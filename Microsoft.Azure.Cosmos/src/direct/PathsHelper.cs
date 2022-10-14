@@ -61,6 +61,17 @@ namespace Microsoft.Azure.Documents
                 return true;
             }
 
+            if (!string.IsNullOrEmpty(resourceUrl) && resourceUrl.Contains(Paths.OperationsPathSegment) &&
+                (resourceUrl.Contains(Paths.MetadataCheckAccessPathSegment)))
+            {
+                // For metadata check access the, the resource path is always root.
+                isFeed = false;
+                resourceIdOrFullName = string.Empty;
+                resourcePath = Paths.Root;
+                isNameBased = true;
+                return true;
+            }
+
             return PathsHelper.TryParsePathSegmentsWithDatabaseAndCollectionNames(resourceUrl, out isFeed, out resourcePath, out resourceIdOrFullName, out isNameBased, out databaseName, out collectionName, clientVersion, false);
         }
 
@@ -174,35 +185,55 @@ namespace Microsoft.Azure.Documents
                 // parse the databaseId or snapshotId as RID. If failed, it is name based routing
                 // mediaId is special, we will treat it always as RID based.
                 ResourceId rid;
-                if (segments[0].Equals(Paths.DatabasesPathSegment, StringComparison.OrdinalIgnoreCase) &&
-                    (!ResourceId.TryParse(segments[1], out rid) || !rid.IsDatabaseId))
+                string firstSegment = segments[0];
+                if (firstSegment.Equals(Paths.DatabasesPathSegment, StringComparison.OrdinalIgnoreCase))
                 {
-                    isNameBased = true;
+                    if (!ResourceId.TryParse(segments[1], out rid) || !rid.IsDatabaseId)
+                    {
+                        isNameBased = true;
+                    }
                 }
-                else if (segments[0].Equals(Paths.SnapshotsPathSegment, StringComparison.OrdinalIgnoreCase) &&
-                    (!ResourceId.TryParse(segments[1], out rid) || !rid.IsSnapshotId))
+                else if (firstSegment.Equals(Paths.EncryptionScopesPathSegment, StringComparison.OrdinalIgnoreCase))
                 {
-                    isNameBased = true;
+                    if (!ResourceId.TryParse(segments[1], out rid) || !rid.IsEncryptionScopeId)
+                    {
+                        isNameBased = true;
+                    }
                 }
-                else if (segments[0].Equals(Paths.RoleDefinitionsPathSegment, StringComparison.OrdinalIgnoreCase) &&
-                         (!ResourceId.TryParse(segments[1], out rid) || !rid.IsRoleDefinitionId))
+                else if (firstSegment.Equals(Paths.SnapshotsPathSegment, StringComparison.OrdinalIgnoreCase))
                 {
-                    isNameBased = true;
+                    if (!ResourceId.TryParse(segments[1], out rid) || !rid.IsSnapshotId)
+                    {
+                        isNameBased = true;
+                    }
                 }
-                else if (segments[0].Equals(Paths.RoleAssignmentsPathSegment, StringComparison.OrdinalIgnoreCase) &&
-                         (!ResourceId.TryParse(segments[1], out rid) || !rid.IsRoleAssignmentId))
+                else if (firstSegment.Equals(Paths.RoleDefinitionsPathSegment, StringComparison.OrdinalIgnoreCase))
                 {
-                    isNameBased = true;
+                    if (!ResourceId.TryParse(segments[1], out rid) || !rid.IsRoleDefinitionId)
+                    {
+                        isNameBased = true;
+                    }
                 }
-                else if (segments[0].Equals(Paths.InteropUsersPathSegment, StringComparison.OrdinalIgnoreCase) &&
-                         (!ResourceId.TryParse(segments[1], out rid) || !rid.IsInteropUserId))
+                else if (firstSegment.Equals(Paths.RoleAssignmentsPathSegment, StringComparison.OrdinalIgnoreCase))
                 {
-                    isNameBased = true;
+                    if (!ResourceId.TryParse(segments[1], out rid) || !rid.IsRoleAssignmentId)
+                    {
+                        isNameBased = true;
+                    }
                 }
-                else if (segments[0].Equals(Paths.AuthPolicyElementsPathSegment, StringComparison.OrdinalIgnoreCase) &&
-                         (!ResourceId.TryParse(segments[1], out rid) || !rid.IsAuthPolicyElementId))
+                else if (firstSegment.Equals(Paths.InteropUsersPathSegment, StringComparison.OrdinalIgnoreCase))
                 {
-                    isNameBased = true;
+                    if (!ResourceId.TryParse(segments[1], out rid) || !rid.IsInteropUserId)
+                    {
+                        isNameBased = true;
+                    }
+                }
+                else if (firstSegment.Equals(Paths.AuthPolicyElementsPathSegment, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!ResourceId.TryParse(segments[1], out rid) || !rid.IsAuthPolicyElementId)
+                    {
+                        isNameBased = true;
+                    }
                 }
 
                 if (isNameBased)
@@ -471,6 +502,9 @@ namespace Microsoft.Azure.Documents
                 case Paths.DatabasesPathSegment:
                     return ResourceType.Database;
 
+                case Paths.EncryptionScopesPathSegment:
+                    return ResourceType.EncryptionScope;
+
                 case Paths.PermissionsPathSegment:
                     return ResourceType.Permission;
 
@@ -546,6 +580,9 @@ namespace Microsoft.Azure.Documents
             {
                 case ResourceType.Database:
                     return Paths.DatabasesPathSegment;
+
+                case ResourceType.EncryptionScope:
+                    return Paths.EncryptionScopesPathSegment;
 
                 case ResourceType.Collection:
                 case ResourceType.PartitionKey:
@@ -828,6 +865,7 @@ namespace Microsoft.Azure.Documents
             if (isFeed &&
                 string.IsNullOrEmpty(resourceFullName) &&
                 resourceType != ResourceType.Database &&
+                resourceType != ResourceType.EncryptionScope &&
                 resourceType != ResourceType.Snapshot &&
                 resourceType != ResourceType.RoleDefinition &&
                 resourceType != ResourceType.RoleAssignment &&
@@ -861,6 +899,10 @@ namespace Microsoft.Azure.Documents
             else if (resourceType == ResourceType.Database)
             {
                 return Paths.DatabasesPathSegment;
+            }
+            else if (resourceType == ResourceType.EncryptionScope)
+            {
+                return Paths.EncryptionScopesPathSegment;
             }
             else if (resourceType == ResourceType.Collection)
             {
@@ -983,6 +1025,7 @@ namespace Microsoft.Azure.Documents
         {
             if (isFeed && string.IsNullOrEmpty(ownerOrResourceId) &&
                 resourceType != ResourceType.Database &&
+                resourceType != ResourceType.EncryptionScope &&
                 resourceType != ResourceType.Offer &&
                 resourceType != ResourceType.DatabaseAccount &&
                 resourceType != ResourceType.Snapshot &&
@@ -1001,6 +1044,15 @@ namespace Microsoft.Azure.Documents
                 )
             {
                 throw new BadRequestException(string.Format(CultureInfo.InvariantCulture, RMResources.UnexpectedResourceType, resourceType));
+            }
+
+            if (isFeed && resourceType == ResourceType.EncryptionScope)
+            {
+                return Paths.EncryptionScopesPathSegment;
+            }
+            else if (resourceType == ResourceType.EncryptionScope)
+            {
+                return Paths.EncryptionScopesPathSegment + "/" + ownerOrResourceId.ToString();
             }
 
             if (isFeed && resourceType == ResourceType.Database)
@@ -1404,6 +1456,8 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetStorageAccountSas;
                 case OperationType.GetUnwrappedDek:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetUnwrappedDek;
+                case OperationType.GetCustomerManagedKeyStatus:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_GetCustomerManagedKeyStatus;
                 case OperationType.ReadReplicaFromMasterPartition:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_ReadReplicaFromMasterPartition;
                 case OperationType.ReadReplicaFromServerPartition:
@@ -1412,6 +1466,8 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_MasterInitiatedProgressCoordination;
                 case OperationType.GetAadGroups:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetAadGroups;
+                case OperationType.MetadataCheckAccess:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_MetadataCheckAccess;
 #endif
 
                 default:
@@ -1461,6 +1517,7 @@ namespace Microsoft.Azure.Documents
                    resourcePathSegment.Equals(Paths.InteropUsersPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.AuthPolicyElementsPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.SystemDocumentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.EncryptionScopesPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.RetriableWriteCachedResponsePathSegment, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -1497,6 +1554,7 @@ namespace Microsoft.Azure.Documents
                    operationTypeSegment.Equals(Paths.Operations_GetStorageAccountSas, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetDatabaseAccountConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetUnwrappedDek, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetCustomerManagedKeyStatus, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_ReadReplicaFromMasterPartition, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_ReadReplicaFromServerPartition, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_MasterInitiatedProgressCoordination, StringComparison.OrdinalIgnoreCase) ||
@@ -1519,7 +1577,9 @@ namespace Microsoft.Azure.Documents
         internal static bool IsNameBased(string resourceIdOrFullName)
         {
             // quick way to tell whether it is resourceId nor not, non conclusively.
-            if (!string.IsNullOrEmpty(resourceIdOrFullName) && resourceIdOrFullName.Length > 4 && resourceIdOrFullName[3] == '/')
+            if (!string.IsNullOrEmpty(resourceIdOrFullName) && 
+                ((resourceIdOrFullName.Length > 4 && resourceIdOrFullName[3] == '/') || 
+                 (resourceIdOrFullName.StartsWith(Paths.InteropUsersPathSegment, StringComparison.OrdinalIgnoreCase))))
             {
                 return true;
             }
@@ -1579,6 +1639,13 @@ namespace Microsoft.Azure.Documents
                 segments.Add(Paths.SnapshotsPathSegment);
                 return segments.ToArray();
             }
+
+            if (resourceType == ResourceType.EncryptionScope)
+            {
+                segments.Add(Paths.EncryptionScopesPathSegment);
+                return segments.ToArray();
+            }
+
             if (resourceType == ResourceType.RoleDefinition)
             {
                 segments.Add(Paths.RoleDefinitionsPathSegment);
@@ -1699,6 +1766,10 @@ namespace Microsoft.Azure.Documents
             {
                 return PathsHelper.ValidateDatabaseId(resourceId);
             }
+            else if (resourceType == ResourceType.EncryptionScope)
+            {
+                return PathsHelper.ValidateEncryptionScopeId(resourceId);
+            }
             else if (resourceType == ResourceType.Collection)
             {
                 return PathsHelper.ValidateDocumentCollectionId(resourceId);
@@ -1784,6 +1855,12 @@ namespace Microsoft.Azure.Documents
         {
             ResourceId resourceId = null;
             return ResourceId.TryParse(resourceIdString, out resourceId) && resourceId.Database > 0;
+        }
+
+        internal static bool ValidateEncryptionScopeId(string resourceIdString)
+        {
+            ResourceId resourceId;
+            return ResourceId.TryParse(resourceIdString, out resourceId) && resourceId.EncryptionScope > 0;
         }
 
         internal static bool ValidateDocumentCollectionId(string resourceIdString)

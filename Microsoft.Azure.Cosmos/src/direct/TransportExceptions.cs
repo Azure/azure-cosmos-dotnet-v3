@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             RMResources.ExceptionMessage,
                             RMResources.Gone),
                         inner,
+                        SubStatusCodes.TransportGenerated410,
                             targetAddress,
                         RntbdConnection.LocalIpv4Address);
                 }
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             RMResources.ExceptionMessage,
                             RMResources.Gone),
                         inner,
+                        SubStatusCodes.TransportGenerated410,
                         targetAddress);
                 }
             }
@@ -49,6 +51,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             RMResources.ExceptionMessage,
                             RMResources.Gone),
                         inner,
+                        SubStatusCodes.TransportGenerated410,
                         targetAddress,
                         RntbdConnection.LocalIpv4Address);
                 }
@@ -59,6 +62,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             RMResources.ExceptionMessage,
                             RMResources.Gone),
                         inner,
+                        SubStatusCodes.TransportGenerated410,
                         targetAddress);
                 }
             }
@@ -132,20 +136,16 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             if (inner == null)
             {
-                serviceUnavailableException = new ServiceUnavailableException(
-                    string.Format(CultureInfo.CurrentUICulture,
-                        RMResources.ExceptionMessage,
-                        RMResources.ChannelClosed),
-                    targetAddress);
+                serviceUnavailableException = ServiceUnavailableException.Create(                    
+                    SubStatusCodes.Channel_Closed,
+                    requestUri: targetAddress);
             }
             else
             {
-                serviceUnavailableException = new ServiceUnavailableException(
-                    string.Format(CultureInfo.CurrentUICulture,
-                        RMResources.ExceptionMessage,
-                        RMResources.ChannelClosed),
-                    inner,
-                    targetAddress);
+                serviceUnavailableException = ServiceUnavailableException.Create(
+                    SubStatusCodes.Channel_Closed,
+                    innerException: inner,
+                    requestUri: targetAddress);
             }
 
             serviceUnavailableException.Headers.Add(HttpConstants.HttpHeaders.RequestValidationFailure, "1");

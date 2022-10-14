@@ -83,6 +83,24 @@ namespace Microsoft.Azure.Documents
             return date ?? string.Empty;
         }
 
+        public static string GetDateHeader(RequestNameValueCollection requestHeaders)
+        {
+            if (requestHeaders == null)
+            {
+                return string.Empty;
+            }
+
+            // Since Date header is overridden by some proxies/http client libraries, we support
+            // an additional date header 'x-ms-date' and prefer that to the regular 'date' header.
+            string date = requestHeaders.XDate;
+            if (string.IsNullOrEmpty(date))
+            {
+                date = requestHeaders.HttpDate;
+            }
+
+            return date ?? string.Empty;
+        }
+
         public static long GetHeaderValueLong(INameValueCollection headerValues, string headerName, long defaultValue = -1)
         {
             long result = defaultValue;

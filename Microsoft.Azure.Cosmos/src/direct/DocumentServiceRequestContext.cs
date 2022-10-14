@@ -6,17 +6,30 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
     using Microsoft.Azure.Documents.Routing;
 
     internal sealed class DocumentServiceRequestContext
     {
+        private StoreResult quorumSelectedStoreResponse;
+
         public TimeoutHelper TimeoutHelper { get; set; }
 
         public RequestChargeTracker RequestChargeTracker { get; set; }
 
         public bool ForceRefreshAddressCache { get; set; }
 
-        public StoreResult QuorumSelectedStoreResponse { get; set; }
+        /// <summary>
+        /// PartitionAddressInformation hash code is used in the cache
+        /// refresh scenarios to avoid doing a refresh when another
+        /// request already completed one.
+        /// </summary>
+        public int LastPartitionAddressInformationHashCode { get; set; }
+
+        /// <summary>
+        /// Non thread safe.
+        /// </summary>
+        public StoreResult QuorumSelectedStoreResponse => this.quorumSelectedStoreResponse;
 
         /// <summary>
         /// Cache the string representation of last returned store responses when exercising QuorumReader logic
@@ -101,6 +114,54 @@ namespace Microsoft.Azure.Documents
         public bool IsRetry { get; set; }
 
         /// <summary>
+        /// Set of all failed enpoints for a DSR. Used for prioritizing replica selection
+        /// </summary>
+        public Lazy<HashSet<TransportAddressUri>> FailedEndpoints { get; private set; }
+
+        public DocumentServiceRequestContext()
+        {
+            this.FailedEndpoints = new Lazy<HashSet<TransportAddressUri>>();
+        }
+
+        /// <summary>
+        /// Uodates selected storeResult and dispose and previously selected result as no longer used/dereferenced. 
+        /// </summary>
+        /// <remarks>
+        /// Non thread safe.
+        /// </remarks>
+        public void UpdateQuorumSelectedStoreResponse(StoreResult storeResult)
+        {
+            StoreResult currentStoreResult = this.quorumSelectedStoreResponse;
+            if (currentStoreResult == storeResult)
+            {
+                // noop to avoid disposal if we try to assign same stream multiple times
+                return;
+            }
+
+            // Dispose old StoreResult referenced on context if any when it is dereferenced on request context
+            if (currentStoreResult != null)
+            {
+                currentStoreResult.Dispose();
+            }
+
+            this.quorumSelectedStoreResponse = storeResult;
+        }
+
+        public void AddToFailedEndpoints(Exception storeException, TransportAddressUri targetUri)
+        {
+            // Add to the FailedEnpoints hashset only for 408, 410, >= 500 to avoid the respective replica on retries
+            if (storeException is DocumentClientException dce)
+            {
+                if (dce.StatusCode == HttpStatusCode.Gone ||
+                    dce.StatusCode == HttpStatusCode.RequestTimeout ||
+                    (int)dce.StatusCode >= 500)
+                {
+                    this.FailedEndpoints.Value.Add(targetUri);
+                }
+            }
+        }
+
+        /// <summary>
         /// Sets routing directive for <see cref="GlobalEndpointManager"/> to resolve
         /// the request to endpoint based on location index
         /// </summary>
@@ -149,6 +210,13 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         public bool EnableConnectionStateListener { get; set; }
 
+        /// <summary>
+        /// contains the modified materializedview source collection content.
+        /// It is set during materializedview delete operation.
+        /// Only required for CosmosFabric based tests.
+        /// </summary>
+        public string SerializedSourceCollectionForMaterializedView { get; set; }
+
         public DocumentServiceRequestContext Clone()
         {
             DocumentServiceRequestContext requestContext = new DocumentServiceRequestContext();
@@ -171,6 +239,8 @@ namespace Microsoft.Azure.Documents
             requestContext.EnsureCollectionExistsCheck = this.EnsureCollectionExistsCheck;
             requestContext.EnableConnectionStateListener = this.EnableConnectionStateListener;
             requestContext.LocalRegionRequest = this.LocalRegionRequest;
+            requestContext.FailedEndpoints = this.FailedEndpoints;
+            requestContext.LastPartitionAddressInformationHashCode = this.LastPartitionAddressInformationHashCode;
 
             return requestContext;
         }

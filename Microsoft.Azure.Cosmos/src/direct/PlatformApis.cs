@@ -37,17 +37,25 @@ namespace Microsoft.Azure.Documents
 
         public static string GetOSVersion()
         {
-            switch (GetOSPlatform())
+            try
             {
-                case Platform.Windows:
-                    return GetWindowsVersion(RuntimeInformation.OSDescription) ?? string.Empty;
-                case Platform.Linux:
-                    return GetDistroVersionId() ?? string.Empty;
-                case Platform.Darwin:
-                    return GetDarwinVersion() ?? string.Empty;
-                default:
-                    return string.Empty;
+                switch (GetOSPlatform())
+                {
+                    case Platform.Windows:
+                        return GetWindowsVersion(RuntimeInformation.OSDescription) ?? string.Empty;
+                    case Platform.Linux:
+                        return GetDistroVersionId() ?? string.Empty;
+                    case Platform.Darwin:
+                        return GetDarwinVersion() ?? string.Empty;
+                    default:
+                        return string.Empty;
+                }
             }
+            catch
+            {
+                return string.Empty; 
+            }
+            
         }
 
         public static string GetWindowsVersion(string osDescipiton)

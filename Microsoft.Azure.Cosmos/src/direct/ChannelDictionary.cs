@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System;
     using System.Collections.Concurrent;
     using System.Diagnostics;
+    using System.Threading.Tasks;
 
     // ChannelDictionary maps server keys to load-balanced channels. There is
     // one load-balanced channel per back-end server.
@@ -45,6 +46,34 @@ namespace Microsoft.Azure.Documents.Rntbd
             Debug.Assert(found);
             Debug.Assert(value != null);
             return value;
+        }
+
+        /// <summary>
+        /// Opens the Rntbd context negotiation channel to the backend replica node, using the server's physical uri.
+        /// </summary>
+        /// <param name="physicalAddress">An instance of <see cref="Uri"/> containing the backend server URI.</param>
+        /// <param name="localRegionRequest">A boolean flag indicating if the request is targeting the local region.</param>
+        /// <param name="activityId">An unique identifier indicating the current activity id.</param>
+        /// <returns>An instance of <see cref="Task"/> indicating the channel has opened successfully.</returns>
+        public Task OpenChannelAsync(
+            Uri physicalAddress,
+            bool localRegionRequest,
+            Guid activityId)
+        {
+            // Do not open a new channel, if the channel is
+            // already a part of the concurrent dictionary.
+            if (!this.channels.ContainsKey(
+                new ServerKey(physicalAddress)))
+            {
+                this.ThrowIfDisposed();
+                IChannel channel = this.GetChannel(
+                    physicalAddress,
+                    localRegionRequest);
+
+                return channel.OpenChannelAsync(activityId);
+            }
+
+            return Task.FromResult(0);
         }
 
         public void Dispose()

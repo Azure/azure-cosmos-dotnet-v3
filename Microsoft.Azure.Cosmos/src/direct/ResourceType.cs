@@ -80,6 +80,8 @@ namespace Microsoft.Azure.Documents
 
         RetriableWriteCachedResponse = 153,
 
+        EncryptionScope = 156,
+
         // These names make it unclear what they map to in ResourceType.
         Key = -2,
         Media = -3,

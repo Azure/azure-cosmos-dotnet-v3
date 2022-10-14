@@ -46,12 +46,14 @@ namespace Microsoft.Azure.Documents
     internal enum SubStatusCodes
     {
         Unknown = 0,
+        TooManyRequests = 429,
 
         // 400: Bad Request Substatus
         PartitionKeyMismatch = 1001,
         CrossPartitionQueryNotServable = 1004,
         ScriptCompileError = 0xFFFF,    // From ExecuteStoredProcedure.
         AnotherOfferReplaceOperationIsInProgress = 3205,
+        HttpListenerException = 1101,
 
         // 410: StatusCodeType_Gone: substatus
         NameCacheIsStale = 1000,
@@ -60,6 +62,9 @@ namespace Microsoft.Azure.Documents
         CompletingPartitionMigration = 1008,
         LeaseNotFound = 1022,
 
+        // 404: StatusCodeType_NotFound: substatus
+        PartitionMigratingCollectionDeleted = 1031,
+
         // 403: Forbidden Substatus.
         WriteForbidden = 3,
         ProvisionLimitReached = 1005,
@@ -67,6 +72,7 @@ namespace Microsoft.Azure.Documents
         RedundantCollectionPut = 1009,
         SharedThroughputDatabaseQuotaExceeded = 1010,
         SharedThroughputOfferGrowNotNeeded = 1011,
+        PartitionKeyQuotaOverLimit = 1014,
         SharedThroughputDatabaseCollectionCountExceeded = 1019,
         SharedThroughputDatabaseCountExceeded = 1020,
         ComputeInternalError = 1021,
@@ -107,8 +113,10 @@ namespace Microsoft.Azure.Documents
         CanNotAcquireSnapshotOwnerLock = 2005,
         StorageSplitConflictingWithNWayThroughputSplit = 2011,
         MergeIsDisabled = 2012,
-		TombstoneRecordsNotFound = 2015, // Tombstone records were not found because they were purged.
+        TombstoneRecordsNotFound = 2015, // Tombstone records were not found because they were purged.
         InvalidAccountStatus = 2016,
+        OfferValidationFailed = 2017,
+        CanNotAquireMasterPartitionAccessLock = 2018,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
@@ -134,7 +142,9 @@ namespace Microsoft.Azure.Documents
         KeyVaultDNSNotResolved = 4009, // Key Vault DNS name could not be resolved, mostly due to customer enter incorrect KeyVault name.
         InvalidKeyVaultCertURI = 4010, // Indicate the Key Vault Cert URI is invalid.
         InvalidKeyVaultKeyAndCertURI = 4011, // Indicate the Key Vault Key and Cert URI is invalid.
-
+        CustomerKeyRotated = 4012, // Indicates the rewrapped key doesn't match with existing key.
+        MissingRequestParameter = 4013, // Indicates that the incoming request has missing parameters.
+        InvalidKeyVaultSecretURI = 4014, // Indicate the Key Vault secret URI is invalid.
 
         // Keep in sync with Microsoft.Azure.Cosmos.ServiceFramework.Security.AadAuthentication.AadSubStatusCodes
         // 401 : Unauthorized Exception (User-side errors start with 50)
@@ -171,7 +181,30 @@ namespace Microsoft.Azure.Documents
         RbacRequestWasNotAuthorized = 5400,
 
         // 200 OK. List feed throttled response.
-        ListResourceFeedThrottled = 5500
+        ListResourceFeedThrottled = 5500,
+
+        // 401 Unauthorized Exception (mutual TLS client auth failed)
+        MutualTlsClientAuthFailed = 5600,
+
+        // SDK Codes (Client)
+        TransportGenerated410 = 20001,
+        TimeoutGenerated410 = 20002,
+        TransportGenerated503 = 20003,
+        Client_CPUOverload = 20004,
+        Client_ThreadStarvation = 20005,
+        Channel_Closed = 20006,
+        MalformedContinuationToken = 20007,
+
+        //SDK Codes (Server)
+        Server_NameCacheIsStaleExceededRetryLimit = 21001,
+        Server_PartitionKeyRangeGoneExceededRetryLimit = 21002,
+        Server_CompletingSplitExceededRetryLimit = 21003,
+        Server_CompletingPartitionMigrationExceededRetryLimit = 21004,
+        ServerGenerated410 = 21005,
+        Server_GlobalStrongWriteBarrierNotMet = 21006,
+        Server_ReadQuorumNotMet = 21007,
+        ServerGenerated503 = 21008,
+        Server_NoValidStoreResponse = 21009
     }
 
     internal static class StatusCodesExtensions
@@ -196,6 +229,7 @@ namespace Microsoft.Azure.Documents
     internal static class SubStatusCodesExtensions
     {
         private static readonly Dictionary<int, string> CodeNameMap = new Dictionary<int, string>();
+        private static readonly int SDKGeneratedSubStatusStartingCode = 20000;
 
         static SubStatusCodesExtensions()
         {
@@ -209,6 +243,11 @@ namespace Microsoft.Azure.Documents
         public static string ToSubStatusCodeString(this SubStatusCodes code)
         {
             return SubStatusCodesExtensions.CodeNameMap.TryGetValue((int)code, out string value) ? value : code.ToString();
+        }
+
+        public static bool IsSDKGeneratedSubStatus(this SubStatusCodes code)
+        {
+            return ((int)code > SubStatusCodesExtensions.SDKGeneratedSubStatusStartingCode);
         }
     }
 

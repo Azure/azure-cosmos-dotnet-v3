@@ -28,22 +28,23 @@ namespace Microsoft.Azure.Cosmos.Rntbd
 
         private readonly Stream stream;
         private byte[] buffer;
-        private Memory<byte> availableBytes;
+        private int offset;
+        private int length;
 
         public RntbdStreamReader(Stream stream)
         {
             this.stream = stream;
             this.buffer = ArrayPool<byte>.Shared.Rent(RntbdStreamReader.BufferSize);
-            this.availableBytes = default;
+            this.offset = 0;
+            this.length = 0;
         }
 
-        internal int AvailableByteCount => this.availableBytes.Length;
+        internal int AvailableByteCount => this.length;
 
         public void Dispose()
         {
             byte[] bufferToReturn = this.buffer;
             this.buffer = null;
-            this.availableBytes = default;
             ArrayPool<byte>.Shared.Return(bufferToReturn);
         }
 
@@ -54,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Rntbd
                 throw new ArgumentException(nameof(payload));
             }
 
-            if (!this.availableBytes.IsEmpty)
+            if (this.length > 0)
             {
                 return new ValueTask<int>(this.CopyFromAvailableBytes(payload, offset, count));
             }
@@ -62,9 +63,19 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             return this.PopulateBytesAndReadAsync(payload, offset, count);
         }
 
+        public ValueTask<int> ReadAsync(MemoryStream payload, int count)
+        {
+            if (this.length > 0)
+            {
+                return new ValueTask<int>(this.CopyFromAvailableBytes(payload, count));
+            }
+
+            return this.PopulateBytesAndReadAsync(payload, count);
+        }
+
         private async ValueTask<int> PopulateBytesAndReadAsync(byte[] payload, int offset, int count)
         {
-            Debug.Assert(this.availableBytes.IsEmpty);
+            Debug.Assert(this.length == 0);
 
             // if the count requested is bigger than the buffer just read directly into the target payload.
             if (count >= this.buffer.Length)
@@ -73,16 +84,30 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             }
             else
             {
-                int bytesRead = await this.stream.ReadAsync(this.buffer, 0, this.buffer.Length);
-                if (bytesRead == 0)
+                this.offset = 0;
+                this.length = await this.stream.ReadAsync(this.buffer, offset: 0, this.buffer.Length);
+                if (this.length == 0)
                 {
                     // graceful closure.
-                    return bytesRead;
+                    return this.length;
                 }
 
-                this.availableBytes = new Memory<byte>(this.buffer, 0, bytesRead);
                 return this.CopyFromAvailableBytes(payload, offset, count);
             }
+        }
+
+        private async ValueTask<int> PopulateBytesAndReadAsync(MemoryStream payload, int count)
+        {
+            Debug.Assert(this.length == 0);
+            this.offset = 0;
+            this.length = await this.stream.ReadAsync(this.buffer, offset: 0, this.buffer.Length);
+            if (this.length == 0)
+            {
+                // graceful closure.
+                return this.length;
+            }
+
+            return this.CopyFromAvailableBytes(payload, count);
         }
 
         private int CopyFromAvailableBytes(byte[] payload, int offset, int count)
@@ -90,24 +115,23 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             // copy any in memory buffer to the target payload.
             try
             {
-                Span<byte> sourceSpan;
-                if (count >= this.availableBytes.Length)
+                if (count >= this.length)
                 {
-                    // if more bytes than wwhat we've buffered is requested, copy what we have 
+                    // if more bytes than what we've buffered is requested, copy what we have 
                     // and return. The caller can request the remaining separately.
-                    sourceSpan = this.availableBytes.Span;
-                    this.availableBytes = default;
+                    Array.Copy(sourceArray: this.buffer, sourceIndex: this.offset, destinationArray: payload, destinationIndex: offset, length: this.length);
+                    int bytesRead = this.length;
+                    this.length = 0;
+                    this.offset = 0;
+                    return bytesRead;
                 }
                 else
                 {
-                    sourceSpan = this.availableBytes.Span.Slice(0, count);
-                    this.availableBytes = this.availableBytes.Slice(count);
+                    Array.Copy(sourceArray: this.buffer, sourceIndex: this.offset, destinationArray: payload, destinationIndex: offset, length: count);
+                    this.length -= count;
+                    this.offset += count;
+                    return count;
                 }
-
-                Span<byte> targetSpan = new Span<byte>(payload, offset, count);
-                sourceSpan.CopyTo(targetSpan);
-
-                return sourceSpan.Length;
             }
             catch (Exception e)
             {
@@ -115,5 +139,33 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             }
         }
 
+        private int CopyFromAvailableBytes(MemoryStream payload, int count)
+        {
+            // copy any in memory buffer to the target payload.
+            try
+            {
+                if (count >= this.length)
+                {
+                    // if more bytes than what we've buffered is requested, copy what we have 
+                    // and return. The caller can request the remaining separately.
+                    int bytesRead = this.length;
+                    payload.Write(this.buffer, this.offset, this.length);
+                    this.length = 0;
+                    this.offset = 0;
+                    return bytesRead;
+                }
+                else
+                {
+                    payload.Write(this.buffer, this.offset, count);
+                    this.length -= count;
+                    this.offset += count;
+                    return count;
+                }
+            }
+            catch (Exception e)
+            {
+                throw new IOException("Error copying buffered bytes", e);
+            }
+        }
     }
 }

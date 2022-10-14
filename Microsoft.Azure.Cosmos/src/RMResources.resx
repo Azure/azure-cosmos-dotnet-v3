@@ -138,6 +138,42 @@
   <data name="DeserializationError" xml:space="preserve">
     <value>Error occurred while deserializing content '{0}'.</value>
   </data>
+  <data name="EnableMultiRegionNotSupported" xml:space="preserve">
+    <value>Cannot add regions to this account type.</value>
+  </data>
+  <data name="EnableMultipleWriteLocationsNotSupported" xml:space="preserve">
+    <value>Cannot set EnableMultipleWriteLocations on this account type.</value>
+  </data>
+  <data name="PitrNotSupported" xml:space="preserve">
+    <value>Pitr is not supported on this account type.</value>
+  </data>
+  <data name="DisableKeyBasedMetadataWriteAccessNotSupported" xml:space="preserve">
+    <value>Cannot set DisableKeyBasedMetadataWriteAccess on this account type.</value>
+  </data>
+  <data name="MaterializedViewsNotSupported" xml:space="preserve">
+    <value>MaterializedViews is not supported on this account type.</value>
+  </data>
+  <data name="FullFidelityChangeFeedNotSupported" xml:space="preserve">
+    <value>Full Fidelity Change Feed is not supported on this account type.</value>
+  </data>
+  <data name="CassandraConnectorNotSupported" xml:space="preserve">
+    <value>CassandraConnector not supported for this account type.</value>
+  </data>
+  <data name="FreeTierNotSupported" xml:space="preserve">
+    <value>Free Tier is not supported on this account type.</value>
+  </data>
+  <data name="AnalyticalStoreNotSupported" xml:space="preserve">
+    <value>Analytical Storage is not supported on this account type.</value>
+  </data>
+  <data name="VirtualNetworkFilterNotSupported" xml:space="preserve">
+    <value>Cannot set VirtualNetworkFilter on this account type.</value>
+  </data>
+  <data name="ServerlessNotSupported" xml:space="preserve">
+    <value>Serverless offer is not supported on this account type.</value>
+  </data>
+  <data name="IpRangeFilterNotSupported" xml:space="preserve">
+    <value>Cannot set IpRangeFilter values on this account type.</value>
+  </data>
   <data name="EndpointNotFound" xml:space="preserve">
     <value>Unable to retrieve address of endpoint '{0}' from the address '{1}'</value>
   </data>
@@ -147,14 +183,14 @@
   <data name="Forbidden" xml:space="preserve">
     <value>Request is blocked by your Cosmos DB account firewall settings. More info: https://aka.ms/cosmosdb-tsg-forbidden</value>
   </data>
-  <data name="ClientPublicIpInfo" xml:space="preserve">
-    <value>client IP {0} through public internet</value>
+  <data name="ForbiddenPublicIpv4" xml:space="preserve">
+    <value>Request originated from IP {0} through public internet. This is blocked by your Cosmos DB account firewall settings. More info: https://aka.ms/cosmosdb-tsg-forbidden</value>
   </data>
-  <data name="ClientVnetInfo" xml:space="preserve">
-    <value>client VNET through {0}</value>
+  <data name="ForbiddenServiceEndpoint" xml:space="preserve">
+    <value>Request originated from VNET through service endpoint. This is blocked by your Cosmos DB account firewall settings. More info: https://aka.ms/cosmosdb-tsg-forbidden</value>
   </data>
-  <data name="ForbiddenClientIpAddress" xml:space="preserve">
-    <value>Request originated from {0}. This is blocked by your Cosmos DB account firewall settings. More info: https://aka.ms/cosmosdb-tsg-forbidden</value>
+  <data name="ForbiddenPrivateEndpoint" xml:space="preserve">
+    <value>Request received through private endpoint. It is blocked because either your account does not have private endpoint configured, or it is not from the private endpoint that your account is configured with. More info: https://aka.ms/cosmosdb-tsg-forbidden</value>
   </data>
   <data name="Gone" xml:space="preserve">
     <value>The requested resource is no longer available at the server.</value>
@@ -280,7 +316,7 @@
     <value>The authorization token is not valid at the current time. Please create another token and retry (token start time: {0}, token expiry time: {1}, current server time: {2}).</value>
   </data>
   <data name="TooManyRequests" xml:space="preserve">
-    <value>The request rate is too large. Please retry after sometime.</value>
+    <value>The request rate is too large. Please retry after sometime. Learn more: http://aka.ms/cosmosdb-error-429</value>
   </data>
   <data name="Unauthorized" xml:space="preserve">
     <value>Unable to authenticate the request. The request requires valid user authentication.</value>
@@ -444,6 +480,9 @@
   <data name="ProvisionLimit" xml:space="preserve">
     <value>Reached the pre-approved storage limit for the database account. Please contact Azure support to increase this limit.</value>
   </data>
+  <data name="GremlinV2ServiceDeleteNotSupported" xml:space="preserve">
+    <value>GraphAPICompute Service cannot be deleted.</value>
+  </data>
   <data name="DatabaseAccountNotFound" xml:space="preserve">
     <value>Database Account {0} does not exist</value>
   </data>
@@ -539,6 +578,9 @@
   </data>
   <data name="InvalidOfferCRUDForServerless" xml:space="preserve">
     <value>Reading or replacing offers is not supported for serverless accounts.</value>
+  </data>
+  <data name="InvalidThroughputPolicy" xml:space="preserve">
+    <value>The value of offer throughput policy specified is invalid.</value>
   </data>
   <data name="InvalidNonPartitionedOfferThroughput" xml:space="preserve">
     <value>The value of offer throughput specified exceeded supported maximum throughput for Fixed size container. Please enter value less than {0}.</value>
@@ -809,6 +851,9 @@
   </data>
   <data name="FeatureNotSupportedInRegion" xml:space="preserve">
     <value>Feature {0} is not supported in {1} region</value>
+  </data>
+  <data name="MaterializedViewsNotSupportedOnZoneRedundantAccount" xml:space="preserve">
+    <value>Materialized Views are not supported on account with zone redundant region</value>
   </data>
   <data name="GlobalAndWriteRegionMisMatch" xml:space="preserve">
     <value>Database and Write Location are not matching</value>
@@ -1081,6 +1126,12 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="CannotRemoveSchemaPolicyFromContainer" xml:space="preserve">
     <value>The container replace request is not allowed since it removes the schema policy from the container {0}.</value>
   </data>
+  <data name="CannotReplaceCassandraConflictPolicyFromContainer" xml:space="preserve">
+    <value>The container replace request is not allowed since it removes the Cassandra conflict resolution policy from the container {0}.</value>
+  </data>
+  <data name="CannotCreateContainerWithoutCassandraConflictPolicy" xml:space="preserve">
+    <value>The container create request is not allowed since it does not contain the Cassandra conflict resolution policy specified for the container {0}.</value>
+  </data>
   <data name="InvalidTypeSystemPolicy" xml:space="preserve">
     <value>Invalid type system '{0}' specified for container {1}.</value>
   </data>
@@ -1143,5 +1194,72 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="RbacMissingAction" xml:space="preserve">
     <value>Cannot authorize request since the [Action] to authorize was not found.</value>
+  </data>
+  <data name="SystemDatabaseAccountPitrEnabledNotSupported" xml:space="preserve">
+    <value>System database account {0} cannot be created with Continuous backup mode</value>
+    <comment>{0} = GlobalDatabaseAccountId</comment>
+  </data>
+  <data name="FailoverDisabled" xml:space="preserve">
+    <value>Cannot perform failover as it is disabled for the account.</value>
+  </data>
+  <data name="UnsupportedPartitionDefinitionKindForPartialKeyOperations" xml:space="preserve">
+    <value>This partition key definition kind is not supported for partial partition key operations</value>
+  </data>
+  <data name="DuplicatePhysicalPartitionIdInTargetPartitionThroughputInfo" xml:space="preserve">
+    <value>There cannot be duplicate physical partition ids in x-ms-cosmos-target-partition-throughput-info header.</value>
+  </data>
+  <data name="DuplicatePhysicalPartitionIdInSourcePartitionThroughputInfo" xml:space="preserve">
+    <value>There cannot be duplicate physical partition ids in x-ms-cosmos-source-partition-throughput-info header.</value>
+  </data>
+  <data name="PhysicalPartitionIdinTargetAndSourcePartitionThroughputInfo" xml:space="preserve">
+    <value>There cannot be a common physical partition id both in x-ms-cosmos-target-partition-throughput-info and x-ms-cosmos-source-partition-throughput-info header. Encountered {0}</value>
+  </data>
+  <data name="PhysicalPartitionIdinTargetOrSourceDoesNotExist" xml:space="preserve">
+    <value>One of the source or target physical partition id doesn't exist.</value>
+  </data>
+  <data name="TransportGenerated410" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. The SDK failed to connect to the service. Please check your networking configuration.</value>
+  </data>
+  <data name="UnsupportedAzRegion" xml:space="preserve">
+    <value>The requested region '{0}' does not support AZ provisioning yet. Please try other regions or disable zone redundancy for this region.</value>
+  </data>
+  <data name="Client_CPUOverload" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. There is high CPU detected on your client machine. Requests are more likely to timeout when CPU exceeds 90%.</value>
+  </data>
+  <data name="Client_ThreadStarvation" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Thread starvation or thread-pool blocking detected.</value>
+  </data>
+  <data name="ServerGenerated410" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Server returned a 410 response.</value>
+  </data>
+  <data name="ServerGenerated503" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Server returned a 503 response.</value>
+  </data>
+  <data name="Server_CompletingPartitionMigrationExceededRetryLimit" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Partition reconfiguration exceeded retry limit. Please contact support with the full exception.</value>
+  </data>
+  <data name="Server_CompletingSplitExceededRetryLimit" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Unhandled partition split. Please contact support with the full exception.</value>
+  </data>
+  <data name="Server_GlobalStrongWriteBarrierNotMet" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Could not achieve backend quorum for Strong or Bounded Staleness after barrier requests.</value>
+  </data>
+  <data name="Server_NameCacheIsStaleExceededRetryLimit" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Container was re-created, exceeded retries to resolve new identifier. Please contact support with the full exception.</value>
+  </data>
+  <data name="Server_NoValidStoreResponse" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Store (backend) returned an invalid response. Please contact support with the full exception. </value>
+  </data>
+  <data name="Server_PartitionKeyRangeGoneExceededRetryLimit" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Unhandled partition split. Please contact support with the full exception.</value>
+  </data>
+  <data name="Server_ReadQuorumNotMet" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Could not achieve backend quorum. </value>
+  </data>
+  <data name="TimeoutGenerated410" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Network timeout or connectivity failure. </value>
+  </data>
+  <data name="TransportGenerated503" xml:space="preserve">
+    <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Continuous connectivity failures. Client cannot connect after multiple retries. Please check your networking configuration</value>
   </data>
 </root>

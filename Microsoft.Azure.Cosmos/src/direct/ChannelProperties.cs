@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
     using System.Diagnostics;
+    using System.Net.Security;
 
     internal sealed class ChannelProperties
     {
@@ -16,7 +17,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             int maxConcurrentOpeningConnectionCount,
             TimeSpan receiveHangDetectionTime, TimeSpan sendHangDetectionTime,
             TimeSpan idleTimeout, TimerPool idleTimerPool,
-            RntbdConstants.CallerId callerId, bool enableChannelMultiplexing)
+            RntbdConstants.CallerId callerId, bool enableChannelMultiplexing,
+            MemoryStreamPool memoryStreamPool,
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
         {
             Debug.Assert(userAgent != null);
             this.UserAgent = userAgent;
@@ -48,6 +51,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.CallerId = callerId;
             this.EnableChannelMultiplexing = enableChannelMultiplexing;
             this.MaxConcurrentOpeningConnectionCount = maxConcurrentOpeningConnectionCount;
+            this.MemoryStreamPool = memoryStreamPool;
+            this.RemoteCertificateValidationCallback = remoteCertificateValidationCallback;
         }
 
         public UserAgentContainer UserAgent { get; private set; }
@@ -93,5 +98,9 @@ namespace Microsoft.Azure.Documents.Rntbd
         public bool EnableChannelMultiplexing { get; private set; }
 
         public int MaxConcurrentOpeningConnectionCount { get; private set; }
+
+        public MemoryStreamPool MemoryStreamPool { get; private set; }
+
+        public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; private set; }
     }
 }

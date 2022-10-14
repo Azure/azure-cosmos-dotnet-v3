@@ -78,6 +78,12 @@ namespace Microsoft.Azure.Documents.Rntbd
         // sendDelayLimit must be greater than sendHangGracePeriod.
         private readonly TimeSpan sendDelayLimit;
 
+        // Recyclable memory stream pool
+        private readonly MemoryStreamPool memoryStreamPool;
+
+        // Used only for integration tests
+        private readonly RemoteCertificateValidationCallback remoteCertificateValidationCallback;
+
         private bool disposed = false;
 
         private TcpClient tcpClient;
@@ -110,12 +116,16 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly object nameLock = new object();  // Acquired after timestampLock.
         private string name;  // Guarded by nameLock.
 
+        private static int numberOfOpenTcpConnections;
+
         public Connection(
             Uri serverUri,
             string hostNameCertificateOverride,
             TimeSpan receiveHangDetectionTime,
             TimeSpan sendHangDetectionTime,
-            TimeSpan idleTimeout)
+            TimeSpan idleTimeout,
+            MemoryStreamPool memoryStreamPool,
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
         {
             Debug.Assert(serverUri.PathAndQuery.Equals("/"), serverUri.AbsoluteUri,
                 "The server URI must not specify a path and query");
@@ -166,7 +176,12 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             this.name = string.Format(CultureInfo.InvariantCulture,
                 "<not connected> -> {0}", this.serverUri);
+
+            this.memoryStreamPool = memoryStreamPool;
+            this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
         }
+
+        public static int NumberOfOpenTcpConnections { get { return Connection.numberOfOpenTcpConnections; } }
 
         public BufferProvider BufferProvider { get; }
 
@@ -299,9 +314,19 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         // This method is thread safe.
-        public async Task WriteRequestAsync(ChannelCommonArguments args, ArraySegment<byte> messagePayload)
+        public async Task WriteRequestAsync(ChannelCommonArguments args, 
+                    TransportSerialization.SerializedRequest messagePayload,
+                    TransportRequestStats transportRequestStats)
         {
             this.ThrowIfDisposed();
+
+            if (transportRequestStats != null)
+            {
+                this.SnapshotConnectionTimestamps(out DateTime lastSendAttempt, out DateTime lastSend, out DateTime lastReceive);
+                transportRequestStats.ConnectionLastSendAttemptTime = lastSendAttempt;
+                transportRequestStats.ConnectionLastSendTime = lastSend;
+                transportRequestStats.ConnectionLastReceiveTime = lastReceive;
+            }
 
             args.SetTimeoutCode(TransportErrorCode.SendLockTimeout);
             await this.writeSemaphore.WaitAsync();
@@ -310,7 +335,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 args.SetTimeoutCode(TransportErrorCode.SendTimeout);
                 args.SetPayloadSent();
                 this.UpdateLastSendAttemptTime();
-                await this.stream.WriteAsync(messagePayload.Array, messagePayload.Offset, messagePayload.Count);
+                await messagePayload.CopyToStreamAsync(this.stream);
             }
             finally
             {
@@ -332,8 +357,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             int metadataHeaderLength = sizeof(UInt32) /* totalLength */ + sizeof(UInt32) /* status */ +
                            16;
             BufferProvider.DisposableBuffer header = this.BufferProvider.GetBuffer(metadataHeaderLength);
-            await this.ReadPayloadAsync(header.Buffer.Array,
-                metadataHeaderLength /* sizeof(Guid) */, "header", args);
+            await this.ReadPayloadAsync(header.Buffer.Array, metadataHeaderLength /* sizeof(Guid) */, "header", args);
 
             UInt32 totalLength = BitConverter.ToUInt32(header.Buffer.Array, 0);
             if (totalLength > Connection.ResponseLengthByteLimit)
@@ -370,7 +394,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         // This method is not thread safe. ReadResponseMetadataAsync and
         // ReadResponseBodyAsync must be called in sequence, from a single thread.
-        public async Task<byte[]> ReadResponseBodyAsync(ChannelCommonArguments args)
+        public async Task<MemoryStream> ReadResponseBodyAsync(ChannelCommonArguments args)
         {
             this.ThrowIfDisposed();
 
@@ -393,9 +417,19 @@ namespace Microsoft.Azure.Documents.Rntbd
                         length, this));
             }
 
-            byte[] body = new byte[length];
-            await this.ReadPayloadAsync(body, (int)length, "body", args);
-            return body;
+            MemoryStream memoryStream = null;
+            if (this.memoryStreamPool?.TryGetMemoryStream((int)length, out memoryStream) ?? false)
+            {
+                await this.ReadPayloadAsync(memoryStream, (int)length, "body", args);
+                memoryStream.Position = 0;
+                return memoryStream;
+            }
+            else
+            {
+                byte[] body = new byte[length];
+                await this.ReadPayloadAsync(body, (int)length, "body", args);
+                return StreamExtension.CreateExportableMemoryStream(body);
+            }
         }
 
         public override string ToString()
@@ -444,6 +478,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.portPool.RemoveReference(this.localEndPoint.AddressFamily, checked((ushort)this.localEndPoint.Port));
                 }
                 this.tcpClient.Close();
+
+                Interlocked.Decrement(ref Connection.numberOfOpenTcpConnections);
+
                 this.tcpClient = null;
                 Debug.Assert(this.stream != null);
                 this.stream.Close();
@@ -615,6 +652,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.tcpClient = tcpClient;
             this.stream = tcpClient.GetStream();
 
+            Interlocked.Increment(ref Connection.numberOfOpenTcpConnections);
+
             // Per MSDN, "The Blocking property has no effect on asynchronous methods"
             // (https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.socket.blocking),
             // but we also try to get the health status of the socket with a 
@@ -626,7 +665,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             string host = this.hostNameCertificateOverride ?? this.serverUri.DnsSafeHost;
             Debug.Assert(this.stream != null);
-            SslStream sslStream = new SslStream(this.stream, leaveInnerStreamOpen: false);
+            SslStream sslStream = new SslStream(this.stream, leaveInnerStreamOpen: false, userCertificateValidationCallback: this.remoteCertificateValidationCallback);
             try
             {
                 args.CommonArguments.SetTimeoutCode(
@@ -663,7 +702,9 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private async Task ReadPayloadAsync(
             byte[] payload,
-            int length, string type, ChannelCommonArguments args)
+            int length,
+            string type,
+            ChannelCommonArguments args)
         {
             Debug.Assert(length > 0);
             Debug.Assert(length <= Connection.ResponseLengthByteLimit);
@@ -678,31 +719,77 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
                 catch (IOException ex)
                 {
-                    DefaultTrace.TraceError(
-                        "Hit IOException while reading {0} on connection {1}. " +
-                        "{2}",
-                        type, this, this.GetConnectionTimestampsText());
-                    throw new TransportException(
-                        TransportErrorCode.ReceiveFailed, ex, args.ActivityId,
-                        this.serverUri, this.ToString(), args.UserPayload, true);
+                    this.TraceAndThrowReceiveFailedException(ex, type, args);
                 }
 
                 if (read == 0)
                 {
-                    DefaultTrace.TraceError(
-                        "Reached end of stream. Read 0 bytes while reading {0} " +
-                        "on connection {1}. {2}",
-                        type, this, this.GetConnectionTimestampsText());
-                    throw new TransportException(
-                        TransportErrorCode.ReceiveStreamClosed, null,
-                        args.ActivityId, this.serverUri, this.ToString(),
-                        args.UserPayload, true);
+                    this.TraceAndThrowEndOfStream(type, args);
                 }
                 this.UpdateLastReceiveTime();
                 bytesRead += read;
             }
             Debug.Assert(bytesRead == length);
             Debug.Assert(length <= payload.Length);
+        }
+
+
+        private async Task ReadPayloadAsync(
+            MemoryStream payload,
+            int length,
+            string type,
+            ChannelCommonArguments args)
+        {
+            Debug.Assert(length > 0);
+            Debug.Assert(length <= Connection.ResponseLengthByteLimit);
+            int bytesRead = 0;
+            while (bytesRead < length)
+            {
+                int read = 0;
+                try
+                {
+                    read = await this.streamReader.ReadAsync(payload, length - bytesRead);
+                }
+                catch (IOException ex)
+                {
+                    this.TraceAndThrowReceiveFailedException(ex, type, args);
+                }
+
+                if (read == 0)
+                {
+                    this.TraceAndThrowEndOfStream(type, args);
+                }
+                this.UpdateLastReceiveTime();
+                bytesRead += read;
+            }
+            Debug.Assert(bytesRead == length);
+            Debug.Assert(length <= payload.Length);
+        }
+
+        private void TraceAndThrowReceiveFailedException(IOException e, string type, ChannelCommonArguments args)
+        {
+            DefaultTrace.TraceError(
+                "Hit IOException {0} with HResult {1} while reading {2} on connection {3}. {4}",
+                e.Message,
+                e.HResult,
+                type,
+                this,
+                this.GetConnectionTimestampsText());
+            throw new TransportException(
+                TransportErrorCode.ReceiveFailed, e, args.ActivityId,
+                this.serverUri, this.ToString(), args.UserPayload, true);
+        }
+
+        private void TraceAndThrowEndOfStream(string type, ChannelCommonArguments args)
+        {
+            DefaultTrace.TraceError(
+                        "Reached end of stream. Read 0 bytes while reading {0} " +
+                        "on connection {1}. {2}",
+                        type, this, this.GetConnectionTimestampsText());
+            throw new TransportException(
+                TransportErrorCode.ReceiveStreamClosed, null,
+                args.ActivityId, this.serverUri, this.ToString(),
+                args.UserPayload, true);
         }
 
         private void SnapshotConnectionTimestamps(

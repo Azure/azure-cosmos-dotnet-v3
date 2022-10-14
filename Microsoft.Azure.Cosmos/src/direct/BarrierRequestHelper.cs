@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Documents
     using System.Diagnostics;
     using System.Globalization;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal static class BarrierRequestHelper
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Documents
                     ResourceType.Collection, null, originalRequestTokenType);
             }
 
-            barrierLsnRequest.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
+            barrierLsnRequest.Headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
 
             if (targetLsn.HasValue && targetLsn.Value > 0)
             {

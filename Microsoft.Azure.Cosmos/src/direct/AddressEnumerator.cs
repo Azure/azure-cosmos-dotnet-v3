@@ -31,24 +31,20 @@ namespace Microsoft.Azure.Documents
         /// This return a random order of the addresses if there are no addresses that failed. Else it moves the failes addresses to the end.
         /// </summary>
         public IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris,
-                                                                      HashSet<TransportAddressUri> failedReplicas)
+                                                                      Lazy<HashSet<TransportAddressUri>> failedEndpoints)
         {
-            if (failedReplicas == null)
+            if (failedEndpoints == null)
             {
-                throw new ArgumentNullException(nameof(failedReplicas));
+                throw new ArgumentNullException(nameof(failedEndpoints));
             }
 
             // Get a random Permutation.
             IEnumerable<TransportAddressUri> randomPermutation = this.GetTransportAddresses(transportAddressUris);
-            if (failedReplicas.Count == 0)
-            {
-                return randomPermutation;
-            }
 
             // We move the failed replicas to the end of the list.
             // This is done to avoid in some cases(like eventual consistency) a retry to the same replica
             // that had a problem before. With RandomPermuation there is a 25% chance that the retry lands on the same replica.
-            return this.MoveFailedReplicasToTheEnd(randomPermutation, failedReplicas);
+            return this.MoveFailedReplicasToTheEnd(randomPermutation, failedEndpoints);
         }
 
         /// <summary>
@@ -81,7 +77,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Fisher-Yates Shuffle gives a random order of TransportAddressUri 
         /// </summary>
-        private readonly struct AddressEnumeratorFisherYateShuffle 
+        private readonly struct AddressEnumeratorFisherYateShuffle
         {
             public static IEnumerable<TransportAddressUri> GetTransportAddressUrisWithFisherYateShuffle(IReadOnlyList<TransportAddressUri> transportAddressUris)
             {
@@ -120,7 +116,7 @@ namespace Microsoft.Azure.Documents
         /// This is optimized for the most common scenario. 
         /// This only requires a single random number and no additional allocation to track items already returned. 
         /// </summary>
-        private readonly struct AddressEnumeratorUsingPermutations 
+        private readonly struct AddressEnumeratorUsingPermutations
         {
             /// <summary>
             /// Permutation by the size -> All permutation for that size -> The individual permutation
@@ -189,25 +185,44 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        private IEnumerable<TransportAddressUri> MoveFailedReplicasToTheEnd(IEnumerable<TransportAddressUri> randomPermutation,
-                                                                            HashSet<TransportAddressUri> failedReplicas)
+        private IEnumerable<TransportAddressUri> MoveFailedReplicasToTheEnd(
+            IEnumerable<TransportAddressUri> randomPermutation,
+            Lazy<HashSet<TransportAddressUri>> lazyFailedReplicasPerRequest)
         {
-            List<TransportAddressUri> failedAddressUris = new List<TransportAddressUri>();
+            List<TransportAddressUri> failedAddressUris = null;
+            HashSet<TransportAddressUri> failedReplicasPerRequest = null;
+            if (lazyFailedReplicasPerRequest != null &&
+                lazyFailedReplicasPerRequest.IsValueCreated &&
+                lazyFailedReplicasPerRequest.Value.Count > 0)
+            {
+                failedReplicasPerRequest = lazyFailedReplicasPerRequest.Value;
+            }
+
             foreach (TransportAddressUri addressUri in randomPermutation)
             {
-                if (!failedReplicas.Contains(addressUri))
+                if (addressUri.IsUnhealthy()
+                    || (failedReplicasPerRequest != null &&
+                        failedReplicasPerRequest.Contains(addressUri)))
                 {
-                    yield return addressUri;
+                    if(failedAddressUris == null)
+                    {
+                        failedAddressUris = new List<TransportAddressUri>();
+                    }
+
+                    failedAddressUris.Add(addressUri);
                 }
                 else
                 {
-                    failedAddressUris.Add(addressUri);
+                    yield return addressUri;
                 }
             }
 
-            foreach (TransportAddressUri addressUri in failedAddressUris)
+            if (failedAddressUris != null)
             {
-                yield return addressUri;
+                foreach (TransportAddressUri addressUri in failedAddressUris)
+                {
+                    yield return addressUri;
+                }
             }
         }
     }

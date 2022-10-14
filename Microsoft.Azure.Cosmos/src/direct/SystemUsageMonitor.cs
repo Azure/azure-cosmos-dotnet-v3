@@ -200,7 +200,12 @@ namespace Microsoft.Azure.Documents.Rntbd
                         if (usageData == null)
                         {
                             DateTime now = DateTime.UtcNow;
-                            usageData = new SystemUsageLoad(now, ThreadInformation.Get(), systemUtilizationReader.GetSystemWideCpuUsage(), systemUtilizationReader.GetSystemWideMemoryAvailabilty());
+                            usageData = new SystemUsageLoad(
+                                timestamp: now, 
+                                threadInfo: ThreadInformation.Get(), 
+                                cpuUsage: systemUtilizationReader.GetSystemWideCpuUsage(), 
+                                memoryAvailable: systemUtilizationReader.GetSystemWideMemoryAvailabilty(),
+                                numberOfOpenTcpConnection: Connection.NumberOfOpenTcpConnections);
                         }
 
                         // record the above calculated usage if eligible
@@ -208,7 +213,12 @@ namespace Microsoft.Azure.Documents.Rntbd
                     }
                 }
 
-                Task.Delay(this.pollDelayInMilliSeconds).Wait();
+                #if NETSTANDARD15 || NETSTANDARD16
+                        Task.Delay(this.pollDelayInMilliSeconds).Wait();
+                #else
+                        Thread.Sleep(this.pollDelayInMilliSeconds);
+                #endif
+
             }
         }
 

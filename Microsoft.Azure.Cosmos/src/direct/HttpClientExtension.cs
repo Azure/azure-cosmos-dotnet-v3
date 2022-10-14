@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Documents
             }
             catch (HttpRequestException requestException)
             {
-                throw new ServiceUnavailableException(requestException);
+                throw ServiceUnavailableException.Create(SubStatusCodes.Unknown, innerException: requestException);
             }
         }
 
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Documents
             }
             catch (HttpRequestException requestException)
             {
-                throw new ServiceUnavailableException(requestException);
+                throw ServiceUnavailableException.Create(SubStatusCodes.Unknown, innerException: requestException);
             }
         }
 
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Documents
             }
             catch (HttpRequestException requestException)
             {
-                throw new ServiceUnavailableException(requestException);
+                throw ServiceUnavailableException.Create(SubStatusCodes.Unknown, innerException: requestException);
             }
         }
 

@@ -174,6 +174,11 @@ For globally strong write:
                         useLocalLSNBasedHeaders: false,
                         storePhysicalAddress: primaryUri.Uri);
 
+                    request.RequestContext.ClientRequestStatistics.RecordResponse(
+                        request: request,
+                        storeResult: storeResult,
+                        startTimeUtc: startTimeUtc,
+                        endTimeUtc: DateTime.UtcNow);
                 }
                 catch (Exception ex)
                 {
@@ -184,9 +189,16 @@ For globally strong write:
                         useLocalLSNBasedHeaders: false,
                         storePhysicalAddress: primaryUri.Uri);
 
+                    request.RequestContext.ClientRequestStatistics.RecordResponse(
+                        request: request,
+                        storeResult: storeResult,
+                        startTimeUtc: startTimeUtc,
+                        endTimeUtc: DateTime.UtcNow);
+
                     if (ex is DocumentClientException)
                     {
                         DocumentClientException dce = (DocumentClientException)ex;
+                        StoreResult.VerifyCanContinueOnException(dce);
                         string value = dce.Headers[HttpConstants.HttpHeaders.WriteRequestTriggerAddressRefresh];
                         if (!string.IsNullOrWhiteSpace(value))
                         {
@@ -209,12 +221,6 @@ For globally strong write:
                     throw new InternalServerErrorException();
                 }
 
-                request.RequestContext.ClientRequestStatistics.RecordResponse(
-                    request: request,
-                    storeResult: storeResult,
-                    startTimeUtc: startTimeUtc,
-                    endTimeUtc: DateTime.UtcNow);
-
                 if (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult))
                 {
                     long lsn = storeResult.LSN;
@@ -224,7 +230,8 @@ For globally strong write:
                     {
                         DefaultTrace.TraceWarning("ConsistencyWriter: LSN {0} or GlobalCommittedLsn {1} is not set for global strong request",
                             lsn, globalCommittedLsn);
-                        throw new GoneException(RMResources.Gone);
+                        // Service Generated because no lsn and glsn set by service
+                        throw new GoneException(RMResources.Gone, SubStatusCodes.ServerGenerated410);
                     }
 
                     request.RequestContext.GlobalStrongWriteStoreResult = storeResult;
@@ -242,7 +249,7 @@ For globally strong write:
                             if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN))
                             {
                                 DefaultTrace.TraceError("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
-                                throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet);
+                                throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet, SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet);
                             }
                         }
                     }
@@ -259,7 +266,7 @@ For globally strong write:
                     if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN))
                     {
                         DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
-                        throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet);
+                        throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet, SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet);
                     }
                 }
             }

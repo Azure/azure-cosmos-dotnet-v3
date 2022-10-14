@@ -113,6 +113,7 @@ namespace Microsoft.Azure.Documents
         private MaterializedViewDefinition materializedViewDefinition;
         private ByokConfig byokConfig;
         private ClientEncryptionPolicy clientEncryptionPolicy;
+        private Collection<MaterializedViews> materializedViews;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentCollection"/> class for the Azure Cosmos DB service.
@@ -560,22 +561,6 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// Gets or sets the UserBackgroundTaskThroughputFraction for the collection.
-        /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.UserBackgroundTaskThroughputFraction)]
-        internal double UserBackgroundTaskThroughputFraction
-        {
-            get
-            {
-                return this.GetValue<double>(Constants.Properties.UserBackgroundTaskThroughputFraction);
-            }
-            set
-            {
-                this.SetValue(Constants.Properties.UserBackgroundTaskThroughputFraction, value);
-            }
-        }
-
-        /// <summary>
         /// Gets a collection of <see cref="PartitionKeyRangeStatistics"/> object in the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -870,6 +855,35 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Gets the materialized views on the collection. 
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.MaterializedViews, DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
+        internal Collection<MaterializedViews> MaterializedViews
+        {
+            get
+            {
+                if (this.materializedViews == null)
+                {
+                    Collection<MaterializedViews> materializedViewsValues = base.GetValueCollection<MaterializedViews>(Constants.Properties.MaterializedViews);
+                    if (materializedViewsValues == null)
+                    {
+                        this.materializedViews = new Collection<MaterializedViews>();
+                    }
+                    else
+                    {
+                        this.materializedViews = materializedViewsValues;
+                    }
+                }
+                return this.materializedViews;
+            }
+            set
+            {
+                this.materializedViews = value;
+                base.SetValueCollection<MaterializedViews>(Constants.Properties.MaterializedViews, value);
+            }
+        }
+
         internal override void Validate()
         {
             base.Validate();
@@ -941,6 +955,11 @@ namespace Microsoft.Azure.Documents
             if (this.clientEncryptionPolicy != null)
             {
                 base.SetObject(Constants.Properties.ClientEncryptionPolicy, this.clientEncryptionPolicy);
+            }
+
+            if (this.materializedViews != null)
+            {
+                base.SetValueCollection<MaterializedViews>(Constants.Properties.MaterializedViews, this.materializedViews);
             }
         }
     }

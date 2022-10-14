@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             int currentPending = Interlocked.Increment(
                 ref this.requestsPending);
+            transportRequestStats.NumberOfInflightRequestsToEndpoint = currentPending;
             try
             {
                 if (currentPending > this.maxCapacity)
@@ -79,6 +80,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.capacityLock.EnterReadLock();
                     try
                     {
+                        transportRequestStats.NumberOfOpenConnectionsToEndpoint = this.openChannels.Count; // Lock has already been acquired for openChannels
                         if (currentPending <= this.capacity)
                         {
                             // Enough capacity is available, pick a channel.
@@ -169,10 +171,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                             }
                             while (this.openChannels.Count < targetChannels)
                             {
-                                Channel newChannel = new Channel(activityId, this.serverUri, this.channelProperties, this.localRegionRequest, this.concurrentOpeningChannelSlim);
-                                newChannel.Initialize();
-                                this.openChannels.Add(new LbChannelState(newChannel, this.channelProperties.MaxRequestsPerChannel));
-                                this.capacity += this.channelProperties.MaxRequestsPerChannel;
+                                await this.OpenChannelAndIncrementCapacity(
+                                    activityId: activityId,
+                                    waitForBackgroundInitializationComplete: false);
                             }
                             Debug.Assert(
                                 this.capacity ==
@@ -200,6 +201,25 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        /// <summary>
+        /// Open and initializes the <see cref="Channel"/>.
+        /// </summary>
+        /// <param name="activityId">An unique identifier indicating the current activity id.</param>
+        internal Task OpenChannelAsync(Guid activityId)
+        {
+            this.capacityLock.EnterWriteLock();
+            try
+            {
+                return this.OpenChannelAndIncrementCapacity(
+                    activityId: activityId,
+                    waitForBackgroundInitializationComplete: true);
+            }
+            finally
+            {
+                this.capacityLock.ExitWriteLock();
+            }
+        }
+
         public void Dispose()
         {
             this.capacityLock.EnterWriteLock();
@@ -217,8 +237,38 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.capacityLock.Dispose();
         }
 
-        // Thread safe sequence number generator. It should probably be a
-        // separate utility class of its own.
+        /// <summary>
+        /// Open and initializes the <see cref="Channel"/> and adds
+        /// the corresponding channel state to the openChannels pool
+        /// and increment the currrent channel capacity.
+        /// </summary>
+        /// <param name="activityId">An unique identifier indicating the current activity id.</param>
+        /// <param name="waitForBackgroundInitializationComplete">A boolean flag to indicate if the caller thread should
+        /// wait until all the background tasks have finished.</param>
+        private async Task OpenChannelAndIncrementCapacity(
+            Guid activityId,
+            bool waitForBackgroundInitializationComplete)
+        {
+            Debug.Assert(this.capacityLock.IsWriteLockHeld);
+            Channel newChannel = new(
+                activityId,
+                this.serverUri,
+                this.channelProperties,
+                this.localRegionRequest,
+                this.concurrentOpeningChannelSlim);
+
+            if (waitForBackgroundInitializationComplete)
+            {
+                await newChannel.OpenChannelAsync(activityId);
+            }
+
+            this.openChannels.Add(
+                new LbChannelState(
+                    newChannel,
+                    this.channelProperties.MaxRequestsPerChannel));
+            this.capacity += this.channelProperties.MaxRequestsPerChannel;
+        }
+
         private sealed class SequenceGenerator
         {
             private int current = 0;

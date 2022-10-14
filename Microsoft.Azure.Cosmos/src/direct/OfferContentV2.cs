@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Documents
 {
+    using System.Collections.ObjectModel;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -19,6 +20,7 @@ namespace Microsoft.Azure.Documents
 #if !DOCDBCLIENT
         private CollectionThroughputInfo throughputInfo;
         private OfferMinimumThroughputParameters minimumThroughputParameters;
+        private Collection<PhysicalPartitionThroughputInfo> physicalPartitionThroughputInfo;
 #endif
 
         /// <summary>
@@ -373,6 +375,20 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        [JsonProperty(PropertyName = Constants.Properties.PhysicalPartitionThroughputInfo, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal Collection<PhysicalPartitionThroughputInfo> PhysicalPartitionThroughputInfo
+        {
+            get
+            {
+                if (this.physicalPartitionThroughputInfo == null)
+                {
+                    this.physicalPartitionThroughputInfo = base.GetObjectCollection<PhysicalPartitionThroughputInfo>(Constants.Properties.PhysicalPartitionThroughputInfo);
+                }
+
+                return this.physicalPartitionThroughputInfo;
+            }
+        }
+
         internal override void OnSave()
         {
             base.OnSave();
@@ -387,6 +403,11 @@ namespace Microsoft.Azure.Documents
             {
                 this.minimumThroughputParameters.OnSave();
                 this.SetObject(Constants.Properties.OfferMinimumThroughputParameters, this.minimumThroughputParameters);
+            }
+
+            if (this.physicalPartitionThroughputInfo != null)
+            {
+                this.SetObjectCollection(Constants.Properties.PhysicalPartitionThroughputInfo, this.physicalPartitionThroughputInfo);
             }
         }
 #endif

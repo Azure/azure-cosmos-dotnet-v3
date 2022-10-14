@@ -97,6 +97,7 @@ namespace Microsoft.Azure.Documents
         }
         #endregion
 
+        /// <inheritdoc/>>
         public Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, IRetryPolicy retryPolicy = null, Func<DocumentServiceRequest, Task> prepareRequestAsyncDelegate = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.ProcessMessageAsync(request, cancellationToken, retryPolicy, prepareRequestAsyncDelegate);
@@ -139,6 +140,18 @@ namespace Microsoft.Azure.Documents
             }
 
             return this.CompleteResponse(storeResponse, request);
+        }
+
+        /// <inheritdoc/>>
+        public async Task OpenConnectionsToAllReplicasAsync(
+            string databaseName,
+            string containerLinkUri,
+            CancellationToken cancellationToken = default)
+        {
+            await this.replicatedResourceClient.OpenConnectionsToAllReplicasAsync(
+                databaseName,
+                containerLinkUri,
+                cancellationToken);
         }
 
         #region Response/Headers helper

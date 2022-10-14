@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
@@ -64,7 +65,7 @@ namespace Microsoft.Azure.Documents
             string originalSessionToken = entity.Headers[HttpConstants.HttpHeaders.SessionToken];
             try
             {
-                ReadReplicaResult readQuorumResult = await this.ReadMultipleReplicasInternalAsync(
+                using ReadReplicaResult readQuorumResult = await this.ReadMultipleReplicasInternalAsync(
                     entity, includePrimary, replicaCountToRead, requiresValidLsn, useSessionToken, readMode, checkMinLSN, forceReadAll);
                 if (entity.RequestContext.PerformLocalRefreshOnGoneException &&
                     readQuorumResult.RetryWithForceRefresh &&
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.Documents
                     entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
                     entity.RequestContext.ForceRefreshAddressCache = true;
-                    readQuorumResult = await this.ReadMultipleReplicasInternalAsync(
+                    using ReadReplicaResult readQuorumResultSecondCall = await this.ReadMultipleReplicasInternalAsync(
                         entity,
                         includePrimary: includePrimary,
                         replicaCountToRead: replicaCountToRead,
@@ -82,9 +83,10 @@ namespace Microsoft.Azure.Documents
                         readMode: readMode,
                         checkMinLSN: false,
                         forceReadAll: forceReadAll);
+                    return readQuorumResultSecondCall.StoreResultList.GetValueAndDereference();
                 }
 
-                return readQuorumResult.Responses;
+                return readQuorumResult.StoreResultList.GetValueAndDereference();
 
             }
             finally
@@ -103,30 +105,42 @@ namespace Microsoft.Azure.Documents
             string originalSessionToken = entity.Headers[HttpConstants.HttpHeaders.SessionToken];
             try
             {
-                ReadReplicaResult readQuorumResult = await this.ReadPrimaryInternalAsync(
-                    entity, requiresValidLsn, useSessionToken);
+                using ReadReplicaResult readQuorumResult = await this.ReadPrimaryInternalAsync(
+                        entity, 
+                        requiresValidLsn, 
+                        useSessionToken, 
+                        isRetryAfterRefresh: false);
                 if (entity.RequestContext.PerformLocalRefreshOnGoneException &&
                     readQuorumResult.RetryWithForceRefresh &&
                     !entity.RequestContext.ForceRefreshAddressCache)
                 {
                     entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
-
                     entity.RequestContext.ForceRefreshAddressCache = true;
-                    readQuorumResult = await this.ReadPrimaryInternalAsync(entity, requiresValidLsn, useSessionToken);
+                    using ReadReplicaResult readQuorumResultSecondCall = await this.ReadPrimaryInternalAsync(
+                            entity, 
+                            requiresValidLsn, 
+                            useSessionToken,
+                            isRetryAfterRefresh: true);
+                    return StoreReader.GetStoreResultOrThrowGoneException(readQuorumResultSecondCall);
                 }
 
-                if (readQuorumResult.Responses.Count == 0)
-                {
-                    throw new GoneException(RMResources.Gone);
-                }
-
-                return readQuorumResult.Responses[0];
+                return StoreReader.GetStoreResultOrThrowGoneException(readQuorumResult);
             }
             finally
             {
                 SessionTokenHelper.SetOriginalSessionToken(entity, originalSessionToken);
             }
+        }
 
+        private static StoreResult GetStoreResultOrThrowGoneException(ReadReplicaResult readReplicaResult)
+        {
+            StoreResultList storeResultList = readReplicaResult.StoreResultList;
+            if (storeResultList.Count == 0)
+            {
+                throw new GoneException(RMResources.Gone, SubStatusCodes.Server_NoValidStoreResponse);
+            }
+
+            return storeResultList.GetFirstStoreResultAndDereference();
         }
 
         /// <summary>
@@ -152,7 +166,7 @@ namespace Microsoft.Azure.Documents
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
-            List<StoreResult> responseResult = new List<StoreResult>(replicaCountToRead);
+            using StoreResultList storeResultList = new(new List<StoreResult>(replicaCountToRead));
 
             string requestedCollectionRid = entity.RequestContext.ResolvedCollectionRid;
 
@@ -187,10 +201,10 @@ namespace Microsoft.Azure.Documents
             {
                 if (!entity.RequestContext.ForceRefreshAddressCache)
                 {
-                    return new ReadReplicaResult(retryWithForceRefresh: true, responses: responseResult);
+                    return new ReadReplicaResult(retryWithForceRefresh: true, responses: storeResultList.GetValueAndDereference());
                 }
 
-                return new ReadReplicaResult(retryWithForceRefresh: false, responses: responseResult);
+                return new ReadReplicaResult(retryWithForceRefresh: false, responses: storeResultList.GetValueAndDereference());
             }
 
             int replicasToRead = replicaCountToRead;
@@ -204,9 +218,10 @@ namespace Microsoft.Azure.Documents
             bool hasCancellationException = false;
             Exception cancellationException = null;
             Exception exceptionToThrow = null;
+            SubStatusCodes subStatusCodeForException = SubStatusCodes.Unknown;
             IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator
                                                             .GetTransportAddresses(resolveApiResults, 
-                                                                                   entity.RequestContext.ClientRequestStatistics.FailedReplicas)
+                                                                                   entity.RequestContext.FailedEndpoints)
                                                             .GetEnumerator();
 
             // Loop until we have the read quorum number of valid responses or if we have read all the replicas
@@ -234,9 +249,31 @@ namespace Microsoft.Azure.Documents
                 }
                 catch (Exception exception)
                 {
-                    //All task exceptions are visited below.
-                    DefaultTrace.TraceInformation("Exception {0} is thrown while doing readMany", exception);
                     exceptionToThrow = exception;
+
+                    // Get SubStatusCode
+                    if (exception is DocumentClientException documentClientException)
+                    {
+                        subStatusCodeForException = documentClientException.GetSubStatus();
+                    }
+
+                    //All task exceptions are visited below.
+                    if (exception is DocumentClientException dce && 
+                        (dce.StatusCode == HttpStatusCode.NotFound
+                            || dce.StatusCode == HttpStatusCode.Conflict
+                            || (int)dce.StatusCode == (int)StatusCodes.TooManyRequests))
+                    {
+                        // Only trace message for common scenarios to avoid the overhead of computing the stack trace.
+                        DefaultTrace.TraceInformation("StoreReader.ReadMultipleReplicasInternalAsync exception thrown: StatusCode: {0}; SubStatusCode:{1}; Exception.Message: {2}",
+                            dce.StatusCode,
+                            dce.Headers?.Get(WFConstants.BackendHeaders.SubStatus),
+                            dce.Message);
+                    }
+                    else
+                    {
+                        // Include the full exception for other scenarios for troubleshooting
+                        DefaultTrace.TraceInformation("StoreReader.ReadMultipleReplicasInternalAsync exception thrown: Exception: {0}", exception);
+                    }
                 }
 
                 foreach (KeyValuePair<Task<(StoreResponse response, DateTime endTime)>, (TransportAddressUri uri, DateTime startTime)> readTaskValuePair in readStoreTasks)
@@ -244,6 +281,12 @@ namespace Microsoft.Azure.Documents
                     Task<(StoreResponse response, DateTime endTime)> readTask = readTaskValuePair.Key;
                     (StoreResponse storeResponse, DateTime endTime) = readTask.Status == TaskStatus.RanToCompletion ? readTask.Result : (null, DateTime.UtcNow);
                     Exception storeException = readTask.Exception?.InnerException;
+                    TransportAddressUri targetUri = readTaskValuePair.Value.uri;
+
+                    if (storeException != null)
+                    {
+                        entity.RequestContext.AddToFailedEndpoints(storeException, targetUri);
+                    }
 
                     // IsCanceled can be true with storeException being null if the async call
                     // gets canceled before it gets scheduled.
@@ -254,79 +297,85 @@ namespace Microsoft.Azure.Documents
                         continue;
                     }
 
-                    TransportAddressUri targetUri = readTaskValuePair.Value.uri;
-
-                    StoreResult storeResult = StoreResult.CreateStoreResult(
+                    using (DisposableObject<StoreResult> disposableStoreResult = new(StoreResult.CreateStoreResult(
                         storeResponse,
                         storeException, 
                         requiresValidLsn,
                         this.canUseLocalLSNBasedHeaders && readMode != ReadMode.Strong,
-                        targetUri.Uri);
-
-                    entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.RequestCharge);
-
-                    if (storeResponse != null)
+                        targetUri.Uri)))
                     {
-                        entity.RequestContext.ClientRequestStatistics.ContactedReplicas.Add(targetUri);
-                    }
+                        StoreResult storeResult = disposableStoreResult.Value;
+                        entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.RequestCharge);
 
-                    if (storeException != null && storeException.InnerException is TransportException)
-                    {
-                        entity.RequestContext.ClientRequestStatistics.FailedReplicas.Add(targetUri);
-                    }
-
-                    entity.RequestContext.ClientRequestStatistics.RecordResponse(
-                        entity,
-                        storeResult,
-                        readTaskValuePair.Value.startTime,
-                        endTime);
-
-                    if (storeResult.IsValid)
-                    {
-                        if (requestSessionToken == null
-                            || (storeResult.SessionToken != null && requestSessionToken.IsValid(storeResult.SessionToken))
-                            || (!enforceSessionCheck && storeResult.StatusCode != StatusCodes.NotFound))
+                        if (storeResponse != null)
                         {
-                            responseResult.Add(storeResult);
+                            entity.RequestContext.ClientRequestStatistics.ContactedReplicas.Add(targetUri);
                         }
+
+                        if (storeException != null && storeException.InnerException is TransportException)
+                        {
+                            entity.RequestContext.ClientRequestStatistics.FailedReplicas.Add(targetUri);
+                        }
+
+                        entity.RequestContext.ClientRequestStatistics.RecordResponse(
+                            entity,
+                            storeResult,
+                            readTaskValuePair.Value.startTime,
+                            endTime);
+
+                        if (storeResult.Exception != null)
+                        {
+                            StoreResult.VerifyCanContinueOnException(storeResult.Exception);
+                        }
+
+                        if (storeResult.IsValid)
+                        {
+                            if (requestSessionToken == null
+                                || (storeResult.SessionToken != null && requestSessionToken.IsValid(storeResult.SessionToken))
+                                || (!enforceSessionCheck && storeResult.StatusCode != StatusCodes.NotFound))
+                            {
+                                storeResultList.Add(disposableStoreResult.GetValueAndDereference());
+                            }
+                        }
+
+                        hasGoneException |= storeResult.StatusCode == StatusCodes.Gone && storeResult.SubStatusCode != SubStatusCodes.NameCacheIsStale;
                     }
 
-                    hasGoneException |= storeResult.StatusCode == StatusCodes.Gone && storeResult.SubStatusCode != SubStatusCodes.NameCacheIsStale;
-                }
-
-                if (responseResult.Count >= replicaCountToRead)
-                {
+                    // Perform address refresh in the background as soon as we hit a GoneException
                     if (hasGoneException && !entity.RequestContext.PerformedBackgroundAddressRefresh)
                     {
                         this.addressSelector.StartBackgroundAddressRefresh(entity);
                         entity.RequestContext.PerformedBackgroundAddressRefresh = true;
                     }
+                }
 
-                    return new ReadReplicaResult(false, responseResult);
+                if (storeResultList.Count >= replicaCountToRead)
+                {
+                    return new ReadReplicaResult(false, storeResultList.GetValueAndDereference());
                 }
 
                 // Remaining replicas
-                replicasToRead = replicaCountToRead - responseResult.Count;
+                replicasToRead = replicaCountToRead - storeResultList.Count;
             }
 
-            if (responseResult.Count < replicaCountToRead)
+            if (storeResultList.Count < replicaCountToRead)
             {
                 DefaultTrace.TraceInformation("Could not get quorum number of responses. " +
                     "ValidResponsesReceived: {0} ResponsesExpected: {1}, ResolvedAddressCount: {2}, ResponsesString: {3}",
-                    responseResult.Count, replicaCountToRead, resolveApiResults.Count, String.Join(";", responseResult));
+                    storeResultList.Count, replicaCountToRead, resolveApiResults.Count, String.Join(";", storeResultList.GetValue()));
 
                 if (hasGoneException)
                 {
                     if (!entity.RequestContext.PerformLocalRefreshOnGoneException)
                     {
                         // If we are not supposed to act upon GoneExceptions here, just throw them
-                        throw new GoneException(exceptionToThrow);
+                        throw new GoneException(exceptionToThrow, subStatusCodeForException);
                     }
                     else if (!entity.RequestContext.ForceRefreshAddressCache)
                     {
                         // We could not obtain valid read quorum number of responses even when we went through all the secondary addresses
                         // Attempt force refresh and start over again.
-                        return new ReadReplicaResult(retryWithForceRefresh: true, responses: responseResult);
+                        return new ReadReplicaResult(retryWithForceRefresh: true, responses: storeResultList.GetValueAndDereference());
                     }
                 }
                 else if (hasCancellationException)
@@ -338,13 +387,14 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            return new ReadReplicaResult(false, responseResult);
+            return new ReadReplicaResult(false, storeResultList.GetValueAndDereference());
         }
 
         private async Task<ReadReplicaResult> ReadPrimaryInternalAsync(
             DocumentServiceRequest entity,
             bool requiresValidLsn,
-            bool useSessionToken)
+            bool useSessionToken,
+            bool isRetryAfterRefresh)
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
@@ -393,20 +443,34 @@ namespace Microsoft.Azure.Documents
                     primaryUri.Uri);
             }
 
+            using DisposableObject<StoreResult> disposableStoreResult = new(storeResult);
             entity.RequestContext.ClientRequestStatistics.RecordResponse(
-                entity, 
+                entity,
                 storeResult,
                 startTimeUtc,
                 endTimeUtc ?? DateTime.UtcNow);
 
             entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.RequestCharge);
 
+            if (storeResult.Exception != null)
+            {
+                StoreResult.VerifyCanContinueOnException(storeResult.Exception);
+            }
+
             if (storeResult.StatusCode == StatusCodes.Gone && storeResult.SubStatusCode != SubStatusCodes.NameCacheIsStale)
             {
+                if (isRetryAfterRefresh ||
+                    !entity.RequestContext.PerformLocalRefreshOnGoneException ||
+                    entity.RequestContext.ForceRefreshAddressCache)
+                {
+                    // We can throw the exception if we have already performed an address refresh or if PerformLocalRefreshOnGoneException is false
+                    throw new GoneException(RMResources.Gone, storeResult.SubStatusCode);
+                }
+
                 return new ReadReplicaResult(true, new List<StoreResult>());
             }
 
-            return new ReadReplicaResult(false, new StoreResult[] { storeResult });
+            return new ReadReplicaResult(false, new StoreResult[] { disposableStoreResult.GetValueAndDereference() });
         }
 
         private async Task<(StoreResponse, DateTime endTime)> ReadFromStoreAsync(
@@ -518,19 +582,114 @@ namespace Microsoft.Azure.Documents
         }
 
         #region PrivateResultClasses
-        private sealed class ReadReplicaResult
+        private sealed class ReadReplicaResult : IDisposable
         {
             public ReadReplicaResult(bool retryWithForceRefresh, IList<StoreResult> responses)
             {
                 this.RetryWithForceRefresh = retryWithForceRefresh;
-                this.Responses = responses;
+                this.StoreResultList = new(responses);
             }
 
             public bool RetryWithForceRefresh { get; private set; }
 
-            public IList<StoreResult> Responses { get; private set; }
+            public StoreResultList StoreResultList { get; private set; }
+
+            public void Dispose()
+            {
+                this.StoreResultList.Dispose();
+            }
         }
 
+        /// <summary>
+        /// Disposable list of StoreResult object with ability to skip first object disposal or skip disposal for entire list.
+        /// </summary>
+        private class StoreResultList : IDisposable
+        {
+            private IList<StoreResult> value;
+
+            public StoreResultList(IList<StoreResult> collection)
+            {
+                this.value = collection ?? throw new ArgumentNullException();
+            }
+
+            public void Add(StoreResult storeResult)
+            {
+                this.GetValueOrThrow().Add(storeResult);
+            }
+
+            public int Count => this.GetValueOrThrow().Count;
+
+            public StoreResult GetFirstStoreResultAndDereference()
+            {
+                IList<StoreResult> value = this.GetValueOrThrow();
+                if (value.Count > 0)
+                {
+                    StoreResult result = this.value[0];
+                    this.value[0] = null;
+                    return result;
+                }
+
+                return null;
+            }
+
+            public IList<StoreResult> GetValue() => this.GetValueOrThrow();
+
+            public IList<StoreResult> GetValueAndDereference()
+            {
+                IList<StoreResult> response = this.GetValueOrThrow();
+                this.value = null;
+                return response;
+            }
+
+            public void Dispose()
+            {
+                if (this.value != null)
+                {
+                    for (int i = 0; i < this.value.Count; i++)
+                    {
+                        this.value[i]?.Dispose();
+                    }
+                }
+            }
+
+            private IList<StoreResult> GetValueOrThrow()
+            {
+                if (this.value == null || (this.value.Count > 0 && this.value[0] == null))
+                {
+                    throw new InvalidOperationException("Call on the StoreResultList with deferenced collection");
+                }
+
+                return this.value;
+            }
+        }
+
+        /// <summary>
+        /// Wrapper for an object to provide disposal capabilities.
+        /// Best to use within a complex method where object must remain non disposed only in a few outcomes.
+        /// </summary>
+        private struct DisposableObject<T> : IDisposable where T : IDisposable
+        {
+            private T value;
+
+            public DisposableObject(T value)
+            {
+                this.value = value ?? throw new ArgumentNullException();
+            }
+
+            public T Value => this.value ?? throw new InvalidOperationException("Call on the DisposableObject with deferenced object");
+
+            public T GetValueAndDereference()
+            {
+                T response = this.Value;
+                this.value = default;
+                return response;
+            }
+
+            public void Dispose()
+            {
+                this.value?.Dispose();
+            }
+        }
         #endregion
     }
 }

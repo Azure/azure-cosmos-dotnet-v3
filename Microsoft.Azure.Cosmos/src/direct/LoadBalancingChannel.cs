@@ -58,7 +58,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     channelProperties.IdleTimeout,
                     channelProperties.IdleTimerPool,
                     channelProperties.CallerId,
-                    channelProperties.EnableChannelMultiplexing);
+                    channelProperties.EnableChannelMultiplexing,
+                    channelProperties.MemoryStreamPool);
                 this.partitions = new LoadBalancingPartition[channelProperties.PartitionCount];
                 for (int i = 0; i < this.partitions.Length; i++)
                 {
@@ -105,17 +106,52 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             Debug.Assert(this.partitions != null);
-            int h = activityId.GetHashCode();
-            // Drop the sign bit. Operator % can return negative values in C#.
-            LoadBalancingPartition partition = this.partitions[
-                (h & 0x8FFFFFFF) % this.partitions.Length];
+            LoadBalancingPartition partition = this.GetLoadBalancedPartition(activityId);
             return partition.RequestAsync(
                 request, physicalAddress, resourceOperation, activityId, transportRequestStats);
         }
 
+        /// <summary>
+        /// Attempts to open the Rntbd channel to the backend replica nodes.
+        /// </summary>
+        /// <param name="activityId">An unique identifier indicating the current activity id.</param>
+        /// <returns>A completed task once the channel is opened.</returns>
+        public Task OpenChannelAsync(
+            Guid activityId)
+        {
+            this.ThrowIfDisposed();
+            if (this.singlePartition != null)
+            {
+                Debug.Assert(this.partitions == null);
+                return this.singlePartition.OpenChannelAsync(activityId);
+            }
+            else
+            {
+                Debug.Assert(this.partitions != null);
+                LoadBalancingPartition partition = this.GetLoadBalancedPartition(activityId);
+                return partition.OpenChannelAsync(
+                    activityId);
+            }
+        }
+
+        /// <summary>
+        /// Gets the load balanced partition from the hash key,
+        /// generated from the current activity id.
+        /// </summary>
+        /// <param name="activityId">An unique identifier indicating the current activity id.</param>
+        /// <returns>An instance of <see cref="LoadBalancingPartition"/>.</returns>
+        private LoadBalancingPartition GetLoadBalancedPartition(
+            Guid activityId)
+        {
+            int hash = activityId.GetHashCode();
+            // Drop the sign bit. Operator % can return negative values in C#.
+            return this.partitions[
+            (hash & 0x8FFFFFFF) % this.partitions.Length];
+        }
+
         public void Close()
         {
-            ((IDisposable) this).Dispose();
+            ((IDisposable)this).Dispose();
         }
 
 #region IDisposable

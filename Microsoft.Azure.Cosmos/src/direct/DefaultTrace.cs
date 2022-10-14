@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Core.Trace
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Runtime.InteropServices;
@@ -13,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
     {
         public static readonly Guid ProviderId = new Guid("{B30ABF1C-6A50-4F2B-85C4-61823ED6CF24}");
 
-        private static readonly TraceSource TraceSourceInternal = new TraceSource("DocDBTrace");
+        private static readonly TraceSource TraceSourceInternal;
 
         private static bool IsListenerAdded;
 
@@ -26,6 +27,12 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
             // UseGlobalLock is false and the value of IsThreadSafe is true.
             // The default behavior is to use the global lock.
             System.Diagnostics.Trace.UseGlobalLock = false;
+
+            DefaultTrace.TraceSourceInternal = new TraceSource("DocDBTrace");
+
+            // The DefaultTraceListener can cause lock contention which leads to request failures.
+            // Remove the DefaultTraceListener unless a debugger is attached.
+            DefaultTrace.RemoveDefaultTraceListener();
         }
 
         public static TraceSource TraceSource
@@ -120,6 +127,35 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
         public static void TraceCritical(string format, params object[] args)
         {
             DefaultTrace.TraceSource.TraceEvent(TraceEventType.Critical, 0, format, args);
+        }
+
+        /// <summary>
+        /// Removes the DefaultTraceListener which causes locking issues 
+        /// </summary>
+        public static void RemoveDefaultTraceListener()
+        {
+            if (Debugger.IsAttached)
+            {
+                return;
+            }
+
+            if (DefaultTrace.TraceSource.Listeners.Count > 0)
+            {
+                List<DefaultTraceListener> removeDefaultTraceListeners = new List<DefaultTraceListener>();
+                foreach (object traceListenerObject in DefaultTrace.TraceSource.Listeners)
+                {
+                    if (traceListenerObject is DefaultTraceListener defaultTraceListener)
+                    {
+                        removeDefaultTraceListeners.Add(defaultTraceListener);
+                    }
+                }
+
+                // Remove all the default trace listeners
+                foreach (DefaultTraceListener defaultTraceListener in removeDefaultTraceListeners)
+                {
+                    DefaultTrace.TraceSource.Listeners.Remove(defaultTraceListener);
+                }
+            }
         }
 
         /// <summary>

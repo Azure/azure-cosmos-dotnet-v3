@@ -449,6 +449,12 @@ namespace Microsoft.Azure.Documents
             ChangeFeedWireFormatVersion = 0x00B2,
             PopulateBYOKEncryptionProgress = 0x00B3,
             UseUserBackgroundBudget = 0x00B4,
+            IncludePhysicalPartitionThroughputInfo = 0x00B5,
+            IsServerlessStorageRefreshRequest = 0x00B6,
+            UpdateOfferStateToPending = 0x00B7,
+            PopulateOldestActiveSchema = 0x00B8,
+            IsInternalServerlessRequest = 0x00B9,
+            OfferReplaceRURedistribution = 0x00BA,
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -617,6 +623,12 @@ namespace Microsoft.Azure.Documents
             public RntbdToken changeFeedWireFormatVersion;
             public RntbdToken populateBYOKEncryptionProgress;
             public RntbdToken useUserBackgroundBudget;
+            public RntbdToken includePhysicalPartitionThroughputInfo;
+            public RntbdToken isServerlessStorageRefreshRequest;
+            public RntbdToken updateOfferStateToPending;
+            public RntbdToken populateOldestActiveSchema;
+            public RntbdToken isInternalServerlessRequest;
+            public RntbdToken offerReplaceRURedistribution;
 
             public Request()
             {
@@ -779,11 +791,18 @@ namespace Microsoft.Azure.Documents
                 this.rbacUserId = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.RbacUserId);
                 this.rbacAction = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.RbacAction);
                 this.rbacResource = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.RbacResource);
-                this.correlatedActivityId = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.CorrelatedActivityId);
+                this.correlatedActivityId = new RntbdToken(false, RntbdTokenTypes.Guid, (ushort)RequestIdentifiers.CorrelatedActivityId);
                 this.isThroughputCapRequest = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsThroughputCapRequest);
                 this.changeFeedWireFormatVersion = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.ChangeFeedWireFormatVersion);
                 this.populateBYOKEncryptionProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateBYOKEncryptionProgress);
                 this.useUserBackgroundBudget = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.UseUserBackgroundBudget);
+                this.includePhysicalPartitionThroughputInfo = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.IncludePhysicalPartitionThroughputInfo);
+                this.isServerlessStorageRefreshRequest = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsServerlessStorageRefreshRequest);
+                this.updateOfferStateToPending = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.UpdateOfferStateToPending);
+                this.populateOldestActiveSchema = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateOldestActiveSchema);
+                this.isInternalServerlessRequest = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsInternalServerlessRequest);
+                this.offerReplaceRURedistribution = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.OfferReplaceRURedistribution);
+
                 base.SetTokens(new RntbdToken[]
                 {
                     this.resourceId,
@@ -950,6 +969,12 @@ namespace Microsoft.Azure.Documents
                     this.changeFeedWireFormatVersion,
                     this.populateBYOKEncryptionProgress,
                     this.useUserBackgroundBudget,
+                    this.includePhysicalPartitionThroughputInfo,
+                    this.isServerlessStorageRefreshRequest,
+                    this.updateOfferStateToPending,
+                    this.populateOldestActiveSchema,
+                    this.isInternalServerlessRequest,
+                    this.offerReplaceRURedistribution
                 });
             }
         }
@@ -1036,7 +1061,9 @@ namespace Microsoft.Azure.Documents
             AnalyticalMigrationProgress = 0x0059,
             TotalAccountThroughput = 0x005A,
             BYOKEncryptionProgress = 0x005B,
-            AppliedPolicyElementId = 0x005C
+            AppliedPolicyElementId = 0x005C,
+            MergeProgressBlocked = 0x005D,
+            ChangeFeedInfo = 0x005E,
         }
 
         public sealed class Response : RntbdTokenStream<ResponseIdentifiers>
@@ -1115,6 +1142,8 @@ namespace Microsoft.Azure.Documents
             public RntbdToken totalAccountThroughput;
             public RntbdToken byokEncryptionProgress;
             public RntbdToken appliedPolicyElementId;
+            public RntbdToken mergeProgressBlocked;
+            public RntbdToken changeFeedInfo;
 
             public Response()
             {
@@ -1192,7 +1221,8 @@ namespace Microsoft.Azure.Documents
                 this.totalAccountThroughput = new RntbdToken(false, RntbdTokenTypes.LongLong, (ushort)ResponseIdentifiers.TotalAccountThroughput);
                 this.byokEncryptionProgress = new RntbdToken(false, RntbdTokenTypes.Long, (ushort)ResponseIdentifiers.BYOKEncryptionProgress);
                 this.appliedPolicyElementId = new RntbdToken(false, RntbdTokenTypes.String, (ushort)ResponseIdentifiers.AppliedPolicyElementId);
-
+                this.mergeProgressBlocked = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)ResponseIdentifiers.MergeProgressBlocked);
+                this.changeFeedInfo = new RntbdToken(false, RntbdTokenTypes.String, (ushort)ResponseIdentifiers.ChangeFeedInfo);
                 base.SetTokens(new RntbdToken[]
                 {
                     this.payloadPresent,
@@ -1267,7 +1297,9 @@ namespace Microsoft.Azure.Documents
                     this.analyticalMigrationProgress,
                     this.totalAccountThroughput,
                     this.byokEncryptionProgress,
-                    this.appliedPolicyElementId
+                    this.appliedPolicyElementId,
+                    this.mergeProgressBlocked,
+                    this.changeFeedInfo,
                 });
             }
         }
@@ -1288,9 +1320,19 @@ namespace Microsoft.Azure.Documents
             Gateway = 0x01,
 
             /// <summary>
+            /// The connection request is made by BackgroundTask
+            /// </summary>
+            BackgroundTask = 0x02,
+
+            /// <summary>
+            /// The connection request is made by ManagementWorkerRuntime
+            /// </summary>
+            ManagementWorker = 0x03,
+
+            /// <summary>
             /// Invalid caller Id
             /// </summary>
-            Invalid = 0x02,
+            Invalid = 0x04,
         }
 
         internal sealed class RntbdEntityPool<T, TU>

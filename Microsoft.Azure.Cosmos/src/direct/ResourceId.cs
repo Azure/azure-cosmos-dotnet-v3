@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Documents
 
     internal sealed class ResourceId : IEquatable<ResourceId>
     {
+        private const int EncryptionScopeIdLength = 5;
         private const int OfferIdLength = 3;
         private const int RbacResourceIdLength = 6;
         private const int SnapshotIdLength = 7;
@@ -51,6 +52,7 @@ namespace Microsoft.Azure.Documents
             this.RoleDefinition = 0;
             this.SystemDocument = 0;
             this.PartitionedSystemDocument = 0;
+            this.EncryptionScope = 0;
         }
 
         public uint Offer
@@ -392,6 +394,30 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        public ulong EncryptionScope
+        {
+            get;
+            private set;
+        }
+
+        public ResourceId EncryptionScopeId
+        {
+            get
+            {
+                ResourceId rid = new ResourceId();
+                rid.EncryptionScope = this.EncryptionScope;
+                return rid;
+            }
+        }
+
+        public bool IsEncryptionScopeId
+        {
+            get
+            {
+                return this.EncryptionScope != 0;
+            }
+        }
+
         public ulong RoleAssignment
         {
             get;
@@ -533,6 +559,8 @@ namespace Microsoft.Azure.Documents
                     len += ResourceId.OfferIdLength;
                 else if (this.Snapshot > 0)
                     len += ResourceId.SnapshotIdLength;
+                else if (this.EncryptionScope > 0)
+                    len += ResourceId.EncryptionScopeIdLength;
                 else if (this.RoleAssignment > 0)
                     len += ResourceId.RbacResourceIdLength;
                 else if (this.RoleDefinition > 0)
@@ -561,6 +589,8 @@ namespace Microsoft.Azure.Documents
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.Database), 0, val, 0, 4);
                 else if (this.Snapshot > 0)
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.Snapshot), 0, val, 0, ResourceId.SnapshotIdLength);
+                else if (this.EncryptionScope > 0)
+                    ResourceId.BlockCopy(BitConverter.GetBytes(this.EncryptionScope), 0, val, 0, ResourceId.EncryptionScopeIdLength);
                 else if (this.AuthPolicyElement > 0)
                 {
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.AuthPolicyElement), 0, val, 0, 4);
@@ -683,6 +713,14 @@ namespace Microsoft.Azure.Documents
             return new ResourceId()
             {
                 Snapshot = snapshotId
+            };
+        }
+
+        public static ResourceId NewEncryptionScopeId(ulong encryptionScopeId)
+        {
+            return new ResourceId()
+            {
+                EncryptionScope = encryptionScopeId
             };
         }
 
@@ -895,7 +933,8 @@ namespace Microsoft.Azure.Documents
                 if (buffer.Length % 4 != 0 &&
                     buffer.Length != ResourceId.OfferIdLength &&
                     buffer.Length != ResourceId.SnapshotIdLength &&
-                    buffer.Length != ResourceId.RbacResourceIdLength)
+                    buffer.Length != ResourceId.RbacResourceIdLength &&
+                    buffer.Length != ResourceId.EncryptionScopeIdLength)
                 {
                     return false;
                 }
@@ -941,6 +980,12 @@ namespace Microsoft.Azure.Documents
                             return false;
                     }
 
+                    return true;
+                }
+
+                if (buffer.Length == ResourceId.EncryptionScopeIdLength)
+                {
+                    rid.EncryptionScope = (uint)ResourceId.ToUnsignedLong(buffer);
                     return true;
                 }
 
@@ -1064,16 +1109,7 @@ namespace Microsoft.Azure.Documents
             if (string.IsNullOrEmpty(id))
                 throw new ArgumentNullException("id");
 
-            buffer = null;
-
-            try
-            {
-                buffer = ResourceId.FromBase64String(id);
-            }
-            catch (FormatException)
-            { }
-
-            if (buffer == null || buffer.Length > ResourceId.Length)
+            if (ResourceId.TryDecodeFromBase64String(id, out buffer) == false || buffer.Length > ResourceId.Length)
             {
                 buffer = null;
                 return false;
@@ -1121,9 +1157,9 @@ namespace Microsoft.Azure.Documents
             throw new NotImplementedException();
         }
 
-        public static byte[] FromBase64String(string s)
+        public static bool TryDecodeFromBase64String(string s, out byte[] bytes)
         {
-            return Convert.FromBase64String(s.Replace('-', '/'));
+            return ResourceIdBase64Decoder.TryDecode(s.Replace('-', '/'), out bytes);
         }
 
         public static ulong ToUnsignedLong(byte[] buffer)

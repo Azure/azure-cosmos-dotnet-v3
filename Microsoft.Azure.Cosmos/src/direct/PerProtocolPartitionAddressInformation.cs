@@ -72,7 +72,8 @@ namespace Microsoft.Azure.Documents
             {
                 // Primary endpoint (of the desired protocol) was not found.
                 throw new GoneException(string.Format(CultureInfo.CurrentUICulture, "The requested resource is no longer available at the server. Returned addresses are {0}",
-                    string.Join(",", this.ReplicaAddresses.Select(address => address.PhysicalUri).ToList())));
+                                                      string.Join(",", this.ReplicaAddresses.Select(address => address.PhysicalUri).ToList())),
+                                        SubStatusCodes.ServerGenerated410);
             }
 
             return primaryReplicaAddress;

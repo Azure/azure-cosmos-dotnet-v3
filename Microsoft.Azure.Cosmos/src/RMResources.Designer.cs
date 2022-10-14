@@ -327,6 +327,28 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to There is high CPU detected on your client machine. Requests are more likely to timeout when CPU exceeds 90%.
+        /// </summary>
+        internal static string Client_CPUOverload
+        {
+            get
+            {
+                return ResourceManager.GetString("Client_CPUOverload", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Thread starvation or thread-pool blocking detected.
+        /// </summary>
+        internal static string Client_ThreadStarvation
+        {
+            get
+            {
+                return ResourceManager.GetString("Client_ThreadStarvation", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. The client CPU was overloaded during the attempted request..
         /// </summary>
         internal static string ClientCpuOverload
@@ -657,6 +679,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to The value of offer throughput policy specified is invalid.
+        /// </summary>
+        internal static string InvalidThroughputPolicy
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidThroughputPolicy", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Cannot set EnableMultipleWriteLocations on an account with EnableServerless.
         /// </summary>
         internal static string EnableMultipleWriteLocationsAndEnableServerlessNotSupported
@@ -708,6 +741,138 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("EnableMultiRegionAndEnableServerlessNotSupported", resourceCulture);
+            }
+        }
+                
+        /// <summary>
+        ///   Looks up a localized string similar to Restore is not Supported on this account type.
+        /// </summary>
+        internal static string PitrNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("PitrNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot add regions to this account type.
+        /// </summary>
+        internal static string EnableMultiRegionNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("EnableMultiRegionNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot set EnableMultipleWriteLocations on this account type.
+        /// </summary>
+        internal static string EnableMultipleWriteLocationsNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("EnableMultipleWriteLocationsNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot set DisableKeyBasedMetadataWriteAccess on this account type.
+        /// </summary>
+        internal static string DisableKeyBasedMetadataWriteAccessNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("DisableKeyBasedMetadataWriteAccessNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to MaterializedViews is not supported on this account type.
+        /// </summary>
+        internal static string MaterializedViewsNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("MaterializedViewsNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Full Fidelity Change Feed is not supported on this account type.
+        /// </summary>
+        internal static string FullFidelityChangeFeedNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("FullFidelityChangeFeedNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to CassandraConnector not supported for this account type.
+        /// </summary>
+        internal static string CassandraConnectorNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("CassandraConnectorNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Free Tier is not supported on this account type.
+        /// </summary>
+        internal static string FreeTierNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("FreeTierNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot set IpRangeFilter values on this account type.
+        /// </summary>
+        internal static string IpRangeFilterNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("IpRangeFilterNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Analytical Storage is not supported on this account type.
+        /// </summary>
+        internal static string AnalyticalStoreNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("AnalyticalStoreNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot set VirtualNetworkFilter on this account type.
+        /// </summary>
+        internal static string VirtualNetworkFilterNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("VirtualNetworkFilterNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Serverless offer is not supported on this account type.
+        /// </summary>
+        internal static string ServerlessNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("ServerlessNotSupported", resourceCulture);
             }
         }
 
@@ -800,6 +965,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to MaterializedViews is not supported on this account type.
+        /// </summary>
+        internal static string MaterializedViewsNotSupportedOnZoneRedundantAccount
+        {
+            get
+            {
+                return ResourceManager.GetString("MaterializedViewsNotSupportedOnZoneRedundantAccount", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Federation {0} in region {1} is not found.
         /// </summary>
         internal static string FederationEntityNotFound
@@ -822,35 +998,40 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to client IP {0} through public internet.
+        ///   Looks up a localized string similar to Request originated from IP {0} through public internet.
+        ///   This is blocked by your Cosmos DB account firewall settings. More info: https://aka.ms/cosmosdb-tsg-forbidden.
         /// </summary>
-        internal static string ClientPublicIpInfo
+        internal static string ForbiddenPublicIpv4
         {
             get
             {
-                return ResourceManager.GetString("ClientPublicIpInfo", resourceCulture);
+                return ResourceManager.GetString("ForbiddenPublicIpv4", resourceCulture);
             }
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to client VNET through {0}.
+        ///   Looks up a localized string similar to Request originated from VNET through service endpoint.
+        ///   This is blocked by your Cosmos DB account firewall settings. More info: https://aka.ms/cosmosdb-tsg-forbidden.
         /// </summary>
-        internal static string ClientVnetInfo
+        internal static string ForbiddenServiceEndpoint
         {
             get
             {
-                return ResourceManager.GetString("ClientVnetInfo", resourceCulture);
+                return ResourceManager.GetString("ForbiddenServiceEndpoint", resourceCulture);
             }
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to Request originated from {0}. This is blocked by your Cosmos DB account firewall settings..
+        ///   Looks up a localized string similar to Request received through private endpoint.
+        ///   It is blocked because either your account does not have private endpoint configured,
+        ///   or it is not from the private endpoint that your account is configured with.
+        ///   More info: https://aka.ms/cosmosdb-tsg-forbidden.
         /// </summary>
-        internal static string ForbiddenClientIpAddress
+        internal static string ForbiddenPrivateEndpoint
         {
             get
             {
-                return ResourceManager.GetString("ForbiddenClientIpAddress", resourceCulture);
+                return ResourceManager.GetString("ForbiddenPrivateEndpoint", resourceCulture);
             }
         }
 
@@ -2246,6 +2427,17 @@ namespace Microsoft.Azure.Documents
                 return ResourceManager.GetString("NotFound", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to GraphAPICompute Service cannot be deleted.
+        /// </summary>
+        internal static string GremlinV2ServiceDeleteNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("GremlinV2ServiceDeleteNotSupported", resourceCulture);
+            }
+        }
 
         /// <summary>
         ///   Looks up a localized string similar to Offer replace request conflicted..
@@ -2776,6 +2968,105 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Partition reconfiguration exceeded retry limit. Please contact support with the full exception.
+        /// </summary>
+        internal static string Server_CompletingPartitionMigrationExceededRetryLimit
+        {
+            get
+            {
+                return ResourceManager.GetString("Server_CompletingPartitionMigrationExceededRetryLimit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Unhandled partition split. Please contact support with the full exception.
+        /// </summary>
+        internal static string Server_CompletingSplitExceededRetryLimit
+        {
+            get
+            {
+                return ResourceManager.GetString("Server_CompletingSplitExceededRetryLimit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Could not achieve backend quorum for Strong or Bounded Staleness after barrier requests.
+        /// </summary>
+        internal static string Server_GlobalStrongWriteBarrierNotMet
+        {
+            get
+            {
+                return ResourceManager.GetString("Server_GlobalStrongWriteBarrierNotMet", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Container was re-created, exceeded retries to resolve new identifier. Please contact support with the full exception.
+        /// </summary>
+        internal static string Server_NameCacheIsStaleExceededRetryLimit
+        {
+            get
+            {
+                return ResourceManager.GetString("Server_NameCacheIsStaleExceededRetryLimit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Store (backend) returned an invalid response. Please contact support with the full exception.
+        /// </summary>
+        internal static string Server_NoValidStoreResponse
+        {
+            get
+            {
+                return ResourceManager.GetString("Server_NoValidStoreResponse", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Unhandled partition split. Please contact support with the full exception.
+        /// </summary>
+        internal static string Server_PartitionKeyRangeGoneExceededRetryLimit
+        {
+            get
+            {
+                return ResourceManager.GetString("Server_PartitionKeyRangeGoneExceededRetryLimit", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Could not achieve backend quorum.
+        /// </summary>
+        internal static string Server_ReadQuorumNotMet
+        {
+            get
+            {
+                return ResourceManager.GetString("Server_ReadQuorumNotMet", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Server returned a 410 response.
+        /// </summary>
+        internal static string ServerGenerated410
+        {
+            get
+            {
+                return ResourceManager.GetString("ServerGenerated410", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Server returned a 503 response.
+        /// </summary>
+        internal static string ServerGenerated503
+        {
+            get
+            {
+                return ResourceManager.GetString("ServerGenerated503", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to The response body length is too large. Body length: {0} bytes. Connection: {1}.
         /// </summary>
         internal static string ServerResponseBodyTooLargeError
@@ -2985,6 +3276,28 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to System database account {0} cannot be created with Continuous backup mode.
+        /// </summary>
+        internal static string SystemDatabaseAccountPitrEnabledNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("SystemDatabaseAccountPitrEnabledNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Network timeout or connectivity failure.
+        /// </summary>
+        internal static string TimeoutGenerated410
+        {
+            get
+            {
+                return ResourceManager.GetString("TimeoutGenerated410", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to PartitionKey has fewer components than defined the collection resource..
         /// </summary>
         internal static string TooFewPartitionKeyComponents
@@ -3007,7 +3320,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to The request rate is too large. Please retry after sometime..
+        ///   Looks up a localized string similar to The request rate is too large. Please retry after sometime. Learn more: http://aka.ms/cosmosdb-error-429.
         /// </summary>
         internal static string TooManyRequests
         {
@@ -3025,6 +3338,28 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("TransportExceptionMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The SDK failed to connect to the service. Please check your networking configuration.
+        /// </summary>
+        internal static string TransportGenerated410
+        {
+            get
+            {
+                return ResourceManager.GetString("TransportGenerated410", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Continuous connectivity failures. Client cannot connect after multiple retries. Please check your networking configuration
+        /// </summary>
+        internal static string TransportGenerated503
+        {
+            get
+            {
+                return ResourceManager.GetString("TransportGenerated503", resourceCulture);
             }
         }
 
@@ -3246,6 +3581,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("UnorderedDistinctQueryContinuationToken", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The requested region &apos;{0}&apos; does not support AZ provisioning yet. Please try other regions or disable zone redundancy for this region..
+        /// </summary>
+        internal static string UnsupportedAzRegion 
+        {
+            get 
+            {
+                return ResourceManager.GetString("UnsupportedAzRegion", resourceCulture);
             }
         }
 
@@ -3547,6 +3893,18 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Cannot perform failover as it is disabled for the account.
+        /// </summary>
+        internal static string FailoverDisabled
+        {
+            get
+            {
+                return ResourceManager.GetString("FailoverDisabled", resourceCulture);
+            }
+        }
+
+
+        /// <summary>
         ///   Looks up a localized string similar to Cannot add additional regions, since database account provision failed..
         /// </summary>
         internal static string WriteRegionDoesNotExist
@@ -3724,6 +4082,28 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to The container replace request is not allowed since it removes the Cassandra conflict resolution policy from the container {0}.
+        /// </summary>
+        internal static string CannotReplaceCassandraConflictPolicyFromContainer
+        {
+            get
+            {
+                return ResourceManager.GetString("CannotReplaceCassandraConflictPolicyFromContainer", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The container create request is not allowed since it does not contain the Cassandra conflict resolution policy specified for the container {0}.
+        /// </summary>
+        internal static string CannotCreateContainerWithoutCassandraConflictPolicy
+        {
+            get
+            {
+                return ResourceManager.GetString("CannotCreateContainerWithoutCassandraConflictPolicy", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Invalid type system '{0}' specified for container {1}.
         /// </summary>
         internal static string InvalidTypeSystemPolicy
@@ -3830,6 +4210,61 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("InvalidTotalThroughputLimitUpdate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to PartitionKey has fewer components than defined the collection resource..
+        /// </summary>
+        internal static string UnsupportedPartitionDefinitionKindForPartialKeyOperations
+        {
+            get
+            {
+                return ResourceManager.GetString("UnsupportedPartitionDefinitionKindForPartialKeyOperations", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to There cannot be duplicate physical partition ids in x-ms-cosmos-target-partition-throughput-info header..
+        /// </summary>
+        internal static string DuplicatePhysicalPartitionIdInTargetPartitionThroughputInfo
+        {
+            get
+            {
+                return ResourceManager.GetString("DuplicatePhysicalPartitionIdInTargetPartitionThroughputInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to There cannot be duplicate physical partition ids in x-ms-cosmos-source-partition-throughput-info header..
+        /// </summary>
+        internal static string DuplicatePhysicalPartitionIdInSourcePartitionThroughputInfo
+        {
+            get
+            {
+                return ResourceManager.GetString("DuplicatePhysicalPartitionIdInSourcePartitionThroughputInfo", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to There cannot be a common physical partition id both in x-ms-cosmos-target-partition-throughput-info and x-ms-cosmos-source-partition-throughput-info header. Encountered {0}.
+        /// </summary>
+        internal static string PhysicalPartitionIdinTargetAndSourcePartitionThroughputInfo
+        {
+            get
+            {
+                return ResourceManager.GetString("PhysicalPartitionIdinTargetAndSourcePartitionThroughputInfo", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to One of the source or target physical partition id doesn't exist..
+        /// </summary>
+        internal static string PhysicalPartitionIdinTargetOrSourceDoesNotExist
+        {
+            get
+            {
+                return ResourceManager.GetString("PhysicalPartitionIdinTargetOrSourceDoesNotExist", resourceCulture);
             }
         }
     }

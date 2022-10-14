@@ -15,6 +15,15 @@ namespace Microsoft.Azure.Documents.Rntbd
             Guid activityId,
             TransportRequestStats transportRequestStats);
 
+        /// <summary>
+        /// Opens the Rntbd context negotiation channel to
+        /// the backend replica node.
+        /// </summary>
+        /// <param name="activityId">An unique identifier indicating the current activity id.</param>
+        /// <returns>A completed task indicating oncw the channel is opened.</returns>
+        public Task OpenChannelAsync(
+            Guid activityId);
+
         bool Healthy { get; }
 
         void Close();

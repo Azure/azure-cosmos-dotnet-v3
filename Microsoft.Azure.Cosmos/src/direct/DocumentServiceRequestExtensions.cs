@@ -34,6 +34,13 @@ namespace Microsoft.Azure.Documents
                 return true;
             }
 
+            // Only for 400
+            if (request.UseStatusCodeForBadRequest
+                && (statusCode == (int)StatusCodes.BadRequest && subStatusCode != SubStatusCodes.PartitionKeyMismatch))
+            {
+                return true;
+            }
+
             return false;
         }
     }

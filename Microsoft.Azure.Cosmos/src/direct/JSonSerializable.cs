@@ -842,6 +842,32 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        internal void SetObjectDictionaryWithNullableValues<TSerializable>(string propertyName, Dictionary<string, TSerializable> value) where TSerializable : JsonSerializable, new()
+        {
+            if (this.propertyBag == null)
+            {
+                this.propertyBag = new JObject();
+            }
+
+            if (value != null)
+            {
+                Dictionary<string, JObject> jobjectDictionary = new Dictionary<string, JObject>();
+                foreach (KeyValuePair<string, TSerializable> kvp in value)
+                {
+                    if (kvp.Value != null)
+                    {
+                        kvp.Value.OnSave();
+                        jobjectDictionary.Add(kvp.Key, kvp.Value.propertyBag ?? new JObject());
+                    }
+                    else
+                    {
+                        jobjectDictionary.Add(kvp.Key, null);
+                    }
+                }
+                this.propertyBag[propertyName] = JToken.FromObject(jobjectDictionary);
+            }
+        }
+
         internal virtual void OnSave()
         {
 

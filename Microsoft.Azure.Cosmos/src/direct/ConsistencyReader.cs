@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Documents
 
             if(responses.Count == 0)
             {
-                throw new GoneException(RMResources.Gone);
+                throw new GoneException(RMResources.Gone, SubStatusCodes.Server_NoValidStoreResponse);
             }
 
             return responses[0].ToResponse();

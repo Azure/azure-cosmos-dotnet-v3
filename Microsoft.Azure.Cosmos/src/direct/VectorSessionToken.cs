@@ -336,6 +336,13 @@ namespace Microsoft.Azure.Documents
                 return false;
             }
 
+            // There is only 1 number in the session token.
+            // This represents a simple session token instead of a vector session token
+            if(index >= sessionToken.Length)
+            {
+                return false;
+            }
+
             if (!TryParseLongSegment(
                 sessionToken,
                 ref index,

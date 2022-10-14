@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Documents
                         total += 8;
                         break;
                     case RntbdTokenTypes.Guid:
-                        total += 12;
+                        total += 16;
                         break;
                     case RntbdTokenTypes.SmallBytes:
                     case RntbdTokenTypes.SmallString:

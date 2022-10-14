@@ -44,19 +44,31 @@ namespace Microsoft.Azure.Documents
 
         public static PartitionKeyRangeIdentity FromHeader(string header)
         {
-            string[] parts = header.Split(',');
-            if (parts.Length == 2)
+            // this gets called a lot, so avoid using string.Split() and
+            // the like
+
+            // header is either
+            //  - partitionKeyRangeId (no commas)
+            // or
+            //  - collectionId,partitionKeyRangeId (one comma)
+
+            int commaIndex = header.IndexOf(',');
+            if (commaIndex == -1)
             {
-                return new PartitionKeyRangeIdentity(parts[0], parts[1]);
+                // reuse the header string
+                return new PartitionKeyRangeIdentity(header);
             }
-            else if (parts.Length == 1)
-            {
-                return new PartitionKeyRangeIdentity(parts[0]);
-            }
-            else
+
+            int secondCommaIndex = header.IndexOf(',', commaIndex + 1);
+            if (secondCommaIndex != -1)
             {
                 throw new BadRequestException(RMResources.InvalidPartitionKeyRangeIdHeader);
             }
+
+            string collectionRid = header.Substring(0, commaIndex);
+            string partionKeyRangeId = header.Substring(commaIndex + 1);
+
+            return new PartitionKeyRangeIdentity(collectionRid, partionKeyRangeId);
         }
 
         public string ToHeader()

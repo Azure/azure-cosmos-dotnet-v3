@@ -158,6 +158,7 @@ namespace Microsoft.Azure.Documents
                         !(this.ResourceType == ResourceType.Media) &&
                         !(this.ResourceType == ResourceType.DatabaseAccount) &&
                         !(this.ResourceType == ResourceType.Snapshot) &&
+                        !(this.ResourceType == ResourceType.EncryptionScope) &&
                         !(this.ResourceType == ResourceType.RoleDefinition) &&
                         !(this.ResourceType == ResourceType.RoleAssignment) &&
                         !(this.ResourceType == ResourceType.InteropUser) &&
@@ -217,6 +218,13 @@ namespace Microsoft.Azure.Documents
         /// the status codes as part of the result for failures.
         /// </summary>
         public bool UseStatusCodeFor429 { get; set; }
+
+        /// <summary>
+        /// This is a flag that indicates whether the DocumentClient internally
+        /// throws exceptions for 400 status codes
+        /// the status codes as part of the result for failures.
+        /// </summary>
+        public bool UseStatusCodeForBadRequest { get; set; }
 
         /// <summary>
         /// Flag indicating whether or not to disable retries on RetryWith Exceptions
@@ -371,6 +379,13 @@ namespace Microsoft.Azure.Documents
 
         public bool ForceNameCacheRefresh { get; set; }
 
+        /// <summary>
+        /// CollectionRoutingMap hash code is used in the cache
+        /// refresh scenarios to avoid doing a refresh when another
+        /// request already completed one.
+        /// </summary>
+        public int LastCollectionRoutingMapHashCode { get; set; }
+
         public bool ForcePartitionKeyRangeRefresh { get; set; }
 
         public bool ForceCollectionRoutingMapRefresh { get; set; }
@@ -510,6 +525,7 @@ namespace Microsoft.Azure.Documents
                 case OperationType.GetAadGroups:
                 case OperationType.UpdateFailoverPriorityList:
                 case OperationType.GetStorageAccountSas:
+                case OperationType.GetBatchCustomerManagedKeyStatus:
                     return HttpConstants.HttpMethods.Post;
 
                 case OperationType.EnsureSnapshotOperation:
@@ -518,6 +534,7 @@ namespace Microsoft.Azure.Documents
                 case OperationType.ReadReplicaFromMasterPartition:
                 case OperationType.ReadReplicaFromServerPartition:
                 case OperationType.GetStorageAuthToken:
+                case OperationType.GetCustomerManagedKeyStatus:
                 case OperationType.GetGraphDatabaseAccountConfiguration:
                     return HttpConstants.HttpMethods.Get;
 #endif
@@ -995,6 +1012,7 @@ namespace Microsoft.Azure.Documents
                QueryString  = this.QueryString,
                Continuation = this.Continuation,
                ForcePartitionKeyRangeRefresh = this.ForcePartitionKeyRangeRefresh,
+               LastCollectionRoutingMapHashCode = this.LastCollectionRoutingMapHashCode,
                ForceCollectionRoutingMapRefresh = this.ForceCollectionRoutingMapRefresh,
                ForceMasterRefresh = this.ForceMasterRefresh,
                DefaultReplicaIndex = this.DefaultReplicaIndex,

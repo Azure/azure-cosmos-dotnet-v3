@@ -26,10 +26,12 @@ namespace Microsoft.Azure.Documents
         public const string Operations_GetStorageAccountKey = "getstorageaccountkey";
         public const string Operations_GetStorageAccountSas = "getstorageaccountsas";
         public const string Operations_GetUnwrappedDek = "getunwrappeddek";
+        public const string Operations_GetCustomerManagedKeyStatus = "getcustomermanagedkeystatus";
         public const string Operations_ReadReplicaFromMasterPartition = "readreplicafrommasterpartition";
         public const string Operations_ReadReplicaFromServerPartition = "readreplicafromserverpartition";
         public const string Operations_MasterInitiatedProgressCoordination = "masterinitiatedprogresscoordination";
         public const string Operations_GetAadGroups = "getaadgroups";
+        public const string Operations_MetadataCheckAccess = "metadatacheckaccess";
 
         //databases namespace off of root-------------------
 
@@ -253,6 +255,9 @@ namespace Microsoft.Azure.Documents
         // vector clock
         public const string VectorClockPathSegment = "vectorclock";
 
+        // metadata check access
+        public const string MetadataCheckAccessPathSegment = "metadatacheckaccess";
+
         // partition key delete
         public const string PartitionKeyDeletePathSegment = "partitionkeydelete";
         public const string PartitionKeyDelete = Collection_Root + "/" + OperationsPathSegment + "/" + PartitionKeyDeletePathSegment;
@@ -312,5 +317,22 @@ namespace Microsoft.Azure.Documents
         // /retriablewritecachedresponse
         public const string RetriableWriteCachedResponsePathSegment = "retriablewritecachedresponse";
         public const string RetriableWriteCachedResponse_Root = Root + "/" + RetriableWriteCachedResponsePathSegment + "/";
+
+        // urls like http://hostname/accounts/{id}/address
+        // /accounts/{id}/
+        public const string AccountsPathSegment = "accounts";
+        public const string AccountId = "accountId";
+        public const string FederationEndpoint_Root = Root + "/" + AccountsPathSegment + "/{" + AccountId + "}/";
+
+        // /accounts/{id}/address
+        public const string FederationEndpoint_Address_Root = FederationEndpoint_Root + "/" + AddressPathSegment + "/";
+
+        // /encryptionscopes
+        public const string EncryptionScopesPathSegment = "encryptionscopes";
+        public const string EncryptionScopes_Root = Root + "/" + EncryptionScopesPathSegment + "/";
+
+        // /encryptionscopes/{id}
+        public const string EncryptionScopeId = "encryptionscopeid";
+        public const string EncryptionScope_Root = EncryptionScopes_Root + "{" + EncryptionScopeId + "}";
     }
 }

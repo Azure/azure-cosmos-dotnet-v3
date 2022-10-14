@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Documents
 
     internal class ShouldRetryResult
     {
-        private static ShouldRetryResult EmptyNoRetry = new ShouldRetryResult { ShouldRetry = false };
+        private static readonly ShouldRetryResult EmptyNoRetry = new ShouldRetryResult { ShouldRetry = false };
 
         protected ShouldRetryResult()
         {
@@ -68,6 +68,8 @@ namespace Microsoft.Azure.Documents
 
     internal class ShouldRetryResult<TPolicyArg1> : ShouldRetryResult
     {
+        private static readonly ShouldRetryResult<TPolicyArg1> EmptyNoRetry = new ShouldRetryResult<TPolicyArg1> { ShouldRetry = false };
+
         /// <summary>
         /// Argument to be passed to the callback method.
         /// </summary>
@@ -75,6 +77,11 @@ namespace Microsoft.Azure.Documents
 
         public static new ShouldRetryResult<TPolicyArg1> NoRetry(Exception exception = null)
         {
+            if (exception == null)
+            {
+                return ShouldRetryResult<TPolicyArg1>.EmptyNoRetry;
+            }
+
             return new ShouldRetryResult<TPolicyArg1> { ShouldRetry = false, ExceptionToThrow = exception };
         }
 

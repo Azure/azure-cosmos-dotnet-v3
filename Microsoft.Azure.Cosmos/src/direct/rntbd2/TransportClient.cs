@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System;
     using System.Diagnostics;
     using System.Globalization;
+    using System.Net.Security;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
 #if NETSTANDARD15 || NETSTANDARD16
@@ -89,7 +89,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.IdleTimeout,
                     this.idleTimerPool,
                     clientOptions.CallerId,
-                    clientOptions.EnableChannelMultiplexing));
+                    clientOptions.EnableChannelMultiplexing,
+                    clientOptions.MemoryStreamPool,
+                    clientOptions.RemoteCertificateValidationCallback));
         }
 
         internal override Task<StoreResponse> InvokeStoreAsync(
@@ -283,6 +285,17 @@ namespace Microsoft.Azure.Documents.Rntbd
 #endif
         }
 
+        /// <inheritdoc/>
+        internal override Task OpenConnectionAsync(
+            Uri physicalAddress)
+        {
+            Guid activityId = Trace.CorrelationManager.ActivityId;
+            return this.channelDictionary.OpenChannelAsync(
+                physicalAddress: physicalAddress,
+                localRegionRequest: false,
+                activityId: activityId);
+        }
+
         #region RNTBD Transition
 
         public event Action OnDisableRntbdChannel;
@@ -378,6 +391,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             public RntbdConstants.CallerId CallerId { get; set; }
             public bool EnableChannelMultiplexing { get; set; }
 
+            public Microsoft.Azure.Documents.MemoryStreamPool MemoryStreamPool { get; set; }
+
             public UserAgentContainer UserAgent
             {
                 get
@@ -428,7 +443,6 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             public int PortPoolBindAttempts { get; internal set; }
 
-
             public TimeSpan TimerPoolResolution
             {
                 get
@@ -440,6 +454,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             public int MaxConcurrentOpeningConnectionCount { get; set; }
+
+            public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; internal set; }
 
             public override string ToString()
             {
@@ -475,6 +491,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 s.AppendLine(this.EnableChannelMultiplexing.ToString());
                 s.Append("  MaxConcurrentOpeningConnectionCount: ");
                 s.AppendLine(this.MaxConcurrentOpeningConnectionCount.ToString(CultureInfo.InvariantCulture));
+                s.Append("  Use_RecyclableMemoryStream: ");
+                s.AppendLine(this.MemoryStreamPool != null ? bool.TrueString : bool.FalseString);
                 return s.ToString();
             }
 

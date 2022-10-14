@@ -30,13 +30,7 @@ namespace Microsoft.Azure.Documents
             storageIndex = 0;
             attachmentId = string.Empty;
 
-            byte[] mediaIdBytes = null;
-
-            try
-            {
-                mediaIdBytes = ResourceId.FromBase64String(mediaId);
-            }
-            catch(FormatException)
+            if (ResourceId.TryDecodeFromBase64String(mediaId, out byte[] mediaIdBytes) == false)
             {
                 return false;
             }

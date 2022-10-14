@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
     using System.Diagnostics;
+    using System.Net.NetworkInformation;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -27,6 +28,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         private State state = State.New;  // Guarded by stateLock.
         private Task initializationTask = null;  // Guarded by stateLock.
+        private volatile bool isInitializationComplete = false;
 
         private ChannelOpenArguments openArguments;
         private readonly SemaphoreSlim openingSlim;
@@ -42,7 +44,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.SendHangDetectionTime,
                 channelProperties.IdleTimerPool,
                 channelProperties.IdleTimeout,
-                channelProperties.EnableChannelMultiplexing);
+                channelProperties.EnableChannelMultiplexing,
+                channelProperties.MemoryStreamPool,
+                channelProperties.RemoteCertificateValidationCallback);
             this.timerPool = channelProperties.RequestTimerPool;
             this.requestTimeoutSeconds = (int) channelProperties.RequestTimeout.TotalSeconds;
             this.serverUri = serverUri;
@@ -58,6 +62,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.CallerId);
 
             this.openingSlim = openingSlim;
+            this.Initialize();
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -103,7 +108,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        public void Initialize()
+        private void Initialize()
         {
             this.ThrowIfDisposed();
             this.stateLock.EnterWriteLock();
@@ -126,6 +131,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     Debug.Assert(this.openArguments.CommonArguments != null);
                     Trace.CorrelationManager.ActivityId = this.openArguments.CommonArguments.ActivityId;
                     await this.InitializeAsync();
+                    this.isInitializationComplete = true;
+                    this.TestOnInitializeComplete?.Invoke();
                 });
             }
             finally
@@ -139,26 +146,18 @@ namespace Microsoft.Azure.Documents.Rntbd
             ResourceOperation resourceOperation, Guid activityId, TransportRequestStats transportRequestStats)
         {
             this.ThrowIfDisposed();
-            Task initTask = null;
-            this.stateLock.EnterReadLock();
-            try
+
+            if (!this.isInitializationComplete)
             {
-                if (this.state != State.Open)
-                {
-                    Debug.Assert(this.initializationTask != null);
-                    initTask = this.initializationTask;
-                }
-            }
-            finally
-            {
-                this.stateLock.ExitReadLock();
-            }
-            if (initTask != null)
-            {
+                transportRequestStats.RequestWaitingForConnectionInitialization = true;
                 DefaultTrace.TraceInformation(
                     "Awaiting RNTBD channel initialization. Request URI: {0}",
                     physicalAddress);
-                await initTask;
+                await this.initializationTask;
+            }
+            else
+            {
+                transportRequestStats.RequestWaitingForConnectionInitialization = false;
             }
 
             // Waiting for channel initialization to move to Pipelined stage
@@ -194,7 +193,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             Task[] tasks = new Task[2];
             tasks[0] = timer.StartTimerAsync();
             Task<StoreResponse> dispatcherCall = this.dispatcher.CallAsync(callArguments, transportRequestStats);
-            TransportClient.GetTransportPerformanceCounters().LogRntbdBytesSentCount(resourceOperation.resourceType, resourceOperation.operationType, callArguments.PreparedCall?.SerializedRequest.Count);
+            TransportClient.GetTransportPerformanceCounters().LogRntbdBytesSentCount(resourceOperation.resourceType, resourceOperation.operationType, callArguments.PreparedCall?.SerializedRequest.RequestSize);
             tasks[1] = dispatcherCall;
             Task completedTask = await Task.WhenAny(tasks);
             if (object.ReferenceEquals(completedTask, tasks[0]))
@@ -230,6 +229,20 @@ namespace Microsoft.Azure.Documents.Rntbd
             StoreResponse storeResponse = dispatcherCall.Result;
             TransportClient.GetTransportPerformanceCounters().LogRntbdBytesReceivedCount(resourceOperation.resourceType, resourceOperation.operationType, storeResponse?.ResponseBody?.Length);
             return storeResponse;
+        }
+
+        /// <summary>
+        /// Returns the background channel initialization task.
+        /// </summary>
+        /// <returns>The initialization task.</returns>
+        public Task OpenChannelAsync(Guid activityId)
+        {
+            if(this.initializationTask == null)
+            {
+                throw new InvalidOperationException("Channal Initialization Task Can't be null.");
+            }
+
+            return this.initializationTask;
         }
 
         public override string ToString()
@@ -448,8 +461,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.openingSlim.Release();
                 }
             }
-
-            this.TestOnInitializeComplete?.Invoke();
         }
 
         private void FinishInitialization(State nextState)

@@ -133,19 +133,19 @@ namespace Microsoft.Azure.Documents
 #endif
         public static extern
         uint GetPartitionKeyRangesFromQuery(
-                [In] IntPtr serviceProvider,
-                [MarshalAs(UnmanagedType.LPWStr)][In] string query,
-                [In] bool requireFormattableOrderByQuery,
-                [In] bool isContinuationExpected,
-                [In] bool allowNonValueAggregateQuery,
-                [In] bool hasLogicalPartitionKey,
-                [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)][In] string[] partitionKeyDefinitionPathTokens,
-                [MarshalAs(UnmanagedType.LPArray)][In] uint[] partitionKeyDefinitionPathTokenLengths,
-                [In] uint partitionKeyDefinitionPathCount,
-                [In] PartitionKind partitionKind,
-                [In, Out] IntPtr serializedQueryExecutionInfoBuffer,
-                [In] uint serializedQueryExecutionInfoBufferLength,
-                [Out] out uint serializedQueryExecutionInfoResultLength);
+            [In] IntPtr serviceProvider,
+            [MarshalAs(UnmanagedType.LPWStr)][In] string query,
+            [In] bool requireFormattableOrderByQuery,
+            [In] bool isContinuationExpected,
+            [In] bool allowNonValueAggregateQuery,
+            [In] bool hasLogicalPartitionKey,
+            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)][In] string[] partitionKeyDefinitionPathTokens,
+            [MarshalAs(UnmanagedType.LPArray)][In] uint[] partitionKeyDefinitionPathTokenLengths,
+            [In] uint partitionKeyDefinitionPathCount,
+            [In] PartitionKind partitionKind,
+            [In, Out] IntPtr serializedQueryExecutionInfoBuffer,
+            [In] uint serializedQueryExecutionInfoBufferLength,
+            [Out] out uint serializedQueryExecutionInfoResultLength);
 
 #if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
@@ -157,20 +157,140 @@ namespace Microsoft.Azure.Documents
 #endif
         public static extern
         uint GetPartitionKeyRangesFromQuery2(
-                [In] IntPtr serviceProvider,
-                [MarshalAs(UnmanagedType.LPWStr)][In] string query,
-                [In] bool requireFormattableOrderByQuery,
-                [In] bool isContinuationExpected,
-                [In] bool allowNonValueAggregateQuery,
-                [In] bool hasLogicalPartitionKey,
-                [In] bool bAllowDCount,
-                [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)][In] string[] partitionKeyDefinitionPathTokens,
-                [MarshalAs(UnmanagedType.LPArray)][In] uint[] partitionKeyDefinitionPathTokenLengths,
-                [In] uint partitionKeyDefinitionPathCount,
-                [In] PartitionKind partitionKind,
-                [In, Out] IntPtr serializedQueryExecutionInfoBuffer,
-                [In] uint serializedQueryExecutionInfoBufferLength,
-                [Out] out uint serializedQueryExecutionInfoResultLength);
+            [In] IntPtr serviceProvider,
+            [MarshalAs(UnmanagedType.LPWStr)][In] string query,
+            [In] bool requireFormattableOrderByQuery,
+            [In] bool isContinuationExpected,
+            [In] bool allowNonValueAggregateQuery,
+            [In] bool hasLogicalPartitionKey,
+            [In] bool bAllowDCount,
+            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)][In] string[] partitionKeyDefinitionPathTokens,
+            [MarshalAs(UnmanagedType.LPArray)][In] uint[] partitionKeyDefinitionPathTokenLengths,
+            [In] uint partitionKeyDefinitionPathCount,
+            [In] PartitionKind partitionKind,
+            [In, Out] IntPtr serializedQueryExecutionInfoBuffer,
+            [In] uint serializedQueryExecutionInfoBufferLength,
+            [Out] out uint serializedQueryExecutionInfoResultLength);
+
+        // Layout should match corresponding native struct
+        [StructLayout(LayoutKind.Sequential)]
+        public struct PartitionKeyRangesApiOptions
+        {
+            public Int32 bRequireFormattableOrderByQuery;
+
+            public Int32 bIsContinuationExpected;
+
+            public Int32 bAllowNonValueAggregateQuery;
+
+            public Int32 bHasLogicalPartitionKey;
+
+            public Int32 bAllowDCount;
+
+            public Int32 bUseSystemPrefix;
+
+            public Int32 ePartitionKind;
+
+            public Int32 eGeospatialType;
+
+            // Reserve additional 32 bytes to match size with native PartitionKeyRangesApiOptions.
+            public Int64 unusedReserved1;
+            public Int64 unusedReserved2;
+            public Int64 unusedReserved3;
+            public Int64 unusedReserved4;
+        };
+
+#if !NETSTANDARD16
+        [System.Security.SuppressUnmanagedCodeSecurity]
+#endif
+#if COSMOSCLIENT
+        [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+#else
+        [DllImport("Microsoft.Azure.Documents.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+#endif
+        public static extern
+        uint GetPartitionKeyRangesFromQuery3(
+            [In] IntPtr serviceProvider,
+            [MarshalAs(UnmanagedType.LPWStr)][In] string query,
+            [In] PartitionKeyRangesApiOptions partitionKeyRangesApiOptions,
+            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)][In] string[] partitionKeyDefinitionPathTokens,
+            [MarshalAs(UnmanagedType.LPArray)][In] uint[] partitionKeyDefinitionPathTokenLengths,
+            [In] uint partitionKeyDefinitionPathCount,
+            [In, Out] IntPtr serializedQueryExecutionInfoBuffer,
+            [In] uint serializedQueryExecutionInfoBufferLength,
+            [Out] out uint serializedQueryExecutionInfoResultLength);
+
+#if !NETSTANDARD16
+        [System.Security.SuppressUnmanagedCodeSecurity]
+#endif
+#if COSMOSCLIENT
+        [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+#else
+        [DllImport("Microsoft.Azure.Documents.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+#endif
+        public static extern 
+        int CreateDistributedQueryContext(
+            [In] IntPtr serviceProvider,
+            [MarshalAs(UnmanagedType.LPWStr)][In] string ownerRid,
+            [MarshalAs(UnmanagedType.LPWStr)][In] string query,
+            [In] ulong queryLength,
+            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)][In] string[] partitionKeyDefinitionPathTokens,
+            [MarshalAs(UnmanagedType.LPArray)][In] uint[] partitionKeyDefinitionPathTokenLengths,
+            [In] uint partitionKeyDefinitionPathCount,
+            [In] PartitionKind partitionKind,
+            [Out] out IntPtr queryContext);
+
+
+        [StructLayout(LayoutKind.Sequential)]
+        public unsafe struct InteropDistributedQueryCompileResult
+        {
+            public IntPtr   Query;
+            public int      QueryLength;
+            public IntPtr   ObfuscatedQuery;
+            public int      ObfuscatedQueryLength;
+            public IntPtr   Shape;
+            public int      ShapeLength;
+            public ulong    Signature;
+            public ulong    ShapeSignature;
+            public bool     NoSpatial;
+            public IntPtr   LocalILProgram;
+            public int      LocalILProgramLength;
+            public IntPtr   PartitionKeyRanges;
+            public int      PartitionKeyRangesLength;
+            public IntPtr   Errors;
+            public int      ErrorsLength;
+        };
+
+#if !NETSTANDARD16
+        [System.Security.SuppressUnmanagedCodeSecurity]
+#endif
+#if COSMOSCLIENT
+        [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+#else
+        [DllImport("Microsoft.Azure.Documents.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+#endif
+        public static extern
+        int CompileDistributedQuery(
+            [In] IntPtr queryContext,
+            [Out] out InteropDistributedQueryCompileResult result);
+
+#if !NETSTANDARD16
+        [System.Security.SuppressUnmanagedCodeSecurity]
+#endif
+#if COSMOSCLIENT
+        [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+#else
+        [DllImport("Microsoft.Azure.Documents.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+#endif
+        public static extern
+        int ExecuteDistributedQuery(
+            [In] IntPtr queryContext,
+            [In] IntPtr collatedResponses,
+            [In] uint length,
+            [In] bool bLocal,
+            [Out] out IntPtr result,
+            [Out] out uint resultLength,
+            [Out] out IntPtr resultOwner);
+
 
 #if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]

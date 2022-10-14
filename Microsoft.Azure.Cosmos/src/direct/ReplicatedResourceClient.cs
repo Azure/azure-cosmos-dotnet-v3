@@ -245,6 +245,31 @@ namespace Microsoft.Azure.Documents
                 cancellationToken: cancellationToken);
         }
 
+        /// <summary>
+        /// Attempts to open a connection to all the replicas for all the available partitions of a given container.
+        /// </summary>
+        /// <param name="databaseName">A string containing the name of the database.</param>
+        /// <param name="containerLinkUri">A string containing the container's link uri</param>
+        /// <param name="cancellationToken">An Instance of the <see cref="CancellationToken"/>.</param>
+        public async Task OpenConnectionsToAllReplicasAsync(
+            string databaseName,
+            string containerLinkUri,
+            CancellationToken cancellationToken = default)
+        {
+            IAddressResolverExtension addressResolverExtension = (IAddressResolverExtension)this.addressResolver;
+            // This check will eventually be removed, when the OpenConnectionsToAllReplicas() move to the IAddressResolver.
+            if (addressResolverExtension == null)
+            {
+                throw new InvalidOperationException("The Address Resolver provided is not an instance of IAddressResolverExtension.");
+            }
+
+            await addressResolverExtension.OpenConnectionsToAllReplicasAsync(
+                databaseName,
+                containerLinkUri,
+                this.transportClient.OpenConnectionAsync,
+                cancellationToken);
+        }
+
         private Task<StoreResponse> InvokeAsync(DocumentServiceRequest request, TimeoutHelper timeout, bool isInRetry, bool forceRefresh, CancellationToken cancellationToken)
         {
             if (request.OperationType == OperationType.ExecuteJavaScript)

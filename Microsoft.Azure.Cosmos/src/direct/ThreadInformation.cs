@@ -4,7 +4,9 @@
 
 namespace Microsoft.Azure.Documents.Rntbd
 {
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -20,6 +22,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         internal double? ThreadWaitIntervalInMs { get; }
 
         private static Stopwatch watch;
+        private static Task task;
 
         public static ThreadInformation Get()
         {
@@ -43,12 +46,26 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 bool? isThreadStarving = null;
                 double? threadWaitIntervalInMs = null;
-                if (watch != null)
+
+                //First time watch and task will be null
+                if (ThreadInformation.watch != null && ThreadInformation.task != null)
                 {
-                    threadWaitIntervalInMs = watch.Elapsed.TotalMilliseconds;
-                    isThreadStarving = (threadWaitIntervalInMs > 1000); // its thread starvation if total elapsed time for stopwatch was more than 1s
+                    threadWaitIntervalInMs = ThreadInformation.watch.Elapsed.TotalMilliseconds;
+
+                    // its thread starvation
+                    // a) if total elapsed time for stopwatch was more than 1s
+                    // b) last task failed due to some error
+                    isThreadStarving = (threadWaitIntervalInMs > 1000 || ThreadInformation.task.IsFaulted);
+                    
+                    // If task is faulted, stop the watch manually. otherwise keep it running
+                    if(ThreadInformation.task.IsFaulted && ThreadInformation.watch.IsRunning)
+                    {
+                        DefaultTrace.TraceError("Thread Starvation detection task failed. Exception: {0}", ThreadInformation.task.Exception);
+                        ThreadInformation.watch.Stop();
+                    }
                 }
 
+                // First time isThreadStarving, threadWaitIntervalInMs will be null.
                 threadInfo = new ThreadInformation(
                    availableThreads: avlWorkerThreads,
                    minThreads: minWorkerThreads,
@@ -57,13 +74,14 @@ namespace Microsoft.Azure.Documents.Rntbd
                    threadWaitIntervalInMs: threadWaitIntervalInMs);
 
                 // if previous task is still not started running yet then do not reinitialize the watch (or new task).
-                if (watch == null || !watch.IsRunning)
+                if (ThreadInformation.watch == null || !ThreadInformation.watch.IsRunning)
                 {
                     // if last watch was stopped then reinitialize it
-                    watch = Stopwatch.StartNew();
-                    Task.Factory.StartNew(() =>
+                    ThreadInformation.watch = Stopwatch.StartNew();
+
+                    ThreadInformation.task = Task.Factory.StartNew(() =>
                     {
-                        watch.Stop();
+                        ThreadInformation.watch.Stop();
                     });
                 }
             }
@@ -99,7 +117,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             if (this.ThreadWaitIntervalInMs.HasValue)
             {
-                stringBuilder.Append("\"threadWaitIntervalInMs\":").Append(this.ThreadWaitIntervalInMs.Value).Append(",");
+                stringBuilder.Append("\"threadWaitIntervalInMs\":").Append(this.ThreadWaitIntervalInMs.Value.ToString(CultureInfo.InvariantCulture)).Append(",");
             }
 
             if (this.AvailableThreads.HasValue)
@@ -132,7 +150,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             if (this.ThreadWaitIntervalInMs.HasValue)
             {
-                builder.Append(" ThreadWaitIntervalInMs :").Append(this.ThreadWaitIntervalInMs.Value);
+                builder.Append(" ThreadWaitIntervalInMs :").Append(this.ThreadWaitIntervalInMs.Value.ToString(CultureInfo.InvariantCulture));
             }
 
             if (this.AvailableThreads.HasValue)

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Globalization;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -273,6 +274,50 @@ namespace Microsoft.Azure.Documents
             {
                 this.Content.Validate();
             }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Snapshot"/> class from existing snapshot object.
+        /// </summary>
+        /// <param name="existingSnapshot"></param>
+        /// <param name="operationType"></param>
+        /// <param name="inheritSnapshotTimestamp"></param>
+        internal static Snapshot CloneSystemSnapshot(Snapshot existingSnapshot, OperationType operationType, bool inheritSnapshotTimestamp)
+        {
+            if (existingSnapshot.Kind != SnapshotKind.System)
+            {
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "Invalid snapshot kind {0}", existingSnapshot.Kind));
+            }
+
+            Snapshot snapshot = new Snapshot();
+
+            snapshot.Kind = existingSnapshot.Kind;
+            snapshot.OwnerResourceId = existingSnapshot.OwnerResourceId;
+            snapshot.ResourceLink = existingSnapshot.ResourceLink;
+            snapshot.Content = new SnapshotContent()
+            {
+                OperationType = operationType,
+                SerializedDatabase = existingSnapshot.Content.SerializedDatabase,
+                SerializedCollection = existingSnapshot.Content.SerializedCollection,
+                SerializedOffer = existingSnapshot.Content.SerializedOffer,
+                SerializedPartitionKeyRanges = existingSnapshot.Content.SerializedPartitionKeyRanges,
+                GeoLinkIdToPKRangeRid = existingSnapshot.Content.GeoLinkIdToPKRangeRid
+            };
+
+            if (inheritSnapshotTimestamp)
+            {
+                snapshot.SnapshotTimestamp = existingSnapshot.SnapshotTimestamp;
+            }
+            else
+            {
+                // Setting to Timestamp to UnixStartTime so that the actual epoch timestamp gets zero.
+                // If actual timestamp is zero, then backend is going to auto-populate the snapshotTimestamp to current timestamp.
+                snapshot.SnapshotTimestamp = UnixStartTime;
+            }
+
+            snapshot.State = SnapshotState.Completed;
+
+            return snapshot;
         }
     }
 }

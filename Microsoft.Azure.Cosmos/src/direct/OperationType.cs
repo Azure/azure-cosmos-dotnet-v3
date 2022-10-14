@@ -88,7 +88,9 @@ namespace Microsoft.Azure.Documents
 
 #if !COSMOSCLIENT
         SystemOperation = 53,
+#endif
         MetadataCheckAccess = 54,
+#if !COSMOSCLIENT
         Prune = 55,
         CreateSystemSnapshot = 56,
 #endif
@@ -125,6 +127,8 @@ namespace Microsoft.Azure.Documents
         GetStorageAccountSas = -17,
         GetStorageServiceConfigurations = -18,
         GetGraphDatabaseAccountConfiguration = -19,
+        GetCustomerManagedKeyStatus = -20,
+        GetBatchCustomerManagedKeyStatus = -21,
 #endif
     }
 

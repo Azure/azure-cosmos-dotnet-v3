@@ -784,8 +784,12 @@ namespace Microsoft.Azure.Documents
             out int? bodySize,
             Guid activityId)
         {
-            return Rntbd.TransportSerialization.BuildRequest(request, replicaPath, resourceOperation,
+            using TransportSerialization.SerializedRequest serializedRequest = Rntbd.TransportSerialization.BuildRequest(request, replicaPath, resourceOperation,
                 activityId, this.BufferProvider, out headerAndMetadataSize, out bodySize);
+
+            BufferProvider.DisposableBuffer finalBuffer = this.BufferProvider.GetBuffer((int)serializedRequest.RequestSize);
+            serializedRequest.CopyTo(finalBuffer.Buffer);
+            return finalBuffer;
         }
         #endregion
 

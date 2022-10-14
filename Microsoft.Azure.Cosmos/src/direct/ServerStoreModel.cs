@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Documents
     using System.Threading;
     using System.Threading.Tasks;
 
-    internal sealed class ServerStoreModel : IStoreModel
+    internal sealed class ServerStoreModel : IStoreModelExtension
     {
         private readonly StoreClient storeClient;
         private EventHandler<SendingRequestEventArgs> sendingRequest;
@@ -101,6 +101,18 @@ namespace Microsoft.Azure.Documents
                 return this.storeClient.ProcessMessageAsync(request, cancellationToken);
             }
 
+        }
+
+        /// <inheritdoc/>>
+        public async Task OpenConnectionsToAllReplicasAsync(
+            string databaseName,
+            string containerLinkUri,
+            CancellationToken cancellationToken = default)
+        {
+            await this.storeClient.OpenConnectionsToAllReplicasAsync(
+                databaseName,
+                containerLinkUri,
+                cancellationToken);
         }
 
         private async Task<DocumentServiceResponse> ProcessMessageWithReceivedResponseDelegateAsync(
