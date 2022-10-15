@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                         if (openConnectionHandler != null)
                         {
-                            await this.OpenConnectionsAsync(
+                            await this.OpenRntbdChannelsAsync(
                                 addressInfo,
                                 openConnectionHandler);
                         }
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// and it's corresponding address information.</param>
         /// <param name="openConnectionHandlerAsync">The transport client callback delegate to be invoked at a
         /// later point of time.</param>
-        private async Task OpenConnectionsAsync(
+        private async Task OpenRntbdChannelsAsync(
              Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo,
              Func<Uri, Task> openConnectionHandlerAsync)
         {
@@ -181,10 +181,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                                          select address.PhysicalUri).ToList();
             foreach (string physicalUri in physicalUris)
             {
-                Console.WriteLine("Opening Connection to: " + physicalUri);
                 DefaultTrace.TraceInformation("Attempting to open Rntbd connection to backend uri: {0}. '{1}'",
-                                    physicalUri,
-                                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                    physicalUri,
+                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
                 try
                 {
                     await openConnectionHandlerAsync(
@@ -192,11 +191,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Exception Occurred inside {nameof(GatewayAddressCache)}: " + ex.Message);
                     DefaultTrace.TraceWarning("Failed to open Rntbd connection to backend uri: {0} with exception: {1}. '{2}'",
-                                        physicalUri,
-                                        ex.Message,
-                                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                        physicalUri,
+                        ex.Message,
+                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
                 }
             }
         }

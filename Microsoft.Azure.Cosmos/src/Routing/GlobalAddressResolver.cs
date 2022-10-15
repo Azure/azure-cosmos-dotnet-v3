@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -114,7 +112,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             await Task.WhenAll(tasks);
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Invokes the gateway address cache and passes the <see cref="Documents.Rntbd.TransportClient"/> deligate to be invoked from the same.
+        /// </summary>
+        /// <param name="databaseName">A string containing the name of the database.</param>
+        /// <param name="containerLinkUri">A string containing the container's link uri.</param>
+        /// <param name="openConnectionHandlerAsync">The transport client callback delegate to be invoked at a later point of time.</param>
+        /// <param name="cancellationToken">An Instance of the <see cref="CancellationToken"/>.</param>
         public async Task OpenConnectionsToAllReplicasAsync(
             string databaseName,
             string containerLinkUri,
@@ -176,11 +180,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Exception Occurred inside {nameof(GlobalAddressResolver)}: " + ex.Message);
                 DefaultTrace.TraceWarning("Failed to open Rntbd connection to backend uri for container: {0} with exception: {1}. '{2}'",
-                                    containerLinkUri,
-                                    ex.Message,
-                                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                    containerLinkUri,
+                    ex.Message,
+                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
             }
         }
 

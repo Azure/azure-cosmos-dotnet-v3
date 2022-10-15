@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
         private const string DatabaseAccountApiEndpoint = "https://endpoint.azure.com";
         private readonly Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider;
         private readonly Mock<IServiceConfigurationReader> mockServiceConfigReader;
+        private readonly Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         private readonly int targetReplicaSetSize = 4;
         private readonly PartitionKeyRangeIdentity testPartitionKeyRangeIdentity;
         private readonly ServiceIdentity serviceIdentity;
@@ -44,6 +46,25 @@ namespace Microsoft.Azure.Cosmos
             this.testPartitionKeyRangeIdentity = new PartitionKeyRangeIdentity("YxM9ANCZIwABAAAAAAAAAA==", "YxM9ANCZIwABAAAAAAAAAA==");
             this.serviceName = new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint);
             this.serviceIdentity = new ServiceIdentity("federation1", this.serviceName, false);
+
+            List<PartitionKeyRange> result = new List<PartitionKeyRange>
+            {
+                new PartitionKeyRange()
+                {
+                    MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                    MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                    Id = "0"
+                }
+            };
+
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
+            this.partitionKeyRangeCache
+                .Setup(m => m.TryGetOverlappingRangesAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<Documents.Routing.Range<string>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<bool>()))
+                .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)result));
         }
 
         [TestMethod]
@@ -298,6 +319,359 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsFalse(outOfNetworkAddresses.IsLocalRegion);
         }
 
+        /// <summary>
+        /// Test to validate that when <see cref="GatewayAddressCache.OpenConnectionsAsync()"/> is called with a
+        /// valid open connection handler callback delegate, the delegate method is indeed invoked.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task OpenConnectionsAsync_WithValidOpenConnectionHandlerDelegate_ShouldInvokeDelegateMethod()
+        {
+            // Arrange.
+            FakeMessageHandler messageHandler = new ();
+            FakeTransportClient transportClient = new (shouldFailTransport: false);
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
+            containerProperties.Id = "TestId";
+            containerProperties.PartitionKeyPath = "/pk";
+            HttpClient httpClient = new(messageHandler)
+            {
+                Timeout = TimeSpan.FromSeconds(120)
+            };
+
+            GatewayAddressCache cache = new (
+                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
+                Documents.Client.Protocol.Tcp,
+                this.mockTokenProvider.Object,
+                this.mockServiceConfigReader.Object,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                suboptimalPartitionForceRefreshIntervalInSeconds: 2);
+
+            // Act.
+            await cache.OpenConnectionsAsync(
+                databaseName: "test-database",
+                collection: containerProperties,
+                partitionKeyRangeIdentities: new List<PartitionKeyRangeIdentity>()
+                {
+                    this.testPartitionKeyRangeIdentity
+                },
+                openConnectionHandler: transportClient.OpenConnectionAsync,
+                cancellationToken: CancellationToken.None);
+
+            // Assert.
+            Assert.AreEqual(0, transportClient.GetExceptionCount());
+            Assert.AreEqual(3, transportClient.GetSuccessfulInvocationCount());
+        }
+
+        /// <summary>
+        /// Test to validate that when <see cref="GatewayAddressCache.OpenConnectionsAsync()"/> is invoked with a
+        /// open connection handler callback delegate that throws an exception, the delegate method is indeed invoked
+        /// and the exception is handled in such a way that the cosmos client initialization does not fail.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task OpenConnectionsAsync_WhenConnectionHandlerDelegateThrowsException_ShouldNotFailInitialization()
+        {
+            // Arrange.
+            FakeMessageHandler messageHandler = new ();
+            FakeTransportClient transportClient = new (shouldFailTransport: true);
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
+            containerProperties.Id = "TestId";
+            containerProperties.PartitionKeyPath = "/pk";
+            HttpClient httpClient = new(messageHandler)
+            {
+                Timeout = TimeSpan.FromSeconds(120)
+            };
+
+            GatewayAddressCache cache = new (
+                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
+                Documents.Client.Protocol.Tcp,
+                this.mockTokenProvider.Object,
+                this.mockServiceConfigReader.Object,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                suboptimalPartitionForceRefreshIntervalInSeconds: 2);
+
+            // Act.
+            await cache.OpenConnectionsAsync(
+                databaseName: "test-database",
+                collection: containerProperties,
+                partitionKeyRangeIdentities: new List<PartitionKeyRangeIdentity>()
+                {
+                    this.testPartitionKeyRangeIdentity
+                },
+                openConnectionHandler: transportClient.OpenConnectionAsync,
+                cancellationToken: CancellationToken.None);
+
+            // Assert.
+            Assert.AreEqual(3, transportClient.GetExceptionCount());
+            Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
+        }
+
+        /// <summary>
+        /// Test to validate that when <see cref="GatewayAddressCache.OpenConnectionsAsync()"/> is invoked with a null
+        /// open connection handler callback delegate, the delegate is never invoked, thus no attempt to open connection
+        /// to the backend replica happens.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task OpenConnectionsAsync_WithNullOpenConnectionHandlerDelegate_ShouldNotInvokeDelegateMethod()
+        {
+            // Arrange.
+            FakeMessageHandler messageHandler = new ();
+            FakeTransportClient transportClient = new(shouldFailTransport: false);
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
+            containerProperties.Id = "TestId";
+            containerProperties.PartitionKeyPath = "/pk";
+            HttpClient httpClient = new(messageHandler)
+            {
+                Timeout = TimeSpan.FromSeconds(120)
+            };
+
+            GatewayAddressCache cache = new(
+                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
+                Documents.Client.Protocol.Tcp,
+                this.mockTokenProvider.Object,
+                this.mockServiceConfigReader.Object,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                suboptimalPartitionForceRefreshIntervalInSeconds: 2);
+
+            // Act.
+            await cache.OpenConnectionsAsync(
+                databaseName: "test-database",
+                collection: containerProperties,
+                partitionKeyRangeIdentities: new List<PartitionKeyRangeIdentity>()
+                {
+                    this.testPartitionKeyRangeIdentity
+                },
+                openConnectionHandler: null,
+                cancellationToken: CancellationToken.None);
+
+            // Assert.
+            Assert.AreEqual(0, transportClient.GetExceptionCount());
+            Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
+        }
+
+        /// <summary>
+        /// Test to validate that when <see cref="GlobalAddressResolver.OpenConnectionsToAllReplicasAsync()"/> is called with a
+        /// valid open connection handler callback delegate, the delegate method is indeed invoked and an attempt is made to open
+        /// the connections to the backend replicas.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WithValidHandlerDelegate_ShouldOpenConnectionsToBackend()
+        {
+            // Arrange.
+            FakeTransportClient transportClient = new (shouldFailTransport: false);
+            UserAgentContainer container = new (clientId: 0);
+            FakeMessageHandler messageHandler = new ();
+            AccountProperties databaseAccount = new ();
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new ();
+            mockDocumentClient
+                .Setup(owner => owner.ServiceEndpoint)
+                .Returns(new Uri("https://blabla.com/"));
+
+            mockDocumentClient
+                .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            GlobalEndpointManager globalEndpointManager = new (
+                mockDocumentClient.Object,
+                new ConnectionPolicy());
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
+
+            ConnectionPolicy connectionPolicy = new ()
+            {
+                RequestTimeout = TimeSpan.FromSeconds(120)
+            };
+
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
+            containerProperties.Id = "TestId";
+            containerProperties.PartitionKeyPath = "/pk";
+
+            Mock<CollectionCache> mockCollectionCahce = new (MockBehavior.Strict);
+            mockCollectionCahce
+                .Setup(x => x.ResolveByNameAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    false,
+                    It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(containerProperties));
+
+            GlobalAddressResolver globalAddressResolver = new (
+                endpointManager: globalEndpointManager,
+                partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
+                protocol: Documents.Client.Protocol.Tcp,
+                tokenProvider: this.mockTokenProvider.Object,
+                collectionCache: mockCollectionCahce.Object,
+                routingMapProvider: this.partitionKeyRangeCache.Object,
+                serviceConfigReader: this.mockServiceConfigReader.Object,
+                connectionPolicy: connectionPolicy,
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+
+            // Act.
+            await globalAddressResolver.OpenConnectionsToAllReplicasAsync(
+                databaseName: "test-db",
+                containerLinkUri: "https://test.uri.cosmos.com",
+                openConnectionHandlerAsync: transportClient.OpenConnectionAsync,
+                CancellationToken.None);
+
+            // Assert.
+            Assert.AreEqual(0, transportClient.GetExceptionCount());
+            Assert.AreEqual(3, transportClient.GetSuccessfulInvocationCount());
+        }
+
+        /// <summary>
+        /// Test to validate that when <see cref="GlobalAddressResolver.OpenConnectionsToAllReplicasAsync()"/> is invoked and
+        /// and an internal operation throws an exception, the exception is handled in such a way that the cosmos client initialization
+        /// does not fail.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenInternalExceptionThrown_ShouldNotFailInitialization()
+        {
+            // Arrange.
+            FakeTransportClient transportClient = new(shouldFailTransport: false);
+            UserAgentContainer container = new(clientId: 0);
+            FakeMessageHandler messageHandler = new();
+            AccountProperties databaseAccount = new();
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+            mockDocumentClient
+                .Setup(owner => owner.ServiceEndpoint)
+                .Returns(new Uri("https://blabla.com/"));
+
+            mockDocumentClient
+                .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            GlobalEndpointManager globalEndpointManager = new (
+                mockDocumentClient.Object,
+                new ConnectionPolicy());
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
+
+            ConnectionPolicy connectionPolicy = new ()
+            {
+                RequestTimeout = TimeSpan.FromSeconds(120)
+            };
+
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
+            containerProperties.Id = "TestId";
+            containerProperties.PartitionKeyPath = "/pk";
+
+            Mock<CollectionCache> mockCollectionCahce = new (MockBehavior.Strict);
+            mockCollectionCahce
+                .Setup(x => x.ResolveByNameAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    false,
+                    It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(containerProperties));
+
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new (null, null, null);
+            partitionKeyRangeCache
+                .Setup(m => m.TryGetOverlappingRangesAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<Documents.Routing.Range<string>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<bool>()))
+                .ThrowsAsync(
+                    new Exception("Transport Exception Occurred."));
+
+            GlobalAddressResolver globalAddressResolver = new(
+                endpointManager: globalEndpointManager,
+                partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
+                protocol: Documents.Client.Protocol.Tcp,
+                tokenProvider: this.mockTokenProvider.Object,
+                collectionCache: mockCollectionCahce.Object,
+                routingMapProvider: partitionKeyRangeCache.Object,
+                serviceConfigReader: this.mockServiceConfigReader.Object,
+                connectionPolicy: connectionPolicy,
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+
+            // Act.
+            await globalAddressResolver.OpenConnectionsToAllReplicasAsync(
+                databaseName: "test-db",
+                containerLinkUri: "https://test.uri.cosmos.com",
+                openConnectionHandlerAsync: transportClient.OpenConnectionAsync,
+                CancellationToken.None);
+
+            // Assert.
+            Assert.AreEqual(0, transportClient.GetExceptionCount());
+            Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
+        }
+
+        /// <summary>
+        /// Test to validate that when <see cref="GlobalAddressResolver.OpenConnectionsToAllReplicasAsync()"/> is invoked and
+        /// and no valid collection could be resolved for the given database name and container link uri, thus a null value is
+        /// returned, the cosmos client initialization does not fail.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenNullCollectionReturned_ShouldNotFailInitialization()
+        {
+            // Arrange.
+            FakeTransportClient transportClient = new (shouldFailTransport: false);
+            UserAgentContainer container = new (clientId: 0);
+            FakeMessageHandler messageHandler = new ();
+            AccountProperties databaseAccount = new ();
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new ();
+            mockDocumentClient
+                .Setup(owner => owner.ServiceEndpoint)
+                .Returns(new Uri("https://blabla.com/"));
+
+            mockDocumentClient
+                .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            GlobalEndpointManager globalEndpointManager = new (
+                mockDocumentClient.Object,
+                new ConnectionPolicy());
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
+
+            ConnectionPolicy connectionPolicy = new ()
+            {
+                RequestTimeout = TimeSpan.FromSeconds(120)
+            };
+
+            Mock<CollectionCache> mockCollectionCahce = new (MockBehavior.Strict);
+            mockCollectionCahce
+                .Setup(x => x.ResolveByNameAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    false,
+                    It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult<ContainerProperties>(null));
+
+            GlobalAddressResolver globalAddressResolver = new (
+                endpointManager: globalEndpointManager,
+                partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
+                protocol: Documents.Client.Protocol.Tcp,
+                tokenProvider: this.mockTokenProvider.Object,
+                collectionCache: mockCollectionCahce.Object,
+                routingMapProvider: this.partitionKeyRangeCache.Object,
+                serviceConfigReader: this.mockServiceConfigReader.Object,
+                connectionPolicy: connectionPolicy,
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+
+            // Act.
+            await globalAddressResolver.OpenConnectionsToAllReplicasAsync(
+                databaseName: "test-db",
+                containerLinkUri: "https://test.uri.cosmos.com",
+                openConnectionHandlerAsync: transportClient.OpenConnectionAsync,
+                CancellationToken.None);
+
+            // Assert.
+            Assert.AreEqual(0, transportClient.GetExceptionCount());
+            Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
+        }
+
         private class FakeMessageHandler : HttpMessageHandler
         {
             private bool returnFullReplicaSet;
@@ -381,6 +755,47 @@ namespace Microsoft.Azure.Cosmos
                 {
                     d(state);
                 }
+            }
+        }
+
+        public class FakeTransportClient
+        {
+            private int exceptionCounter = 0;
+            private int successInvocationCounter = 0;
+            private readonly bool shouldFailTransport;
+
+            public FakeTransportClient(bool shouldFailTransport)
+            {
+                this.shouldFailTransport = shouldFailTransport;
+            }
+
+            public Task OpenConnectionAsync(Uri physicalAddress)
+            {
+                if (this.shouldFailTransport)
+                {
+                    this.exceptionCounter++;
+                    throw new TransportException(
+                        errorCode: TransportErrorCode.ConnectionBroken,
+                        innerException: new Exception("Transport Error Occurred."),
+                        activityId: Guid.NewGuid(),
+                        requestUri: physicalAddress,
+                        sourceDescription: "SourceDescription",
+                        userPayload: true,
+                        payloadSent: false);
+                }
+
+                this.successInvocationCounter++;
+                return Task.CompletedTask;
+            }
+
+            public int GetSuccessfulInvocationCount()
+            {
+                return this.successInvocationCounter;
+            }
+
+            public int GetExceptionCount()
+            {
+                return this.exceptionCounter;
             }
         }
     }
