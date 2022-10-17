@@ -266,8 +266,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<ResponseMessage> ReadThroughputStreamAsync(
-            RequestOptions requestOptions,
-            CancellationToken cancellation = default)
+           RequestOptions requestOptions,
+           CancellationToken cancellation = default)
         {
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadThroughputStreamAsync),
