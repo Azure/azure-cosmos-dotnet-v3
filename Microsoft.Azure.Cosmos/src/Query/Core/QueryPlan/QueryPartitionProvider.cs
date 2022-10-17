@@ -360,18 +360,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             if (disposing)
             {
-                // Free managed objects
-            }
-
-            lock (this.serviceProviderStateLock)
-            {
-                if (this.serviceProvider != IntPtr.Zero)
+                lock (this.serviceProviderStateLock)
                 {
-                    Marshal.Release(this.serviceProvider);
-                    this.serviceProvider = IntPtr.Zero;
-                }
+                    if (this.serviceProvider != IntPtr.Zero)
+                    {
+                        Marshal.Release(this.serviceProvider);
+                        this.serviceProvider = IntPtr.Zero;
+                    }
 
-                this.disposed = true;
+                    this.disposed = true;
+                }
             }
         }
     }
