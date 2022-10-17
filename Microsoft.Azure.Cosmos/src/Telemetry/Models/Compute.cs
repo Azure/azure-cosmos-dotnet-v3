@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
     using Newtonsoft.Json;
@@ -13,11 +13,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         [JsonConstructor]
         public Compute(
-            string vMId, 
-            string location, 
-            string sKU, 
-            string azEnvironment, 
-            string oSType, 
+            string vMId,
+            string location,
+            string sKU,
+            string azEnvironment,
+            string oSType,
             string vMSize)
         {
             this.Location = location;

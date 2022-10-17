@@ -291,7 +291,8 @@ namespace Microsoft.Azure.Cosmos
         {
             scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, exception.StatusCode);
             scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, exception.RequestCharge);
-            scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
+            scope.AddAttribute(OpenTelemetryAttributeKeys.Region, 
+                ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics?.GetContactedRegions()));
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
 
             CosmosDbEventSource.RecordDiagnosticsForExceptions(exception.Diagnostics);
