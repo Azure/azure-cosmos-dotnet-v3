@@ -505,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey)
                     .WithApplicationRegion(notAValidAzureRegion);
 
-                ArgumentException argumentException = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.Build(new MockDocumentClient()));
+                ArgumentException argumentException = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.Build());
 
                 Assert.IsTrue(argumentException.Message.Contains(notAValidAzureRegion), $"Expected error message to contain {notAValidAzureRegion} but got: {argumentException.Message}");
             }

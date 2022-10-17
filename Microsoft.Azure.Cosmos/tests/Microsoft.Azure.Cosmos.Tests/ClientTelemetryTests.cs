@@ -5,16 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Net;
-    using System.Text;
-    using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using HdrHistogram;
-    using System.Net.Http;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Telemetry;
     using System.Collections.Generic;
-    using System.Xml.Serialization;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
@@ -89,7 +85,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void CheckJsonSerializerContract()
         {
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, null, 10), ClientTelemetryOptions.JsonSerializerSettings);
+            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties(clientId: "clientId", 
+                processId: "", 
+                userAgent: null, 
+                connectionMode: ConnectionMode.Direct, 
+                preferredRegions: null, 
+                aggregationIntervalInSec: 10), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"aggregationIntervalInSec\":10,\"systemInfo\":[]}", json);
         }
 
@@ -100,7 +101,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 "region1"
             };
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, preferredRegion, 1), ClientTelemetryOptions.JsonSerializerSettings);
+            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties(clientId: "clientId", 
+                processId: "", 
+                userAgent: null, 
+                connectionMode: ConnectionMode.Direct, 
+                preferredRegions: preferredRegion,
+                aggregationIntervalInSec: 1), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[]}", json);
         }
 

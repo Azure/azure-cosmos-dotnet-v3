@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
     using Util;

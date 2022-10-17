@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using System.Net;
     using System.Net.Http;
-    using System.Diagnostics;
     using System.Reflection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -24,6 +23,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Globalization;
     using System.Linq;
     using Cosmos.Util;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Common;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -248,6 +250,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 Container container = await this.CreateClientAndContainer(mode, Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix);
+
                 await container.ReadItemAsync<JObject>(
                     new Guid().ToString(),
                     new Cosmos.PartitionKey(new Guid().ToString()),
@@ -269,7 +272,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.WaitAndAssert(expectedOperationCount: 2,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.Eventual,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation);
+                expectedOperationRecordCountMap: expectedRecordCountInOperation, 
+                expectedCacheSource: null);
         }
 
         [TestMethod]
@@ -303,7 +307,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.WaitAndAssert(expectedOperationCount: 2,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation);
+                expectedOperationRecordCountMap: expectedRecordCountInOperation,
+                expectedCacheSource: null);
         }
 
         [TestMethod]
@@ -312,6 +317,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task StreamOperationsTest(ConnectionMode mode)
         {
             Container container = await this.CreateClientAndContainer(mode);
+
             // Create an item
             var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
             await container
@@ -351,7 +357,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             await this.WaitAndAssert(expectedOperationCount: 12,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation);
+                expectedOperationRecordCountMap: expectedRecordCountInOperation,
+                expectedCacheSource: null);
         }
 
         [TestMethod]
@@ -653,6 +660,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Container container = await this.CreateClientAndContainer(mode);
 
+            // Create an item : First successful request to load Cache
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
+            await container.CreateItemAsync<ToDoActivity>(testItem);
+
             List<ToDoActivity> results = new List<ToDoActivity>();
             using (FeedIterator<ToDoActivity> resultSetIterator = container.GetItemQueryIterator<ToDoActivity>(
                   "SELECT * FROM c",
@@ -673,8 +684,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            await this.WaitAndAssert(expectedOperationCount: 0,
-                expectedSubstatuscode: "0"); // Does not record telemetry
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Create.ToString(), 1}
+            };
+
+            await this.WaitAndAssert(expectedOperationCount: 2,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -750,7 +766,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.WaitAndAssert(expectedOperationCount: 2,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation,
-                expectedSubstatuscode: "999999");
+                expectedSubstatuscode: 999999);
 
         }
 
@@ -765,14 +781,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expectedOperationCount = 0,
             Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel = null,
             IDictionary<string, long> expectedOperationRecordCountMap = null,
-            string expectedSubstatuscode = null,
-            bool? isAzureInstance = null)
+            int expectedSubstatuscode = 0,
+            bool? isAzureInstance = null,
+            string expectedCacheSource = "ClientCollectionCache")
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
 
             // As this feature is thread based execution so wait for the results to avoid test flakiness
             List<ClientTelemetryProperties> localCopyOfActualInfo = null;
             ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+            HashSet<CacheRefreshInfo> cacheRefreshInfoSet = new HashSet<CacheRefreshInfo>();
             do
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(1500)); // wait at least for 1 round of telemetry
@@ -782,12 +800,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     // Setting the number of unique OperationInfo irrespective of response size as response size is varying in case of queries.
                     this.actualInfo
-                        .ForEach(x => x.OperationInfo
-                                       .ForEach(y =>
-                                       {
-                                           y.GreaterThan1Kb = false;
-                                           actualOperationSet.Add(y);
-                                       }));
+                        .ForEach(x =>
+                        {
+                            if (x.CacheRefreshInfo != null && x.CacheRefreshInfo.Count > 0)
+                            {
+                                x.CacheRefreshInfo
+                                  .ForEach(y =>
+                                  {
+                                      y.GreaterThan1Kb = false;
+                                      cacheRefreshInfoSet.Add(y);
+                                  });
+
+                            }
+
+                            x.OperationInfo
+                                .ForEach(y =>
+                                {
+                                    y.GreaterThan1Kb = false;
+                                    actualOperationSet.Add(y);
+                                });
+                        });
 
                     if (actualOperationSet.Count == expectedOperationCount / 2)
                     {
@@ -821,6 +853,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList: actualOperationList,
                 expectedSubstatuscode: expectedSubstatuscode);
 
+            if(!string.IsNullOrEmpty(expectedCacheSource))
+            {
+                Assert.IsTrue(cacheRefreshInfoSet.Count > 0, "Cache Refresh Information is not there");
+
+                ClientTelemetryTests.AssertCacheRefreshInfoInformation(
+                  cacheRefreshInfoSet: cacheRefreshInfoSet,
+                  expectedCacheSource: expectedCacheSource);
+            }
+           
             ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation, this.expectedMetricNameUnitMap);
         }
 
@@ -839,7 +880,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(systemInfo.MetricInfo.UnitName, actualMetricNameUnitMap[systemInfo.MetricInfo.MetricsName]);
                 }
 
-                if(!systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.IsThreadStarvingName))
+                if(!systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.IsThreadStarvingName) &&
+                    !systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.ThreadWaitIntervalInMsName))
                 {
                     Assert.IsTrue(systemInfo.MetricInfo.Count > 0, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Count is not greater than 0");
                     Assert.IsNotNull(systemInfo.MetricInfo.Percentiles, $"Percentiles is null for metrics ({systemInfo.MetricInfo.MetricsName})");
@@ -863,7 +905,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel, 
             IDictionary<string, long> expectedOperationRecordCountMap, 
             List<OperationInfo> actualOperationList,
-            string expectedSubstatuscode = null)
+            int expectedSubstatuscode = 0)
         {
             IDictionary<string, long> actualOperationRecordCountMap = new Dictionary<string, long>();
 
@@ -872,7 +914,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.IsNotNull(operation.Operation, "Operation Type is null");
                 Assert.IsNotNull(operation.Resource, "Resource Type is null");
-                Assert.IsNotNull(operation.StatusCode, "StatusCode is null");
                 Assert.AreEqual(expectedSubstatuscode, operation.SubStatusCode);
                 Assert.AreEqual(expectedConsistencyLevel?.ToString(), operation.Consistency, $"Consistency is not {expectedConsistencyLevel}");
 
@@ -900,7 +941,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (expectedOperationRecordCountMap != null)
             {
-                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({actualOperationRecordCountMap}) for operation does not match with expected record i.e. ({expectedOperationRecordCountMap})");
+                    Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({actualOperationRecordCountMap}) for operation does not match with expected record i.e. ({expectedOperationRecordCountMap})");
             }
         }
 
@@ -960,6 +1001,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+
+        private static void AssertCacheRefreshInfoInformation(
+            HashSet<CacheRefreshInfo> cacheRefreshInfoSet,
+            string expectedCacheSource)
+        {
+            foreach(CacheRefreshInfo cacheRefreshInfo in cacheRefreshInfoSet)
+            {
+                Assert.IsNotNull(cacheRefreshInfo.CacheRefreshSource);
+                Assert.IsTrue(expectedCacheSource.Contains(cacheRefreshInfo.CacheRefreshSource));
+                Assert.IsNotNull(cacheRefreshInfo.Operation, "Operation Type is null");
+                Assert.IsNotNull(cacheRefreshInfo.Resource, "Resource Type is null");
+                Assert.IsNotNull(cacheRefreshInfo.StatusCode, "StatusCode is null");
+                Assert.IsNotNull(cacheRefreshInfo.SubStatusCode);
+                Assert.IsNull(cacheRefreshInfo.Consistency);
+                Assert.IsNotNull(cacheRefreshInfo.ContainerName, "ContainerName is null");
+                Assert.IsNotNull(cacheRefreshInfo.MetricInfo, "MetricInfo is null");
+                Assert.IsNotNull(cacheRefreshInfo.MetricInfo.MetricsName, "MetricsName is null");
+                Assert.IsNotNull(cacheRefreshInfo.MetricInfo.UnitName, "UnitName is null");
+                Assert.IsNotNull(cacheRefreshInfo.MetricInfo.Percentiles, "Percentiles is null");
+                Assert.IsTrue(cacheRefreshInfo.MetricInfo.Count >= 0, "MetricInfo Count is not greater than 0");
+                Assert.IsTrue(cacheRefreshInfo.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
+                Assert.IsTrue(cacheRefreshInfo.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
+                Assert.IsTrue(cacheRefreshInfo.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
+            }
+        }
+        
         [TestMethod]
         public async Task CheckMisconfiguredTelemetryEndpoint_should_stop_the_job()
         {

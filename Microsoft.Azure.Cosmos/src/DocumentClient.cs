@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -132,11 +133,13 @@ namespace Microsoft.Azure.Cosmos
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
         private bool enableCpuMonitor = DefaultEnableCpuMonitor;
         private int rntbdMaxConcurrentOpeningConnectionCount = 5;
+        private string clientId;
 
         //Consistency
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
 
         internal CosmosAccountServiceConfiguration accountServiceConfiguration { get; private set; }
+        internal ClientTelemetry clientTelemetry { get; set; }
 
         private ClientCollectionCache collectionCache;
 
@@ -417,6 +420,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
         /// <param name="isLocalQuorumConsistency">Flag to allow Quorum Read with Eventual Consistency Account</param>
+        /// <param name="cosmosClientId"></param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -441,7 +445,8 @@ namespace Microsoft.Azure.Cosmos
                               bool? enableCpuMonitor = null,
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
                               IStoreClientFactory storeClientFactory = null,
-                              bool isLocalQuorumConsistency = false)
+                              bool isLocalQuorumConsistency = false,
+                              string cosmosClientId = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -472,7 +477,8 @@ namespace Microsoft.Azure.Cosmos
                 handler: handler,
                 sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
-                storeClientFactory: storeClientFactory);
+                storeClientFactory: storeClientFactory,
+                cosmosClientId: cosmosClientId);
         }
 
         /// <summary>
@@ -634,7 +640,12 @@ namespace Microsoft.Azure.Cosmos
             catch (DocumentClientException ex)
             {
                 // Clear the caches to ensure that we don't have partial results
-                this.collectionCache = new ClientCollectionCache(this.sessionContainer, this.GatewayStoreModel, this, this.retryPolicy);
+                this.collectionCache = new ClientCollectionCache(
+                    sessionContainer: this.sessionContainer, 
+                    storeModel: this.GatewayStoreModel, 
+                    tokenProvider: this, 
+                    retryPolicy: this.retryPolicy,
+                    clientTelemetry: this.clientTelemetry);
                 this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
 
                 DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
@@ -648,12 +659,15 @@ namespace Microsoft.Azure.Cosmos
             ISessionContainer sessionContainer = null,
             bool? enableCpuMonitor = null,
             IStoreClientFactory storeClientFactory = null,
-            TokenCredential tokenCredential = null)
+            TokenCredential tokenCredential = null,
+            string cosmosClientId = null)
         {
             if (serviceEndpoint == null)
             {
                 throw new ArgumentNullException("serviceEndpoint");
             }
+
+            this.clientId = cosmosClientId;
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
@@ -928,6 +942,12 @@ namespace Microsoft.Azure.Cosmos
             // For direct: WFStoreProxy [set in OpenAsync()].
             this.eventSource = DocumentClientEventSource.Instance;
 
+            // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
+            // the system information so no need to track it.
+#if !INTERNAL
+            this.InitializeClientTelemetry();
+#endif
+
             this.initializeTaskFactory = (_) => TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
                     new ResourceThrottleRetryPolicy(
@@ -984,7 +1004,12 @@ namespace Microsoft.Azure.Cosmos
 
             this.GatewayStoreModel = gatewayStoreModel;
 
-            this.collectionCache = new ClientCollectionCache(this.sessionContainer, this.GatewayStoreModel, this, this.retryPolicy);
+            this.collectionCache = new ClientCollectionCache(
+                    sessionContainer: this.sessionContainer, 
+                    storeModel: this.GatewayStoreModel, 
+                    tokenProvider: this, 
+                    retryPolicy: this.retryPolicy,
+                    clientTelemetry: this.clientTelemetry);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
@@ -1000,6 +1025,36 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return true;
+        }
+
+        private void InitializeClientTelemetry()
+        {
+            if (this.ConnectionPolicy.EnableClientTelemetry)
+            {
+                try
+                {
+                    this.clientTelemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
+                        clientId: this.clientId,
+                        httpClient: this.httpClient,
+                        userAgent: this.ConnectionPolicy.UserAgentContainer.UserAgent,
+                        connectionMode: this.ConnectionPolicy.ConnectionMode,
+                        authorizationTokenProvider: this.cosmosAuthorization,
+                        diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
+                        preferredRegions: this.ConnectionPolicy.PreferredLocations,
+                        globalEndpointManager: this.GlobalEndpointManager);
+
+                    DefaultTrace.TraceInformation("Client Telemetry Enabled.");
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
+                    this.ConnectionPolicy.EnableClientTelemetry = false;
+                }
+            }
+            else
+            {
+                DefaultTrace.TraceInformation("Client Telemetry Disabled.");
+            }
         }
 
         private async Task InitializeCachesAsync(string databaseName, DocumentCollection collection, CancellationToken cancellationToken)
@@ -1270,6 +1325,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.initTaskCache.Dispose();
                 this.initTaskCache = null;
+            }
+
+            if (this.clientTelemetry != null)
+            {
+                this.clientTelemetry.Dispose();
             }
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
