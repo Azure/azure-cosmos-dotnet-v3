@@ -6362,7 +6362,10 @@ namespace Microsoft.Azure.Cosmos
                                                                                                clientSideRequestStatistics: null);
                 this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
 
-                (await this.QueryPartitionProvider).Update(databaseAccount.QueryEngineConfiguration);
+                if (this.queryPartitionProvider.IsValueCreated)
+                {
+                    (await this.QueryPartitionProvider).Update(databaseAccount.QueryEngineConfiguration);
+                }
 
                 return databaseAccount;
             }
