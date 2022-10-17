@@ -30,15 +30,6 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            if (requestOptions == null)
-            {
-                (OfferV2 nullOfferV2, _) = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
-                if (nullOfferV2 == null)
-                {
-                    return new ThroughputResponse(HttpStatusCode.NoContent, null, null, null, null);
-                }
-            }
-
             (OfferV2 offerV2, double requestCharge) = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
 
             return await this.GetThroughputResponseAsync(
@@ -50,6 +41,33 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
                      
+        }
+
+        internal async Task<ResponseMessage> ReadThroughputStreamAsync(
+            string targetRID,
+            RequestOptions requestOptions,
+            string uri,
+            CancellationToken cancellationToken = default)
+        {
+            (OfferV2 offerV2, double requestCharge) = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
+
+            string resourceUri = offerV2 != null ? new Uri(offerV2.SelfLink, UriKind.Relative).OriginalString : uri;
+
+            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: resourceUri,
+                resourceType: ResourceType.Offer,
+                operationType: OperationType.Read,
+                cosmosContainerCore: null,
+                feedRange: null,
+                streamPayload: null,
+                requestOptions: requestOptions,
+                requestEnricher: null,
+                trace: NoOpTrace.Singleton,
+                cancellationToken: cancellationToken);
+
+            responseMessage.Headers.RequestCharge += requestCharge;
+           
+            return responseMessage;
         }
 
         internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(

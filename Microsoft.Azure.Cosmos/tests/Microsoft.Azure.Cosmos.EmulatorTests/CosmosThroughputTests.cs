@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Net;
+    using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -166,15 +167,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database db1 = await this.cosmosClient.CreateDatabaseAsync(
                 Guid.NewGuid().ToString(),
                 throughput: null);
-            try
-            {
-                await db1.ReadThroughputAsync(requestOptions: null);
-            }
-            catch
-            {
-                await db1.DeleteAsync();
-                Assert.Fail();
-            }
+
+            ResponseMessage responseMessage1 = await db1.ReadThroughputStreamAsync(requestOptions: null);
+            
+            Assert.IsNotNull(responseMessage1);
+            Assert.AreEqual(HttpStatusCode.BadRequest, responseMessage1.StatusCode);
+
+            Database db2 = await this.cosmosClient.CreateDatabaseAsync(
+                Guid.NewGuid().ToString(),
+                throughput: 400);
+
+            ResponseMessage responseMessage2 = await db2.ReadThroughputStreamAsync(requestOptions: null);
+
+            Assert.IsNotNull(responseMessage2);
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage2.StatusCode);
+
         }
         private async Task RecreateContainerUsingDifferentClient(
             string databaseId,
