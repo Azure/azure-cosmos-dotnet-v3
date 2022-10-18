@@ -347,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            return this.database.ReadThroughoutStreamAsync(
+            return this.database.ReadThroughputStreamAsync(
                 requestOptions,
                 cancellationToken);
         }
