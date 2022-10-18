@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
 #if SDKPROJECTREF
-        public override Task<ResponseMessage> ReadThroughoutStreamAsync(
+        public override Task<ResponseMessage> ReadThroughputStreamAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
