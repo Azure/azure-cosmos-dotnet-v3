@@ -8,10 +8,13 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -137,11 +140,21 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (collection == null)
                 {
-                    DefaultTrace.TraceWarning("Could not resolve the collection: {0} for database: {1}. '{2}'",
+                    DefaultTrace.TraceError("Could not resolve the collection: {0} for database: {1}. '{2}'",
                         containerLinkUri,
                         databaseName,
                         System.Diagnostics.Trace.CorrelationManager.ActivityId);
-                    return;
+
+                    CosmosException cosmosException = CosmosExceptionFactory.Create(
+                        statusCode: HttpStatusCode.NotFound,
+                        message: $"Could not resolve the collection: {containerLinkUri} for database: {databaseName}.",
+                        stackTrace: default,
+                        headers: new Headers(),
+                        trace: NoOpTrace.Singleton,
+                        error: null,
+                        innerException: default);
+
+                    throw cosmosException;
                 }
 
                 IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.routingMapProvider?.TryGetOverlappingRangesAsync(
@@ -180,10 +193,32 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Failed to open Rntbd connection to backend uri for container: {0} with exception: {1}. '{2}'",
+                DefaultTrace.TraceError("Failed to open Rntbd connection to backend uri for container: {0} with exception: {1}. '{2}'",
                     containerLinkUri,
                     ex.Message,
                     System.Diagnostics.Trace.CorrelationManager.ActivityId);
+
+                switch (ex)
+                {
+                    case DocumentClientException dce:
+                        if (dce.StatusCode == HttpStatusCode.NotFound)
+                        {
+                            CosmosException cosmosException = CosmosExceptionFactory.Create(
+                                statusCode: HttpStatusCode.NotFound,
+                                message: "The requested resource was not found.",
+                                stackTrace: dce.StackTrace,
+                                headers: new Headers(),
+                                trace: NoOpTrace.Singleton,
+                                error: null,
+                                innerException: dce);
+
+                            throw cosmosException;
+                        }
+                        throw dce;
+
+                    default:
+                        throw ex;
+                }
             }
         }
 

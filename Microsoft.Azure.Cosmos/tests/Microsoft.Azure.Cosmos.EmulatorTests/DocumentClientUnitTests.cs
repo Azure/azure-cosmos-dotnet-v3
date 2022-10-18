@@ -82,6 +82,79 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Owner("dkunda")]
+        public async Task OpenConnectionsToAllReplicasAsync_WithEmptyDatabaseName_ShouldThrowExceptionDuringInitialization()
+        {
+            // Arrange.
+            ConnectionPolicy connectionPolicy = new ()
+            {
+                EnableEndpointDiscovery = false,
+                RetryOptions = new RetryOptions { MaxRetryAttemptsOnThrottledRequests = 100, MaxRetryWaitTimeInSeconds = 1 }
+            };
+
+            DocumentClient client = new (
+                new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
+                ConfigurationManager.AppSettings["MasterKey"],
+                (HttpMessageHandler)null,
+                connectionPolicy);
+
+            // Act.
+            ArgumentNullException ane = await Assert.ThrowsExceptionAsync<ArgumentNullException>(() => client.OpenConnectionsToAllReplicasAsync(
+                databaseName: string.Empty,
+                containerLinkUri: "https://replica.cosmos.com/test",
+                cancellationToken: default));
+
+            // Assert.
+            Assert.IsNotNull(ane);
+            Assert.AreEqual("Value cannot be null. (Parameter 'databaseName')", ane.Message);
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task OpenConnectionsToAllReplicasAsync_WhenStoreModelThrowsInternalException_ShouldThrowExceptionDuringInitialization()
+        {
+            // Arrange.
+            string exceptionMessage = "Internal Server Error";
+            Mock<IStoreModelExtension> mockStoreModel = new ();
+            mockStoreModel
+                .Setup(model => model.OpenConnectionsToAllReplicasAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .Throws(new Exception(exceptionMessage));
+
+            ConnectionPolicy connectionPolicy = new ()
+            {
+                EnableEndpointDiscovery = false,
+                RetryOptions = new RetryOptions { MaxRetryAttemptsOnThrottledRequests = 100, MaxRetryWaitTimeInSeconds = 1 }
+            };
+
+            DocumentClient client = new (
+                new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
+                ConfigurationManager.AppSettings["MasterKey"],
+                (HttpMessageHandler)null,
+                connectionPolicy);
+
+            client.GetDatabaseAccountAsync().Wait();
+            client.StoreModel = mockStoreModel.Object;
+            client.GatewayStoreModel = mockStoreModel.Object;
+
+            // Act.
+            Exception ex = await Assert.ThrowsExceptionAsync<Exception>(() => client.OpenConnectionsToAllReplicasAsync(
+                databaseName: "some-valid-database",
+                containerLinkUri: "https://replica.cosmos.com/test",
+                cancellationToken: default));
+
+            // Assert.
+            Assert.IsNotNull(ex);
+            Assert.AreEqual(exceptionMessage, ex.Message);
+            mockStoreModel.Verify(x => x.OpenConnectionsToAllReplicasAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
         public async Task QueryPartitionProviderSingletonTestAsync()
         {
             DocumentClient client = new DocumentClient(

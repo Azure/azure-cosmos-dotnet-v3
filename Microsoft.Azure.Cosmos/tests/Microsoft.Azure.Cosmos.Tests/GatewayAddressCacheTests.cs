@@ -523,13 +523,85 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Test to validate that when <see cref="GlobalAddressResolver.OpenConnectionsToAllReplicasAsync()"/> is invoked and
-        /// and an internal operation throws an exception, the exception is handled in such a way that the cosmos client initialization
-        /// does not fail.
+        /// Test to validate that when <see cref="GlobalAddressResolver.OpenConnectionsToAllReplicasAsync()"/> is called with a
+        /// open connection handler callback delegate that throws an exception, the delegate method is indeed invoked and the
+        /// exception is handled in such a way that the cosmos client initialization does not fail.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenInternalExceptionThrown_ShouldNotFailInitialization()
+        public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenHandlerDelegateThrowsException_ShouldNotFailInitialization()
+        {
+            // Arrange.
+            FakeTransportClient transportClient = new(shouldFailTransport: true);
+            UserAgentContainer container = new(clientId: 0);
+            FakeMessageHandler messageHandler = new();
+            AccountProperties databaseAccount = new();
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+            mockDocumentClient
+                .Setup(owner => owner.ServiceEndpoint)
+                .Returns(new Uri("https://blabla.com/"));
+
+            mockDocumentClient
+                .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            GlobalEndpointManager globalEndpointManager = new(
+                mockDocumentClient.Object,
+                new ConnectionPolicy());
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
+
+            ConnectionPolicy connectionPolicy = new()
+            {
+                RequestTimeout = TimeSpan.FromSeconds(120)
+            };
+
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
+            containerProperties.Id = "TestId";
+            containerProperties.PartitionKeyPath = "/pk";
+
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
+            mockCollectionCahce
+                .Setup(x => x.ResolveByNameAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    false,
+                    It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(containerProperties));
+
+            GlobalAddressResolver globalAddressResolver = new(
+                endpointManager: globalEndpointManager,
+                partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
+                protocol: Documents.Client.Protocol.Tcp,
+                tokenProvider: this.mockTokenProvider.Object,
+                collectionCache: mockCollectionCahce.Object,
+                routingMapProvider: this.partitionKeyRangeCache.Object,
+                serviceConfigReader: this.mockServiceConfigReader.Object,
+                connectionPolicy: connectionPolicy,
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+
+            // Act.
+            await globalAddressResolver.OpenConnectionsToAllReplicasAsync(
+                databaseName: "test-db",
+                containerLinkUri: "https://test.uri.cosmos.com",
+                openConnectionHandlerAsync: transportClient.OpenConnectionAsync,
+                CancellationToken.None);
+
+            // Assert.
+            Assert.AreEqual(3, transportClient.GetExceptionCount());
+            Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
+        }
+
+        /// <summary>
+        /// Test to validate that when <see cref="GlobalAddressResolver.OpenConnectionsToAllReplicasAsync()"/> is invoked and
+        /// and an internal operation throws an exception which is other than a transport exception, then the exception is indeed
+        /// bubbled up and thrown during the cosmos client initialization.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenInternalExceptionThrownApartFromTransportError_ShouldThrowException()
         {
             // Arrange.
             FakeTransportClient transportClient = new(shouldFailTransport: false);
@@ -571,6 +643,7 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(containerProperties));
 
+            string exceptionMessage = "Failed to lookup partition key ranges.";
             Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new (null, null, null);
             partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
@@ -579,7 +652,7 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<ITrace>(),
                     It.IsAny<bool>()))
                 .ThrowsAsync(
-                    new Exception("Transport Exception Occurred."));
+                    new Exception(exceptionMessage));
 
             GlobalAddressResolver globalAddressResolver = new(
                 endpointManager: globalEndpointManager,
@@ -593,25 +666,27 @@ namespace Microsoft.Azure.Cosmos
                 httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
             // Act.
-            await globalAddressResolver.OpenConnectionsToAllReplicasAsync(
+            Exception ex = await Assert.ThrowsExceptionAsync<Exception>(() => globalAddressResolver.OpenConnectionsToAllReplicasAsync(
                 databaseName: "test-db",
                 containerLinkUri: "https://test.uri.cosmos.com",
                 openConnectionHandlerAsync: transportClient.OpenConnectionAsync,
-                CancellationToken.None);
+                CancellationToken.None));
 
             // Assert.
+            Assert.IsNotNull(ex);
+            Assert.AreEqual(exceptionMessage, ex.Message);
             Assert.AreEqual(0, transportClient.GetExceptionCount());
             Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
         }
 
         /// <summary>
         /// Test to validate that when <see cref="GlobalAddressResolver.OpenConnectionsToAllReplicasAsync()"/> is invoked and
-        /// and no valid collection could be resolved for the given database name and container link uri, thus a null value is
-        /// returned, the cosmos client initialization does not fail.
+        /// no valid collection could be resolved for the given database name and container link uri, thus a null value is
+        /// returned, then a <see cref="CosmosException"/> is thrown during the cosmos client initialization.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenNullCollectionReturned_ShouldNotFailInitialization()
+        public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenNullCollectionReturned_ShouldThrowException()
         {
             // Arrange.
             FakeTransportClient transportClient = new (shouldFailTransport: false);
@@ -661,13 +736,15 @@ namespace Microsoft.Azure.Cosmos
                 httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
             // Act.
-            await globalAddressResolver.OpenConnectionsToAllReplicasAsync(
+            CosmosException ce = await Assert.ThrowsExceptionAsync<CosmosException>(() => globalAddressResolver.OpenConnectionsToAllReplicasAsync(
                 databaseName: "test-db",
                 containerLinkUri: "https://test.uri.cosmos.com",
                 openConnectionHandlerAsync: transportClient.OpenConnectionAsync,
-                CancellationToken.None);
+                CancellationToken.None));
 
             // Assert.
+            Assert.IsNotNull(ce);
+            Assert.IsTrue(ce.Message.Contains("Could not resolve the collection"));
             Assert.AreEqual(0, transportClient.GetExceptionCount());
             Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
         }

@@ -1477,15 +1477,15 @@ namespace Microsoft.Azure.Cosmos
             if (string.IsNullOrEmpty(databaseName) ||
                 string.IsNullOrEmpty(containerLinkUri))
             {
-                string resource = string.IsNullOrEmpty(databaseName) ?
-                    "databaseName" :
-                    "containerLinkUri";
+                string resourceName = string.IsNullOrEmpty(databaseName) ?
+                    nameof(databaseName) :
+                    nameof(containerLinkUri);
 
-                DefaultTrace.TraceWarning("Failed to open connections to backend replicas. {0} cannot be left empty. '{1}'",
-                    resource,
+                DefaultTrace.TraceError("Failed to open connections to backend replicas. {0} cannot be left empty. '{1}'",
+                    resourceName,
                     System.Diagnostics.Trace.CorrelationManager.ActivityId);
 
-                return;
+                throw new ArgumentNullException(resourceName);
             }
 
             if (this.StoreModel != null)
@@ -1499,10 +1499,11 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceWarning("Failed to open connections to backend replicas for container: {0} with exception: {1}. '{2}'",
+                    DefaultTrace.TraceError("Failed to open connections to backend replicas for container: {0} with exception: {1}. '{2}'",
                         containerLinkUri,
                         ex.Message,
                         System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                    throw ex;
                 }
             }
         }
