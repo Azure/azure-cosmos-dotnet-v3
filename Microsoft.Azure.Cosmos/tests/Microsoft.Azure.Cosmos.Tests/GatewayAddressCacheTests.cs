@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
             this.serviceName = new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint);
             this.serviceIdentity = new ServiceIdentity("federation1", this.serviceName, false);
 
-            List<PartitionKeyRange> result = new List<PartitionKeyRange>
+            List<PartitionKeyRange> partitionKeyRanges = new ()
             {
                 new PartitionKeyRange()
                 {
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<Documents.Routing.Range<string>>(),
                     It.IsAny<ITrace>(),
                     It.IsAny<bool>()))
-                .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)result));
+                .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)partitionKeyRanges));
         }
 
         [TestMethod]

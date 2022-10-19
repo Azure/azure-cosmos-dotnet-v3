@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -135,11 +134,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                             collectionRid: collection.ResourceId,
                             partitionKeyRangeIds: partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId),
                             forceRefresh: false)
-                        .ContinueWith(x =>
+                        .ContinueWith(task =>
                         {
-                            if (x.Exception != null || x.IsFaulted)
+                            if (task.Exception != null || task.IsFaulted)
                             {
-                                x.Exception.Handle(ex =>
+                                task.Exception.Handle(ex =>
                                 {
                                     DefaultTrace.TraceWarning("Failed to fetch the server addresses for: {0} with exception: {1}. '{2}'",
                                         collection.ResourceId,
@@ -148,9 +147,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                                     return true;
                                 });
                             }
-                            else if (x.IsCompleted)
+                            else if (task.IsCompleted)
                             {
-                                responses.Add(x.Result);
+                                responses.Add(task.Result);
                             }
                         }));
                 }

@@ -81,6 +81,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(throttled);
         }
 
+        /// <summary>
+        /// Test to validate that when <see cref="DocumentClient.OpenConnectionsToAllReplicasAsync()"/> invoked with
+        /// an empty database/ container name, a <see cref="ArgumentNullException"/> is thrown during cosmos client
+        /// initialization.
+        /// </summary>
         [TestMethod]
         [Owner("dkunda")]
         public async Task OpenConnectionsToAllReplicasAsync_WithEmptyDatabaseName_ShouldThrowExceptionDuringInitialization()
@@ -109,6 +114,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual("Value cannot be null. (Parameter 'databaseName')", ane.Message);
         }
 
+        /// <summary>
+        /// Test to validate that when <see cref="DocumentClient.OpenConnectionsToAllReplicasAsync()"/> invoked and
+        /// the store model throws some internal exception, the exception is indeed bubbled up and thrown during
+        /// cosmos client initialization.
+        /// </summary>
         [TestMethod]
         [Owner("dkunda")]
         public async Task OpenConnectionsToAllReplicasAsync_WhenStoreModelThrowsInternalException_ShouldThrowExceptionDuringInitialization()
