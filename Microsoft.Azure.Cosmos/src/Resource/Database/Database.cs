@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the record of retrieving the provisioned throughput for this database .</returns>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-database">Set throughput on a database</seealso>
         public abstract Task<ResponseMessage> ReadThroughputStreamAsync(
