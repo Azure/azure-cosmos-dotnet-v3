@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Net;
-    using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -164,25 +163,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ReadThroughutNullRequestOptions()
         {
+            //Test for non-existant throughput
+            ResponseMessage responseMessage1 = await this.cosmosClient.GetDatabase("thisDoesNotExist").ReadThroughputStreamAsync(requestOptions: null);
+
+            Assert.IsNotNull(responseMessage1);
+            Assert.AreEqual(HttpStatusCode.NotFound, responseMessage1.StatusCode);
+
+            //Test for Database with null provisioned throughput 
             Database db1 = await this.cosmosClient.CreateDatabaseAsync(
                 Guid.NewGuid().ToString(),
                 throughput: null);
 
-            ResponseMessage responseMessage1 = await db1.ReadThroughputStreamAsync(requestOptions: null);
-            
-            Assert.IsNotNull(responseMessage1);
-            Assert.AreEqual(HttpStatusCode.BadRequest, responseMessage1.StatusCode);
+            ResponseMessage responseMessage2 = await db1.ReadThroughputStreamAsync(requestOptions: null);
 
+            Assert.IsNotNull(responseMessage2);
+            Assert.AreEqual(HttpStatusCode.NotFound, responseMessage2.StatusCode);
+
+            //Test for Database with provisioned throughput
             Database db2 = await this.cosmosClient.CreateDatabaseAsync(
                 Guid.NewGuid().ToString(),
                 throughput: 400);
 
-            ResponseMessage responseMessage2 = await db2.ReadThroughputStreamAsync(requestOptions: null);
+            ResponseMessage responseMessage3 = await db2.ReadThroughputStreamAsync(requestOptions: null);
 
-            Assert.IsNotNull(responseMessage2);
-            Assert.AreEqual(HttpStatusCode.OK, responseMessage2.StatusCode);
-
+            Assert.IsNotNull(responseMessage3);
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage3.StatusCode);
         }
+
         private async Task RecreateContainerUsingDifferentClient(
             string databaseId,
             string containerId,

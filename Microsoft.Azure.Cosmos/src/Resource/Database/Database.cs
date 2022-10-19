@@ -109,7 +109,6 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// Null value indicates a database with no throughput provisioned.
-        /// If requestOptions is set to null on a database with no througput provisioned a 404.0 exception will be thrown
         /// </remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-database">Set throughput on a database</seealso>

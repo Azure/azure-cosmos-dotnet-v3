@@ -98,13 +98,23 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            string rid = await this.GetRIDAsync(cancellationToken);
-            CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-            return await cosmosOffers.ReadThroughputStreamAsync(
-                targetRID: rid,
-                requestOptions: requestOptions,
-                cancellationToken: cancellationToken,
-                uri: this.LinkUri);
+            ResponseMessage responseMessage = await this.ReadStreamAsync(cancellationToken: cancellationToken);
+
+            if (responseMessage.IsSuccessStatusCode)
+            {
+                string rid = await this.GetRIDAsync(cancellationToken);
+                CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
+                return await cosmosOffers.ReadThroughputStreamAsync(
+                    targetRID: rid,
+                    requestOptions: requestOptions,
+                    cancellationToken: cancellationToken);
+            }
+            else
+            {
+                return new ResponseMessage(
+                     HttpStatusCode.NotFound,
+                     errorMessage: "Resourse does not exist.");
+            }
         }
 
         internal override async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
