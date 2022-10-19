@@ -1503,7 +1503,8 @@ namespace Microsoft.Azure.Cosmos
                         containerLinkUri,
                         ex.Message,
                         System.Diagnostics.Trace.CorrelationManager.ActivityId);
-                    throw ex;
+
+                    throw;
                 }
             }
         }

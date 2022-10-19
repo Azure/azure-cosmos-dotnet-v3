@@ -23,9 +23,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.Azure.Documents.Routing;
 
-    /// <summary>
-    /// Add applicable documentation.
-    /// </summary>
     internal class GatewayAddressCache : IAddressCache, IDisposable
     {
         private const string protocolFilterFormat = "{0} eq {1}";
@@ -199,22 +196,20 @@ namespace Microsoft.Azure.Cosmos.Routing
              Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo,
              Func<Uri, Task> openConnectionHandlerAsync)
         {
-            List<string> physicalUris = (from AddressInformation address in addressInfo.Item2.AllAddresses
-                                         select address.PhysicalUri).ToList();
-            foreach (string physicalUri in physicalUris)
+            foreach (AddressInformation address in addressInfo.Item2.AllAddresses)
             {
-                DefaultTrace.TraceInformation("Attempting to open Rntbd connection to backend uri: {0}. '{1}'",
-                    physicalUri,
+                DefaultTrace.TraceVerbose("Attempting to open Rntbd connection to backend uri: {0}. '{1}'",
+                    address.PhysicalUri,
                     System.Diagnostics.Trace.CorrelationManager.ActivityId);
                 try
                 {
                     await openConnectionHandlerAsync(
-                        new Uri(physicalUri));
+                        new Uri(address.PhysicalUri));
                 }
                 catch (Exception ex)
                 {
                     DefaultTrace.TraceWarning("Failed to open Rntbd connection to backend uri: {0} with exception: {1}. '{2}'",
-                        physicalUri,
+                        address.PhysicalUri,
                         ex.Message,
                         System.Diagnostics.Trace.CorrelationManager.ActivityId);
                 }

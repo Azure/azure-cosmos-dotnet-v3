@@ -1373,10 +1373,10 @@ namespace Microsoft.Azure.Cosmos
                         databaseId,
                         containerId);
 
-                    tasks.Add(this.InitializeContainerUsingRntbdAsync(
-                        databaseId,
-                        container.LinkUri,
-                        cancellationToken));
+                    tasks.Add(this.ClientContext.InitializeContainerUsingRntbdAsync(
+                        databaseId: databaseId,
+                        containerLinkUri: container.LinkUri,
+                        cancellationToken: cancellationToken));
                 }
 
                 await Task.WhenAll(tasks);
@@ -1409,24 +1409,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return 0;
-        }
-
-        /// <summary>
-        /// Initializes the given container by establishing the
-        /// Rntbd connection to all of the backend backend replica nodes.
-        /// </summary>
-        /// <param name="databaseId">A string containing the cosmos database identifier.</param>
-        /// <param name="containerLinkUri">A string containing the cosmos container link uri.</param>
-        /// <param name="cancellationToken">An instance of the <see cref="CancellationToken"/>.</param>
-        private async Task InitializeContainerUsingRntbdAsync(
-            string databaseId,
-            string containerLinkUri,
-            CancellationToken cancellationToken = default)
-        {
-            await this.ClientContext.InitializeContainerUsingRntbdAsync(
-                databaseId,
-                containerLinkUri,
-                cancellationToken);
         }
 
         /// <summary>
