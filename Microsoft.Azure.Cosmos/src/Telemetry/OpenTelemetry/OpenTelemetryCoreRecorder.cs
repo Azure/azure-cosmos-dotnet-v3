@@ -103,11 +103,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Record attributes during exception
         /// </summary>
-        /// <param name="exception"></param>
-        public void MarkFailed(Exception exception)
+        /// <param name="openTelemetryException"></param>
+        public void MarkFailed(OpenTelemetryException openTelemetryException)
         {
             if (this.IsEnabled)
             {
+                Exception exception = openTelemetryException.OriginalException;
+                
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
 
