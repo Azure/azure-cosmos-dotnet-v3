@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Collections.Specialized;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -747,6 +749,83 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(ce.Message.Contains("Could not resolve the collection"));
             Assert.AreEqual(0, transportClient.GetExceptionCount());
             Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
+        }
+
+        /// <summary>
+        /// Test to validate that when <see cref="GatewayAddressCache.OpenConnectionsAsync()"/> is called with a
+        /// valid open connection handler callback delegate and some of the address resolving fails with exception,
+        /// then the GatewayAddressCache should ignore the failed addresses and the delegate method is indeed invoked
+        /// for all resolved addresses.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task OpenConnectionsAsync_WhenSomeAddressResolvingFailsWithException_ShouldIgnoreExceptionsAndInvokeDelegateMethodForOtherAddresses()
+        {
+            // Arrange.
+            FakeMessageHandler messageHandler = new ();
+            FakeTransportClient transportClient = new (shouldFailTransport: false);
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
+            containerProperties.Id = "TestId";
+            containerProperties.PartitionKeyPath = "/pk";
+            List<PartitionKeyRangeIdentity> partitionKeyRangeIdentities = Enumerable.Repeat(this.testPartitionKeyRangeIdentity, 70).ToList();
+
+            List<Address> addresses = new ()
+            {
+                new Address() { IsPrimary = true, PhysicalUri = "https://blabla.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
+                new Address() { IsPrimary = false, PhysicalUri = "https://blabla3.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
+                new Address() { IsPrimary = false, PhysicalUri = "https://blabla2.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
+                new Address() { IsPrimary = false, PhysicalUri = "https://blabla4.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
+                new Address() { IsPrimary = false, PhysicalUri = "https://blabla5.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" }
+            };
+
+            FeedResource<Address> addressFeedResource = new ()
+            {
+                Id = "YxM9ANCZIwABAAAAAAAAAA==",
+                SelfLink = "dbs/YxM9AA==/colls/YxM9ANCZIwA=/docs/YxM9ANCZIwABAAAAAAAAAA==/",
+                Timestamp = DateTime.Now,
+                InnerCollection = new Collection<Address>(addresses),
+            };
+
+            StringBuilder feedResourceString = new ();
+            addressFeedResource.SaveTo(feedResourceString);
+
+            StringContent content = new (feedResourceString.ToString());
+            HttpResponseMessage responseMessage = new ()
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = content,
+            };
+
+            Mock<CosmosHttpClient> mockHttpClient = new ();
+            mockHttpClient.SetupSequence(x => x.GetAsync(
+                    It.IsAny<Uri>(),
+                    It.IsAny<Documents.Collections.INameValueCollection>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<HttpTimeoutPolicy>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("Some random error occurred."))
+                .ReturnsAsync(responseMessage);
+
+            GatewayAddressCache cache = new(
+                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
+                Documents.Client.Protocol.Tcp,
+                this.mockTokenProvider.Object,
+                this.mockServiceConfigReader.Object,
+                mockHttpClient.Object,
+                suboptimalPartitionForceRefreshIntervalInSeconds: 2);
+
+            // Act.
+            await cache.OpenConnectionsAsync(
+                databaseName: "test-database",
+                collection: containerProperties,
+                partitionKeyRangeIdentities: partitionKeyRangeIdentities,
+                openConnectionHandler: transportClient.OpenConnectionAsync,
+                cancellationToken: CancellationToken.None);
+
+            // Assert.
+            Assert.AreEqual(0, transportClient.GetExceptionCount());
+            Assert.AreEqual(addresses.Count, transportClient.GetSuccessfulInvocationCount());
         }
 
         private class FakeMessageHandler : HttpMessageHandler

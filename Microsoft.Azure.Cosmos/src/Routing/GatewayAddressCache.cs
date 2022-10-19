@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -93,7 +94,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             Func<Uri, Task> openConnectionHandler,
             CancellationToken cancellationToken)
         {
-            List<Task<DocumentServiceResponse>> tasks = new List<Task<DocumentServiceResponse>>();
+            List<Task> tasks = new ();
+            List<DocumentServiceResponse> responses = new ();
             int batchSize = GatewayAddressCache.DefaultBatchSize;
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
@@ -127,15 +129,36 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 for (int i = 0; i < partitionKeyRangeIdentities.Count; i += batchSize)
                 {
-                    tasks.Add(this.GetServerAddressesViaGatewayAsync(
-                        request,
-                        collection.ResourceId,
-                        partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId),
-                        false));
+                    tasks
+                        .Add(this.GetServerAddressesViaGatewayAsync(
+                            request: request,
+                            collectionRid: collection.ResourceId,
+                            partitionKeyRangeIds: partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId),
+                            forceRefresh: false)
+                        .ContinueWith(x =>
+                        {
+                            if (x.Exception != null || x.IsFaulted)
+                            {
+                                x.Exception.Handle(ex =>
+                                {
+                                    DefaultTrace.TraceWarning("Failed to fetch the server addresses for: {0} with exception: {1}. '{2}'",
+                                        collection.ResourceId,
+                                        ex.Message,
+                                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                                    return true;
+                                });
+                            }
+                            else if (x.IsCompleted)
+                            {
+                                responses.Add(x.Result);
+                            }
+                        }));
                 }
             }
 
-            foreach (DocumentServiceResponse response in await Task.WhenAll(tasks))
+            await Task.WhenAll(tasks);
+
+            foreach (DocumentServiceResponse response in responses)
             {
                 using (response)
                 {

@@ -311,7 +311,8 @@
             // Assert.
             Assert.IsNotNull(ce);
             Assert.AreEqual(HttpStatusCode.NotFound, ce.StatusCode);
-            Assert.IsTrue(ce.Message.Contains("The requested resource was not found"));
+            Console.WriteLine(ce.Message);
+            Assert.IsTrue(ce.Message.Contains("NotFound (404)"));
         }
     }
 }

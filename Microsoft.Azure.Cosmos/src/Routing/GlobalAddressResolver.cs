@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         databaseName,
                         System.Diagnostics.Trace.CorrelationManager.ActivityId);
 
-                    CosmosException cosmosException = CosmosExceptionFactory.Create(
+                    throw CosmosExceptionFactory.Create(
                         statusCode: HttpStatusCode.NotFound,
                         message: $"Could not resolve the collection: {containerLinkUri} for database: {databaseName}.",
                         stackTrace: default,
@@ -153,8 +153,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                         trace: NoOpTrace.Singleton,
                         error: null,
                         innerException: default);
-
-                    throw cosmosException;
                 }
 
                 IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.routingMapProvider?.TryGetOverlappingRangesAsync(
@@ -198,27 +196,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     ex.Message,
                     System.Diagnostics.Trace.CorrelationManager.ActivityId);
 
-                switch (ex)
+                throw ex switch
                 {
-                    case DocumentClientException dce:
-                        if (dce.StatusCode == HttpStatusCode.NotFound)
-                        {
-                            CosmosException cosmosException = CosmosExceptionFactory.Create(
-                                statusCode: HttpStatusCode.NotFound,
-                                message: "The requested resource was not found.",
-                                stackTrace: dce.StackTrace,
-                                headers: new Headers(),
-                                trace: NoOpTrace.Singleton,
-                                error: null,
-                                innerException: dce);
+                    DocumentClientException dce => CosmosExceptionFactory.Create(
+                        dce,
+                        NoOpTrace.Singleton),
 
-                            throw cosmosException;
-                        }
-                        throw dce;
-
-                    default:
-                        throw ex;
-                }
+                    _ => ex,
+                };
             }
         }
 
