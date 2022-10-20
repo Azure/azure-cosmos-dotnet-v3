@@ -348,6 +348,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<object>>>(),
                 It.IsAny<Func<object, OpenTelemetryAttributes>>(),
+                It.IsAny<Func<Exception, OpenTelemetryException>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<object>>, Func<object, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(

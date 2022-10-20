@@ -7,7 +7,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using Diagnostics;
+    using global::Azure;
     using global::Azure.Core.Pipeline;
+    using Microsoft.Azure.Documents;
 
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
@@ -108,8 +110,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.IsEnabled)
             {
-                Exception exception = openTelemetryException.OriginalException;
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, openTelemetryException.RequestContentLength);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, openTelemetryException.ResponseContentLength);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, openTelemetryException.ItemCount);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, openTelemetryException.OperationType);
+
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, openTelemetryException.DatabaseName);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, openTelemetryException.ContainerName);
                 
+                Exception exception = openTelemetryException.OriginalException;
+
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType());
 

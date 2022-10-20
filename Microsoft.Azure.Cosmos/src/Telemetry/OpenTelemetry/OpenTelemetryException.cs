@@ -5,11 +5,15 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
-    
+
     internal class OpenTelemetryException : OpenTelemetryAttributes
     {
-        internal Exception OriginalException { get; set; }
+        internal OpenTelemetryException(string containerName, string databaseName, Exception exception)
+            : base(null/*need to check*/, containerName, databaseName)
+        {
+            this.OriginalException = exception;
+        }
+        
+        internal Exception OriginalException { get; }
     }
 }

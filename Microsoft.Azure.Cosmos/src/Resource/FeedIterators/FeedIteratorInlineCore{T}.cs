@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.OperationHelperAsync("Typed FeedIterator ReadNextAsync",
                         requestOptions: null,
                         task: trace => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken),
-                        openTelemetry: (response) =>
+                        onSuccess: (response) =>
                         {
                             if (this.container == null)
                             {
