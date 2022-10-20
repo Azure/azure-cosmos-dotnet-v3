@@ -133,16 +133,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
-            await Task.WhenAll(tasks);
-
-            foreach (Task<TryCatch<DocumentServiceResponse>> task in tasks)
+            foreach (TryCatch<DocumentServiceResponse> task in await Task.WhenAll(tasks))
             {
-                if (task.Result.Failed)
+                if (task.Failed)
                 {
                     continue;
                 }
 
-                using (DocumentServiceResponse response = task.Result.Result)
+                using (DocumentServiceResponse response = task.Result)
                 {
                     FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
 
@@ -749,6 +747,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             };
         }
 
+        /// <summary>
+        /// Utilizes the <see cref="TryCatch{TResult}"/> to get the server addresses. If an
+        /// exception is thrown during the invocation, it handles it gracefully and returns
+        /// a <see cref="TryCatch{TResult}"/> Task containing the exception.
+        /// </summary>
+        /// <param name="request">An instance of <see cref="DocumentServiceRequest"/> containing the request payload.</param>
+        /// <param name="collectionRid">A string containing the collection ids.</param>
+        /// <param name="partitionKeyRangeIds">An instance of <see cref="IEnumerable{T}"/> containing the list of partition key range ids.</param>
+        /// <returns>A task of <see cref="TryCatch{TResult}"/> containing the result.</returns>
         private async Task<TryCatch<DocumentServiceResponse>> GetAddressesAsync(
             DocumentServiceRequest request,
             string collectionRid,
