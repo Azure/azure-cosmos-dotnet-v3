@@ -140,11 +140,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (collection == null)
                 {
-                    DefaultTrace.TraceError("Could not resolve the collection: {0} for database: {1}. '{2}'",
-                        containerLinkUri,
-                        databaseName,
-                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
-
                     throw CosmosExceptionFactory.Create(
                         statusCode: HttpStatusCode.NotFound,
                         message: $"Could not resolve the collection: {containerLinkUri} for database: {databaseName}.",
@@ -191,11 +186,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Failed to open Rntbd connection to backend uri for container: {0} with exception: {1}. '{2}'",
-                    containerLinkUri,
-                    ex.Message,
-                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
-
                 throw ex switch
                 {
                     DocumentClientException dce => CosmosExceptionFactory.Create(

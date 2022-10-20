@@ -1481,10 +1481,6 @@ namespace Microsoft.Azure.Cosmos
                     nameof(databaseName) :
                     nameof(containerLinkUri);
 
-                DefaultTrace.TraceError("Failed to open connections to backend replicas. {0} cannot be left empty. '{1}'",
-                    resourceName,
-                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
-
                 throw new ArgumentNullException(resourceName);
             }
 
@@ -1497,13 +1493,8 @@ namespace Microsoft.Azure.Cosmos
                         containerLinkUri,
                         cancellationToken);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    DefaultTrace.TraceError("Failed to open connections to backend replicas for container: {0} with exception: {1}. '{2}'",
-                        containerLinkUri,
-                        ex.Message,
-                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
-
                     throw;
                 }
             }

@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -90,8 +91,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             Func<Uri, Task> openConnectionHandler,
             CancellationToken cancellationToken)
         {
-            List<Task> tasks = new ();
-            List<DocumentServiceResponse> responses = new ();
+            List<Task<TryCatch<DocumentServiceResponse>>> tasks = new ();
             int batchSize = GatewayAddressCache.DefaultBatchSize;
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
@@ -126,37 +126,23 @@ namespace Microsoft.Azure.Cosmos.Routing
                 for (int i = 0; i < partitionKeyRangeIdentities.Count; i += batchSize)
                 {
                     tasks
-                        .Add(this.GetServerAddressesViaGatewayAsync(
+                        .Add(this.GetAddressesAsync(
                             request: request,
                             collectionRid: collection.ResourceId,
-                            partitionKeyRangeIds: partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId),
-                            forceRefresh: false)
-                        .ContinueWith(task =>
-                        {
-                            if (task.Exception != null || task.IsFaulted)
-                            {
-                                task.Exception.Handle(ex =>
-                                {
-                                    DefaultTrace.TraceWarning("Failed to fetch the server addresses for: {0} with exception: {1}. '{2}'",
-                                        collection.ResourceId,
-                                        ex.Message,
-                                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
-                                    return true;
-                                });
-                            }
-                            else if (task.IsCompleted)
-                            {
-                                responses.Add(task.Result);
-                            }
-                        }));
+                            partitionKeyRangeIds: partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId)));
                 }
             }
 
             await Task.WhenAll(tasks);
 
-            foreach (DocumentServiceResponse response in responses)
+            foreach (Task<TryCatch<DocumentServiceResponse>> task in tasks)
             {
-                using (response)
+                if (task.Result.Failed)
+                {
+                    continue;
+                }
+
+                using (DocumentServiceResponse response = task.Result.Result)
                 {
                     FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
 
@@ -761,6 +747,32 @@ namespace Microsoft.Azure.Cosmos.Routing
                 (int)Protocol.Tcp => RuntimeConstants.Protocols.RNTBD,
                 _ => throw new ArgumentOutOfRangeException("protocol"),
             };
+        }
+
+        private async Task<TryCatch<DocumentServiceResponse>> GetAddressesAsync(
+            DocumentServiceRequest request,
+            string collectionRid,
+            IEnumerable<string> partitionKeyRangeIds)
+        {
+            try
+            {
+                return TryCatch<DocumentServiceResponse>
+                    .FromResult(
+                        await this.GetServerAddressesViaGatewayAsync(
+                            request: request,
+                            collectionRid: collectionRid,
+                            partitionKeyRangeIds: partitionKeyRangeIds,
+                            forceRefresh: false));
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("Failed to fetch the server addresses for: {0} with exception: {1}. '{2}'",
+                    collectionRid,
+                    ex,
+                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+
+                return TryCatch<DocumentServiceResponse>.FromException(ex);
+            }
         }
 
         protected virtual void Dispose(bool disposing)
