@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     DefaultTrace.TraceWarning("Failed to open Rntbd connection to backend uri: {0} with exception: {1}. '{2}'",
                         address.PhysicalUri,
-                        ex.Message,
+                        ex,
                         System.Diagnostics.Trace.CorrelationManager.ActivityId);
                 }
             }
