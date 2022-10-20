@@ -111,9 +111,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                return new ResponseMessage(
-                     HttpStatusCode.NotFound,
-                     errorMessage: "Resourse does not exist.");
+                return responseMessage;
             }
         }
 

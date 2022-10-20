@@ -275,6 +275,7 @@ namespace Microsoft.Azure.Cosmos
                 (trace) => base.ReadThroughputStreamAsync(requestOptions, trace, cancellation),
                 (response) => new OpenTelemetryResponse(response));
         }
+
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
             int throughput,
             RequestOptions requestOptions = null,

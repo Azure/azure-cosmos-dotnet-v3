@@ -43,29 +43,19 @@ namespace Microsoft.Azure.Cosmos
         {
             (OfferV2 offerV2, double requestCharge) = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
 
-            ResponseMessage responseMessage;
-            if (offerV2 != null)
-            {
-                string resourceUri = new Uri(offerV2.SelfLink, UriKind.Relative).OriginalString;
+            string resourceUri = offerV2 != null ? new Uri(offerV2.SelfLink, UriKind.Relative).OriginalString : String.Empty;
 
-                responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
-                    resourceUri: resourceUri,
-                    resourceType: ResourceType.Offer,
-                    operationType: OperationType.Read,
-                    cosmosContainerCore: null,
-                    feedRange: null,
-                    streamPayload: null,
-                    requestOptions: requestOptions,
-                    requestEnricher: null,
-                    trace: NoOpTrace.Singleton,
-                    cancellationToken: cancellationToken);       
-            }
-            else
-            {
-                responseMessage = new ResponseMessage(
-                    HttpStatusCode.NotFound,
-                    errorMessage: $"Throughput is not configured for {targetRID}");
-            }
+            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
+                   resourceUri: resourceUri,
+                   resourceType: ResourceType.Offer,
+                   operationType: OperationType.Read,
+                   cosmosContainerCore: null,
+                   feedRange: null,
+                   streamPayload: null,
+                   requestOptions: requestOptions,
+                   requestEnricher: null,
+                   trace: NoOpTrace.Singleton,
+                   cancellationToken: cancellationToken);
 
             responseMessage.Headers.RequestCharge += requestCharge;
 
