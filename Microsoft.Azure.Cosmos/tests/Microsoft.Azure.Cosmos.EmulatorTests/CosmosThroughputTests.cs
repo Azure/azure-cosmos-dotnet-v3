@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ThroughputResponse offer = await container.ReadThroughputAsync(requestOptions: null);
             Assert.AreEqual(offer.RequestCharge, this.requestChargeHandler.TotalRequestCharges);
             Assert.AreEqual(400, offer.Resource.Throughput);
-            
+
             this.requestChargeHandler.TotalRequestCharges = 0;
             ThroughputResponse replaceOffer = await container.ReplaceThroughputAsync(2000);
             Assert.AreEqual(replaceOffer.RequestCharge, this.requestChargeHandler.TotalRequestCharges);
