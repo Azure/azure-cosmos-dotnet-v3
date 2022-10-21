@@ -44,9 +44,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 sqlAliasedCollectionExpression.Alias.Accept(this) as SqlIdentifier);
         }
 
-        public override SqlObject Visit(SqlAllScalarExpression sqlExistsScalarExpression)
+        public override SqlObject Visit(SqlAllScalarExpression sqlAllScalarExpression)
         {
-            return SqlExistsScalarExpression.Create(sqlExistsScalarExpression.Subquery.Accept(this) as SqlQuery);
+            return SqlExistsScalarExpression.Create(sqlAllScalarExpression.Subquery.Accept(this) as SqlQuery);
         }
 
         public override SqlObject Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)

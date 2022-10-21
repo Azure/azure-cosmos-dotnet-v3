@@ -39,11 +39,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             }
         }
 
-        public override void Visit(SqlAllScalarExpression sqlExistsScalarExpression)
+        public override void Visit(SqlAllScalarExpression sqlAllScalarExpression)
         {
             this.writer.Write("ALL");
             this.WriteStartContext("(");
-            sqlExistsScalarExpression.Subquery.Accept(this);
+            sqlAllScalarExpression.Subquery.Accept(this);
             this.WriteEndContext(")");
         }
 
