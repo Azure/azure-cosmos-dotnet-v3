@@ -788,7 +788,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                     public static readonly AggregateScalarExpressionDetector Singleton = new AggregateScalarExpressionDetector();
 
-                    public override bool Visit(SqlAllScalarExpression sqlExistsScalarExpression)
+                    public override bool Visit(SqlAllScalarExpression sqlAllScalarExpression)
                     {
                         // No need to worry about aggregates within the subquery (they will recursively get rewritten).
                         return false;
