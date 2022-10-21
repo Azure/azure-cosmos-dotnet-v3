@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.Offer,
                 currentRequestCharge: requestCharge,
                 requestOptions: requestOptions,
-                cancellationToken: cancellationToken);        
+                cancellationToken: cancellationToken);
         }
 
         internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
