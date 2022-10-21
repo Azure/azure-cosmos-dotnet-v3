@@ -65,7 +65,7 @@
   <Result>
     <Input>
       <Description><![CDATA[ALL in a function call]]></Description>
-      <Query><![CDATA[SELECT ALL( 1, 2)]]></Query>
+      <Query><![CDATA[SELECT ALL(1, 2)]]></Query>
     </Input>
     <Output>
       <ParsedQuery><![CDATA[SELECT ALL(1, 2)]]></ParsedQuery>
@@ -74,10 +74,19 @@
   <Result>
     <Input>
       <Description><![CDATA[ALL in a UDF function call]]></Description>
-      <Query><![CDATA[SELECT udf.ALL( 1, 2)]]></Query>
+      <Query><![CDATA[SELECT udf.ALL(1, 2)]]></Query>
     </Input>
     <Output>
       <ParsedQuery><![CDATA[SELECT udf.ALL(1, 2)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ALL in every possible grammar rule at the same time]]></Description>
+      <Query><![CDATA[SELECT ALL(1, 2) as ALL FROM ALL IN (SELECT ALL.ALL) WHERE ALL(     SELECT ALL     FROM (SELECT udf.ALL(1, 2)) as ALL     WHERE ALL( SELECT VALUE 1) )]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT ALL(1, 2) AS ALL FROM ALL IN (SELECT ALL.ALL) WHERE ALL(SELECT ALL FROM (SELECT udf.ALL(1, 2)) AS ALL WHERE ALL(SELECT VALUE 1))]]></ParsedQuery>
     </Output>
   </Result>
 </Results>

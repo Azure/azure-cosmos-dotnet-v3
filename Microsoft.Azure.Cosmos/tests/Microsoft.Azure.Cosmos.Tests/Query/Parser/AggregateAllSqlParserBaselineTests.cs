@@ -15,29 +15,54 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
         {
             List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()
             {
-                CreateInput(description: "ALL in an SqlSelectItem as an alias", scalarExpression: "SELECT 1 as ALL"),
-                CreateInput(description: "ALL in an AliasedCollectionExpression as an alias", scalarExpression:
-               "SELECT * " +
-               "FROM (SELECT VALUE 1) as ALL"),
-                CreateInput(description: "ALL in an ArrayIteratorCollectionExpression", scalarExpression:
-               "SELECT * " +
-               "FROM ALL IN (SELECT VALUE 1)"),
-                CreateInput(description: "ALL in an InputPathCollection and IdentifierPathExpression", scalarExpression:
-               "SELECT * " +
-               "FROM ALL.ALL"),
-                CreateInput(description: "ALL in a PropertyRefScalarExpression", scalarExpression: "SELECT ALL"),
-                CreateInput(description: "ALL in a PropertyRefScalarExpression as child", scalarExpression: "SELECT c.ALL"),
-                CreateInput(description: "ALL in a PropertyRefScalarExpression as parent and child", scalarExpression: "SELECT ALL.ALL"),
-                CreateInput(description: "ALL in a function call", scalarExpression: "SELECT ALL( 1, 2)"),
-                CreateInput(description: "ALL in a UDF function call", scalarExpression: "SELECT udf.ALL( 1, 2)"),
+                CreateInput(
+                    description: "ALL in an SqlSelectItem as an alias",
+                    query: "SELECT 1 as ALL"),
+                CreateInput(
+                    description: "ALL in an AliasedCollectionExpression as an alias",
+                    query: "SELECT * " +
+                           "FROM (SELECT VALUE 1) as ALL"),
+                CreateInput(
+                    description: "ALL in an ArrayIteratorCollectionExpression",
+                    query: "SELECT * " +
+                           "FROM ALL IN (SELECT VALUE 1)"),
+                CreateInput(
+                    description: "ALL in an InputPathCollection and IdentifierPathExpression", 
+                    query: "SELECT * " +
+                           "FROM ALL.ALL"),
+                CreateInput(
+                    description: "ALL in a PropertyRefScalarExpression", 
+                    query: "SELECT ALL"),
+                CreateInput(
+                    description: "ALL in a PropertyRefScalarExpression as child", 
+                    query: "SELECT c.ALL"),
+                CreateInput(
+                    description: "ALL in a PropertyRefScalarExpression as parent and child", 
+                    query: "SELECT ALL.ALL"),
+                CreateInput(
+                    description: "ALL in a function call", 
+                    query: "SELECT ALL(1, 2)"),
+                CreateInput(
+                    description: "ALL in a UDF function call", 
+                    query: "SELECT udf.ALL(1, 2)"),
+                CreateInput(
+                    description: "ALL in every possible grammar rule at the same time",
+                    query: "SELECT ALL(1, 2) as ALL " +
+                           "FROM ALL IN (SELECT ALL.ALL) " +
+                           "WHERE ALL( " +
+                           "    SELECT ALL " +
+                           "    FROM (SELECT udf.ALL(1, 2)) as ALL " +
+                           "    WHERE ALL( SELECT VALUE 1) " +
+                           ")")
+
             };
             
             this.ExecuteTestSuite(inputs);
         }
 
-        public static SqlParserBaselineTestInput CreateInput(string description, string scalarExpression)
+        public static SqlParserBaselineTestInput CreateInput(string description, string query)
         {
-            return new SqlParserBaselineTestInput(description, scalarExpression);
+            return new SqlParserBaselineTestInput(description, query);
         }
     }
 }
