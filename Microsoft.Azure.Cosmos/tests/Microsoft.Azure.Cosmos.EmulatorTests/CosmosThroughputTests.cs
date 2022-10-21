@@ -160,36 +160,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await db1.DeleteAsync();
         }
 
-        [TestMethod]
-        public async Task ReadThroughutNullRequestOptions()
-        {
-            //Test for non-existant throughput
-            ResponseMessage responseMessage1 = await this.cosmosClient.GetDatabase("thisDoesNotExist").ReadThroughputStreamAsync(requestOptions: null);
-
-            Assert.IsNotNull(responseMessage1);
-            Assert.AreEqual(HttpStatusCode.NotFound, responseMessage1.StatusCode);
-
-            //Test for Database with null provisioned throughput 
-            Database db1 = await this.cosmosClient.CreateDatabaseAsync(
-                Guid.NewGuid().ToString(),
-                throughput: null);
-
-            ResponseMessage responseMessage2 = await db1.ReadThroughputStreamAsync(requestOptions: null);
-
-            Assert.IsNotNull(responseMessage2);
-            Assert.AreEqual(HttpStatusCode.NotFound, responseMessage2.StatusCode);
-
-            //Test for Database with provisioned throughput
-            Database db2 = await this.cosmosClient.CreateDatabaseAsync(
-                Guid.NewGuid().ToString(),
-                throughput: 400);
-
-            ResponseMessage responseMessage3 = await db2.ReadThroughputStreamAsync(requestOptions: null);
-
-            Assert.IsNotNull(responseMessage3);
-            Assert.AreEqual(HttpStatusCode.OK, responseMessage3.StatusCode);
-        }
-
         private async Task RecreateContainerUsingDifferentClient(
             string databaseId,
             string containerId,

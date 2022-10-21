@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -31,35 +30,16 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            ResponseMessage responseMessage = await this.ReadThroughputStreamAsync(targetRID, requestOptions, cancellationToken);
+            (OfferV2 offerV2, double requestCharge) = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
 
-            return this.ClientContext.ResponseFactory.CreateThroughputResponse(responseMessage);               
-        }
-
-        internal async Task<ResponseMessage> ReadThroughputStreamAsync(
-            string targetRID,
-            RequestOptions requestOptions,
-            CancellationToken cancellationToken = default)
-        {
-            (OfferV2 offerV2, double requestCharge) = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
-
-            string resourceUri = offerV2 != null ? new Uri(offerV2.SelfLink, UriKind.Relative).OriginalString : String.Empty;
-
-            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
-                   resourceUri: resourceUri,
-                   resourceType: ResourceType.Offer,
-                   operationType: OperationType.Read,
-                   cosmosContainerCore: null,
-                   feedRange: null,
-                   streamPayload: null,
-                   requestOptions: requestOptions,
-                   requestEnricher: null,
-                   trace: NoOpTrace.Singleton,
-                   cancellationToken: cancellationToken);
-
-            responseMessage.Headers.RequestCharge += requestCharge;
-
-            return responseMessage;
+            return await this.GetThroughputResponseAsync(
+                streamPayload: null,
+                operationType: OperationType.Read,
+                linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
+                resourceType: ResourceType.Offer,
+                currentRequestCharge: requestCharge,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);               
         }
 
         internal async Task<ThroughputResponse> ReadThroughputIfExistsAsync(

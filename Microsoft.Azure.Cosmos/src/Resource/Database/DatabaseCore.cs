@@ -93,28 +93,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        public async Task<ResponseMessage> ReadThroughputStreamAsync(
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            ResponseMessage responseMessage = await this.ReadStreamAsync(cancellationToken: cancellationToken);
-
-            if (responseMessage.IsSuccessStatusCode)
-            {
-                string rid = await this.GetRIDAsync(cancellationToken);
-                CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
-                return await cosmosOffers.ReadThroughputStreamAsync(
-                    targetRID: rid,
-                    requestOptions: requestOptions,
-                    cancellationToken: cancellationToken);
-            }
-            else
-            {
-                return responseMessage;
-            }
-        }
-
         internal override async Task<ThroughputResponse> ReadThroughputIfExistsAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken)

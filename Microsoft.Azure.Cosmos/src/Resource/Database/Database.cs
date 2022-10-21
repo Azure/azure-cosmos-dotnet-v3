@@ -103,7 +103,24 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">The options for the throughput request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The throughput response.</returns>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        /// <exception cref="CosmosException">
+        /// This exception can encapsulate many different types of errors.
+        /// To determine the specific error always look at the StatusCode property.
+        /// Some common codes you may get when reading a client encryption key are:
+        /// <list type="table">
+        ///     <listheader>
+        ///         <term>StatusCode</term>
+        ///         <description>Reason for exception</description>
+        ///     </listheader>
+        ///     <item>
+        ///         <term>404</term>
+        ///         <description>
+        ///         NotFound - This means the database does not exist or has no throughput assigned.
+        ///         </description>
+        ///     </item>
+        /// </list>
+        /// </exception>
         /// <value>
         /// The provisioned throughput for this database.
         /// </value>
@@ -135,19 +152,6 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ThroughputResponse> ReadThroughputAsync(
-            RequestOptions requestOptions,
-            CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Gets database throughput in measurement of request units per second in the Azure Cosmos service.
-        /// </summary>
-        /// <param name="requestOptions"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the record of retrieving the provisioned throughput for this database .</returns>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-database">Set throughput on a database</seealso>
-        public abstract Task<ResponseMessage> ReadThroughputStreamAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default);
 
