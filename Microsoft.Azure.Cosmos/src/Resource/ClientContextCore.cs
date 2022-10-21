@@ -41,8 +41,7 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
-            BatchAsyncContainerExecutorCache batchExecutorCache,
-            ClientTelemetry telemetry)
+            BatchAsyncContainerExecutorCache batchExecutorCache)
         {
             this.client = client;
             this.clientOptions = clientOptions;
@@ -135,8 +134,7 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: requestInvokerHandler,
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                batchExecutorCache: new BatchAsyncContainerExecutorCache(),
-                telemetry: documentClient.clientTelemetry);
+                batchExecutorCache: new BatchAsyncContainerExecutorCache());
         }
 
         /// <summary>
