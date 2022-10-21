@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             this.AzEnvironment = azEnvironment;
             this.OSType = oSType;
             this.VMSize = vMSize;
-            this.VMId = $"{VmMetadataApiHandler.HashedVmIdPrefix}{HashingExtension.ComputeHash(vMId)}";
+            this.VMId = $"{VmMetadataApiHandler.VmIdPrefix}{vMId}";
         }
 
         [JsonProperty(PropertyName = "location")]

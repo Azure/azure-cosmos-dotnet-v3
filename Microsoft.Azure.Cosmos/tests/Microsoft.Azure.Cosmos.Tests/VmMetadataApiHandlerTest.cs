@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
             VmMetadataApiHandler.TryInitialize(cosmoshttpClient);
 
             await Task.Delay(2000);
-            Assert.AreEqual($"{VmMetadataApiHandler.HashedVmIdPrefix}{HashingExtension.ComputeHash("d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd")}", VmMetadataApiHandler.GetMachineId());
+            Assert.AreEqual($"{VmMetadataApiHandler.VmIdPrefix}{"d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd"}", VmMetadataApiHandler.GetMachineId());
             Assert.AreEqual(VmMetadataApiHandler.GetMachineRegion(), "eastus");
         }
 
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual("AzurePublicCloud", metadata.Compute.AzEnvironment);
             Assert.AreEqual("Linux", metadata.Compute.OSType);
             Assert.AreEqual("Standard_D2s_v3", metadata.Compute.VMSize);
-            Assert.AreEqual($"{VmMetadataApiHandler.HashedVmIdPrefix}{HashingExtension.ComputeHash("d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd")}", metadata.Compute.VMId);
+            Assert.AreEqual($"{VmMetadataApiHandler.VmIdPrefix}{"d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd"}", metadata.Compute.VMId);
         }
 
         [TestMethod]
