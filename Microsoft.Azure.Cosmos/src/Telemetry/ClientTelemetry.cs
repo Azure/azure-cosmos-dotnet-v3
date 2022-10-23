@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
@@ -32,7 +33,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal class ClientTelemetry : IDisposable
     {
         private const int allowedNumberOfFailures = 3;
-
+        private const string exceptionDatumKey = "Client Telemetry Exception Message";
+        
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 
@@ -215,12 +217,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             ResourceType resourceType,
                             SubStatusCodes subStatusCode,
                             string databaseId,
+                            ITrace trace,
                             long responseSizeInBytes = 0,
                             string consistencyLevel = null )
         {
             if (string.IsNullOrEmpty(cacheRefreshSource))
             {
-                throw new ArgumentNullException(nameof(cacheRefreshSource));
+                trace.AddDatum(ClientTelemetry.exceptionDatumKey, "cacheRefreshSource is null");
             }
 
             DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {cacheRefreshSource} data for Telemetry.");
@@ -245,10 +248,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                         ClientTelemetryOptions.RequestLatencyPrecision));
             try
             {
+                if (!requestLatency.HasValue)
+                {
+                    throw new Exception("Request latency is null");
+                }
                 latency.RecordValue(requestLatency.Value.Ticks);
             }
             catch (Exception ex)
             {
+                trace.AddDatum(ClientTelemetry.exceptionDatumKey, "Latency Recording Failed. Exception : {ex.Message}");
                 DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
             }
         }
@@ -266,6 +274,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="consistencyLevel"></param>
         /// <param name="requestCharge"></param>
         /// <param name="subStatusCode"></param>
+        /// <param name="trace"></param>
         internal void CollectOperationInfo(CosmosDiagnostics cosmosDiagnostics,
                             HttpStatusCode statusCode,
                             long responseSizeInBytes,
@@ -275,13 +284,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             ResourceType resourceType,
                             string consistencyLevel,
                             double requestCharge,
-                            SubStatusCodes subStatusCode)
+                            SubStatusCodes subStatusCode,
+                            ITrace trace)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
-
+            
             if (cosmosDiagnostics == null)
             {
-                throw new ArgumentNullException(nameof(cosmosDiagnostics));
+                trace.AddDatum(ClientTelemetry.exceptionDatumKey, "cosmosDiagnostics is null");
             }
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
@@ -306,10 +316,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                         ClientTelemetryOptions.RequestChargePrecision)));
             try
             {
-                latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
+                TimeSpan latencyTimeSpan = cosmosDiagnostics.GetClientElapsedTime();
+                if (latencyTimeSpan == null)
+                {
+                    throw new Exception("Latency is null");
+                }
+                latency.RecordValue(latencyTimeSpan.Ticks);
             } 
             catch (Exception ex)
             {
+                trace.AddDatum(ClientTelemetry.exceptionDatumKey, $"Latency Recording Failed. Exception : {ex.Message}");
                 DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
             }
 
@@ -320,6 +336,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
+                trace.AddDatum(ClientTelemetry.exceptionDatumKey, $"Request Charge Recording Failed. Exception : {ex.Message}");
                 DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
             }
         }

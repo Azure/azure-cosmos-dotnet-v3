@@ -27,25 +27,20 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
             if (this.IsAllowed(request))
             {
-                try
-                {
-                    this.telemetry
-                        .CollectOperationInfo(
-                                cosmosDiagnostics: response.Diagnostics,
-                                statusCode: response.StatusCode,
-                                responseSizeInBytes: this.GetPayloadSize(response),
-                                containerId: request.ContainerId,
-                                databaseId: request.DatabaseId,
-                                operationType: request.OperationType,
-                                resourceType: request.ResourceType,
-                                consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
-                                requestCharge: response.Headers.RequestCharge,
-                                subStatusCode: response.Headers.SubStatusCode);
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceError("Error while collecting telemetry information : " + ex.Message);
-                }
+                this.telemetry
+                    .CollectOperationInfo(
+                            cosmosDiagnostics: response.Diagnostics,
+                            statusCode: response.StatusCode,
+                            responseSizeInBytes: this.GetPayloadSize(response),
+                            containerId: request.ContainerId,
+                            databaseId: request.DatabaseId,
+                            operationType: request.OperationType,
+                            resourceType: request.ResourceType,
+                            consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
+                            requestCharge: response.Headers.RequestCharge,
+                            subStatusCode: response.Headers.SubStatusCode,
+                            trace: request.Trace);
+                
             }
             return response;
         }
