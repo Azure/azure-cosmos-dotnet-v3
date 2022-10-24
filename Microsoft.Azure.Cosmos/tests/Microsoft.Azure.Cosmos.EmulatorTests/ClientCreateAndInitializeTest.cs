@@ -198,7 +198,7 @@
 
         /// <summary>
         /// Test to validate that when <see cref="CosmosClient.CreateAndInitializeAsync()"/> is called with a
-        /// valid a valid database id and a container id that exists in the database, an attempt is made to open
+        /// valid database id and a container id that exists in the database, an attempt is made to open
         /// the rntbd connections to the backend replicas and the connections are opened successfully.
         /// </summary>
         [TestMethod]
@@ -283,7 +283,7 @@
 
         /// <summary>
         /// Test to validate that when <see cref="CosmosClient.CreateAndInitializeAsync()"/> is called with a
-        /// valid a valid database id and an invalid container that doesn't exists in the database, the cosmos
+        /// valid database id and an invalid container that doesn't exists in the database, the cosmos
         /// client initialization fails and a <see cref="CosmosException"/> is thrown with a 404 status code.
         /// </summary>
         [TestMethod]
