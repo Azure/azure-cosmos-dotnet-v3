@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 ResourceType.Document,
                 new Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } },
                 hasLogicalPartitionKey: false,
+                geospatialType: Cosmos.GeospatialType.Geography,
                 useSystemPrefix: false,
                 trace.Object,
                 default));
@@ -84,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 ResourceType.Document,
                 new Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } },
                 hasLogicalPartitionKey: false,
+                geospatialType: Cosmos.GeospatialType.Geography,
                 useSystemPrefix: false,
                 trace.Object,
                 default));
