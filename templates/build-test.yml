@@ -5,10 +5,8 @@ parameters:
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
-  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
-  EmulatorPipeline2Arguments: ' -l "console;verbosity=detailed" --filter "TestCategory=TEST" '
-  EmulatorPipeline1CategoryListName: ' Query, ChangeFeed, ReadFeed, Batch ' # Divided in 2 categories to run them in parallel and reduce the PR feedback time
-  EmulatorPipeline2CategoryListName: ' Others '
+  EmulatorPipeline1Arguments: ' -l "console;verbosity=detailed" --filter "TestCategory=TEST" '
+  EmulatorPipeline1CategoryListName: ' Others '
 
 jobs:
 - job:
