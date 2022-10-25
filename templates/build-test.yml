@@ -5,7 +5,7 @@ parameters:
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
-  EmulatorPipeline1Arguments: ' -l "console;verbosity=detailed" --filter "TestCategory=Quarantine & TestCategory!=Functional & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed" '
+  EmulatorPipeline1Arguments: ' -l "console;verbosity=detailed" --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed" '
   EmulatorPipeline1CategoryListName: ' Others '
 
 jobs:
