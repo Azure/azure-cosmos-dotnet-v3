@@ -30,9 +30,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         Logger.LogLine("1");
                         Cosmos.Database database = client.CreateDatabaseAsync(databaseId).GetAwaiter().GetResult();
+                        Logger.LogLine("a");
                         database = client.CreateDatabaseIfNotExistsAsync(databaseId).GetAwaiter().GetResult();
-
+                        Logger.LogLine("b");
                         database.ReadStreamAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                        Logger.LogLine("c");
                         database.ReadAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                         Logger.LogLine("2");
                         QueryDefinition databaseQuery = new QueryDefinition("select * from T where T.id = @id").WithParameter("@id", databaseId);
