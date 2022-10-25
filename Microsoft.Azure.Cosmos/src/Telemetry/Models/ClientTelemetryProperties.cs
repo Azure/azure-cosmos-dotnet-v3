@@ -2,12 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
     using Newtonsoft.Json.Serialization;
 
     [Serializable]
@@ -56,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal List<SystemInfo> SystemInfo { get; set; }
 
         [JsonProperty(PropertyName = "cacheRefreshInfo")]
-        private List<OperationInfo> CacheRefreshInfo { get; set; }
+        internal List<CacheRefreshInfo> CacheRefreshInfo { get; set; }
 
         [JsonProperty(PropertyName = "operationInfo")]
         internal List<OperationInfo> OperationInfo { get; set; }
@@ -75,10 +74,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ProcessId = processId;
             this.UserAgent = userAgent;
             this.ConnectionMode = connectionMode.ToString().ToUpperInvariant();
-            if (connectionMode == Microsoft.Azure.Cosmos.ConnectionMode.Direct)
-            {
-                this.IsDirectConnectionMode = true;   
-            }
+            this.IsDirectConnectionMode = connectionMode == Cosmos.ConnectionMode.Direct;
             this.SystemInfo = new List<SystemInfo>();
             this.PreferredRegions = preferredRegions;
             this.AggregationIntervalInSec = aggregationIntervalInSec;
@@ -99,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             bool? acceleratedNetworking,
             IReadOnlyList<string> preferredRegions,
             List<SystemInfo> systemInfo,
-            List<OperationInfo> cacheRefreshInfo,
+            List<CacheRefreshInfo> cacheRefreshInfo,
             List<OperationInfo> operationInfo,
             string machineId)
         {
