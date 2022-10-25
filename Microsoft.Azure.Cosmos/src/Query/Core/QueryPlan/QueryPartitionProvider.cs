@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 {
                     string newConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
 
-                    if (!String.Equals(this.queryengineConfiguration, newConfiguration))
+                    if (!string.Equals(this.queryengineConfiguration, newConfiguration))
                     {
                         this.queryengineConfiguration = newConfiguration;
 
