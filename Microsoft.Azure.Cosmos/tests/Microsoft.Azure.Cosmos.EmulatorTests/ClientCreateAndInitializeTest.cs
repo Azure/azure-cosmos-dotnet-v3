@@ -285,11 +285,11 @@
 
         /// <summary>
         /// Test to validate that when <see cref="CosmosClient.CreateAndInitializeAsync()"/> is called with
-        /// the Gateway Mode enabled, no Rntbd connection is opened to the backend replicas.
+        /// the Gateway Mode enabled, the operation should not open any Rntbd connections to the backend replicas.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        public async Task CreateAndInitializeAsync_WithGatewayModeEnabled_ShouldThrowException()
+        public async Task CreateAndInitializeAsync_WithGatewayModeEnabled_ShouldNotOpenConnectionToBackendReplicas()
         {
             // Arrange.
             int httpCallsMade = 0;
