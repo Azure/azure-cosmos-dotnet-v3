@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -27,28 +28,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     using (CosmosClient client = TestCommon.CreateCosmosClient())
                     {
+                        Logger.LogLine("1");
                         Cosmos.Database database = client.CreateDatabaseAsync(databaseId).GetAwaiter().GetResult();
                         database = client.CreateDatabaseIfNotExistsAsync(databaseId).GetAwaiter().GetResult();
 
                         database.ReadStreamAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                         database.ReadAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-
+                        Logger.LogLine("2");
                         QueryDefinition databaseQuery = new QueryDefinition("select * from T where T.id = @id").WithParameter("@id", databaseId);
                         FeedIterator<DatabaseProperties> databaseIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(databaseQuery);
                         while (databaseIterator.HasMoreResults)
                         {
                             databaseIterator.ReadNextAsync().GetAwaiter().GetResult();
                         }
-
+                        Logger.LogLine("3");
                         Container container = database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk").GetAwaiter().GetResult();
                         container = database.CreateContainerIfNotExistsAsync(container.Id, "/pk").GetAwaiter().GetResult();
-
+                        Logger.LogLine("4");
                         ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
                         ItemResponse<ToDoActivity> response = container.CreateItemAsync<ToDoActivity>(item: testItem).ConfigureAwait(false).GetAwaiter().GetResult();
                         Assert.IsNotNull(response);
                         string diagnostics = response.Diagnostics.ToString();
                         Assert.IsTrue(diagnostics.Contains("Synchronization Context"));
-
+                        Logger.LogLine("5");
                         using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
                         try
@@ -65,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             string exception = oe.ToString();
                             Assert.IsTrue(exception.Contains("Synchronization Context"));
                         }
-
+                        Logger.LogLine("6");
                         // Test read feed
                         container.GetItemLinqQueryable<ToDoActivity>(
                             allowSynchronousQueryExecution: true,
@@ -81,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             feedIterator.ReadNextAsync().GetAwaiter().GetResult();
                         }
-
+                        Logger.LogLine("7");
                         FeedIterator<ToDoActivity> feedIteratorTyped = container.GetItemLinqQueryable<ToDoActivity>()
                             .ToFeedIterator<ToDoActivity>();
 
@@ -89,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         {
                             feedIteratorTyped.ReadNextAsync().GetAwaiter().GetResult();
                         }
-
+                        Logger.LogLine("8");
                         // Test query
                         container.GetItemLinqQueryable<ToDoActivity>(
                             allowSynchronousQueryExecution: true,
@@ -105,6 +107,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             queryIterator.ReadNextAsync().GetAwaiter().GetResult();
                         }
 
+                        Logger.LogLine("9");
+
                         FeedIterator<ToDoActivity> queryIteratorTyped = container.GetItemLinqQueryable<ToDoActivity>()
                             .Where(item => item.id != "").ToFeedIterator<ToDoActivity>();
 
@@ -113,14 +117,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             queryIteratorTyped.ReadNextAsync().GetAwaiter().GetResult();
                         }
 
+                        Logger.LogLine("10");
+
                         double costAsync = container.GetItemLinqQueryable<ToDoActivity>()
                             .Select(x => x.cost).SumAsync().GetAwaiter().GetResult();
 
                         double cost = container.GetItemLinqQueryable<ToDoActivity>(
                             allowSynchronousQueryExecution: true).Select(x => x.cost).Sum();
-
+                        Logger.LogLine("11");
                         ItemResponse<ToDoActivity> deleteResponse = container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id).ConfigureAwait(false).GetAwaiter().GetResult();
                         Assert.IsNotNull(deleteResponse);
+                        Logger.LogLine("12");
                     }
                 }, state: null);
             }
