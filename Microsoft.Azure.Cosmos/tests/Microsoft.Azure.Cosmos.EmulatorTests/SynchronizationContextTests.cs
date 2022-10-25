@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class SynchronizationContextTests
     {
-        [TestCategory("TEST")]
         [TestMethod]
         [Timeout(30000)]
         public void VerifySynchronizationContextDoesNotLock()
