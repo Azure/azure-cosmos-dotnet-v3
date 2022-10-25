@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Linq;
@@ -14,10 +15,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class SynchronizationContextTests
     {
+        [TestCategory("TEST")]
         [TestMethod]
         [Timeout(30000)]
         public void VerifySynchronizationContextDoesNotLock()
         {
+            Type defaultTrace = Type.GetType("Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace,Microsoft.Azure.Cosmos.Direct");
+            TraceSource traceSource = (TraceSource)defaultTrace.GetProperty("TraceSource").GetValue(null);
+            traceSource.Switch.Level = SourceLevels.All;
+            traceSource.Listeners.Clear();
+            traceSource.Listeners.Add(new ConsoleTraceListener());
+
             string databaseId = Guid.NewGuid().ToString();
             SynchronizationContext prevContext = SynchronizationContext.Current;
             try
