@@ -238,6 +238,8 @@
                 cosmosClientOptions: cosmosClientOptions);
 
             // Assert.
+            Assert.AreEqual(5, httpCallsMade);
+
             IStoreClientFactory factory = (IStoreClientFactory)cosmosClient.DocumentClient.GetType()
                             .GetField("storeClientFactory", BindingFlags.NonPublic | BindingFlags.Instance)
                             .GetValue(cosmosClient.DocumentClient);
@@ -325,6 +327,7 @@
 
             // Assert.
             Assert.IsNotNull(cosmosClient);
+            Assert.AreEqual(1, httpCallsMade);
         }
 
         /// <summary>
