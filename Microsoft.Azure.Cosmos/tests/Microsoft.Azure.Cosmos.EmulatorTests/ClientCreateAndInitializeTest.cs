@@ -202,6 +202,7 @@
         /// the rntbd connections to the backend replicas and the connections are opened successfully.
         /// </summary>
         [TestMethod]
+        [Owner("dkunda")]
         public async Task CreateAndInitializeAsync_WithValidDatabaseAndContainer_ShouldOpenRntbdConnectionsToBackendReplicas()
         {
             // Arrange.
@@ -226,6 +227,7 @@
             CosmosClientOptions cosmosClientOptions = new ()
             {
                 HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+                ConnectionMode = ConnectionMode.Direct,
             };
 
             // Act.
@@ -282,11 +284,56 @@
         }
 
         /// <summary>
+        /// Test to validate that when <see cref="CosmosClient.CreateAndInitializeAsync()"/> is called with
+        /// the Gateway Mode enabled, no Rntbd connection is opened to the backend replicas.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task CreateAndInitializeAsync_WithGatewayModeEnabled_ShouldThrowException()
+        {
+            // Arrange.
+            int httpCallsMade = 0;
+            HttpClientHandlerHelper httpClientHandlerHelper = new()
+            {
+                RequestCallBack = (request, cancellationToken) =>
+                {
+                    httpCallsMade++;
+                    return null;
+                }
+            };
+            List<(string, string)> containers = new()
+            {
+                (
+                "ClientCreateAndInitializeDatabase",
+                "ClientCreateAndInitializeContainer"
+                )
+            };
+
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            CosmosClientOptions cosmosClientOptions = new()
+            {
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+                ConnectionMode = ConnectionMode.Gateway,
+            };
+
+            // Act.
+            CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: authKey,
+                containers: containers,
+                cosmosClientOptions: cosmosClientOptions);
+
+            // Assert.
+            Assert.IsNotNull(cosmosClient);
+        }
+
+        /// <summary>
         /// Test to validate that when <see cref="CosmosClient.CreateAndInitializeAsync()"/> is called with a
         /// valid database id and an invalid container that doesn't exists in the database, the cosmos
         /// client initialization fails and a <see cref="CosmosException"/> is thrown with a 404 status code.
         /// </summary>
         [TestMethod]
+        [Owner("dkunda")]
         public async Task CreateAndInitializeAsync_WithValidDatabaseAndInvalidContainer_ShouldThrowException()
         {
             // Arrange.
@@ -311,8 +358,6 @@
             // Assert.
             Assert.IsNotNull(ce);
             Assert.AreEqual(HttpStatusCode.NotFound, ce.StatusCode);
-            Console.WriteLine(ce.Message);
-            Assert.IsTrue(ce.Message.Contains("NotFound (404)"));
         }
     }
 }

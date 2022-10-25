@@ -485,7 +485,7 @@ namespace Microsoft.Azure.Cosmos
 
         public Task OpenConnectionsToAllReplicasAsync(string databaseName, string containerLinkUri, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
     }
 }

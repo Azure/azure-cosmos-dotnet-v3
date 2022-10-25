@@ -379,10 +379,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
-            HttpClient httpClient = new(messageHandler)
-            {
-                Timeout = TimeSpan.FromSeconds(120)
-            };
+            HttpClient httpClient = new(messageHandler);
 
             GatewayAddressCache cache = new (
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
