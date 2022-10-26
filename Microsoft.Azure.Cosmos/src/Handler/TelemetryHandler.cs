@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry;
 
     internal class TelemetryHandler : RequestHandler
@@ -27,21 +26,32 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
             if (this.IsAllowed(request))
             {
-                this.telemetry
-                    .CollectOperationInfo(
-                            cosmosDiagnostics: response.Diagnostics,
-                            statusCode: response.StatusCode,
-                            responseSizeInBytes: this.GetPayloadSize(response),
-                            containerId: request.ContainerId,
-                            databaseId: request.DatabaseId,
-                            operationType: request.OperationType,
-                            resourceType: request.ResourceType,
-                            consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
-                            requestCharge: response.Headers.RequestCharge,
-                            subStatusCode: response.Headers.SubStatusCode,
-                            trace: request.Trace);
-                
+                try
+                {
+                    this.telemetry
+                        .CollectOperationInfo(
+                               cosmosDiagnostics: response.Diagnostics,
+                               statusCode: response.StatusCode,
+                               responseSizeInBytes: this.GetPayloadSize(response),
+                               containerId: request.ContainerId,
+                               databaseId: request.DatabaseId,
+                               operationType: request.OperationType,
+                               resourceType: request.ResourceType,
+                               consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
+                               requestCharge: response.Headers.RequestCharge,
+                               subStatusCode: response.Headers.SubStatusCode,
+                               trace: request.Trace);
+                }
+                catch (Exception ex)
+                {
+                    request.Trace.AddDatum(ClientTelemetry.exceptionDatumKey, ex.Message);
+                }
             }
+            else
+            {
+                request.Trace.AddDatum(ClientTelemetry.warningDatumKey, $"Collection not allowed for {request.ResourceType} resource type.");
+            }
+            
             return response;
         }
 

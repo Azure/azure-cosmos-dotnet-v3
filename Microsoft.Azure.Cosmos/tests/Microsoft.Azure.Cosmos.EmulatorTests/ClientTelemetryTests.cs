@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Common;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -1096,12 +1094,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()
                 : this.cosmosClientBuilder.Build();
 
-            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
-    
-            return await this.database.CreateContainerAsync(
+            DatabaseResponse dbResponse = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Assert.IsTrue(dbResponse.Diagnostics.ToString().Contains($"\"Client Telemetry Warning\":\"Collection not allowed for Database resource type.\""));
+            this.database = (Cosmos.Database)dbResponse;
+
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                 id: Guid.NewGuid().ToString(),
                 partitionKeyPath: "/id",
-                throughput: isLargeContainer? 15000 : 400);
+                throughput: isLargeContainer ? 15000 : 400);
+            Assert.IsTrue(containerResponse.Diagnostics.ToString().Contains($"\"Client Telemetry Warning\":\"Collection not allowed for Collection resource type.\""));
+
+            return (Container)containerResponse;
 
         }
 

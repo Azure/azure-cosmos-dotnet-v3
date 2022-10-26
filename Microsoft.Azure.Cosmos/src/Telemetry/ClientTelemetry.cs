@@ -33,8 +33,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal class ClientTelemetry : IDisposable
     {
         private const int allowedNumberOfFailures = 3;
-        private const string exceptionDatumKey = "Client Telemetry Exception Message";
         
+        internal const string exceptionDatumKey = "Client Telemetry Exception";
+        internal const string warningDatumKey = "Client Telemetry Warning";
+
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 

@@ -217,18 +217,25 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                                 if (this.clientTelemetry != null)
                                 {
-                                    ClientCollectionCache.GetDatabaseAndCollectionName(collectionLink, out string databaseName, out string collectionName);
-                                    this.clientTelemetry.CollectCacheInfo(
-                                                    cacheRefreshSource: ClientCollectionCache.TelemetrySourceName,
-                                                    regionsContactedList: response.RequestStats.RegionsContacted,
-                                                    requestLatency: response.RequestStats.RequestLatency,
-                                                    statusCode: response.StatusCode,
-                                                    containerId: collectionName,
-                                                    operationType: request.OperationType,
-                                                    resourceType: request.ResourceType,
-                                                    subStatusCode: response.SubStatusCode,
-                                                    databaseId: databaseName,
-                                                    trace: childTrace);
+                                    try
+                                    {
+                                        ClientCollectionCache.GetDatabaseAndCollectionName(collectionLink, out string databaseName, out string collectionName);
+                                        this.clientTelemetry.CollectCacheInfo(
+                                                        cacheRefreshSource: ClientCollectionCache.TelemetrySourceName,
+                                                        regionsContactedList: response.RequestStats.RegionsContacted,
+                                                        requestLatency: response.RequestStats.RequestLatency,
+                                                        statusCode: response.StatusCode,
+                                                        containerId: collectionName,
+                                                        operationType: request.OperationType,
+                                                        resourceType: request.ResourceType,
+                                                        subStatusCode: response.SubStatusCode,
+                                                        databaseId: databaseName,
+                                                        trace: childTrace);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        childTrace.AddDatum(ClientTelemetry.exceptionDatumKey, ex.Message);
+                                    }
                                 }
 
                                 return containerProperties;
