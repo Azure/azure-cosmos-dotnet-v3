@@ -146,7 +146,7 @@
         [TestMethod]
         public async Task TestPipelineForBackendDocumentsOnSinglePartitionAsync()
         {
-            int numItems = 10;
+            int numItems = 100;
             string query = "SELECT VALUE COUNT(1) FROM c";
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: false);
             IQueryPipelineStage queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
@@ -160,7 +160,7 @@
                 documentCountInSinglePartition += Int32.Parse(tryGetPage.Result.Documents[0].ToString());
             }
 
-            Assert.AreEqual(documentCountInSinglePartition, 10);
+            Assert.AreEqual(documentCountInSinglePartition, 100);
         }
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s) + continuation token.
@@ -199,9 +199,9 @@
 
         // test to check if pipeline handles a 410 exception properly and returns all the documents.
         // it creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
-        // TODO: With the addition of the merge/split supprt, this queryPipelineStage should be able to return all documents regardless of a gone exception happening 
+        // TODO: With the addition of the merge/split support, this queryPipelineStage should be able to return all documents regardless of a gone exception happening 
         [TestMethod]
-        public async Task TestPipelineForGoneExceptionAsync()
+        public async Task TestPipelineForGoneExceptionSinglePartitionAsync()
         {
             int numItems = 100;
             string query = "SELECT * FROM c";
@@ -217,11 +217,11 @@
             int moveNextAsyncCounter = 0;
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(
                 numItems,
-                multiPartition: true,
+                multiPartition: false,
                 failureConfigs: new FlakyDocumentContainer.FailureConfigs(
                     inject429s: false,
                     injectEmptyPages: false,
-                    shouldReturnFailure: ()=> Task.FromResult<Exception>(moveNextAsyncCounter == 0 ? null: goneException)));
+                    shouldReturnFailure: () => Task.FromResult<Exception>(moveNextAsyncCounter != 1 ? null : goneException)));
 
             IQueryPipelineStage queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
 
@@ -244,7 +244,92 @@
                     break;
                 }
             }
+            // Once fallback plan is implemented, this test should be able to return all 100 documents
             Assert.AreEqual(documents.Count, 10);
+        }
+
+        // test finds out pipeline response to a gone exception on multiple partitions
+        [TestMethod]
+        public async Task TestPipelineForGoneExceptionMultiplePartitionsAsync()
+        {
+            int numItems = 100;
+            string query = "SELECT * FROM c";
+            List<CosmosElement> documents = new List<CosmosElement>();
+            string errorMessage = $"Epk Range: Partition does not exist at the given range.";
+            CosmosException goneException = new CosmosException(
+                message: errorMessage,
+                statusCode: System.Net.HttpStatusCode.Gone,
+                subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                activityId: Guid.NewGuid().ToString(),
+                requestCharge: default);
+
+            int moveNextAsyncCounter = 0;
+            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(
+                numItems,
+                multiPartition: true,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    shouldReturnFailure: () => Task.FromResult<Exception>(moveNextAsyncCounter != 1 ? null : goneException)));
+
+            IQueryPipelineStage queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
+
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            {
+                moveNextAsyncCounter++;
+                try
+                {
+                    TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
+                    tryGetPage.ThrowIfFailed();
+
+                    documents.AddRange(tryGetPage.Result.Documents);
+                }
+                catch
+                {
+                    // check if gone exception is handled properly
+                    Assert.IsTrue(queryPipelineStage.Current.Failed);
+                    Assert.AreEqual(queryPipelineStage.Current.InnerMostException.Message, errorMessage);
+                    Assert.AreEqual(((CosmosException)queryPipelineStage.Current.InnerMostException).StatusCode, System.Net.HttpStatusCode.Gone);
+                    break;
+                }
+            }
+            // Once fallback plan is implemented, this test should be able to return all 100 documents
+            Assert.AreEqual(documents.Count, 10);
+        }
+
+        // Start with ODE pipeline and then switch to parallel in a single partition scenario.
+        // This is to simulate whether a fallback solution would work and provide client with all the required documents
+        [TestMethod]
+        public async Task TestPipelineSwitchForContinuationTokenOnSinglePartitionAsync()
+        {
+            int numItems = 100;
+            string query = "SELECT * FROM c";
+            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: false);
+            IQueryPipelineStage queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
+            List<CosmosElement> documents = new List<CosmosElement>();
+            int continuationTokenCount = 0;
+
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            {
+                TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
+                tryGetPage.ThrowIfFailed();
+
+                documents.AddRange(tryGetPage.Result.Documents);
+
+                if (tryGetPage.Result.State == null)
+                {
+                    break;
+                }
+                else
+                {
+                    queryPipelineStage = await CreateParallelCrossPartitionPipelineStateAsync(inMemoryCollection, query, continuationToken: tryGetPage.Result.State.Value);
+                }
+
+                continuationTokenCount++;
+            }
+
+            Assert.AreEqual(continuationTokenCount, 10);
+            Assert.AreEqual(documents.Count, 100);
         }
 
         // Start with ODE pipeline and then switch to parallel in a cross partition scenario.
@@ -713,8 +798,8 @@
         {
             return Task.FromResult(new List<PartitionKeyRange>{new PartitionKeyRange()
             {
-                MinInclusive = PartitionKeyHash.V2.Hash("abc").ToString(),
-                MaxExclusive = PartitionKeyHash.V2.Hash("def").ToString()
+                MinInclusive = PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                MaxExclusive = PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
             }
             });
         }
