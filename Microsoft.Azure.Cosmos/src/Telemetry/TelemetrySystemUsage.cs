@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using HdrHistogram;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
