@@ -412,6 +412,19 @@ namespace Microsoft.Azure.Cosmos
             return this.batchExecutorCache.GetExecutorForContainer(container, this);
         }
 
+        /// <inheritdoc/>
+        internal override async Task InitializeContainerUsingRntbdAsync(
+            string databaseId,
+            string containerLinkUri,
+            CancellationToken cancellationToken)
+        {
+            await this.DocumentClient.EnsureValidClientAsync(NoOpTrace.Singleton);
+            await this.DocumentClient.OpenConnectionsToAllReplicasAsync(
+                databaseId,
+                containerLinkUri,
+                cancellationToken);
+        }
+
         public override void Dispose()
         {
             this.Dispose(true);
