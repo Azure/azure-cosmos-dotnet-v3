@@ -14,8 +14,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class SynchronizationContextTests
     {
         [DataTestMethod]
-        [DataRow(false, DisplayName = "Client Telemetry disabled")]
-        [DataRow(true, DisplayName = "Client Telemetry enabled")]
+        [DataRow(false, DisplayName = "SynchronizationContextTests - Client Telemetry disabled")]
+        [DataRow(true, DisplayName = "SynchronizationContextTests - Client Telemetry enabled")]
         [Timeout(30000)]
         public void VerifySynchronizationContextDoesNotLock(bool withClientTelemetry)
         {
