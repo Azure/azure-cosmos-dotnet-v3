@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 throw new ArgumentNullException(nameof(cosmosDiagnostics));
             }
 
-            ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics);
+            ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
         }
     }
 }

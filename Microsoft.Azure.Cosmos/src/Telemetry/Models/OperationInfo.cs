@@ -2,15 +2,16 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
     using HdrHistogram;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
     [Serializable]
-    internal sealed class OperationInfo
+    internal class OperationInfo
     {
         [JsonProperty(PropertyName = "regionsContacted")]
         internal string RegionsContacted { get; }
@@ -19,10 +20,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal bool? GreaterThan1Kb { get; set; }
 
         [JsonProperty(PropertyName = "databaseName")]
-        private string DatabaseName { get; }
+        internal string DatabaseName { get; }
 
         [JsonProperty(PropertyName = "containerName")]
-        private string ContainerName { get; }
+        internal string ContainerName { get; }
 
         [JsonProperty(PropertyName = "operation")]
         internal string Operation { get; }
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public int? StatusCode { get; }
 
         [JsonProperty(PropertyName = "subStatusCode")]
-        public string SubStatusCode { get; }
+        public int SubStatusCode { get; }
 
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
@@ -47,15 +48,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.MetricInfo = new MetricInfo(metricsName, unitName);
         }
 
-        internal OperationInfo(string regionsContacted, 
-            long? responseSizeInBytes,            
-            string consistency, 
-            string databaseName, 
-            string containerName, 
-            OperationType? operation, 
-            ResourceType? resource, 
+        internal OperationInfo(string regionsContacted,
+            long? responseSizeInBytes,
+            string consistency,
+            string databaseName,
+            string containerName,
+            OperationType? operation,
+            ResourceType? resource,
             int? statusCode,
-            string subStatusCode)
+            int subStatusCode)
         {
             this.RegionsContacted = regionsContacted;
             if (responseSizeInBytes != null)
@@ -71,15 +72,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.SubStatusCode = subStatusCode;
         }
 
-        public OperationInfo(string regionsContacted, 
-            bool? greaterThan1Kb, 
-            string databaseName, 
-            string containerName, 
-            string operation, 
-            string resource, 
-            string consistency, 
+        public OperationInfo(string regionsContacted,
+            bool? greaterThan1Kb,
+            string databaseName,
+            string containerName,
+            string operation,
+            string resource,
+            string consistency,
             int? statusCode,
-            string subStatusCode,
+            int subStatusCode,
             MetricInfo metricInfo)
         {
             this.RegionsContacted = regionsContacted;
@@ -119,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             hash = (hash * 7) ^ (this.Operation == null ? 0 : this.Operation.GetHashCode());
             hash = (hash * 7) ^ (this.Resource == null ? 0 : this.Resource.GetHashCode());
             hash = (hash * 7) ^ (this.StatusCode == null ? 0 : this.StatusCode.GetHashCode());
-            hash = (hash * 7) ^ (this.SubStatusCode == null ? 0 : this.SubStatusCode.GetHashCode());
+            hash = (hash * 7) ^ (this.SubStatusCode.GetHashCode());
             return hash;
         }
 
@@ -127,14 +128,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             bool isequal = obj is OperationInfo payload &&
                    ((this.RegionsContacted == null && payload.RegionsContacted == null) || (this.RegionsContacted != null && payload.RegionsContacted != null && this.RegionsContacted.Equals(payload.RegionsContacted))) &&
-                   ((this.GreaterThan1Kb == null && payload.GreaterThan1Kb == null ) || (this.GreaterThan1Kb != null && payload.GreaterThan1Kb != null && this.GreaterThan1Kb.Equals(payload.GreaterThan1Kb))) &&
+                   ((this.GreaterThan1Kb == null && payload.GreaterThan1Kb == null) || (this.GreaterThan1Kb != null && payload.GreaterThan1Kb != null && this.GreaterThan1Kb.Equals(payload.GreaterThan1Kb))) &&
                    ((this.Consistency == null && payload.Consistency == null) || (this.Consistency != null && payload.Consistency != null && this.Consistency.Equals(payload.Consistency))) &&
                    ((this.DatabaseName == null && payload.DatabaseName == null) || (this.DatabaseName != null && payload.DatabaseName != null && this.DatabaseName.Equals(payload.DatabaseName))) &&
                    ((this.ContainerName == null && payload.ContainerName == null) || (this.ContainerName != null && payload.ContainerName != null && this.ContainerName.Equals(payload.ContainerName))) &&
                    ((this.Operation == null && payload.Operation == null) || (this.Operation != null && payload.Operation != null && this.Operation.Equals(payload.Operation))) &&
                    ((this.Resource == null && payload.Resource == null) || (this.Resource != null && payload.Resource != null && this.Resource.Equals(payload.Resource))) &&
                    ((this.StatusCode == null && payload.StatusCode == null) || (this.StatusCode != null && payload.StatusCode != null && this.StatusCode.Equals(payload.StatusCode))) &&
-                   ((this.SubStatusCode == null && payload.SubStatusCode == null) || (this.SubStatusCode != null && payload.SubStatusCode != null && this.SubStatusCode.Equals(payload.SubStatusCode)));
+                   this.SubStatusCode.Equals(payload.SubStatusCode);
 
             return isequal;
         }

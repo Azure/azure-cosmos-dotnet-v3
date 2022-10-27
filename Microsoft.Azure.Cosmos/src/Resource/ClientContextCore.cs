@@ -17,8 +17,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -31,7 +29,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
-        private readonly ClientTelemetry telemetry;
 
         private readonly string userAgent;
         private bool isDisposed = false;
@@ -44,8 +41,7 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
-            BatchAsyncContainerExecutorCache batchExecutorCache,
-            ClientTelemetry telemetry)
+            BatchAsyncContainerExecutorCache batchExecutorCache)
         {
             this.client = client;
             this.clientOptions = clientOptions;
@@ -55,7 +51,6 @@ namespace Microsoft.Azure.Cosmos
             this.documentClient = documentClient;
             this.userAgent = userAgent;
             this.batchExecutorCache = batchExecutorCache;
-            this.telemetry = telemetry;
         }
 
         internal static CosmosClientContext Create(
@@ -83,7 +78,8 @@ namespace Microsoft.Azure.Cosmos
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
                handler: httpMessageHandler,
-               sessionContainer: clientOptions.SessionContainer);
+               sessionContainer: clientOptions.SessionContainer,
+               cosmosClientId: cosmosClient.Id);
 
             return ClientContextCore.Create(
                 cosmosClient,
@@ -109,34 +105,6 @@ namespace Microsoft.Azure.Cosmos
 
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
 
-            ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy(cosmosClient.ClientId);
-            ClientTelemetry telemetry = null;
-            if (connectionPolicy.EnableClientTelemetry)
-            {
-                try
-                {
-                    telemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
-                        clientId: cosmosClient.Id,
-                        documentClient: documentClient,
-                        userAgent: connectionPolicy.UserAgentContainer.UserAgent,
-                        connectionMode: connectionPolicy.ConnectionMode,
-                        authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
-                        diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
-                        preferredRegions: clientOptions.ApplicationPreferredRegions);
-
-                } 
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
-                    connectionPolicy.EnableClientTelemetry = false;
-                }
-               
-            } 
-            else
-            {
-                DefaultTrace.TraceInformation("Client Telemetry Disabled.");
-            }
-
             if (requestInvokerHandler == null)
             {
                 //Request pipeline 
@@ -144,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosClient,
                     clientOptions.ConsistencyLevel,
                     clientOptions.CustomHandlers,
-                    telemetry: telemetry);
+                    telemetry: documentClient.clientTelemetry);
 
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }
@@ -166,8 +134,7 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: requestInvokerHandler,
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                batchExecutorCache: new BatchAsyncContainerExecutorCache(),
-                telemetry: telemetry);
+                batchExecutorCache: new BatchAsyncContainerExecutorCache());
         }
 
         /// <summary>
@@ -266,7 +233,8 @@ namespace Microsoft.Azure.Cosmos
                     trace,
                     task,
                     openTelemetry,
-                    operationName);
+                    operationName,
+                    requestOptions);
             }
         }
 
@@ -295,7 +263,8 @@ namespace Microsoft.Azure.Cosmos
                         trace,
                         task,
                         openTelemetry,
-                        operationName);
+                        operationName,
+                        requestOptions);
                 }
             });
         }
@@ -443,6 +412,19 @@ namespace Microsoft.Azure.Cosmos
             return this.batchExecutorCache.GetExecutorForContainer(container, this);
         }
 
+        /// <inheritdoc/>
+        internal override async Task InitializeContainerUsingRntbdAsync(
+            string databaseId,
+            string containerLinkUri,
+            CancellationToken cancellationToken)
+        {
+            await this.DocumentClient.EnsureValidClientAsync(NoOpTrace.Singleton);
+            await this.DocumentClient.OpenConnectionsToAllReplicasAsync(
+                databaseId,
+                containerLinkUri,
+                cancellationToken);
+        }
+
         public override void Dispose()
         {
             this.Dispose(true);
@@ -458,7 +440,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (disposing)
                 {
-                    this.telemetry?.Dispose();
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
                 }
@@ -471,22 +452,24 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
-            string operationName)
+            string operationName,
+            RequestOptions requestOptions)
         {
             using (OpenTelemetryCoreRecorder recorder = 
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     operationName: operationName,
-                                    isFeatureEnabled: this.clientOptions.EnableOpenTelemetry))
+                                    requestOptions: requestOptions,
+                                    clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
                 {
+                    // Record Operation Name
+                    recorder.Record(OpenTelemetryAttributeKeys.DbOperation, operationName);
+
                     TResult result = await task(trace).ConfigureAwait(false);
                     if (openTelemetry != null && recorder.IsEnabled)
                     {
-                        // Record client and other information
-                        recorder.Record(operationName, this);
-
                         // Record request response information
                         OpenTelemetryAttributes response = openTelemetry(result);
                         recorder.Record(response);
@@ -557,7 +540,7 @@ namespace Microsoft.Azure.Cosmos
                 itemRequestOptions,
                 cancellationToken);
 
-            return batchOperationResult.ToResponseMessage();
+            return batchOperationResult.ToResponseMessage(cosmosContainerCore);
         }
 
         private bool IsBulkOperationSupported(

@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Query
                                     partitionIdentifier,
                                     new QueryMetrics(
                                         response.ResponseHeaders[HttpConstants.HttpHeaders.QueryMetrics],
-                                        IndexUtilizationInfo.CreateFromString(response.ResponseHeaders[HttpConstants.HttpHeaders.IndexUtilization]),
+                                        IndexUtilizationInfo.CreateFromString(response.ResponseHeaders[HttpConstants.HttpHeaders.IndexUtilization], true),
                                         new ClientSideMetrics(
                                             this.retries,
                                             response.RequestCharge,

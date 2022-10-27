@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         internal StandByFeedContinuationToken compositeContinuationToken;
 
         private readonly CosmosClientContext clientContext;
-        private readonly ContainerInternal container;
+
         private string containerRid;
         private string continuationToken;
         private int? maxItemCount;

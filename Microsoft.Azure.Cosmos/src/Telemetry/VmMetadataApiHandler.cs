@@ -10,8 +10,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
+    using Util;
 
     /// <summary>
     /// Task to collect virtual machine metadata information. using instance metedata service API.
@@ -20,7 +22,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal static class VmMetadataApiHandler
     {
+        internal const string HashedMachineNamePrefix = "hashedMachineName:";
+        internal const string VmIdPrefix = "vmId:";
+        internal const string UuidPrefix = "uuid:";
+
         internal static readonly Uri vmMetadataEndpointUrl = new ("http://169.254.169.254/metadata/instance?api-version=2020-06-01");
+
         private static readonly string nonAzureCloud = "NonAzureVM";
 
         private static readonly object lockObject = new object();
@@ -139,42 +146,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return VmMetadataApiHandler.azMetadata?.Compute?.AzEnvironment ?? VmMetadataApiHandler.nonAzureCloud;
         }
 
-        /// <summary>
-        /// Hash a passed Value
-        /// </summary>
-        /// <param name="rawData"></param>
-        /// <returns>hashed Value</returns>
-        internal static string ComputeHash(string rawData)
-        {
-            if (string.IsNullOrEmpty(rawData))
-            {
-                throw new ArgumentNullException(nameof(rawData));
-            }
-
-            // Create a SHA256    
-            using (SHA256 sha256Hash = SHA256.Create())
-            {
-                // ComputeHash - returns byte array  
-                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));
-                Array.Resize(ref bytes, 16);
-
-                // Convert byte array to a string   
-                return new Guid(bytes).ToString();
-            }
-        }
-
         private static readonly Lazy<string> uniqueId = new Lazy<string>(() =>
         {
             try
             {
-                return "hashedMachineName:" + VmMetadataApiHandler.ComputeHash(Environment.MachineName);
+                return $"{VmMetadataApiHandler.HashedMachineNamePrefix}{HashingExtension.ComputeHash(Environment.MachineName)}";
             }
             catch (Exception ex)
             {
                 DefaultTrace.TraceWarning("Error while generating hashed machine name " + ex.Message);
             }
 
-            return "uuid:" + Guid.NewGuid().ToString();
+            return $"{VmMetadataApiHandler.UuidPrefix}{Guid.NewGuid()}";
         });
 
     }

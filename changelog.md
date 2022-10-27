@@ -1,6 +1,6 @@
 ## <a name="recommended-version"></a> Recommended version
 
-The **minimum recommended version is [3.25.0](#3.25.0)**.
+The **minimum recommended version is [3.31.0](#3.31.0)**.
 
 Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes.
 
@@ -12,6 +12,54 @@ Preview features are treated as a separate branch and will not be included in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+### <a name="3.31.0"/> [3.31.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.0) - 2022-10-03
+### <a name="3.31.0-preview"/> [3.31.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.0-preview) - 2022-10-03
+
+#### Fixed
+- [#3480](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3480) FeedRange: Fixes a NullRef in `FeedRangePartitionKey.ToString()`
+- [#3479](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3479) ClientRetryPolicy: Fixes behavior to handling of 503 HTTP errors. Introduced in 3.24.0 PR [#3008](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3008)
+- [#3431](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3431) Documentation: Fixes ApplicationRegion and ApplicationPreferredRegions remarks
+- [#3405](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3405) CosmosClient Initialization: Fixes TokenCredentialCache to respect cancellation token
+- [#3401](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3401) Change Feed Processor: Fixes LeaseLostException leaks on notification APIs
+- [#3377](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3377) Documentation: Fixes ItemRequestOptions Example
+
+#### Added
+- [#3455](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3455) CosmosClientOptions: Adds validation for ApplicationName
+- [#3449](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3449) Documentation: Adds link to supported operations doc for PatchOperationType Enum
+- [#3433](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3433) CosmosOperationCanceledException: Adds serializable functionality
+- [#3419](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3419) Documentation: Removes mention of obsolete disableAutomaticIdGeneration
+- [#3404](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3404) Patch: Adds public to `PatchOperation<T>` class for testing
+- [#3400](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3400) Query: Adds new system strings in JsonBinaryEncoding, replacing 1-byte user strings
+- [#3380](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3380) Query: Adds aggressive prefetching for `GROUP BY` and `COUNT(DISTINCT)`
+
+### <a name="3.30.1"/> [3.30.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.30.1) - 2022-09-01
+### <a name="3.30.1-preview"/> [3.30.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.30.1-preview) - 2022-09-01
+
+#### Fixed
+- [#3430](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3430) PartitionKeyRangeCache: Fixes duplicate trace key generation which is the root cause of `System.ThrowHelper.ThrowArgumentException` during `GetFeedRangesAsync` API invocation.
+
+### <a name="3.30.0-preview"/> [3.30.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.30.0-preview) - 2022-08-19
+
+#### Added
+- [#3394](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3394) Change Feed: Refactors Change Feed Contract to rename TimeToLiveExpired
+- [#3331](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3331) Open Telemetry: Adds Client and other information in attributes
+- [#3197](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3197) Change Feed: Adds SDK changes required for Full-Fidelity Change Feed
+
+### <a name="3.30.0"/> [3.30.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.30.0) - 2022-08-19
+
+#### Added
+- [#3376](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3376) Client Telemetry : Refactors code to compute hash of VM ID and Process Name information
+- [#3364](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3364) Integrated cache: Adds DedicatedGatewayRequestOptions for public release
+- [#3273](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3273) Linq: Adds support constant evaluation of `Nullable<T>.HasValue`. (Thanks [@ccurrens](https://github.com/ccurrens))
+- [#3268](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3268) Diagnostics: Adds GetStartTimeUtc and GetFailedRequestCount
+
+#### Fixed
+- [#3350](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3350) Diagnostics: Fixes Diagnostics for Query with FeedRanges
+- [#3348](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3348) Documentation: Fixes DeleteItemAsync Example
+- [#3338](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3338) Documentation: Fixes retry time to timespan
+- [#3391](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3391) Diagnostics: Fixes Ordering of ClientConfiguration Initialization
+
 
 ### <a name="3.29.0-preview"/> [3.29.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.29.0-preview) - 2022-07-11
 

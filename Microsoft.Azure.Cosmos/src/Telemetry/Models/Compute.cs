@@ -2,21 +2,22 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
     using Newtonsoft.Json;
+    using Util;
 
     [Serializable]
     internal sealed class Compute
     {
         [JsonConstructor]
         public Compute(
-            string vMId, 
-            string location, 
-            string sKU, 
-            string azEnvironment, 
-            string oSType, 
+            string vMId,
+            string location,
+            string sKU,
+            string azEnvironment,
+            string oSType,
             string vMSize)
         {
             this.Location = location;
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.AzEnvironment = azEnvironment;
             this.OSType = oSType;
             this.VMSize = vMSize;
-            this.VMId = "vmId:" + vMId;
+            this.VMId = $"{VmMetadataApiHandler.VmIdPrefix}{vMId}";
         }
 
         [JsonProperty(PropertyName = "location")]

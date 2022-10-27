@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
     using System.IO;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
@@ -310,7 +311,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         /// <summary>
         /// Verifies that if the updater read a different Owner from the captured in memory, throws a LeaseLost
         /// </summary>
-        [ExpectedException(typeof(LeaseLostException))]
         [TestMethod]
         public async Task IfOwnerChangedThrow()
         {
@@ -350,7 +350,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 options,
                 Mock.Of<RequestOptionsFactory>());
 
-            await documentServiceLeaseManagerCosmos.AcquireAsync(lease);
+            LeaseLostException leaseLost = await Assert.ThrowsExceptionAsync<LeaseLostException>(() => documentServiceLeaseManagerCosmos.AcquireAsync(lease));
+
+            Assert.IsTrue(leaseLost.InnerException is CosmosException innerCosmosException
+                && innerCosmosException.StatusCode == HttpStatusCode.PreconditionFailed);
         }
 
         /// <summary>

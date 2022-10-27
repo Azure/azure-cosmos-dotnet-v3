@@ -327,6 +327,27 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
+        private class StringVisitToString : SqlBuiltinFunctionVisitor
+        {
+            public StringVisitToString()
+                : base("ToString",
+                    true,
+                    null)
+            {
+            }
+
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                if ((methodCallExpression.Arguments.Count == 0) && (methodCallExpression.Object != null))
+                {
+                    SqlScalarExpression str = ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context);
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.ToString, str);
+                }
+
+                return null;
+            }
+        }
+
         static StringBuiltinFunctions()
         {
             StringBuiltinFunctionDefinitions = new Dictionary<string, BuiltinFunctionVisitor>
@@ -385,6 +406,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     "Reverse",
                     new StringVisitReverse()
+                },
+                {
+                    "ToString",
+                    new StringVisitToString()
                 },
                 {
                     "TrimEnd",
