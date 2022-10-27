@@ -9,7 +9,7 @@
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    //[TestClass]
+    [TestClass]
     public class SummaryDiagnosticsTest
     {
         private Container Container = null;
