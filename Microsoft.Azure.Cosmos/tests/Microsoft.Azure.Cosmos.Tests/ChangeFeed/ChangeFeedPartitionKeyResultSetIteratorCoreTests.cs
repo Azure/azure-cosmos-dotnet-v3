@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

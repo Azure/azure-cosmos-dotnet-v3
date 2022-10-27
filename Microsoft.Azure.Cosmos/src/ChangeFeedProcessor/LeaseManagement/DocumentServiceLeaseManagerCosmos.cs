@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -89,7 +90,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                     if (serverLease.Owner != oldOwner)
                     {
                         DefaultTrace.TraceInformation("{0} lease token was taken over by owner '{1}'", lease.CurrentLeaseToken, serverLease.Owner);
-                        throw new LeaseLostException(lease);
+                        throw new LeaseLostException(
+                            lease, 
+                            CosmosExceptionFactory.Create(
+                                statusCode: HttpStatusCode.PreconditionFailed, 
+                                message: $"{lease.CurrentLeaseToken} lease token was taken over by owner '{serverLease.Owner}'",
+                                headers: new Headers(),
+                                stackTrace: default,
+                                trace: NoOpTrace.Singleton,
+                                error: default,
+                                innerException: default),
+                            isGone: false);
                     }
                     serverLease.Owner = this.options.HostName;
                     serverLease.Properties = lease.Properties;

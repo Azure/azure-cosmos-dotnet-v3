@@ -21,8 +21,6 @@ namespace Microsoft.Azure.Cosmos
         private Collection<AccountRegion> readRegions;
         private Collection<AccountRegion> writeRegions;
 
-        private string accountNameWithCloudInfo;
-
         internal readonly Lazy<IDictionary<string, object>> QueryEngineConfigurationInternal;
 
         /// <summary>
@@ -60,13 +58,6 @@ namespace Microsoft.Azure.Cosmos
         /// Unlike <see cref="Documents.Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
         /// </para>
         /// <para>
-        /// When working with document resources, they too have this settable Id property. 
-        /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
-        /// persisting the document in the database. 
-        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Cosmos.DocumentClient"/> instance to true.
-        /// This will prevent the SDK from generating new Ids. 
-        /// </para>
-        /// <para>
         /// The following characters are restricted and cannot be used in the Id property:
         ///  '/', '\\', '?', '#'
         /// </para>
@@ -79,7 +70,6 @@ namespace Microsoft.Azure.Cosmos
             internal set
             {
                 this.id = value;
-                this.accountNameWithCloudInfo = null;
             }
         }
 
@@ -249,26 +239,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 return new Dictionary<string, object>();
             }
-        }
-        
-        [JsonIgnore]
-        internal string AccountNameWithCloudInformation => this.AppendAccountAndCloudInfo();
-
-        /// <summary>
-        /// if there is cached value AND there is no change in the account id.
-        /// Ideally, it should not change but it has internal setter that's why this check is required.
-        /// </summary>
-        /// <returns>accountNameWithCloudInfoSnapshot</returns>
-        private string AppendAccountAndCloudInfo()
-        {
-            string accountNameWithCloudInfoSnapshot = this.accountNameWithCloudInfo;
-            if (!string.IsNullOrEmpty(accountNameWithCloudInfoSnapshot))
-            {
-                return accountNameWithCloudInfoSnapshot;
-            }
-
-            return this.accountNameWithCloudInfo = $"{this.Id}({VmMetadataApiHandler.GetCloudInformation()})";
-
         }
 
         /// <summary>

@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 NotStr, NotStr, NotStr, NotStr, NotStr, NotStr, NotStr, NotStr,
                 NotStr, NotStr, NotStr, NotStr, NotStr, NotStr, NotStr, NotStr,
 
-                // Encoded 1-byte system string (32 values)
+                // Encoded 1-byte system string (64 values)
                 SystemStrings.Strings[0].Utf8String.Length, SystemStrings.Strings[1].Utf8String.Length,
                 SystemStrings.Strings[2].Utf8String.Length, SystemStrings.Strings[3].Utf8String.Length,
                 SystemStrings.Strings[4].Utf8String.Length, SystemStrings.Strings[5].Utf8String.Length,
@@ -54,12 +54,22 @@ namespace Microsoft.Azure.Cosmos.Json
                 SystemStrings.Strings[26].Utf8String.Length, SystemStrings.Strings[27].Utf8String.Length,
                 SystemStrings.Strings[28].Utf8String.Length, SystemStrings.Strings[29].Utf8String.Length,
                 SystemStrings.Strings[30].Utf8String.Length, SystemStrings.Strings[31].Utf8String.Length,
-
-                // Encoded 1-byte user string (32 values)
-                UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1,
-                UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1,
-                UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1,
-                UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1, UsrStr1,
+                SystemStrings.Strings[32].Utf8String.Length, SystemStrings.Strings[33].Utf8String.Length,
+                SystemStrings.Strings[34].Utf8String.Length, SystemStrings.Strings[35].Utf8String.Length,
+                SystemStrings.Strings[36].Utf8String.Length, SystemStrings.Strings[37].Utf8String.Length,
+                SystemStrings.Strings[38].Utf8String.Length, SystemStrings.Strings[39].Utf8String.Length,
+                SystemStrings.Strings[40].Utf8String.Length, SystemStrings.Strings[41].Utf8String.Length,
+                SystemStrings.Strings[42].Utf8String.Length, SystemStrings.Strings[43].Utf8String.Length,
+                SystemStrings.Strings[44].Utf8String.Length, SystemStrings.Strings[45].Utf8String.Length,
+                SystemStrings.Strings[46].Utf8String.Length, SystemStrings.Strings[47].Utf8String.Length,
+                SystemStrings.Strings[48].Utf8String.Length, SystemStrings.Strings[49].Utf8String.Length,
+                SystemStrings.Strings[50].Utf8String.Length, SystemStrings.Strings[51].Utf8String.Length,
+                SystemStrings.Strings[52].Utf8String.Length, SystemStrings.Strings[53].Utf8String.Length,
+                SystemStrings.Strings[54].Utf8String.Length, SystemStrings.Strings[55].Utf8String.Length,
+                SystemStrings.Strings[56].Utf8String.Length, SystemStrings.Strings[57].Utf8String.Length,
+                SystemStrings.Strings[58].Utf8String.Length, SystemStrings.Strings[59].Utf8String.Length,
+                SystemStrings.Strings[60].Utf8String.Length, SystemStrings.Strings[61].Utf8String.Length,
+                SystemStrings.Strings[62].Utf8String.Length, SystemStrings.Strings[63].Utf8String.Length,
     
                 // Encoded 2-byte user string (8 values) 
                 UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2, UsrStr2,

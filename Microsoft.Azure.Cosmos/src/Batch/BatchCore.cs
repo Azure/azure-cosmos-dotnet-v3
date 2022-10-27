@@ -232,7 +232,10 @@ namespace Microsoft.Azure.Cosmos
                     this.operations = new List<ItemBatchOperation>();
                     return executor.ExecuteAsync(trace,  cancellationToken);
                 },
-                (response) => new OpenTelemetryResponse(response));
+                (response) => new OpenTelemetryResponse(
+                    responseMessage: response, 
+                    containerName: this.container?.Id, 
+                    databaseName: this.container?.Database?.Id));
         }
 
         /// <summary>

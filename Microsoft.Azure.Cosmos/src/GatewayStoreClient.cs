@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -253,6 +254,12 @@ namespace Microsoft.Azure.Cosmos
                 request.OperationType == OperationType.QueryPlan ||
                 (request.ResourceType == ResourceType.PartitionKey && request.OperationType == OperationType.Delete))
             {
+                httpMethod = HttpMethod.Post;
+            }
+            else if (ChangeFeedHelper.IsChangeFeedWithQueryRequest(request.OperationType, request.Body != null))
+            {
+                // ChangeFeed with payload is a CF with query support and will
+                // be a query POST request.
                 httpMethod = HttpMethod.Post;
             }
             else if (request.OperationType == OperationType.Read
