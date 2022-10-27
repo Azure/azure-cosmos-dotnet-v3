@@ -514,7 +514,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 if (uris != null)
                 {
-                    Dictionary<TransportAddressUri, int> uriCount = new();
+                    Dictionary<TransportAddressUri, int> uriCount = new ();
                     foreach (TransportAddressUri transportAddressUri in uris)
                     {
                         if (transportAddressUri == null)
