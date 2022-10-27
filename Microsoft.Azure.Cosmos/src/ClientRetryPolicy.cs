@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Received 503.0 due to client connect timeout or Gateway
             if (statusCode == HttpStatusCode.ServiceUnavailable
-                && subStatusCode == SubStatusCodes.Unknown)
+                && ClientRetryPolicy.IsRetriableServiceUnavailable(subStatusCode))
             {
                 DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
@@ -231,6 +231,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return null;
+        }
+
+        private static bool IsRetriableServiceUnavailable(SubStatusCodes? subStatusCode)
+        {
+            return subStatusCode == SubStatusCodes.Unknown ||
+                (subStatusCode.HasValue && subStatusCode.Value.IsSDKGeneratedSubStatus());
         }
 
         private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(

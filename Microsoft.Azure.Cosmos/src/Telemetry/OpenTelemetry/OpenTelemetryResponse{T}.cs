@@ -4,28 +4,53 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
+    using System.Net;
+    using Telemetry;
 
     internal sealed class OpenTelemetryResponse<T> : OpenTelemetryAttributes
     {
-        internal OpenTelemetryResponse(Response<T> responseMessage) 
-            : base(responseMessage.RequestMessage)
+        internal OpenTelemetryResponse(FeedResponse<T> responseMessage, string containerName = null, string databaseName = null)
+        : this(
+               statusCode: responseMessage.StatusCode,
+               requestCharge: responseMessage.Headers?.RequestCharge,
+               responseContentLength: responseMessage?.Headers?.ContentLength,
+               diagnostics: responseMessage.Diagnostics,
+               itemCount: responseMessage.Headers?.ItemCount,
+               databaseName: databaseName,
+               containerName: containerName,
+               requestMessage: responseMessage.RequestMessage)
         {
-            this.StatusCode = responseMessage.StatusCode;
-            this.RequestCharge = responseMessage.Headers?.RequestCharge;
-            this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable; 
-            this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount;
         }
 
-        internal OpenTelemetryResponse(FeedResponse<T> responseMessage)
-           : base(responseMessage.RequestMessage)
+        internal OpenTelemetryResponse(Response<T> responseMessage, string containerName = null, string databaseName = null)
+           : this(
+                  statusCode: responseMessage.StatusCode,
+                  requestCharge: responseMessage.Headers?.RequestCharge,
+                  responseContentLength: responseMessage?.Headers?.ContentLength,
+                  diagnostics: responseMessage.Diagnostics,
+                  itemCount: responseMessage.Headers?.ItemCount,
+                  databaseName: databaseName,
+                  containerName: containerName,
+                  requestMessage: responseMessage.RequestMessage)
         {
-            this.StatusCode = responseMessage.StatusCode;
-            this.RequestCharge = responseMessage.Headers?.RequestCharge;
-            this.ResponseContentLength = responseMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
-            this.Diagnostics = responseMessage.Diagnostics;
-            this.ItemCount = responseMessage.Headers?.ItemCount;
+        }
+
+        private OpenTelemetryResponse(
+           HttpStatusCode statusCode,
+           double? requestCharge,
+           string responseContentLength,
+           CosmosDiagnostics diagnostics,
+           string itemCount,
+           string databaseName,
+           string containerName,
+           RequestMessage requestMessage)
+           : base(requestMessage, containerName, databaseName)
+        {
+            this.StatusCode = statusCode;
+            this.RequestCharge = requestCharge;
+            this.ResponseContentLength = responseContentLength ?? OpenTelemetryAttributes.NotAvailable;
+            this.Diagnostics = diagnostics;
+            this.ItemCount = itemCount ?? OpenTelemetryAttributes.NotAvailable;
         }
     }
 }

@@ -81,17 +81,15 @@ namespace Microsoft.Azure.Cosmos.Json
                 RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token,
                 RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token,
 
-                // Encoded 1-byte system string (32 values)
+                // Encoded 1-byte system string (64 values)
                 RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token,
                 RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token,
                 RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token,
                 RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token,
-
-                // Encoded 1-byte user string (32 values)
-                RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr,
-                RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr,
-                RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr,
-                RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr,
+                RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token,
+                RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token,
+                RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token,
+                RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token, RawValueType.Token,
 
                 // Encoded 2-byte user string (8 values)
                 RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr, RawValueType.StrUsr,
