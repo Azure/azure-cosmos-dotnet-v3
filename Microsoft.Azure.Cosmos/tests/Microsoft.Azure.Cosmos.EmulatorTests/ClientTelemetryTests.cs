@@ -44,17 +44,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private HttpClientHandlerHelper httpHandler;
         private HttpClientHandlerHelper httpHandlerForNonAzureInstance;
 
-        [TestInitialize]
-        public void TestInitialize()
+        [ClassInitialize]
+        public static void ClassInitialize(TestContext _)
         {
-            Util.EnableClientTelemetryEnvironmentVariables();
-            
             SystemUsageMonitor oldSystemUsageMonitor = (SystemUsageMonitor)typeof(DiagnosticsHandlerHelper)
                 .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.Instance);
             oldSystemUsageMonitor.Stop();
 
             ClientTelemetryTests.ResetSystemUsageMonitor(true);
+        }
 
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            Util.EnableClientTelemetryEnvironmentVariables();
+            
             this.actualInfo = new List<ClientTelemetryProperties>();
 
             this.httpHandler = new HttpClientHandlerHelper
@@ -171,7 +175,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestCleanup();
 
             Util.DisableClientTelemetryEnvironmentVariables();
+        }
 
+        [ClassCleanup]
+        public static void FinalCleanup()
+        {
             ClientTelemetryTests.ResetSystemUsageMonitor(false);
         }
             
