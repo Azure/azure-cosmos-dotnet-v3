@@ -40,16 +40,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     writer.WriteFieldName("Summary");
                     SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
                     summaryDiagnostics.WriteSummaryDiagnostics(writer);
+                    writer.WriteFieldName("start time");
+                    writer.WriteStringValue(trace.StartTime.ToString("hh:mm:ss:fff"));
                 }
 
                 writer.WriteFieldName("name");
                 writer.WriteStringValue(trace.Name);
-
-                writer.WriteFieldName("id");
-                writer.WriteStringValue(trace.Id.ToString());
-
-                writer.WriteFieldName("start time");
-                writer.WriteStringValue(trace.StartTime.ToString("hh:mm:ss:fff"));
 
                 writer.WriteFieldName("duration in milliseconds");
                 writer.WriteNumber64Value(trace.Duration.TotalMilliseconds);
@@ -78,8 +74,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                     foreach (ITrace child in trace.Children)
                     {
-                        WriteTrace(writer, 
-                            child, 
+                        WriteTrace(writer,
+                            child,
                             isRootTrace: false);
                     }
 
@@ -208,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 foreach (KeyValuePair<string, ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics> stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics)
                 {
-                   this.VisitAddressResolutionStatistics(stat.Value);
+                    this.VisitAddressResolutionStatistics(stat.Value);
                 }
 
                 this.jsonWriter.WriteArrayEnd();
@@ -518,7 +514,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 if (uris != null)
                 {
-                    Dictionary<TransportAddressUri, int> uriCount = new ();
+                    Dictionary<TransportAddressUri, int> uriCount = new();
                     foreach (TransportAddressUri transportAddressUri in uris)
                     {
                         if (transportAddressUri == null)
@@ -536,7 +532,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         }
                     }
 
-                    foreach (KeyValuePair<TransportAddressUri, int> contactedCount in uriCount) 
+                    foreach (KeyValuePair<TransportAddressUri, int> contactedCount in uriCount)
                     {
                         this.jsonWriter.WriteObjectStart();
                         this.jsonWriter.WriteFieldName("Count");
