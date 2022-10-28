@@ -150,8 +150,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                     return OptimisticDirectExecutionContext(
                                 documentContainer,
+                                cosmosQueryContext,
                                 inputParameters,
                                 targetRange,
+                                trace,
                                 cancellationToken);
                 }
 
@@ -318,8 +320,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                 tryCreatePipelineStage = CosmosQueryExecutionContextFactory.OptimisticDirectExecutionContext(
                     documentContainer,
+                    cosmosQueryContext,
                     inputParameters,
                     targetRange,
+                    trace,
                     cancellationToken);
 
                 return tryCreatePipelineStage;
@@ -378,19 +382,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         
         private static TryCatch<IQueryPipelineStage> OptimisticDirectExecutionContext(
             DocumentContainer documentContainer,
+            CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             Documents.PartitionKeyRange targetRange,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             // Return a OptimisticDirectExecution context
             return OptimisticDirectExecutionQueryPipelineStage.MonadicCreate(
-                documentContainer: documentContainer,
-                sqlQuerySpec: inputParameters.SqlQuerySpec,
-                targetRange: new FeedRangeEpk(targetRange.ToRange()),
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount),
-                partitionKey: inputParameters.PartitionKey,
-                continuationToken: inputParameters.InitialUserContinuationToken,
-                cancellationToken: cancellationToken);
+                documentContainer,
+                cosmosQueryContext,
+                inputParameters,
+                targetRange,
+                trace,
+                cancellationToken);
         }
         
         private static TryCatch<IQueryPipelineStage> TryCreatePassthroughQueryExecutionContext(
