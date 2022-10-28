@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 foreach (KeyValuePair<string, ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics> stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics)
                 {
-                    this.VisitAddressResolutionStatistics(stat.Value);
+                   this.VisitAddressResolutionStatistics(stat.Value);
                 }
 
                 this.jsonWriter.WriteArrayEnd();
