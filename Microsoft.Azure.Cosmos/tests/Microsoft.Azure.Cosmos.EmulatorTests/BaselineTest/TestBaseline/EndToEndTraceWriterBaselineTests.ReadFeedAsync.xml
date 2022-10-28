@@ -138,15 +138,12 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
-  "name": "Trace Forest",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
+  "name": "Trace Forest",
   "duration in milliseconds": 0,
   "children": [
     {
       "name": "FeedIterator Read Next Async",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -154,56 +151,38 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[,FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Prefetch",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "[,FF) move next",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Get Collection Cache",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0
                                 },
                                 {
                                   "name": "Get Partition Key Range Cache",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0
                                 },
                                 {
                                   "name": "Try Get Overlapping Ranges",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0
                                 }
                               ]
@@ -216,46 +195,32 @@
                 },
                 {
                   "name": "Get Container Properties",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Get Collection Cache",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
                 },
                 {
                   "name": "Get RID",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 },
                 {
                   "name": "Get Collection Cache",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 },
                 {
                   "name": "Get Overlapping Feed Ranges",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Get Partition Key Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
                       ]
@@ -264,44 +229,30 @@
                 },
                 {
                   "name": "MoveNextAsync",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[,05C1CFFFFFFFF8) move next",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "data": {
                                 "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -309,26 +260,18 @@
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                              "id": "00000000-0000-0000-0000-000000000000",
-                                              "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -356,8 +299,6 @@
     },
     {
       "name": "FeedIterator Read Next Async",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -365,50 +306,34 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Get Partition Key Range Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -416,26 +341,18 @@
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "data": {
                                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -461,8 +378,6 @@
     },
     {
       "name": "FeedIterator Read Next Async",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -470,50 +385,34 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Get Partition Key Range Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -521,26 +420,18 @@
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "data": {
                                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -566,8 +457,6 @@
     },
     {
       "name": "FeedIterator Read Next Async",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -575,50 +464,34 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[05C1E7FFFFFFFA,FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Get Partition Key Range Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -626,26 +499,18 @@
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "data": {
                                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -825,15 +690,12 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
-  "name": "Trace Forest",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
+  "name": "Trace Forest",
   "duration in milliseconds": 0,
   "children": [
     {
       "name": "Typed FeedIterator ReadNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -841,56 +703,38 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[,FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Prefetch",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "[,FF) move next",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Get Collection Cache",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0
                                 },
                                 {
                                   "name": "Get Partition Key Range Cache",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0
                                 },
                                 {
                                   "name": "Try Get Overlapping Ranges",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0
                                 }
                               ]
@@ -903,46 +747,32 @@
                 },
                 {
                   "name": "Get Container Properties",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Get Collection Cache",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
                 },
                 {
                   "name": "Get RID",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 },
                 {
                   "name": "Get Collection Cache",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 },
                 {
                   "name": "Get Overlapping Feed Ranges",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Get Partition Key Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
                       ]
@@ -951,44 +781,30 @@
                 },
                 {
                   "name": "MoveNextAsync",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[,05C1CFFFFFFFF8) move next",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "data": {
                                 "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -996,26 +812,18 @@
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                              "id": "00000000-0000-0000-0000-000000000000",
-                                              "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -1041,16 +849,12 @@
         },
         {
           "name": "Feed Response Serialization",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Typed FeedIterator ReadNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -1058,50 +862,34 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Get Partition Key Range Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -1109,26 +897,18 @@
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "data": {
                                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -1152,16 +932,12 @@
         },
         {
           "name": "Feed Response Serialization",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Typed FeedIterator ReadNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -1169,50 +945,34 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Get Partition Key Range Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -1220,26 +980,18 @@
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "data": {
                                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -1263,16 +1015,12 @@
         },
         {
           "name": "Feed Response Serialization",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Typed FeedIterator ReadNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -1280,50 +1028,34 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[05C1E7FFFFFFFA,FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Get Partition Key Range Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -1331,26 +1063,18 @@
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "data": {
                                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -1374,8 +1098,6 @@
         },
         {
           "name": "Feed Response Serialization",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0
         }
       ]
@@ -1533,15 +1255,12 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
-  "name": "Trace Forest",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
+  "name": "Trace Forest",
   "duration in milliseconds": 0,
   "children": [
     {
       "name": "FeedIterator Read Next Async",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -1549,56 +1268,38 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[,FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Prefetch",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "[,FF) move next",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Get Collection Cache",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0
                                 },
                                 {
                                   "name": "Get Partition Key Range Cache",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0
                                 },
                                 {
                                   "name": "Try Get Overlapping Ranges",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0
                                 }
                               ]
@@ -1611,46 +1312,32 @@
                 },
                 {
                   "name": "Get Container Properties",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Get Collection Cache",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
                 },
                 {
                   "name": "Get RID",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 },
                 {
                   "name": "Get Collection Cache",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 },
                 {
                   "name": "Get Overlapping Feed Ranges",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Get Partition Key Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
                       ]
@@ -1659,44 +1346,30 @@
                 },
                 {
                   "name": "MoveNextAsync",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[,05C1CFFFFFFFF8) move next",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "data": {
                                 "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -1704,26 +1377,18 @@
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                              "id": "00000000-0000-0000-0000-000000000000",
-                                              "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -1751,8 +1416,6 @@
     },
     {
       "name": "FeedIterator Read Next Async",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -1760,50 +1423,34 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Get Partition Key Range Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -1811,26 +1458,18 @@
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "data": {
                                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -1856,8 +1495,6 @@
     },
     {
       "name": "FeedIterator Read Next Async",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -1865,50 +1502,34 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Get Partition Key Range Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -1916,26 +1537,18 @@
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "data": {
                                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -1961,8 +1574,6 @@
     },
     {
       "name": "FeedIterator Read Next Async",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -1970,50 +1581,34 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[05C1E7FFFFFFFA,FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Get Partition Key Range Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -2021,26 +1616,18 @@
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "data": {
                                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -2221,15 +1808,12 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
-  "name": "Trace Forest",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
+  "name": "Trace Forest",
   "duration in milliseconds": 0,
   "children": [
     {
       "name": "Typed FeedIterator ReadNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -2237,56 +1821,38 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[,FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Prefetch",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "[,FF) move next",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Get Collection Cache",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0
                                 },
                                 {
                                   "name": "Get Partition Key Range Cache",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0
                                 },
                                 {
                                   "name": "Try Get Overlapping Ranges",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0
                                 }
                               ]
@@ -2299,46 +1865,32 @@
                 },
                 {
                   "name": "Get Container Properties",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Get Collection Cache",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
                 },
                 {
                   "name": "Get RID",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 },
                 {
                   "name": "Get Collection Cache",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 },
                 {
                   "name": "Get Overlapping Feed Ranges",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Get Partition Key Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
                       ]
@@ -2347,44 +1899,30 @@
                 },
                 {
                   "name": "MoveNextAsync",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[,05C1CFFFFFFFF8) move next",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "data": {
                                 "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -2392,26 +1930,18 @@
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                              "id": "00000000-0000-0000-0000-000000000000",
-                                              "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -2437,16 +1967,12 @@
         },
         {
           "name": "Feed Response Serialization",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Typed FeedIterator ReadNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -2454,50 +1980,34 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Get Partition Key Range Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -2505,26 +2015,18 @@
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "data": {
                                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -2548,16 +2050,12 @@
         },
         {
           "name": "Feed Response Serialization",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Typed FeedIterator ReadNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -2565,50 +2063,34 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Get Partition Key Range Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -2616,26 +2098,18 @@
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "data": {
                                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -2659,16 +2133,12 @@
         },
         {
           "name": "Feed Response Serialization",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Typed FeedIterator ReadNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -2676,50 +2146,34 @@
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[05C1E7FFFFFFFA,FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Get Collection Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Get Partition Key Range Cache",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Try Get Overlapping Ranges",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         },
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -2727,26 +2181,18 @@
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "data": {
                                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -2770,8 +2216,6 @@
         },
         {
           "name": "Feed Response Serialization",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0
         }
       ]
