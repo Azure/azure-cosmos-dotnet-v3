@@ -8,9 +8,13 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -20,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// AddressCache implementation for client SDK. Supports cross region address routing based on
     /// avaialbility and preference list.
     /// </summary>
-    internal sealed class GlobalAddressResolver : IAddressResolver, IDisposable
+    internal sealed class GlobalAddressResolver : IAddressResolverExtension, IDisposable
     {
         private const int MaxBackupReadRegions = 3;
 
@@ -100,10 +104,97 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
             {
-                tasks.Add(endpointCache.AddressCache.OpenAsync(databaseName, collection, ranges, cancellationToken));
+                tasks.Add(endpointCache.AddressCache.OpenConnectionsAsync(
+                    databaseName: databaseName,
+                    collection: collection,
+                    partitionKeyRangeIdentities: ranges,
+                    openConnectionHandler: null,
+                    cancellationToken: cancellationToken));
             }
 
             await Task.WhenAll(tasks);
+        }
+
+        /// <summary>
+        /// Invokes the gateway address cache and passes the <see cref="Documents.Rntbd.TransportClient"/> deligate to be invoked from the same.
+        /// </summary>
+        /// <param name="databaseName">A string containing the name of the database.</param>
+        /// <param name="containerLinkUri">A string containing the container's link uri.</param>
+        /// <param name="openConnectionHandlerAsync">The transport client callback delegate to be invoked at a later point of time.</param>
+        /// <param name="cancellationToken">An Instance of the <see cref="CancellationToken"/>.</param>
+        public async Task OpenConnectionsToAllReplicasAsync(
+            string databaseName,
+            string containerLinkUri,
+            Func<Uri, Task> openConnectionHandlerAsync,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                ContainerProperties collection = await this.collectionCache.ResolveByNameAsync(
+                        apiVersion: HttpConstants.Versions.CurrentVersion,
+                        resourceAddress: containerLinkUri,
+                        forceRefesh: false,
+                        trace: NoOpTrace.Singleton,
+                        clientSideRequestStatistics: null,
+                        cancellationToken: cancellationToken);
+
+                if (collection == null)
+                {
+                    throw CosmosExceptionFactory.Create(
+                        statusCode: HttpStatusCode.NotFound,
+                        message: $"Could not resolve the collection: {containerLinkUri} for database: {databaseName}.",
+                        stackTrace: default,
+                        headers: new Headers(),
+                        trace: NoOpTrace.Singleton,
+                        error: null,
+                        innerException: default);
+                }
+
+                IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.routingMapProvider?.TryGetOverlappingRangesAsync(
+                        collectionRid: collection.ResourceId,
+                        range: FeedRangeEpk.FullRange.Range,
+                        trace: NoOpTrace.Singleton);
+
+                IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities = partitionKeyRanges?.Select(
+                    range => new PartitionKeyRangeIdentity(
+                        collection.ResourceId,
+                        range.Id))
+                    .ToList();
+
+                Uri firstPreferredReadRegion = this.endpointManager
+                    .ReadEndpoints
+                    .First();
+
+                if (!this.addressCacheByEndpoint.ContainsKey(firstPreferredReadRegion))
+                {
+                    DefaultTrace.TraceWarning("The Address Cache doesn't contain a value for the first preferred read region: {0} under the database: {1}. '{2}'",
+                        firstPreferredReadRegion,
+                        databaseName,
+                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                    return;
+                }
+
+                await this.addressCacheByEndpoint[firstPreferredReadRegion]
+                    .AddressCache
+                    .OpenConnectionsAsync(
+                        databaseName: databaseName,
+                        collection: collection,
+                        partitionKeyRangeIdentities: partitionKeyRangeIdentities,
+                        openConnectionHandler: openConnectionHandlerAsync,
+                        cancellationToken: cancellationToken);
+
+            }
+            catch (Exception ex)
+            {
+                throw ex switch
+                {
+                    DocumentClientException dce => CosmosExceptionFactory.Create(
+                        dce,
+                        NoOpTrace.Singleton),
+
+                    _ => ex,
+                };
+            }
         }
 
         public async Task<PartitionAddressInformation> ResolveAsync(
