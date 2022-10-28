@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Net;
     using System.Threading;
@@ -143,15 +144,14 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <inheritdoc/>>
-        public async Task OpenConnectionsToAllReplicasAsync(
-            string databaseName,
-            string containerLinkUri,
+        public async Task OpenConnectionsAsync(
+            IEnumerable<Uri> addrsses,
             CancellationToken cancellationToken = default)
         {
-            await this.replicatedResourceClient.OpenConnectionsToAllReplicasAsync(
-                databaseName,
-                containerLinkUri,
-                cancellationToken);
+            foreach (Uri endpoint in addrsses)
+            {
+                await this.transportClient.OpenConnectionAsync(endpoint);
+            }
         }
 
         #region Response/Headers helper

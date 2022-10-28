@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
@@ -418,11 +419,21 @@ namespace Microsoft.Azure.Cosmos
             string containerLinkUri,
             CancellationToken cancellationToken)
         {
+            // TODO: Exception handling -> convert DCE to CosmosExceptions
             await this.DocumentClient.EnsureValidClientAsync(NoOpTrace.Singleton);
-            await this.DocumentClient.OpenConnectionsToAllReplicasAsync(
-                databaseId,
-                containerLinkUri,
+            IEnumerable<Uri> addresses = await this.DocumentClient.InitializeCachesAsync(databaseId, 
+                containerLinkUri, 
+                GlobalAddressResolver.AddressResolutionPolicy.FirstReadOrWriteRegionsOnly,
                 cancellationToken);
+
+            // Only when StoreModel implements IStoreModelExtension
+            if (this.DocumentClient.StoreModel is IStoreModelExtension)
+            {
+                IStoreModelExtension storeModelExtension = (IStoreModelExtension)this.DocumentClient.StoreModel;
+                await storeModelExtension.OpenConnectionsAsync(
+                            addresses,
+                            cancellationToken);
+            }
         }
 
         public override void Dispose()

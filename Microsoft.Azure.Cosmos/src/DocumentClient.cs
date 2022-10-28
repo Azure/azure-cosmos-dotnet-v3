@@ -1057,16 +1057,27 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async Task InitializeCachesAsync(string databaseName, DocumentCollection collection, CancellationToken cancellationToken)
+        private Task InitializeCachesAsync(string databaseName, DocumentCollection collection, CancellationToken cancellationToken)
+        {
+            return this.InitializeCachesAsync(databaseName, 
+                collection.SelfLink,
+                GlobalAddressResolver.AddressResolutionPolicy.Default,
+                cancellationToken);
+        }
+
+        internal async Task<IEnumerable<Uri>> InitializeCachesAsync(string databaseName, 
+            string collectionLink,
+            GlobalAddressResolver.AddressResolutionPolicy addressResolutionPolicy,
+            CancellationToken cancellationToken)
         {
             if (databaseName == null)
             {
                 throw new ArgumentNullException(nameof(databaseName));
             }
 
-            if (collection == null)
+            if (collectionLink == null)
             {
-                throw new ArgumentNullException(nameof(collection));
+                throw new ArgumentNullException(nameof(collectionLink));
             }
 
             CollectionCache collectionCache = await this.GetCollectionCacheAsync(NoOpTrace.Singleton);
@@ -1074,7 +1085,7 @@ namespace Microsoft.Azure.Cosmos
                 DocumentServiceRequest request = DocumentServiceRequest.Create(
                     OperationType.Query,
                     ResourceType.Document,
-                    collection.SelfLink,
+                    collectionLink,
                     AuthorizationTokenType.PrimaryMasterKey))
             {
                 ContainerProperties resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
@@ -1090,8 +1101,10 @@ namespace Microsoft.Azure.Cosmos
                 // In Gateway mode, AddressCache is null
                 if (this.AddressResolver != null)
                 {
-                    await this.AddressResolver.OpenAsync(databaseName, resolvedCollection, cancellationToken);
+                    return await this.AddressResolver.OpenAsync(databaseName, resolvedCollection, addressResolutionPolicy, cancellationToken);
                 }
+
+                return Enumerable.Empty<Uri>();
             }
         }
 
@@ -1359,7 +1372,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Test hook to enable unit test of DocumentClient.
         /// </remarks>
-        internal IStoreModelExtension StoreModel { get; set; }
+        internal IStoreModel StoreModel { get; set; }
 
         /// <summary>
         /// Gets and sets the gateway IStoreModel object.
@@ -1367,7 +1380,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Test hook to enable unit test of DocumentClient.
         /// </remarks>
-        internal IStoreModelExtension GatewayStoreModel { get; set; }
+        internal IStoreModel GatewayStoreModel { get; set; }
 
         /// <summary>
         /// Gets and sets on execute scalar query callback
@@ -1459,44 +1472,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 IStoreModel storeProxy = this.GetStoreProxy(request);
                 return await storeProxy.ProcessMessageAsync(request, cancellationToken);
-            }
-        }
-
-        /// <summary>
-        /// Establishes and Initializes the Rntbd connection to all the backend replica nodes
-        /// for the given database name and container.
-        /// </summary>
-        /// <param name="databaseName">A string containing the cosmos database name.</param>
-        /// <param name="containerLinkUri">A string containing the cosmos container link uri.</param>
-        /// <param name="cancellationToken">An instance of the <see cref="CancellationToken"/>.</param>
-        internal async Task OpenConnectionsToAllReplicasAsync(
-            string databaseName,
-            string containerLinkUri,
-            CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrEmpty(databaseName) ||
-                string.IsNullOrEmpty(containerLinkUri))
-            {
-                string resourceName = string.IsNullOrEmpty(databaseName) ?
-                    nameof(databaseName) :
-                    nameof(containerLinkUri);
-
-                throw new ArgumentNullException(resourceName);
-            }
-
-            if (this.StoreModel != null)
-            {
-                try
-                {
-                    await this.StoreModel.OpenConnectionsToAllReplicasAsync(
-                        databaseName,
-                        containerLinkUri,
-                        cancellationToken);
-                }
-                catch (Exception)
-                {
-                    throw;
-                }
             }
         }
 

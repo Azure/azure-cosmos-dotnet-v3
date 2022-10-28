@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
@@ -104,14 +105,12 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <inheritdoc/>>
-        public async Task OpenConnectionsToAllReplicasAsync(
-            string databaseName,
-            string containerLinkUri,
+        public async Task OpenConnectionsAsync(
+            IEnumerable<Uri> addrsses,
             CancellationToken cancellationToken = default)
         {
-            await this.storeClient.OpenConnectionsToAllReplicasAsync(
-                databaseName,
-                containerLinkUri,
+            await this.storeClient.OpenConnectionsAsync(
+                addrsses,
                 cancellationToken);
         }
 

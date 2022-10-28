@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string exceptionMessage = "Internal Server Error";
             Mock<IStoreModelExtension> mockStoreModel = new ();
             mockStoreModel
-                .Setup(model => model.OpenConnectionsToAllReplicasAsync(
+                .Setup(model => model.OpenConnectionsAsync(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<CancellationToken>()))
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Assert.
             Assert.IsNotNull(ex);
             Assert.AreEqual(exceptionMessage, ex.Message);
-            mockStoreModel.Verify(x => x.OpenConnectionsToAllReplicasAsync(
+            mockStoreModel.Verify(x => x.OpenConnectionsAsync(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<CancellationToken>()), Times.Once);

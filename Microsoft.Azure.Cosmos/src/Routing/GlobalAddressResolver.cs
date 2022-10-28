@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// AddressCache implementation for client SDK. Supports cross region address routing based on
     /// avaialbility and preference list.
     /// </summary>
-    internal sealed class GlobalAddressResolver : IAddressResolverExtension, IDisposable
+    internal sealed class GlobalAddressResolver : IAddressResolver, IDisposable
     {
         private const int MaxBackupReadRegions = 3;
 
@@ -81,9 +81,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task OpenAsync(
+        public enum AddressResolutionPolicy
+        {
+            Default, // All replicas in all PreferredRegions
+            FirstReadOrWriteRegionsOnly // Write region only primary addresses are returned
+        }
+
+        public async Task<IEnumerable<Uri>> OpenAsync(
             string databaseName,
             ContainerProperties collection,
+            AddressResolutionPolicy addressResolutionPolicy,
             CancellationToken cancellationToken)
         {
             CollectionRoutingMap routingMap = await this.routingMapProvider.TryLookupAsync(
@@ -94,106 +101,63 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             if (routingMap == null)
             {
-                return;
+                return Enumerable.Empty<Uri>();
             }
 
             List<PartitionKeyRangeIdentity> ranges = routingMap.OrderedPartitionKeyRanges.Select(
                 range => new PartitionKeyRangeIdentity(collection.ResourceId, range.Id)).ToList();
 
-            List<Task> tasks = new List<Task>();
-
-            foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
+            List<Task<IEnumerable<Uri>>> tasks = new List<Task<IEnumerable<Uri>>>();
+            foreach ((EndpointCache endpointCache, bool primaryReplicaAddressOnly) in 
+                        this.GetInitalizationRegions(addressResolutionPolicy))
             {
-                tasks.Add(endpointCache.AddressCache.OpenConnectionsAsync(
+                tasks.Add(endpointCache.AddressCache.OpenAsync(
                     databaseName: databaseName,
                     collection: collection,
                     partitionKeyRangeIdentities: ranges,
-                    openConnectionHandler: null,
+                    primaryReplicaAddressOnly: primaryReplicaAddressOnly,
                     cancellationToken: cancellationToken));
             }
 
-            await Task.WhenAll(tasks);
+            IEnumerable<Uri>[] serverEndpoints = await Task.WhenAll(tasks);
+
+            // All initialization finished, just return distincts
+            return serverEndpoints
+                .SelectMany(e => e)
+                .Distinct();
         }
 
-        /// <summary>
-        /// Invokes the gateway address cache and passes the <see cref="Documents.Rntbd.TransportClient"/> deligate to be invoked from the same.
-        /// </summary>
-        /// <param name="databaseName">A string containing the name of the database.</param>
-        /// <param name="containerLinkUri">A string containing the container's link uri.</param>
-        /// <param name="openConnectionHandlerAsync">The transport client callback delegate to be invoked at a later point of time.</param>
-        /// <param name="cancellationToken">An Instance of the <see cref="CancellationToken"/>.</param>
-        public async Task OpenConnectionsToAllReplicasAsync(
-            string databaseName,
-            string containerLinkUri,
-            Func<Uri, Task> openConnectionHandlerAsync,
-            CancellationToken cancellationToken = default)
+        private IEnumerable<(EndpointCache, bool)> GetInitalizationRegions(AddressResolutionPolicy addressResolutionPolicy)
         {
-            try
+            const bool IsOnlyPrimaryReplicaAddresses = true;
+
+            switch(addressResolutionPolicy)
             {
-                ContainerProperties collection = await this.collectionCache.ResolveByNameAsync(
-                        apiVersion: HttpConstants.Versions.CurrentVersion,
-                        resourceAddress: containerLinkUri,
-                        forceRefesh: false,
-                        trace: NoOpTrace.Singleton,
-                        clientSideRequestStatistics: null,
-                        cancellationToken: cancellationToken);
+                case AddressResolutionPolicy.FirstReadOrWriteRegionsOnly:
+                    Uri writeRegionEndpoint = endpointManager.WriteEndpoints.First();
+                    Uri readRegionEndpoint = endpointManager.ReadEndpoints.First();
 
-                if (collection == null)
-                {
-                    throw CosmosExceptionFactory.Create(
-                        statusCode: HttpStatusCode.NotFound,
-                        message: $"Could not resolve the collection: {containerLinkUri} for database: {databaseName}.",
-                        stackTrace: default,
-                        headers: new Headers(),
-                        trace: NoOpTrace.Singleton,
-                        error: null,
-                        innerException: default);
-                }
-
-                IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.routingMapProvider?.TryGetOverlappingRangesAsync(
-                        collectionRid: collection.ResourceId,
-                        range: FeedRangeEpk.FullRange.Range,
-                        trace: NoOpTrace.Singleton);
-
-                IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities = partitionKeyRanges?.Select(
-                    range => new PartitionKeyRangeIdentity(
-                        collection.ResourceId,
-                        range.Id))
-                    .ToList();
-
-                Uri firstPreferredReadRegion = this.endpointManager
-                    .ReadEndpoints
-                    .First();
-
-                if (!this.addressCacheByEndpoint.ContainsKey(firstPreferredReadRegion))
-                {
-                    DefaultTrace.TraceWarning("The Address Cache doesn't contain a value for the first preferred read region: {0} under the database: {1}. '{2}'",
-                        firstPreferredReadRegion,
-                        databaseName,
-                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
-                    return;
-                }
-
-                await this.addressCacheByEndpoint[firstPreferredReadRegion]
-                    .AddressCache
-                    .OpenConnectionsAsync(
-                        databaseName: databaseName,
-                        collection: collection,
-                        partitionKeyRangeIdentities: partitionKeyRangeIdentities,
-                        openConnectionHandler: openConnectionHandlerAsync,
-                        cancellationToken: cancellationToken);
-
-            }
-            catch (Exception ex)
-            {
-                throw ex switch
-                {
-                    DocumentClientException dce => CosmosExceptionFactory.Create(
-                        dce,
-                        NoOpTrace.Singleton),
-
-                    _ => ex,
-                };
+                    if (writeRegionEndpoint.Equals(readRegionEndpoint))
+                    {
+                        // Both read and write regions are same 
+                        EndpointCache writeRegionCache = this.GetOrAddEndpoint(writeRegionEndpoint);
+                        yield return (writeRegionCache, !IsOnlyPrimaryReplicaAddresses);
+                    }
+                    else
+                    {
+                        EndpointCache writeRegionCache = this.GetOrAddEndpoint(writeRegionEndpoint);
+                        EndpointCache readRegionCache = this.GetOrAddEndpoint(readRegionEndpoint);
+                        yield return (writeRegionCache, IsOnlyPrimaryReplicaAddresses);
+                        yield return (readRegionCache, !IsOnlyPrimaryReplicaAddresses);
+                    }
+                    break;
+                case AddressResolutionPolicy.Default:
+                default:
+                    foreach(var e in this.addressCacheByEndpoint.Values)
+                    {
+                        yield return (e, !IsOnlyPrimaryReplicaAddresses);
+                    }
+                    break;
             }
         }
 

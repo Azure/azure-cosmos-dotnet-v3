@@ -84,11 +84,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
 
-        public async Task OpenConnectionsAsync(
+        public async Task<IEnumerable<Uri>> OpenAsync(
             string databaseName,
             ContainerProperties collection,
             IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities,
-            Func<Uri, Task> openConnectionHandler,
+            bool primaryReplicaAddressOnly,
             CancellationToken cancellationToken)
         {
             List<Task<TryCatch<DocumentServiceResponse>>> tasks = new ();
@@ -133,7 +133,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
-            foreach (TryCatch<DocumentServiceResponse> task in await Task.WhenAll(tasks))
+            HashSet<string> addresses = new HashSet<string>();
+            TryCatch<DocumentServiceResponse>[] addressResponseMonads = await Task.WhenAll(tasks);
+            foreach (TryCatch<DocumentServiceResponse> task in addressResponseMonads)
             {
                 if (task.Failed)
                 {
@@ -157,47 +159,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                             new PartitionKeyRangeIdentity(collection.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
                             addressInfo.Item2);
 
-                        if (openConnectionHandler != null)
+                        foreach (string epAddress in addressInfo.Item2
+                                .AllAddresses
+                                .Where(e => !primaryReplicaAddressOnly || e.IsPrimary && primaryReplicaAddressOnly)
+                                .Select(e => new Uri(e.PhysicalUri).GetLeftPart(UriPartial.Authority)))
                         {
-                            await this.OpenRntbdChannelsAsync(
-                                addressInfo,
-                                openConnectionHandler);
+                            addresses.Add(epAddress);
                         }
                     }
                 }
             }
-        }
 
-        /// <summary>
-        /// Invokes the transport client delegate to open the Rntbd connection
-        /// and establish Rntbd context negotiation to the backend replica nodes.
-        /// </summary>
-        /// <param name="addressInfo">An instance of <see cref="Tuple{T1, T2}"/> containing the partition key id
-        /// and it's corresponding address information.</param>
-        /// <param name="openConnectionHandlerAsync">The transport client callback delegate to be invoked at a
-        /// later point of time.</param>
-        private async Task OpenRntbdChannelsAsync(
-             Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo,
-             Func<Uri, Task> openConnectionHandlerAsync)
-        {
-            foreach (AddressInformation address in addressInfo.Item2.AllAddresses)
-            {
-                DefaultTrace.TraceVerbose("Attempting to open Rntbd connection to backend uri: {0}. '{1}'",
-                    address.PhysicalUri,
-                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
-                try
-                {
-                    await openConnectionHandlerAsync(
-                        new Uri(address.PhysicalUri));
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceWarning("Failed to open Rntbd connection to backend uri: {0} with exception: {1}. '{2}'",
-                        address.PhysicalUri,
-                        ex,
-                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
-                }
-            }
+            return addresses.Select(e => new Uri(e));
         }
 
         public async Task<PartitionAddressInformation> TryGetAddressesAsync(

@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -17,12 +18,10 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Establishes and Initializes the Rntbd connection to all the backend replica nodes for the given database name and container.
         /// </summary>
-        /// <param name="databaseName">A string containing the name of the database.</param>
-        /// <param name="containerLinkUri">A string containing the container's link uri</param>
+        /// <param name="addrsses">A string containing the name of the database.</param>
         /// <param name="cancellationToken">An Instance of the <see cref="CancellationToken"/>.</param>
-        Task OpenConnectionsToAllReplicasAsync(
-            string databaseName,
-            string containerLinkUri,
+        Task OpenConnectionsAsync(
+            IEnumerable<Uri> addrsses,
             CancellationToken cancellationToken = default);
     }
 }
