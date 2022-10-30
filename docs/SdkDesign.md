@@ -6,6 +6,35 @@ Whenever an operation is executed through the .NET SQL SDK, a **public API** is 
 
 The **handler pipeline** is used to process and handle the RequestMessage and perform actions like handling [retries](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs) including any custom user handler added through `CosmosClientOptions.CustomHandlers`. See [the pipeline section](#handler-pipeline) for more details.
 
+```mermaid
+flowchart LR
+    subgraph CDB_Account_Region1
+        CDBR1_GW(((CosmosDB-Account/Gateway/Region1)))
+        CDBR1_BE(((CosmosDB-Account/Backend/Region1)))
+    end
+    subgraph CDB_Account_RegionN
+        CDBRN_GW(((CosmosDB-Account/Gateway/Region1)))
+        CDBRN_BE(((CosmosDB-Account/Backend/RegionN)))
+    end
+    subgraph AddressCaches
+        GAC1[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/R1</a>] ==> CDBR1_GW
+        GACN[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/RN</a>] ==> CDBRN_GW
+        GAC1 -.-> CDBR1_BE
+        GACN -.-> CDBRN_BE
+        GAR[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalAddressResolver.cs'>GlobalAddressResolver</a>] --> GAC1
+    end
+    subgraph GlobalEndpointManager
+        GEM[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalEndpointManager.cs'>GlobalEndpointManager</a>] ==> LC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/LocationCache.cs'>LocationCache</a>]
+        LC --> PL[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/543294cd7e49c9322661422ea602bc911c434972/Microsoft.Azure.Cosmos/src/CosmosClientOptions.cs#L190'>PreferredLocations</a>]
+        GACN[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/RN</a>] ==> CDBRN_GW
+    end
+    subgraph AddressResolver
+        GAR[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalAddressResolver.cs'>GlobalAddressResolver</a>] --> GAC1
+        GAR --> GACN
+    end
+```
+
+
 At the end of the pipeline, the request is sent to the **transport layer**, which will process the request depending on the `CosmosClientOptions.ConnectionMode` and use [gateway or direct connectivity mode](https://docs.microsoft.com/azure/cosmos-db/sql/sql-sdk-connection-modes) to reach to the Azure Cosmos DB service.
 
 ```mermaid
