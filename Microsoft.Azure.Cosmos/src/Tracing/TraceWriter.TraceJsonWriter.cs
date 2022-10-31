@@ -74,8 +74,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                     foreach (ITrace child in trace.Children)
                     {
-                        WriteTrace(writer,
-                            child,
+                        WriteTrace(writer, 
+                            child, 
                             isRootTrace: false);
                     }
 
@@ -532,7 +532,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         }
                     }
 
-                    foreach (KeyValuePair<TransportAddressUri, int> contactedCount in uriCount)
+                    foreach (KeyValuePair<TransportAddressUri, int> contactedCount in uriCount) 
                     {
                         this.jsonWriter.WriteObjectStart();
                         this.jsonWriter.WriteFieldName("Count");
