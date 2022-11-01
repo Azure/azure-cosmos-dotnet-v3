@@ -19,6 +19,9 @@ flowchart LR
 
 ## Address caches coneptual model
 
+![image](https://user-images.githubusercontent.com/6880899/199167007-bcc054c3-ecb1-4469-ba7d-eae52362e9cd.png)
+
+
 ```mermaid
 flowchart LR
     subgraph CDB_account
@@ -44,63 +47,33 @@ flowchart LR
         GACN -->  |NonBlockingAsyncCache| CDBRN_GW
         GACN -.-> CDBRN_BE
     end
-    subgraph CollectionKeyRangeCaches
-        PKC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/PartitionKeyRangeCache.cs'>PartitionKeyRangeCache</a>]
-        CC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/CollectionCache.cs'>CollectionCache</a>]
-
-        PKC --x CC
-    end
-    subgraph GlobalEndpointManager
-        GEM[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalEndpointManager.cs'>GlobalEndpointManager</a>] ==> LC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/LocationCache.cs'>LocationCache</a>]
-        PL[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/543294cd7e49c9322661422ea602bc911c434972/Microsoft.Azure.Cosmos/src/CosmosClientOptions.cs#L190'>PreferredLocations</a>]
-        GEPEM[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalPartitionEndpointManager.cs'>GlobalPartitionEndpointManager</a>]
-        GEPEMC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalPartitionEndpointManagerCore.cs'>GlobalPartitionEndpointManagerCore</a>]
-
-        LC --> PL
-        GEPEM --> GEPEMC
-        GEPEMC --x GEM
-    end
-    subgraph AddressResolver
-        GAR[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalAddressResolver.cs'>GlobalAddressResolver</a>] 
-        IAR[<a href=https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/IAddressResolver.cs'>IAddressResolver</a>]
-        AR[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/IAddressResolver.cs#L12'>AddressResolver</a>]
-
-        IAR --> AR
-        IAR --> GAR
-        GAR --> |has| AR
-        GAR --> |R1 Addresses| GAC1
-        GAR --> |RN Addresses| GACN
-        GAR -.-> |PeriodicRefresh| CDB_EP
-
-        GAR --x |PerPartitionRouting| GEPEM
-        GAR --x |RegionRoutng| GEM
-        GAR --x |PKRangeId| PKC
-
-    end
 ```
+
+### Sequence of interaction is 
 
 ```mermaid
-flowchart TB
-    subgraph DirectModeAddressSelection
-        AS[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/AddressSelector.cs'>AddressSelector</a>]
-        CR[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/ConsistencyReader.cs'>ConsistencyReader</a>]
-        CW[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/ConsistencyWriter.cs'>ConsistencyWriter</a>]
-        RSC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/ReplicatedResourceClient.cs'>ReplicatedResourceClient</a>]
-        SC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/StoreClient.cs'>StoreClient</a>]
-        SSM[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/ServerStoreModel.cs'>ServerStoreModel</a>]
-        IAR[<a href=https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/IAddressResolver.cs'>IAddressResolver</a>]
+sequenceDiagram
+    GlobalAddressResolver->>GlobalEndpointManager: ResolveServiceEndpoint(DocumentServiceRequest)
+    GlobalEndpointManager-->>GlobalAddressResolver: URI (ServingRegion)
+    GlobalAddressResolver->>GlobalAddressResolver: GetEndpointCache(ServingRegion).AddressResolver
 
-        AS --> IAR
-        CR --> AS
-        CW --> AS
-        RSC --> CR
-        RSC --> CW
-        SC --> RSC
-        SSM --> SC
+    critical RegularAddressResolution(Implicit contract of dsr.RequestContext.ResolvedPartitionKeyRange population)
+        GlobalAddressResolver->>AddressResolver: ResolveAsync(DocumentServiceRequest)
+        AddressResolver-->>GlobalAddressResolver: PartitionAddressInformation
     end
-    
-```
 
+    critical AnyPerpartitionOverrides
+        GlobalAddressResolver->>GlobalPartitionEndpointManager: TryAddPartitionLevelLocationOverride(DocumentServiceRequest)
+        GlobalPartitionEndpointManager-->>GlobalAddressResolver: (bool, DSR.RequestContext.RouteToLocation)
+
+        option YES
+            GlobalAddressResolver->>GlobalEndpointManager: ResolveServiceEndpoint(DocumentServiceRequest)
+            GlobalEndpointManager-->>GlobalAddressResolver: URI (ServingRegion)
+    end
+    GlobalAddressResolver->>GlobalAddressResolver: GetEndpointCache(ServingRegion)
+    GlobalAddressResolver->>AddressResolver: ResolveAsync(DocumentServiceRequest)
+    AddressResolver-->>GlobalAddressResolver: PartitionAddressInformation
+```
 
 ## Handler pipeline
 
