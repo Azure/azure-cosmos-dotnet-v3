@@ -153,6 +153,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             IList<string> allowedAttributes = new List<string>
             {
+                 "az.namespace",
+                 "kind",
                  "db.system",
                  "db.name",
                  "db.operation",
