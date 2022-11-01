@@ -40,8 +40,8 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
-  "start time": "12:00:00:000",
   "name": "CreateItemStreamAsync",
+  "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
     "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -129,8 +129,8 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
-  "start time": "12:00:00:000",
   "name": "ReadItemStreamAsync",
+  "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
     "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -226,8 +226,8 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
-  "start time": "12:00:00:000",
   "name": "ReplaceItemStreamAsync",
+  "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
     "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -318,8 +318,8 @@
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
-  "start time": "12:00:00:000",
   "name": "DeleteItemStreamAsync",
+  "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
     "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
