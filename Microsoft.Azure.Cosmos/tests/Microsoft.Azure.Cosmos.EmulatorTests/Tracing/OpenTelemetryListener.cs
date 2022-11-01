@@ -136,10 +136,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                    .Append(name)
                    .Append("</OPERATION>");
 
+            OpenTelemetryListener.AssertData(name, tags);
+            
             foreach (KeyValuePair<string, string> tag in tags)
             {
-                this.ValidateData(name, tag);
-
                 builder
                 .Append("<ATTRIBUTE-KEY>")
                 .Append(tag.Key)
@@ -149,7 +149,43 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.GeneratedActivities.Add(builder.ToString());
         }
 
-        private void ValidateData(string name, KeyValuePair<string, string> tag)
+        private static void AssertData(string name, IEnumerable<KeyValuePair<string, string>> tags)
+        {
+            IList<string> allowedAttributes = new List<string>
+            {
+                 "db.system",
+                 "db.name",
+                 "db.operation",
+                 "net.peer.name",
+                 "db.cosmosdb.client_id",
+                 "db.cosmosdb.hashed_machine_id",
+                 "db.cosmosdb.user_agent",
+                 "db.cosmosdb.connection_mode",
+                 "db.cosmosdb.operation_type",
+                 "db.cosmosdb.container",
+                 "db.cosmosdb.request_content_length_bytes",
+                 "db.cosmosdb.response_content_length_bytes",
+                 "db.cosmosdb.status_code",
+                 "db.cosmosdb.sub_status_code",
+                 "db.cosmosdb.request_charge",
+                 "db.cosmosdb.regions_contacted",
+                 "db.cosmosdb.retry_count",
+                 "db.cosmosdb.item_count",
+                 "db.cosmosdb.request_diagnostics",
+                 "exception.type",
+                 "exception.message",
+                 "exception.stacktrace"
+            };
+            
+            foreach (KeyValuePair<string, string> tag in tags)
+            {
+                Assert.IsTrue(allowedAttributes.Contains(tag.Key), $"{tag.Key} is not allowed for {name}");
+
+                OpenTelemetryListener.AssertDatabaseAndContainerName(name, tag);
+            }
+        }
+
+        private static void AssertDatabaseAndContainerName(string name, KeyValuePair<string, string> tag)
         {
             IList<string> exceptionsForContainerAttribute = new List<string>
             {
