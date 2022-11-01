@@ -23,16 +23,16 @@ flowchart LR
 flowchart LR
     subgraph CDB_account
         subgraph CDB_Account_Endpoint
-            CDB_EP[[fa:fa-cloud CosmosDB-Account/Endpoint]]
+            CDB_EP[[CosmosDB-Account/Endpoint]]
         end
 
         subgraph CDB_Account_Region1
-            CDBR1_GW[[fa:fa-cloud CosmosDB-Account/Gateway/Region1]]
-            CDBR1_BE[[fa:fa-cloud CosmosDB-Account/Backend/Region1]]
+            CDBR1_GW[[CosmosDB-Account/Gateway/Region1]]
+            CDBR1_BE[[CosmosDB-Account/Backend/Region1]]
         end
         subgraph CDB_Account_RegionN
-            CDBRN_GW[[fa:fa-cloud CosmosDB-Account/Gateway/Region1]]
-            CDBRN_BE[[fa:fa-cloud CosmosDB-Account/Backend/RegionN]]
+            CDBRN_GW[[CosmosDB-Account/Gateway/Region1]]
+            CDBRN_BE[[CosmosDB-Account/Backend/RegionN]]
         end
     end
     subgraph AddressCaches
@@ -43,6 +43,12 @@ flowchart LR
         GAC1 -.-> CDBR1_BE
         GACN -->  |NonBlockingAsyncCache| CDBRN_GW
         GACN -.-> CDBRN_BE
+    end
+    subgraph CollectionKeyRangeCaches
+        PKC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/PartitionKeyRangeCache.cs'>PartitionKeyRangeCache</a>]
+        CC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/CollectionCache.cs'>CollectionCache</a>]
+
+        PKC --x CC
     end
     subgraph GlobalEndpointManager
         GEM[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalEndpointManager.cs'>GlobalEndpointManager</a>] ==> LC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/LocationCache.cs'>LocationCache</a>]
@@ -60,29 +66,37 @@ flowchart LR
         AR[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/IAddressResolver.cs#L12'>AddressResolver</a>]
 
         IAR --> AR
-        AR --> GAR
+        IAR --> GAR
+        GAR --> |has| AR
         GAR --> |R1 Addresses| GAC1
         GAR --> |RN Addresses| GACN
         GAR -.-> |PeriodicRefresh| CDB_EP
 
         GAR --x |PerPartitionRouting| GEPEM
         GAR --x |RegionRoutng| GEM
+        GAR --x |PKRangeId| PKC
+
     end
-    subgraph addressselector
+```
+
+```mermaid
+flowchart TB
+    subgraph DirectModeAddressSelection
         AS[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/AddressSelector.cs'>AddressSelector</a>]
         CR[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/ConsistencyReader.cs'>ConsistencyReader</a>]
         CW[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/ConsistencyWriter.cs'>ConsistencyWriter</a>]
         RSC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/ReplicatedResourceClient.cs'>ReplicatedResourceClient</a>]
         SC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/StoreClient.cs'>StoreClient</a>]
         SSM[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/ServerStoreModel.cs'>ServerStoreModel</a>]
+        IAR[<a href=https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/IAddressResolver.cs'>IAddressResolver</a>]
 
-        AS --x IAR
-        CR --x AS
-        CW --x AS
-        RSC --x CR
-        RSC --x CW
-        SC --x RSC
-        SSM --x SC
+        AS --> IAR
+        CR --> AS
+        CW --> AS
+        RSC --> CR
+        RSC --> CW
+        SC --> RSC
+        SSM --> SC
     end
     
 ```
