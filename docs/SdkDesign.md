@@ -22,6 +22,16 @@ flowchart LR
 ![image](https://user-images.githubusercontent.com/6880899/199167007-bcc054c3-ecb1-4469-ba7d-eae52362e9cd.png)
 
 
+- CollectionCache: Dictionary<CollectionName/Rid, CollectionProperties>
+- CollectionRoutingMap: Single collection PartitionKeyRanges map
+- PartitionKeyRangeCache: Dictionary<CollectionName/Rid, CollectionRoutingMap>
+- GlobalPartitionEndpointManager: Per partition override state. Every reqeust will flow throgh
+    -   Today GlobalEndpointManager is at region scope only and doesn't look at the partition
+    -   Ideal abstraction is to fold it into GlobalEndpointManager --> extra hash computation
+        - Posible to refractor direct code and flow HashedValue down stream (more contract work with direct package)
+- AddressResolver: It does use IAddressCache (Above diagram missing it)
+
+
 ```mermaid
 flowchart LR
     subgraph CDB_account
