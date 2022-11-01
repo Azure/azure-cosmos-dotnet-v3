@@ -8,10 +8,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public sealed class AggregateAllSqlParserBaselineTests : SqlParserBaselineTests
+    public sealed class AggregateSubquerySqlParserBaselineTests : SqlParserBaselineTests
     {
         [TestMethod]
-        public void Tests()
+        public void All()
         {
             List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()
             {
