@@ -6,6 +6,19 @@ Whenever an operation is executed through the .NET SQL SDK, a **public API** is 
 
 The **handler pipeline** is used to process and handle the RequestMessage and perform actions like handling [retries](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs) including any custom user handler added through `CosmosClientOptions.CustomHandlers`. See [the pipeline section](#handler-pipeline) for more details.
 
+At the end of the pipeline, the request is sent to the **transport layer**, which will process the request depending on the `CosmosClientOptions.ConnectionMode` and use [gateway or direct connectivity mode](https://docs.microsoft.com/azure/cosmos-db/sql/sql-sdk-connection-modes) to reach to the Azure Cosmos DB service.
+
+```mermaid
+flowchart LR
+    PublicApi[Public API]
+    PublicApi <--> ClientContext[Client Context]
+    ClientContext <--> Pipeline[Handler Pipeline]
+    Pipeline <--> TransportClient[Configured Transport]
+    TransportClient <--> Service[(Cosmos DB Service)]
+```
+
+## Address caches coneptual model
+
 ```mermaid
 flowchart LR
     subgraph CDB_account
@@ -74,17 +87,6 @@ flowchart LR
     
 ```
 
-
-At the end of the pipeline, the request is sent to the **transport layer**, which will process the request depending on the `CosmosClientOptions.ConnectionMode` and use [gateway or direct connectivity mode](https://docs.microsoft.com/azure/cosmos-db/sql/sql-sdk-connection-modes) to reach to the Azure Cosmos DB service.
-
-```mermaid
-flowchart LR
-    PublicApi[Public API]
-    PublicApi <--> ClientContext[Client Context]
-    ClientContext <--> Pipeline[Handler Pipeline]
-    Pipeline <--> TransportClient[Configured Transport]
-    TransportClient <--> Service[(Cosmos DB Service)]
-```
 
 ## Handler pipeline
 
