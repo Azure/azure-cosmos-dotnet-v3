@@ -8,30 +8,70 @@ The **handler pipeline** is used to process and handle the RequestMessage and pe
 
 ```mermaid
 flowchart LR
-    subgraph CDB_Account_Region1
-        CDBR1_GW(((CosmosDB-Account/Gateway/Region1)))
-        CDBR1_BE(((CosmosDB-Account/Backend/Region1)))
-    end
-    subgraph CDB_Account_RegionN
-        CDBRN_GW(((CosmosDB-Account/Gateway/Region1)))
-        CDBRN_BE(((CosmosDB-Account/Backend/RegionN)))
+    subgraph CDB_account
+        subgraph CDB_Account_Endpoint
+            CDB_EP[[fa:fa-cloud CosmosDB-Account/Endpoint]]
+        end
+
+        subgraph CDB_Account_Region1
+            CDBR1_GW[[fa:fa-cloud CosmosDB-Account/Gateway/Region1]]
+            CDBR1_BE[[fa:fa-cloud CosmosDB-Account/Backend/Region1]]
+        end
+        subgraph CDB_Account_RegionN
+            CDBRN_GW[[fa:fa-cloud CosmosDB-Account/Gateway/Region1]]
+            CDBRN_BE[[fa:fa-cloud CosmosDB-Account/Backend/RegionN]]
+        end
     end
     subgraph AddressCaches
-        GAC1[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/R1</a>] ==> CDBR1_GW
-        GACN[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/RN</a>] ==> CDBRN_GW
+        GAC1[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/R1</a>]
+        GACN[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/RN</a>]
+
+        GAC1 --> |NonBlockingAsyncCache| CDBR1_GW
         GAC1 -.-> CDBR1_BE
+        GACN -->  |NonBlockingAsyncCache| CDBRN_GW
         GACN -.-> CDBRN_BE
-        GAR[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalAddressResolver.cs'>GlobalAddressResolver</a>] --> GAC1
     end
     subgraph GlobalEndpointManager
         GEM[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalEndpointManager.cs'>GlobalEndpointManager</a>] ==> LC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/LocationCache.cs'>LocationCache</a>]
-        LC --> PL[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/543294cd7e49c9322661422ea602bc911c434972/Microsoft.Azure.Cosmos/src/CosmosClientOptions.cs#L190'>PreferredLocations</a>]
-        GACN[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/RN</a>] ==> CDBRN_GW
+        PL[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/543294cd7e49c9322661422ea602bc911c434972/Microsoft.Azure.Cosmos/src/CosmosClientOptions.cs#L190'>PreferredLocations</a>]
+        GEPEM[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalPartitionEndpointManager.cs'>GlobalPartitionEndpointManager</a>]
+        GEPEMC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalPartitionEndpointManagerCore.cs'>GlobalPartitionEndpointManagerCore</a>]
+
+        LC --> PL
+        GEPEM --> GEPEMC
+        GEPEMC --x GEM
     end
     subgraph AddressResolver
-        GAR[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalAddressResolver.cs'>GlobalAddressResolver</a>] --> GAC1
-        GAR --> GACN
+        GAR[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GlobalAddressResolver.cs'>GlobalAddressResolver</a>] 
+        IAR[<a href=https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/IAddressResolver.cs'>IAddressResolver</a>]
+        AR[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/IAddressResolver.cs#L12'>AddressResolver</a>]
+
+        IAR --> AR
+        AR --> GAR
+        GAR --> |R1 Addresses| GAC1
+        GAR --> |RN Addresses| GACN
+        GAR -.-> |PeriodicRefresh| CDB_EP
+
+        GAR --x |PerPartitionRouting| GEPEM
+        GAR --x |RegionRoutng| GEM
     end
+    subgraph addressselector
+        AS[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/AddressSelector.cs'>AddressSelector</a>]
+        CR[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/ConsistencyReader.cs'>ConsistencyReader</a>]
+        CW[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/ConsistencyWriter.cs'>ConsistencyWriter</a>]
+        RSC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/ReplicatedResourceClient.cs'>ReplicatedResourceClient</a>]
+        SC[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/StoreClient.cs'>StoreClient</a>]
+        SSM[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/a94329d353aa8432d57270c3f3bc19cba1021855/Microsoft.Azure.Cosmos/src/direct/ServerStoreModel.cs'>ServerStoreModel</a>]
+
+        AS --x IAR
+        CR --x AS
+        CW --x AS
+        RSC --x CR
+        RSC --x CW
+        SC --x RSC
+        SSM --x SC
+    end
+    
 ```
 
 
