@@ -59,7 +59,7 @@ flowchart LR
     end
 ```
 
-### Sequence of interaction is 
+### Sequence of interaction
 
 ```mermaid
 sequenceDiagram
