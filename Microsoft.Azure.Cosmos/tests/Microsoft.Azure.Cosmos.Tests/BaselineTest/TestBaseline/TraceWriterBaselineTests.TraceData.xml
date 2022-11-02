@@ -38,7 +38,6 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -98,7 +97,6 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -174,7 +172,6 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -301,7 +298,6 @@
     "RegionsContacted": 2
   },
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -522,7 +518,6 @@
     "RegionsContacted": 1
   },
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -707,7 +702,6 @@
     }
   },
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -783,7 +777,6 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
