@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.Serializer;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
@@ -194,11 +193,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(CreateItemAsync),
                 requestOptions,
                 (trace) => base.CreateItemAsync<T>(item, trace, partitionKey, requestOptions, cancellationToken),
-                onSuccess: (response) => new OpenTelemetryResponse<T>(response),
-                onException: (exception) => new OpenTelemetryException(
-                    containerName: this.Id, 
-                    databaseName: this.Database.Id,
-                    exception: exception));
+                (response) => new OpenTelemetryResponse<T>(response));
         }
 
         public override Task<ResponseMessage> ReadItemStreamAsync(
@@ -211,11 +206,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(ReadItemStreamAsync),
                 requestOptions,
                 (trace) => base.ReadItemStreamAsync(id, partitionKey, trace, requestOptions, cancellationToken),
-                onSuccess: (response) => new OpenTelemetryResponse(response),
-                onException: (exception) => new OpenTelemetryException(
-                    containerName: this.Id,
-                    databaseName: this.Database.Id,
-                    exception: exception));
+                (response) => new OpenTelemetryResponse(response));
         }
 
         public override Task<ItemResponse<T>> ReadItemAsync<T>(
@@ -228,11 +219,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(ReadItemAsync),
                 requestOptions,
                 (trace) => base.ReadItemAsync<T>(id, partitionKey, trace, requestOptions, cancellationToken),
-                onSuccess: (response) => new OpenTelemetryResponse<T>(response),
-                onException: (exception) => new OpenTelemetryException(
-                    containerName: this.Id,
-                    databaseName: this.Database.Id,
-                    exception: exception));
+                (response) => new OpenTelemetryResponse<T>(response));
         }
 
         public override Task<ResponseMessage> UpsertItemStreamAsync(
@@ -245,11 +232,7 @@ namespace Microsoft.Azure.Cosmos
                 nameof(UpsertItemStreamAsync),
                 requestOptions,
                 (trace) => base.UpsertItemStreamAsync(streamPayload, partitionKey, trace, requestOptions, cancellationToken),
-                onSuccess: (response) => new OpenTelemetryResponse(response),
-                onException: (exception) => new OpenTelemetryException(
-                    containerName: this.Id,
-                    databaseName: this.Database.Id,
-                    exception: exception));
+                (response) => new OpenTelemetryResponse(response));
         }
 
         public override Task<ItemResponse<T>> UpsertItemAsync<T>(

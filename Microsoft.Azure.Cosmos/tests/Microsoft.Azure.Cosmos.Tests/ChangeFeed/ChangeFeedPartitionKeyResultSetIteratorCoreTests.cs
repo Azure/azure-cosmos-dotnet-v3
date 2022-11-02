@@ -44,7 +44,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
-                It.IsAny<Func<Exception, OpenTelemetryException>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>,Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
@@ -119,7 +118,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
-                It.IsAny<Func<Exception, OpenTelemetryException>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
@@ -184,7 +182,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
-                It.IsAny<Func<Exception, OpenTelemetryException>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
@@ -261,7 +258,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
-                It.IsAny<Func<Exception, OpenTelemetryException>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
                .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
