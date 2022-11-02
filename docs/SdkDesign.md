@@ -17,7 +17,7 @@ flowchart LR
     TransportClient <--> Service[(Cosmos DB Service)]
 ```
 
-## Address caches coneptual model
+## Address caches conceptual model
 
 ![image](https://user-images.githubusercontent.com/6880899/199167007-bcc054c3-ecb1-4469-ba7d-eae52362e9cd.png)
 
