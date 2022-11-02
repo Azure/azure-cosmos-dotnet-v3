@@ -70,5 +70,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// OperationType
         /// </summary>
         internal string OperationType { get; set; }
+
+        /// <summary>
+        /// SubStatusCode
+        /// </summary>
+        internal int SubStatusCode { get; set; }
     }
 }
