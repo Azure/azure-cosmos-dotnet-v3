@@ -138,7 +138,6 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "ReadManyItemsStreamAsync",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -147,8 +146,6 @@
   "children": [
     {
       "name": "Execute query for a partitionkeyrange",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Query Correlated ActivityId": "Redacted To Not Change The Baselines From Run To Run"
@@ -156,46 +153,32 @@
       "children": [
         {
           "name": "Create Query Pipeline",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Get Container Properties",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Collection Cache",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
             },
             {
               "name": "Service Interop Query Plan",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "Get Overlapping Feed Ranges",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Partition Key Ranges",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Try Get Overlapping Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -206,32 +189,22 @@
         },
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetching",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {
                         "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
@@ -239,32 +212,22 @@
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "data": {
                                 "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -272,26 +235,18 @@
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                              "id": "00000000-0000-0000-0000-000000000000",
-                                              "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -309,8 +264,6 @@
                         },
                         {
                           "name": "Get Cosmos Element Response",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
                       ]
@@ -325,8 +278,6 @@
     },
     {
       "name": "Execute query for a partitionkeyrange",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Query Correlated ActivityId": "Redacted To Not Change The Baselines From Run To Run"
@@ -334,46 +285,32 @@
       "children": [
         {
           "name": "Create Query Pipeline",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Get Container Properties",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Collection Cache",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
             },
             {
               "name": "Service Interop Query Plan",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "Get Overlapping Feed Ranges",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Partition Key Ranges",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Try Get Overlapping Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -384,32 +321,22 @@
         },
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetching",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "[,05C1CFFFFFFFF8) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[,05C1CFFFFFFFF8) move next",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {
                         "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
@@ -417,32 +344,22 @@
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "data": {
                                 "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -450,26 +367,18 @@
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                              "id": "00000000-0000-0000-0000-000000000000",
-                                              "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -487,8 +396,6 @@
                         },
                         {
                           "name": "Get Cosmos Element Response",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
                       ]
@@ -503,8 +410,6 @@
     },
     {
       "name": "Execute query for a partitionkeyrange",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Query Correlated ActivityId": "Redacted To Not Change The Baselines From Run To Run"
@@ -512,46 +417,32 @@
       "children": [
         {
           "name": "Create Query Pipeline",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Get Container Properties",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Collection Cache",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
             },
             {
               "name": "Service Interop Query Plan",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "Get Overlapping Feed Ranges",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Partition Key Ranges",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Try Get Overlapping Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -562,32 +453,22 @@
         },
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetching",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "[05C1E7FFFFFFFA,FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[05C1E7FFFFFFFA,FF) move next",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {
                         "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
@@ -595,32 +476,22 @@
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "data": {
                                 "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -628,26 +499,18 @@
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                              "id": "00000000-0000-0000-0000-000000000000",
-                                              "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -665,8 +528,6 @@
                         },
                         {
                           "name": "Get Cosmos Element Response",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
                       ]
@@ -681,12 +542,12 @@
     }
   ]
 }]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Cosmos.ReadManyItemsStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.ReadManyItemsStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+<ACTIVITY><OPERATION>Cosmos.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
 <EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
 <EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
 <EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
@@ -835,7 +696,6 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "ReadManyItemsAsync",
-  "id": "00000000-0000-0000-0000-000000000000",
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -844,8 +704,6 @@
   "children": [
     {
       "name": "Execute query for a partitionkeyrange",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Query Correlated ActivityId": "Redacted To Not Change The Baselines From Run To Run"
@@ -853,46 +711,32 @@
       "children": [
         {
           "name": "Create Query Pipeline",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Get Container Properties",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Collection Cache",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
             },
             {
               "name": "Service Interop Query Plan",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "Get Overlapping Feed Ranges",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Partition Key Ranges",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Try Get Overlapping Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -903,32 +747,22 @@
         },
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetching",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {
                         "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
@@ -936,32 +770,22 @@
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "data": {
                                 "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -969,26 +793,18 @@
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                              "id": "00000000-0000-0000-0000-000000000000",
-                                              "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -1006,8 +822,6 @@
                         },
                         {
                           "name": "Get Cosmos Element Response",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
                       ]
@@ -1022,8 +836,6 @@
     },
     {
       "name": "Execute query for a partitionkeyrange",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Query Correlated ActivityId": "Redacted To Not Change The Baselines From Run To Run"
@@ -1031,46 +843,32 @@
       "children": [
         {
           "name": "Create Query Pipeline",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Get Container Properties",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Collection Cache",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
             },
             {
               "name": "Service Interop Query Plan",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "Get Overlapping Feed Ranges",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Partition Key Ranges",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Try Get Overlapping Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -1081,32 +879,22 @@
         },
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetching",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "[,05C1CFFFFFFFF8) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[,05C1CFFFFFFFF8) move next",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {
                         "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
@@ -1114,32 +902,22 @@
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "data": {
                                 "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -1147,26 +925,18 @@
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                              "id": "00000000-0000-0000-0000-000000000000",
-                                              "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -1184,8 +954,6 @@
                         },
                         {
                           "name": "Get Cosmos Element Response",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
                       ]
@@ -1200,8 +968,6 @@
     },
     {
       "name": "Execute query for a partitionkeyrange",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
         "Query Correlated ActivityId": "Redacted To Not Change The Baselines From Run To Run"
@@ -1209,46 +975,32 @@
       "children": [
         {
           "name": "Create Query Pipeline",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Get Container Properties",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Collection Cache",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
             },
             {
               "name": "Service Interop Query Plan",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "Get Overlapping Feed Ranges",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Get Partition Key Ranges",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Try Get Overlapping Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -1259,32 +1011,22 @@
         },
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetching",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "[05C1E7FFFFFFFA,FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[05C1E7FFFFFFFA,FF) move next",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {
                         "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
@@ -1292,32 +1034,22 @@
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "children": [
                             {
                               "name": "Get Collection Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Partition Key Range Cache",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "data": {
                                 "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -1325,26 +1057,18 @@
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                              "id": "00000000-0000-0000-0000-000000000000",
-                                              "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -1362,8 +1086,6 @@
                         },
                         {
                           "name": "Get Cosmos Element Response",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
                       ]
@@ -1378,25 +1100,19 @@
     },
     {
       "name": "Query Response Serialization",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0
     },
     {
       "name": "Query Response Serialization",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0
     },
     {
       "name": "Query Response Serialization",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0
     }
   ]
 }]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Cosmos.ReadManyItemsAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
+      <OTelActivities><ACTIVITY><OPERATION>Cosmos.ReadManyItemsAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
 <EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
 </OTelActivities>
     </Output>
