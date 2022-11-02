@@ -28,7 +28,7 @@ flowchart LR
 - GlobalPartitionEndpointManager: Per partition override state. Every reqeust will flow throgh
     -   Today GlobalEndpointManager is at region scope only and doesn't look at the partition
     -   Ideal abstraction is to fold it into GlobalEndpointManager --> extra hash computation
-        - Posible to refractor direct code and flow HashedValue down stream (more contract work with direct package)
+        - Posible to refactor direct code and flow HashedValue down stream (more contract work with direct package)
 - AddressResolver: It does use IAddressCache (Above diagram missing it)
 
 
