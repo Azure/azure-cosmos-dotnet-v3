@@ -18,21 +18,51 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract bool ShouldRetryBasedOnResponse(HttpMethod requestHttpMethod, HttpResponseMessage responseMessage);
 
+        public virtual bool ShouldThrow503OnTimeout => false;
+
         public static HttpTimeoutPolicy GetTimeoutPolicy(
            DocumentServiceRequest documentServiceRequest)
         {
+            //Query Plan Requests
             if (documentServiceRequest.ResourceType == ResourceType.Document
                 && documentServiceRequest.OperationType == OperationType.QueryPlan)
             {
-                return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
+            //Partition Key Requests
             if (documentServiceRequest.ResourceType == ResourceType.PartitionKeyRange)
             {
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
             }
 
+            //Data Plane Read
+            if (!IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
+            {
+                return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+            }
+
+            //Data Plane Write
+            if (!IsMetaData(documentServiceRequest) && !documentServiceRequest.IsReadOnlyRequest)
+            {
+                return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+            }
+
+            //Meta Data Read
+
+            if (IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
+            {
+                return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+            }
+
             return HttpTimeoutPolicyDefault.Instance;
+
+            static bool IsMetaData(DocumentServiceRequest request)
+            {
+                return (request.OperationType != Documents.OperationType.ExecuteJavaScript && request.ResourceType == ResourceType.StoredProcedure) ||
+                    request.ResourceType != ResourceType.Document;
+
+            }
         }
     }
 }

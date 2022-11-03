@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using FluentAssertions;
 
     [TestClass]
     public class CosmosHttpClientCoreTests
@@ -257,6 +258,88 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.AreEqual(3, count, "Should retry 3 times");
+        }
+
+        [TestMethod]
+        public async Task HttpTimeoutThrow503TestAsync()
+        {
+            static async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+
+                throw new OperationCanceledException("API with exception");
+
+            }
+
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            //Data plane read
+            try
+            {
+
+                HttpResponseMessage responseMessage1 = await cosmoshttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(
+                        result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                        resourceType: ResourceType.Document,
+                        timeoutPolicy: HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                        cancellationToken: default);
+            }
+            catch (Exception e)
+            {
+                Assert.IsInstanceOfType(e, typeof(ServiceUnavailableException));
+            }
+            //Data plane write
+
+            try
+            {
+                HttpResponseMessage responseMessage2 = await cosmoshttpClient.SendHttpAsync(() =>
+                   new ValueTask<HttpRequestMessage>(
+                       result: new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"))),
+                       resourceType: ResourceType.Document,
+                       timeoutPolicy: HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
+                       clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                       cancellationToken: default);
+            }
+            catch (Exception e)
+            {
+                Assert.IsInstanceOfType(e, typeof(ServiceUnavailableException));
+            }
+
+
+            ////Meta data read
+
+            try
+            {
+                HttpResponseMessage responseMessage3 = await cosmoshttpClient.SendHttpAsync(() =>
+                   new ValueTask<HttpRequestMessage>(
+                       result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                       resourceType: ResourceType.Database,
+                       timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                       clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                       cancellationToken: default);
+            }
+            catch (Exception e)
+            {
+                Assert.IsInstanceOfType(e, typeof(ServiceUnavailableException));
+            }
+
+            //Query plan read (note all query plan operations are reads).
+            try
+            {
+                HttpResponseMessage responseMessage2 = await cosmoshttpClient.SendHttpAsync(() =>
+                   new ValueTask<HttpRequestMessage>(
+                       result: new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"))),
+                       resourceType: ResourceType.Document,
+                       timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
+                       clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                       cancellationToken: default);
+            }
+            catch (Exception e)
+            {
+                Assert.IsInstanceOfType(e, typeof(ServiceUnavailableException));
+            }
         }
 
         [TestMethod]
