@@ -13,6 +13,12 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.31.2"/> [3.31.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.2) - 2022-11-03
+### <a name="3.31.2-preview"/> [3.31.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.2-preview) - 2022-11-03
+
+#### Fixed
+- [#3525](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3525) Query: Fixes performance regression on target partition on some ORDER BY queries with continuation
+
 ### <a name="3.31.1"/> [3.31.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.1) - 2022-10-29
 ### <a name="3.31.1-preview"/> [3.31.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.1-preview) - 2022-10-29
 
