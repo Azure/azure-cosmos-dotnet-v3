@@ -124,9 +124,6 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The provisioned throughput for this database.
         /// </value>
-        /// <remarks>
-        /// Null value indicates a database with no throughput provisioned.
-        /// </remarks>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-database">Set throughput on a database</seealso>
         /// <example>
