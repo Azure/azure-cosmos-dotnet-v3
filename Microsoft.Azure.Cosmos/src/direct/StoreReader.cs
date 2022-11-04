@@ -9,14 +9,17 @@ namespace Microsoft.Azure.Documents
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
 
     internal sealed class StoreReader
     {
+        private const string replicaValidationVariableName = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
         private readonly TransportClient transportClient;
         private readonly AddressSelector addressSelector;
         private readonly IAddressEnumerator addressEnumerator;
         private readonly ISessionContainer sessionContainer;
         private readonly bool canUseLocalLSNBasedHeaders;
+        private readonly bool isReplicaAddressValidationEnabled;
 
         public StoreReader(
             TransportClient transportClient,
@@ -29,6 +32,9 @@ namespace Microsoft.Azure.Documents
             this.addressEnumerator = addressEnumerator ?? throw new ArgumentNullException(nameof(addressEnumerator));
             this.sessionContainer = sessionContainer;
             this.canUseLocalLSNBasedHeaders = VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.Versions.v2018_06_18);
+            this.isReplicaAddressValidationEnabled = StoreReader.GetEnvironmentVariableAsBool(
+                name: replicaValidationVariableName,
+                defaultValue: true);
         }
 
         // Test hook
@@ -220,8 +226,9 @@ namespace Microsoft.Azure.Documents
             Exception exceptionToThrow = null;
             SubStatusCodes subStatusCodeForException = SubStatusCodes.Unknown;
             IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator
-                                                            .GetTransportAddresses(resolveApiResults, 
-                                                                                   entity.RequestContext.FailedEndpoints)
+                                                            .GetTransportAddresses(transportAddressUris: resolveApiResults,
+                                                                                   failedEndpoints: entity.RequestContext.FailedEndpoints,
+                                                                                   replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled)
                                                             .GetEnumerator();
 
             // Loop until we have the read quorum number of valid responses or if we have read all the replicas
@@ -579,6 +586,27 @@ namespace Microsoft.Azure.Documents
                 activity.ActivityComplete(true);
                 return response;
             }
+        }
+
+        private static bool GetEnvironmentVariableAsBool(
+            string name,
+            bool defaultValue)
+        {
+            string envVariableValueText = Environment.GetEnvironmentVariable(name);
+
+            if (string.IsNullOrEmpty(envVariableValueText))
+            {
+                return defaultValue;
+            }
+
+            bool envVariableBool = envVariableValueText.ToLowerInvariant() switch
+            {
+                "true" or "yes" or "1" => true,
+                "false" or "no" or "0" => false,
+                _ => throw new ArgumentException("Environment variable was not set properly.", name),
+            };
+
+            return envVariableBool;
         }
 
         #region PrivateResultClasses

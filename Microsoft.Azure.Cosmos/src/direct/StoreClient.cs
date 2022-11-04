@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Documents
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Rntbd;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
@@ -47,18 +48,37 @@ namespace Microsoft.Azure.Documents
             this.sessionContainer = sessionContainer;
             this.enableRequestDiagnostics = enableRequestDiagnostics;
 
-            this.replicatedResourceClient = new ReplicatedResourceClient(
-                addressResolver: addressResolver,
-                sessionContainer: sessionContainer,
-                protocol: protocol,
-                transportClient: this.transportClient,
-                serviceConfigReader: this.serviceConfigurationReader,
-                authorizationTokenProvider: userTokenProvider,
-                enableReadRequestsFallback: enableReadRequestsFallback,
-                useMultipleWriteLocations: useMultipleWriteLocations,
-                detectClientConnectivityIssues: detectClientConnectivityIssues,
-                disableRetryWithRetryPolicy: disableRetryWithRetryPolicy,
-                retryWithConfiguration: retryWithConfiguration);
+            if (addressResolver is IAddressResolverExtension addressResolverExtension)
+            {
+                addressResolverExtension.SetOpenConnectionsHandler(new RntbdOpenConnectionHandler(transportClient));
+                this.replicatedResourceClient = new ReplicatedResourceClient(
+                    addressResolver: addressResolverExtension,
+                    sessionContainer: sessionContainer,
+                    protocol: protocol,
+                    transportClient: this.transportClient,
+                    serviceConfigReader: this.serviceConfigurationReader,
+                    authorizationTokenProvider: userTokenProvider,
+                    enableReadRequestsFallback: enableReadRequestsFallback,
+                    useMultipleWriteLocations: useMultipleWriteLocations,
+                    detectClientConnectivityIssues: detectClientConnectivityIssues,
+                    disableRetryWithRetryPolicy: disableRetryWithRetryPolicy,
+                    retryWithConfiguration: retryWithConfiguration);
+            }
+            else
+            {
+                this.replicatedResourceClient = new ReplicatedResourceClient(
+                    addressResolver: addressResolver,
+                    sessionContainer: sessionContainer,
+                    protocol: protocol,
+                    transportClient: this.transportClient,
+                    serviceConfigReader: this.serviceConfigurationReader,
+                    authorizationTokenProvider: userTokenProvider,
+                    enableReadRequestsFallback: enableReadRequestsFallback,
+                    useMultipleWriteLocations: useMultipleWriteLocations,
+                    detectClientConnectivityIssues: detectClientConnectivityIssues,
+                    disableRetryWithRetryPolicy: disableRetryWithRetryPolicy,
+                    retryWithConfiguration: retryWithConfiguration);
+            }
         }
 
         internal JsonSerializerSettings SerializerSettings { get; set; }

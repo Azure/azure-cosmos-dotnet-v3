@@ -26,7 +26,13 @@ namespace Microsoft.Azure.Documents
         Task OpenConnectionsToAllReplicasAsync(
             string databaseName,
             string containerLinkUri,
-            Func<Uri, Task> openConnectionHandlerAsync,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// blabla
+        /// </summary>
+        /// <param name="openConnectionHandler"></param>
+        void SetOpenConnectionsHandler(
+            IOpenConnectionsHandler openConnectionHandler);
     }
 }

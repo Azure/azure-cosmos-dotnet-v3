@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly CosmosHttpClient httpClient;
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
+        private IOpenConnectionsHandler openConnectionsHandler;
 
         public GlobalAddressResolver(
             GlobalEndpointManager endpointManager,
@@ -108,7 +109,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                     databaseName: databaseName,
                     collection: collection,
                     partitionKeyRangeIdentities: ranges,
-                    openConnectionHandler: null,
                     cancellationToken: cancellationToken));
             }
 
@@ -125,7 +125,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         public async Task OpenConnectionsToAllReplicasAsync(
             string databaseName,
             string containerLinkUri,
-            Func<Uri, Task> openConnectionHandlerAsync,
             CancellationToken cancellationToken = default)
         {
             try
@@ -180,7 +179,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                         databaseName: databaseName,
                         collection: collection,
                         partitionKeyRangeIdentities: partitionKeyRangeIdentities,
-                        openConnectionHandler: openConnectionHandlerAsync,
                         cancellationToken: cancellationToken);
 
             }
@@ -284,6 +282,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.tokenProvider,
                         this.serviceConfigReader,
                         this.httpClient,
+                        this.openConnectionsHandler,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery);
 
                     string location = this.endpointManager.GetLocation(endpoint);
@@ -316,6 +315,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             return endpointCache;
+        }
+
+        /// <inheritdoc/>
+        public void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler)
+        {
+            this.openConnectionsHandler = openConnectionsHandler;
+
+            // setup openConnectionHandler for existing address cache
+            // For the new ones added later, the openConnectionHandler will pass through constructor
+            foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
+            {
+                endpointCache.AddressCache.SetOpenConnectionsHandler(openConnectionsHandler);
+            }
         }
 
         private sealed class EndpointCache

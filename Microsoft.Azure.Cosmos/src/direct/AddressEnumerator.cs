@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using global::Azure;
 
     /// <summary>
     /// AddressEnumerator randomly iterates a list of TransportAddressUris.
@@ -31,7 +32,8 @@ namespace Microsoft.Azure.Documents
         /// This return a random order of the addresses if there are no addresses that failed. Else it moves the failes addresses to the end.
         /// </summary>
         public IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris,
-                                                                      Lazy<HashSet<TransportAddressUri>> failedEndpoints)
+                                                                      Lazy<HashSet<TransportAddressUri>> failedEndpoints,
+                                                                      bool replicaAddressValidationEnabled)
         {
             if (failedEndpoints == null)
             {
@@ -44,7 +46,10 @@ namespace Microsoft.Azure.Documents
             // We move the failed replicas to the end of the list.
             // This is done to avoid in some cases(like eventual consistency) a retry to the same replica
             // that had a problem before. With RandomPermuation there is a 25% chance that the retry lands on the same replica.
-            return this.MoveFailedReplicasToTheEnd(randomPermutation, failedEndpoints);
+            return this.ReorderReplicasByHealthStatus(
+                randomPermutation: randomPermutation.ToList(),
+                lazyFailedReplicasPerRequest: failedEndpoints,
+                replicaAddressValidationEnabled: replicaAddressValidationEnabled); // TODO: Get the boolean flag from environment variable.
         }
 
         /// <summary>
@@ -224,6 +229,81 @@ namespace Microsoft.Azure.Documents
                     yield return addressUri;
                 }
             }
+        }
+
+        private IEnumerable<TransportAddressUri> ReorderReplicasByHealthStatus(
+            List<TransportAddressUri> randomPermutation,
+            Lazy<HashSet<TransportAddressUri>> lazyFailedReplicasPerRequest,
+            bool replicaAddressValidationEnabled)
+        {
+            HashSet<TransportAddressUri> failedReplicasPerRequest = null;
+            if (lazyFailedReplicasPerRequest != null &&
+                lazyFailedReplicasPerRequest.IsValueCreated &&
+                lazyFailedReplicasPerRequest.Value.Count > 0)
+            {
+                failedReplicasPerRequest = lazyFailedReplicasPerRequest.Value;
+            }
+
+            if (!replicaAddressValidationEnabled)
+            {
+                // When replica address validation is disabled, we will rely on RxDocumentServiceRequest to transition away unknown/unhealthyPending
+                // so we prefer connected/unknown/unhealthyPending to unhealthy
+                randomPermutation.Sort((x, y) =>
+                {
+                    TransportAddressUri.HealthStatus xStatus = GetEffectiveStatus(x, failedReplicasPerRequest);
+                    TransportAddressUri.HealthStatus yStatus = GetEffectiveStatus(y, failedReplicasPerRequest);
+
+                    if (xStatus != TransportAddressUri.HealthStatus.Unhealthy && yStatus != TransportAddressUri.HealthStatus.Unhealthy)
+                    {
+                        return 0;
+                    }
+                    if (xStatus == TransportAddressUri.HealthStatus.Unhealthy)
+                    {
+                        return 1;
+                    }
+
+                    return -1;
+                });
+            }
+            else
+            {
+                // When replica address validation is enabled, we will prefer connected/unknown > unhealthyPending > unhealthy.
+                // We will prefer to use open connection request to transit away unknown/unhealthyPending status,
+                // but in case open connection request can not happen due to any reason,
+                // then after some extended time, we are going to rolling unknown/unhealthyPending into Healthy category (please check details of getEffectiveHealthStatus)
+                randomPermutation.Sort((x, y) =>
+                {
+                    TransportAddressUri.HealthStatus xStatus = GetEffectiveStatus(x, failedReplicasPerRequest);
+                    TransportAddressUri.HealthStatus yStatus = GetEffectiveStatus(y, failedReplicasPerRequest);
+
+                    if (xStatus == yStatus)
+                    {
+                        return 0;
+                    }
+
+                    if (xStatus < yStatus
+                        && yStatus < TransportAddressUri.HealthStatus.UnhealthyPending)
+                    {
+                        return 0;
+                    }
+
+                    return xStatus - yStatus;
+                });
+            }
+
+            return randomPermutation;
+        }
+
+        private static TransportAddressUri.HealthStatus GetEffectiveStatus(
+            TransportAddressUri addressUri,
+            HashSet<TransportAddressUri> failedEndpoints)
+        {
+            if (failedEndpoints != null && failedEndpoints.Contains(addressUri))
+            {
+                return TransportAddressUri.HealthStatus.Unhealthy;
+            }
+
+            return addressUri.GetEffectiveHealthStatus();
         }
     }
 }

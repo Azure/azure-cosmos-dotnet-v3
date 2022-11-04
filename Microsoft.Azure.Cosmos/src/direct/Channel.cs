@@ -158,6 +158,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             else
             {
                 transportRequestStats.RequestWaitingForConnectionInitialization = false;
+                physicalAddress.SetConnected();
             }
 
             // Waiting for channel initialization to move to Pipelined stage

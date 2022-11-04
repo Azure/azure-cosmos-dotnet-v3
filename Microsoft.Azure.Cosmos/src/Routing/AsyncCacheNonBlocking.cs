@@ -197,6 +197,42 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Questions on this method. Fix this accordingly.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="singleValueInitFunc"></param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        public async Task Refresh(
+           TKey key,
+           Func<TValue, Task<TValue>> singleValueInitFunc)
+        {
+            if (this.values.TryGetValue(key, out AsyncLazyWithRefreshTask<TValue> initialLazyValue))
+            {
+                try
+                {
+                    TValue cachedResult = await initialLazyValue.CreateAndWaitForBackgroundRefreshTaskAsync(singleValueInitFunc);
+                }
+                catch (Exception e)
+                {
+                    // This is needed for scenarios where the initial GetAsync was
+                    // called but never awaited.
+                    if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
+                    {
+                        bool removed = this.TryRemove(key);
+
+                        DefaultTrace.TraceError(
+                            "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
+                            key,
+                            removed,
+                            e);
+                    }
+
+                    throw;
+                }
+            }
+        }
+
+        /// <summary>
         /// This is AsyncLazy that has an additional Task that can
         /// be used to update the value. This allows concurrent requests
         /// to use the stale value while the refresh is occurring. 

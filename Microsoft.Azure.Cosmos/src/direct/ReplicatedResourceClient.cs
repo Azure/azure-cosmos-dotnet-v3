@@ -266,7 +266,6 @@ namespace Microsoft.Azure.Documents
             await addressResolverExtension.OpenConnectionsToAllReplicasAsync(
                 databaseName,
                 containerLinkUri,
-                this.transportClient.OpenConnectionAsync,
                 cancellationToken);
         }
 

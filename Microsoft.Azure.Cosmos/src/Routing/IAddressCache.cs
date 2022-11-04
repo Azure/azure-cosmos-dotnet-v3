@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Common
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -22,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Common
         /// <param name="serviceIdentity">This parameter will be only supplied in Gateway. FabricAddressCache ignores <paramref name="partitionKeyRangeIdentity"/>.</param>
         /// <param name="forceRefreshPartitionAddresses">Whether addresses need to be refreshed as previously resolved addresses were determined to be outdated.</param>
         /// <param name="cancellationToken">Instance of <see cref="CancellationToken"/>.</param>
+        /// <param name="openConnectionHandler">A callback delegate of transport client.</param>
         /// <returns>Physical addresses.</returns>
         Task<PartitionAddressInformation> TryGetAddressesAsync(
             DocumentServiceRequest request,
@@ -29,5 +31,11 @@ namespace Microsoft.Azure.Cosmos.Common
             ServiceIdentity serviceIdentity,
             bool forceRefreshPartitionAddresses,
             CancellationToken cancellationToken);
+
+        /// <summary>
+        /// blabla
+        /// </summary>
+        /// <param name="openConnectionsHandler"></param>
+        void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler);
     }
 }
