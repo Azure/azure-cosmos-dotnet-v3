@@ -51,7 +51,7 @@ namespace AspNetCoreWebApp
             if(!string.IsNullOrEmpty(multiRegionAccountConnectionString))
             {
                 Container multiContainer = CosmosClientInit.CreateClientAndContainer(
-                 connectionString: "",
+                 connectionString: multiRegionAccountConnectionString,
                  mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
                  isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
                 CosmosClientInit.multiRegionAccount = multiContainer;
