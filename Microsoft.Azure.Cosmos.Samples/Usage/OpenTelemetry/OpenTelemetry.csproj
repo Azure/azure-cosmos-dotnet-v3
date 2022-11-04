@@ -10,24 +10,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.DiagnosticSourceListener" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.EtwCollector" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.EventCounterCollector" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.EventSourceListener" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.Log4NetAppender" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.NLogTarget" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.PerfCounterCollector" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.TraceListener" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.Web" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel" Version="2.22.0-beta1-build00137" />
-    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.22.0-beta1-build00137" />
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.22.0-beta1" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0-beta1" />
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.30.135" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.22.0-beta1-build00137" />
   </ItemGroup>
 
   <ItemGroup>
