@@ -41,16 +41,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
                     summaryDiagnostics.WriteSummaryDiagnostics(writer);
                 }
-
                 writer.WriteFieldName("name");
                 writer.WriteStringValue(trace.Name);
 
-                writer.WriteFieldName("id");
-                writer.WriteStringValue(trace.Id.ToString());
-
-                writer.WriteFieldName("start time");
-                writer.WriteStringValue(trace.StartTime.ToString("hh:mm:ss:fff"));
-
+                if (isRootTrace)
+                {
+                    writer.WriteFieldName("start time");
+                    writer.WriteStringValue(trace.StartTime.ToString("hh:mm:ss:fff"));
+                }
                 writer.WriteFieldName("duration in milliseconds");
                 writer.WriteNumber64Value(trace.Duration.TotalMilliseconds);
 
