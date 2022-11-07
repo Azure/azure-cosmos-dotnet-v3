@@ -199,7 +199,7 @@ JOIN (
         SELECT VALUE MAX(t0["Amount"]) 
         FROM root 
         JOIN t0 IN root["Records"]["Transactions"])) AS v0 
-        ORDER BY (root["IsRegistered"] ? root["FamilyId"] : root["Int"]) DESC, (v0[0] % 1000) ASC
+        ORDER BY (root["IsRegistered"] ? root["FamilyId"] : ToString(root["Int"])) DESC, (v0[0] % 1000) ASC
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","code":2206,"message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]},0x800A0B00]]></ErrorMessage>
     </Output>

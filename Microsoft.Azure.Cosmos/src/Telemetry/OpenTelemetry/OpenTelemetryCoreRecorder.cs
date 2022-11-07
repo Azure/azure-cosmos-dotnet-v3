@@ -82,13 +82,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, response.SubStatusCode);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, response.OperationType);
 
                 if (response.Diagnostics != null)
                 {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics) ?? OpenTelemetryAttributes.NotAvailable);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()) ?? OpenTelemetryAttributes.NotAvailable);
                     CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, response);
                 }
                 else

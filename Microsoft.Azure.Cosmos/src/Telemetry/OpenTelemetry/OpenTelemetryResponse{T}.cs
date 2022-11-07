@@ -18,7 +18,8 @@ namespace Microsoft.Azure.Cosmos
                itemCount: responseMessage.Headers?.ItemCount,
                databaseName: databaseName,
                containerName: containerName,
-               requestMessage: responseMessage.RequestMessage)
+               requestMessage: responseMessage.RequestMessage,
+               subStatusCode: (int)responseMessage.Headers?.SubStatusCode)
         {
         }
 
@@ -31,7 +32,8 @@ namespace Microsoft.Azure.Cosmos
                   itemCount: responseMessage.Headers?.ItemCount,
                   databaseName: databaseName,
                   containerName: containerName,
-                  requestMessage: responseMessage.RequestMessage)
+                  requestMessage: responseMessage.RequestMessage,
+                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode)
         {
         }
 
@@ -43,7 +45,8 @@ namespace Microsoft.Azure.Cosmos
            string itemCount,
            string databaseName,
            string containerName,
-           RequestMessage requestMessage)
+           RequestMessage requestMessage,
+           int subStatusCode)
            : base(requestMessage, containerName, databaseName)
         {
             this.StatusCode = statusCode;
@@ -51,6 +54,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseContentLength = responseContentLength ?? OpenTelemetryAttributes.NotAvailable;
             this.Diagnostics = diagnostics;
             this.ItemCount = itemCount ?? OpenTelemetryAttributes.NotAvailable;
+            this.SubStatusCode = subStatusCode;
         }
     }
 }

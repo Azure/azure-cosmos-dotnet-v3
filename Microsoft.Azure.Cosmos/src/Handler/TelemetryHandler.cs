@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 try
                 {
                     this.telemetry
-                        .Collect(
+                        .CollectOperationInfo(
                                 cosmosDiagnostics: response.Diagnostics,
                                 statusCode: response.StatusCode,
                                 responseSizeInBytes: this.GetPayloadSize(response),
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 resourceType: request.ResourceType,
                                 consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
                                 requestCharge: response.Headers.RequestCharge,
-                                subStatusCode: response.Headers.SubStatusCodeLiteral);
+                                subStatusCode: response.Headers.SubStatusCode);
                 }
                 catch (Exception ex)
                 {
