@@ -290,8 +290,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Assert.IsInstanceOfType(e, typeof(ServiceUnavailableException));
             }
-            //Data plane write
 
+            //Data plane write
             try
             {
                 HttpResponseMessage responseMessage2 = await cosmoshttpClient.SendHttpAsync(() =>
