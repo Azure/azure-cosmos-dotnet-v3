@@ -1,0 +1,548 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>ST_DISTANCE Constant Foldable Geography</Description>
+      <Query>SELECT * FROM c WHERE ST_DISTANCE({'type': 'Polygon', 'coordinates': [[[35, 10], [45, 45], [15, 40], [10, 20], [35, 10]], [[20, 30], [35, 35], [30, 20], [20, 30]]]}, {'type': 'Point', 'coordinates': [30, 10]}) &gt; 66408.034483</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geography</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_DISTANCE Constant Foldable Geometry</Description>
+      <Query>SELECT * FROM c WHERE ST_DISTANCE({'type': 'Polygon', 'coordinates': [[[35, 10], [45, 45], [15, 40], [10, 20], [35, 10]], [[20, 30], [35, 35], [30, 20], [20, 30]]]}, {'type': 'Point', 'coordinates': [30, 10]}) &gt; 66408.034483</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geometry</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],[]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_DISTANCE Geography</Description>
+      <Query>SELECT * FROM c WHERE ST_DISTANCE({'type': 'Polygon', 'coordinates': [[[35, 10], [45, 45], [15, 40], [10, 20], [35, 10]], [[20, 30], [35, 35], [30, 20], [20, 30]]]}, c.geojson) &gt; 66408.034483</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geography</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_DISTANCE Geometry</Description>
+      <Query>SELECT * FROM c WHERE ST_DISTANCE({'type': 'Polygon', 'coordinates': [[[35, 10], [45, 45], [15, 40], [10, 20], [35, 10]], [[20, 30], [35, 35], [30, 20], [20, 30]]]}, c.geojson) &gt; 66408.034483</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geometry</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_INTERSECTS Constant Foldable Geography</Description>
+      <Query>SELECT * FROM c WHERE ST_INTERSECTS({'type':'LineString', 'coordinates':[ [ 0, 0 ], [ 0, 40 ] ]}, {'type':'Polygon',"coordinates":[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geography</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],[]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_INTERSECTS Constant Foldable Geometry</Description>
+      <Query>SELECT * FROM c WHERE ST_INTERSECTS({'type':'LineString', 'coordinates':[ [ 0, 0 ], [ 0, 40 ] ]}, {'type':'Polygon',"coordinates":[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geometry</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_INTERSECTS Geography</Description>
+      <Query>SELECT * FROM c WHERE ST_INTERSECTS(c.geojson, {'type':'Polygon',"coordinates":[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geography</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_INTERSECTS Geometry</Description>
+      <Query>SELECT * FROM c WHERE ST_INTERSECTS(c.geojson, {'type':'Polygon',"coordinates":[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geometry</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_ISVALID Constant Foldable Geography</Description>
+      <Query>SELECT * FROM c WHERE ST_ISVALID({'type': 'Polygon', 'coordinates': [[[-1000, 1000], [1000, 1000], [1000, 4000], [-1000, 4000], [-1000, 1000]]]})</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geography</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],[]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_ISVALID Constant Foldable Geometry</Description>
+      <Query>SELECT * FROM c WHERE ST_ISVALID({'type': 'Polygon', 'coordinates': [[[-1000, 1000], [1000, 1000], [1000, 4000], [-1000, 4000], [-1000, 1000]]]})</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geometry</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_ISVALID Geography</Description>
+      <Query>SELECT * FROM c WHERE ST_ISVALID(c.geojson)</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geography</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_ISVALID Geometry</Description>
+      <Query>SELECT * FROM c WHERE ST_ISVALID(c.geojson)</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geometry</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_WITHIN Constant Foldable Geography</Description>
+      <Query>SELECT * FROM c WHERE NOT ST_WITHIN({'type': 'Point', 'coordinates': [0, 40]}, {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geography</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_WITHIN Constant Foldable Geometry</Description>
+      <Query>SELECT * FROM c WHERE NOT ST_WITHIN({'type': 'Point', 'coordinates': [0, 40]}, {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geometry</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],[]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_WITHIN Geography</Description>
+      <Query>SELECT * FROM c WHERE NOT ST_WITHIN(c.geojson,
+                  {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geography</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>ST_WITHIN Geometry</Description>
+      <Query>SELECT * FROM c WHERE NOT ST_WITHIN(c.geojson,
+                  {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+      <GeospatialType>Geometry</GeospatialType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+</Results>

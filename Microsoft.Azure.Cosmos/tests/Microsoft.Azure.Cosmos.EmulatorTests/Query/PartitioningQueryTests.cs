@@ -489,5 +489,90 @@
                 Assert.IsTrue(actualPartitionKeyValues.SetEquals(args.ExpectedPartitionKeyValues));
             }
         }
+
+        [TestMethod]
+        public async Task TestGeospatial()
+        {
+            string[] inputDocs = new[]
+            {
+                @"{""id"":""documentId1"",""key"":""A"",""prop"":3,""shortArray"":[{""a"":5}]}",
+                @"{""id"":""documentId2"",""key"":""A"",""prop"":2,""shortArray"":[{""a"":6}]}",
+                @"{""id"":""documentId3"",""key"":""A"",""prop"":1,""shortArray"":[{""a"":7}]}",
+                @"{""id"":""documentId4"",""key"":5,""prop"":3,""shortArray"":[{""a"":5}]}",
+                @"{""id"":""documentId5"",""key"":5,""prop"":2,""shortArray"":[{""a"":6}]}",
+                @"{""id"":""documentId6"",""key"":5,""prop"":1,""shortArray"":[{""a"":7}]}",
+                @"{""id"":""documentId10"",""prop"":3,""shortArray"":[{""a"":5}]}",
+                @"{""id"":""documentId11"",""prop"":2,""shortArray"":[{""a"":6}]}",
+                @"{""id"":""documentId12"",""prop"":1,""shortArray"":[{""a"":7}]}",
+            };
+
+            string All = "documentId4,documentId5,documentId6,documentId10,documentId11,documentId12,documentId1,documentId2,documentId3";
+            string None = string.Empty;
+            var testVariations = new[]
+            {
+                new
+                {
+                    Query = "SELECT c.id FROM c WHERE ST_DISTANCE({'type': 'Polygon', 'coordinates': [[[35, 10], [45, 45], [15, 40], [10, 20], [35, 10]], [[20, 30], [35, 35], [30, 20], [20, 30]]]}, {'type': 'Point', 'coordinates': [30, 10]}) > 66408.034483",
+                    Expected = new Dictionary<Cosmos.GeospatialType, string>
+                        {
+                            { Cosmos.GeospatialType.Geography, All },
+                            { Cosmos.GeospatialType.Geometry, None },
+                        }
+                },
+                new
+                {
+                    Query = "SELECT c.id FROM c WHERE ST_ISVALID({'type': 'Polygon', 'coordinates': [[[-1000, 1000], [1000, 1000], [1000, 4000], [-1000, 4000], [-1000, 1000]]]})",
+                    Expected = new Dictionary<Cosmos.GeospatialType, string>
+                        {
+                            { Cosmos.GeospatialType.Geography, None },
+                            { Cosmos.GeospatialType.Geometry, All },
+                        }
+                },
+                new
+                {
+                    Query = "SELECT * FROM c WHERE NOT ST_WITHIN({'type': 'Point', 'coordinates': [0, 40]}, {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})",
+                    Expected = new Dictionary<Cosmos.GeospatialType, string>
+                        {
+                            { Cosmos.GeospatialType.Geography, All },
+                            { Cosmos.GeospatialType.Geometry, None },
+                        }
+                },
+            };
+
+            foreach (Cosmos.GeospatialType geospatialType in new[] { Cosmos.GeospatialType.Geography, Cosmos.GeospatialType.Geometry })
+            {
+                await this.CreateIngestQueryDeleteAsync(
+                    ConnectionModes.Direct,
+                    CollectionTypes.MultiPartition,
+                    inputDocs,
+                    ImplementationAsync,
+                    "/key",
+                    geospatialType: geospatialType);
+
+                async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+                {
+                    foreach (var testVariation in testVariations)
+                    {
+                        string expectedResult = string.Join(",", testVariation.Expected[geospatialType]);
+
+                        FeedIterator<Document> resultSetIterator = container.GetItemQueryIterator<Document>(
+                            queryText: testVariation.Query,
+                            requestOptions: new QueryRequestOptions());
+
+                        List<Document> result = new List<Document>();
+                        while (resultSetIterator.HasMoreResults)
+                        {
+                            result.AddRange(await resultSetIterator.ReadNextAsync());
+                        }
+
+                        string resultDocIds = string.Join(",", result.Select(doc => doc.Id));
+                        Assert.AreEqual(
+                            expectedResult,
+                            resultDocIds,
+                            $"{Environment.NewLine}Query failed for geospatial type '{geospatialType}'{Environment.NewLine}{testVariation.Query}");
+                    }
+                }
+            }
+        }
     }
 }
