@@ -392,7 +392,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Documents.Collections.RequestNameValueCollection());
 
             HttpTimeoutPolicy retryPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(documentServiceRequest);
-            Assert.AreEqual(HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance, retryPolicy);
+            Assert.AreEqual(HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout, retryPolicy);
 
             int count = 0;
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> retry = retryPolicy.GetTimeoutEnumerator();
