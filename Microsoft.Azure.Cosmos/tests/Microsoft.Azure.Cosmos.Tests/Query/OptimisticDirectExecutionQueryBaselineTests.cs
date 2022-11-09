@@ -40,25 +40,25 @@
             List<OptimisticDirectExecutionTestInput> testVariations = new List<OptimisticDirectExecutionTestInput>
             {
                 CreateInput(
-                description: @"Partition Key + Value and Distinct",
-                query: "SELECT DISTINCT c.key FROM c",
-                expectedOptimisticDirectExecution: true,
-                partitionKeyPath: @"/pk",
-                partitionKeyValue: @"/value"),
+                    description: @"Partition Key + Value and Distinct",
+                    query: "SELECT DISTINCT c.key FROM c",
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: @"value"),
 
                 CreateInput(
-                description: @"Partition Key + Value and Min Aggregate",
-                query: "SELECT VALUE MIN(c.key) FROM c",
-                expectedOptimisticDirectExecution: true,
-                partitionKeyPath: @"/pk",
-                partitionKeyValue: @"/value"),
+                    description: @"Partition Key + Value and Min Aggregate",
+                    query: "SELECT VALUE MIN(c.key) FROM c",
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: @"value"),
 
                 CreateInput(
-                description: @"Partition Key + Value Fields",
-                query: "SELECT c.key FROM c",
-                expectedOptimisticDirectExecution: true,
-                partitionKeyPath: @"/pk",
-                partitionKeyValue: @"/value"),
+                    description: @"Partition Key + Value Fields",
+                    query: "SELECT c.key FROM c",
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: @"value"),
             };
             this.ExecuteTestSuite(testVariations);
         }
@@ -70,25 +70,25 @@
             List<OptimisticDirectExecutionTestInput> testVariations = new List<OptimisticDirectExecutionTestInput>
             {
                 CreateInput(
-                description: @"Null Partition Key Value",
-                query: "SELECT * FROM c",
-                expectedOptimisticDirectExecution: false,
-                partitionKeyPath: @"/pk",
-                partitionKeyValue: Cosmos.PartitionKey.Null),
+                    description: @"Null Partition Key Value",
+                    query: "SELECT * FROM c",
+                    expectedOptimisticDirectExecution: false,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: Cosmos.PartitionKey.Null),
 
                 CreateInput(
-                description: @"None Partition Key Value",
-                query: "SELECT * FROM c",
-                expectedOptimisticDirectExecution: false,
-                partitionKeyPath: @"/pk",
-                partitionKeyValue: Cosmos.PartitionKey.None),
+                    description: @"None Partition Key Value",
+                    query: "SELECT * FROM c",
+                    expectedOptimisticDirectExecution: false,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: Cosmos.PartitionKey.None),
 
                 CreateInput(
-                description: @"C# Null Partition Key Value",
-                query: "SELECT * FROM c",
-                expectedOptimisticDirectExecution: false,
-                partitionKeyPath: @"/pk",
-                partitionKeyValue: null),
+                    description: @"C# Null Partition Key Value",
+                    query: "SELECT * FROM c",
+                    expectedOptimisticDirectExecution: false,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: null),
             };
             this.ExecuteTestSuite(testVariations);
         }
@@ -112,21 +112,18 @@
             string query = "SELECT * FROM c";
 
             // null continuation token
-            Assert.IsTrue(await HasMonadicCreateSucceeded(numItems, multiPartition, query, targetRange: FeedRangeEpk.FullRange, continuationToken: null));
+            Assert.IsTrue(await TryMonadicCreate(numItems, multiPartition, query, targetRange: FeedRangeEpk.FullRange, continuationToken: null));
 
             // default continuation token
-            Assert.IsTrue(await HasMonadicCreateSucceeded(numItems, multiPartition, query, targetRange: FeedRangeEpk.FullRange, continuationToken: default));
+            Assert.IsTrue(await TryMonadicCreate(numItems, multiPartition, query, targetRange: FeedRangeEpk.FullRange, continuationToken: default));
 
-            Range<string> range = new Documents.Routing.Range<string>("A", "B", isMinInclusive: true, isMaxInclusive: false);
-            ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
-                token: "asdf",
-                range: range);
+            CosmosElement cosmosElementContinuationToken = CosmosElement.Parse(
+                "{\"OptimisticDirectExecutionToken\":{\"token\":\"{\\\"resourceId\\\":\\\"AQAAAMmFOw8LAAAAAAAAAA==\\\",\\\"skipCount\\\":1}\"," +
+                "\"range\":{\"min\":\"\",\"max\":\"FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF\"}}}");
+            Range<string> range = new Documents.Routing.Range<string>("", "FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF", isMinInclusive: true, isMaxInclusive: false);
 
-            OptimisticDirectExecutionContinuationToken token = new OptimisticDirectExecutionContinuationToken(parallelContinuationToken);
-            CosmosElement cosmosElementContinuationToken = OptimisticDirectExecutionContinuationToken.ToCosmosElement(token);
-            
             // single continuation token
-            Assert.IsTrue(await HasMonadicCreateSucceeded(numItems, multiPartition, query, targetRange: new FeedRangeEpk(range), continuationToken: cosmosElementContinuationToken));
+            Assert.IsTrue(await TryMonadicCreate(numItems, multiPartition, query, targetRange: new FeedRangeEpk(range), continuationToken: cosmosElementContinuationToken));
         }
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s). 
@@ -154,22 +151,14 @@
         [TestMethod]
         public async Task TestPipelineForContinuationTokenOnSinglePartitionAsync()
         {
-            Assert.IsTrue(await this.GetResultsFromHydratingPipelineWithContinuation(
-                            numItems: 100, 
-                            isMultiPartition: false, 
-                            isODE: true, 
-                            query: "SELECT * FROM c"));
-        }
+            int numItems = 100;
+            int result = await this.GetResultsFromHydratingPipelineWithContinuation(
+                numItems: numItems, 
+                isMultiPartition: false, 
+                isODE: true, 
+                query: "SELECT * FROM c");
 
-        // test checks that ODE pipeline does not get invoked when CrossPartition query is run
-        [TestMethod]
-        public async Task TestParallelContTokenEvocationAsync()
-        {
-            Assert.IsTrue(await this.GetResultsFromHydratingPipelineWithContinuation(
-                            numItems: 100, 
-                            isMultiPartition: true, 
-                            isODE: false, 
-                            query: "SELECT * FROM c"));
+            Assert.AreEqual(result, numItems);
         }
 
         // test to check if pipeline handles a 410 exception properly and returns all the documents.
@@ -187,19 +176,18 @@
         [TestMethod]
         public async Task TestPipelinesForDistributedQueryAsync()
         {
-            bool result = false;
-            try
-            {
-                result = await this.GetResultsFromHydratingPipelineWithContinuation(100, false, true, "SELECT AVG(c) FROM c");
-            }
-            catch 
-            { 
-                // Coming into catch because doc count Assert failed. Once aggregate logic is added, this should not go into Catch
-                Assert.IsFalse(result);
-            }
+            int numItems = 100;
+            int result = await this.GetResultsFromHydratingPipelineWithContinuation(
+                            numItems: numItems, 
+                            isMultiPartition: false, 
+                            isODE: true, 
+                            query: "SELECT AVG(c) FROM c");
+
+            // TODO: These values will not equal each other until aggregate logic is added
+            Assert.AreNotEqual(result, numItems);
         }
 
-        private static async Task<bool> HasMonadicCreateSucceeded(int numItems, bool multiPartition, string query, FeedRangeEpk targetRange, CosmosElement continuationToken)
+        private static async Task<bool> TryMonadicCreate(int numItems, bool multiPartition, string query, FeedRangeEpk targetRange, CosmosElement continuationToken)
         {
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition);
 
@@ -270,13 +258,11 @@
             return queryPipelineStage;
         }
 
-        private async Task<bool> GetResultsFromHydratingPipelineWithContinuation(int numItems, bool isMultiPartition, bool isODE, string query)
+        private async Task<int> GetResultsFromHydratingPipelineWithContinuation(int numItems, bool isMultiPartition, bool isODE, string query)
         {
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition);
-            IQueryPipelineStage queryPipelineStage = isODE
-                ? await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: null)
-                : await CreateParallelCrossPartitionPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
-
+            IQueryPipelineStage queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
+                
             List<CosmosElement> documents = new List<CosmosElement>();
             int continuationTokenCount = 0;
 
@@ -293,31 +279,13 @@
                 }
                 else
                 {
-                    if (isODE)
-                    {
-                        queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: tryGetPage.Result.State.Value);
-                    }
-                    else {
-                        List<OptimisticDirectExecutionTestInput> parallelTest = new List<OptimisticDirectExecutionTestInput>
-                        {
-                            CreateInput(
-                            description: @"Cross partition continuation token",
-                            query: query,
-                            expectedOptimisticDirectExecution: false,
-                            partitionKeyPath: @"/pk",
-                            partitionKeyValue: Cosmos.PartitionKey.Null,
-                            continuationToken: tryGetPage.Result.State.Value)
-                        };
-
-                        this.ExecuteTestSuite(parallelTest);
-                    }
+                    queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: tryGetPage.Result.State.Value);
                 }
 
                 continuationTokenCount++;
             }
 
-            Assert.AreEqual(documents.Count, numItems);
-            return true;
+            return documents.Count;
         }
 
             // it creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
@@ -359,14 +327,12 @@
                 {
                     Assert.IsTrue(queryPipelineStage.Current.Failed);
                     Assert.AreEqual(queryPipelineStage.Current.InnerMostException.Message, errorMessage);
-                    Assert.AreEqual(((CosmosException)queryPipelineStage.Current.InnerMostException).StatusCode, System.Net.HttpStatusCode.Gone);
                     break;
                 }
             }
 
             // Once fallback plan is implemented, this test should be able to return all 100 documents
             Assert.AreEqual(documents.Count, 10);
-
             return true;
         }
 
@@ -395,9 +361,11 @@
 
             int exponentPartitionKeyRanges = 2; // a value of 2 would lead to 4 partitions (2 * 2). 4 partitions are used because theyre easy to manage + demonstrates multi partition use case
 
+            IReadOnlyList<FeedRangeInternal> ranges;
+
             for (int i = 0; i < exponentPartitionKeyRanges; i++)
             {
-                IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
+                ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -411,6 +379,14 @@
 
                 await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             }
+
+            ranges = await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: default);
+            
+            int rangeCount = multiPartition == true ? 4 : 1;
+
+            Assert.AreEqual(rangeCount, ranges.Count);
 
             for (int i = 0; i < numItems; i++)
             {
@@ -528,6 +504,7 @@
                       cosmosQueryContextCore,
                       inputParameters,
                       NoOpTrace.Singleton);
+
             bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result;
 
             if (input.ExpectedOptimisticDirectExecution)
