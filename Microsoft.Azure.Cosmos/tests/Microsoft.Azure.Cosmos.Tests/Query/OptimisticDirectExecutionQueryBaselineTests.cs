@@ -155,7 +155,6 @@
             int result = await this.GetResultsFromHydratingPipelineWithContinuation(
                 numItems: numItems, 
                 isMultiPartition: false, 
-                isODE: true, 
                 query: "SELECT * FROM c");
 
             Assert.AreEqual(result, numItems);
@@ -180,7 +179,6 @@
             int result = await this.GetResultsFromHydratingPipelineWithContinuation(
                             numItems: numItems, 
                             isMultiPartition: false, 
-                            isODE: true, 
                             query: "SELECT AVG(c) FROM c");
 
             // TODO: These values will not equal each other until aggregate logic is added
@@ -226,39 +224,7 @@
             return queryPipelineStage;
         }
 
-        private static async Task<IQueryPipelineStage> CreateParallelCrossPartitionPipelineStateAsync(IDocumentContainer documentContainer, string query, CosmosElement continuationToken)
-        {
-            List<FeedRangeEpk> targetRanges = await documentContainer.GetFeedRangesAsync(
-                    trace: NoOpTrace.Singleton,
-                    cancellationToken: default);
-
-            if (continuationToken is CosmosObject continuationTokenObject)
-            {
-                bool canGetContinuationToken = continuationTokenObject.TryGetValue("OptimisticDirectExecutionToken", out CosmosElement parallelContinuationToken);
-                Assert.IsTrue(canGetContinuationToken);
-
-                CosmosArray cosmosElementParallelContinuationToken = CosmosArray.Create(parallelContinuationToken);
-                continuationToken = cosmosElementParallelContinuationToken;
-            }
-
-            TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-            documentContainer: documentContainer,
-            sqlQuerySpec: new SqlQuerySpec(query),
-            targetRanges: targetRanges,
-            queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-            partitionKey: null,
-            maxConcurrency: 10,
-            prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-            cancellationToken: default,
-            continuationToken: continuationToken);
-
-            Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
-            IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
-
-            return queryPipelineStage;
-        }
-
-        private async Task<int> GetResultsFromHydratingPipelineWithContinuation(int numItems, bool isMultiPartition, bool isODE, string query)
+        private async Task<int> GetResultsFromHydratingPipelineWithContinuation(int numItems, bool isMultiPartition, string query)
         {
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition);
             IQueryPipelineStage queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
