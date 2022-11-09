@@ -39,7 +39,8 @@
                     allowNonValueAggregateQuery: true,
                     hasLogicalPartitionKey: false,
                     allowDCount: true,
-                    useSystemPrefix: false);
+                    useSystemPrefix: false,
+                    geospatialType: Cosmos.GeospatialType.Geography);
 
             Assert.IsTrue(tryGetQueryPlan.Failed);
             Assert.IsTrue(tryGetQueryPlan.Exception.ToString().Contains("The SQL query text exceeded the maximum limit of 5 characters"));
@@ -54,7 +55,8 @@
                             allowNonValueAggregateQuery: true,
                             hasLogicalPartitionKey: false,
                             allowDCount: true,
-                            useSystemPrefix: false);
+                            useSystemPrefix: false,
+                            geospatialType: Cosmos.GeospatialType.Geography);
 
             Assert.IsTrue(tryGetQueryPlan.Succeeded);
         }
