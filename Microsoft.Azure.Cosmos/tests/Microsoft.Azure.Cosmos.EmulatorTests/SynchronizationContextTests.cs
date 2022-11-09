@@ -13,10 +13,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class SynchronizationContextTests
     {
-        [TestMethod]
+        [DataTestMethod]
+        [DataRow(false, DisplayName = "SynchronizationContextTests - Client Telemetry disabled")]
+        [DataRow(true, DisplayName = "SynchronizationContextTests - Client Telemetry enabled")]
         [Timeout(30000)]
-        public void VerifySynchronizationContextDoesNotLock()
+        public void VerifySynchronizationContextDoesNotLock(bool withClientTelemetry)
         {
+            if (withClientTelemetry)
+            {
+                Util.EnableClientTelemetryEnvironmentVariables();
+            }
+
             string databaseId = Guid.NewGuid().ToString();
             SynchronizationContext prevContext = SynchronizationContext.Current;
             try
@@ -29,7 +36,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         Cosmos.Database database = client.CreateDatabaseAsync(databaseId).GetAwaiter().GetResult();
                         database = client.CreateDatabaseIfNotExistsAsync(databaseId).GetAwaiter().GetResult();
-
                         database.ReadStreamAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                         database.ReadAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 
@@ -118,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         double cost = container.GetItemLinqQueryable<ToDoActivity>(
                             allowSynchronousQueryExecution: true).Select(x => x.cost).Sum();
-
+                        
                         ItemResponse<ToDoActivity> deleteResponse = container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id).ConfigureAwait(false).GetAwaiter().GetResult();
                         Assert.IsNotNull(deleteResponse);
                     }
@@ -127,12 +133,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             finally
             {
                 SynchronizationContext.SetSynchronizationContext(prevContext);
+                
                 using (CosmosClient client = TestCommon.CreateCosmosClient())
                 {
                     client.GetDatabase(databaseId).DeleteAsync().GetAwaiter().GetResult();
                 }
+
+                if (withClientTelemetry)
+                {
+                    Util.DisableClientTelemetryEnvironmentVariables();
+                }
             }
         }
+
+        
 
         public class TestSynchronizationContext : SynchronizationContext
         {

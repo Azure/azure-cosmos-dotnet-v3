@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (await containerWithThrottle.ReadItemStreamAsync(firstItemIdAndPk, new PartitionKey(firstItemIdAndPk))) { }
 
             Documents.IStoreModel storeModel = clientWithThrottle.ClientContext.DocumentClient.StoreModel;
-            Mock<Documents.IStoreModel> mockStore = new Mock<Documents.IStoreModel>();
+            Mock<Documents.IStoreModelExtension> mockStore = new Mock<Documents.IStoreModelExtension>();
             clientWithThrottle.ClientContext.DocumentClient.StoreModel = mockStore.Object;
 
             // Cause 429 after the first call
