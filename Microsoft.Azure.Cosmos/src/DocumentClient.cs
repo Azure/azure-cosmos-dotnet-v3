@@ -1359,7 +1359,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Test hook to enable unit test of DocumentClient.
         /// </remarks>
-        internal IStoreModel StoreModel { get; set; }
+        internal IStoreModelExtension StoreModel { get; set; }
 
         /// <summary>
         /// Gets and sets the gateway IStoreModel object.
@@ -1367,7 +1367,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Test hook to enable unit test of DocumentClient.
         /// </remarks>
-        internal IStoreModel GatewayStoreModel { get; set; }
+        internal IStoreModelExtension GatewayStoreModel { get; set; }
 
         /// <summary>
         /// Gets and sets on execute scalar query callback
@@ -1459,6 +1459,44 @@ namespace Microsoft.Azure.Cosmos
             {
                 IStoreModel storeProxy = this.GetStoreProxy(request);
                 return await storeProxy.ProcessMessageAsync(request, cancellationToken);
+            }
+        }
+
+        /// <summary>
+        /// Establishes and Initializes the Rntbd connection to all the backend replica nodes
+        /// for the given database name and container.
+        /// </summary>
+        /// <param name="databaseName">A string containing the cosmos database name.</param>
+        /// <param name="containerLinkUri">A string containing the cosmos container link uri.</param>
+        /// <param name="cancellationToken">An instance of the <see cref="CancellationToken"/>.</param>
+        internal async Task OpenConnectionsToAllReplicasAsync(
+            string databaseName,
+            string containerLinkUri,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(databaseName) ||
+                string.IsNullOrEmpty(containerLinkUri))
+            {
+                string resourceName = string.IsNullOrEmpty(databaseName) ?
+                    nameof(databaseName) :
+                    nameof(containerLinkUri);
+
+                throw new ArgumentNullException(resourceName);
+            }
+
+            if (this.StoreModel != null)
+            {
+                try
+                {
+                    await this.StoreModel.OpenConnectionsToAllReplicasAsync(
+                        databaseName,
+                        containerLinkUri,
+                        cancellationToken);
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
             }
         }
 
@@ -6421,6 +6459,12 @@ namespace Microsoft.Azure.Cosmos
                 AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(CreateRequestMessage,
                                                                                                clientSideRequestStatistics: null);
                 this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
+
+                if (this.queryPartitionProvider.IsValueCreated)
+                {
+                    (await this.QueryPartitionProvider).Update(databaseAccount.QueryEngineConfiguration);
+                }
+
                 return databaseAccount;
             }
 

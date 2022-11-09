@@ -304,9 +304,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return true;
         }
 
-        private IStoreModel GetMockGatewayStoreModel()
+        private IStoreModelExtension GetMockGatewayStoreModel()
         {
-            Mock<IStoreModel> gatewayStoreModel = new Mock<IStoreModel>();
+            Mock<IStoreModelExtension> gatewayStoreModel = new Mock<IStoreModelExtension>();
 
             gatewayStoreModel.Setup(
                 storeModel => storeModel.ProcessMessageAsync(

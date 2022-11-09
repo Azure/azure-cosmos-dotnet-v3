@@ -74,7 +74,8 @@ namespace Microsoft.Azure.Cosmos
             return new ContainerQueryProperties(
                 containerProperties.ResourceId,
                 effectivePartitionKeyString,
-                containerProperties.PartitionKey);
+                containerProperties.PartitionKey,
+                containerProperties.GeospatialConfig.GeospatialType);
         }
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(
@@ -87,6 +88,7 @@ namespace Microsoft.Azure.Cosmos
             bool hasLogicalPartitionKey,
             bool allowDCount,
             bool useSystemPrefix,
+            Cosmos.GeospatialType geospatialType,
             CancellationToken cancellationToken)
         {
             string queryString = null;
@@ -109,7 +111,8 @@ namespace Microsoft.Azure.Cosmos
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount,
-                useSystemPrefix: useSystemPrefix);
+                useSystemPrefix: useSystemPrefix,
+                geospatialType: geospatialType);
         }
 
         public override async Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
