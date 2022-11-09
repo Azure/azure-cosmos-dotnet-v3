@@ -309,7 +309,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
 
             ////Meta data read
-
             try
             {
                 HttpResponseMessage responseMessage3 = await cosmoshttpClient.SendHttpAsync(() =>
