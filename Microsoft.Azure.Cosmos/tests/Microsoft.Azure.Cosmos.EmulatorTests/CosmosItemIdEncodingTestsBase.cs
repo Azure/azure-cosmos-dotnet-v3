@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Container Container = null;
         private ContainerProperties containerSettings = null;
 
+        protected virtual String AccountEndpointOverride => null;
+
         protected abstract void ConfigureClientBuilder(CosmosClientBuilder builder);
 
         [TestInitialize]
@@ -29,7 +31,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestInit(
                 validateSinglePartitionKeyRangeCacheCall: true,
-                customizeClientBuilder: this.ConfigureClientBuilder);
+                customizeClientBuilder: this.ConfigureClientBuilder,
+                accountEndpointOverride: this.AccountEndpointOverride);
 
             string PartitionKey = "/pk";
             this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
@@ -483,9 +486,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     TransportMode = ConnectionMode.Gateway,
                     ExpectedCreateStatusCode = HttpStatusCode.Created,
-                    ExpectedReadStatusCode = HttpStatusCode.BadRequest,// CGW - HttpStatusCode.OK,
-                    ExpectedReplaceStatusCode = HttpStatusCode.BadRequest,// CGW - HttpStatusCode.OK,
-                    ExpectedDeleteStatusCode = HttpStatusCode.BadRequest,// CGW - HttpStatusCode.NoContent,
+                    ExpectedReadStatusCode = HttpStatusCode.BadRequest,
+                    ExpectedReplaceStatusCode = HttpStatusCode.BadRequest,
+                    ExpectedDeleteStatusCode = HttpStatusCode.BadRequest,
+                },
+                ComputeGateway = new TestScenarioExpectations
+                {
+                    TransportMode = ConnectionMode.Gateway,
+                    ExpectedCreateStatusCode = HttpStatusCode.Created,
+                    ExpectedReadStatusCode = HttpStatusCode.OK,
+                    ExpectedReplaceStatusCode = HttpStatusCode.OK,
+                    ExpectedDeleteStatusCode = HttpStatusCode.NoContent,
                 },
                 Direct = new TestScenarioExpectations
                 {
@@ -511,9 +522,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     TransportMode = ConnectionMode.Gateway,
                     ExpectedCreateStatusCode = HttpStatusCode.Created,
-                    ExpectedReadStatusCode = HttpStatusCode.BadRequest,// CGW - HttpStatusCode.OK,
-                    ExpectedReplaceStatusCode = HttpStatusCode.BadRequest,// CGW - HttpStatusCode.OK,
-                    ExpectedDeleteStatusCode = HttpStatusCode.BadRequest,// CGW - HttpStatusCode.NoContent,
+                    ExpectedReadStatusCode = HttpStatusCode.BadRequest,
+                    ExpectedReplaceStatusCode = HttpStatusCode.BadRequest,
+                    ExpectedDeleteStatusCode = HttpStatusCode.BadRequest,
+                },
+                ComputeGateway = new TestScenarioExpectations
+                {
+                    TransportMode = ConnectionMode.Gateway,
+                    ExpectedCreateStatusCode = HttpStatusCode.Created,
+                    ExpectedReadStatusCode = HttpStatusCode.OK,
+                    ExpectedReplaceStatusCode = HttpStatusCode.OK,
+                    ExpectedDeleteStatusCode = HttpStatusCode.NoContent,
                 },
                 Direct = new TestScenarioExpectations
                 {
@@ -539,9 +558,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     TransportMode = ConnectionMode.Gateway,
                     ExpectedCreateStatusCode = HttpStatusCode.Created,
-                    ExpectedReadStatusCode = HttpStatusCode.BadRequest,// CGW - HttpStatusCode.OK,
-                    ExpectedReplaceStatusCode = HttpStatusCode.BadRequest,// CGW - HttpStatusCode.OK,
-                    ExpectedDeleteStatusCode = HttpStatusCode.BadRequest,// CGW - HttpStatusCode.NoContent,
+                    ExpectedReadStatusCode = HttpStatusCode.BadRequest,
+                    ExpectedReplaceStatusCode = HttpStatusCode.BadRequest,
+                    ExpectedDeleteStatusCode = HttpStatusCode.BadRequest,
+                },
+                ComputeGateway = new TestScenarioExpectations
+                {
+                    TransportMode = ConnectionMode.Gateway,
+                    ExpectedCreateStatusCode = HttpStatusCode.Created,
+                    ExpectedReadStatusCode = HttpStatusCode.OK,
+                    ExpectedReplaceStatusCode = HttpStatusCode.OK,
+                    ExpectedDeleteStatusCode = HttpStatusCode.NoContent,
                 },
                 Direct = new TestScenarioExpectations
                 {
@@ -559,8 +586,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ExecuteTestCase(TestScenario scenario)
         {
             TestScenarioExpectations expected =
-                this.cosmosClient.ClientOptions.ConnectionMode == ConnectionMode.Gateway ?
-                    scenario.Gateway : scenario.Direct;
+                this.cosmosClient.ClientOptions.ConnectionMode == ConnectionMode.Direct ?
+                    scenario.Direct :
+                    this.cosmosClient.Endpoint.Port == 8903 ? scenario.ComputeGateway ?? scenario.Gateway : scenario.Gateway;
 
             Console.WriteLine($"Scenario: {scenario.Name}, Id: \"{scenario.Id}\"");
 
@@ -670,6 +698,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public string Id { get; set; }
 
             public TestScenarioExpectations Gateway { get; set; }
+
+            public TestScenarioExpectations ComputeGateway { get; set; }
 
             public TestScenarioExpectations Direct { get; set; }
         }
