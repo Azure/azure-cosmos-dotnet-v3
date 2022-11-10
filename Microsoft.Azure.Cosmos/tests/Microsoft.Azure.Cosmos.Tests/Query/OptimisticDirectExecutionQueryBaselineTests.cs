@@ -358,14 +358,8 @@
             {
                 // Insert an item
                 CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
-                while (true)
-                {
-                    TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(item, cancellationToken: default);
-                    if (monadicCreateRecord.Succeeded)
-                    {
-                        break;
-                    }
-                }
+                TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(item, cancellationToken: default);
+                Assert.IsTrue(monadicCreateRecord.Succeeded);
             }
 
             return documentContainer;
@@ -436,7 +430,6 @@
             //  gets input parameters
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
-                MaxBufferedItemCount = 7000,
                 TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false, enableOptimisticDirectExecution: true, new TestInjections.ResponseStats())
             };
 
