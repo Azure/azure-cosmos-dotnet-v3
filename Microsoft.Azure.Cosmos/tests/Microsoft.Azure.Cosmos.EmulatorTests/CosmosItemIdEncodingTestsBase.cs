@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             encoderShouldEmitUTF8Identifier: false,
             throwOnInvalidBytes: true);
 
+        private static readonly int computeGatewayPort = Int32.Parse(Utils.ConfigurationManager.AppSettings["ComputeGatewayPort"]);
+
         private Container Container = null;
         private ContainerProperties containerSettings = null;
 
@@ -588,7 +590,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestScenarioExpectations expected =
                 this.cosmosClient.ClientOptions.ConnectionMode == ConnectionMode.Direct ?
                     scenario.Direct :
-                    this.cosmosClient.Endpoint.Port == 8903 ? scenario.ComputeGateway ?? scenario.Gateway : scenario.Gateway;
+                    this.cosmosClient.Endpoint.Port == computeGatewayPort ? 
+                        scenario.ComputeGateway ?? scenario.Gateway : scenario.Gateway;
 
             Console.WriteLine($"Scenario: {scenario.Name}, Id: \"{scenario.Id}\"");
 
