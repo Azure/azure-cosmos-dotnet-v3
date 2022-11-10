@@ -219,9 +219,12 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.container.ClientContext.OperationHelperAsync(
-                nameof(ExecuteAsync),
-                requestOptions,
-                (trace) =>
+                operationName: nameof(ExecuteAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Replace,
+                requestOptions: requestOptions,
+                task: (trace) =>
                 {
                     BatchExecutor executor = new BatchExecutor(
                         container: this.container,
@@ -232,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
                     this.operations = new List<ItemBatchOperation>();
                     return executor.ExecuteAsync(trace,  cancellationToken);
                 },
-                (response) => new OpenTelemetryResponse(
+                openTelemetry: (response) => new OpenTelemetryResponse(
                     responseMessage: response, 
                     containerName: this.container?.Id, 
                     databaseName: this.container?.Database?.Id));

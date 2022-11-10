@@ -26,10 +26,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadAsync),
-                requestOptions,
-                (trace) => base.ReadAsync(requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<UserProperties>(response));
+                operationName: nameof(ReadAsync),
+                containerName: null,
+                databaseName: this.Database.Id,
+                operationType: Documents.OperationType.Read,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReadAsync(requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<UserProperties>(response));
         }
 
         public override Task<UserResponse> ReplaceAsync(
@@ -38,10 +41,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReplaceAsync),
-                requestOptions,
-                (trace) => base.ReplaceAsync(userProperties, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<UserProperties>(response));
+                operationName: nameof(ReplaceAsync),
+                containerName: null,
+                databaseName: this.Database.Id,
+                operationType: Documents.OperationType.Replace,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReplaceAsync(userProperties, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<UserProperties>(response));
         }
 
         public override Task<UserResponse> DeleteAsync(
@@ -49,10 +55,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(DeleteAsync),
-                requestOptions,
-                (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<UserProperties>(response));
+                operationName: nameof(DeleteAsync),
+                containerName: null,
+                databaseName: this.Database.Id,
+                operationType: Documents.OperationType.Replace,
+                requestOptions: requestOptions,
+                task: (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<UserProperties>(response));
         }
 
         public override Permission GetPermission(string id)
@@ -67,10 +76,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreatePermissionAsync),
-                requestOptions,
-                (trace) => base.CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<PermissionProperties>(response));
+                operationName: nameof(CreatePermissionAsync),
+                containerName: null,
+                databaseName: this.Database.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreatePermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<PermissionProperties>(response));
         }
 
         public override Task<PermissionResponse> UpsertPermissionAsync(
@@ -80,10 +92,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(UpsertPermissionAsync),
-                requestOptions,
-                (trace) => base.UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<PermissionProperties>(response));
+                operationName: nameof(UpsertPermissionAsync),
+                containerName: null,
+                databaseName: this.Database.Id,
+                operationType: Documents.OperationType.Replace,
+                requestOptions: requestOptions,
+                task: (trace) => base.UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<PermissionProperties>(response));
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(

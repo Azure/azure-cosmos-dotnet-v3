@@ -194,6 +194,9 @@ namespace Microsoft.Azure.Cosmos
         internal override Task<TResult> 
             OperationHelperAsync<TResult>(
             string operationName,
+            string containerName,
+            string databaseName,
+            OperationType operationType,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry,

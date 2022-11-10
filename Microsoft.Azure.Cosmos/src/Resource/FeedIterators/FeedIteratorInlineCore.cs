@@ -51,7 +51,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return this.clientContext.OperationHelperAsync("FeedIterator Read Next Async",
+            return this.clientContext.OperationHelperAsync(
+                        operationName: "FeedIterator Read Next Async",
+                        containerName: this.container.Id,
+                        databaseName: this.container.Database.Id,
+                        operationType: Documents.OperationType.Replace,
                         requestOptions: null,
                         task: (trace) => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken),
                         openTelemetry: (response) =>

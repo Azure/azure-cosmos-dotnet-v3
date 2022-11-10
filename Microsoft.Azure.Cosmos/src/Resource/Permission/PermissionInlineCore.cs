@@ -27,10 +27,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadAsync),
-                requestOptions,
-                (trace) => base.ReadAsync(tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<PermissionProperties>(response));
+                operationName: nameof(ReadAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Read,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReadAsync(tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<PermissionProperties>(response));
         }
 
         public override Task<PermissionResponse> ReplaceAsync(
@@ -40,10 +43,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReplaceAsync),
-                requestOptions,
-                (trace) => base.ReplaceAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<PermissionProperties>(response));
+                operationName: nameof(ReplaceAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Replace,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReplaceAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<PermissionProperties>(response));
         }
 
         public override Task<PermissionResponse> DeleteAsync(
@@ -51,10 +57,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(DeleteAsync),
+                operationName: nameof(DeleteAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Create,
                 requestOptions,
-                (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<PermissionProperties>(response));
+                task: (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<PermissionProperties>(response));
         }
     }
 }

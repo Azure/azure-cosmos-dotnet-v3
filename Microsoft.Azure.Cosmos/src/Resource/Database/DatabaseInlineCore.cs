@@ -27,10 +27,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateContainerAsync),
-                requestOptions,
-                (trace) => base.CreateContainerAsync(containerProperties, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(
+                operationName: nameof(CreateContainerAsync),
+                containerName: containerProperties.Id,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateContainerAsync(containerProperties, throughput, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(
                     responseMessage: response, 
                     containerName: response.Resource?.Id, 
                     databaseName: this.Id));
@@ -43,10 +46,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateContainerAsync),
-                requestOptions,
-                (trace) => base.CreateContainerAsync(id, partitionKeyPath, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(
+                operationName: nameof(CreateContainerAsync),
+                containerName: id,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateContainerAsync(id, partitionKeyPath, throughput, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(
                     responseMessage: response, 
                     containerName: response.Resource?.Id, 
                     databaseName: this.Id));
@@ -59,10 +65,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateContainerIfNotExistsAsync),
-                requestOptions,
-                (trace) => base.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(
+                operationName: nameof(CreateContainerIfNotExistsAsync),
+                containerName: containerProperties.Id,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(
                     responseMessage: response, 
                     containerName: response.Resource?.Id, 
                     databaseName: this.Id));
@@ -76,10 +85,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateContainerIfNotExistsAsync),
-                requestOptions,
-                (trace) => base.CreateContainerIfNotExistsAsync(id, partitionKeyPath, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(
+                operationName: nameof(CreateContainerIfNotExistsAsync),
+                containerName: id,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateContainerIfNotExistsAsync(id, partitionKeyPath, throughput, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(
                     responseMessage: response, 
                     containerName: response.Resource?.Id, 
                     databaseName: this.Id));
@@ -92,10 +104,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateContainerStreamAsync),
-                requestOptions,
-                (trace) => base.CreateContainerStreamAsync(containerProperties, throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse(response));
+                operationName: nameof(CreateContainerStreamAsync),
+                containerName: containerProperties.Id,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateContainerStreamAsync(containerProperties, throughput, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
 
         public override Task<UserResponse> CreateUserAsync(string id,
@@ -103,10 +118,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateUserAsync),
-                requestOptions,
-                (trace) => base.CreateUserAsync(id, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<UserProperties>(response));
+                operationName: nameof(CreateUserAsync),
+                containerName: id,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateUserAsync(id, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<UserProperties>(response));
         }
 
         public override ContainerBuilder DefineContainer(
@@ -121,10 +139,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(DeleteAsync),
-                requestOptions,
-                (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(
+                operationName: nameof(DeleteAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Delete,
+                requestOptions: requestOptions,
+                task: (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<DatabaseProperties>(
                     responseMessage: response, 
                     containerName: null, 
                     databaseName: response.Resource?.Id));
@@ -135,10 +156,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(DeleteStreamAsync),
-                requestOptions,
-                (trace) => base.DeleteStreamAsync(requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse(response));
+                operationName: nameof(DeleteStreamAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Delete,
+                requestOptions: requestOptions,
+                task: (trace) => base.DeleteStreamAsync(requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
 
         public override Container GetContainer(string id)
@@ -226,10 +250,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadAsync),
-                requestOptions,
-                (trace) => base.ReadAsync(requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(
+                operationName: nameof(ReadAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Read,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReadAsync(requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<DatabaseProperties>(
                     responseMessage: response, 
                     containerName: null, 
                     databaseName: response.Resource?.Id));
@@ -240,18 +267,24 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadStreamAsync),
-                requestOptions,
-                (trace) => base.ReadStreamAsync(requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse(response));
+                operationName: nameof(ReadStreamAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Read,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReadStreamAsync(requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
 
         public override Task<int?> ReadThroughputAsync(CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadThroughputAsync),
-                null,
-                (trace) => base.ReadThroughputAsync(trace, cancellationToken));
+                operationName: nameof(ReadThroughputAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Read,
+                requestOptions: null,
+                task: (trace) => base.ReadThroughputAsync(trace, cancellationToken));
         }
 
         public override Task<ThroughputResponse> ReadThroughputAsync(
@@ -259,10 +292,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadThroughputAsync),
-                requestOptions,
-                (trace) => base.ReadThroughputAsync(requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
+                operationName: nameof(ReadThroughputAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Read,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReadThroughputAsync(requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -271,10 +307,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReplaceThroughputAsync),
-                requestOptions,
-                (trace) => base.ReplaceThroughputAsync(throughput, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
+                operationName: nameof(ReplaceThroughputAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Replace,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReplaceThroughputAsync(throughput, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -283,10 +322,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReplaceThroughputAsync),
-                requestOptions,
-                (trace) => base.ReplaceThroughputAsync(throughputProperties, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
+                operationName: nameof(ReplaceThroughputAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Replace,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReplaceThroughputAsync(throughputProperties, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<ThroughputProperties>(response));
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -296,10 +338,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateContainerAsync),
-                requestOptions,
-                (trace) => base.CreateContainerAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(
+                operationName: nameof(CreateContainerAsync),
+                containerName: containerProperties.Id,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateContainerAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(
                     responseMessage: response, 
                     containerName: response.Resource?.Id, 
                     databaseName: this.Id));
@@ -312,10 +357,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateContainerIfNotExistsAsync),
-                requestOptions,
-                (trace) => base.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<ContainerProperties>(response, response.Resource?.Id, this.Id));
+                operationName: nameof(CreateContainerIfNotExistsAsync),
+                containerName: containerProperties.Id,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(response, response.Resource?.Id, this.Id));
         }
 
         public override Task<ResponseMessage> CreateContainerStreamAsync(
@@ -325,10 +373,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateContainerStreamAsync),
-                requestOptions,
-                (trace) => base.CreateContainerStreamAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse(response));
+                operationName: nameof(CreateContainerStreamAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateContainerStreamAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
 
         public override Task<UserResponse> UpsertUserAsync(
@@ -337,10 +388,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(UpsertUserAsync),
-                requestOptions,
-                (trace) => base.UpsertUserAsync(id, requestOptions, trace, cancellationToken),
-                (response) => new OpenTelemetryResponse<UserProperties>(response));
+                operationName: nameof(UpsertUserAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Upsert,
+                requestOptions: requestOptions,
+                task: (trace) => base.UpsertUserAsync(id, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<UserProperties>(response));
         }
 
         public override ClientEncryptionKey GetClientEncryptionKey(string id)
@@ -362,10 +416,13 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateClientEncryptionKeyAsync),
-                requestOptions,
-                (trace) => base.CreateClientEncryptionKeyAsync(trace, clientEncryptionKeyProperties, requestOptions, cancellationToken),
-                (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response));
+                operationName: nameof(CreateClientEncryptionKeyAsync),
+                containerName: null,
+                databaseName: this.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateClientEncryptionKeyAsync(trace, clientEncryptionKeyProperties, requestOptions, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response));
         }
     }
 }

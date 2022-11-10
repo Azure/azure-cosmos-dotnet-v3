@@ -91,7 +91,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// <returns>A change feed response from cosmos service</returns>
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return this.clientContext.OperationHelperAsync("Change Feed Processor Read Next Async",
+            return this.clientContext.OperationHelperAsync(
+                                operationName: "Change Feed Processor Read Next Async",
+                                containerName: this.container.Id,
+                                databaseName: this.container.Database.Id,
+                                operationType: Documents.OperationType.Replace,
                                 requestOptions: this.changeFeedOptions,
                                 task: (trace) => this.ReadNextAsync(trace, cancellationToken),
                                 openTelemetry: (response) => new OpenTelemetryResponse(
