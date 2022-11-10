@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             Documents.ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
+            GeospatialType geospatialType,
             bool useSystemPrefix,
             ITrace trace,
             CancellationToken cancellationToken = default)
@@ -70,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     QueryPlanRetriever.SupportedQueryFeatures,
                     hasLogicalPartitionKey,
                     useSystemPrefix,
+                    geospatialType,
                     cancellationToken);
 
                 if (!tryGetQueryPlan.Succeeded)

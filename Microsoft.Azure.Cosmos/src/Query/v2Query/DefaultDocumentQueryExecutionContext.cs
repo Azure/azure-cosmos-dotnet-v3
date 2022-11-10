@@ -319,6 +319,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         partitionKeyDefinition: partitionKeyDefinition,
                         queryPartitionProvider: queryPartitionProvider,
                         clientApiVersion: version,
+                        geospatialType: collection.GeospatialConfig.GeospatialType,
                         out QueryInfo _);
                 }
                 else if (request.Properties != null && request.Properties.TryGetValue(

@@ -126,7 +126,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: false,
                 allowDCount: true,
-                useSystemPrefix: false);
+                useSystemPrefix: false,
+                geospatialType: Cosmos.GeospatialType.Geography);
 
             tryGetQueryPlan.ThrowIfFailed();
         }

@@ -348,6 +348,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         partitionKeyDefinition: new PartitionKeyDefinition { Paths = new Collection<string> { testcase.PartitionKey }, Kind = PartitionKind.Hash },
                         queryPartitionProvider: QueryPartitionProviderTestInstance.Object,
                         clientApiVersion: testcase.ClientApiVersion,
+                        geospatialType: Cosmos.GeospatialType.Geography,
                         out QueryInfo info);
 
                     Assert.Fail();
