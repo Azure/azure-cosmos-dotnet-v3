@@ -99,9 +99,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                 requestOptions: this.changeFeedOptions,
                                 task: (trace) => this.ReadNextAsync(trace, cancellationToken),
                                 openTelemetry: (response) => new OpenTelemetryResponse(
-                                    responseMessage: response, 
-                                    containerName: this.container?.Id,
-                                    databaseName: this.container?.Database?.Id),
+                                    responseMessage: response),
                                 traceComponent: TraceComponent.ChangeFeed,
                                 traceLevel: TraceLevel.Info);
         }

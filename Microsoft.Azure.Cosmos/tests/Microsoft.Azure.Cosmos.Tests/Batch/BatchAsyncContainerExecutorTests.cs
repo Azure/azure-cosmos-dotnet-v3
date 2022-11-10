@@ -345,6 +345,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<object>(
                 It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<object>>>(),
                 It.IsAny<Func<object, OpenTelemetryAttributes>>(),

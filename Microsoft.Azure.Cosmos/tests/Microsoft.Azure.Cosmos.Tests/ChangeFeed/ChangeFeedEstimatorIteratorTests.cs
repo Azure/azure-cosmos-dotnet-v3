@@ -336,6 +336,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             mockedContext.Setup(c => c.Client).Returns(MockCosmosUtil.CreateMockCosmosClient());
             mockedContext.Setup(x => x.OperationHelperAsync<FeedResponse<ChangeFeedProcessorState>>(
                 It.Is<string>(str => str.Contains("Change Feed Estimator")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
                 It.IsAny<Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>(),
@@ -427,6 +430,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
             mockContext.Setup(x => x.OperationHelperAsync<FeedResponse<ChangeFeedProcessorState>>(
                 It.Is<string>(str => str.Contains("Change Feed Estimator")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
                 It.IsAny<Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>(),

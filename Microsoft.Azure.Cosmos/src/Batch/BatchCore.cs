@@ -236,9 +236,7 @@ namespace Microsoft.Azure.Cosmos
                     return executor.ExecuteAsync(trace,  cancellationToken);
                 },
                 openTelemetry: (response) => new OpenTelemetryResponse(
-                    responseMessage: response, 
-                    containerName: this.container?.Id, 
-                    databaseName: this.container?.Database?.Id));
+                    responseMessage: response));
         }
 
         /// <summary>

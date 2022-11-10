@@ -41,6 +41,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
@@ -115,6 +118,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
@@ -179,6 +185,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
@@ -255,6 +264,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),

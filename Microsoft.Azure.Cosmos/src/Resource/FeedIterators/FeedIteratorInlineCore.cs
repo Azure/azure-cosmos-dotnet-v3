@@ -53,24 +53,12 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.clientContext.OperationHelperAsync(
                         operationName: "FeedIterator Read Next Async",
-                        containerName: this.container.Id,
-                        databaseName: this.container.Database.Id,
+                        containerName: this.container?.Id,
+                        databaseName: this.container?.Database?.Id,
                         operationType: Documents.OperationType.Replace,
                         requestOptions: null,
                         task: (trace) => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken),
-                        openTelemetry: (response) =>
-                        {
-                            if (this.container == null)
-                            {
-                                return new OpenTelemetryResponse(
-                                    responseMessage: response, 
-                                    containerName: null,
-                                    databaseName: this.databaseName);
-                            }
-                            return new OpenTelemetryResponse(responseMessage: response,
-                                    containerName: this.container?.Id,
-                                    databaseName: this.container?.Database?.Id ?? this.databaseName);
-                        });
+                        openTelemetry: (response) => new OpenTelemetryResponse(responseMessage: response));
         }
 
         public override Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)

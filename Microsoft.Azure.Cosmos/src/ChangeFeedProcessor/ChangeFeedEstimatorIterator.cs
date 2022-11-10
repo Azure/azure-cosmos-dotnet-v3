@@ -118,10 +118,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                 operationType: Documents.OperationType.Replace,
                                 requestOptions: null,
                                 task: (trace) => this.ReadNextAsync(trace, cancellationToken),
-                                openTelemetry: (response) => new OpenTelemetryResponse<ChangeFeedProcessorState>(
-                                    responseMessage: response, 
-                                    containerName: this.monitoredContainer?.Id,
-                                    databaseName: this.monitoredContainer?.Database?.Id ?? this.databaseName),
+                                openTelemetry: (response) => new OpenTelemetryResponse<ChangeFeedProcessorState>(responseMessage: response),
                                 traceComponent: TraceComponent.ChangeFeed,
                                 traceLevel: TraceLevel.Info);
         }

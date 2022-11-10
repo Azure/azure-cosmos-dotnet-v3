@@ -33,10 +33,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
                 task: (trace) => base.CreateContainerAsync(containerProperties, throughput, requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(
-                    responseMessage: response, 
-                    containerName: response.Resource?.Id, 
-                    databaseName: this.Id));
+                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(responseMessage: response));
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(string id,
@@ -52,10 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
                 task: (trace) => base.CreateContainerAsync(id, partitionKeyPath, throughput, requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(
-                    responseMessage: response, 
-                    containerName: response.Resource?.Id, 
-                    databaseName: this.Id));
+                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(responseMessage: response));
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -71,10 +65,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
                 task: (trace) => base.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(
-                    responseMessage: response, 
-                    containerName: response.Resource?.Id, 
-                    databaseName: this.Id));
+                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(responseMessage: response));
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -91,10 +82,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
                 task: (trace) => base.CreateContainerIfNotExistsAsync(id, partitionKeyPath, throughput, requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(
-                    responseMessage: response, 
-                    containerName: response.Resource?.Id, 
-                    databaseName: this.Id));
+                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(responseMessage: response));
         }
 
         public override Task<ResponseMessage> CreateContainerStreamAsync(
@@ -145,10 +133,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<DatabaseProperties>(
-                    responseMessage: response, 
-                    containerName: null, 
-                    databaseName: response.Resource?.Id));
+                openTelemetry: (response) => new OpenTelemetryResponse<DatabaseProperties>(responseMessage: response));
         }
 
         public override Task<ResponseMessage> DeleteStreamAsync(
@@ -256,10 +241,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
                 task: (trace) => base.ReadAsync(requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<DatabaseProperties>(
-                    responseMessage: response, 
-                    containerName: null, 
-                    databaseName: response.Resource?.Id));
+                openTelemetry: (response) => new OpenTelemetryResponse<DatabaseProperties>(responseMessage: response));
         }
 
         public override Task<ResponseMessage> ReadStreamAsync(
@@ -344,10 +326,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
                 task: (trace) => base.CreateContainerAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(
-                    responseMessage: response, 
-                    containerName: response.Resource?.Id, 
-                    databaseName: this.Id));
+                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(responseMessage: response));
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -363,7 +342,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
                 task: (trace) => base.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken),
-                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(response, response.Resource?.Id, this.Id));
+                openTelemetry: (response) => new OpenTelemetryResponse<ContainerProperties>(response));
         }
 
         public override Task<ResponseMessage> CreateContainerStreamAsync(

@@ -10,7 +10,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private static DiagnosticScopeFactory ScopeFactory { get; set; } 
 
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, 
+        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
+            string containerName,
+            string databaseName,
+            Documents.OperationType operationType,
             RequestOptions requestOptions, 
             CosmosClientContext clientContext)
         {
@@ -27,6 +30,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     return new OpenTelemetryCoreRecorder(
                         scope: scope,
+                        operationName: operationName,
+                        containerName: containerName,
+                        databaseName: databaseName,
+                        operationType: operationType,
                         clientContext: clientContext,
                         config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
                 }
