@@ -125,6 +125,12 @@ Or all through `Re-run failed checks` on the top right corner:
 
 ![Re-run all failures](docs/images/contributing-rerunall.png)
 
+## Usage of Cosmos DB Emulator for running unit tests
+
+- - The same version of the emulator used in the CI pipelines can be downloaded [here](https://aka.ms/cosmosdb-emulator)
+- More information about how ro use the emulator for development is documented [here](https://github.com/Azure/azure-documentdb-dotnet/blob/master/docs/documentdb-nosql-local-emulator.md)
+- You can start the emulator with same parameters as the emulator unit tests in the CI pipeline via `.\CosmosDB.Emulator.exe /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /enableRio /EnablePreview /EnableAadAuthentication /EnableSqlComputeEndpoint`
+
 ## Troubleshooting
 
 - [General .NET SDK Troubleshooting](https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-dot-net-sdk)
