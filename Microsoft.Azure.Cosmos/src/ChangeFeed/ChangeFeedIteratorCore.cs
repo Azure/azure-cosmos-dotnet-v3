@@ -222,8 +222,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
                 return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
-                                                containerName: this.container.Id,
-                                                databaseName: this.container.Database.Id,
+                                                containerName: this.container?.Id,
+                                                databaseName: this.container?.Database?.Id ?? this.databaseName,
                                                 operationType: OperationType.ReadFeed,
                                                 requestOptions: this.changeFeedRequestOptions,
                                                 task: (trace) => this.ReadNextInternalAsync(trace, cancellationToken),
