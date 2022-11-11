@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             //Default behavior
             return HttpTimeoutPolicyDefault.Instance;
 
-            static bool StaticIsMetaData(DocumentServiceRequest request)
+            static bool IsMetaData(DocumentServiceRequest request)
             {
                 return (request.OperationType != Documents.OperationType.ExecuteJavaScript && request.ResourceType == ResourceType.StoredProcedure) ||
                     request.ResourceType != ResourceType.Document;
