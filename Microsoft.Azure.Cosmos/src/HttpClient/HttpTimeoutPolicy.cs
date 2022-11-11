@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             //Data Plane Read & Write
-            if (!StaticIsMetaData(documentServiceRequest))
+            if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest))
             {
                 return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
             }
