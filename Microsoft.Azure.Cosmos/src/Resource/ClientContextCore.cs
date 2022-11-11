@@ -41,8 +41,7 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
-            BatchAsyncContainerExecutorCache batchExecutorCache,
-            ClientTelemetry telemetry)
+            BatchAsyncContainerExecutorCache batchExecutorCache)
         {
             this.client = client;
             this.clientOptions = clientOptions;
@@ -135,8 +134,7 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: requestInvokerHandler,
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                batchExecutorCache: new BatchAsyncContainerExecutorCache(),
-                telemetry: documentClient.clientTelemetry);
+                batchExecutorCache: new BatchAsyncContainerExecutorCache());
         }
 
         /// <summary>
@@ -412,6 +410,19 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.batchExecutorCache.GetExecutorForContainer(container, this);
+        }
+
+        /// <inheritdoc/>
+        internal override async Task InitializeContainerUsingRntbdAsync(
+            string databaseId,
+            string containerLinkUri,
+            CancellationToken cancellationToken)
+        {
+            await this.DocumentClient.EnsureValidClientAsync(NoOpTrace.Singleton);
+            await this.DocumentClient.OpenConnectionsToAllReplicasAsync(
+                databaseId,
+                containerLinkUri,
+                cancellationToken);
         }
 
         public override void Dispose()

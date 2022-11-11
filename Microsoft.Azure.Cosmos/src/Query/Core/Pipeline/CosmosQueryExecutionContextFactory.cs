@@ -248,6 +248,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             cosmosQueryContext.ResourceTypeEnum,
                             partitionKeyDefinition,
                             inputParameters.PartitionKey != null,
+                            containerQueryProperties.GeospatialType,
                             cosmosQueryContext.UseSystemPrefix,
                             createQueryPipelineTrace,
                             cancellationToken);

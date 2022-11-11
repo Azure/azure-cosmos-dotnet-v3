@@ -47,6 +47,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             bool hasLogicalPartitionKey,
             bool allowDCount,
             bool useSystemPrefix,
+            Cosmos.GeospatialType geospatialType,
             CancellationToken cancellationToken);
 
         public abstract Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
