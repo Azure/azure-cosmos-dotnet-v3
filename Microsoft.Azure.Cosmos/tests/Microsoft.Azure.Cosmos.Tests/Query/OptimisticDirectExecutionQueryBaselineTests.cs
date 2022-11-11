@@ -114,9 +114,6 @@
             // null continuation token
             Assert.IsTrue(await TryMonadicCreate(numItems, multiPartition, query, targetRange: FeedRangeEpk.FullRange, continuationToken: null));
 
-            // default continuation token
-            Assert.IsTrue(await TryMonadicCreate(numItems, multiPartition, query, targetRange: FeedRangeEpk.FullRange, continuationToken: default));
-
             CosmosElement cosmosElementContinuationToken = CosmosElement.Parse(
                 "{\"OptimisticDirectExecutionToken\":{\"token\":\"{\\\"resourceId\\\":\\\"AQAAAMmFOw8LAAAAAAAAAA==\\\",\\\"skipCount\\\":1}\"," +
                 "\"range\":{\"min\":\"\",\"max\":\"FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF\"}}}");
@@ -152,7 +149,7 @@
         public async Task TestPipelineForContinuationTokenOnSinglePartitionAsync()
         {
             int numItems = 100;
-            int result = await this.GetResultsFromHydratingPipelineWithContinuation(
+            int result = await this.CreateOptimisticPipelineAndDrainAsync(
                 numItems: numItems, 
                 isMultiPartition: false, 
                 query: "SELECT * FROM c");
@@ -176,12 +173,11 @@
         public async Task TestPipelinesForDistributedQueryAsync()
         {
             int numItems = 100;
-            int result = await this.GetResultsFromHydratingPipelineWithContinuation(
+            int result = await this.CreateOptimisticPipelineAndDrainAsync(
                             numItems: numItems, 
                             isMultiPartition: false, 
                             query: "SELECT AVG(c) FROM c");
 
-            // TODO: These values will not equal each other until aggregate logic is added
             Assert.AreNotEqual(result, numItems);
         }
 
@@ -207,7 +203,7 @@
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
-            FeedRangeEpk firstRange = targetRanges[0];
+            FeedRangeEpk firstRange = targetRanges[0]; // only one range is taken because ODE pipeline can only accept one range
 
             TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = OptimisticDirectExecutionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
@@ -215,8 +211,8 @@
                 targetRange: firstRange,
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
-                cancellationToken: default,
-                continuationToken: continuationToken);
+                continuationToken: continuationToken,
+                cancellationToken: default);
 
             Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
             IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
@@ -224,7 +220,7 @@
             return queryPipelineStage;
         }
 
-        private async Task<int> GetResultsFromHydratingPipelineWithContinuation(int numItems, bool isMultiPartition, string query)
+        private async Task<int> CreateOptimisticPipelineAndDrainAsync(int numItems, bool isMultiPartition, string query)
         {
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition);
             IQueryPipelineStage queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
@@ -254,9 +250,9 @@
             return documents.Count;
         }
 
-            // it creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
-            // TODO: With the addition of the merge/split support, this queryPipelineStage should be able to return all documents regardless of a gone exception happening 
-            private static async Task<bool> ExecuteGoneExceptionOnODEPipeline(bool isMultiPartition)
+        // it creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
+        // TODO: With the addition of the merge/split support, this queryPipelineStage should be able to return all documents regardless of a gone exception happening 
+        private static async Task<bool> ExecuteGoneExceptionOnODEPipeline(bool isMultiPartition)
         {
             int numItems = 100;
             string query = "SELECT * FROM c";
@@ -266,7 +262,7 @@
                 message: errorMessage,
                 statusCode: System.Net.HttpStatusCode.Gone,
                 subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                activityId: Guid.NewGuid().ToString(),
+                activityId: "0f8fad5b-d9cb-469f-a165-70867728950e",
                 requestCharge: default);
 
             int moveNextAsyncCounter = 0;
@@ -350,7 +346,7 @@
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
             
-            int rangeCount = multiPartition == true ? 4 : 1;
+            int rangeCount = multiPartition ? 4 : 1;
 
             Assert.AreEqual(rangeCount, ranges.Count);
 
@@ -516,7 +512,7 @@
             bool expectedOptimisticDirectExecution,
             string partitionKeyPath,
             Cosmos.PartitionKey partitionKeyValue,
-            CosmosElement continuationToken = null)
+            CosmosElement continuationToken)
             : base(description)
         {
             this.PartitionKeyDefinition = new PartitionKeyDefinition()
