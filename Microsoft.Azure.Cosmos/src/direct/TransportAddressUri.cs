@@ -76,20 +76,26 @@ namespace Microsoft.Azure.Documents
 
         public void SetUnhealthy()
         {
-            this.SetHealthStatus(HealthStatus.Unhealthy);
+            this.SetHealthStatus(
+                HealthStatus.Unhealthy,
+                false);
             this.lastFailedRequestUtc = DateTime.UtcNow;
         }
 
         public void SetConnected()
         {
-            this.SetHealthStatus(HealthStatus.Connected);
+            this.SetHealthStatus(
+                HealthStatus.Connected,
+                false);
         }
 
-        public void SetRefreshed()
+        public void SetRefreshedIfUnhealthy()
         {
             if (this.healthStatus == HealthStatus.Unhealthy)
             {
-                this.SetHealthStatus(HealthStatus.UnhealthyPending);
+                this.SetHealthStatus(
+                    HealthStatus.UnhealthyPending,
+                    false);
             }
         }
 
@@ -126,42 +132,50 @@ namespace Microsoft.Azure.Documents
         /// Sets the health status.
         /// </summary>
         /// <param name="status"></param>
-        public void SetHealthStatus(HealthStatus status)
+        /// <param name="forceSet"></param>
+        public void SetHealthStatus(HealthStatus status, bool forceSet)
         {
             this.healthStatusLock.EnterWriteLock();
             try
             {
-                HealthStatus previousStatus = this.healthStatus;
-                switch (status)
+                if (forceSet)
                 {
-                    case HealthStatus.Unhealthy:
-                        this.lastUnhealthyTimestamp = DateTime.UtcNow;
-                        this.healthStatus = status;
-                        break;
-
-                    case HealthStatus.UnhealthyPending:
-                        if (previousStatus == HealthStatus.Unhealthy || previousStatus == HealthStatus.UnhealthyPending)
-                        {
-                            this.lastUnhealthyPendingTimestamp = DateTime.UtcNow;
+                    this.healthStatus = status;
+                }
+                else
+                {
+                    HealthStatus previousStatus = this.healthStatus;
+                    switch (status)
+                    {
+                        case HealthStatus.Unhealthy:
+                            this.lastUnhealthyTimestamp = DateTime.UtcNow;
                             this.healthStatus = status;
-                        }
-                        break;
+                            break;
 
-                    case HealthStatus.Connected:
-                        if (previousStatus != HealthStatus.Unhealthy
-                            || (previousStatus == HealthStatus.Unhealthy &&
-                                DateTime.UtcNow > this.lastUnhealthyTimestamp + TransportAddressUri.oneMinute))
-                        {
-                            this.healthStatus = status;
-                        }
-                        break;
+                        case HealthStatus.UnhealthyPending:
+                            if (previousStatus == HealthStatus.Unhealthy || previousStatus == HealthStatus.UnhealthyPending)
+                            {
+                                this.lastUnhealthyPendingTimestamp = DateTime.UtcNow;
+                                this.healthStatus = status;
+                            }
+                            break;
 
-                    case HealthStatus.Unknown:
-                        // there is no reason we are going to reach here
-                        throw new ArgumentException("It is impossible to set to unknown status");
+                        case HealthStatus.Connected:
+                            if (previousStatus != HealthStatus.Unhealthy
+                                || (previousStatus == HealthStatus.Unhealthy &&
+                                    DateTime.UtcNow > this.lastUnhealthyTimestamp + TransportAddressUri.oneMinute))
+                            {
+                                this.healthStatus = status;
+                            }
+                            break;
 
-                    default:
-                        throw new ArgumentException("Unsupported health status: " + status);
+                        case HealthStatus.Unknown:
+                            // there is no reason we are going to reach here
+                            throw new ArgumentException("It is impossible to set to unknown status");
+
+                        default:
+                            throw new ArgumentException("Unsupported health status: " + status);
+                    }
                 }
             }
             finally
@@ -220,9 +234,9 @@ namespace Microsoft.Azure.Documents
                     && DateTime.UtcNow >= (this.lastUnhealthyTimestamp + TransportAddressUri.oneMinute);
         }
 
-        public String GetHealthStatusDiagnosticString()
+        public string GetHealthStatusDiagnosticString()
         {
-            return this.Uri.Port + ":" + this.healthStatus.ToString();
+            return $"{this.Uri.Port}:{this.healthStatus}";
         }
 
         /// <summary>

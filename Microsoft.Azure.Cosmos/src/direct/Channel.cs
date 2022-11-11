@@ -158,10 +158,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             else
             {
                 transportRequestStats.RequestWaitingForConnectionInitialization = false;
-                physicalAddress.SetConnected();
             }
 
             // Waiting for channel initialization to move to Pipelined stage
+            physicalAddress.SetConnected();
             transportRequestStats.RecordState(TransportRequestStats.RequestStage.Pipelined);
 
             // Ideally, we would set up a timer here, and then hand off the rest of the work

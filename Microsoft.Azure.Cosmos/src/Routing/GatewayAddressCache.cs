@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: false,
-                            cachedAddresses: _),
+                            cachedAddresses: null),
                         forceRefresh: (_) => false);
                 }
 
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 // When an address is marked as unhealthy, then the address enumerator will move it to the end of the list
                 // So it could happen that no request will use the unhealthy address for an extended period of time
                 // So the 410 -> forceRefresh workflow may not happen.
-                if (addresses
+                if (this.isReplicaAddressValidationEnabled && addresses
                     .Get(Protocol.Tcp)
                     .ReplicaTransportAddressUris
                     .Any(x => x.ShouldRefreshHealthStatus()))
@@ -421,7 +421,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                            partitionKeyRangeIdentity.CollectionRid,
                            partitionKeyRangeIdentity.PartitionKeyRangeId,
                            forceRefresh: true,
-                           cachedAddresses: _),
+                           cachedAddresses: null),
                        forceRefresh: (_) => true);
         }
 
@@ -514,16 +514,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 // Merge with the cached addresses
                 // if the address is being returned from gateway again, then keep using the cached addressInformation object
                 // for new addresses, use the new addressInformation object
-
                 PartitionAddressInformation mergedAddresses = this.MergeAddresses(result.Item2, cachedAddresses);
-                foreach (TransportAddressUri address in mergedAddresses.Get(Protocol.Tcp)?.ReplicaTransportAddressUris)
-                {
-                    // The main purpose for this step is to move address health status from unhealthy -> unhealthyPending
-                    address.SetRefreshed();
-                }
 
                 if (this.isReplicaAddressValidationEnabled)
                 {
+                    foreach (TransportAddressUri address in mergedAddresses.Get(Protocol.Tcp)?.ReplicaTransportAddressUris)
+                    {
+                        // The main purpose for this step is to move address health status from unhealthy -> unhealthyPending
+                        address.SetRefreshedIfUnhealthy();
+                    }
+
                     await this.ValidateReplicaAddresses(mergedAddresses.Get(Protocol.Tcp)?.ReplicaTransportAddressUris);
                 }
 
@@ -880,71 +880,26 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return newAddresses;
             }
 
-            List<AddressInformation> mergedAddressesInformation = new ();
-            List<TransportAddressUri> mergedTransportAddressUri = new ();
-            List<TransportAddressUri> nonPrimaryReplicaTransportAddressUris = new ();
-            TransportAddressUri primaryRepliaTransportAddress = null;
+            PerProtocolPartitionAddressInformation newAddressInformations = newAddresses.Get(Protocol.Tcp);
+            PerProtocolPartitionAddressInformation oldAddressInformations = cachedAddresses.Get(Protocol.Tcp);
+            Dictionary<string, TransportAddressUri.HealthStatus> cachedAddressDict = new ();
 
-            Dictionary<string, Tuple<AddressInformation, TransportAddressUri>> newAddressDict = this.BuildPhysicalAddressTransportAddressMapping(newAddresses.Get(Protocol.Tcp));
-            Dictionary<string, Tuple<AddressInformation, TransportAddressUri>> cachedAddressDict = this.BuildPhysicalAddressTransportAddressMapping(cachedAddresses.Get(Protocol.Tcp));
-
-            foreach (AddressInformation newAddress in newAddresses.Get(Protocol.Tcp)?.ReplicaAddresses)
+            foreach (TransportAddressUri transportAddressUri in oldAddressInformations.ReplicaTransportAddressUris)
             {
-                if (cachedAddressDict.ContainsKey(newAddress.PhysicalUri) &&
-                    newAddress.Protocol == cachedAddressDict[newAddress.PhysicalUri].Item1.Protocol &&
-                    newAddress.IsPublic == cachedAddressDict[newAddress.PhysicalUri].Item1.IsPublic &&
-                    newAddress.IsPrimary == cachedAddressDict[newAddress.PhysicalUri].Item1.IsPrimary)
-                {
-                    mergedAddressesInformation.Add(cachedAddressDict[newAddress.PhysicalUri].Item1);
-                    mergedTransportAddressUri.Add(cachedAddressDict[newAddress.PhysicalUri].Item2);
+                cachedAddressDict.Add(transportAddressUri.ToString(), transportAddressUri.GetHealthStatus());
+            }
 
-                    if (!newAddress.IsPrimary)
-                    {
-                        nonPrimaryReplicaTransportAddressUris.Add(cachedAddressDict[newAddress.PhysicalUri].Item2);
-                    }
-                    else if (primaryRepliaTransportAddress == null)
-                    {
-                        primaryRepliaTransportAddress = cachedAddressDict[newAddress.PhysicalUri].Item2;
-                    }
-                }
-                else
+            foreach (TransportAddressUri transportAddressUri in newAddressInformations.ReplicaTransportAddressUris)
+            {
+                if (cachedAddressDict.ContainsKey(transportAddressUri.ToString()))
                 {
-                    mergedAddressesInformation.Add(newAddress);
-                    mergedTransportAddressUri.Add(newAddressDict[newAddress.PhysicalUri].Item2);
-
-                    if (!newAddress.IsPrimary)
-                    {
-                        nonPrimaryReplicaTransportAddressUris.Add(newAddressDict[newAddress.PhysicalUri].Item2);
-                    }
-                    else if (primaryRepliaTransportAddress == null)
-                    {
-                        primaryRepliaTransportAddress = newAddressDict[newAddress.PhysicalUri].Item2;
-                    }
+                    transportAddressUri.SetHealthStatus(
+                        status: cachedAddressDict[transportAddressUri.ToString()],
+                        forceSet: true);
                 }
             }
 
-            return new (
-                mergedAddressesInformation,
-                mergedTransportAddressUri,
-                nonPrimaryReplicaTransportAddressUris,
-                primaryRepliaTransportAddress);
-        }
-
-        private Dictionary<string, Tuple<AddressInformation, TransportAddressUri>> BuildPhysicalAddressTransportAddressMapping(PerProtocolPartitionAddressInformation protocolAddressInformation)
-        {
-            Dictionary<string, Tuple<AddressInformation, TransportAddressUri>> addressDict = new ();
-
-            foreach ((AddressInformation addressInfo, TransportAddressUri transportUri) in from AddressInformation addressInfo in protocolAddressInformation.ReplicaAddresses
-                                                                                           from TransportAddressUri transportUri in protocolAddressInformation.ReplicaTransportAddressUris
-                                                                                           where addressInfo.PhysicalUri.Equals(transportUri.ToString())
-                                                                                           select (addressInfo, transportUri))
-            {
-                addressDict.Add(
-                    addressInfo.PhysicalUri,
-                    Tuple.Create(addressInfo, transportUri));
-            }
-
-            return addressDict;
+            return newAddresses;
         }
 
         private static bool GetEnvironmentVariableAsBool(

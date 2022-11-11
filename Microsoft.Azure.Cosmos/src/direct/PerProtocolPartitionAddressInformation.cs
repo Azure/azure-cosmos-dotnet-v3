@@ -52,33 +52,6 @@ namespace Microsoft.Azure.Documents
             this.Protocol = protocol;
         }
 
-        public PerProtocolPartitionAddressInformation(
-            Protocol protocol,
-            IReadOnlyList<AddressInformation> replicaAddresses,
-            IReadOnlyList<TransportAddressUri> replicaTransportAddressUris,
-            IReadOnlyList<TransportAddressUri> nonPrimaryReplicaTransportAddressUris,
-            TransportAddressUri primaryReplicaTransportAddressUri)
-        {
-            this.ReplicaAddresses = replicaAddresses ?? throw new ArgumentNullException(nameof(replicaAddresses));
-
-            this.ReplicaUris = this.ReplicaAddresses
-                                .Select(e => new Uri(e.PhysicalUri))
-                                .ToArray();
-
-            this.ReplicaTransportAddressUris = replicaTransportAddressUris;
-
-            this.NonPrimaryReplicaTransportAddressUris = nonPrimaryReplicaTransportAddressUris;
-
-            AddressInformation primaryReplicaAddress = this.ReplicaAddresses.SingleOrDefault(
-                address => address.IsPrimary && !address.PhysicalUri.Contains('['));
-            if (primaryReplicaAddress != null)
-            {
-                this.PrimaryReplicaTransportAddressUri = primaryReplicaTransportAddressUri;
-            }
-
-            this.Protocol = protocol;
-        }
-
         // Add setters for all members.
         public TransportAddressUri GetPrimaryAddressUri(DocumentServiceRequest request)
         {
