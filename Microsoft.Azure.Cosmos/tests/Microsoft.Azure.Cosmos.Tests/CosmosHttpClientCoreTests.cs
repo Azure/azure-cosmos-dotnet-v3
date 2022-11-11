@@ -263,8 +263,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task HttpTimeoutThrow503TestAsync()
         {
-            static async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            int count = 0;
+            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
             {
+                count++;
 
                 throw new OperationCanceledException("API with exception");
 
@@ -288,8 +290,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             catch (Exception e)
             {
+                Assert.AreEqual(3, count, "Should retry 3 times");
                 Assert.IsInstanceOfType(e, typeof(ServiceUnavailableException));
             }
+            count = 0;
 
             //Data plane write
             try
@@ -304,11 +308,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             catch (Exception e)
             {
+                Assert.AreEqual(1, count, "Post methods should not retry");
                 Assert.IsInstanceOfType(e, typeof(ServiceUnavailableException));
             }
+            count = 0;
 
-
-            ////Meta data read
+            //Meta data read
             try
             {
                 HttpResponseMessage responseMessage3 = await cosmoshttpClient.SendHttpAsync(() =>
@@ -321,15 +326,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             catch (Exception e)
             {
+                Assert.AreEqual(3, count, "Should retry 3 times");
                 Assert.IsInstanceOfType(e, typeof(ServiceUnavailableException));
             }
+            count = 0;
 
             //Query plan read (note all query plan operations are reads).
             try
             {
                 HttpResponseMessage responseMessage2 = await cosmoshttpClient.SendHttpAsync(() =>
                    new ValueTask<HttpRequestMessage>(
-                       result: new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"))),
+                       result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                        resourceType: ResourceType.Document,
                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
@@ -337,7 +344,26 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             catch (Exception e)
             {
+                Assert.AreEqual(3, count, "Should retry 3 times");
                 Assert.IsInstanceOfType(e, typeof(ServiceUnavailableException));
+            }
+            count = 0;
+
+            //Metadata Write (Should throw a 408 OperationCanceledException rather than a 503)
+            try
+            {
+                HttpResponseMessage responseMessage2 = await cosmoshttpClient.SendHttpAsync(() =>
+                   new ValueTask<HttpRequestMessage>(
+                       result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                       resourceType: ResourceType.Database,
+                       timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
+                       clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                       cancellationToken: default);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(3, count, "Post methods should not retry");
+                Assert.IsInstanceOfType(e, typeof(OperationCanceledException));
             }
         }
 

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -300,6 +301,14 @@ namespace Microsoft.Azure.Cosmos
                                     
                                     if (timeoutPolicy.ShouldThrow503OnTimeout)
                                     {
+                                        CosmosException serviceUnavailableExcpetion = CosmosExceptionFactory.CreateServiceUnavailable(
+                                            message: message,
+                                            headers: new Headers()
+                                            {
+                                                ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
+                                            },
+                                            innerException: e);
+                                        
                                         throw new ServiceUnavailableException(message, e, SubStatusCodes.TransportGenerated503);
                                     }
 

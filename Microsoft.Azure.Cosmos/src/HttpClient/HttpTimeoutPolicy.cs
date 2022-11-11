@@ -36,20 +36,14 @@ namespace Microsoft.Azure.Cosmos
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
             }
 
-            //Data Plane Read
-            if (!IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
-            {
-                return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
-            }
-
-            //Data Plane Write
-            if (!IsMetaData(documentServiceRequest) && !documentServiceRequest.IsReadOnlyRequest)
+            //Data Plane Read & Write
+            if (!StaticIsMetaData(documentServiceRequest))
             {
                 return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
             }
 
             //Meta Data Read
-            if (IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
+            if (StaticIsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
             {
                 return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
             }
@@ -57,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             //Default behavior
             return HttpTimeoutPolicyDefault.Instance;
 
-            static bool IsMetaData(DocumentServiceRequest request)
+            static bool StaticIsMetaData(DocumentServiceRequest request)
             {
                 return (request.OperationType != Documents.OperationType.ExecuteJavaScript && request.ResourceType == ResourceType.StoredProcedure) ||
                     request.ResourceType != ResourceType.Document;
