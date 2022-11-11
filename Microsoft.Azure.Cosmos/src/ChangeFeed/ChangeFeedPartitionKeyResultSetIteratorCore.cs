@@ -93,9 +93,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             return this.clientContext.OperationHelperAsync(
                                 operationName: "Change Feed Processor Read Next Async",
-                                containerName: this.container.Id,
-                                databaseName: this.container.Database.Id,
-                                operationType: Documents.OperationType.Replace,
+                                containerName: this.container?.Id,
+                                databaseName: this.container?.Database?.Id ?? this.databaseName,
+                                operationType: Documents.OperationType.ReadFeed,
                                 requestOptions: this.changeFeedOptions,
                                 task: (trace) => this.ReadNextAsync(trace, cancellationToken),
                                 openTelemetry: (response) => new OpenTelemetryResponse(

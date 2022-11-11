@@ -49,8 +49,8 @@ namespace Microsoft.Azure.Cosmos
             return this.clientContext.OperationHelperAsync(
                         operationName: "Typed FeedIterator ReadNextAsync",
                         containerName: this.container?.Id,
-                        databaseName: this.databaseName,
-                        operationType: Documents.OperationType.Replace,
+                        databaseName: this.container?.Database.Id ?? this.databaseName,
+                        operationType: Documents.OperationType.ReadFeed,
                         requestOptions: null,
                         task: trace => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken),
                         openTelemetry: (response) => new OpenTelemetryResponse<T>(responseMessage: response));

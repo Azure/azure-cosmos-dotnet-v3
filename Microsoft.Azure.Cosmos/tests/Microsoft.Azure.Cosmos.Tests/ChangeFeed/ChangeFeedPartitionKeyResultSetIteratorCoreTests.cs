@@ -49,8 +49,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>,Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, oTelFunc, comp, level) =>
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>,Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
@@ -73,7 +73,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ).ReturnsAsync(responseMessage);
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
-
+            containerMock.Setup(c => c.Id).Returns("containerId");
+            containerMock.Setup(c => c.Database.Id).Returns("databaseId");
+            
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
                 continuationToken: null,
@@ -126,8 +128,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, oTelFunc, comp, level) =>
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
@@ -152,7 +154,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             .ReturnsAsync(secondResponse);
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
-
+            containerMock.Setup(c => c.Id).Returns("containerId");
+            containerMock.Setup(c => c.Database.Id).Returns("databaseId");
+            
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
                 continuationToken: null,
@@ -193,8 +197,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, oTelFunc, comp, level) =>
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
@@ -217,7 +221,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ).ReturnsAsync(new ResponseMessage(System.Net.HttpStatusCode.OK));
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
-
+            containerMock.Setup(c => c.Id).Returns("containerId");
+            containerMock.Setup(c => c.Database.Id).Returns("databaseId");
+            
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
                 continuationToken: null,
@@ -272,8 +278,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, oTelFunc, comp, level) =>
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
@@ -295,7 +301,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 )
             ).ReturnsAsync(new ResponseMessage(System.Net.HttpStatusCode.OK));
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
-            containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
+            containerMock.Setup(c => c.LinkUri).Returns("http://localhost");
+            containerMock.Setup(c => c.Id).Returns("containerId");
+            containerMock.Setup(c => c.Database.Id).Returns("databaseId");
+
             MockDocumentClient mockDocumentClient = new MockDocumentClient();
             mockContext.Setup(c => c.DocumentClient).Returns(mockDocumentClient);          
 
