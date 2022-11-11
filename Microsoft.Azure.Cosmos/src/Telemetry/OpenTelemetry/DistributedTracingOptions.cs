@@ -10,7 +10,12 @@ namespace Microsoft.Azure.Cosmos
     /// Open Telemetry Configuration
     /// It needs to be public once AppInsight is ready
     /// </summary>
-    internal sealed class DistributedTracingOptions
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+        sealed class DistributedTracingOptions
     {
         /// <summary>
         /// Default Latency threshold for other than query Operation
