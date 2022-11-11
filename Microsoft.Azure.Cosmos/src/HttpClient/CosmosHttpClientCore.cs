@@ -301,7 +301,7 @@ namespace Microsoft.Azure.Cosmos
                                     
                                     if (timeoutPolicy.ShouldThrow503OnTimeout)
                                     {
-                                        CosmosException serviceUnavailableExcpetion = CosmosExceptionFactory.CreateServiceUnavailable(
+                                        throw new CosmosExceptionFactory.CreateServiceUnavailable(
                                             message: message,
                                             headers: new Headers()
                                             {
