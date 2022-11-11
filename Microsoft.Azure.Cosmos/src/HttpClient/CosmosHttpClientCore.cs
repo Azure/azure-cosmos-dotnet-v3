@@ -301,15 +301,14 @@ namespace Microsoft.Azure.Cosmos
                                     
                                     if (timeoutPolicy.ShouldThrow503OnTimeout)
                                     {
-                                        throw new CosmosExceptionFactory.CreateServiceUnavailable(
+                                        throw CosmosExceptionFactory.CreateServiceUnavailableException(
                                             message: message,
                                             headers: new Headers()
                                             {
-                                                ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
+                                                ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                                SubStatusCode = SubStatusCodes.TransportGenerated503
                                             },
                                             innerException: e);
-                                        
-                                        throw new ServiceUnavailableException(message, e, SubStatusCodes.TransportGenerated503);
                                     }
 
                                     throw;

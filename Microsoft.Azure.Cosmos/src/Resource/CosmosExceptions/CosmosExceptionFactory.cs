@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 innerException);
         }
 
-        internal static CosmosException CreateServiceUnavailable(
+        internal static CosmosException CreateServiceUnavailableException(
             string message, 
             Headers headers,
             string stackTrace = default, 

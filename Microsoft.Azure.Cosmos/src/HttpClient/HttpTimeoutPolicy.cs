@@ -50,13 +50,13 @@ namespace Microsoft.Azure.Cosmos
 
             //Default behavior
             return HttpTimeoutPolicyDefault.Instance;
+        }
 
-            static bool IsMetaData(DocumentServiceRequest request)
-            {
-                return (request.OperationType != Documents.OperationType.ExecuteJavaScript && request.ResourceType == ResourceType.StoredProcedure) ||
-                    request.ResourceType != ResourceType.Document;
+        private static bool IsMetaData(DocumentServiceRequest request)
+        {
+            return (request.OperationType != Documents.OperationType.ExecuteJavaScript && request.ResourceType == ResourceType.StoredProcedure) ||
+                request.ResourceType != ResourceType.Document;
 
-            }
         }
     }
 }
