@@ -52,7 +52,6 @@ namespace Microsoft.Azure.Documents
             this.Protocol = protocol;
         }
 
-        // Add setters for all members.
         public TransportAddressUri GetPrimaryAddressUri(DocumentServiceRequest request)
         {
             TransportAddressUri primaryReplicaAddress = null;

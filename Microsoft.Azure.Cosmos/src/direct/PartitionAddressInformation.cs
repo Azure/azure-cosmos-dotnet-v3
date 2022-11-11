@@ -20,8 +20,7 @@ namespace Microsoft.Azure.Documents
         public bool IsLocalRegion { get; set; }
 
         public PartitionAddressInformation(IReadOnlyList<AddressInformation> replicaAddresses)
-            : this(replicaAddresses,
-                  false)
+            : this(replicaAddresses, false)
         {
 
         }
@@ -36,7 +35,7 @@ namespace Microsoft.Azure.Documents
             }
 
             // Verify the list is sorted. If not sort it.
-            for (int i = 1; i < replicaAddresses.Count; i++)
+            for(int i = 1; i < replicaAddresses.Count; i++)
             {
                 if(replicaAddresses[i-1].CompareTo(replicaAddresses[i]) > 0)
                 {
@@ -62,9 +61,7 @@ namespace Microsoft.Azure.Documents
             foreach (Protocol protocol in (Protocol[])Enum.GetValues(typeof(Protocol)))
             {
                 this.perProtocolAddressInformation[(int)protocol] =
-                    new PerProtocolPartitionAddressInformation(
-                        protocol,
-                        this.AllAddresses);
+                    new PerProtocolPartitionAddressInformation(protocol, this.AllAddresses);
             }
 
             this.IsLocalRegion = inNetworkRequest;
