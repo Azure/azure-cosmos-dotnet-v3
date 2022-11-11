@@ -37,8 +37,7 @@
 
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
-
-        private const double DiagnosticsLatencyThresholdValue = .0001; // Very Very Small Value
+        
         [ClassInitialize()]
         public static async Task ClassInitAsync(TestContext context)
         {
@@ -58,17 +57,17 @@
 
             client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
+                EnableDiagnosticsTraceForAllEvents = true
             };
 
             bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
+                EnableDiagnosticsTraceForAllEvents = true
             };
             
             miscCosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
+                EnableDiagnosticsTraceForAllEvents = true
             };
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
@@ -985,7 +984,7 @@
                 throttleClient.ClientOptions.EnableDistributedTracing = true;
                 throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
+                    EnableDiagnosticsTraceForAllEvents = true
                 };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
@@ -1272,7 +1271,7 @@
                 throttleClient.ClientOptions.EnableDistributedTracing = true;
                 throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
+                    EnableDiagnosticsTraceForAllEvents = true
                 };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
