@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             DistributedTracingOptions distributedTracingOptions = new DistributedTracingOptions
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(20)
+                DiagnosticsLatencyThreshold = this.rootTrace.Duration.Add(TimeSpan.FromSeconds(1))
             };
             
             OpenTelemetryAttributes response = new OpenTelemetryAttributes
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             DistributedTracingOptions distributedTracingOptions = new DistributedTracingOptions
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(20)
+                DiagnosticsLatencyThreshold = this.rootTrace.Duration.Add(TimeSpan.FromSeconds(1))
             };
 
             OpenTelemetryAttributes response = new OpenTelemetryAttributes
