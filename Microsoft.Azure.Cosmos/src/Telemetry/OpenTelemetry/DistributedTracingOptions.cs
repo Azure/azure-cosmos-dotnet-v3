@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         /// Set this flag as true if you want to generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) containing request diagnostics string for all the operations.
         /// If this flag is true then, it won't honour <see cref="DiagnosticsLatencyThreshold"/> value to generate diagnostic traces.
         /// </summary>
-        public bool EnableDiagnosticsTraceForAllEvents { get; set; }
+        public bool EnableDiagnosticsTraceForAllRequests { get; set; }
 
     }
 }
