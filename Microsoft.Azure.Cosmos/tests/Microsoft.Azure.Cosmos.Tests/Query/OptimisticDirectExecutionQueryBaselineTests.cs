@@ -40,22 +40,22 @@
             List<OptimisticDirectExecutionTestInput> testVariations = new List<OptimisticDirectExecutionTestInput>
             {
                 CreateInput(
-                    description: @"Partition Key + Value and Distinct",
-                    query: "SELECT DISTINCT c.key FROM c",
+                    description: @"Single Partition Key and Distinct",
+                    query: "SELECT DISTINCT c.age FROM c",
                     expectedOptimisticDirectExecution: true,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: @"value"),
 
                 CreateInput(
-                    description: @"Partition Key + Value and Min Aggregate",
-                    query: "SELECT VALUE MIN(c.key) FROM c",
+                    description: @"Single Partition Key and Min Aggregate",
+                    query: "SELECT VALUE MIN(c.age) FROM c",
                     expectedOptimisticDirectExecution: true,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: @"value"),
 
                 CreateInput(
-                    description: @"Partition Key + Value Fields",
-                    query: "SELECT c.key FROM c",
+                    description: @"Single Partition Key and Value Field",
+                    query: "SELECT c.age FROM c",
                     expectedOptimisticDirectExecution: true,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: @"value"),
@@ -121,6 +121,8 @@
 
             // single continuation token
             Assert.IsTrue(await TryMonadicCreate(numItems, multiPartition, query, targetRange: new FeedRangeEpk(range), continuationToken: cosmosElementContinuationToken));
+
+            //TODO: Add non ODE continuation token case
         }
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s). 
@@ -141,7 +143,7 @@
                 documentCountInSinglePartition += Int32.Parse(tryGetPage.Result.Documents[0].ToString());
             }
 
-            Assert.AreEqual(documentCountInSinglePartition, 100);
+            Assert.AreEqual(100, documentCountInSinglePartition);
         }
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s) + continuation token.
@@ -150,9 +152,10 @@
         {
             int numItems = 100;
             int result = await this.CreateOptimisticPipelineAndDrainAsync(
-                numItems: numItems, 
-                isMultiPartition: false, 
-                query: "SELECT * FROM c");
+                            numItems: numItems, 
+                            isMultiPartition: false, 
+                            query: "SELECT * FROM c",
+                            expectedContinuationTokenCount: 10);
 
             Assert.AreEqual(result, numItems);
         }
@@ -170,13 +173,14 @@
         // Currently this pipeline cannot handle distributed queries as it does not have the logic to sum up the values it gets from the backend in partial results.
         // This functionality is available for other pipelines such as the ParallelCrossPartitionQueryPipelineStage.
         [TestMethod]
-        public async Task TestPipelinesForDistributedQueryAsync()
+        public async Task TestPipelineForDistributedQueryAsync()
         {
             int numItems = 100;
             int result = await this.CreateOptimisticPipelineAndDrainAsync(
                             numItems: numItems, 
                             isMultiPartition: false, 
-                            query: "SELECT AVG(c) FROM c");
+                            query: "SELECT AVG(c) FROM c",
+                            expectedContinuationTokenCount: 0);
 
             Assert.AreNotEqual(result, numItems);
         }
@@ -203,7 +207,8 @@
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
-            FeedRangeEpk firstRange = targetRanges[0]; // only one range is taken because ODE pipeline can only accept one range
+            // only one range is taken because ODE pipeline can only accept one range
+            FeedRangeEpk firstRange = targetRanges[0]; 
 
             TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = OptimisticDirectExecutionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
@@ -220,7 +225,7 @@
             return queryPipelineStage;
         }
 
-        private async Task<int> CreateOptimisticPipelineAndDrainAsync(int numItems, bool isMultiPartition, string query)
+        private async Task<int> CreateOptimisticPipelineAndDrainAsync(int numItems, bool isMultiPartition, string query, int expectedContinuationTokenCount)
         {
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition);
             IQueryPipelineStage queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
@@ -247,6 +252,7 @@
                 continuationTokenCount++;
             }
 
+            Assert.AreEqual(expectedContinuationTokenCount, continuationTokenCount);
             return documents.Count;
         }
 
@@ -257,15 +263,16 @@
             int numItems = 100;
             string query = "SELECT * FROM c";
             List<CosmosElement> documents = new List<CosmosElement>();
-            string errorMessage = $"Epk Range: Partition does not exist at the given range.";
+            string goneExceptionMessage = $"Epk Range: Partition does not exist at the given range.";
             CosmosException goneException = new CosmosException(
-                message: errorMessage,
+                message: goneExceptionMessage,
                 statusCode: System.Net.HttpStatusCode.Gone,
                 subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
                 activityId: "0f8fad5b-d9cb-469f-a165-70867728950e",
                 requestCharge: default);
 
             int moveNextAsyncCounter = 0;
+            bool caughtGoneException = false;
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(
                 numItems,
                 multiPartition: isMultiPartition,
@@ -278,23 +285,25 @@
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
                 moveNextAsyncCounter++;
-                try
-                {
-                    TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
-                    tryGetPage.ThrowIfFailed();
+                TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
 
-                    documents.AddRange(tryGetPage.Result.Documents);
-                }
-                catch
+                if (tryGetPage.Failed == true)
                 {
-                    Assert.IsTrue(queryPipelineStage.Current.Failed);
-                    Assert.AreEqual(queryPipelineStage.Current.InnerMostException.Message, errorMessage);
-                    break;
+                    string errorRecieved = tryGetPage.Exception.InnerException.Message;
+                    if (errorRecieved.Equals(goneExceptionMessage))
+                    {
+                        caughtGoneException = true;
+                        break;
+                    }
                 }
+
+                documents.AddRange(tryGetPage.Result.Documents);
             }
 
             // Once fallback plan is implemented, this test should be able to return all 100 documents
-            Assert.AreEqual(documents.Count, 10);
+            Assert.AreEqual(10, documents.Count);
+            Assert.IsTrue(caughtGoneException);
+
             return true;
         }
 
@@ -321,7 +330,8 @@
 
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
-            int exponentPartitionKeyRanges = 2; // a value of 2 would lead to 4 partitions (2 * 2). 4 partitions are used because theyre easy to manage + demonstrates multi partition use case
+            // a value of 2 would lead to 4 partitions (2 * 2). 4 partitions are used because they're easy to manage + demonstrates multi partition use case
+            int exponentPartitionKeyRanges = 2; 
 
             IReadOnlyList<FeedRangeInternal> ranges;
 
