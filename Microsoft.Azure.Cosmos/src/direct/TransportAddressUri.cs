@@ -141,41 +141,39 @@ namespace Microsoft.Azure.Documents
                 if (forceSet)
                 {
                     this.healthStatus = status;
+                    return;
                 }
-                else
+                HealthStatus previousStatus = this.healthStatus;
+                switch (status)
                 {
-                    HealthStatus previousStatus = this.healthStatus;
-                    switch (status)
-                    {
-                        case HealthStatus.Unhealthy:
-                            this.lastUnhealthyTimestamp = DateTime.UtcNow;
+                    case HealthStatus.Unhealthy:
+                        this.lastUnhealthyTimestamp = DateTime.UtcNow;
+                        this.healthStatus = status;
+                        break;
+
+                    case HealthStatus.UnhealthyPending:
+                        if (previousStatus == HealthStatus.Unhealthy || previousStatus == HealthStatus.UnhealthyPending)
+                        {
+                            this.lastUnhealthyPendingTimestamp = DateTime.UtcNow;
                             this.healthStatus = status;
-                            break;
+                        }
+                        break;
 
-                        case HealthStatus.UnhealthyPending:
-                            if (previousStatus == HealthStatus.Unhealthy || previousStatus == HealthStatus.UnhealthyPending)
-                            {
-                                this.lastUnhealthyPendingTimestamp = DateTime.UtcNow;
-                                this.healthStatus = status;
-                            }
-                            break;
+                    case HealthStatus.Connected:
+                        if (previousStatus != HealthStatus.Unhealthy
+                            || (previousStatus == HealthStatus.Unhealthy &&
+                                DateTime.UtcNow > this.lastUnhealthyTimestamp + TransportAddressUri.oneMinute))
+                        {
+                            this.healthStatus = status;
+                        }
+                        break;
 
-                        case HealthStatus.Connected:
-                            if (previousStatus != HealthStatus.Unhealthy
-                                || (previousStatus == HealthStatus.Unhealthy &&
-                                    DateTime.UtcNow > this.lastUnhealthyTimestamp + TransportAddressUri.oneMinute))
-                            {
-                                this.healthStatus = status;
-                            }
-                            break;
+                    case HealthStatus.Unknown:
+                        // there is no reason we are going to reach here
+                        throw new ArgumentException("It is impossible to set to unknown status");
 
-                        case HealthStatus.Unknown:
-                            // there is no reason we are going to reach here
-                            throw new ArgumentException("It is impossible to set to unknown status");
-
-                        default:
-                            throw new ArgumentException("Unsupported health status: " + status);
-                    }
+                    default:
+                        throw new ArgumentException("Unsupported health status: " + status);
                 }
             }
             finally

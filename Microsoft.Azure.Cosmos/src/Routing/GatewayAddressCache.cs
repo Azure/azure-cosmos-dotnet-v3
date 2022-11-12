@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.NetworkInformation;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -88,8 +89,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GatewayAddressCache.ProtocolString(this.protocol));
 
             this.openConnectionsHandler = openConnectionsHandler;
-            this.isReplicaAddressValidationEnabled = GatewayAddressCache.GetEnvironmentVariableAsBool(
-                name: replicaValidationVariableName,
+            this.isReplicaAddressValidationEnabled = ConfigurationManager.GetEnvironmentVariable(
+                variable: replicaValidationVariableName,
                 defaultValue: true);
 
             this.replicaValidationScopes = new ConcurrentBag<TransportAddressUri.HealthStatus>();
@@ -831,17 +832,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-
-        /***
-         *  merge the new addresses get back from gateway with the cached addresses.
-         *  If the address is being returned from gateway again, then keep using the cached addressInformation object
-         *  If it is a new address being returned, then use the new addressInformation object.
-         *
-         * @param newAddresses the latest addresses being returned from gateway.
-         * @param cachedAddresses the cached addresses.
-         *
-         * @return the merged addresses.
-         */
+        /// <summary>
+        /// Merge the new addresses get back from gateway with the cached addresses.
+        /// If the address is being returned from gateway again, then keep using the cached addressInformation object
+        /// If it is a new address being returned, then use the new addressInformation object.
+        /// </summary>
+        /// <param name="newAddresses">The latest addresses being returned from gateway.</param>
+        /// <param name="cachedAddresses">The cached addresses.</param>
+        /// <returns>The merged addresses.</returns>
         private PartitionAddressInformation MergeAddresses(
             PartitionAddressInformation newAddresses,
             PartitionAddressInformation cachedAddresses)
@@ -876,27 +874,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             return newAddresses;
-        }
-
-        private static bool GetEnvironmentVariableAsBool(
-            string name,
-            bool defaultValue)
-        {
-            string envVariableValueText = Environment.GetEnvironmentVariable(name);
-
-            if (string.IsNullOrEmpty(envVariableValueText))
-            {
-                return defaultValue;
-            }
-
-            bool envVariableBool = envVariableValueText.ToLowerInvariant() switch
-            {
-                "true" or "yes" or "1" => true,
-                "false" or "no" or "0" => false,
-                _ => throw new ArgumentException("Environment variable was not set properly.", name),
-            };
-
-            return envVariableBool;
         }
 
         protected virtual void Dispose(bool disposing)

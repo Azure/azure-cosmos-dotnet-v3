@@ -603,7 +603,7 @@ namespace Microsoft.Azure.Documents
             {
                 "true" or "yes" or "1" => true,
                 "false" or "no" or "0" => false,
-                _ => throw new ArgumentException("Environment variable was not set properly.", name),
+                _ => defaultValue,
             };
 
             return envVariableBool;
