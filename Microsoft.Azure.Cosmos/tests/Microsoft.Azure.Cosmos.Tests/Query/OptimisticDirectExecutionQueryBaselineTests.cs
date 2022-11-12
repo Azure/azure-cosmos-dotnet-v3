@@ -29,6 +29,7 @@
     using System.IO;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
+    using Microsoft.IdentityModel.Tokens;
 
     [TestClass]
     public class OptimisticDirectExecutionQueryBaselineTests : BaselineTests<OptimisticDirectExecutionTestInput, OptimisticDirectExecutionTestOutput>
@@ -157,7 +158,7 @@
                             query: "SELECT * FROM c",
                             expectedContinuationTokenCount: 10);
 
-            Assert.AreEqual(result, numItems);
+            Assert.AreEqual(numItems, result);
         }
 
         // test to check if pipeline handles a 410 exception properly and returns all the documents.
@@ -182,7 +183,8 @@
                             query: "SELECT AVG(c) FROM c",
                             expectedContinuationTokenCount: 0);
 
-            Assert.AreNotEqual(result, numItems);
+            //TODO: Add validation for actual value of average
+            Assert.AreEqual(1, result);
         }
 
         private static async Task<bool> TryMonadicCreate(int numItems, bool multiPartition, string query, FeedRangeEpk targetRange, CosmosElement continuationToken)
@@ -290,6 +292,8 @@
                 if (tryGetPage.Failed == true)
                 {
                     string errorRecieved = tryGetPage.Exception.InnerException.Message;
+                    Assert.AreEqual(goneException.GetType(), tryGetPage.Exception.InnerException.GetType());
+
                     if (errorRecieved.Equals(goneExceptionMessage))
                     {
                         caughtGoneException = true;
