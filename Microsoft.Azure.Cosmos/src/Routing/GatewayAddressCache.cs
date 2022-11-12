@@ -297,19 +297,19 @@ namespace Microsoft.Azure.Cosmos.Routing
                 // When an address is marked as unhealthy, then the address enumerator will move it to the end of the list
                 // So it could happen that no request will use the unhealthy address for an extended period of time
                 // So the 410 -> forceRefresh workflow may not happen.
-                if (this.isReplicaAddressValidationEnabled && addresses
+                if (addresses
                     .Get(Protocol.Tcp)
                     .ReplicaTransportAddressUris
                     .Any(x => x.ShouldRefreshHealthStatus()))
                 {
-                    await this.serverPartitionAddressCache.Refresh(
+                    Task refreshAddressesInBackgroundTask = Task.Run(async () => await this.serverPartitionAddressCache.Refresh(
                         key: partitionKeyRangeIdentity,
                         singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
                                 request,
                                 partitionKeyRangeIdentity.CollectionRid,
                                 partitionKeyRangeIdentity.PartitionKeyRangeId,
                                 forceRefresh: true,
-                                cachedAddresses: currentCachedValue));
+                                cachedAddresses: currentCachedValue)));
                 }
 
                 return addresses;
@@ -821,37 +821,13 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             // checkNotNull(addresses, "Argument 'addresses' can not be null");
 
-            // By theory, when we reach here, the status of the address should be in one of the three status: Unknown, Connected, UnhealthyPending
-            // using open connection to validate addresses in UnhealthyPending status
-            // Could extend to also open connection for unknown in the future
+            IEnumerable<TransportAddressUri> addressesNeedToValidation = addresses
+                .Where(address => this.replicaValidationScopes.Contains(address.GetHealthStatus()) && address.GetHealthStatus().Equals(TransportAddressUri.HealthStatus.UnhealthyPending));
 
-            List<TransportAddressUri> addressesNeedToValidation = new();
-            foreach (TransportAddressUri address in addresses)
+            if (addressesNeedToValidation.Any())
             {
-                if (this.replicaValidationScopes.Contains(address.GetHealthStatus()))
-                {
-                    switch (address.GetHealthStatus())
-                    {
-                        case TransportAddressUri.HealthStatus.UnhealthyPending:
-                            // Generally, an unhealthyPending replica has more chances to fail the request compared to unknown replica
-                            // so we want to put it at the head of the validation list
-                            addressesNeedToValidation.Insert(0, address);
-                            break;
-
-                        case TransportAddressUri.HealthStatus.Unknown:
-                            addressesNeedToValidation.Add(address);
-                            break;
-
-                        default:
-                            throw new ArgumentException("Validate replica status is not support for status " + address.GetHealthStatus());
-                    }
-                }
-            }
-
-            if (addressesNeedToValidation.Count > 0)
-            {
-                await this.openConnectionsHandler.OpenRntbdChannelsAsync(
-                    addressesNeedToValidation);
+                Task openConnectionsInBackgroundTask = Task.Run(async () => await this.openConnectionsHandler.OpenRntbdChannelsAsync(
+                    addresses: addressesNeedToValidation.ToList()));
             }
         }
 
