@@ -121,7 +121,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 forceRefresh: false,
                 NoOpTrace.Singleton,
                 cancellationToken: cancellationToken);
-            string databaseRid = await ((DatabaseInternal)((ContainerInternal)monitoredContainer).Database).GetRIDAsync(cancellationToken);
+
+            string databaseRid;
+            try
+            {
+                // Extract DbRid from ContainerRid
+                Documents.ResourceId resourceId = Documents.ResourceId.Parse(containerRid);
+                databaseRid = resourceId.DatabaseId.ToString();
+            }
+            catch (Documents.BadRequestException)
+            {
+                // Fallback to reading the database RID
+                databaseRid = await ((DatabaseInternal)((ContainerInternal)monitoredContainer).Database).GetRIDAsync(cancellationToken);
+            }
+            
             return $"{databaseRid}_{containerRid}";
         }
 
