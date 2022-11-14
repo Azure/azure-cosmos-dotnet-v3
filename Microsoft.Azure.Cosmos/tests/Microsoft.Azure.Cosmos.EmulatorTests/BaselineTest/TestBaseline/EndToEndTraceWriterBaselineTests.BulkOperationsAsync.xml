@@ -1602,7 +1602,7 @@
     throttleClient.ClientOptions.EnableDistributedTracing = true;
     throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
     {
-        EnableDiagnosticsTraceForAllEvents = true
+        EnableDiagnosticsTraceForAllRequests = true
     };
 
     ItemRequestOptions requestOptions = new ItemRequestOptions();
