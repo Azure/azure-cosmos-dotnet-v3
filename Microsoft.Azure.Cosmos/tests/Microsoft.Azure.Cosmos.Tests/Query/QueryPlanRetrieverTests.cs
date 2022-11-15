@@ -107,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
+                It.IsAny<Cosmos.GeospatialType>(),
                 It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(innerException));
 
             CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
@@ -115,6 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 ResourceType.Document,
                 new Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } },
                 hasLogicalPartitionKey: false,
+                geospatialType: Cosmos.GeospatialType.Geography,
                 useSystemPrefix: false,
                 NoOpTrace.Singleton));
 
