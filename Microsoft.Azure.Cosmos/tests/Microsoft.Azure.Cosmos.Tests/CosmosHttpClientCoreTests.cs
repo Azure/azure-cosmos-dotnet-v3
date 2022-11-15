@@ -16,8 +16,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
-    using System.Drawing.Text;
-    using System.Security.Policy;
 
     [TestClass]
     public class CosmosHttpClientCoreTests
