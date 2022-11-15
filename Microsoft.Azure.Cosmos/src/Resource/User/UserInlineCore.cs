@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
                 operationName: nameof(DeleteAsync),
                 containerName: null,
                 databaseName: this.Database.Id,
-                operationType: Documents.OperationType.Replace,
+                operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
                 openTelemetry: (response) => new OpenTelemetryResponse<UserProperties>(response));
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                 operationName: nameof(UpsertPermissionAsync),
                 containerName: null,
                 databaseName: this.Database.Id,
-                operationType: Documents.OperationType.Replace,
+                operationType: Documents.OperationType.Upsert,
                 requestOptions: requestOptions,
                 task: (trace) => base.UpsertPermissionAsync(permissionProperties, tokenExpiryInSeconds, requestOptions, trace, cancellationToken),
                 openTelemetry: (response) => new OpenTelemetryResponse<PermissionProperties>(response));

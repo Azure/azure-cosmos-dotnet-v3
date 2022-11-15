@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
                 operationName: nameof(DeleteAsync),
                 containerName: null,
                 databaseName: this.Id,
-                operationType: Documents.OperationType.Create,
+                operationType: Documents.OperationType.Delete,
                 requestOptions,
                 task: (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken),
                 openTelemetry: (response) => new OpenTelemetryResponse<PermissionProperties>(response));
