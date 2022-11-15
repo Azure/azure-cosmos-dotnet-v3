@@ -350,14 +350,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     }
                 });
 
-            string databaseRid = Guid.NewGuid().ToString();
-            Mock<DatabaseInternal> mockedMonitoredDatabase = new Mock<DatabaseInternal>(MockBehavior.Strict);
-            mockedMonitoredDatabase.Setup(c => c.GetRIDAsync(It.IsAny<CancellationToken>())).ReturnsAsync(databaseRid);
-
-            string monitoredContainerRid = Guid.NewGuid().ToString();
+            string monitoredContainerRid = "V4lVAMl0wuQ=";
+            string databaseRid = Documents.ResourceId.Parse(monitoredContainerRid).DatabaseId.ToString();
             Mock<ContainerInternal> mockedMonitoredContainer = new Mock<ContainerInternal>(MockBehavior.Strict);
             mockedMonitoredContainer.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(monitoredContainerRid);
-            mockedMonitoredContainer.Setup(c => c.Database).Returns(mockedMonitoredDatabase.Object);
             mockedMonitoredContainer.Setup(c => c.ClientContext).Returns(mockedContext.Object);
             
 
