@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;

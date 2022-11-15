@@ -291,11 +291,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                             clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                             cancellationToken: default);
                 }
-                //catch (CosmosException e)
-                //{
-                //    Assert.AreEqual(expectedNumberOfRetrys, count, "Should retry 3 times for read methods, for writes should only be tried once");
-                //    Assert.AreEqual(e.StatusCode, System.Net.HttpStatusCode.ServiceUnavailable);
-                //}
                 catch (Exception e)
                 {
                     Assert.AreEqual(expectedNumberOfRetrys, count, "Should retry 3 times for read methods, for writes should only be tried once");
