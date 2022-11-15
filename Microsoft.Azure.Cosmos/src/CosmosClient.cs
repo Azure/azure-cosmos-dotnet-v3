@@ -18,8 +18,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -629,9 +627,12 @@ namespace Microsoft.Azure.Cosmos
         public virtual Task<AccountProperties> ReadAccountAsync()
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadAccountAsync),
-                null,
-                (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint));
+                operationName: nameof(ReadAccountAsync),
+                containerName: null,
+                databaseName: null,
+                operationType: OperationType.Read,
+                requestOptions: null,
+                task: (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint));
         }
 
         /// <summary>
@@ -715,9 +716,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateDatabaseAsync),
-                requestOptions,
-                (trace) =>
+                operationName: nameof(CreateDatabaseAsync),
+                containerName: null,
+                databaseName: id,
+                operationType: OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) =>
                 {
                     DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
                     ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(throughput);
@@ -729,10 +733,7 @@ namespace Microsoft.Azure.Cosmos
                         trace: trace,
                         cancellationToken: cancellationToken);
                 },
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(
-                    responseMessage: response, 
-                    containerName: null, 
-                    databaseName: response.Resource?.Id));
+                openTelemetry: (response) => new OpenTelemetryResponse<DatabaseProperties>(responseMessage: response));
         }
 
         /// <summary>
@@ -765,9 +766,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateDatabaseAsync),
-                requestOptions,
-                (trace) =>
+                operationName: nameof(CreateDatabaseAsync),
+                containerName: null,
+                databaseName: id,
+                operationType: OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) =>
                 {
                     DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
                     return this.CreateDatabaseInternalAsync(
@@ -777,10 +781,7 @@ namespace Microsoft.Azure.Cosmos
                         trace: trace,
                         cancellationToken: cancellationToken);
                 },
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(
-                    responseMessage: response, 
-                    containerName: null, 
-                    databaseName: response.Resource?.Id));
+                openTelemetry: (response) => new OpenTelemetryResponse<DatabaseProperties>(responseMessage: response));
         }
 
         /// <summary>
@@ -824,59 +825,60 @@ namespace Microsoft.Azure.Cosmos
             return string.IsNullOrEmpty(id)
                 ? throw new ArgumentNullException(nameof(id))
                 : this.ClientContext.OperationHelperAsync(
-                nameof(CreateDatabaseIfNotExistsAsync),
-                requestOptions,
-                async (trace) =>
-            {
-                double totalRequestCharge = 0;
-                // Doing a Read before Create will give us better latency for existing databases
-                DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
-                DatabaseCore database = (DatabaseCore)this.GetDatabase(id);
-                using (ResponseMessage readResponse = await database.ReadStreamAsync(
+                    operationName: nameof(CreateDatabaseIfNotExistsAsync),
+                    containerName: null,
+                    databaseName: id,
+                    operationType: OperationType.Create,
                     requestOptions: requestOptions,
-                    trace: trace,
-                    cancellationToken: cancellationToken))
-                {
-                    totalRequestCharge = readResponse.Headers.RequestCharge;
-                    if (readResponse.StatusCode != HttpStatusCode.NotFound)
+                    task: async (trace) =>
                     {
-                        return this.ClientContext.ResponseFactory.CreateDatabaseResponse(database, readResponse);
-                    }
-                }
+                        double totalRequestCharge = 0;
+                        // Doing a Read before Create will give us better latency for existing databases
+                        DatabaseProperties databaseProperties = this.PrepareDatabaseProperties(id);
+                        DatabaseCore database = (DatabaseCore)this.GetDatabase(id);
+                        using (ResponseMessage readResponse = await database.ReadStreamAsync(
+                            requestOptions: requestOptions,
+                            trace: trace,
+                            cancellationToken: cancellationToken))
+                        {
+                            totalRequestCharge = readResponse.Headers.RequestCharge;
+                            if (readResponse.StatusCode != HttpStatusCode.NotFound)
+                            {
+                                return this.ClientContext.ResponseFactory.CreateDatabaseResponse(database, readResponse);
+                            }
+                        }
 
-                using (ResponseMessage createResponse = await this.CreateDatabaseStreamInternalAsync(
-                    databaseProperties,
-                    throughputProperties,
-                    requestOptions,
-                    trace,
-                    cancellationToken))
-                {
-                    totalRequestCharge += createResponse.Headers.RequestCharge;
-                    createResponse.Headers.RequestCharge = totalRequestCharge;
+                        using (ResponseMessage createResponse = await this.CreateDatabaseStreamInternalAsync(
+                            databaseProperties,
+                            throughputProperties,
+                            requestOptions,
+                            trace,
+                            cancellationToken))
+                        {
+                            totalRequestCharge += createResponse.Headers.RequestCharge;
+                            createResponse.Headers.RequestCharge = totalRequestCharge;
 
-                    if (createResponse.StatusCode != HttpStatusCode.Conflict)
-                    {
-                        return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), createResponse);
-                    }
-                }
+                            if (createResponse.StatusCode != HttpStatusCode.Conflict)
+                            {
+                                return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), createResponse);
+                            }
+                        }
 
-                // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
-                // so for the remaining ones we should do a Read instead of throwing Conflict exception
-                using (ResponseMessage readResponseAfterConflict = await database.ReadStreamAsync(
-                    requestOptions: requestOptions,
-                    trace: trace,
-                    cancellationToken: cancellationToken))
-                {
-                    totalRequestCharge += readResponseAfterConflict.Headers.RequestCharge;
-                    readResponseAfterConflict.Headers.RequestCharge = totalRequestCharge;
+                        // This second Read is to handle the race condition when 2 or more threads have Read the database and only one succeeds with Create
+                        // so for the remaining ones we should do a Read instead of throwing Conflict exception
+                        using (ResponseMessage readResponseAfterConflict = await database.ReadStreamAsync(
+                            requestOptions: requestOptions,
+                            trace: trace,
+                            cancellationToken: cancellationToken))
+                        {
+                            totalRequestCharge += readResponseAfterConflict.Headers.RequestCharge;
+                            readResponseAfterConflict.Headers.RequestCharge = totalRequestCharge;
 
-                    return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
-                }
-            },
-                (response) => new OpenTelemetryResponse<DatabaseProperties>(
-                    responseMessage: response, 
-                    containerName: null, 
-                    databaseName: response.Resource?.Id));
+                            return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this.GetDatabase(databaseProperties.Id), readResponseAfterConflict);
+                        }
+                    },
+                    openTelemetry: (response) => new OpenTelemetryResponse<DatabaseProperties>(
+                        responseMessage: response));
         }
 
         /// <summary>
@@ -1165,9 +1167,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ClientContext.OperationHelperAsync(
-                 nameof(CreateDatabaseStreamAsync),
-                 requestOptions,
-                 (trace) =>
+                 operationName: nameof(CreateDatabaseStreamAsync),
+                 containerName: null,
+                 databaseName: databaseProperties.Id,
+                 operationType: OperationType.Create,
+                 requestOptions: requestOptions,
+                 task: (trace) =>
                  {
                      this.ClientContext.ValidateResource(databaseProperties.Id);
                      return this.CreateDatabaseStreamInternalAsync(
@@ -1177,7 +1182,7 @@ namespace Microsoft.Azure.Cosmos
                          trace,
                          cancellationToken);
                  },
-                 (response) => new OpenTelemetryResponse(response));
+                 openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
 
         /// <summary>
@@ -1260,9 +1265,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateDatabaseIfNotExistsAsync),
-                requestOptions,
-                (trace) =>
+                operationName: nameof(CreateDatabaseIfNotExistsAsync),
+                containerName: null,
+                databaseName: databaseProperties.Id,
+                operationType: OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) =>
                 {
                     this.ClientContext.ValidateResource(databaseProperties.Id);
                     return this.CreateDatabaseStreamInternalAsync(
@@ -1272,7 +1280,7 @@ namespace Microsoft.Azure.Cosmos
                         trace,
                         cancellationToken);
                 },
-                (response) => new OpenTelemetryResponse(response));
+                openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
 
         private async Task<DatabaseResponse> CreateDatabaseInternalAsync(
