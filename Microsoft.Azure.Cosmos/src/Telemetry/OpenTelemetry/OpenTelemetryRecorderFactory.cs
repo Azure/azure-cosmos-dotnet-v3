@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
     using global::Azure.Core.Pipeline;
 
     internal static class OpenTelemetryRecorderFactory
@@ -36,6 +37,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         operationType: operationType,
                         clientContext: clientContext,
                         config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
+                }
+            } 
+            else
+            {
+                if (requestOptions?.DistributedTracingOptions != null || clientContext?.ClientOptions?.DistributedTracingOptions != null)
+                {
+                    throw new ArgumentException("Distributed tracing is not enabled. Please set CosmosClientOptions.EnableDistributedTracing to true.");
                 }
             }
 

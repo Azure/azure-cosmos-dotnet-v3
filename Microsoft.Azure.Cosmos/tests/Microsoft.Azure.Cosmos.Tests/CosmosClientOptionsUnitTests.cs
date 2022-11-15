@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Threading.Tasks;
     using Cosmos.Telemetry;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -175,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
             Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.DistributedTracingOptions.DiagnosticsLatencyThreshold);
-            Assert.IsFalse(clientOptions.EnableDistributedTracing);
+            Assert.IsTrue(clientOptions.EnableDistributedTracing);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -205,6 +206,53 @@ namespace Microsoft.Azure.Cosmos.Tests
                     EnableDiagnosticsTraceForAllRequests = true
                 }));
             Assert.AreEqual("EnableDiagnosticsTraceForAllRequests can not be true along with DiagnosticsLatencyThreshold.", exception.Message);
+        }
+        
+        [TestMethod]
+        public async Task VerifyDistributedTracing()
+        {
+            string endpoint = AccountEndpoint;
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+
+            // Using Client Builder to enable distributed tracing
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+              accountEndpoint: endpoint,
+              authKeyOrResourceToken: key);
+
+            CosmosClient cosmosClient = cosmosClientBuilder
+                .WithDistributingTracing()
+                .Build(new MockDocumentClient());
+            
+            CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
+
+            Assert.IsTrue(clientOptions.EnableDistributedTracing);
+            Assert.IsNull(clientOptions.DistributedTracingOptions);
+
+            // Using ClientOptions to set distributed tracing options without enabling distributed tracing
+            cosmosClient = new CosmosClientBuilder(
+              accountEndpoint: endpoint,
+              authKeyOrResourceToken: key).Build(new MockDocumentClient());
+            
+            cosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions();
+            
+            var exception = await Assert.ThrowsExceptionAsync<ArgumentException>(() => cosmosClient.CreateDatabaseAsync("test"));
+
+            Assert.AreEqual("Distributed tracing is not enabled. Please set CosmosClientOptions.EnableDistributedTracing to true.", exception.Message);
+
+            // Using Request Options to set distributed tracing options without enabling distributed tracing
+            cosmosClient = new CosmosClientBuilder(
+               accountEndpoint: endpoint,
+               authKeyOrResourceToken: key).Build(new MockDocumentClient());
+
+            exception = await Assert.ThrowsExceptionAsync<ArgumentException>(() => cosmosClient.CreateDatabaseAsync(
+                id: "test",
+                requestOptions: new Cosmos.RequestOptions()
+                {
+                    DistributedTracingOptions = new DistributedTracingOptions()
+                }));
+
+            Assert.AreEqual("Distributed tracing is not enabled. Please set CosmosClientOptions.EnableDistributedTracing to true.", exception.Message);
+
         }
 
         [TestMethod]
