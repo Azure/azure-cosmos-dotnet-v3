@@ -78,16 +78,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         {
             Exception innerException = ExceptionWithStackTraceException.UnWrapMonadExcepion(exceptionWithStackTrace, trace);
 
-            // Use the original stack trace from the inner exception.
-            if (innerException is Microsoft.Azure.Documents.DocumentClientException
-                || innerException is CosmosException)
-            {
-                return ExceptionToCosmosException.TryCreateFromException(
-                    innerException, 
-                    trace, 
-                    out cosmosException);
-            }
-
             if (!ExceptionToCosmosException.TryCreateFromException(
                 innerException,
                 trace,
