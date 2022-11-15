@@ -991,7 +991,6 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> are only applicable when EnableDistributedTracing flag is true.
-        /// otherwise, this configuration will be ignored.
         /// </summary>
 #if PREVIEW
         public
@@ -1001,7 +1000,7 @@ namespace Microsoft.Azure.Cosmos
             DistributedTracingOptions DistributedTracingOptions { get; set; }
         
         /// <summary>
-        /// Gets or sets value indicating whether distributed tracing activities (<see cref="System.Diagnostics.Activity"/>) are going to be created for the SDK methods calls and HTTP calls.
+        /// Gets or sets value indicating whether distributed tracing activities (<see cref="System.Diagnostics.Activity"/>) are going to be created for the SDK operation calls and HTTP calls.
         /// </summary>
 #if PREVIEW
         public
