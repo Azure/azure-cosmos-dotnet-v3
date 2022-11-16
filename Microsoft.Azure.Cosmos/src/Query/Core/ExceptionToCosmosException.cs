@@ -86,14 +86,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 return false;
             }
 
-            cosmosException = CosmosExceptionFactory.Create(
-                cosmosException.StatusCode,
-                cosmosException.Message,
-                exceptionWithStackTrace.StackTrace,
-                headers: cosmosException.Headers,
-                cosmosException.Trace,
-                cosmosException.Error,
-                cosmosException.InnerException);
+            if (innerException is not CosmosException && innerException is not Documents.DocumentClientException)
+            {
+                cosmosException = CosmosExceptionFactory.Create(
+                    cosmosException.StatusCode,
+                    cosmosException.Message,
+                    exceptionWithStackTrace.StackTrace,
+                    headers: cosmosException.Headers,
+                    cosmosException.Trace,
+                    cosmosException.Error,
+                    cosmosException.InnerException);
+            }
+
             return true;
         }
 
