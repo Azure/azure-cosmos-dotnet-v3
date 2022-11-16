@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Documents
         private readonly ReaderWriterLockSlim healthStatusLock = new (LockRecursionPolicy.NoRecursion);
 
         /// <summary>
-        /// test
+        /// Creates a new instance of <see cref="TransportAddressUri"/>
         /// </summary>
         /// <param name="addressUri"></param>
         public TransportAddressUri(Uri addressUri)
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// blabla
+        /// Gets the current health status.
         /// </summary>
         /// <returns>An instance of <see cref="HealthStatus"/>.</returns>
         public HealthStatus GetHealthStatus()
@@ -193,9 +193,10 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        ///  In AddressEnumerator, it could de-prioritize uri in unhealthyPending/unhealthy health status (depending on whether replica validation is enabled)
-        /// If the replica stuck in those statuses for too long, in order to avoid replica usage skew,
-        /// we are going to rolling them into healthy category, so it is status can be validated by requests again
+        /// In <see cref="AddressEnumerator"/>, it could de-prioritize the TransportAddressUri in UnhealthyPending/Unhealthy health status (depending on
+        /// whether replica validation is enabled). If the replica is stuck in those statuses for too long (more than a minute in reality),
+        /// then in order to avoid replica usage skew, we are going to mark them into healthy category, so it's status can be re-validated
+        /// by requests again.
         /// </summary>
         /// <returns>the HealthStatus.</returns>
         public HealthStatus GetEffectiveHealthStatus()
@@ -238,27 +239,27 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// blabla
+        /// Enum containing the health statuses of <see cref="TransportAddressUri"/>
         /// </summary>
         public enum HealthStatus
         {
             /// <summary>
-            /// blabla
+            /// Marks an URI status to connected.
             /// </summary>
             Connected = 100,
 
             /// <summary>
-            /// blabla
+            /// Marks an URI status to unknown.
             /// </summary>
             Unknown = 200,
 
             /// <summary>
-            /// blabla
+            /// Marks an URI status to unhealthyPending/ pending validation.
             /// </summary>
             UnhealthyPending = 300,
 
             /// <summary>
-            /// blabla
+            /// Marks an URI status to unhealthy.
             /// </summary>
             Unhealthy = 400,
         }

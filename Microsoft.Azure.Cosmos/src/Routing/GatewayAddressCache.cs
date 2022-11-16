@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.NetworkInformation;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -293,11 +292,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.suboptimalServerPartitionTimestamps.TryAdd(partitionKeyRangeIdentity, DateTime.UtcNow);
                 }
 
-                // Refresh the cache if there was an address has been marked as unhealthy long enough and need to revalidate its status
-                // If you are curious about why we do not depend on 410 to force refresh the addresses, the reason being:
-                // When an address is marked as unhealthy, then the address enumerator will move it to the end of the list
+                // Refresh the cache on-demand, if there was an address has been marked as unhealthy long enough (more than 1 minute)
+                // and need to revalidate its status. The reason we do not depend on 410 to force refresh the addresses, is being:
+                // When an address is marked as unhealthy, then the address enumerator will move it to the end of the list.
                 // So it could happen that no request will use the unhealthy address for an extended period of time
-                // So the 410 -> forceRefresh workflow may not happen.
+                // therefore, the 410 -> forceRefresh workflow may not happen.
                 if (addresses
                     .Get(Protocol.Tcp)
                     .ReplicaTransportAddressUris
@@ -512,16 +511,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                     throw new PartitionKeyRangeGoneException(errorMessage) { ResourceAddress = collectionRid };
                 }
 
-                // Merge with the cached addresses
-                // if the address is being returned from gateway again, then keep using the cached addressInformation object
-                // for new addresses, use the new addressInformation object
+                // The purpose of this step is to merge the new transport addresses with the old one. What this means is -
+                // 1. If a newly returned address from gateway is already a part of the cache, then restore the health state
+                // of the new address with that of the old one.
+                // 2. If a newly returned address from gateway doesn't exist in the cache, then keep using the new address
+                // with `Unknown` (initial) status.
                 PartitionAddressInformation mergedAddresses = this.MergeAddresses(result.Item2, cachedAddresses);
 
                 if (this.isReplicaAddressValidationEnabled)
                 {
                     foreach (TransportAddressUri address in mergedAddresses.Get(Protocol.Tcp)?.ReplicaTransportAddressUris)
                     {
-                        // The main purpose for this step is to move address health status from unhealthy -> unhealthyPending
+                        // The main purpose for this step is to move address health status from Unhealthy to UnhealthyPending.
                         address.SetRefreshedIfUnhealthy();
                     }
 
@@ -820,7 +821,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         private async Task ValidateReplicaAddresses(
             IReadOnlyList<TransportAddressUri> addresses)
         {
-            // checkNotNull(addresses, "Argument 'addresses' can not be null");
+            if (addresses == null)
+            {
+                throw new ArgumentNullException(nameof(addresses));
+            }
 
             IEnumerable<TransportAddressUri> addressesNeedToValidation = addresses
                 .Where(address => this.replicaValidationScopes.Contains(address.GetHealthStatus()) && address.GetHealthStatus().Equals(TransportAddressUri.HealthStatus.UnhealthyPending));

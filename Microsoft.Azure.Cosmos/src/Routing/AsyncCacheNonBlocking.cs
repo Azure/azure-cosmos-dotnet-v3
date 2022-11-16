@@ -197,11 +197,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Questions on this method. Fix this accordingly.
+        /// Refreshes the cache on-demand.
         /// </summary>
         /// <param name="key"></param>
         /// <param name="singleValueInitFunc"></param>
-        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public async Task Refresh(
            TKey key,
            Func<TValue, Task<TValue>> singleValueInitFunc)
@@ -214,8 +213,6 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception e)
                 {
-                    // This is needed for scenarios where the initial GetAsync was
-                    // called but never awaited.
                     if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
                     {
                         bool removed = this.TryRemove(key);

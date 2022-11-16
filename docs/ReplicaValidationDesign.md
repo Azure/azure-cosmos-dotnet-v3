@@ -26,7 +26,7 @@ sequenceDiagram
     participant A as StoreReader <br> [Direct Code]
     participant B as GlobalAddressResolver <br> [v3 Code]
     participant C as GatewayAddressCache <br> [v3 Code]
-    participant D as GatewayService <br> [External Service]    
+    participant D as GatewayService <br> [External Service]
     A->>+B: Request (forceRefresh - false)
     B->>+C: TryGetAddresses (forceRefresh - false)
     C->>-B: Fetch Cached Addresses
@@ -37,7 +37,7 @@ sequenceDiagram
     C->>+D: GetServerAddresses
     D->>-C: Returns the new refreshed addresses
     Note over D: Note that the returned addresses from <br> GatewayService may still undergoing <br> the upgrade, thus and they are not in a ready state.
-    C->>-B: Returns the refreshed addresses    
+    C->>-B: Returns the refreshed addresses
     B->>-A: Returns the refreshed addresses
     A-xA: Request fails with <br> 410 GoneException
     Note over A: Note that the request fails to connect to the replica <br> which causes a "ConnectionTimeoutException".
