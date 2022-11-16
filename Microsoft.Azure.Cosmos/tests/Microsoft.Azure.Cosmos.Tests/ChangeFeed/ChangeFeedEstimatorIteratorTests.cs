@@ -358,6 +358,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<ContainerInternal> mockedMonitoredContainer = new Mock<ContainerInternal>(MockBehavior.Strict);
             mockedMonitoredContainer.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(monitoredContainerRid);
             mockedMonitoredContainer.Setup(c => c.ClientContext).Returns(mockedContext.Object);
+            mockedMonitoredContainer.Setup(c => c.Database.Id).Returns("databaseId");
             mockedMonitoredContainer.Setup(c => c.Id).Returns("containerId");
 
             Mock<FeedIteratorInternal> leaseFeedIterator = new Mock<FeedIteratorInternal>();
