@@ -329,7 +329,7 @@ classDiagram
 
 ## Pull Request with Sample Code Changes
 
-Here is the link to a sample PR which provides an overview of the incoming changes.
+Here is the [link to a sample PR](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3570) which provides an overview of the incoming changes.
 
 ## References
 
