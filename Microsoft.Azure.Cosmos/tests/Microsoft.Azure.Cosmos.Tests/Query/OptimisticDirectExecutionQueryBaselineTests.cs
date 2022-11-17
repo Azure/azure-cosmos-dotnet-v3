@@ -106,7 +106,7 @@
 
         [TestMethod]
         [Owner("akotalwar")]
-        public async Task TestMonadicCreateODEPipeline()
+        public async Task TestMonadicCreateOdePipeline()
         {
             int numItems = 10;
             bool multiPartition = false;
@@ -123,7 +123,7 @@
             // single continuation token
             Assert.IsTrue(await TryMonadicCreate(numItems, multiPartition, query, targetRange: new FeedRangeEpk(range), continuationToken: cosmosElementContinuationToken));
 
-            //TODO: Add non ODE continuation token case
+            //TODO: Add non Ode continuation token case
         }
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s). 
@@ -165,9 +165,9 @@
         [TestMethod]
         public async Task TestPipelineForGoneExceptionOnSingleAndMultiplePartitionAsync()
         {
-            Assert.IsTrue(await ExecuteGoneExceptionOnODEPipeline(isMultiPartition: false));
+            Assert.IsTrue(await ExecuteGoneExceptionOnOdePipeline(isMultiPartition: false));
 
-            Assert.IsTrue(await ExecuteGoneExceptionOnODEPipeline(isMultiPartition: true));
+            Assert.IsTrue(await ExecuteGoneExceptionOnOdePipeline(isMultiPartition: true));
         }
 
         // The reason we have the below test is to show the missing capabilities of the OptimisticDirectExecution pipeline.
@@ -209,7 +209,7 @@
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
-            // only one range is taken because ODE pipeline can only accept one range
+            // only one range is taken because Ode pipeline can only accept one range
             FeedRangeEpk firstRange = targetRanges[0]; 
 
             TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = OptimisticDirectExecutionQueryPipelineStage.MonadicCreate(
@@ -260,7 +260,7 @@
 
         // it creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
         // TODO: With the addition of the merge/split support, this queryPipelineStage should be able to return all documents regardless of a gone exception happening 
-        private static async Task<bool> ExecuteGoneExceptionOnODEPipeline(bool isMultiPartition)
+        private static async Task<bool> ExecuteGoneExceptionOnOdePipeline(bool isMultiPartition)
         {
             int numItems = 100;
             string query = "SELECT * FROM c";
@@ -281,7 +281,7 @@
                 failureConfigs: new FlakyDocumentContainer.FailureConfigs(
                     inject429s: false,
                     injectEmptyPages: false,
-                    shouldReturnFailure: () => Task.FromResult<Exception>(moveNextAsyncCounter != 1 ? null : goneException)));
+                    shouldReturnFailure: () => Task.FromResult<Exception>(moveNextAsyncCounter == 1 ? goneException : null)));
 
             IQueryPipelineStage queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
