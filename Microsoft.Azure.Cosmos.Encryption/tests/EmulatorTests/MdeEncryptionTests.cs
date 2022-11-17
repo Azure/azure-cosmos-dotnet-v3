@@ -1451,6 +1451,179 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
+            };
+
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+
+            Container encryptionContainerToDelete = await database.CreateContainerAsync(containerProperties, 400);
+            await encryptionContainerToDelete.InitializeEncryptionAsync();
+
+            CosmosClient otherClient = TestCommon.CreateCosmosClient(builder => builder
+                .Build());
+
+            CosmosClient otherEncryptionClient = otherClient.WithEncryption(new TestEncryptionKeyWrapProvider());
+            Database otherDatabase = otherEncryptionClient.GetDatabase(MdeEncryptionTests.database.Id);
+
+            Container otherEncryptionContainer = otherDatabase.GetContainer(encryptionContainerToDelete.Id);
+
+            await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
+
+            // Client 1 Deletes the Container referenced in Client 2 and Recreate with different policy
+            using (await database.GetContainer(encryptionContainerToDelete.Id).DeleteContainerStreamAsync())
+            { }
+
+            paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_IntArray",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_DecimalFormat",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_FloatFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_ArrayFormat",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+            };
+
+            clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+
+            containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+
+            ContainerResponse containerResponse = await database.CreateContainerAsync(containerProperties, 400);
+
+            // operation fails, policy gets updated.
+            try
+            {
+                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+                Assert.Fail("Create operation should have failed. ");
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("Create operation should have failed with 1024 SubStatusCode.");
+                }
+
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 2, expectedPropertiesDecryptedCount: 0);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
+            }
+
+            TestDoc docPostPatching = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+
+            // request should fail and pick up new policy.
+            docPostPatching.NonSensitive = Guid.NewGuid().ToString();
+            docPostPatching.NonSensitiveInt++;
+            docPostPatching.Sensitive_StringFormat = Guid.NewGuid().ToString();
+            docPostPatching.Sensitive_DateFormat = new DateTime(2020, 02, 02);
+            docPostPatching.Sensitive_DecimalFormat = 11.11m;
+            docPostPatching.Sensitive_IntArray[1] = 19877;
+            docPostPatching.Sensitive_IntMultiDimArray[1, 0] = 19877;
+            docPostPatching.Sensitive_IntFormat = 2020;
+            docPostPatching.Sensitive_NestedObjectFormatL1 = new TestDoc.Sensitive_NestedObjectL1()
+            {
+                Sensitive_IntArrayL1 = new int[2] { 999, 100 },
+                Sensitive_IntFormatL1 = 1999,
+                Sensitive_DecimalFormatL1 = 1999.1m,
+                Sensitive_ArrayFormatL1 = new TestDoc.Sensitive_ArrayData[]
+                {
+                    new TestDoc.Sensitive_ArrayData
+                    {
+                        Sensitive_ArrayIntFormat = 0,
+                        Sensitive_ArrayDecimalFormat = 0.1m
+                    },
+                    new TestDoc.Sensitive_ArrayData
+                    {
+                        Sensitive_ArrayIntFormat = 1,
+                        Sensitive_ArrayDecimalFormat = 2.1m
+                    },
+                    new TestDoc.Sensitive_ArrayData
+                    {
+                        Sensitive_ArrayIntFormat = 2,
+                        Sensitive_ArrayDecimalFormat = 3.1m
+                    }
+                }
+            };
+
+            // Maximum 10 operations at a time (current limit)
+            List<PatchOperation> patchOperations = new List<PatchOperation>
+            {
+                PatchOperation.Increment("/NonSensitiveInt", 1),
+                PatchOperation.Replace("/NonSensitive", docPostPatching.NonSensitive),
+                PatchOperation.Replace("/Sensitive_StringFormat", docPostPatching.Sensitive_StringFormat),
+                PatchOperation.Replace("/Sensitive_DateFormat", docPostPatching.Sensitive_DateFormat),
+                PatchOperation.Replace("/Sensitive_DecimalFormat", docPostPatching.Sensitive_DecimalFormat),
+                PatchOperation.Set("/Sensitive_IntArray/1", docPostPatching.Sensitive_IntArray[1]),
+                PatchOperation.Set("/Sensitive_IntMultiDimArray/1/0", docPostPatching.Sensitive_IntMultiDimArray[1,0]),
+                PatchOperation.Replace("/Sensitive_IntFormat", docPostPatching.Sensitive_IntFormat),
+                PatchOperation.Remove("/Sensitive_NestedObjectFormatL1/Sensitive_NestedObjectFormatL2"),
+                PatchOperation.Set("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/0", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[0])
+            };
+
+            try
+            {
+                await MdeEncryptionTests.MdePatchItemAsync(otherEncryptionContainer, patchOperations, docPostPatching, HttpStatusCode.OK);
+                Assert.Fail("Patch operation should have failed. ");
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("Patch operation should have failed with 1024 SubStatusCode. ");
+                }
+
+                // stale policy has two path for encryption.
+                VerifyDiagnostics(ex.Diagnostics, encryptOperation: true, decryptOperation: false, expectedPropertiesEncryptedCount: 2, expectedPropertiesDecryptedCount: 0);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container."));
+            }
+
+            // retry post policy refresh.
+            await MdeEncryptionTests.MdePatchItemAsync(otherEncryptionContainer, patchOperations, docPostPatching, HttpStatusCode.OK);
+        }
+
+        [TestMethod]
+        public async Task EncryptionValidatePolicyRefreshPostContainerDeletePatch()
+        {
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_StringFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_NestedObjectFormatL1",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
 
                 new ClientEncryptionIncludedPath()
                 {
@@ -1893,6 +2066,90 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
 
             CollectionAssert.AreEquivalent(mdeSupportedEncryptionTypes, cosmosSupportedEncryptionTypes);
+        }
+
+        [TestMethod]
+        public void MdeEncryptionTypesContractTest()
+        {
+            string[] cosmosSupportedEncryptionTypes = typeof(EncryptionType)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => ((FieldInfo)e).GetValue(e).ToString())
+                            .ToArray();
+
+            string[] mdeSupportedEncryptionTypes = typeof(Data.Encryption.Cryptography.EncryptionType)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => e.Name)
+                            .ToArray();
+
+            if (mdeSupportedEncryptionTypes.Length > cosmosSupportedEncryptionTypes.Length)
+            {
+                HashSet<string> missingEncryptionTypes = new HashSet<string>(mdeSupportedEncryptionTypes);
+                foreach (string encryptionTypes in cosmosSupportedEncryptionTypes)
+                {
+                    missingEncryptionTypes.Remove(encryptionTypes);
+                }
+
+                // no Plaintext support.
+                missingEncryptionTypes.Remove("Plaintext");
+                mdeSupportedEncryptionTypes = mdeSupportedEncryptionTypes.Where(value => value != "Plaintext").ToArray();
+
+                if (missingEncryptionTypes.Count != 0)
+                {
+                    Assert.Fail($"Missing EncryptionType support from CosmosEncryptionType: {string.Join(";", missingEncryptionTypes)}");
+                }
+            }
+
+            CollectionAssert.AreEquivalent(mdeSupportedEncryptionTypes, cosmosSupportedEncryptionTypes);
+        }
+
+        [TestMethod]
+        public void MdeEncryptionAlgorithmsTypesContractTest()
+        {
+            string[] cosmosKeyEncryptionAlgorithms = typeof(KeyEncryptionKeyAlgorithm)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => ((FieldInfo)e).GetValue(e).ToString())
+                            .ToArray();
+
+            string[] mdeKeyEncryptionAlgorithms = typeof(Data.Encryption.Cryptography.KeyEncryptionKeyAlgorithm)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => e.Name)
+                            .ToArray();            
+
+            if (mdeKeyEncryptionAlgorithms.Length > cosmosKeyEncryptionAlgorithms.Length)
+            {
+                HashSet<string> missingKeyEncryptionAlgorithms = new HashSet<string>(mdeKeyEncryptionAlgorithms);
+                foreach (string algorithm in cosmosKeyEncryptionAlgorithms)
+                {
+                    missingKeyEncryptionAlgorithms.Remove(algorithm);
+                }
+
+                Assert.Fail($"Missing key encryption algorithm support from CosmosKeyEncryptionKeyAlgorithm: {string.Join(";", missingKeyEncryptionAlgorithms)}");
+            }
+
+            CollectionAssert.AreEquivalent(mdeKeyEncryptionAlgorithms, cosmosKeyEncryptionAlgorithms);            
+
+            string[] cosmosDataEncryptionAlgorithms = typeof(DataEncryptionKeyAlgorithm)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => ((FieldInfo)e).GetValue(e).ToString())
+                            .ToArray();
+
+            string[] mdeDataEncryptionAlgorithms = typeof(Data.Encryption.Cryptography.DataEncryptionKeyAlgorithm)
+                            .GetMembers(BindingFlags.Static | BindingFlags.Public)
+                            .Select(e => e.Name)
+                            .ToArray();
+
+            if (mdeDataEncryptionAlgorithms.Length > cosmosDataEncryptionAlgorithms.Length)
+            {
+                HashSet<string> missingDataEncryptionAlgorithms = new HashSet<string>(mdeDataEncryptionAlgorithms);
+                foreach (string algorithm in cosmosDataEncryptionAlgorithms)
+                {
+                    missingDataEncryptionAlgorithms.Remove(algorithm);
+                }
+
+                Assert.Fail($"Missing data encryption algorithm support from CosmosDataEncryptionKeyAlgorithm: {string.Join(";", missingDataEncryptionAlgorithms)}");
+            }
+
+            CollectionAssert.AreEquivalent(mdeDataEncryptionAlgorithms, cosmosDataEncryptionAlgorithms);
         }
 
         [TestMethod]

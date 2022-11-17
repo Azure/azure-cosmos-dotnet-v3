@@ -7,6 +7,7 @@
     using Azure.Identity;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
+    using Microsoft.Data.Encryption.AzureKeyVaultProvider;
     using Microsoft.Extensions.Configuration;
     using System.Collections.Generic;
     using System.Net;

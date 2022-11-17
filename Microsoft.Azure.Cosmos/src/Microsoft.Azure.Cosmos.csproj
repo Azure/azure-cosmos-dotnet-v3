@@ -16,7 +16,6 @@
 		<FileVersion>$(ClientVersion)</FileVersion>
 		<Authors>Microsoft</Authors>
 		<TargetFramework>netstandard2.0</TargetFramework>
-		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<AssemblyName>Microsoft.Azure.Cosmos.Client</AssemblyName>
 		<Title>Microsoft Azure Cosmos DB Client library</Title>
@@ -45,7 +44,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<AdditionalFiles Include="stylecop.json" />
 		<None Include="Icon.png" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
@@ -98,20 +96,22 @@
 			<Generator>ResXFileCodeGenerator</Generator>
 			<LastGenOutput>ClientResources.Designer.cs</LastGenOutput>
 		</EmbeddedResource>
+		<EmbeddedResource Update="RMResources.resx">
+			<Generator>ResXFileCodeGenerator</Generator>
+			<LastGenOutput>RMResources.Designer.cs</LastGenOutput>
+			<CustomToolNamespace>Microsoft.Azure.Documents</CustomToolNamespace>
+		</EmbeddedResource>
 	</ItemGroup>
 
-	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
-		<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
-	</ItemGroup>
+  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+	<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
+  </ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Azure.Core" Version="1.19.0" />
 		<PackageReference Include="System.Collections.Immutable" Version="1.7.0" />
 		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" />
-		<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
 		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
 		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
 
@@ -141,31 +141,28 @@
 		</None>
 	</ItemGroup>
 
-	<ItemGroup>
-		<None Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
-			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
-		</None>
-		<None Update="Json\JsonBinaryEncoding.SystemStrings.tt">
-			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>JsonBinaryEncoding.SystemStrings.cs</LastGenOutput>
-		</None>
-	</ItemGroup>
+  <ItemGroup>
+    <None Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="Json\JsonBinaryEncoding.SystemStrings.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>JsonBinaryEncoding.SystemStrings.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  
+  <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
 
-	<ItemGroup>
-		<Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
-	</ItemGroup>
-
-	<PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<SignAssembly>true</SignAssembly>
-		<DelaySign>true</DelaySign>
-		<AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
-	</PropertyGroup>
-
-	<PropertyGroup>
-		<DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
-		<DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
-		<DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
-	</PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants>TRACE;NETSTANDARD20;DOCDBCLIENT;COSMOSCLIENT;CODE_ANALYSIS;NETSTANDARD2_0</DefineConstants>
+    <DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
+    <DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
+    <DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
+  </PropertyGroup>
 
 </Project>

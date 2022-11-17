@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
                 Func<T, Task<T>> createRefreshTask)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
-
+                
                 // The original task is still being created. Just return the original task.
                 Task<T> valueSnapshot = this.value;
                 if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(valueSnapshot))

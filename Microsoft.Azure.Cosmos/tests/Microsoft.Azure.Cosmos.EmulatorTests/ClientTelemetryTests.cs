@@ -159,8 +159,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ClientTelemetryTests.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
         }
 
-        [TestCleanup]
-        public async Task Cleanup()
+        [ClassCleanup]
+        public static void FinalCleanup()
         {
             FieldInfo isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
                BindingFlags.Static |
@@ -172,6 +172,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                BindingFlags.NonPublic);
             azMetadataField.SetValue(null, null);
 
+            ClientTelemetryTests.ResetSystemUsageMonitor(false);
+        }
+
+        private static void ResetSystemUsageMonitor(bool isTelemetryEnabled)
+        {
+            ClientTelemetryTests.systemUsageMonitor?.Stop();
+
+            FieldInfo diagnosticsHandlerHelperInstance = typeof(DiagnosticsHandlerHelper)
+                .GetField("isTelemetryMonitoringEnabled", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
+            diagnosticsHandlerHelperInstance.SetValue(null, isTelemetryEnabled);
+
+            List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
+            {
+                (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
+                        .GetField("diagnosticSystemUsageRecorder", 
+                                                BindingFlags.Instance | BindingFlags.NonPublic)
+                        .GetValue(DiagnosticsHandlerHelper.Instance)
+            };
+
+            if (isTelemetryEnabled)
+            {
+                recorders.Add(
+                    (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
+                                .GetField("telemetrySystemUsageRecorder", 
+                                                            BindingFlags.Instance | BindingFlags.NonPublic)
+                                .GetValue(DiagnosticsHandlerHelper.Instance));
+            }
+
+            ClientTelemetryTests.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
+        }
+
+        [TestCleanup]
+        public async Task Cleanup()
+        {
             await base.TestCleanup();
 
             Util.DisableClientTelemetryEnvironmentVariables();
