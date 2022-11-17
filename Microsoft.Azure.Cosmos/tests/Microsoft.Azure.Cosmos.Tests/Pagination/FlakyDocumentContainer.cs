@@ -27,7 +27,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     /// </summary>
     internal sealed class FlakyDocumentContainer : IMonadicDocumentContainer
     {
-        private readonly FailureConfigs failureConfigs;
+        private FailureConfigs failureConfigs;
+        private bool isODETest;
+        private int iterationCount = 0;
         private readonly Random random;
 
         private static class Throttle
@@ -64,10 +66,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public FlakyDocumentContainer(
             IMonadicDocumentContainer documentContainer,
-            FailureConfigs failureConfigs)
+            FailureConfigs failureConfigs,
+            bool isODETest = false)
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.failureConfigs = failureConfigs ?? throw new ArgumentNullException(nameof(failureConfigs));
+            this.isODETest = isODETest;
             this.random = new Random();
         }
 
@@ -175,10 +179,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             state: feedRangeState.State ?? StateForStartedButNoDocumentsReturned));
             }
 
-            Exception failure = await this.ShouldReturnFailure();
-            if (failure != null)
+            if (this.isODETest)
             {
-                return TryCatch<QueryPage>.FromException(failure);
+                this.iterationCount++;
+                if (this.iterationCount == 2)
+                {
+                    Exception failure = await this.ShouldReturnFailure();
+                    if (failure != null)
+                    {
+                        return TryCatch<QueryPage>.FromException(failure);
+                    }
+                }
+            }
+            else
+            {
+                Exception failure = await this.ShouldReturnFailure();
+                if (failure != null)
+                {
+                    return TryCatch<QueryPage>.FromException(failure);
+                }
             }
 
             return await this.documentContainer.MonadicQueryAsync(
@@ -190,8 +209,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         public async Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
-            FeedRangeState<ChangeFeedState> feedRangeState, 
-            ChangeFeedPaginationOptions changeFeedPaginationOptions, 
+            FeedRangeState<ChangeFeedState> feedRangeState,
+            ChangeFeedPaginationOptions changeFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -289,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public delegate Task<Exception> ShouldReturnFailure();
 
             public FailureConfigs(
-                bool inject429s, 
+                bool inject429s,
                 bool injectEmptyPages,
                 Exception throwException = null,
                 Exception returnFailure = null)

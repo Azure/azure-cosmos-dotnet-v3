@@ -150,6 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                     return OptimisticDirectExecutionContext(
                                 documentContainer,
+                                cosmosQueryContext,
                                 inputParameters,
                                 targetRange,
                                 cancellationToken);
@@ -319,6 +320,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                 tryCreatePipelineStage = CosmosQueryExecutionContextFactory.OptimisticDirectExecutionContext(
                     documentContainer,
+                    cosmosQueryContext,
                     inputParameters,
                     targetRange,
                     cancellationToken);
@@ -379,6 +381,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         
         private static TryCatch<IQueryPipelineStage> OptimisticDirectExecutionContext(
             DocumentContainer documentContainer,
+            CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             Documents.PartitionKeyRange targetRange,
             CancellationToken cancellationToken)
@@ -386,11 +389,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             // Return a OptimisticDirectExecution context
             return OptimisticDirectExecutionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
-                sqlQuerySpec: inputParameters.SqlQuerySpec,
+                cosmosQueryContext: cosmosQueryContext,
+                inputParameters: inputParameters,
                 targetRange: new FeedRangeEpk(targetRange.ToRange()),
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount),
-                partitionKey: inputParameters.PartitionKey,
-                continuationToken: inputParameters.InitialUserContinuationToken,
                 cancellationToken: cancellationToken);
         }
         

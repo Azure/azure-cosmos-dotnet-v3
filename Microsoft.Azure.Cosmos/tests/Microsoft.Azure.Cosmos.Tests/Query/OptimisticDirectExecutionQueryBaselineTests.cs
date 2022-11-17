@@ -191,34 +191,36 @@
         {
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition);
 
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = await CreateInputParamsAndQueryContext(query, continuationToken);
+
             TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = OptimisticDirectExecutionQueryPipelineStage.MonadicCreate(
                 documentContainer: inMemoryCollection,
-                sqlQuerySpec: new SqlQuerySpec(query),
+                cosmosQueryContext: cosmosQueryContextCore,
+                inputParameters: inputParameters,
                 targetRange: targetRange,
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                partitionKey: null,
-                cancellationToken: default,
-                continuationToken: continuationToken);
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount),
+                cancellationToken: default);
 
             return monadicQueryPipelineStage.Succeeded;
         }
 
         private static async Task<IQueryPipelineStage> CreateOptimisticDirectExecutionPipelineStateAsync(DocumentContainer documentContainer, string query, CosmosElement continuationToken)
         {
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = await CreateInputParamsAndQueryContext(query, continuationToken);
+
             List<FeedRangeEpk> targetRanges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
-            // only one range is taken because ODE pipeline can only accept one range
-            FeedRangeEpk firstRange = targetRanges[0]; 
+            // only the first range is taken because ODE pipeline can only accept one range
+            FeedRangeEpk firstRange = targetRanges.Where(r => r.Range.Min == string.Empty || targetRanges.Count == 1).First();
 
             TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = OptimisticDirectExecutionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
-                sqlQuerySpec: new SqlQuerySpec(query),
+                cosmosQueryContext: cosmosQueryContextCore,
+                inputParameters: inputParameters,
                 targetRange: firstRange,
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                partitionKey: null,
-                continuationToken: continuationToken,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount),
                 cancellationToken: default);
 
             Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
@@ -258,6 +260,48 @@
             return documents.Count;
         }
 
+        private static async Task<Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore>> CreateInputParamsAndQueryContext(string query, CosmosElement continuationToken)
+        {
+            //  gets input parameters
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                MaxConcurrency = 0,
+                MaxItemCount = 10,
+                MaxBufferedItemCount = 7000,
+                TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false, enableOptimisticDirectExecution: true, new TestInjections.ResponseStats())
+            };
+
+            CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
+                sqlQuerySpec: new SqlQuerySpec(query),
+                initialUserContinuationToken: continuationToken,
+                initialFeedRange: null,
+                maxConcurrency: queryRequestOptions.MaxConcurrency,
+                maxItemCount: queryRequestOptions.MaxItemCount,
+                maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
+                partitionKey: null,
+                properties: queryRequestOptions.Properties,
+                partitionedQueryExecutionInfo: null,
+                executionEnvironment: null,
+                returnResultsInDeterministicOrder: null,
+                forcePassthrough: true,
+                testInjections: queryRequestOptions.TestSettings);
+
+            string databaseId = "db1234";
+            string resourceLink = string.Format("dbs/{0}/colls", databaseId);
+            CosmosQueryContextCore cosmosQueryContextCore = new CosmosQueryContextCore(
+                client: new TestCosmosQueryClient(),
+                resourceTypeEnum: Documents.ResourceType.Document,
+                operationType: Documents.OperationType.Query,
+                resourceType: typeof(QueryResponseCore),
+                resourceLink: resourceLink,
+                isContinuationExpected: false,
+                allowNonValueAggregateQuery: true,
+                useSystemPrefix: false,
+                correlatedActivityId: Guid.NewGuid());
+
+            return Tuple.Create(inputParameters, cosmosQueryContextCore);
+        }
+
         // it creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
         // TODO: With the addition of the merge/split support, this queryPipelineStage should be able to return all documents regardless of a gone exception happening 
         private static async Task<bool> ExecuteGoneExceptionOnODEPipeline(bool isMultiPartition)
@@ -281,7 +325,7 @@
                 failureConfigs: new FlakyDocumentContainer.FailureConfigs(
                     inject429s: false,
                     injectEmptyPages: false,
-                    shouldReturnFailure: () => Task.FromResult<Exception>(moveNextAsyncCounter != 1 ? null : goneException)));
+                    shouldReturnFailure: () => Task.FromResult<Exception>(moveNextAsyncCounter == 1 ? goneException : null)));
 
             IQueryPipelineStage queryPipelineStage = await CreateOptimisticDirectExecutionPipelineStateAsync(inMemoryCollection, query, continuationToken: null);
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
@@ -305,8 +349,9 @@
             }
 
             // Once fallback plan is implemented, this test should be able to return all 100 documents
-            Assert.AreEqual(10, documents.Count);
-            Assert.IsTrue(caughtGoneException);
+            Assert.AreEqual(100, documents.Count);
+            // cannot check for assert because the gone exception never reaches till here
+            //Assert.IsTrue(caughtGoneException);
 
             return true;
         }
@@ -329,7 +374,7 @@
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
             if (failureConfigs != null)
             {
-                monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
+                monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs, isODETest: true);
             }
 
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
