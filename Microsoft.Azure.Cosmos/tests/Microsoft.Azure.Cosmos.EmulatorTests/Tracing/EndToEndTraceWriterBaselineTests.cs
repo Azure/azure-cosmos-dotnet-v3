@@ -2,9 +2,12 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
@@ -21,6 +24,10 @@
     using Newtonsoft.Json.Linq;
     using Telemetry;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
+    using Microsoft.ApplicationInsights.Extensibility;
+    using Microsoft.ApplicationInsights;
+    using Microsoft.ApplicationInsights.DependencyCollector;
+    using TraceLevel = Cosmos.Tracing.TraceLevel;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
     [TestCategory("UpdateContract")]
@@ -37,9 +44,10 @@
 
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
-        
+
+        private const double DiagnosticsLatencyThresholdValue = .0001; // Very Very Small Value
         [ClassInitialize()]
-        public static async Task ClassInitAsync(TestContext context)
+        public static async Task ClassInitAsync()
         {
             testListener = new OpenTelemetryListener(OpenTelemetryAttributeKeys.DiagnosticNamespace);
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
@@ -57,17 +65,17 @@
 
             client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                EnableDiagnosticsTraceForAllRequests = true
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
 
             bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                EnableDiagnosticsTraceForAllRequests = true
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
-            
+
             miscCosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                EnableDiagnosticsTraceForAllRequests = true
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
             };
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
@@ -96,12 +104,141 @@
         [ClassCleanup()]
         public static async Task ClassCleanupAsync()
         {
-            if(database != null)
+            if (database != null)
             {
                 await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
             }
 
             testListener?.Dispose();
+        }
+
+        [TestMethod]
+        public async Task NewTest()
+        {
+            try
+            {
+                TelemetryConfiguration configuration = TelemetryConfiguration.CreateDefault();
+
+                configuration.ConnectionString = "InstrumentationKey=0b7bcdc4-cb13-44c5-9544-aba02b8b8123;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/";
+                configuration.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
+
+                TelemetryClient telemetryClient = new TelemetryClient(configuration);
+
+                Activity activity = new("SampleApplication");
+                activity.Start();
+                using (InitializeDependencyTracking(configuration))
+                {
+                    telemetryClient.TrackTrace("Hello World!");
+
+                    using (HttpClient httpClient = new HttpClient())
+                    {
+                        // Http dependency is automatically tracked!
+                        httpClient.GetAsync("https://microsoft.com").Wait();
+                    }
+
+                    using CosmosClient client = new(
+                    accountEndpoint: "https://cosmosdbaavasthy.documents.azure.com:443/",
+                    authKeyOrResourceToken: "GuDON7mQabFeo1KQUZSV3N3D4srOuJFNheIPIumYIogKIHAyevrxPF52ddFDvQXRPfrNUVvjRh5JBDCWpSKo3A==");
+                    client.ClientOptions.EnableDistributedTracing = true;
+                    Database database = await client.CreateDatabaseIfNotExistsAsync(
+                        id: "adventureworks"
+                    );
+
+                    // Container reference with creation if it does not alredy exist
+                    Container container = await database.CreateContainerIfNotExistsAsync(
+                        id: "products",
+                        partitionKeyPath: "/category",
+                        throughput: 400
+                    );
+
+                    // Create new object and upsert (create or replace) to container
+                    Product newItem = new(
+                        Id: "68719518391",
+                        Category: "gear-surf-surfboards",
+                        Name: "Yamba Surfboard",
+                        Quantity: 12,
+                        Sale: false
+                    );
+
+                    ItemResponse<Product> createdItem = await container.UpsertItemAsync<Product>(
+                        item: newItem,
+                        partitionKey: new PartitionKey("gear-surf-surfboards")
+                    );
+
+                    TimeSpan interval = new TimeSpan(0, 0, 0, 1);
+                    if (createdItem.Diagnostics.GetClientElapsedTime() > interval)
+                    {
+                        // Log the response.Diagnostics.ToString() and add any additional info necessary to correlate to other logs 
+                        // Console.WriteLine($"Log:\t{createdItem.Diagnostics.ToString()}");
+                    }
+
+
+                    // Point read item from container using the id and partitionKey
+                    Product readItem = await container.ReadItemAsync<Product>(
+                        id: "68719518391",
+                        partitionKey: new PartitionKey("gear-surf-surfboards")
+                    );
+
+                    // Create query using a SQL string and parameters
+                    QueryDefinition query = new QueryDefinition(
+                        query: "SELECT * FROM products p WHERE p.category = @key"
+                    )
+                        .WithParameter("@key", "gear-surf-surfboards");
+
+                    using FeedIterator<Product> feed = container.GetItemQueryIterator<Product>(
+                        queryDefinition: query
+                    );
+
+                    while (feed.HasMoreResults)
+                    {
+                        FeedResponse<Product> response = await feed.ReadNextAsync();
+                        foreach (Product item in response)
+                        {
+                            Console.WriteLine($"Found item:\t{item.Name}");
+                        }
+                    }
+
+                }
+                activity.Stop();
+                // before exit, flush the remaining data
+                telemetryClient.Flush();
+
+                Task.Delay(5000).Wait();
+            }
+            catch (CosmosException cosmosException)
+            {
+                Console.WriteLine("The current UI culture is {0}",
+                                   Thread.CurrentThread.CurrentUICulture.Name);
+                string a = cosmosException.Diagnostics.ToString();
+                //Console.WriteLine($"Error log:\t{cosmosException.ToString()}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error Custom {0}", ex.Message.ToString());
+            }
+        }
+        static DependencyTrackingTelemetryModule InitializeDependencyTracking(TelemetryConfiguration configuration)
+        {
+            DependencyTrackingTelemetryModule module = new DependencyTrackingTelemetryModule();
+
+            // prevent Correlation Id to be sent to certain endpoints. You may add other domains as needed.
+            module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("core.windows.net");
+            module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("core.chinacloudapi.cn");
+            module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("core.cloudapi.de");
+            module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("core.usgovcloudapi.net");
+            module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("localhost");
+            module.ExcludeComponentCorrelationHttpHeadersOnDomains.Add("127.0.0.1");
+
+            // enable known dependency tracking, note that in future versions, we will extend this list. 
+            // please check default settings in https://github.com/microsoft/ApplicationInsights-dotnet-server/blob/develop/WEB/Src/DependencyCollector/DependencyCollector/ApplicationInsights.config.install.xdt
+
+            module.IncludeDiagnosticSourceActivities.Add("Microsoft.Azure.ServiceBus");
+            module.IncludeDiagnosticSourceActivities.Add("Microsoft.Azure.EventHubs");
+
+            // initialize the module
+            module.Initialize(configuration);
+
+            return module;
         }
 
         [TestMethod]
@@ -134,10 +271,10 @@
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input(
-                                    description: "ReadFeed", 
+                                    description: "ReadFeed",
                                     trace: traceForest,
                                     startLineNumber: startLineNumber,
-                                    endLineNumber: endLineNumber, 
+                                    endLineNumber: endLineNumber,
                                     oTelActivities: testListener.GetRecordedAttributes()));
 
                 testListener.ResetAttributes();
@@ -165,7 +302,7 @@
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input(
-                                description: "ReadFeed Typed", 
+                                description: "ReadFeed Typed",
                                 trace: traceForest,
                                 startLineNumber: startLineNumber,
                                 endLineNumber: endLineNumber,
@@ -196,7 +333,7 @@
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input(
-                                description: "ReadFeed Public API", 
+                                description: "ReadFeed Public API",
                                 trace: traceForest,
                                 startLineNumber: startLineNumber,
                                 endLineNumber: endLineNumber,
@@ -473,7 +610,8 @@
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Change Feed Estimator", traceForest, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Change Feed Estimator", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+
             }
             //----------------------------------------------------------------
 
@@ -1029,7 +1167,7 @@
                 throttleClient.ClientOptions.EnableDistributedTracing = true;
                 throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    EnableDiagnosticsTraceForAllRequests = true
+                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
                 };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
@@ -1180,7 +1318,7 @@
                 }
                 catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
                 {
-                    trace = ((CosmosTraceDiagnostics)ce.Diagnostics).Value;                    
+                    trace = ((CosmosTraceDiagnostics)ce.Diagnostics).Value;
                 }
                 endLineNumber = GetLineNumber();
 
@@ -1271,7 +1409,7 @@
                 await Task.WhenAll(createItemsTasks);
 
                 List<ITrace> traces = new List<ITrace>();
-             
+
                 foreach (Task<ItemResponse<ToDoActivity>> createTask in createItemsTasks)
                 {
                     ItemResponse<ToDoActivity> itemResponse = await createTask;
@@ -1316,7 +1454,7 @@
                 throttleClient.ClientOptions.EnableDistributedTracing = true;
                 throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    EnableDiagnosticsTraceForAllRequests = true
+                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
                 };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
@@ -1362,7 +1500,7 @@
             //----------------------------------------------------------------
             {
                 startLineNumber = GetLineNumber();
-             
+
                 DatabaseResponse databaseResponse = await miscCosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
                 EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
                     databaseResponse.Diagnostics.ToString(),
@@ -1472,13 +1610,13 @@
                     oTelActivitiesString.AppendLine(attributes);
                 }
             }
-          
+
             AssertTraceProperites(input.Trace);
             Assert.IsTrue(text.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {text}");
             Assert.IsTrue(json.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {json}");
             Assert.IsTrue(text.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {text}");
             Assert.IsTrue(json.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {json}");
-            
+
             return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented), oTelActivitiesString.ToString());
         }
 
@@ -1501,13 +1639,13 @@
         }
 
         private static void AssertCustomHandlerTime(
-            string diagnostics, 
+            string diagnostics,
             string handlerName,
             TimeSpan delay)
         {
             JObject jObject = JObject.Parse(diagnostics);
             JObject handlerChild = EndToEndTraceWriterBaselineTests.FindChild(
-                handlerName, 
+                handlerName,
                 jObject);
             Assert.IsNotNull(handlerChild);
             JToken delayToken = handlerChild["duration in milliseconds"];
@@ -1520,24 +1658,24 @@
             string name,
             JObject jObject)
         {
-            if(jObject == null)
+            if (jObject == null)
             {
                 return null;
             }
 
             JToken nameToken = jObject["name"];
-            if(nameToken != null && nameToken.ToString() == name)
+            if (nameToken != null && nameToken.ToString() == name)
             {
                 return jObject;
             }
 
             JArray jArray = jObject["children"]?.ToObject<JArray>();
-            if(jArray != null)
+            if (jArray != null)
             {
-                foreach(JObject child in jArray)
+                foreach (JObject child in jArray)
                 {
                     JObject response = EndToEndTraceWriterBaselineTests.FindChild(name, child);
-                    if(response != null)
+                    if (response != null)
                     {
                         return response;
                     }
@@ -1550,7 +1688,7 @@
 
         private static void AssertTraceProperites(ITrace trace)
         {
-            if (trace.Name == "ReadManyItemsStreamAsync" || 
+            if (trace.Name == "ReadManyItemsStreamAsync" ||
                 trace.Name == "ReadManyItemsAsync")
             {
                 return; // skip test for read many as the queries are done in parallel
@@ -1755,10 +1893,10 @@
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
             }
 
-            public void UpdateRegionContacted(TraceDatum traceDatum)
-            {
-                //NoImplementation
-            }
+            //public void UpdateRegionContacted(TraceDatum traceDatum)
+            //{
+            //    //NoImplementation
+            //}
 
             public void AddOrUpdateDatum(string key, object value)
             {
