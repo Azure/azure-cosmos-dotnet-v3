@@ -13,8 +13,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     internal sealed class ChangeFeedIteratorCore : FeedIteratorInternal
     {
@@ -222,12 +222,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
                 return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
+                                                containerName: this.container?.Id,
+                                                databaseName: this.container?.Database?.Id ?? this.databaseName,
+                                                operationType: OperationType.ReadFeed,
                                                 requestOptions: this.changeFeedRequestOptions,
                                                 task: (trace) => this.ReadNextInternalAsync(trace, cancellationToken),
-                                                openTelemetry: (response) => new OpenTelemetryResponse(
-                                                    responseMessage: response, 
-                                                    containerName: this.container?.Id,
-                                                    databaseName: this.container?.Database?.Id),
+                                                openTelemetry: (response) => new OpenTelemetryResponse(responseMessage: response),
                                                 traceComponent: TraceComponent.ChangeFeed,
                                                 traceLevel: TraceLevel.Info);
         }

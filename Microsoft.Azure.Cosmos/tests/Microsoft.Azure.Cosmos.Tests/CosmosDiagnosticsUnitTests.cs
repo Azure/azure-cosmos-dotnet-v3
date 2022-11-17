@@ -93,9 +93,12 @@ namespace Microsoft.Azure.Cosmos.Tests
               new CosmosClientOptions());
 
             Guid result = await clientContext.OperationHelperAsync<Guid>(
-                nameof(ValidateActivityId),
-                new RequestOptions(),
-                (trace) => this.ValidateActivityIdHelper());
+                operationName: nameof(ValidateActivityId),
+                containerName: null,
+                databaseName: null,
+                operationType: Documents.OperationType.Replace,
+                requestOptions: new RequestOptions(),
+                task: (trace) => this.ValidateActivityIdHelper());
 
             Assert.AreEqual(Guid.Empty, System.Diagnostics.Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
         }
@@ -119,9 +122,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 SynchronizationContext.SetSynchronizationContext(mockSynchronizationContext.Object);
 
                 Guid result = await clientContext.OperationHelperAsync<Guid>(
-                    nameof(ValidateActivityIdWithSynchronizationContext),
-                    new RequestOptions(),
-                    (trace) => this.ValidateActivityIdHelper());
+                    operationName: nameof(ValidateActivityIdWithSynchronizationContext),
+                    containerName: null,
+                    databaseName: null,
+                    operationType: Documents.OperationType.Replace,
+                    requestOptions: new RequestOptions(),
+                    task: (trace) => this.ValidateActivityIdHelper());
 
                 Assert.AreEqual(Guid.Empty, System.Diagnostics.Trace.CorrelationManager.ActivityId, "ActivityScope was not disposed of");
             }

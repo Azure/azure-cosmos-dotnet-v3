@@ -478,8 +478,7 @@
   <Result>
     <Input>
       <Description>ST_WITHIN Geography</Description>
-      <Query>SELECT * FROM c WHERE NOT ST_WITHIN(c.geojson,
-                  {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})</Query>
+      <Query>SELECT * FROM c WHERE NOT ST_WITHIN(c.geojson, {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})</Query>
       <PartitionKeys>
         <Key>/key</Key>
       </PartitionKeys>
@@ -513,8 +512,7 @@
   <Result>
     <Input>
       <Description>ST_WITHIN Geometry</Description>
-      <Query>SELECT * FROM c WHERE NOT ST_WITHIN(c.geojson,
-                  {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})</Query>
+      <Query>SELECT * FROM c WHERE NOT ST_WITHIN(c.geojson, {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})</Query>
       <PartitionKeys>
         <Key>/key</Key>
       </PartitionKeys>
