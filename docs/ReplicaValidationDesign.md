@@ -2,18 +2,18 @@
 
 ## Table of Contents
 
-* [Scope.]()
-* [Backgraound.]()
-* [Proposed Solution.]()
-* [Design Approach.]()
-    * Outline.
-    * Updated Sequence Diagram for `CosmosClient` initialization.
-    * Sequence Diagram when `StoreReader` invokes the `GatewayAddressCache` to resolve addresses and leverages `AddressEnumerator` to enumerate the transport addresses.
-    * State Diagram to Understand the `TransportAddressUri` Health State Transformations.
-    * `Azure.Cosmos.Direct` package class diagrams.
-    * `Microsoft.Azure.Cosmos` package class diagrams.
-* [Pull Request with Sample Code Changes.]()
-* [References.]()
+* [Scope.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#scope)
+* [Backgraound.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#backgraound)
+* [Proposed Solution.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#proposed-solution)
+* [Design Approach.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#design-approach)
+    * [Outline.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#outline)
+    * [Updated Sequence Diagram for `CosmosClient` initialization.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#updated-sequence-diagram-for-cosmosclient-initialization)
+    * [Sequence Diagram when `StoreReader` invokes the `GatewayAddressCache` to resolve addresses and leverages `AddressEnumerator` to enumerate the transport addresses.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#sequence-diagram-when-storereader-invokes-the-gatewayaddresscache-to-resolve-addresses-and-leverages-addressenumerator-to-enumerate-the-transport-addresses)
+    * [State Diagram to Understand the `TransportAddressUri` Health State Transformations.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#state-diagram-to-understand-the-transportaddressuri-health-state-transformations)
+    * [`Azure.Cosmos.Direct` package class diagrams.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#azurecosmosdirect-package-class-diagrams)
+    * [`Microsoft.Azure.Cosmos` package class diagrams.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#microsoftazurecosmos-package-class-diagrams)
+* [Pull Request with Sample Code Changes.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#pull-request-with-sample-code-changes)
+* [References.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#references)
 
 ## Scope
 
