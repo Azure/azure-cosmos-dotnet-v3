@@ -424,8 +424,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// If Open Telemetry listener is subscribed for "Azure.Cosmos" namespace, There are <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can leverage to control it.<br></br>
-        /// </summary>
+        /// If Open Telemetry listener is subscribed for "Azure.Cosmos" source. Then, Distributed Tracing <see cref="System.Diagnostics.Activity"/> are going to generate for the SDK operations along with <see cref="System.Diagnostics.Tracing.EventSource"/> with Request Diagnostic log information.
+        /// Using <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can control the <see cref="System.Diagnostics.Tracing.EventSource"/> traces containing request diagnostics logs.<br></br>
+        /// SDK don't correlate <see cref="System.Diagnostics.Activity"/> and <see cref="System.Diagnostics.Tracing.EventSource"/>, it has to be taken care at listener.
+        /// </summary>  
+        /// <remarks> This function enables <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> flag and set <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> </remarks>
         /// <param name="options">Tracing Options <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
 #if PREVIEW

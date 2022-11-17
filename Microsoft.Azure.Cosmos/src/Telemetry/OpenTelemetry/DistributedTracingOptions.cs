@@ -7,8 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
 
     /// <summary>
-    /// Open Telemetry Configuration
-    /// It needs to be public once AppInsight is ready
+    /// This class contains all the configuration which can be set as part of ClientOptions and RequestOptions
     /// </summary>
 #if PREVIEW
     public
@@ -48,9 +47,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Set this flag as true if you want to generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) containing request diagnostics string for all the operations.
-        /// If this flag is true then, it won't honour <see cref="DiagnosticsLatencyThreshold"/> value to generate diagnostic traces.
+        /// Enable it, if you want to generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) containing request diagnostics string for all the operations.
+        /// If EnableDiagnosticsTraceForAllRequests is enabled then, it won't honour <see cref="DiagnosticsLatencyThreshold"/> configuration to generate diagnostic traces.
         /// </summary>
+        /// <remarks>This is NOT supported in RequestOptions</remarks>
         public bool EnableDiagnosticsTraceForAllRequests
         {
             get => this.enableDiagnosticsTraceForAllRequests;

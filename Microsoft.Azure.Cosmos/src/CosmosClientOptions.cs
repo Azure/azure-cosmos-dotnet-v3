@@ -990,18 +990,21 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> are only applicable when EnableDistributedTracing flag is true.
+        /// Distributed Tracing Configuration to control the traces containing request diagnostics logs.
         /// </summary>
+        /// <remarks>Customization of <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> is allowed when <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> is true </remarks>
 #if PREVIEW
         public
 #else
         internal
 #endif
             DistributedTracingOptions DistributedTracingOptions { get; set; }
-        
+
         /// <summary>
-        /// Gets or sets value indicating whether distributed tracing activities (<see cref="System.Diagnostics.Activity"/>) are going to be created for the SDK operation calls and HTTP calls.
-        /// </summary>
+        /// If this flag is true AND Open Telemetry listener is subscribed for "Azure.Cosmos" source. Then, Distributed Tracing <see cref="System.Diagnostics.Activity"/> are going to generate for the SDK operations along with <see cref="System.Diagnostics.Tracing.EventSource"/> with Request Diagnostic log information.
+        /// Using <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can control the traces containing request diagnostics logs.<br></br>
+        /// SDK don't correlate <see cref="System.Diagnostics.Activity"/> and <see cref="System.Diagnostics.Tracing.EventSource"/>, it has to be taken care at listener.
+        /// </summary>  
 #if PREVIEW
         public
 #else
