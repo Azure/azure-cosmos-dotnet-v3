@@ -2,6 +2,7 @@
 
 ## Table of Contents
 
+* [Scope.]()
 * [Backgraound.]()
 * [Proposed Solution.]()
 * [Design Approach.]()
@@ -14,9 +15,13 @@
 * [Pull Request with Sample Code Changes.]()
 * [References.]()
 
+## Scope
+
+The scope of the replica validation workstream is targed for the `CosmosClient` configured for `Direct` mode.
+
 ## Backgraound
 
-During an upgrade scenario in the backend replica nodes, there has been an observation of increased request latency. One of the primary reason for the latency is that, during an upgrade, a replica which is still undergoing upgrade may still be returned back to SDK, when an address refresh occurres. As of today, the incoming request will have 25% chance to hit the replica that not ready yet, therefore causing the `ConnectionTimeoutException`, which contributes to the increased latency. 
+During an upgrade scenario in the backend replica nodes, there has been an observation of increased request latency. One of the primary reason for the latency is that, during an upgrade, a replica which is still undergoing upgrade may still be returned back to SDK, when an address refresh occurres. As of today, the incoming request will have `25%` chance to hit the replica that not ready yet, therefore causing the `ConnectionTimeoutException`, which contributes to the increased latency. 
 
 To understand the problem statement better, please take a look at the below sequence diagram which reflects the connection timeouts caused by the replica upgrade.
 
@@ -27,25 +32,28 @@ sequenceDiagram
     participant B as GlobalAddressResolver <br> [v3 Code]
     participant C as GatewayAddressCache <br> [v3 Code]
     participant D as GatewayService <br> [External Service]
+    participant E as BackendReplica <br> [A Replica Node Still Undergoing Upgrade <br> Address: rntbd://test.azure.com:443/partitions/1p]
     A->>+B: Request (forceRefresh - false)
     B->>+C: TryGetAddresses (forceRefresh - false)
-    C->>-B: Fetch Cached Addresses
-    B->>-A: Return Addresses
-    A->>A: Request fails with <br> 410 GoneException
-    A->>+B: Request (forceRefresh - true)
+    C->>-B: Fetch Cached Addresses <br> rntbd://test.azure.com:443/partitions/1p
+    B->>-A: Return Addresses <br> rntbd://test.azure.com:443/partitions/1p
+    A->>+E: Request Sent to Backend Replica
+    E-x-A: Request fails with 410 GoneException
+    A->>+B: Request (forceRefresh - true) <br> GoneWithRetryAttempt
     B->>+C: TryGetAddresses (forceRefresh - true)
     C->>+D: GetServerAddresses
-    D->>-C: Returns the new refreshed addresses
+    D->>-C: Returns the new refreshed addresses <br> rntbd://test.azure.com:443/partitions/1p
     Note over D: Note that the returned addresses from <br> GatewayService may still undergoing <br> the upgrade, thus and they are not in a ready state.
-    C->>-B: Returns the refreshed addresses
-    B->>-A: Returns the refreshed addresses
-    A-xA: Request fails with <br> 410 GoneException
+    C->>-B: Returns the refreshed addresses <br> rntbd://test.azure.com:443/partitions/1p
+    B->>-A: Returns the refreshed addresses <br> rntbd://test.azure.com:443/partitions/1p
+    A->>+E: Request Sent to Backend Replica
+    E-x-A: Request fails again with 410 GoneException
     Note over A: Note that the request fails to connect to the replica <br> which causes a "ConnectionTimeoutException".
 ```
 
 ## Proposed Solution
 
-The .NET SDK will track the replica endpoint health based on client side metrics, and de-prioritize the replica which were marked as - `Unhealthy`. SDK will validate the health of the replica by attempting to open RNTBD connections to the backend. When SDK refresh addresses back from gateway for a partition, **SDK will only validate the replica/s which were in `Unhealthy` status, by opening RNTBD connection requests**. This process will be completed with best effort, which means:
+The .NET SDK will track the replica endpoint health based on client side metrics, and de-prioritize any replica which were marked as - `Unhealthy`. SDK will validate the health of the replica by attempting to open RNTBD connections to the backend. When SDK refresh addresses back from gateway for a partition, **SDK will only validate the replica/s which were in `Unhealthy` status, by opening RNTBD connection requests**. This process will be completed with best effort, which means:
 
 - If the validation can not finish within `1 min` of opening connections, the de-prioritize will stop for certain status.
 
@@ -127,63 +135,63 @@ sequenceDiagram
     participant J as TransportClient <br> [Direct Code]    
     participant K as Channel <br> [Direct Code]
     participant L as TransportAddressUri <br> [Direct Code]
-    A->>A: ReadMultipleReplicaAsync()
-    A->>B: 1. ResolveAllTransportAddressUriAsync(forceRefresh - false)
-    B->>C: 2. ResolveAsync(forceRefresh - false)
-    C->>D: 3. ResolveAsync(forceRefresh - false)
-    D->>D: 4. ResolveAddressesAndIdentityAsync()
-    D->>E: 5. TryGetAddressesAsync(forceRefresh - false)
-    E->>G: 6. GetAsync ("singleValueInitFunc delegate", "forceRefresh - false")
+    A->>A: 1. ReadMultipleReplicaAsync()
+    A->>B: 2. ResolveAllTransportAddressUriAsync(forceRefresh - false)
+    B->>C: 3. ResolveAsync(forceRefresh - false)
+    C->>D: 4. ResolveAsync(forceRefresh - false)
+    D->>D: 5. ResolveAddressesAndIdentityAsync()
+    D->>E: 6. TryGetAddressesAsync(forceRefresh - false)
+    E->>G: 7. GetAsync ("singleValueInitFunc delegate", "forceRefresh - false")
     Note over L: Initial health status of a <br> TransportAddressUri is "Unknown".
     Note over E: Passes the SingleValueInitFunc delegate <br> to async nonblocking cache.
-    G->>E: 7. Returns the cached addresses
-    E->>D: 8. Returns the resolved addresses
-    D->>C: 9. Returns the resolved addresses
-    C->>B: 10. Returns the resolved addresses
-    B->>A: 11. Returns the resolved addresses
-    A->>A: 12. Request failes with "GoneException"
+    G->>E: 8. Returns the cached addresses
+    E->>D: 9. Returns the resolved addresses
+    D->>C: 10. Returns the resolved addresses
+    C->>B: 11. Returns the resolved addresses
+    B->>A: 12. Returns the resolved addresses
+    A->>A: 13. Request failes with "GoneException"
     Note over A: Sets Force Refresh <br> header to true.
-    A->>A: 13. ReadMultipleReplicaAsync()
-    A->>B: 14. ResolveAllTransportAddressUriAsync (forceRefresh - true)
-    B->>C: 15. ResolveAsync(forceRefresh - true)
-    C->>D: 16. ResolveAsync(forceRefresh - true)
-    D->>D: 17. ResolveAddressesAndIdentityAsync(forceRefresh - true)
-    D->>E: 18. TryGetAddressesAsync(forceRefresh - true)
-    E->>G: 19. GetAsync ("singleValueInitFunc delegate", "forceRefresh - true")
+    A->>A: 14. ReadMultipleReplicaAsync()
+    A->>B: 15. ResolveAllTransportAddressUriAsync (forceRefresh - true)
+    B->>C: 16. ResolveAsync(forceRefresh - true)
+    C->>D: 17. ResolveAsync(forceRefresh - true)
+    D->>D: 18. ResolveAddressesAndIdentityAsync(forceRefresh - true)
+    D->>E: 19. TryGetAddressesAsync(forceRefresh - true)
+    E->>G: 20. GetAsync ("singleValueInitFunc delegate", "forceRefresh - true")
     Note over E: Passes the SingleValueInitFunc delegate <br> to async nonblocking cache.
-    G->>E: 20. Invokes the singleValueInitFunc delegate
-    E->>E: 21. SetTransportAddressUrisToUnhealthy(currentCachedValue, failedEndpoints)
+    G->>E: 21. Invokes the singleValueInitFunc delegate
+    E->>E: 22. SetTransportAddressUrisToUnhealthy(currentCachedValue, failedEndpoints)
     Note over E: Sets the failed TransportAddressUris <br> to an "Unhealthy" status.    
-    E->>L: 22. SetUnhealthy()
-    E->>E: 23. GetAddressesForRangeIdAsync(forceRefresh - true, cachedAddresses)
-    E->>H: 24. Invokes the GatewayService using GetServerAddressesViaGatewayAsync() <br> to receive new addresses.
-    H->>E: 25. Receives the resolved new addresses.
-    E->>E: 26. MergeAddresses<NewAddress, CachedAddress>
+    E->>L: 23. SetUnhealthy()
+    E->>E: 24. GetAddressesForRangeIdAsync(forceRefresh - true, cachedAddresses)
+    E->>H: 25. Invokes the GatewayService using GetServerAddressesViaGatewayAsync() <br> to receive new addresses.
+    H->>E: 26. Receives the resolved new addresses.
+    E->>E: 27. MergeAddresses<NewAddress, CachedAddress>
     Note over E: The purpose of the merge is to restore the health statuses of all the new addresses to <br> that of their recpective cached addresses, if returned same addresses.
-    E->>L: 27. SetRefreshedIfUnhealthy()
+    E->>L: 28. SetRefreshedIfUnhealthy()
     Note over E: Sets any TransportAddressUri with <br> an "Unhealthy" status to "UnhealthyPending".
-    E->>E: 28. ValidateReplicaAddresses(mergedTransportAddress)
+    E->>E: 29. ValidateReplicaAddresses(mergedTransportAddress)
     Note over E: Validates the backend replicas, <br> if the replica validation env variable is enabled.
-    E-->>F: 29. OpenRntbdChannelsAsync(mergedTransportAddress)
+    E-->>F: 30. OpenRntbdChannelsAsync(mergedTransportAddress)
     Note over E: If replica validation is enabled, then validate unhealthy pending <br> replicas by opening RNTBD connections. Note that this <br> operations executes as a background task.
-    F-->>J: 30. OpenConnectionAsync() <br> using the resolved transport address uris
-    J-->>K: 31. OpenConnectionAsync() <br> using the resolved physical address uris
-    K-->>L: 32. SetConnected()
+    F-->>J: 31. OpenConnectionAsync() <br> using the resolved transport address uris
+    J-->>K: 32. OpenConnectionAsync() <br> using the resolved physical address uris
+    K-->>L: 33. SetConnected()
     Note over K: Initializes and Establishes a RNTBD <br> context negotiation to the backend replica nodes.
-    E->>G: 33. Returns the merged addresses to cache and store into the Async Nonblocking Cache
-    G->>E: 34. Returns the resolved addresses
-    E->>E: 35. ShouldRefreshHealthStatus()
+    E->>G: 34. Returns the merged addresses to cache and store into the Async Nonblocking Cache
+    G->>E: 35. Returns the resolved addresses
+    E->>E: 36. ShouldRefreshHealthStatus()
     Note over E: Refresh the cache if there was an address <br> has been marked as unhealthy long enough (more than a minute) <br> and need to revalidate its status.
-    E-->>G: 36. Refresh ("GetAddressesForRangeIdAsync() as the singleValueInitFunc delegate", "forceRefresh - true")
+    E-->>G: 37. Refresh ("GetAddressesForRangeIdAsync() as the singleValueInitFunc delegate", "forceRefresh - true")
     Note over E: Note that the refresh operation <br> happens as a background task.   
-    E->>D: 37. Returns the resolved addresses
-    D->>C: 38. Returns the resolved addresses
-    C->>B: 39. Returns the resolved addresses
-    B->>A: 40. Returns the resolved transport addresses
-    A->>I: 41. GetTransportAddresses("transportAddressUris", "replicaAddressValidationEnabled")
-    I->>I: 42. ReorderReplicasByHealthStatus()
+    E->>D: 38. Returns the resolved addresses
+    D->>C: 39. Returns the resolved addresses
+    C->>B: 40. Returns the resolved addresses
+    B->>A: 41. Returns the resolved transport addresses
+    A->>I: 42. GetTransportAddresses("transportAddressUris", "replicaAddressValidationEnabled")
+    I->>I: 43. ReorderReplicasByHealthStatus()
     Note over I: Re-orders the transport addresses <br> by their health statuses <br> Connected/Unknown >> UnhealthyPending >> Unhealthy.
-    I->>A: 43. Returns the transport addresses re-ordered by their health statuses
+    I->>A: 44. Returns the transport addresses re-ordered by their health statuses
 ```
 ### State Diagram to Understand the `TransportAddressUri` Health State Transformations.
 
