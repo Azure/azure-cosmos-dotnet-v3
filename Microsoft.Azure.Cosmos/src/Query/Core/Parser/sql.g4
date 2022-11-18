@@ -278,8 +278,9 @@ fragment SAFECODEPOINTWITHDOUBLEQUOTATION
     ;
 
 LEX_IDENTIFIER
-    : [a-zA-Z_]([a-zA-Z_]|DIGIT)*
-    ;
+	:
+    | [a-zA-Z_]([a-zA-Z_]|DIGIT)*
+	;
 
 PARAMETER
     : '@'LEX_IDENTIFIER
