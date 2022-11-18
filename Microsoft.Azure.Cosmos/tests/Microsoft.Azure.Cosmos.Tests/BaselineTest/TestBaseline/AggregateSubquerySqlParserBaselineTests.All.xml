@@ -2,7 +2,7 @@
   <Result>
     <Input>
       <Description><![CDATA[ALL in an SqlSelectItem as an alias]]></Description>
-      <Query><![CDATA[SELECT 1 as ALL]]></Query>
+      <Query><![CDATA[SELECT 1 AS ALL]]></Query>
     </Input>
     <Output>
       <ParsedQuery><![CDATA[SELECT 1 AS ALL]]></ParsedQuery>
@@ -11,7 +11,7 @@
   <Result>
     <Input>
       <Description><![CDATA[ALL in an AliasedCollectionExpression as an alias]]></Description>
-      <Query><![CDATA[SELECT * FROM (SELECT VALUE 1) as ALL]]></Query>
+      <Query><![CDATA[SELECT * FROM (SELECT VALUE 1) AS ALL]]></Query>
     </Input>
     <Output>
       <ParsedQuery><![CDATA[SELECT * FROM (SELECT VALUE 1) AS ALL]]></ParsedQuery>
@@ -83,7 +83,7 @@
   <Result>
     <Input>
       <Description><![CDATA[ALL in every possible grammar rule at the same time]]></Description>
-      <Query><![CDATA[SELECT ALL(1, 2) as ALL FROM ALL IN (SELECT ALL.ALL) WHERE ALL(     SELECT ALL     FROM (SELECT udf.ALL(1, 2)) as ALL     WHERE ALL( SELECT VALUE 1) )]]></Query>
+      <Query><![CDATA[SELECT ALL(1, 2) AS ALL FROM ALL IN (SELECT ALL.ALL) WHERE ALL(     SELECT ALL     FROM (SELECT udf.ALL(1, 2)) AS ALL     WHERE ALL( SELECT VALUE 1) )]]></Query>
     </Input>
     <Output>
       <ParsedQuery><![CDATA[SELECT ALL(1, 2) AS ALL FROM ALL IN (SELECT ALL.ALL) WHERE ALL(SELECT ALL FROM (SELECT udf.ALL(1, 2)) AS ALL WHERE ALL(SELECT VALUE 1))]]></ParsedQuery>
