@@ -424,19 +424,26 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// If Open Telemetry listener is subscribed for "Azure.Cosmos" source. Then, Distributed Tracing <see cref="System.Diagnostics.Activity"/> are going to generate for the SDK operations along with <see cref="System.Diagnostics.Tracing.EventSource"/> with Request Diagnostic log information.
+        /// Distributed Tracing allows to capture timing data for specific operations and send it to a data store for viewing.
+        /// <para>
+        /// Usage with AppInsights: AppInsight SDK support it out of the box. ref. <seealso href="https://github.com/Microsoft/ApplicationInsights-dotnet/releases" />. You can directly start using it with AppInsight SDK.
+        /// </para>
+        /// <para>
+        /// Usage with Opentelemetry or Custom Listener: Subscribe for "Azure.Cosmos" source. Then, <see cref="System.Diagnostics.Activity"/> is going to generate for the SDK operations along with <see cref="System.Diagnostics.Tracing.EventSource"/> with Request Diagnostic log information (based on <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>).
+        /// SDK don't correlate <see cref="System.Diagnostics.Activity"/> and <see cref="System.Diagnostics.Tracing.EventSource"/>, it has to be taken care at custom listener by the application.
+        /// </para>
         /// Using <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can control the <see cref="System.Diagnostics.Tracing.EventSource"/> traces containing request diagnostics logs.<br></br>
-        /// SDK don't correlate <see cref="System.Diagnostics.Activity"/> and <see cref="System.Diagnostics.Tracing.EventSource"/>, it has to be taken care at listener.
-        /// <br></br><br></br>
-        /// <b>Enable distributing tracing with default configuration</b>
+        /// </summary>
+        /// <example>
+        /// Enable distributing tracing with default configuration
         /// <code>
         ///  CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key);
         ///  CosmosClient cosmosClient = cosmosClientBuilder
         ///                                 .WithDistributingTracing()
         ///                                 .Build();
         /// </code>
-        /// <br></br><br></br>
-        /// <b>Enable distributing tracing with custom configuration</b>
+        /// 
+        /// Enable distributing tracing with custom configuration
         /// <code>
         ///  CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key);
         ///  CosmosClient cosmosClient = cosmosClientBuilder
@@ -446,8 +453,8 @@ namespace Microsoft.Azure.Cosmos.Fluent
         ///                                 })
         ///                                 .Build();
         /// </code>
-        /// </summary> 
-        /// <remarks> This function enables <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> flag and set <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> </remarks>
+        /// </example>
+        /// <remarks>This function enables <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> flag and set <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> </remarks>
         /// <param name="options">Tracing Options <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
 #if PREVIEW

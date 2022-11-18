@@ -46,6 +46,22 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Set Request Level Distributed Tracing Configuration to control the traces containing request diagnostics logs.
         /// </summary>
+        /// <example>
+        /// <code language="c#">
+        ///  CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key);
+        ///  CosmosClient cosmosClient = cosmosClientBuilder
+        ///                                 .Build();
+        ///  cosmosClient.CreateDatabaseAsync(
+        ///     id: "test", 
+        ///     requestOptions: new Cosmos.RequestOptions() 
+        ///     {
+        ///         DistributedTracingOptions = new DistributedTracingOptions()
+        ///         {
+        ///             DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1);
+        ///         }
+        ///     });
+        /// </code>
+        /// </example>
         /// <remarks>Customization of <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> is allowed when <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> is true </remarks>
 #if PREVIEW
         public
