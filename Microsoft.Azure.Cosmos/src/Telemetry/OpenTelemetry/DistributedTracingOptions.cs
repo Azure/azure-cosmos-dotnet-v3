@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     ///  CosmosClient cosmosClient = cosmosClientBuilder
     ///                                 .WithDistributingTracing(<instance of DistributedTracingOptions>)
     ///                                 .Build();
-    ///  ]]
+    ///  ]]>
     /// </code>
     /// </para>
     /// 
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
     ///         EnableDistributedTracing = true,
     ///         DistributedTracingOptions = <instance of DistributedTracingOptions>
     ///     });
-    ///  ]]
+    ///  ]]>
     /// </code>
     /// </para>
     /// 
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
     ///             DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1);
     ///         }
     ///     });
-    /// ]]
+    /// ]]>
     /// </code>
     /// </para>
     /// </example>
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
         /// { 
         ///    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
         /// }
-        /// ]]
+        /// ]]>
         /// </code>
         /// </example>
         /// <remarks>If it is not set then by default it will generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) for query operation which are taking more than 500 ms and non-query operations taking more than 100 ms and this can not be configured if <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions.EnableDiagnosticsTraceForAllRequests"/> is enabled.</remarks>
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
         /// { 
         ///    EnableDiagnosticsTraceForAllRequests = true
         /// }
-        /// ]]
+        /// ]]>
         /// </code>
         /// </example>
         /// <remarks>This is NOT supported in RequestOptions. <see cref="EnableDiagnosticsTraceForAllRequests"/> cannot be enabled along with <see cref="DiagnosticsLatencyThreshold"/> configuration.</remarks>

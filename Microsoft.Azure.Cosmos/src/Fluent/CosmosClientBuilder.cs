@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         ///  CosmosClient cosmosClient = cosmosClientBuilder
         ///                                 .WithDistributingTracing()
         ///                                 .Build();
-        /// ]]
+        /// ]]>
         /// </code>
         /// 
         /// Enable distributing tracing with custom configuration
@@ -455,7 +455,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         ///                                     EnableDiagnosticsTraceForAllRequests = true
         ///                                 })
         ///                                 .Build();
-        /// ]]
+        /// ]]>
         /// </code>
         /// </example>
         /// <remarks>This function enables <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> flag and set <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> </remarks>

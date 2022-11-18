@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         ///             DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1);
         ///         }
         ///     });
-        /// ]]
+        /// ]]>
         /// </code>
         /// </example>
         /// <remarks>Customization of <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> is allowed when <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> is true </remarks>
