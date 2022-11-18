@@ -17,11 +17,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
             {
                 CreateInput(
                     description: "ALL in an SqlSelectItem as an alias",
-                    query: "SELECT 1 as ALL"),
+                    query: "SELECT 1 AS ALL"),
                 CreateInput(
                     description: "ALL in an AliasedCollectionExpression as an alias",
                     query: "SELECT * " +
-                           "FROM (SELECT VALUE 1) as ALL"),
+                           "FROM (SELECT VALUE 1) AS ALL"),
                 CreateInput(
                     description: "ALL in an ArrayIteratorCollectionExpression",
                     query: "SELECT * " +
@@ -47,11 +47,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
                     query: "SELECT udf.ALL(1, 2)"),
                 CreateInput(
                     description: "ALL in every possible grammar rule at the same time",
-                    query: "SELECT ALL(1, 2) as ALL " +
+                    query: "SELECT ALL(1, 2) AS ALL " +
                            "FROM ALL IN (SELECT ALL.ALL) " +
                            "WHERE ALL( " +
                            "    SELECT ALL " +
-                           "    FROM (SELECT udf.ALL(1, 2)) as ALL " +
+                           "    FROM (SELECT udf.ALL(1, 2)) AS ALL " +
                            "    WHERE ALL( SELECT VALUE 1) " +
                            ")")
 
