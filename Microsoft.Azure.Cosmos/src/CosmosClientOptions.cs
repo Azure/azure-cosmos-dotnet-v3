@@ -990,7 +990,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// When <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> is enabled,
         /// Distributed Tracing Configuration to control the traces containing request diagnostics logs.
+        /// <br></br>
+        /// When <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> is disabled, setting up this configuration will throw ArgumentException
         /// </summary>
         /// <remarks>Customization of <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> is allowed when <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> is true </remarks>
 #if PREVIEW
@@ -1001,10 +1004,11 @@ namespace Microsoft.Azure.Cosmos
             DistributedTracingOptions DistributedTracingOptions { get; set; }
 
         /// <summary>
-        /// If this flag is true AND Open Telemetry listener is subscribed for "Azure.Cosmos" source. Then, Distributed Tracing <see cref="System.Diagnostics.Activity"/> are going to generate for the SDK operations along with <see cref="System.Diagnostics.Tracing.EventSource"/> with Request Diagnostic log information.
+        /// When it is enabled AND Open Telemetry listener is subscribed for "Azure.Cosmos" source. Then, Distributed Tracing <see cref="System.Diagnostics.Activity"/> are going to generate for the SDK operations along with <see cref="System.Diagnostics.Tracing.EventSource"/> with Request Diagnostic log information.
         /// Using <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can control the traces containing request diagnostics logs.<br></br>
-        /// SDK don't correlate <see cref="System.Diagnostics.Activity"/> and <see cref="System.Diagnostics.Tracing.EventSource"/>, it has to be taken care at listener.
-        /// </summary>  
+        /// When it is disabled, this feature will be completely turned off.
+        /// </summary>
+        /// <remarks>SDK don't correlate <see cref="System.Diagnostics.Activity"/> and <see cref="System.Diagnostics.Tracing.EventSource"/>, it has to be taken care at custom listener by the application, right now only AppInsight SDK support it out of the box. ref. <seealso href="https://github.com/Microsoft/ApplicationInsights-dotnet/releases" /></remarks>
 #if PREVIEW
         public
 #else
