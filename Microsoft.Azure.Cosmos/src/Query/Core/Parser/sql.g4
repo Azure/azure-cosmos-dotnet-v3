@@ -177,10 +177,10 @@ primary_expression
     ;
 
 function_call_scalar_expression
-	: (K_UDF '.')? identifier '(' scalar_expression_list? ')'
-	| K_LEFT '(' scalar_expression_list? ')'
-	| K_RIGHT '(' scalar_expression_list? ')' 
-	;
+    : (K_UDF '.')? identifier '(' scalar_expression_list? ')'
+    | K_LEFT '(' scalar_expression_list? ')'
+    | K_RIGHT '(' scalar_expression_list? ')' 
+    ;
 
 scalar_expression_list : scalar_expression (',' scalar_expression)*;
 
@@ -278,9 +278,9 @@ fragment SAFECODEPOINTWITHDOUBLEQUOTATION
     ;
 
 LEX_IDENTIFIER
-	:
+    :
     | [a-zA-Z_]([a-zA-Z_]|DIGIT)*
-	;
+    ;
 
 PARAMETER
     : '@'LEX_IDENTIFIER
