@@ -6,10 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using Diagnostics;
-    using global::Azure;
     using global::Azure.Core.Pipeline;
-    using HdrHistogram;
 
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
