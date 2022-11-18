@@ -24,7 +24,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     isActivityEnabled: true);
                 DiagnosticScope scope = OpenTelemetryRecorderFactory
                     .ScopeFactory
-                    .CreateScope($"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}");
+                    .CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
+                                 kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
 
                 if (scope.IsEnabled)
                 {
