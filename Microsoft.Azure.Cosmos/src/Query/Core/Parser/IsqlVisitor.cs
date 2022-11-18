@@ -417,6 +417,12 @@ internal interface IsqlVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitPropertyRefScalarExpressionRecursive([NotNull] sqlParser.PropertyRefScalarExpressionRecursiveContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="sqlParser.function_call_scalar_expression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitFunction_call_scalar_expression([NotNull] sqlParser.Function_call_scalar_expressionContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="sqlParser.scalar_expression_list"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>

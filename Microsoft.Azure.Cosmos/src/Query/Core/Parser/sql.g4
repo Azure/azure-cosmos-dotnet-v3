@@ -166,7 +166,6 @@ primary_expression
     | literal #LiteralScalarExpression
     | '[' scalar_expression_list? ']' #ArrayCreateScalarExpression
     | '{' object_property_list? '}' #ObjectCreateScalarExpression
-    | (K_UDF '.')? identifier '(' scalar_expression_list? ')' #FunctionCallScalarExpression
     | '(' scalar_expression ')' #ParenthesizedScalarExperession
     | '(' sql_query ')' #SubqueryScalarExpression
     | primary_expression '.' identifier #PropertyRefScalarExpressionRecursive
@@ -174,7 +173,14 @@ primary_expression
     | K_EXISTS '(' sql_query ')' #ExistsScalarExpression
     | K_ARRAY '(' sql_query ')' #ArrayScalarExpression
     | K_ALL '(' sql_query ')' #AllScalarExpression
+    | function_call_scalar_expression #FunctionCallScalarExpression
     ;
+
+function_call_scalar_expression
+	: (K_UDF '.')? identifier '(' scalar_expression_list? ')'
+	| K_LEFT '(' scalar_expression_list? ')'
+	| K_RIGHT '(' scalar_expression_list? ')' 
+	;
 
 scalar_expression_list : scalar_expression (',' scalar_expression)*;
 
@@ -207,6 +213,7 @@ K_FROM : F R O M;
 K_GROUP : G R O U P;
 K_IN : I N ;
 K_JOIN : J O I N;
+K_LEFT : L E F T;
 K_LIKE : L I K E;
 K_LIMIT : L I M I T;
 K_NOT : N O T;
@@ -214,6 +221,7 @@ K_NULL : 'null';
 K_OFFSET : O F F S E T;
 K_OR : O R;
 K_ORDER : O R D E R;
+K_RIGHT : R I G H T;
 K_SELECT : S E L E C T;
 K_TOP : T O P;
 K_TRUE : 'true';
@@ -270,8 +278,7 @@ fragment SAFECODEPOINTWITHDOUBLEQUOTATION
     ;
 
 LEX_IDENTIFIER
-    : 
-    | [a-zA-Z_]([a-zA-Z_]|DIGIT)*
+    : [a-zA-Z_]([a-zA-Z_]|DIGIT)*
     ;
 
 PARAMETER

@@ -571,10 +571,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         public override SqlObject VisitFunctionCallScalarExpression([NotNull] sqlParser.FunctionCallScalarExpressionContext context)
         {
             Contract.Requires(context != null);
-            // (K_UDF '.')? identifier '(' scalar_expression_list? ')'
+            Contract.Requires(context.function_call_scalar_expression != null);
+
+            return this.Visit(context.function_call_scalar_expression());
+        }
+
+        public override SqlObject VisitFunction_call_scalar_expression([NotNull] sqlParser.Function_call_scalar_expressionContext context)
+        {
+            Contract.Requires(context != null);
+            // : (K_UDF '.')? identifier '(' scalar_expression_list ? ')'
+            // | K_LEFT '(' scalar_expression_list ? ')'
+            // | K_RIGHT '(' scalar_expression_list ? ')'
 
             bool udf = context.K_UDF() != null;
-            SqlIdentifier identifier = SqlIdentifier.Create(context.identifier().GetText());
+            SqlIdentifier identifier;
+
+            if (context.identifier() != null)
+            {
+                identifier = SqlIdentifier.Create(context.identifier().GetText());
+            }
+            else if (context.K_LEFT() != null) 
+            {
+                identifier = SqlIdentifier.Create(context.K_LEFT().GetText());
+            }
+            else
+            {
+                identifier = SqlIdentifier.Create(context.K_RIGHT().GetText());
+            }
+
             List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
             if (context.scalar_expression_list() != null)
             {

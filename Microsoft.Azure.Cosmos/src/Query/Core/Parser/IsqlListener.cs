@@ -682,6 +682,16 @@ internal interface IsqlListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitPropertyRefScalarExpressionRecursive([NotNull] sqlParser.PropertyRefScalarExpressionRecursiveContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="sqlParser.function_call_scalar_expression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterFunction_call_scalar_expression([NotNull] sqlParser.Function_call_scalar_expressionContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="sqlParser.function_call_scalar_expression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitFunction_call_scalar_expression([NotNull] sqlParser.Function_call_scalar_expressionContext context);
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="sqlParser.scalar_expression_list"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>

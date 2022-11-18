@@ -806,6 +806,18 @@ internal partial class sqlBaseListener : IsqlListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitPropertyRefScalarExpressionRecursive([NotNull] sqlParser.PropertyRefScalarExpressionRecursiveContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="sqlParser.function_call_scalar_expression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterFunction_call_scalar_expression([NotNull] sqlParser.Function_call_scalar_expressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="sqlParser.function_call_scalar_expression"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitFunction_call_scalar_expression([NotNull] sqlParser.Function_call_scalar_expressionContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="sqlParser.scalar_expression_list"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
