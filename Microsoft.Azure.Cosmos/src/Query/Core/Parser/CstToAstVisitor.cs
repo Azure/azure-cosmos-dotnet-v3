@@ -571,7 +571,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         public override SqlObject VisitFunctionCallScalarExpression([NotNull] sqlParser.FunctionCallScalarExpressionContext context)
         {
             Contract.Requires(context != null);
-            Contract.Requires(context.function_call_scalar_expression != null);
+            // function_call_scalar_expression
 
             return this.Visit(context.function_call_scalar_expression());
         }
