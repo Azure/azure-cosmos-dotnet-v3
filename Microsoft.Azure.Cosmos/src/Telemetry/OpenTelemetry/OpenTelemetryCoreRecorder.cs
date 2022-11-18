@@ -92,8 +92,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, clientContext.Client?.Endpoint?.Host);
 
                 // Client Information
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id ?? OpenTelemetryAttributes.NotAvailable);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent ?? OpenTelemetryAttributes.NotAvailable);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, clientContext.ClientOptions.ConnectionMode);
             }
         }
@@ -115,13 +115,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 
                 if (response.Diagnostics != null)
                 {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()) ?? OpenTelemetryAttributes.NotAvailable);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
                     CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, this.operationType, response);
-                }
-                else
-                {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, OpenTelemetryAttributes.NotAvailable);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, OpenTelemetryAttributes.NotAvailable);
                 }
             }
         }
