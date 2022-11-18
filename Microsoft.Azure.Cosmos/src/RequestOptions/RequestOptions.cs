@@ -48,10 +48,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <example>
         /// <code language="c#">
-        ///  CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key);
-        ///  CosmosClient cosmosClient = cosmosClientBuilder
-        ///                                 .Build();
-        ///  cosmosClient.CreateDatabaseAsync(
+        /// <![CDATA[ 
+        ///  CosmosClient cosmosClient = new CosmosClient(accountEndpoint: endpoint, authKeyOrResourceToken: key, new CosmosClientOptions
+        ///     {
+        ///         EnableDistributedTracing = true
+        ///     });
+        ///     
+        ///  await cosmosClient.CreateDatabaseAsync(
         ///     id: "test", 
         ///     requestOptions: new Cosmos.RequestOptions() 
         ///     {
@@ -60,9 +63,11 @@ namespace Microsoft.Azure.Cosmos
         ///             DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1);
         ///         }
         ///     });
+        /// ]]
         /// </code>
         /// </example>
         /// <remarks>Customization of <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> is allowed when <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> is true </remarks>
+        /// <exception cref="ArgumentException">When <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> is disabled.</exception>
 #if PREVIEW
         public
 #else

@@ -13,30 +13,38 @@ namespace Microsoft.Azure.Cosmos
     /// <para>
     /// Configure it using <see cref="Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder"/>
     /// <code language="c#">
+    /// <![CDATA[ 
     ///  CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key);
     ///  CosmosClient cosmosClient = cosmosClientBuilder
-    ///                                 .WithDistributingTracing(instance of DistributedTracingOptions)
+    ///                                 .WithDistributingTracing(<instance of DistributedTracingOptions>)
     ///                                 .Build();
+    ///  ]]
     /// </code>
     /// </para>
     /// 
     /// <para>
     /// Configure it using <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions"/>
     /// <code language="c#">
-    ///  CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key);
-    ///  CosmosClient cosmosClient = cosmosClientBuilder
-    ///                                 .Build();
-    ///  cosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions();
+    /// <![CDATA[ 
+    ///   CosmosClient cosmosClient = new CosmosClient(accountEndpoint: endpoint, authKeyOrResourceToken: key, new CosmosClientOptions
+    ///     {
+    ///         EnableDistributedTracing = true,
+    ///         DistributedTracingOptions = <instance of DistributedTracingOptions>
+    ///     });
+    ///  ]]
     /// </code>
     /// </para>
     /// 
     /// <para>
     /// Configure it using <see cref="Microsoft.Azure.Cosmos.RequestOptions"/>
     /// <code language="c#">
-    ///  CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key);
-    ///  CosmosClient cosmosClient = cosmosClientBuilder
-    ///                                 .Build();
-    ///  cosmosClient.CreateDatabaseAsync(
+    /// <![CDATA[ 
+    ///   CosmosClient cosmosClient = new CosmosClient(accountEndpoint: endpoint, authKeyOrResourceToken: key, new CosmosClientOptions
+    ///     {
+    ///         EnableDistributedTracing = true
+    ///     });
+    ///     
+    ///   await cosmosClient.CreateDatabaseAsync(
     ///     id: "test", 
     ///     requestOptions: new Cosmos.RequestOptions() 
     ///     {
@@ -45,6 +53,7 @@ namespace Microsoft.Azure.Cosmos
     ///             DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1);
     ///         }
     ///     });
+    /// ]]
     /// </code>
     /// </para>
     /// </example>
@@ -53,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-        sealed class DistributedTracingOptions
+            sealed class DistributedTracingOptions
     {
         /// <summary>
         /// Default Latency threshold for other than query Operation
@@ -69,18 +78,21 @@ namespace Microsoft.Azure.Cosmos
         private TimeSpan? diagnosticsLatencyThreshold;
 
         /// <summary>
-        /// Latency Threshold to generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) with Request diagnostics in distributing Tracing.<br></br>
+        /// Latency Threshold to generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) with Request diagnostics in distributing Tracing.
         /// </summary>
         /// <example>
         /// Enable trace generation for high latency requests. So it will generate traces only those requests which are taking more than 1ms to execute (Supported by <see cref="Microsoft.Azure.Cosmos.RequestOptions"/> and <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions"/> both)
         /// <code language="c#">
+        /// <![CDATA[ 
         /// new DistributedTracingOptions() 
         /// { 
         ///    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(1)
         /// }
+        /// ]]
         /// </code>
         /// </example>
         /// <remarks>If it is not set then by default it will generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) for query operation which are taking more than 500 ms and non-query operations taking more than 100 ms and this can not be configured if <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions.EnableDiagnosticsTraceForAllRequests"/> is enabled.</remarks>
+        /// <exception cref="ArgumentException">When <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions.EnableDiagnosticsTraceForAllRequests"/> is enabled.</exception>
         public TimeSpan? DiagnosticsLatencyThreshold
         {
             get => this.diagnosticsLatencyThreshold;
@@ -100,13 +112,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <example>
         /// <code language="c#">
+        /// <![CDATA[ 
         /// new DistributedTracingOptions() 
         /// { 
         ///    EnableDiagnosticsTraceForAllRequests = true
         /// }
+        /// ]]
         /// </code>
         /// </example>
         /// <remarks>This is NOT supported in RequestOptions. <see cref="EnableDiagnosticsTraceForAllRequests"/> cannot be enabled along with <see cref="DiagnosticsLatencyThreshold"/> configuration.</remarks>
+        /// <exception cref="ArgumentException">When <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions.DiagnosticsLatencyThreshold"/> is not null.</exception>
         public bool EnableDiagnosticsTraceForAllRequests
         {
             get => this.enableDiagnosticsTraceForAllRequests;

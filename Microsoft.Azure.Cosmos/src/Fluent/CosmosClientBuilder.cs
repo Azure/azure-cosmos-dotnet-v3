@@ -432,19 +432,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Usage with Opentelemetry or Custom Listener: Subscribe for "Azure.Cosmos" source. Then, <see cref="System.Diagnostics.Activity"/> is going to generate for the SDK operations along with <see cref="System.Diagnostics.Tracing.EventSource"/> with Request Diagnostic log information (based on <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>).
         /// SDK don't correlate <see cref="System.Diagnostics.Activity"/> and <see cref="System.Diagnostics.Tracing.EventSource"/>, it has to be taken care at custom listener by the application.
         /// </para>
-        /// Using <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can control the <see cref="System.Diagnostics.Tracing.EventSource"/> traces containing request diagnostics logs.<br></br>
+        /// Using <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can control the <see cref="System.Diagnostics.Tracing.EventSource"/> traces containing request diagnostics logs.
         /// </summary>
         /// <example>
         /// Enable distributing tracing with default configuration
-        /// <code>
+        /// <code language="c#">
+        /// <![CDATA[ 
         ///  CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key);
         ///  CosmosClient cosmosClient = cosmosClientBuilder
         ///                                 .WithDistributingTracing()
         ///                                 .Build();
+        /// ]]
         /// </code>
         /// 
         /// Enable distributing tracing with custom configuration
-        /// <code>
+        /// <code language="c#">
+        /// <![CDATA[ 
         ///  CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: key);
         ///  CosmosClient cosmosClient = cosmosClientBuilder
         ///                                 .WithDistributingTracing(new DistributedTracingOptions() 
@@ -452,6 +455,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         ///                                     EnableDiagnosticsTraceForAllRequests = true
         ///                                 })
         ///                                 .Build();
+        /// ]]
         /// </code>
         /// </example>
         /// <remarks>This function enables <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> flag and set <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> </remarks>

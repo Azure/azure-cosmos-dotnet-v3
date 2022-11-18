@@ -992,14 +992,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// When <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> is enabled,
         /// Distributed Tracing Configuration to control the traces containing request diagnostics logs.
-        /// <br></br>
-        /// When <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> is disabled, setting up this configuration will throw ArgumentException
         /// </summary>
         /// <remarks>Customization of <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> is allowed when <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> is true </remarks>
+        /// <exception cref="ArgumentException">When <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.EnableDistributedTracing"/> is disabled.</exception>
 #if PREVIEW
         public
 #else
-        internal 
+        internal
 #endif
             DistributedTracingOptions DistributedTracingOptions { get; set; }
 
@@ -1014,7 +1013,7 @@ namespace Microsoft.Azure.Cosmos
         /// Usage with Opentelemetry or Custom Listener: Subscribe for "Azure.Cosmos" source. Then, <see cref="System.Diagnostics.Activity"/> is going to generate for the SDK operations along with <see cref="System.Diagnostics.Tracing.EventSource"/> with Request Diagnostic log information (based on <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>).
         /// SDK don't correlate <see cref="System.Diagnostics.Activity"/> and <see cref="System.Diagnostics.Tracing.EventSource"/>, it has to be taken care at custom listener by the application.
         /// </para>
-        /// Using <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can control the <see cref="System.Diagnostics.Tracing.EventSource"/> traces containing request diagnostics logs.<br></br>
+        /// Using <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can control the <see cref="System.Diagnostics.Tracing.EventSource"/> traces containing request diagnostics logs.
         /// </para>
         /// When it is disabled, this feature will be completely turned off.
         /// </summary>
