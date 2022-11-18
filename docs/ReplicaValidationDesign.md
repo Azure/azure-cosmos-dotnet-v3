@@ -2,18 +2,18 @@
 
 ## Table of Contents
 
-* [Scope.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#scope)
-* [Backgraound.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#backgraound)
-* [Proposed Solution.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#proposed-solution)
-* [Design Approach.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#design-approach)
-    * [Outline.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#outline)
-    * [Updated Sequence Diagram for `CosmosClient` initialization.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#updated-sequence-diagram-for-cosmosclient-initialization)
-    * [Sequence Diagram when `StoreReader` invokes the `GatewayAddressCache` to resolve addresses and leverages `AddressEnumerator` to enumerate the transport addresses.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#sequence-diagram-when-storereader-invokes-the-gatewayaddresscache-to-resolve-addresses-and-leverages-addressenumerator-to-enumerate-the-transport-addresses)
-    * [State Diagram to Understand the `TransportAddressUri` Health State Transformations.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#state-diagram-to-understand-the-transportaddressuri-health-state-transformations)
-    * [`Azure.Cosmos.Direct` package class diagrams.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#azurecosmosdirect-package-class-diagrams)
-    * [`Microsoft.Azure.Cosmos` package class diagrams.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#microsoftazurecosmos-package-class-diagrams)
-* [Pull Request with Sample Code Changes.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#pull-request-with-sample-code-changes)
-* [References.](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/users/kundadebdatta/draft_replica_validation_sneakpeek/docs/ReplicaValidationDesign.md#references)
+* [Scope.](#scope)
+* [Backgraound.](#backgraound)
+* [Proposed Solution.](#proposed-solution)
+* [Design Approach.](#design-approach)
+    * [Outline.](#outline)
+    * [Updated Sequence Diagram for `CosmosClient` initialization.](#updated-sequence-diagram-for-cosmosclient-initialization)
+    * [Sequence Diagram when `StoreReader` invokes the `GatewayAddressCache` to resolve addresses and leverages `AddressEnumerator` to enumerate the transport addresses.](#sequence-diagram-when-storereader-invokes-the-gatewayaddresscache-to-resolve-addresses-and-leverages-addressenumerator-to-enumerate-the-transport-addresses)
+    * [State Diagram to Understand the `TransportAddressUri` Health State Transformations.](#state-diagram-to-understand-the-transportaddressuri-health-state-transformations)
+    * [`Azure.Cosmos.Direct` package class diagrams.](#azurecosmosdirect-package-class-diagrams)
+    * [`Microsoft.Azure.Cosmos` package class diagrams.](#microsoftazurecosmos-package-class-diagrams)
+* [Pull Request with Sample Code Changes.](#pull-request-with-sample-code-changes)
+* [References.](#references)
 
 ## Scope
 
@@ -32,20 +32,20 @@ sequenceDiagram
     participant B as GlobalAddressResolver <br> [v3 Code]
     participant C as GatewayAddressCache <br> [v3 Code]
     participant D as GatewayService <br> [External Service]
-    participant E as BackendReplica <br> [A Replica Node Still Undergoing Upgrade <br> Address: rntbd://test.azure.com:443/partitions/1p]
+    participant E as BackendReplica <br> [A Replica Node Still Undergoing Upgrade <br> Address: rntbd://test.azure.com:443/partitions/2s]
     A->>+B: Request (forceRefresh - false)
     B->>+C: TryGetAddresses (forceRefresh - false)
-    C->>-B: Fetch Cached Addresses <br> rntbd://test.azure.com:443/partitions/1p
-    B->>-A: Return Addresses <br> rntbd://test.azure.com:443/partitions/1p
+    C->>-B: Fetch Cached Addresses <br> rntbd://test.azure.com:443/partitions/2s
+    B->>-A: Return Addresses <br> rntbd://test.azure.com:443/partitions/2s
     A->>+E: Request Sent to Backend Replica
     E-x-A: Request fails with 410 GoneException
     A->>+B: Request (forceRefresh - true) <br> GoneWithRetryAttempt
     B->>+C: TryGetAddresses (forceRefresh - true)
     C->>+D: GetServerAddresses
-    D->>-C: Returns the new refreshed addresses <br> rntbd://test.azure.com:443/partitions/1p
+    D->>-C: Returns the new refreshed addresses <br> rntbd://test.azure.com:443/partitions/2s
     Note over D: Note that the returned addresses from <br> GatewayService may still undergoing <br> the upgrade, thus and they are not in a ready state.
-    C->>-B: Returns the refreshed addresses <br> rntbd://test.azure.com:443/partitions/1p
-    B->>-A: Returns the refreshed addresses <br> rntbd://test.azure.com:443/partitions/1p
+    C->>-B: Returns the refreshed addresses <br> rntbd://test.azure.com:443/partitions/2s
+    B->>-A: Returns the refreshed addresses <br> rntbd://test.azure.com:443/partitions/2s
     A->>+E: Request Sent to Backend Replica
     E-x-A: Request fails again with 410 GoneException
     Note over A: Note that the request fails to connect to the replica <br> which causes a "ConnectionTimeoutException".
