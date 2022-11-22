@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                  "db.operation",
                  "net.peer.name",
                  "db.cosmosdb.client_id",
-                 "db.cosmosdb.hashed_machine_id",
+                 "db.cosmosdb.machine_id",
                  "db.cosmosdb.user_agent",
                  "db.cosmosdb.connection_mode",
                  "db.cosmosdb.operation_type",
@@ -209,7 +209,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 (tag.Key == OpenTelemetryAttributeKeys.DbName && !exceptionsForDbNameAttribute.Contains(name)))
             {
                 Assert.IsNotNull(tag.Value, $"{tag.Key} is 'null' for {name} operation");
-                Assert.IsNull(tag.Value, $"{tag.Key} is null for {name} operation");
+            } 
+            else if ((tag.Key == OpenTelemetryAttributeKeys.ContainerName && exceptionsForContainerAttribute.Contains(name)) ||
+                (tag.Key == OpenTelemetryAttributeKeys.DbName && exceptionsForDbNameAttribute.Contains(name)))
+            {
+                Assert.IsNull(tag.Value, $"{tag.Key} is '{tag.Value}' for {name} operation");
             }
         }
 
