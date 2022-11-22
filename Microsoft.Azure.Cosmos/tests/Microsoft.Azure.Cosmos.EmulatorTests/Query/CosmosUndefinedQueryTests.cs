@@ -49,8 +49,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private static async Task RunTests(Container container, IReadOnlyList<CosmosObject> _)
         {
-            // await OrderByTests(container);
-            // await GroupByTests(container);
+            await OrderByTests(container);
+            await GroupByTests(container);
             await UntypedTests(container);
         }
 
@@ -70,23 +70,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 MakeUndefinedProjectionTest(
                     query: "SELECT VALUE c.AlwaysUndefinedField FROM c GROUP BY c.AlwaysUndefinedField",
                     expectedCount: 0),
-
-                //MakeUndefinedProjectionTest(
-                //    query: "SELECT c.AlwaysUndefinedField FROM c GROUP BY c.AlwaysUndefinedField",
-                //    expectedCount: DocumentCount),
                 MakeUndefinedProjectionTest(
                     query: $"SELECT VALUE SUM(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
                     expectedCount: 0),
                 MakeUndefinedProjectionTest(
                     query: $"SELECT VALUE AVG(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
                     expectedCount: 0),
-
-                //MakeUndefinedProjectionTest(
-                //    query: $"SELECT VALUE MIN(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
-                //    expectedCount: 0),
-                //MakeUndefinedProjectionTest(
-                //    query: $"SELECT VALUE MAX(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
-                //    expectedCount: 0),
             };
 
             foreach (UndefinedProjectionTestCase testCase in undefinedProjectionTestCases)
