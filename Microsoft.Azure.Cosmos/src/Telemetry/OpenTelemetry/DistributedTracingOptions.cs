@@ -73,9 +73,6 @@ namespace Microsoft.Azure.Cosmos
         /// Default Latency threshold for QUERY operation
         /// </summary>
         internal static readonly TimeSpan DefaultQueryTimeoutThreshold = TimeSpan.FromMilliseconds(500);
-        
-        private bool enableDiagnosticsTraceForAllRequests;
-        private TimeSpan? diagnosticsLatencyThreshold;
 
         /// <summary>
         /// Latency Threshold to generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) with Request diagnostics in distributing Tracing.
@@ -91,49 +88,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>If it is not set then by default it will generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) for query operation which are taking more than 500 ms and non-query operations taking more than 100 ms and this can not be configured if <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions.EnableDiagnosticsTraceForAllRequests"/> is enabled.</remarks>
-        /// <exception cref="ArgumentException">When <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions.EnableDiagnosticsTraceForAllRequests"/> is enabled.</exception>
-        public TimeSpan? DiagnosticsLatencyThreshold
-        {
-            get => this.diagnosticsLatencyThreshold;
-            set
-            {
-                if (this.EnableDiagnosticsTraceForAllRequests)
-                {
-                    throw new ArgumentException("EnableDiagnosticsTraceForAllRequests can not be true along with DiagnosticsLatencyThreshold.");
-                }
-                
-                this.diagnosticsLatencyThreshold = value;
-            }
-        }
-
-        /// <summary>
-        /// When enabled, it generates (<see cref="System.Diagnostics.Tracing.EventSource"/>) containing request diagnostics string for all the operations.
-        /// </summary>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[ 
-        /// new DistributedTracingOptions() 
-        /// { 
-        ///    EnableDiagnosticsTraceForAllRequests = true
-        /// }
-        /// ]]>
-        /// </code>
-        /// </example>
-        /// <remarks>This is NOT supported in RequestOptions. <see cref="EnableDiagnosticsTraceForAllRequests"/> cannot be enabled along with <see cref="DiagnosticsLatencyThreshold"/> configuration.</remarks>
-        /// <exception cref="ArgumentException">When <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions.DiagnosticsLatencyThreshold"/> is not null.</exception>
-        public bool EnableDiagnosticsTraceForAllRequests
-        {
-            get => this.enableDiagnosticsTraceForAllRequests;
-            set
-            {
-                if (value && this.DiagnosticsLatencyThreshold != null)
-                {
-                    throw new ArgumentException("EnableDiagnosticsTraceForAllRequests can not be true along with DiagnosticsLatencyThreshold.");
-                }
-                
-                this.enableDiagnosticsTraceForAllRequests = value;
-            }
-        }
+        /// <remarks>If it is not set then by default it will generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) for query operation which are taking more than 500 ms and non-query operations taking more than 100 ms.</remarks>
+        public TimeSpan? DiagnosticsLatencyThreshold { get; set; }
     }
 }

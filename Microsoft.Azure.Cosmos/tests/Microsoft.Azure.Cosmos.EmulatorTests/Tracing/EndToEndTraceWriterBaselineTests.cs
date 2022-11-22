@@ -57,17 +57,17 @@
 
             client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                EnableDiagnosticsTraceForAllRequests = true
+                DiagnosticsLatencyThreshold = TimeSpan.FromSeconds(0)
             };
 
             bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                EnableDiagnosticsTraceForAllRequests = true
+                DiagnosticsLatencyThreshold = TimeSpan.FromSeconds(0)
             };
             
             miscCosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                EnableDiagnosticsTraceForAllRequests = true
+                DiagnosticsLatencyThreshold = TimeSpan.FromSeconds(0)
             };
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
@@ -984,7 +984,7 @@
                 throttleClient.ClientOptions.EnableDistributedTracing = true;
                 throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    EnableDiagnosticsTraceForAllRequests = true
+                    DiagnosticsLatencyThreshold = TimeSpan.FromSeconds(0)
                 };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
@@ -1271,7 +1271,7 @@
                 throttleClient.ClientOptions.EnableDistributedTracing = true;
                 throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    EnableDiagnosticsTraceForAllRequests = true
+                    DiagnosticsLatencyThreshold = TimeSpan.FromSeconds(0)
                 };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();

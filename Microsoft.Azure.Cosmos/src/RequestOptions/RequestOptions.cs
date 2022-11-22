@@ -41,8 +41,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets a delegate which injects/appends a custom header in the request.
         /// </summary>
         public Action<Headers> AddRequestHeaders { get; set; }
-
-        private DistributedTracingOptions distributedTracingOptions;
+        
         /// <summary>
         /// Set Request Level Distributed Tracing Configuration to control the traces containing request diagnostics logs.
         /// </summary>
@@ -73,24 +72,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-             DistributedTracingOptions DistributedTracingOptions
-        {
-            get => this.distributedTracingOptions;
-            set
-            {
-                this.ValidateDistributedTracingOptions(value);
-                
-                this.distributedTracingOptions = value;
-            }
-        }
-
-        private void ValidateDistributedTracingOptions(DistributedTracingOptions distributedTracingOptions)
-        {
-            if (distributedTracingOptions?.EnableDiagnosticsTraceForAllRequests == true)
-            {
-                throw new ArgumentException($"EnableDiagnosticsTraceForAllRequests is not supported in {nameof(RequestOptions)}");
-            }
-        }
+             DistributedTracingOptions DistributedTracingOptions { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.

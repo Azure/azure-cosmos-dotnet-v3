@@ -187,25 +187,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
-
-            // Verify DiagnosticsLatencyThreshold
-            cosmosClientBuilder = new CosmosClientBuilder(
-               accountEndpoint: endpoint,
-               authKeyOrResourceToken: key);
-            var exception = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.WithConnectionModeDirect(
-                idleTcpConnectionTimeout,
-                openTcpConnectionTimeout,
-                maxRequestsPerTcpConnection,
-                maxTcpConnectionsPerEndpoint,
-                portReuseMode,
-                enableTcpConnectionEndpointRediscovery)
-                .WithApplicationPreferredRegions(preferredLocations)
-                .WithDistributingTracing(new DistributedTracingOptions
-                {
-                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(100),
-                    EnableDiagnosticsTraceForAllRequests = true
-                }));
-            Assert.AreEqual("EnableDiagnosticsTraceForAllRequests can not be true along with DiagnosticsLatencyThreshold.", exception.Message);
         }
         
         [TestMethod]
@@ -252,26 +233,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }));
             
             Assert.AreEqual("Distributed tracing is not enabled. Please set CosmosClientOptions.EnableDistributedTracing to true.", exception.Message);
-
-            // Using Request Options to set EnableDiagnosticsTraceForAllRequests at request levele
-            cosmosClient = new CosmosClientBuilder(
-               accountEndpoint: endpoint,
-               authKeyOrResourceToken: key).WithDistributingTracing(new DistributedTracingOptions()
-               {
-                   EnableDiagnosticsTraceForAllRequests = true
-               }).Build(new MockDocumentClient());
-
-            exception = await Assert.ThrowsExceptionAsync<ArgumentException>(() => cosmosClient.CreateDatabaseAsync(
-                id: "test",
-                requestOptions: new Cosmos.RequestOptions()
-                {
-                    DistributedTracingOptions = new DistributedTracingOptions()
-                    {
-                        EnableDiagnosticsTraceForAllRequests = true
-                    }
-                }));
-
-            Assert.AreEqual("EnableDiagnosticsTraceForAllRequests is not supported in RequestOptions", exception.Message);
 
         }
 

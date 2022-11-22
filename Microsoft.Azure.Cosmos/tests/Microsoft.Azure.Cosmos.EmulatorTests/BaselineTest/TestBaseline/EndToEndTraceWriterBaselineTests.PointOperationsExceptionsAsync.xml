@@ -175,7 +175,7 @@
     throttleClient.ClientOptions.EnableDistributedTracing = true;
     throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
     {
-        EnableDiagnosticsTraceForAllRequests = true
+        DiagnosticsLatencyThreshold = TimeSpan.FromSeconds(0)
     };
 
     ItemRequestOptions requestOptions = new ItemRequestOptions();
