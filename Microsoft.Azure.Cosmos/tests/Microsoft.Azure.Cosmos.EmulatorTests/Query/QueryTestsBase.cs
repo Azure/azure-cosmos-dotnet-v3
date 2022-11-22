@@ -914,6 +914,23 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
         }
 
+        internal static async IAsyncEnumerable<ResponseMessage> RunSimpleQueryAsync(
+           Container container,
+           string query,
+           QueryRequestOptions requestOptions = null)
+        {
+            using FeedIterator resultSetIterator = container.GetItemQueryStreamIterator(
+                query,
+                null,
+                requestOptions: requestOptions);
+
+            while (resultSetIterator.HasMoreResults)
+            {
+                ResponseMessage response = await resultSetIterator.ReadNextAsync();
+                yield return response;
+            }
+        }
+
         internal async Task<List<T>> RunSinglePartitionQuery<T>(
             Container container,
             string query,
