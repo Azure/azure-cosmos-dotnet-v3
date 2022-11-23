@@ -198,20 +198,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Cosmos.DeleteStreamAsync"
             };
 
-            IList<string> exceptionsForDbNameAttribute = new List<string>
-            {
-                "Cosmos.DeleteAsync",
-                "Cosmos.ExecuteAsync",
-                "Cosmos.DeleteStreamAsync"
-            };
-
             if ((tag.Key == OpenTelemetryAttributeKeys.ContainerName && !exceptionsForContainerAttribute.Contains(name)) || 
-                (tag.Key == OpenTelemetryAttributeKeys.DbName && !exceptionsForDbNameAttribute.Contains(name)))
+                (tag.Key == OpenTelemetryAttributeKeys.DbName))
             {
                 Assert.IsNotNull(tag.Value, $"{tag.Key} is 'null' for {name} operation");
             } 
-            else if ((tag.Key == OpenTelemetryAttributeKeys.ContainerName && exceptionsForContainerAttribute.Contains(name)) ||
-                (tag.Key == OpenTelemetryAttributeKeys.DbName && exceptionsForDbNameAttribute.Contains(name)))
+            else if (tag.Key == OpenTelemetryAttributeKeys.ContainerName && exceptionsForContainerAttribute.Contains(name))
             {
                 Assert.IsNull(tag.Value, $"{tag.Key} is '{tag.Value}' for {name} operation");
             }
