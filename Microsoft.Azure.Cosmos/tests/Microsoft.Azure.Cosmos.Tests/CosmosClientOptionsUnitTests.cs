@@ -186,25 +186,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
-
-            // Verify DiagnosticsLatencyThreshold
-            cosmosClientBuilder = new CosmosClientBuilder(
-               accountEndpoint: endpoint,
-               authKeyOrResourceToken: key);
-            var exception = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.WithConnectionModeDirect(
-                idleTcpConnectionTimeout,
-                openTcpConnectionTimeout,
-                maxRequestsPerTcpConnection,
-                maxTcpConnectionsPerEndpoint,
-                portReuseMode,
-                enableTcpConnectionEndpointRediscovery)
-                .WithApplicationPreferredRegions(preferredLocations)
-                .WithDistributingTracing(new DistributedTracingOptions
-                {
-                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(100),
-                    EnableDiagnosticsTraceForAllRequests = true
-                }));
-            Assert.AreEqual("EnableDiagnosticsTraceForAllRequests can not be true along with DiagnosticsLatencyThreshold.", exception.Message);
         }
 
         [TestMethod]
