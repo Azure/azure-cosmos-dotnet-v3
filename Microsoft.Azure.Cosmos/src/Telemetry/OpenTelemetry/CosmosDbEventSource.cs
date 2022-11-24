@@ -31,19 +31,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            if (config.EnableDiagnosticsTraceForAllRequests)
+            if (DiagnosticsFilterHelper.IsTracingNeeded(
+                    config: config,
+                    operationType: operationType,
+                    response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
-                CosmosDbEventSource.Singleton.WriteInfoEvent(response.Diagnostics.ToString());
-            } 
-            else
-            {
-                if (DiagnosticsFilterHelper.IsTracingNeeded(
-                        config: config,
-                        operationType: operationType,
-                        response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
-                {
-                    CosmosDbEventSource.Singleton.WriteWarningEvent(response.Diagnostics.ToString());
-                }
+                CosmosDbEventSource.Singleton.WriteWarningEvent(response.Diagnostics.ToString());
             }
         }
 
