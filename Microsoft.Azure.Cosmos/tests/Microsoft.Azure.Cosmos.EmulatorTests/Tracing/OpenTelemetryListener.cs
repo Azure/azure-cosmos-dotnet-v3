@@ -194,7 +194,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Cosmos.CreateDatabaseAsync",
                 "Cosmos.ReadAsync",
                 "Cosmos.DeleteAsync",
-                "Cosmos.ExecuteAsync",
                 "Cosmos.DeleteStreamAsync"
             };
 
