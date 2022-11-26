@@ -289,8 +289,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="scope"></param>
         internal static void RecordOtelAttributes(CosmosException exception, DiagnosticScope scope)
         {
-            scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, exception.StatusCode);
-            scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, exception.SubStatusCode);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)exception.StatusCode);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, (int)exception.SubStatusCode);
             scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, exception.RequestCharge);
             scope.AddAttribute(OpenTelemetryAttributeKeys.Region, 
                 ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics?.GetContactedRegions()));

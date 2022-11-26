@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                  "db.operation",
                  "net.peer.name",
                  "db.cosmosdb.client_id",
-                 "db.cosmosdb.hashed_machine_id",
+                 "db.cosmosdb.machine_id",
                  "db.cosmosdb.user_agent",
                  "db.cosmosdb.connection_mode",
                  "db.cosmosdb.operation_type",
@@ -194,22 +194,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Cosmos.CreateDatabaseAsync",
                 "Cosmos.ReadAsync",
                 "Cosmos.DeleteAsync",
-                "Cosmos.ExecuteAsync",
-                "Cosmos.DeleteStreamAsync"
-            };
-
-            IList<string> exceptionsForDbNameAttribute = new List<string>
-            {
-                "Cosmos.DeleteAsync",
-                "Cosmos.ExecuteAsync",
                 "Cosmos.DeleteStreamAsync"
             };
 
             if ((tag.Key == OpenTelemetryAttributeKeys.ContainerName && !exceptionsForContainerAttribute.Contains(name)) || 
-                (tag.Key == OpenTelemetryAttributeKeys.DbName && !exceptionsForDbNameAttribute.Contains(name)))
+                (tag.Key == OpenTelemetryAttributeKeys.DbName))
             {
                 Assert.IsNotNull(tag.Value, $"{tag.Key} is 'null' for {name} operation");
-                Assert.AreNotEqual(OpenTelemetryAttributes.NotAvailable, tag.Value, $"{tag.Key} is {OpenTelemetryAttributes.NotAvailable} for {name} operation");
+            } 
+            else if (tag.Key == OpenTelemetryAttributeKeys.ContainerName && exceptionsForContainerAttribute.Contains(name))
+            {
+                Assert.IsNull(tag.Value, $"{tag.Key} is '{tag.Value}' for {name} operation");
             }
         }
 
