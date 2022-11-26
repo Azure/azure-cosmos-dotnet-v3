@@ -19,12 +19,10 @@
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
-    using OpenTelemetry.Resources;
     using OpenTelemetry;
     using Telemetry;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
     using OpenTelemetry.Trace;
-    using OpenTelemetry.Exporter;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
     [TestCategory("UpdateContract")]
@@ -50,7 +48,7 @@
 
             // Open Telemetry Listener
             oTelTracerProvider = Sdk.CreateTracerProviderBuilder()
-                .AddCustomOtelExporter()
+                .AddCustomOtelExporter() // use any exporter here
                 .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*")
                 .Build();
 

@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Reflection;
     using System.Text;
-    using System.Threading;
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
 
     public class CustomListener :
         EventListener,
@@ -155,9 +150,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
-            if (this.sourceNameFilter(eventSource.Name))
+            if (eventSource != null && this.sourceNameFilter(eventSource.Name))
             {
-                this.EnableEvents(eventSource, EventLevel.Informational);
+                this.EnableEvents(eventSource, EventLevel.Informational); // Enable information level events
             }
         }
 

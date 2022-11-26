@@ -3,13 +3,8 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using OpenTelemetry;
-    using OpenTelemetry.Exporter;
     using OpenTelemetry.Trace;
-    using static Microsoft.Azure.Cosmos.Tests.CustomListener;
 
     internal class CustomOtelExporter : BaseExporter<Activity>
     {
