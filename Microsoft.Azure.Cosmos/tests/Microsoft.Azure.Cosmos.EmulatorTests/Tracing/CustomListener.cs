@@ -1,0 +1,308 @@
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Tests
+{
+    using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Diagnostics.Tracing;
+    using System.Linq;
+    using System.Reflection;
+    using System.Text;
+    using System.Threading;
+    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
+
+    public class CustomListener :
+        EventListener,
+        IObserver<KeyValuePair<string, object>>,
+        IObserver<DiagnosticListener>,
+        IDisposable
+    {
+        private readonly Func<string, bool> sourceNameFilter;
+
+        private List<IDisposable> subscriptions = new List<IDisposable>();
+
+        private List<ProducedDiagnosticScope> Scopes { get; } = new List<ProducedDiagnosticScope>();
+
+        public static List<Activity> CollectedActivities = new List<Activity>();
+        
+        private ConcurrentBag<string> GeneratedActivityTagsForBaselineXmls { set;  get; }
+        private ConcurrentBag<string> GeneratedEventTagsForBaselineXmls { set; get; }
+
+        public CustomListener(string name)
+            : this(n => n == name)
+        {
+        }
+
+        public CustomListener(Func<string, bool> filter)
+        {
+            this.sourceNameFilter = filter;
+            
+            this.GeneratedActivityTagsForBaselineXmls = new ConcurrentBag<string>();
+            this.GeneratedEventTagsForBaselineXmls = new ConcurrentBag<string>();
+
+            DiagnosticListener.AllListeners.Subscribe(this);
+        }
+
+        /// <summary>
+        /// IObserver Override
+        /// </summary>
+        public void OnCompleted()
+        {
+            // Unimplemented Method
+        }
+
+        /// <summary>
+        /// IObserver Override
+        /// </summary>
+        public void OnError(Exception error)
+        {
+            // Unimplemented Method
+        }
+
+        /// <summary>
+        /// IObserver Override
+        /// </summary>
+        public void OnNext(KeyValuePair<string, object> value)
+        {
+            lock (this.Scopes)
+            {
+                // Check for disposal
+                if (this.subscriptions == null) return;
+
+                string startSuffix = ".Start";
+                string stopSuffix = ".Stop";
+                string exceptionSuffix = ".Exception";
+
+                if (value.Key.EndsWith(startSuffix))
+                {
+                    string name = value.Key[..^startSuffix.Length];
+                    PropertyInfo propertyInfo = value.Value.GetType().GetTypeInfo().GetDeclaredProperty("Links");
+                    IEnumerable<Activity> links = propertyInfo?.GetValue(value.Value) as IEnumerable<Activity> ?? Array.Empty<Activity>();
+
+                    ProducedDiagnosticScope scope = new ProducedDiagnosticScope()
+                    {
+                        Name = name,
+                        Activity = Activity.Current,
+                        Links = links.Select(a => new ProducedLink(a.ParentId, a.TraceStateString)).ToList(),
+                        LinkedActivities = links.ToList()
+                    };
+
+                    this.Scopes.Add(scope);
+                }
+                else if (value.Key.EndsWith(stopSuffix))
+                {
+                    string name = value.Key[..^stopSuffix.Length];
+                    foreach (ProducedDiagnosticScope producedDiagnosticScope in this.Scopes)
+                    {
+                        if (producedDiagnosticScope.Activity.Id == Activity.Current.Id)
+                        {
+                            AssertActivity.IsValid(producedDiagnosticScope.Activity);
+                            
+                            CollectedActivities.Add(producedDiagnosticScope.Activity);
+
+                            producedDiagnosticScope.IsCompleted = true;
+                            return;
+                        }
+                    }
+                    throw new InvalidOperationException($"Event '{name}' was not started");
+                }
+                else if (value.Key.EndsWith(exceptionSuffix))
+                {
+                    string name = value.Key[..^exceptionSuffix.Length];
+                    foreach (ProducedDiagnosticScope producedDiagnosticScope in this.Scopes)
+                    {
+                        if (producedDiagnosticScope.Activity.Id == Activity.Current.Id)
+                        {
+                            if (producedDiagnosticScope.IsCompleted)
+                            {
+                                throw new InvalidOperationException("Scope should not be stopped when calling Failed");
+                            }
+
+                            producedDiagnosticScope.Exception = (Exception)value.Value;
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// IObserver Override
+        /// </summary>
+        public void OnNext(DiagnosticListener value)
+        {
+            if (this.sourceNameFilter(value.Name) && this.subscriptions != null)
+            {
+                lock (this.Scopes)
+                {
+                    if (this.subscriptions != null)
+                    {
+                        this.subscriptions.Add(value.Subscribe(this));
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// EventListener Override
+        /// </summary>
+        protected override void OnEventSourceCreated(EventSource eventSource)
+        {
+            if (this.sourceNameFilter(eventSource.Name))
+            {
+                this.EnableEvents(eventSource, EventLevel.Informational);
+            }
+        }
+
+        /// <summary>
+        /// EventListener Override
+        /// </summary>
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append("<EVENT>")
+                   .Append("Ideally, this should contain request diagnostics but request diagnostics is " +
+                   "subject to change with each request as it contains few unique id. " +
+                   "So just putting this tag with this static text to make sure event is getting generated" +
+                   " for each test.")
+                   .Append("</EVENT>");
+            this.GeneratedEventTagsForBaselineXmls.Add(builder.ToString());
+        }
+        
+        /// <summary>
+        /// Dispose Override
+        /// </summary>
+        /// <exception cref="InvalidOperationException"></exception>
+        public override void Dispose()
+        {
+            base.Dispose();
+
+            if (this.subscriptions == null)
+            {
+                return;
+            }
+
+            List<IDisposable> subscriptions;
+            lock (this.Scopes)
+            {
+                subscriptions = this.subscriptions;
+                this.subscriptions = null;
+            }
+
+            foreach (IDisposable subscription in subscriptions)
+            {
+                subscription.Dispose();
+            }
+
+            foreach (ProducedDiagnosticScope producedDiagnosticScope in this.Scopes)
+            {
+                Activity activity = producedDiagnosticScope.Activity;
+                string operationName = activity.OperationName;
+                // traverse the activities and check for duplicates among ancestors
+                while (activity != null)
+                {
+                    if (operationName == activity.Parent?.OperationName)
+                    {
+                        // Throw this exception lazily on Dispose, rather than when the scope is started, so that we don't trigger a bunch of other
+                        // erroneous exceptions relating to scopes not being completed/started that hide the actual issue
+                        throw new InvalidOperationException($"A scope has already started for event '{producedDiagnosticScope.Name}'");
+                    }
+
+                    activity = activity.Parent;
+                }
+
+                if (!producedDiagnosticScope.IsCompleted)
+                {
+                    throw new InvalidOperationException($"'{producedDiagnosticScope.Name}' scope is not completed");
+                }
+            }
+
+            this.ResetAttributes();
+        }
+        
+        private void GenerateTagForBaselineTest(Activity activity)
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append("<ACTIVITY>")
+                   .Append("<OPERATION>")
+                   .Append(activity.OperationName)
+                   .Append("</OPERATION>");
+            
+            foreach (KeyValuePair<string, string> tag in activity.Tags)
+            {
+                builder
+                .Append("<ATTRIBUTE-KEY>")
+                .Append(tag.Key)
+                .Append("</ATTRIBUTE-KEY>");
+            }
+            builder.Append("</ACTIVITY>");
+            
+            this.GeneratedActivityTagsForBaselineXmls.Add(builder.ToString());
+        }
+
+        public List<string> GetRecordedAttributes() 
+        {
+            CollectedActivities.ForEach((activity) => this.GenerateTagForBaselineTest(activity));
+            
+            List<string> outputList = new List<string>();
+            if(this.GeneratedActivityTagsForBaselineXmls != null && this.GeneratedActivityTagsForBaselineXmls.Count > 0)
+            {
+                outputList.AddRange(this.GeneratedActivityTagsForBaselineXmls);
+
+            }
+            if (this.GeneratedEventTagsForBaselineXmls != null && this.GeneratedEventTagsForBaselineXmls.Count > 0)
+            {
+                outputList.AddRange(this.GeneratedEventTagsForBaselineXmls);
+            }
+
+            return outputList;
+        }
+
+        public void ResetAttributes()
+        {
+            this.GeneratedActivityTagsForBaselineXmls = new ConcurrentBag<string>();
+            this.GeneratedEventTagsForBaselineXmls = new ConcurrentBag<string>();
+        }
+
+        public class ProducedDiagnosticScope
+        {
+            public string Name { get; set; }
+            public Activity Activity { get; set; }
+            public bool IsCompleted { get; set; }
+            public bool IsFailed => this.Exception != null;
+            public Exception Exception { get; set; }
+            public List<ProducedLink> Links { get; set; } = new List<ProducedLink>();
+            public List<Activity> LinkedActivities { get; set; } = new List<Activity>();
+
+            public override string ToString()
+            {
+                return this.Name;
+            }
+        }
+
+        public struct ProducedLink
+        {
+            public ProducedLink(string id)
+            {
+                this.Traceparent = id;
+                this.Tracestate = null;
+            }
+
+            public ProducedLink(string traceparent, string tracestate)
+            {
+                this.Traceparent = traceparent;
+                this.Tracestate = tracestate;
+            }
+
+            public string Traceparent { get; set; }
+            public string Tracestate { get; set; }
+        }
+    }
+}

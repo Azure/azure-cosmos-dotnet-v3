@@ -1,0 +1,54 @@
+﻿namespace Microsoft.Azure.Cosmos.Tracing
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using OpenTelemetry;
+    using OpenTelemetry.Exporter;
+    using OpenTelemetry.Trace;
+    using static Microsoft.Azure.Cosmos.Tests.CustomListener;
+
+    internal class CustomOtelExporter : BaseExporter<Activity>
+    {
+        private readonly string _name;
+
+        public static List<Activity> CollectedActivities = new List<Activity>();
+        
+        public CustomOtelExporter(string name = "CustomOtelExporter")
+        {
+            this._name = name;
+        }
+
+        public override ExportResult Export(in Batch<Activity> batch)
+        {
+            // SuppressInstrumentationScope should be used to prevent exporter
+            // code from generating telemetry and causing live-loop.
+            using IDisposable scope = SuppressInstrumentationScope.Begin();
+
+            foreach (Activity activity in batch)
+            {
+                AssertActivity.IsValid(activity);
+                
+                CollectedActivities.Add(activity);
+            }
+
+            return ExportResult.Success;
+        }
+    }
+
+    internal static class OTelExtensions
+    {
+        public static TracerProviderBuilder AddCustomOtelExporter(this TracerProviderBuilder builder)
+        {
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+
+            return builder.AddProcessor(new SimpleActivityExportProcessor(new CustomOtelExporter()));
+        }
+    }
+}

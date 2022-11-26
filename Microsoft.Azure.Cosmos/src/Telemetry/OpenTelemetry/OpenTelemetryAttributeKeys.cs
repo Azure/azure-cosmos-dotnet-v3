@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         // Azure defaults
         public const string DiagnosticNamespace = "Azure.Cosmos";
         public const string ResourceProviderNamespace = "Microsoft.DocumentDB";
-        public const string OperationPrefix = "Cosmos";
+        public const string OperationPrefix = "Operation";
 
         // Common database attributes
         public const string DbSystemName = "db.system";
