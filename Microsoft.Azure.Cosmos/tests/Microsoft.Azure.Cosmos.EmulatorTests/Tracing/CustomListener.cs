@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
-            if (eventSource != null && this.sourceNameFilter(eventSource.Name))
+            if (eventSource != null && this.sourceNameFilter != null && this.sourceNameFilter(eventSource.Name))
             {
                 this.EnableEvents(eventSource, EventLevel.Informational); // Enable information level events
             }
