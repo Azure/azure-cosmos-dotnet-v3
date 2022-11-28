@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
     /// <summary>
-    /// This class is used to generate events for Azure.Cosmos.Operation Namespace
+    /// This class is used to generate events with Azure.Cosmos.Operation Source Name
     /// </summary>
     [EventSource(Name = EventSourceName)]
     internal sealed class CosmosDbEventSource : AzureEventSource
