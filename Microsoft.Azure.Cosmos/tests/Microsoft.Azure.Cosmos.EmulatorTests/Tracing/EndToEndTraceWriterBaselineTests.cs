@@ -49,11 +49,11 @@
             // Open Telemetry Listener
             oTelTracerProvider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter() // use any exporter here
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*")
+                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*") // Right now, it will capture only "Azure.Cosmos.Operation"
                 .Build();
 
             // Custom Listener
-            testListener = new CustomListener(OpenTelemetryAttributeKeys.DiagnosticNamespace);
+            testListener = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*");
 
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
                 useGateway: false);
