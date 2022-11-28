@@ -22,14 +22,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         private readonly Func<string, bool> sourceNameFilter;
 
-        private List<IDisposable> subscriptions = new List<IDisposable>();
+        private List<IDisposable> subscriptions = new();
+        private List<ProducedDiagnosticScope> Scopes { get; } = new();
 
-        private List<ProducedDiagnosticScope> Scopes { get; } = new List<ProducedDiagnosticScope>();
-
-        public static List<Activity> CollectedActivities = new List<Activity>();
-        
-        private ConcurrentBag<string> GeneratedActivityTagsForBaselineXmls { set;  get; }
-        private ConcurrentBag<string> GeneratedEventTagsForBaselineXmls { set; get; }
+        public static ConcurrentBag<Activity> CollectedActivities { private set; get; } = new();
+        private static ConcurrentBag<string> CollectedEvents { set; get; } = new();
 
         public CustomListener(string name)
             : this(n => n == name)
@@ -40,9 +37,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             this.sourceNameFilter = filter;
             
-            this.GeneratedActivityTagsForBaselineXmls = new ConcurrentBag<string>();
-            this.GeneratedEventTagsForBaselineXmls = new ConcurrentBag<string>();
-
             DiagnosticListener.AllListeners.Subscribe(this);
         }
 
@@ -101,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         {
                             AssertActivity.IsValid(producedDiagnosticScope.Activity);
                             
-                            CollectedActivities.Add(producedDiagnosticScope.Activity);
+                            CustomListener.CollectedActivities.Add(producedDiagnosticScope.Activity);
 
                             producedDiagnosticScope.IsCompleted = true;
                             return;
@@ -137,10 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 lock (this.Scopes)
                 {
-                    if (this.subscriptions != null)
-                    {
-                        this.subscriptions.Add(value.Subscribe(this));
-                    }
+                    this.subscriptions?.Add(value.Subscribe(this));
                 }
             }
         }
@@ -168,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                    "So just putting this tag with this static text to make sure event is getting generated" +
                    " for each test.")
                    .Append("</EVENT>");
-            this.GeneratedEventTagsForBaselineXmls.Add(builder.ToString());
+            CustomListener.CollectedEvents.Add(builder.ToString());
         }
         
         /// <summary>
@@ -222,8 +213,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.ResetAttributes();
         }
         
-        private void GenerateTagForBaselineTest(Activity activity)
+        private string GenerateTagForBaselineTest(Activity activity)
         {
+            
             StringBuilder builder = new StringBuilder();
             builder.Append("<ACTIVITY>")
                    .Append("<OPERATION>")
@@ -239,22 +231,25 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             builder.Append("</ACTIVITY>");
             
-            this.GeneratedActivityTagsForBaselineXmls.Add(builder.ToString());
+            return builder.ToString();
         }
-
+        
         public List<string> GetRecordedAttributes() 
         {
-            CollectedActivities.ForEach((activity) => this.GenerateTagForBaselineTest(activity));
+            List<string> generatedActivityTagsForBaselineXmls = new();
+            List<Activity> collectedActivities = new List<Activity>(CustomListener.CollectedActivities);
+
+            collectedActivities.ForEach(activity => generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity)));
             
             List<string> outputList = new List<string>();
-            if(this.GeneratedActivityTagsForBaselineXmls != null && this.GeneratedActivityTagsForBaselineXmls.Count > 0)
+            if(generatedActivityTagsForBaselineXmls != null && generatedActivityTagsForBaselineXmls.Count > 0)
             {
-                outputList.AddRange(this.GeneratedActivityTagsForBaselineXmls);
+                outputList.AddRange(generatedActivityTagsForBaselineXmls);
 
             }
-            if (this.GeneratedEventTagsForBaselineXmls != null && this.GeneratedEventTagsForBaselineXmls.Count > 0)
+            if (CustomListener.CollectedEvents != null && CustomListener.CollectedEvents.Count > 0)
             {
-                outputList.AddRange(this.GeneratedEventTagsForBaselineXmls);
+                outputList.AddRange(CustomListener.CollectedEvents);
             }
 
             return outputList;
@@ -262,8 +257,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public void ResetAttributes()
         {
-            this.GeneratedActivityTagsForBaselineXmls = new ConcurrentBag<string>();
-            this.GeneratedEventTagsForBaselineXmls = new ConcurrentBag<string>();
+            CustomListener.CollectedEvents = new();
+            CustomListener.CollectedActivities = new();
         }
 
         public class ProducedDiagnosticScope

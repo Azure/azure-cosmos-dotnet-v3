@@ -124,9 +124,7 @@
         {
             AssertActivity.AreEqualAcrossListeners();
 
-            CustomListener.CollectedActivities = new();
             CustomOtelExporter.CollectedActivities = new();
-
             testListener.ResetAttributes();
         }
 
