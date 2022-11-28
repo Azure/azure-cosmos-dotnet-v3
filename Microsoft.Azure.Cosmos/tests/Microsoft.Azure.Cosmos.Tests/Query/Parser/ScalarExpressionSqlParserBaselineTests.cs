@@ -9,6 +9,38 @@
     public sealed class ScalarExpressionSqlParserBaselineTests : SqlParserBaselineTests
     {
         [TestMethod]
+        public void All()
+        {
+            List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()
+            {
+                // Positive
+                CreateInput(description: "Basic", scalarExpression: "ALL(SELECT *)"),
+                CreateInput(description: "case insensitive", scalarExpression: "aLl(SELECT *)"),
+                CreateInput(description: "nested", scalarExpression:"ALL( SELECT * WHERE ALL( SELECT *))"),
+                CreateInput(
+                    description: "multiple nested", 
+                    scalarExpression:
+                "ALL( "                         +
+                "   SELECT * "                  +
+                "   WHERE ALL( "                +
+                "       SELECT *"               +
+                "       WHERE ALL("             +
+                "           SELECT *"           +
+                "           WHERE ALL("         +
+                "               SELECT VALUE 1" +
+                "           )"                  +
+                "       )"                      +
+                "   )"                          +
+                ")"),
+
+                // Negative
+                CreateInput(description: "No closing parens", scalarExpression: "ALL(SELECT *")
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void ArrayCreate()
         {
             List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()

@@ -1,0 +1,92 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[ALL in an SqlSelectItem as an alias]]></Description>
+      <Query><![CDATA[SELECT 1 AS ALL]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT 1 AS ALL]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ALL in an AliasedCollectionExpression as an alias]]></Description>
+      <Query><![CDATA[SELECT * FROM (SELECT VALUE 1) AS ALL]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM (SELECT VALUE 1) AS ALL]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ALL in an ArrayIteratorCollectionExpression]]></Description>
+      <Query><![CDATA[SELECT * FROM ALL IN (SELECT VALUE 1)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM ALL IN (SELECT VALUE 1)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ALL in an InputPathCollection and IdentifierPathExpression]]></Description>
+      <Query><![CDATA[SELECT * FROM ALL.ALL]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM ALL.ALL]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ALL in a PropertyRefScalarExpression]]></Description>
+      <Query><![CDATA[SELECT ALL]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT ALL]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ALL in a PropertyRefScalarExpression as child]]></Description>
+      <Query><![CDATA[SELECT c.ALL]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT c.ALL]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ALL in a PropertyRefScalarExpression as parent and child]]></Description>
+      <Query><![CDATA[SELECT ALL.ALL]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT ALL.ALL]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ALL in a function call]]></Description>
+      <Query><![CDATA[SELECT ALL(1, 2)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT ALL(1, 2)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ALL in a UDF function call]]></Description>
+      <Query><![CDATA[SELECT udf.ALL(1, 2)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT udf.ALL(1, 2)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ALL in every possible grammar rule at the same time]]></Description>
+      <Query><![CDATA[SELECT ALL(1, 2) AS ALL FROM ALL IN (SELECT ALL.ALL) WHERE ALL(     SELECT ALL     FROM (SELECT udf.ALL(1, 2)) AS ALL     WHERE ALL( SELECT VALUE 1) )]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT ALL(1, 2) AS ALL FROM ALL IN (SELECT ALL.ALL) WHERE ALL(SELECT ALL FROM (SELECT udf.ALL(1, 2)) AS ALL WHERE ALL(SELECT VALUE 1))]]></ParsedQuery>
+    </Output>
+  </Result>
+</Results>
