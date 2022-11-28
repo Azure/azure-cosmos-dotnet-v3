@@ -2288,7 +2288,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             QueryMetrics queryMetrics = new QueryMetrics(
                                 responseQueryMetrics,
-                                IndexUtilizationInfo.CreateFromString(indexUtilization),
+                                IndexUtilizationInfo.CreateFromString(indexUtilization, true),
                                 ClientSideMetrics.Empty);
                             this.ValidateQueryMetrics(queryMetrics);
 

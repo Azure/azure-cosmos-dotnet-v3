@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionKeyDefinition partitionKeyDefinition,
             QueryPartitionProvider queryPartitionProvider,
             string clientApiVersion,
+            Cosmos.GeospatialType geospatialType,
             out QueryInfo queryInfo)
         {
             if (querySpecJsonString == null)
@@ -62,7 +63,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 allowNonValueAggregateQuery: allowNonValueAggregates,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount,
-                useSystemPrefix: useSystemPrefix);
+                useSystemPrefix: useSystemPrefix,
+                geospatialType: geospatialType);
             if (!tryGetPartitionQueryExecutionInfo.Succeeded)
             {
                 throw new BadRequestException(tryGetPartitionQueryExecutionInfo.Exception);

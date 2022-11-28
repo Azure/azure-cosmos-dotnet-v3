@@ -2896,11 +2896,9 @@
           "Attributes": [],
           "MethodInfo": "System.String ApplicationRegion;CanRead:True;CanWrite:True;System.String get_ApplicationRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ApplicationRegion(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_ApplicationName()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_ApplicationName()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String get_ApplicationName();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String get_ApplicationRegion()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -2934,11 +2932,9 @@
           ],
           "MethodInfo": "Void set_AllowBulkExecution(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_ApplicationName(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_ApplicationName(System.String)": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Void set_ApplicationName(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_ApplicationPreferredRegions(System.Collections.Generic.IReadOnlyList`1[System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -3259,7 +3255,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.CosmosOperationCanceledException;System.OperationCanceledException;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.CosmosOperationCanceledException;System.OperationCanceledException;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:True": {
       "Subclasses": {},
       "Members": {
         "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
@@ -3338,6 +3334,11 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.OperationCanceledException, Microsoft.Azure.Cosmos.CosmosDiagnostics), Void .ctor(System.OperationCanceledException, Microsoft.Azure.Cosmos.CosmosDiagnostics)]"
+        },
+        "Void GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_HelpLink(System.String)": {
           "Type": "Method",

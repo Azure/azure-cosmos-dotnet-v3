@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// <returns>true or false</returns>
         public static bool IsTracingNeeded(
             DistributedTracingOptions config,
+            OperationType operationType,
             OpenTelemetryAttributes response)
         {
             TimeSpan latencyThreshold;
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             }
             else
             {
-                latencyThreshold = response.OperationType == OperationType.Query ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
+                latencyThreshold = operationType == OperationType.Query ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
             }
 
             return response.Diagnostics.GetClientElapsedTime() > latencyThreshold || !response.StatusCode.IsSuccess();

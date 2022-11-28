@@ -19,11 +19,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private bool loopBackgroundOperaitons = false;
 
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            this.loopBackgroundOperaitons = false;
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            this.loopBackgroundOperaitons = false;
+        }
+
         [TestMethod]
         public async Task VerifyPkRangeCacheRefreshOnSplitWithErrorsAsync()
         {
-            this.loopBackgroundOperaitons = false;
-
             int throwOnPkRefreshCount = 3;
             int pkRangeCalls = 0;
             bool causeSplitExceptionInRntbdCall = false;

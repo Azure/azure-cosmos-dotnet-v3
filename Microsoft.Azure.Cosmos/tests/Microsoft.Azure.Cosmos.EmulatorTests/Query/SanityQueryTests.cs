@@ -604,7 +604,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                     MaxItemCount = maxItemCount,
                                 },
                                 feedRangeInternal: null,
-                                continuationToken: continuationToken);
+                                continuationToken: continuationToken,
+                                geospatialType: Cosmos.GeospatialType.Geography);
 
                             if (canSupportExpected)
                             {
@@ -637,7 +638,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         MaxItemCount = 1,
                     },
                     feedRangeInternal: null,
-                    continuationToken: null);
+                    continuationToken: null,
+                    geospatialType: Cosmos.GeospatialType.Geography);
 
                 Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.FailedToGetQueryPlanResult);
             }
@@ -653,7 +655,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         MaxItemCount = 1,
                     },
                     feedRangeInternal: new FeedRangePartitionKeyRange("0"), // filtering on a PkRangeId.
-                    continuationToken: null);
+                    continuationToken: null,
+                    geospatialType: Cosmos.GeospatialType.Geography);
 
                 Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.QueryPlanIsSupportedResult);
                 ContainerInternal.QueryPlanIsSupportedResult queryPlanIsSupportedResult = (ContainerInternal.QueryPlanIsSupportedResult)tryExecuteQueryResult;

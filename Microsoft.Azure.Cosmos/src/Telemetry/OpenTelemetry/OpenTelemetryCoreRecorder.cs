@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using Diagnostics;
     using global::Azure.Core.Pipeline;
 
     internal struct OpenTelemetryCoreRecorder : IDisposable
@@ -15,8 +14,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private readonly DiagnosticScope scope;
         private readonly DistributedTracingOptions config;
-        private string accountHostWithCloudInfo = null;
 
+        private readonly Documents.OperationType operationType;
+        
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> OTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
         {
             { typeof(CosmosNullReferenceException), (exception, scope) => CosmosNullReferenceException.RecordOtelAttributes((CosmosNullReferenceException)exception, scope)},
@@ -26,16 +26,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             { typeof(ChangeFeedProcessorUserException), (exception, scope) => ChangeFeedProcessorUserException.RecordOtelAttributes((ChangeFeedProcessorUserException)exception, scope)}
         };
 
-        public OpenTelemetryCoreRecorder(DiagnosticScope scope, CosmosClientContext clientContext, DistributedTracingOptions config)
+        public OpenTelemetryCoreRecorder(
+            DiagnosticScope scope,
+            string operationName,
+            string containerName,
+            string databaseName,
+            Documents.OperationType operationType, 
+            CosmosClientContext clientContext, DistributedTracingOptions config)
         {
             this.scope = scope;
             this.config = config;
-
+            this.operationType = operationType;
+            
             if (this.IsEnabled)
             {
                 this.scope.Start();
 
-                this.Record(clientContext);
+                this.Record(
+                        operationName: operationName,
+                        containerName: containerName,
+                        databaseName: databaseName,
+                        operationType: operationType,
+                        clientContext: clientContext);
             }
         }
 
@@ -48,25 +60,38 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.scope.AddAttribute(key, value);
             }
         }
-
+        
         /// <summary>
-        /// System Level and Client level attributes
+        /// Recording information
         /// </summary>
+        /// <param name="operationName"></param>
+        /// <param name="containerName"></param>
+        /// <param name="databaseName"></param>
+        /// <param name="operationType"></param>
         /// <param name="clientContext"></param>
-        public void Record(CosmosClientContext clientContext)
+        public void Record(
+            string operationName,
+            string containerName,
+            string databaseName,
+            Documents.OperationType operationType,
+            CosmosClientContext clientContext)
         {
             if (this.IsEnabled)
             {
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationType);
+                
                 // Other information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, this.GetHostWithCloudInformation(clientContext.Client?.Endpoint?.Host));
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, clientContext.Client?.Endpoint?.Host);
 
                 // Client Information
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id ?? OpenTelemetryAttributes.NotAvailable);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent ?? OpenTelemetryAttributes.NotAvailable);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode,
-                    clientContext.ClientOptions.ConnectionMode);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, clientContext.ClientOptions.ConnectionMode);
             }
         }
 
@@ -78,34 +103,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.IsEnabled)
             {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, response.DatabaseName);
-
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, response.ContainerName);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength,
-                    response.ResponseContentLength);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)response.StatusCode);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, (int)response.SubStatusCode);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
-
+                
                 if (response.Diagnostics != null)
                 {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics));
-
-                    if (this.IsEnabled && DiagnosticsFilterHelper.IsTracingNeeded(
-                            config: this.config,
-                            response: response))
-                    {
-                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, response.Diagnostics);
-                    }
-                }
-                else
-                {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, OpenTelemetryAttributes.NotAvailable);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, OpenTelemetryAttributes.NotAvailable);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
+                    CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, this.operationType, response);
                 }
             }
-
         }
 
         /// <summary>
@@ -157,21 +167,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 this.scope.Dispose();
             }
-        }
-
-        /// <summary>
-        /// Host Name with Cloud Information
-        /// </summary>
-        /// <param name="hostName"></param>
-        /// <returns>hostname(cloudInfo)</returns>
-        private string GetHostWithCloudInformation(string hostName)
-        {
-            string accountHostWithCloudInfoSnapshot = this.accountHostWithCloudInfo;
-            if (!string.IsNullOrEmpty(accountHostWithCloudInfoSnapshot))
-            {
-                return accountHostWithCloudInfoSnapshot;
-            }
-            return this.accountHostWithCloudInfo = $"{hostName}({VmMetadataApiHandler.GetCloudInformation()})";
         }
     }
 }

@@ -5,14 +5,11 @@
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Text;
-    using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     internal static class CosmosExceptionFactory
@@ -278,6 +275,24 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         {
             return CosmosExceptionFactory.Create(
                 HttpStatusCode.BadRequest,
+                message,
+                stackTrace,
+                headers,
+                trace,
+                error,
+                innerException);
+        }
+
+        internal static CosmosException CreateServiceUnavailableException(
+            string message, 
+            Headers headers,
+            string stackTrace = default, 
+            ITrace trace = default,
+            Error error = default,
+            Exception innerException = default)
+        {
+            return CosmosExceptionFactory.Create(
+                HttpStatusCode.ServiceUnavailable,
                 message,
                 stackTrace,
                 headers,

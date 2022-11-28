@@ -228,6 +228,9 @@
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.RangePartitionKey.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Spatial.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Subqueries.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

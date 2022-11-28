@@ -296,6 +296,19 @@ namespace Microsoft.Azure.Cosmos
                                     string message =
                                             $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
                                     e.Data.Add("Message", message);
+                                    
+                                    if (timeoutPolicy.ShouldThrow503OnTimeout)
+                                    {
+                                        throw CosmosExceptionFactory.CreateServiceUnavailableException(
+                                            message: message,
+                                            headers: new Headers()
+                                            {
+                                                ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                                SubStatusCode = SubStatusCodes.TransportGenerated503
+                                            },
+                                            innerException: e);
+                                    }
+
                                     throw;
                                 }
 
