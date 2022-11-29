@@ -237,7 +237,8 @@ flowchart TD
     OperationRequest[Operation Request] --> ClientContextCore
     GeneratedActivity --> |Request goes for Processing|HandlerPipeline(Handler Pipeline)
     subgraph ClientContextCore
-        OTelScopeFactory --> CreateActivity(Start Activity Using DiagnosticScope) 
+        OTelScopeFactory --> CheckSourceName{is source name is Azure.Cosmos.Operation?} 
+        CheckSourceName --> |Yes| CreateActivity(Start Activity Using DiagnosticScope) 
         --> Preloaddata(Load containerName, databaseName, operationType)
         --> ConnectionModeforkind{Gateway Mode/Direct Mode?}
         ConnectionModeforkind -- Direct --> SetInternalKind(Set activity Kind as Internal) 
@@ -245,7 +246,8 @@ flowchart TD
         SetInternalKind --> GeneratedActivity(Activity Initiated)
         SetClientKind --> GeneratedActivity
         StopActivity
-    end 
+    end
+    CheckSourceName --> |No| HandlerPipeline 
     HandlerPipeline --> |Response/Exception| StopActivity
     HandlerPipeline --> ConnectionMode{Gateway Mode/Direct Mode?}
     subgraph DirectPackage["Direct Implementation (part of Direct package)"]
