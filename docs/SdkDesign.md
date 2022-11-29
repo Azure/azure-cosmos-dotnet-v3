@@ -229,3 +229,31 @@ flowchart TD
     ConnectionMode -- "Direct(Request Process on client Machine)" --> DirectPackage
     ConnectionMode -- Gateway --> GatewayCode
 ```
+
+## Open Telemetry (Private Preview)
+
+```mermaid
+flowchart TD
+    OperationRequest[Operation Request] --> ClientContextCore
+    GeneratedActivity --> |Request goes for Processing|HandlerPipeline(Handler Pipeline)
+    subgraph ClientContextCore
+        OTelScopeFactory --> CreateActivity(Start Activity Using DiagnosticScope) 
+        --> Preloaddata(Load containerName, databaseName, operationType)
+        --> ConnectionModeforkind{Gateway Mode/Direct Mode?}
+        ConnectionModeforkind -- Direct --> SetInternalKind(Set activity Kind as Internal) 
+        ConnectionModeforkind -- Gateway --> SetClientKind(Set activity Kind as Client)
+        SetInternalKind --> GeneratedActivity(Activity Initiated)
+        SetClientKind --> GeneratedActivity
+        StopActivity
+    end 
+    HandlerPipeline --> |Response/Exception| StopActivity
+    HandlerPipeline --> ConnectionMode{Gateway Mode/Direct Mode?}
+    subgraph DirectPackage["Direct Implementation (part of Direct package)"]
+        DRetryAndLogic(Retry/Failover/Replica selection etc Business Logic) --> TCPImpl(TCP Implementation) --> |RNTBD|BackendService(Back End Service)
+    end
+    subgraph GatewayCode[Gateway Implementation]
+        GRetryAndLogic(Retry Logic) --> |HTTP|GatewayCall(Gateway Service)
+    end
+    ConnectionMode -- "Direct(Request Process on client Machine)" --> DirectPackage
+    ConnectionMode -- Gateway --> GatewayCode
+```
