@@ -186,3 +186,46 @@ flowchart LR
     ConsistencyWriter --> TCPClient
 
 ```
+
+## Client Telemetry (Private Preview)
+
+
+```mermaid
+flowchart TD
+    ClientInitiate[Client Initialization]
+    OperationRequest[Operation Request] --> UserHandlers(User Handlers)
+    subgraph HandlerPipeline[Handler Pipeline]
+        UserHandlers --> TelmetryHandler(Telemetry Handler)
+        TelmetryHandler --> |Request|OtherHandlers(Other Handlers)
+        OtherHandlers(Other Handlers) --> |Response|TelmetryHandler
+        OtherHandlers --> TransportHandler(Transport Handler)
+    end
+    subgraph TelemetryJob[Telemetry Job]
+        subgraph Collectors
+            subgraph DataCollector[Operational Data Collector]
+            OpsDatapoint(Operation Datapoint) --> OperationHistogram[(Histogram)]
+            end
+            subgraph CacheCollector[Cache Data Collector]
+            CacheDatapoint(Cache Request Datapoint) --> CacheHistogram[(Histogram)]
+            end
+        end
+        subgraph TelemetryTask[Telemetry Task Every 10 min]
+            CacheAccountInfo(Cached Account Properties) --> VMInfo
+            VMInfo(VM Information) --> CollectSystemUsage
+            CollectSystemUsage(System Usage Telemetry) --> GetDataFromCollector
+            GetDataFromCollector(Fetch Data from Collector) --> SendCTOverHTTP(Send Data over HTTP to Service)
+        end
+        GetDataFromCollector --> |Get Aggregated data|Collectors
+    end
+    TelmetryHandler --> |Sends Data to Collector|TelemetryJob
+    ClientInitiate --> |Start the Job|TelemetryJob
+    TransportHandler --> ConnectionMode{Gateway Mode/Direct Mode?}
+    subgraph DirectPackage["Direct Implementation (part of Direct package)"]
+        DRetryAndLogic(Retry/Failover/Replica selection etc Business Logic) --> TCPImpl(TCP Implementation) --> |RNTBD|BackendService(Back End Service)
+    end
+    subgraph GatewayCode[Gateway Implementation]
+        GRetryAndLogic(Retry Logic) --> |HTTP|GatewayCall(Gateway Service)
+    end
+    ConnectionMode -- "Direct(Request Process on client Machine)" --> DirectPackage
+    ConnectionMode -- Gateway --> GatewayCode
+```
