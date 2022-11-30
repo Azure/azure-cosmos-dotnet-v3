@@ -389,10 +389,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             // Return a OptimisticDirectExecution context
             return OptimisticDirectExecutionQueryPipelineStage.MonadicCreate(
                 documentContainer: documentContainer,
-                cosmosQueryContext: cosmosQueryContext,
                 inputParameters: inputParameters,
                 targetRange: new FeedRangeEpk(targetRange.ToRange()),
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount),
+                queryPipelineStage: (InputParameters updatedInputParameters) =>
+                {
+                    // Query Iterator requires that the creation of the query context is deferred until fallback pipeline is called
+                    Task<TryCatch<IQueryPipelineStage>> tryCreateContext =
+                        CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
+                            documentContainer,
+                            cosmosQueryContext,
+                            updatedInputParameters,
+                            NoOpTrace.Singleton,
+                            default);
+
+                    return tryCreateContext;
+                },
                 cancellationToken: cancellationToken);
         }
         
@@ -615,7 +627,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ContainerQueryProperties containerQueryProperties,
             ITrace trace)
         {
-            if (inputParameters.TestInjections == null || !inputParameters.TestInjections.EnableOptimisticDirectExecution) return null;
+            if (inputParameters.TestInjections == null || !inputParameters.TestInjections.EnableOptimisticDirectExecution || inputParameters.IsOdeFallBackPlan) return null;
 
             // case 1: Is query going to a single partition
             bool hasPartitionKey = inputParameters.PartitionKey.HasValue
@@ -687,7 +699,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 ExecutionEnvironment? executionEnvironment,
                 bool? returnResultsInDeterministicOrder,
                 bool forcePassthrough,
-                TestInjections testInjections)
+                TestInjections testInjections,
+                bool isOdeFallBackPlan = false)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.InitialUserContinuationToken = initialUserContinuationToken;
@@ -721,6 +734,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder);
                 this.ForcePassthrough = forcePassthrough;
                 this.TestInjections = testInjections;
+                this.IsOdeFallBackPlan = isOdeFallBackPlan;
             }
 
             public SqlQuerySpec SqlQuerySpec { get; }
@@ -736,6 +750,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public bool ReturnResultsInDeterministicOrder { get; }
             public TestInjections TestInjections { get; }
             public bool ForcePassthrough { get; }
+            public bool IsOdeFallBackPlan { get; set; }
         }
 
         internal sealed class AggregateProjectionDetector

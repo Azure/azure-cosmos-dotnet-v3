@@ -8,17 +8,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Reflection;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
-    using Microsoft.Azure.Cosmos.Core.Collections;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
@@ -32,21 +25,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
     internal sealed class OptimisticDirectExecutionQueryPipelineStage : IQueryPipelineStage
     {
-        //private readonly Func<IQueryPipelineStage> queryPipelineStageFactory;
+        private readonly string optimisticDirectExecutionToken = "OptimisticDirectExecutionToken";
         private TryCatch<IQueryPipelineStage> inner;
-        //private TryCatch<IQueryPipelineStage> currentPipeline;
-        private QueryPartitionRangePageAsyncEnumerator partitionPageEnumerator;
-        private static DocumentContainer mDocumentContainer;
-        private static CosmosQueryContext mCosmosQueryContext;
-        private static InputParameters mInputParameters;
-        private static FeedRangeEpk mTargetRange;
+        private Func<InputParameters, Task<TryCatch<IQueryPipelineStage>>> queryPipelineStageFactory;
+        private InputParameters inputParameters;
         
-        public OptimisticDirectExecutionQueryPipelineStage(TryCatch<IQueryPipelineStage> monadicCreate)
+        private OptimisticDirectExecutionQueryPipelineStage(TryCatch<IQueryPipelineStage> monadicCreate)
         {
             this.inner = monadicCreate;
         }
 
-        public TryCatch<QueryPage> Current { get; private set; }
+        public TryCatch<QueryPage> Current => this.inner.Result.Current;
 
         public ValueTask DisposeAsync() => default;
        
@@ -57,56 +46,45 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 && this.inner.Result.Current.InnerMostException is CosmosException exception
                 && exception.StatusCode == System.Net.HttpStatusCode.Gone
                 && exception.SubStatusCode == 1002;
-                
-            if (isGoneException)
+
+            if (result)
             {
-                IQueryPipelineStage pipelineResult = CosmosQueryExecutionContextFactory.Create(mDocumentContainer, mCosmosQueryContext, mInputParameters, trace);
-                this.inner = TryCatch<IQueryPipelineStage>.FromResult(pipelineResult);
-                result = await this.inner.Result.MoveNextAsync(trace);
-                this.Current = this.inner.Result.Current;
-                return result;
+                if (this.Current.Result?.State?.Value != null)
+                {
+                    CosmosElement continuationToken = this.inner.Result.Current.Result.State.Value;
+                    this.SaveContinuation(continuationToken);
+                    return result;
+                }
             }
             else 
             {
-                this.Current = this.inner.Result.Current;
+                if (isGoneException)
+                {
+                    Debug.Assert(result != this.Current.Failed);
+
+                    this.inputParameters.IsOdeFallBackPlan = true;
+                    this.inner = await this.queryPipelineStageFactory.Invoke(this.inputParameters);
+                    return await this.inner.Result.MoveNextAsync(trace);
+                }
             }
 
-            if (this.inner.Result.Current.Result?.State?.Value != null)
-            {
-                AddContTokenToParams(this.inner.Result.Current.Result.State.Value);
-            }
-
-            return result;
+            return result; 
         }
 
         public void SetCancellationToken(CancellationToken cancellationToken)
         {
-            this.partitionPageEnumerator = new QueryPartitionRangePageAsyncEnumerator(
-                mDocumentContainer,
-                mInputParameters.SqlQuerySpec,
-                new FeedRangeState<QueryState>(mTargetRange, default),
-                mInputParameters.PartitionKey,
-                new QueryPaginationOptions(pageSizeHint: mInputParameters.MaxItemCount),
-                cancellationToken);
-
-            OptimisticDirectExecutionQueryPipelineImpl ode = new OptimisticDirectExecutionQueryPipelineImpl(this.partitionPageEnumerator);
-            ode.SetCancellationToken(cancellationToken);
+            this.inner.Result.SetCancellationToken(cancellationToken);
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             DocumentContainer documentContainer,
-            CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             FeedRangeEpk targetRange,
             QueryPaginationOptions queryPaginationOptions,
+            Func<InputParameters, Task<TryCatch<IQueryPipelineStage>>> queryPipelineStage,
             CancellationToken cancellationToken)
         {
-            mDocumentContainer = documentContainer;
-            mCosmosQueryContext = cosmosQueryContext;
-            mInputParameters = inputParameters;
-            mTargetRange = targetRange;
-            
-            TryCatch<IQueryPipelineStage> monadicCreate = OptimisticDirectExecutionQueryPipelineImpl.MonadicCreate(
+            TryCatch<IQueryPipelineStage> pipelineStage = OptimisticDirectExecutionQueryPipelineImpl.MonadicCreate(
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
                 targetRange: targetRange,
@@ -115,43 +93,45 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 continuationToken: inputParameters.InitialUserContinuationToken,
                 cancellationToken: cancellationToken);
 
-            if (monadicCreate.Failed)
+            if (pipelineStage.Failed)
             {
-                return TryCatch<IQueryPipelineStage>.FromException(
-                    new Exception(
-                        message: "Failed when creating MonadicCreate",
-                        innerException: monadicCreate.Exception));
+                return TryCatch<IQueryPipelineStage>.FromException(pipelineStage.Exception);
             }
 
-            OptimisticDirectExecutionQueryPipelineStage odePipelineStageMonadicCreate = new OptimisticDirectExecutionQueryPipelineStage(monadicCreate);
+            OptimisticDirectExecutionQueryPipelineStage odePipelineStageMonadicCreate = new OptimisticDirectExecutionQueryPipelineStage(pipelineStage)
+            {
+                queryPipelineStageFactory = queryPipelineStage,
+                inputParameters = inputParameters
+            };
+
             return TryCatch<IQueryPipelineStage>.FromResult(odePipelineStageMonadicCreate);
         }
 
-        private static void AddContTokenToParams(CosmosElement continuationToken)
+        private void SaveContinuation(CosmosElement continuationToken)
         {
             if (continuationToken is CosmosObject)
             {
-                ((CosmosObject)continuationToken).TryGetValue("OptimisticDirectExecutionToken", out CosmosElement parallelContinuationToken);
+                ((CosmosObject)continuationToken).TryGetValue(this.optimisticDirectExecutionToken, out CosmosElement parallelContinuationToken);
                 CosmosArray cosmosElementParallelContinuationToken = CosmosArray.Create(parallelContinuationToken);
                 continuationToken = cosmosElementParallelContinuationToken;
             }
-
+            
             InputParameters inputParams = new InputParameters(
-                  mInputParameters.SqlQuerySpec,
+                  this.inputParameters.SqlQuerySpec,
                   continuationToken,
-                  mInputParameters.InitialFeedRange,
-                  mInputParameters.MaxConcurrency,
-                  mInputParameters.MaxItemCount,
-                  mInputParameters.MaxBufferedItemCount,
-                  mInputParameters.PartitionKey,
-                  mInputParameters.Properties,
-                  mInputParameters.PartitionedQueryExecutionInfo,
-                  mInputParameters.ExecutionEnvironment,
-                  mInputParameters.ReturnResultsInDeterministicOrder,
-                  mInputParameters.ForcePassthrough,
-                  mInputParameters.TestInjections);
+                  this.inputParameters.InitialFeedRange,
+                  this.inputParameters.MaxConcurrency,
+                  this.inputParameters.MaxItemCount,
+                  this.inputParameters.MaxBufferedItemCount,
+                  this.inputParameters.PartitionKey,
+                  this.inputParameters.Properties,
+                  this.inputParameters.PartitionedQueryExecutionInfo,
+                  this.inputParameters.ExecutionEnvironment,
+                  this.inputParameters.ReturnResultsInDeterministicOrder,
+                  this.inputParameters.ForcePassthrough,
+                  this.inputParameters.TestInjections);
 
-            mInputParameters = inputParams;
+            this.inputParameters = inputParams;
         }
 
         private class OptimisticDirectExecutionQueryPipelineImpl : IQueryPipelineStage
