@@ -10,7 +10,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private static DiagnosticScopeFactory ScopeFactory { get; set; } 
 
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, 
+        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
+            string containerName,
+            string databaseName,
+            Documents.OperationType operationType,
             RequestOptions requestOptions, 
             CosmosClientContext clientContext)
         {
@@ -21,12 +24,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     isActivityEnabled: true);
                 DiagnosticScope scope = OpenTelemetryRecorderFactory
                     .ScopeFactory
-                    .CreateScope($"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}");
+                    .CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
+                                 kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
 
                 if (scope.IsEnabled)
                 {
                     return new OpenTelemetryCoreRecorder(
                         scope: scope,
+                        operationName: operationName,
+                        containerName: containerName,
+                        databaseName: databaseName,
+                        operationType: operationType,
                         clientContext: clientContext,
                         config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
                 }

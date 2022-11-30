@@ -5,11 +5,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -513,6 +517,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.SessionToken,
                 options.OfferType,
                 options.OfferThroughput);
+        }
+
+        internal static void EnableClientTelemetryEnvironmentVariables()
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
+        }
+
+        internal static void DisableClientTelemetryEnvironmentVariables()
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
+        }
+
+        /// <summary>
+        /// Enables traces for local debugging
+        /// </summary>
+        internal static void EnableTracesForDebugging()
+        {
+            Type defaultTrace = Type.GetType("Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace,Microsoft.Azure.Cosmos.Direct");
+            TraceSource traceSource = (TraceSource)defaultTrace.GetProperty("TraceSource").GetValue(null);
+            traceSource.Switch.Level = SourceLevels.All;
+            traceSource.Listeners.Clear();
+            traceSource.Listeners.Add(new DirectToConsoleTraceListener());
+        }
+
+        public class DirectToConsoleTraceListener : TextWriterTraceListener
+        {
+            public DirectToConsoleTraceListener() : base(new DirectToConsoleTextWriter())
+            {
+            }
+
+            public override void Close()
+            {
+            }
+        }
+
+        public class DirectToConsoleTextWriter : TextWriter
+        {
+            public override Encoding Encoding => Console.Out.Encoding;
+
+            public override void Write(string value)
+            {
+                Logger.LogLine(value);
+            }
+
+            public override void WriteLine(string value)
+            {
+                Logger.LogLine(value);
+            }
         }
     }
 }

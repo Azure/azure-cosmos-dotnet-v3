@@ -15,6 +15,7 @@
     using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
 
     /// <summary>
     /// Tests for <see cref="QueryPartitionProvider"/>.
@@ -1292,6 +1293,44 @@
             this.ExecuteTestSuite(testVariations);
         }
 
+        [TestMethod]
+        [Owner("adityasa")]
+        public void Spatial()
+        {
+            var variations = new[]
+            {
+                // ST_DISTANCE
+                new { Description = @"ST_DISTANCE Constant Foldable", Query = @"SELECT * FROM c WHERE ST_DISTANCE({'type': 'Polygon', 'coordinates': [[[35, 10], [45, 45], [15, 40], [10, 20], [35, 10]], [[20, 30], [35, 35], [30, 20], [20, 30]]]}, {'type': 'Point', 'coordinates': [30, 10]}) > 66408.034483" },
+                new { Description = @"ST_DISTANCE", Query = @"SELECT * FROM c WHERE ST_DISTANCE({'type': 'Polygon', 'coordinates': [[[35, 10], [45, 45], [15, 40], [10, 20], [35, 10]], [[20, 30], [35, 35], [30, 20], [20, 30]]]}, c.geojson) > 66408.034483" },
+
+                // ST_INTERSECTS
+                new { Description = @"ST_INTERSECTS Constant Foldable", Query = @"SELECT * FROM c WHERE ST_INTERSECTS({'type':'LineString', 'coordinates':[ [ 0, 0 ], [ 0, 40 ] ]}, {'type':'Polygon',""coordinates"":[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})" },
+                new { Description = @"ST_INTERSECTS", Query = @"SELECT * FROM c WHERE ST_INTERSECTS(c.geojson, {'type':'Polygon',""coordinates"":[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})" },
+
+                // ST_ISVALID
+                new { Description = @"ST_ISVALID Constant Foldable", Query = @"SELECT * FROM c WHERE ST_ISVALID({'type': 'Polygon', 'coordinates': [[[-1000, 1000], [1000, 1000], [1000, 4000], [-1000, 4000], [-1000, 1000]]]})" },
+                new { Description = @"ST_ISVALID", Query = @"SELECT * FROM c WHERE ST_ISVALID(c.geojson)" },
+
+                // ST_WITHIN
+                new { Description = @"ST_WITHIN Constant Foldable", Query = @"SELECT * FROM c WHERE NOT ST_WITHIN({'type': 'Point', 'coordinates': [0, 40]}, {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})" },
+                new { Description = @"ST_WITHIN", Query = @"SELECT * FROM c WHERE NOT ST_WITHIN(c.geojson, {'type':'Polygon','coordinates':[[[-60,20], [70,20], [70,70], [-60,70], [-60,20]]]})" },
+            };
+
+            List<QueryPlanBaselineTestInput> testVariations = variations
+                .SelectMany(variation =>
+                    {
+                        PartitionKeyDefinition pkDefinitions = CreateHashPartitionKey("/key");
+                        return new List<QueryPlanBaselineTestInput>
+                        {
+                            new QueryPlanBaselineTestInput($"{variation.Description} Geography", pkDefinitions, new SqlQuerySpec(variation.Query)) { GeospatialType = Cosmos.GeospatialType.Geography },
+                            new QueryPlanBaselineTestInput($"{variation.Description} Geometry", pkDefinitions, new SqlQuerySpec(variation.Query)) { GeospatialType = Cosmos.GeospatialType.Geometry }
+                        };
+                    })
+                .ToList();
+
+            this.ExecuteTestSuite(testVariations);
+        }
+
         private static PartitionKeyDefinition CreateHashPartitionKey(
             params string[] partitionKeys) => new PartitionKeyDefinition()
             {
@@ -1386,7 +1425,8 @@
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: false,
                 allowDCount: true,
-                useSystemPrefix: false);
+                useSystemPrefix: false,
+                geospatialType: input.GeospatialType ?? Cosmos.GeospatialType.Geography);
 
             if (info.Failed)
             {
@@ -1401,6 +1441,7 @@
     {
         internal PartitionKeyDefinition PartitionKeyDefinition { get; set; }
         internal SqlQuerySpec SqlQuerySpec { get; set; }
+        internal Cosmos.GeospatialType? GeospatialType { get; set; }
 
         internal QueryPlanBaselineTestInput(
             string description,
@@ -1432,6 +1473,11 @@
                     "PartitionKeyType",
                     this.PartitionKeyDefinition.Kind == PartitionKind.Hash ? "Hash" : (
                         this.PartitionKeyDefinition.Kind == PartitionKind.MultiHash ? "MultiHash" : "Range"));
+            }
+
+            if (this.GeospatialType != null)
+            {
+                xmlWriter.WriteElementString("GeospatialType", this.GeospatialType.Value.ToString());
             }
 
             if (this.SqlQuerySpec.ShouldSerializeParameters())

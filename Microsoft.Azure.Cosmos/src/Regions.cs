@@ -186,12 +186,12 @@ namespace Microsoft.Azure.Cosmos
         public const string USGovVirginia = "USGov Virginia";
 
         /// <summary>
-        /// Name of the Azure East US 2 EUAP region in the Azure Cosmos DB service.
+        /// Name of the Azure East US 2 Early Updates Access Program (EUAP) region in the Azure Cosmos DB service.
         /// </summary>
         public const string EastUS2EUAP = "East US 2 EUAP";
 
         /// <summary>
-        /// Name of the Azure Central US EUAP region in the Azure Cosmos DB service.
+        /// Name of the Azure Central US Early Updates Access Program (EUAP) region in the Azure Cosmos DB service.
         /// </summary>
         public const string CentralUSEUAP = "Central US EUAP";
 

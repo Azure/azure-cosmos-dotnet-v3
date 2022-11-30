@@ -166,6 +166,12 @@ flowchart
 
 ```
 
+## Direct mode caches
+
+Per our [connectivity documentation](https://learn.microsoft.com/azure/cosmos-db/nosql/sdk-connection-modes#routing), the SDK will store, in internal caches, critical information to allow for request routing.
+
+For details on the caches, please see the [cache design documentation](caches.md).
+
 ## Consistency (direct mode)
 
 When performing operations through Direct mode, the SDK is involved in checking consistency for Bounded Staleness and Strong accounts. Read requests are handled by the [ConsistencyReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyReader.cs) and write requests are handled by the [ConsistencyWriter](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyWriter.cs). The `ConsistencyReader` uses the [QuorumReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/QuorumReader.cs) when the consistency is Bounded Staleness or Strong to verify quorum after performing two requests and comparing the LSNs. If quorum cannot be achieved, the SDK starts what is defined as "barrier requests" to the container and waits for it to achieve quorum. The `ConsistencyWriter` also performs a similar LSN check after receiving the response from the write, the `GlobalCommittedLSN` and the item `LSN`. If they don't match, barrier requests are also performed.
@@ -180,5 +186,3 @@ flowchart LR
     ConsistencyWriter --> TCPClient
 
 ```
-
-

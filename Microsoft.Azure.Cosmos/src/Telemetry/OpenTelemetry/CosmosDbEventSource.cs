@@ -26,21 +26,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         [NonEvent]
-        public static void RecordDiagnosticsForRequests(DistributedTracingOptions config,
+        public static void RecordDiagnosticsForRequests(
+            DistributedTracingOptions config,
+            Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            if (CosmosDbEventSource.IsEnabled(EventLevel.Informational))
+            if (DiagnosticsFilterHelper.IsTracingNeeded(
+                    config: config,
+                    operationType: operationType,
+                    response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
-                CosmosDbEventSource.Singleton.WriteInfoEvent(response.Diagnostics.ToString());
-            } 
-            else
-            {
-                if (DiagnosticsFilterHelper.IsTracingNeeded(
-                        config: config,
-                        response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
-                {
-                    CosmosDbEventSource.Singleton.WriteWarningEvent(response.Diagnostics.ToString());
-                }
+                CosmosDbEventSource.Singleton.WriteWarningEvent(response.Diagnostics.ToString());
             }
         }
 

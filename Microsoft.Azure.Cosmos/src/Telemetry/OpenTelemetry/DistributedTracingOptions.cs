@@ -27,6 +27,5 @@ namespace Microsoft.Azure.Cosmos
         /// If it is not set then by default it will generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) for query operation which are taking more than 500 ms and non-query operations taking more than 100 ms.
         /// </summary>
         public TimeSpan? DiagnosticsLatencyThreshold { get; set; }
-
     }
 }

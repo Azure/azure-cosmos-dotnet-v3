@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         // Cosmos Db Specific
         public const string ClientId = "db.cosmosdb.client_id";
-        public const string MachineId = "db.cosmosdb.hashed_machine_id";
+        public const string MachineId = "db.cosmosdb.machine_id";
         public const string UserAgent = "db.cosmosdb.user_agent";
         public const string ConnectionMode = "db.cosmosdb.connection_mode";
         public const string OperationType = "db.cosmosdb.operation_type";
@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string RequestContentLength = "db.cosmosdb.request_content_length_bytes";
         public const string ResponseContentLength = "db.cosmosdb.response_content_length_bytes";
         public const string StatusCode = "db.cosmosdb.status_code";
+        public const string SubStatusCode = "db.cosmosdb.sub_status_code";
         public const string RequestCharge = "db.cosmosdb.request_charge";
         public const string Region = "db.cosmosdb.regions_contacted";
         public const string RetryCount = "db.cosmosdb.retry_count";
