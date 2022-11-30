@@ -27,9 +27,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateStoredProcedureAsync),
-                requestOptions,
-                (trace) => base.CreateStoredProcedureAsync(storedProcedureProperties, requestOptions, trace, cancellationToken));
+                operationName: nameof(CreateStoredProcedureAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateStoredProcedureAsync(storedProcedureProperties, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<StoredProcedureProperties>(response));
         }
 
         public override FeedIterator<T> GetStoredProcedureQueryIterator<T>(
@@ -86,9 +90,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadStoredProcedureAsync),
-                requestOptions,
-                (trace) => base.ReadStoredProcedureAsync(id, requestOptions, trace, cancellationToken));
+                operationName: nameof(ReadStoredProcedureAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Read,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReadStoredProcedureAsync(id, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<StoredProcedureProperties>(response));
         }
 
         public override Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
@@ -97,9 +105,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReplaceStoredProcedureAsync),
+                operationName: nameof(ReplaceStoredProcedureAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Replace,
                 requestOptions,
-                (trace) => base.ReplaceStoredProcedureAsync(storedProcedureProperties, requestOptions, trace, cancellationToken));
+                task: (trace) => base.ReplaceStoredProcedureAsync(storedProcedureProperties, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<StoredProcedureProperties>(response));
         }
 
         public override Task<StoredProcedureResponse> DeleteStoredProcedureAsync(
@@ -108,9 +120,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(DeleteStoredProcedureAsync),
-                requestOptions,
-                (trace) => base.DeleteStoredProcedureAsync(id, requestOptions, trace, cancellationToken));
+                operationName: nameof(DeleteStoredProcedureAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Delete,
+                requestOptions: requestOptions,
+                task: (trace) => base.DeleteStoredProcedureAsync(id, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<StoredProcedureProperties>(response));
         }
 
         public override Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(
@@ -121,9 +137,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ExecuteStoredProcedureAsync),
-                requestOptions,
-                (trace) => base.ExecuteStoredProcedureAsync<TOutput>(storedProcedureId, partitionKey, parameters, requestOptions, trace, cancellationToken));
+                operationName: nameof(ExecuteStoredProcedureAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Execute,
+                requestOptions: requestOptions,
+                task: (trace) => base.ExecuteStoredProcedureAsync<TOutput>(storedProcedureId, partitionKey, parameters, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<TOutput>(response));
         }
 
         public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
@@ -134,9 +154,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ExecuteStoredProcedureStreamAsync),
-                requestOptions,
-                (trace) => base.ExecuteStoredProcedureStreamAsync(storedProcedureId, partitionKey, parameters, requestOptions, trace, cancellationToken));
+                operationName: nameof(ExecuteStoredProcedureStreamAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Execute,
+                requestOptions: requestOptions,
+                task: (trace) => base.ExecuteStoredProcedureStreamAsync(storedProcedureId, partitionKey, parameters, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
 
         public override Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
@@ -147,9 +171,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ExecuteStoredProcedureStreamAsync),
-                requestOptions,
-                (trace) => base.ExecuteStoredProcedureStreamAsync(storedProcedureId, streamPayload, partitionKey, requestOptions, trace, cancellationToken));
+                operationName: nameof(ExecuteStoredProcedureStreamAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Execute,
+                requestOptions: requestOptions,
+                task: (trace) => base.ExecuteStoredProcedureStreamAsync(storedProcedureId, streamPayload, partitionKey, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse(response));
         }
 
         public override Task<TriggerResponse> CreateTriggerAsync(
@@ -158,9 +186,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateTriggerAsync),
-                requestOptions,
-                (trace) => base.CreateTriggerAsync(triggerProperties, requestOptions, trace, cancellationToken));
+                operationName: nameof(CreateTriggerAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateTriggerAsync(triggerProperties, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<TriggerProperties>(response));
         }
 
         public override FeedIterator<T> GetTriggerQueryIterator<T>(
@@ -217,9 +249,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadTriggerAsync),
-                requestOptions,
-                (trace) => base.ReadTriggerAsync(id, requestOptions, trace, cancellationToken));
+                operationName: nameof(ReadTriggerAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Read,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReadTriggerAsync(id, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<TriggerProperties>(response));
         }
 
         public override Task<TriggerResponse> ReplaceTriggerAsync(
@@ -228,9 +264,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReplaceTriggerAsync),
-                requestOptions,
-                (trace) => base.ReplaceTriggerAsync(triggerProperties, requestOptions, trace, cancellationToken));
+                operationName: nameof(ReplaceTriggerAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Replace,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReplaceTriggerAsync(triggerProperties, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<TriggerProperties>(response));
         }
 
         public override Task<TriggerResponse> DeleteTriggerAsync(
@@ -239,9 +279,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(DeleteTriggerAsync),
-                requestOptions,
-                (trace) => base.DeleteTriggerAsync(id, requestOptions, trace, cancellationToken));
+                operationName: nameof(DeleteTriggerAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Delete,
+                requestOptions: requestOptions,
+                task: (trace) => base.DeleteTriggerAsync(id, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<TriggerProperties>(response));
         }
 
         public override Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
@@ -250,9 +294,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateUserDefinedFunctionAsync),
-                requestOptions,
-                (trace) => base.CreateUserDefinedFunctionAsync(userDefinedFunctionProperties, requestOptions, trace, cancellationToken));
+                operationName: nameof(CreateUserDefinedFunctionAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Create,
+                requestOptions: requestOptions,
+                task: (trace) => base.CreateUserDefinedFunctionAsync(userDefinedFunctionProperties, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<UserDefinedFunctionProperties>(response));
         }
 
         public override FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(
@@ -309,9 +357,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReadUserDefinedFunctionAsync),
-                requestOptions,
-                (trace) => base.ReadUserDefinedFunctionAsync(id, requestOptions, trace, cancellationToken));
+                operationName: nameof(ReadUserDefinedFunctionAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Read,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReadUserDefinedFunctionAsync(id, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<UserDefinedFunctionProperties>(response));
         }
 
         public override Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
@@ -320,9 +372,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(ReplaceUserDefinedFunctionAsync),
-                requestOptions,
-                (trace) => base.ReplaceUserDefinedFunctionAsync(userDefinedFunctionProperties, requestOptions, trace, cancellationToken));
+                operationName: nameof(ReplaceUserDefinedFunctionAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Replace,
+                requestOptions: requestOptions,
+                task: (trace) => base.ReplaceUserDefinedFunctionAsync(userDefinedFunctionProperties, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<UserDefinedFunctionProperties>(response));
         }
 
         public override Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
@@ -331,9 +387,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(DeleteUserDefinedFunctionAsync),
-                requestOptions,
-                (trace) => base.DeleteUserDefinedFunctionAsync(id, requestOptions, trace, cancellationToken));
+                operationName: nameof(DeleteUserDefinedFunctionAsync),
+                containerName: this.container.Id,
+                databaseName: this.container.Database.Id,
+                operationType: Documents.OperationType.Delete,
+                requestOptions: requestOptions,
+                task: (trace) => base.DeleteUserDefinedFunctionAsync(id, requestOptions, trace, cancellationToken),
+                openTelemetry: (response) => new OpenTelemetryResponse<UserDefinedFunctionProperties>(response));
         }
     }
 }

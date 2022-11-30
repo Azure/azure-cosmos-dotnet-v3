@@ -22,35 +22,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         public async Task Test429sAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.Test429sAsync();
+            await implementation.Test429sAsync(false);
         }
 
         [TestMethod]
         public async Task Test429sWithContinuationsAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.Test429sWithContinuationsAsync();
+            await implementation.Test429sWithContinuationsAsync(false, false);
         }
 
         [TestMethod]
         public async Task TestDrainFullyAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestDrainFullyAsync();
+            await implementation.TestDrainFullyAsync(false);
         }
 
         [TestMethod]
         public async Task TestEmptyPages()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestEmptyPages();
+            await implementation.TestEmptyPages(false);
         }
 
         [TestMethod]
         public async Task TestResumingFromStateAsync()
         {
             Implementation implementation = new Implementation();
-            await implementation.TestResumingFromStateAsync();
+            await implementation.TestResumingFromStateAsync(false, false);
         }
 
         [TestMethod]
@@ -122,8 +122,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 return page.GetRecords();
             }
 
-            public override IAsyncEnumerable<TryCatch<ReadFeedPage>> CreateEnumerable(
+            protected override IAsyncEnumerable<TryCatch<ReadFeedPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
                 ReadFeedState state = null)
             {
                 return new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
@@ -131,17 +132,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                         state ?? ReadFeedState.Beginning()),
                         (feedRangeState) => new ReadFeedPartitionRangeEnumerator(
-                        documentContainer,
-                        feedRangeState: feedRangeState,
-                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
-                        cancellationToken: default),
+                            documentContainer,
+                            feedRangeState: feedRangeState,
+                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                            cancellationToken: default),
                     trace: NoOpTrace.Singleton);
             }
 
-            public override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
-                IDocumentContainer inMemoryCollection,  ReadFeedState state = null, CancellationToken cancellationToken = default)
+            protected override Task<IAsyncEnumerator<TryCatch<ReadFeedPage>>> CreateEnumeratorAsync(
+                IDocumentContainer inMemoryCollection,
+                bool aggressivePrefetch = false,
+                bool exercisePrefetch = false,
+                ReadFeedState state = null,
+                CancellationToken cancellationToken = default)
             {
-                return new TracingAsyncEnumerator<TryCatch<ReadFeedPage>>(
+                IAsyncEnumerator<TryCatch<ReadFeedPage>> enumerator = new TracingAsyncEnumerator<TryCatch<ReadFeedPage>>(
                     new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRangeState: new FeedRangeState<ReadFeedState>(
@@ -150,6 +155,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
                         cancellationToken: cancellationToken),
                     trace: NoOpTrace.Singleton);
+
+                return Task.FromResult(enumerator);
             }
         }
     }

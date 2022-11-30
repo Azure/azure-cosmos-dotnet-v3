@@ -13,8 +13,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     internal sealed class ChangeFeedIteratorCore : FeedIteratorInternal
     {
@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
         private readonly AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>> lazyMonadicEnumerator;
         private readonly CosmosClientContext clientContext;
+        private readonly ChangeFeedQuerySpec changeFeedQuerySpec;
         private bool hasMoreResults;
 
         public ChangeFeedIteratorCore(
@@ -29,7 +30,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions,
             ChangeFeedStartFrom changeFeedStartFrom,
-            CosmosClientContext clientContext)
+            CosmosClientContext clientContext,
+            ContainerInternal container,
+            ChangeFeedQuerySpec changeFeedQuerySpec = null)
         {
             if (changeFeedStartFrom == null)
             {
@@ -41,9 +44,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 throw new ArgumentNullException(nameof(changeFeedMode));
             }
 
+            this.container = container;
             this.clientContext = clientContext;
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.changeFeedRequestOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
+            this.changeFeedQuerySpec = changeFeedQuerySpec;
+
             this.lazyMonadicEnumerator = new AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>>(
                 valueFactory: async (trace, cancellationToken) =>
                 {
@@ -201,7 +207,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             changeFeedMode,
                             changeFeedRequestOptions?.PageSizeHint,
                             changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
-                            additionalHeaders),
+                            additionalHeaders,
+                            this.changeFeedQuerySpec),
                         cancellationToken: default);
 
                     TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromResult(enumerator);
@@ -214,11 +221,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
-                                requestOptions: this.changeFeedRequestOptions,
-                                task: (trace) => this.ReadNextInternalAsync(trace, cancellationToken),
-                                traceComponent: TraceComponent.ChangeFeed,
-                                traceLevel: TraceLevel.Info);
+                return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
+                                                containerName: this.container?.Id,
+                                                databaseName: this.container?.Database?.Id ?? this.databaseName,
+                                                operationType: OperationType.ReadFeed,
+                                                requestOptions: this.changeFeedRequestOptions,
+                                                task: (trace) => this.ReadNextInternalAsync(trace, cancellationToken),
+                                                openTelemetry: (response) => new OpenTelemetryResponse(responseMessage: response),
+                                                traceComponent: TraceComponent.ChangeFeed,
+                                                traceLevel: TraceLevel.Info);
         }
 
         public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)

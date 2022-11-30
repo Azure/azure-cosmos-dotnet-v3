@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections;
+    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
@@ -73,6 +75,15 @@ namespace Microsoft.Azure.Cosmos
         public override string ToString()
         {
             return $"{this.originalException} {Environment.NewLine} CosmosDiagnostics: {this.Diagnostics}";
+        }
+
+        internal static void RecordOtelAttributes(CosmosNullReferenceException exception, DiagnosticScope scope)
+        {
+            scope.AddAttribute(OpenTelemetryAttributeKeys.Region, 
+                ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics?.GetContactedRegions()));
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.GetBaseException().Message);
+
+            CosmosDbEventSource.RecordDiagnosticsForExceptions(exception.Diagnostics);
         }
     }
 }

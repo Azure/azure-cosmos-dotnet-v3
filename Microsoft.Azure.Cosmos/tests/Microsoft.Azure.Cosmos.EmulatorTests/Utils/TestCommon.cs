@@ -75,10 +75,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static CosmosClientBuilder GetDefaultConfiguration(
             bool useCustomSeralizer = true,
-            bool validatePartitionKeyRangeCalls = false)
+            bool validatePartitionKeyRangeCalls = false,
+            string accountEndpointOverride = null)
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: authKey);
+            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
+                accountEndpoint: accountEndpointOverride ?? endpoint,
+                authKeyOrResourceToken: authKey);
             if (useCustomSeralizer)
             {
                 clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer());
@@ -95,9 +98,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static CosmosClient CreateCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
             bool useCustomSeralizer = true,
-            bool validatePartitionKeyRangeCalls = false)
+            bool validatePartitionKeyRangeCalls = false,
+            string accountEndpointOverride = null)
         {
-            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer, validatePartitionKeyRangeCalls);
+            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer, validatePartitionKeyRangeCalls, accountEndpointOverride);
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             CosmosClient client = cosmosClientBuilder.Build();
@@ -136,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 cosmosClientBuilder.WithConnectionModeGateway();
             }
-
+            
             return cosmosClientBuilder.Build();
         }
 
@@ -262,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (string.IsNullOrEmpty(key)) throw new ArgumentException("key");
             if (headers == null) throw new ArgumentNullException("headers");
 
-            string xDate = DateTime.UtcNow.ToString("r");
+            string xDate = Rfc1123DateTimeCache.UtcNow();
 
             client.DefaultRequestHeaders.Remove(HttpConstants.HttpHeaders.XDate);
             client.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.XDate, xDate);
@@ -282,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             List<T> result = new List<T>();
 
-            INameValueCollection localHeaders = new StoreRequestNameValueCollection();
+            INameValueCollection localHeaders = new RequestNameValueCollection();
             if (headers != null)
             {
                 localHeaders.Add(headers);

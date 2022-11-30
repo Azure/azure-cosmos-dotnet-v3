@@ -36,19 +36,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 throw new NotImplementedException();
             }
 
-            public override IAsyncEnumerable<TryCatch<OrderByQueryPage>> CreateEnumerable(IDocumentContainer documentContainer, QueryState state = null)
+            protected override IAsyncEnumerable<TryCatch<OrderByQueryPage>> CreateEnumerable(
+                IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
+                QueryState state = null)
             {
                 throw new NotImplementedException();
             }
 
-            public override IAsyncEnumerator<TryCatch<OrderByQueryPage>> CreateEnumerator(
-                IDocumentContainer documentContainer, QueryState state = null, CancellationToken cancellationToken = default)
+            protected override Task<IAsyncEnumerator<TryCatch<OrderByQueryPage>>> CreateEnumeratorAsync(
+                IDocumentContainer documentContainer,
+                bool aggressivePrefetch = false,
+                bool exercisePrefetch = false,
+                QueryState state = null,
+                CancellationToken cancellationToken = default)
             {
                 List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton,
                     cancellationToken: cancellationToken).Result;
                 Assert.AreEqual(1, ranges.Count);
-                return new TracingAsyncEnumerator<TryCatch<OrderByQueryPage>>(
+                
+                IAsyncEnumerator<TryCatch<OrderByQueryPage>> enumerator = new TracingAsyncEnumerator<TryCatch<OrderByQueryPage>>(
                     new OrderByQueryPartitionRangePageAsyncEnumerator(
                         queryDataSource: documentContainer,
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
@@ -58,6 +66,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                         filter: "filter",
                         cancellationToken: cancellationToken),
                     NoOpTrace.Singleton);
+
+                return Task.FromResult(enumerator);
             }
         }
     }

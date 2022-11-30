@@ -71,6 +71,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions requestOptions,
+            GeospatialType geospatialType,
             CancellationToken cancellationToken = default);
 
         public abstract FeedIterator GetStandByFeedIterator(
@@ -191,5 +192,17 @@ namespace Microsoft.Azure.Cosmos
 
             public QueryIterator QueryIterator { get; }
         }
+
+        public abstract FeedIterator GetChangeFeedStreamIteratorWithQuery(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            ChangeFeedQuerySpec changeFeedQuerySpec,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract FeedIterator<T> GetChangeFeedIteratorWithQuery<T>(
+           ChangeFeedStartFrom changeFeedStartFrom,
+           ChangeFeedMode changeFeedMode,
+           ChangeFeedQuerySpec changeFeedQuerySpec,
+           ChangeFeedRequestOptions changeFeedRequestOptions = null);
     }
 }

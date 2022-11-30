@@ -17,8 +17,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -78,17 +80,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task InitTaskThreadSafe()
         {
             int httpCallCount = 0;
+            int metadataCallCount = 0;
             bool delayCallBack = true;
+
+            var isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
+               BindingFlags.Static |
+               BindingFlags.NonPublic);
+            isInitializedField.SetValue(null, false);
+
+            var azMetadataField = typeof(VmMetadataApiHandler).GetField("azMetadata",
+               BindingFlags.Static |
+               BindingFlags.NonPublic);
+            azMetadataField.SetValue(null, null);
+
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
             {
                 RequestCallBack = async (request, cancellToken) =>
                 {
-                    Interlocked.Increment(ref httpCallCount);
+                    if(request.RequestUri.AbsoluteUri ==  VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri)
+                    {
+                        Interlocked.Increment(ref metadataCallCount);
+                    } 
+                    else
+                    {
+                        Interlocked.Increment(ref httpCallCount);
+                    }
+                    
                     while (delayCallBack)
                     {
                         await Task.Delay(TimeSpan.FromMilliseconds(100));
                     }
-                    
+
                     return null;
                 }
             };
@@ -105,14 +127,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Container container = cosmosClient.GetContainer("db", "c");
 
-            for(int loop = 0; loop < 3; loop++)
+            for (int loop = 0; loop < 3; loop++)
             {
                 for (int i = 0; i < 10; i++)
                 {
                     tasks.Add(this.ReadNotFound(container));
                 }
-            
-                Stopwatch sw = Stopwatch.StartNew();
+
+                ValueStopwatch sw = ValueStopwatch.StartNew();
                 while(this.TaskStartedCount < 10 && sw.Elapsed.TotalSeconds < 2)
                 {
                     await Task.Delay(TimeSpan.FromMilliseconds(50));
@@ -123,6 +145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await Task.WhenAll(tasks);
 
+                Assert.AreEqual(1, metadataCallCount, "Only one call for VM Metadata call with be made");
                 Assert.AreEqual(1, httpCallCount, "Only the first task should do the http call. All other should wait on the first task");
 
                 // Reset counters and retry the client to verify a new http call is done for new requests
@@ -130,6 +153,140 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 delayCallBack = true;
                 this.TaskStartedCount = 0;
                 httpCallCount = 0;
+            }
+        }
+
+
+        [TestMethod]
+        public async Task ValidateAzureKeyCredentialDirectModeUpdateAsync()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
+            using (CosmosClient client = new CosmosClient(
+                    endpoint,
+                    masterKeyCredential))
+            {
+                string databaseName = Guid.NewGuid().ToString();
+
+                try
+                {
+                    Cosmos.Database database = client.GetDatabase(databaseName);
+                    ResponseMessage responseMessage = await database.ReadStreamAsync();
+                    Assert.AreEqual(HttpStatusCode.NotFound, responseMessage.StatusCode);
+
+                    {
+                        // Random key: Next set of actions are expected to fail => 401 (UnAuthorized)
+                        masterKeyCredential.Update(Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())));
+
+                        responseMessage = await database.ReadStreamAsync();
+                        Assert.AreEqual(HttpStatusCode.Unauthorized, responseMessage.StatusCode);
+
+                        string diagnostics = responseMessage.Diagnostics.ToString();
+                        Assert.IsTrue(diagnostics.Contains("AuthProvider LifeSpan InSec"), diagnostics.ToString());
+                    }
+
+                    {
+                        // Resetting back to master key => 404 (NotFound)
+                        masterKeyCredential.Update(authKey);
+                        responseMessage = await database.ReadStreamAsync();
+                        Assert.AreEqual(HttpStatusCode.NotFound, responseMessage.StatusCode);
+                    }
+
+
+                    // Test with resource token interchageability 
+                    masterKeyCredential.Update(authKey);
+                    database = await client.CreateDatabaseAsync(databaseName);
+
+                    string containerId = Guid.NewGuid().ToString();
+                    ContainerResponse containerResponse = await database.CreateContainerAsync(containerId, "/id");
+                    Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+
+
+                    {
+                        // Resource token with ALL permissoin's
+                        string userId = Guid.NewGuid().ToString();
+                        UserResponse userResponse = await database.CreateUserAsync(userId);
+                        Cosmos.User user = userResponse.User;
+                        Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+                        Assert.AreEqual(userId, user.Id);
+
+                        string permissionId = Guid.NewGuid().ToString();
+                        PermissionProperties permissionProperties = new PermissionProperties(permissionId, Cosmos.PermissionMode.All, client.GetContainer(databaseName, containerId));
+                        PermissionResponse permissionResponse = await database.GetUser(userId).CreatePermissionAsync(permissionProperties);
+                        Assert.AreEqual(HttpStatusCode.Created, permissionResponse.StatusCode);
+                        Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
+                        Assert.AreEqual(Cosmos.PermissionMode.All, permissionResponse.Resource.PermissionMode);
+                        Assert.IsNotNull(permissionResponse.Resource.Token);
+                        SelflinkValidator.ValidatePermissionSelfLink(permissionResponse.Resource.SelfLink);
+
+                        // Valdiate ALL on contianer
+                        masterKeyCredential.Update(permissionResponse.Resource.Token);
+                        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+
+                        Cosmos.Container container = client.GetContainer(databaseName, containerId);
+
+                        responseMessage = await container.ReadContainerStreamAsync();
+                        Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+
+                        responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
+                        Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode); // Read Only resorce token
+                    }
+
+                    // Reset to master key for new permission creation
+                    masterKeyCredential.Update(authKey);
+
+                    {
+                        // Resource token with Read-ONLY permissoin's
+                        string userId = Guid.NewGuid().ToString();
+                        UserResponse userResponse = await database.CreateUserAsync(userId);
+                        Cosmos.User user = userResponse.User;
+                        Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
+                        Assert.AreEqual(userId, user.Id);
+
+                        string permissionId = Guid.NewGuid().ToString();
+                        PermissionProperties permissionProperties = new PermissionProperties(permissionId, Cosmos.PermissionMode.Read, client.GetContainer(databaseName, containerId));
+                        PermissionResponse permissionResponse = await database.GetUser(userId).CreatePermissionAsync(permissionProperties);
+                        //Backend returns Created instead of OK
+                        Assert.AreEqual(HttpStatusCode.Created, permissionResponse.StatusCode);
+                        Assert.AreEqual(permissionId, permissionResponse.Resource.Id);
+                        Assert.AreEqual(Cosmos.PermissionMode.Read, permissionResponse.Resource.PermissionMode);
+
+                        // Valdiate read on contianer
+                        masterKeyCredential.Update(permissionResponse.Resource.Token);
+                        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+
+                        Cosmos.Container container = client.GetContainer(databaseName, containerId);
+
+                        responseMessage = await container.ReadContainerStreamAsync();
+                        Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+
+                        responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
+                        Assert.AreEqual(HttpStatusCode.Forbidden, responseMessage.StatusCode); // Read Only resorce token
+                    }
+
+                    {
+
+                        // Reset to master key for new permission creation
+                        masterKeyCredential.Update(Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())));
+
+                        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+                        Cosmos.Container container = client.GetContainer(databaseName, containerId);
+
+                        responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
+                        Assert.AreEqual(HttpStatusCode.Unauthorized, responseMessage.StatusCode); // Read Only resorce token
+
+                        string diagnostics = responseMessage.Diagnostics.ToString();
+                        Assert.IsTrue(diagnostics.Contains("AuthProvider LifeSpan InSec"), diagnostics.ToString());
+                    }
+                }
+                finally
+                {
+                    // Reset to master key for clean-up
+                    masterKeyCredential.Update(authKey);
+                    await TestCommon.DeleteDatabaseAsync(client, client.GetDatabase(databaseName));
+                }
             }
         }
 
@@ -371,6 +528,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     QueryText = "SELECT 1",
                     Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new JRaw("{\"a\":[1,2,3]}")) }
                 });
+            verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
+                    "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,3]}}" +
+                "]}",
+                new SqlQuerySpec()
+                {
+                    QueryText = "SELECT 1",
+                    Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new JRaw("{\"a\":[1,2,3]}")) },
+                });
+            verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
+                    "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,3]}}" + 
+                "]}",
+                new SqlQuerySpec()
+                {
+                    QueryText = "SELECT 1",
+                    Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new JRaw("{\"a\":[1,2,3]}")) },
+                });
 
             // Verify roundtrips
             verifyJsonSerializationText("{\"query\":null}");
@@ -394,7 +567,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "\"query\":\"SELECT 1\"," +
                     "\"parameters\":[" +
                         "{\"name\":\"@p1\",\"value\":true}" +
-                    "]" +
+                    "]" + 
                 "}");
             verifyJsonSerializationText(
                 "{" +
@@ -415,6 +588,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "\"query\":\"SELECT 1\"," +
                     "\"parameters\":[" +
                         "{\"name\":\"@p1\",\"value\":\"abc\"}" +
+                    "]" +
+                "}");
+            verifyJsonSerializationText(
+                "{" +
+                    "\"query\":\"SELECT 1\"," +
+                    "\"parameters\":[" +
+                        "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,\"abc\"]}}" +
                     "]" +
                 "}");
             verifyJsonSerializationText(

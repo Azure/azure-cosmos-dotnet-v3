@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
-    internal sealed class InMemoryContainer : IMonadicDocumentContainer
+    internal class InMemoryContainer : IMonadicDocumentContainer
     {
         private readonly PartitionKeyDefinition partitionKeyDefinition;
         private readonly Dictionary<int, (int, int)> parentToChildMapping;
@@ -449,7 +449,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
         }
 
-        public Task<TryCatch<QueryPage>> MonadicQueryAsync(
+        public virtual Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             QueryPaginationOptions queryPaginationOptions,
@@ -602,9 +602,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 queryPageResults = queryPageResults.Take((queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
                 List<CosmosElement> queryPageResultList = queryPageResults.ToList();
                 QueryState queryState;
-                if (queryPageResultList.LastOrDefault() is CosmosObject lastDocument)
+                if (queryPageResultList.LastOrDefault() is CosmosObject lastDocument
+                    && lastDocument.TryGetValue<CosmosString>("_rid", out CosmosString resourceId))
                 {
-                    string currentResourceId = ((CosmosString)lastDocument["_rid"]).Value;
+                    string currentResourceId = resourceId.Value;
                     int currentSkipCount = queryPageResultList
                         .Where(document => ((CosmosString)((CosmosObject)document)["_rid"]).Value == currentResourceId)
                         .Count();
@@ -1507,6 +1508,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public SqlScalarExpression Visit(CosmosString cosmosString)
             {
                 return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
+            }
+
+            public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
+            {
+                return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
             }
         }
     }

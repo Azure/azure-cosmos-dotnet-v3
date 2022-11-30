@@ -1,6 +1,8 @@
 ﻿{
   "AppSettings": {
     "GatewayEndpoint": "https://127.0.0.1:8081/",
+    "ComputeGatewayEndpoint": "https://localhost:8903/",
+    "ComputeGatewayPort": "8903",
     "Location": "South Central US",
     "Location2": "West US",
     "GlobalDatabaseAccountId": "globaldb",
@@ -8,6 +10,15 @@
     "DatabaseAccountId2": "localhost-westus",
     "MasterKey": "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
     "ServerStalenessIntervalInSeconds": "5",
-    "MasterStalenessIntervalInSeconds": "1"
+    "MasterStalenessIntervalInSeconds": "1",
+    "ContentSerializationPerformanceTests.CosmosDatabaseId": "db",
+    "ContentSerializationPerformanceTests.ContainerId": "container",
+    "ContentSerializationPerformanceTests.ContentSerialization": "JsonText",
+    "ContentSerializationPerformanceTests.Query": "SELECT TOP 1 c.region FROM c",
+    "ContentSerializationPerformanceTests.MaxConcurrency": "-1",
+    "ContentSerializationPerformanceTests.MaxItemCount": "-1",
+    "ContentSerializationPerformanceTests.NumberOfIterations": "1",
+    "ContentSerializationPerformanceTests.WarmupIterations": "0",
+    "ContentSerializationPerformanceTests.UseStronglyTypedIterator": "true"
   }
 }

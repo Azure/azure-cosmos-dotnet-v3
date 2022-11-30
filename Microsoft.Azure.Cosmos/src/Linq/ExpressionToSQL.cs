@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -551,7 +552,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     else if (memberType == typeof(DateTime))
                     {
                         SqlStringLiteral serializedDateTime = (SqlStringLiteral)right.Literal;
-                        value = DateTime.Parse(serializedDateTime.Value);
+                        value = DateTime.Parse(serializedDateTime.Value, provider: null, DateTimeStyles.RoundtripKind);
                     }
 
                     if (value != default(object))
@@ -712,6 +713,22 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return SqlArrayCreateScalarExpression.Create(arrayItems.ToImmutableArray());
             }
 
+            if (context.linqSerializerOptions?.CustomCosmosSerializer != null)
+            {
+                StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
+
+                // Use the user serializer for the parameter values so custom conversions are correctly handled
+                using (Stream stream = context.linqSerializerOptions.CustomCosmosSerializer.ToStream(inputExpression.Value))
+                {
+                    using (StreamReader streamReader = new StreamReader(stream))
+                    {
+                        string propertyValue = streamReader.ReadToEnd();
+                        writer.Write(propertyValue);
+                        return CosmosElement.Parse(writer.ToString()).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
+                    }
+                }
+            }
+               
             return CosmosElement.Parse(JsonConvert.SerializeObject(inputExpression.Value)).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton);
         }
 
@@ -2010,6 +2027,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             public SqlScalarExpression Visit(CosmosString cosmosString)
             {
                 return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
+            }
+
+            public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
+            {
+                return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
             }
         }
         private enum SubqueryKind

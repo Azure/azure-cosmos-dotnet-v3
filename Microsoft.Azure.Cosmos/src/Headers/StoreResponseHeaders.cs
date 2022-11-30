@@ -70,6 +70,8 @@ namespace Microsoft.Azure.Cosmos
             set => this.storeResponseNameValueCollection.PartitionKeyRangeId = value;
         }
 
+        public override INameValueCollection INameValueCollection => this.storeResponseNameValueCollection;
+
         public StoreResponseHeaders(StoreResponseNameValueCollection storeResponseNameValueCollection)
         {
             this.storeResponseNameValueCollection = storeResponseNameValueCollection ?? throw new ArgumentNullException(nameof(storeResponseNameValueCollection));
@@ -116,34 +118,14 @@ namespace Microsoft.Azure.Cosmos
             return this.storeResponseNameValueCollection.Keys().GetEnumerator();
         }
 
-        public override void Clear()
-        {
-            this.storeResponseNameValueCollection.Clear();
-        }
-
         public override int Count()
         {
             return this.storeResponseNameValueCollection.Count();
         }
 
-        public override INameValueCollection Clone()
-        {
-            return this.storeResponseNameValueCollection.Clone();
-        }
-
         public override string[] GetValues(string key)
         {
             return this.storeResponseNameValueCollection.GetValues(key);
-        }
-
-        public override IEnumerable<string> Keys()
-        {
-            return this.storeResponseNameValueCollection.Keys();
-        }
-
-        public override NameValueCollection ToNameValueCollection()
-        {
-            return this.storeResponseNameValueCollection.ToNameValueCollection();
         }
     }
 }

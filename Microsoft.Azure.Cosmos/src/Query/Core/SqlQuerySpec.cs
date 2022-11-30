@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     internal sealed class SqlQuerySpec
     {
         private SqlParameterCollection parameters;
-
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.SqlQuerySpec"/> class for the Azure Cosmos DB service.</summary>
         /// <remarks> 
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             this.QueryText = queryText;
             this.parameters = parameters ?? throw new ArgumentNullException("parameters");
         }
-
+        
         /// <summary>
         /// Gets or sets the text of the Azure Cosmos DB database query.
         /// </summary>
@@ -76,5 +76,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         {
             return this.parameters.Count > 0;
         }
+
     }
 }

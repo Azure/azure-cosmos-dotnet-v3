@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 request.UseStatusCodeForFailures = true;
                 StoreResponse mockStoreResponse404 = new StoreResponse
                 {
-                    Headers = new StoreRequestNameValueCollection()
+                    Headers = new StoreResponseNameValueCollection()
                 };
                 mockStoreResponse404.Headers.Add(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString());
                 mockStoreResponse404.Status = (int)HttpStatusCode.NotFound;
@@ -217,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     ResponseBody = Stream.Null,
                     Status = responseStatusCode,
-                    Headers = new StoreRequestNameValueCollection()
+                    Headers = new StoreResponseNameValueCollection()
                 };
             }
 

@@ -76,32 +76,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             ITrace trace,
             out CosmosException cosmosException)
         {
-            // Use the original stack trace from the inner exception.
-            if (exceptionWithStackTrace.InnerException is Microsoft.Azure.Documents.DocumentClientException
-                || exceptionWithStackTrace.InnerException is CosmosException)
-            {
-                return ExceptionToCosmosException.TryCreateFromException(
-                    exceptionWithStackTrace.InnerException, 
-                    trace, 
-                    out cosmosException);
-            }
+            Exception innerException = ExceptionWithStackTraceException.UnWrapMonadExcepion(exceptionWithStackTrace, trace);
 
             if (!ExceptionToCosmosException.TryCreateFromException(
-                exceptionWithStackTrace.InnerException,
+                innerException,
                 trace,
                 out cosmosException))
             {
                 return false;
             }
 
-            cosmosException = CosmosExceptionFactory.Create(
-                cosmosException.StatusCode,
-                cosmosException.Message,
-                exceptionWithStackTrace.StackTrace,
-                headers: cosmosException.Headers,
-                cosmosException.Trace,
-                cosmosException.Error,
-                cosmosException.InnerException);
+            if (innerException is not CosmosException && innerException is not Documents.DocumentClientException)
+            {
+                cosmosException = CosmosExceptionFactory.Create(
+                    cosmosException.StatusCode,
+                    cosmosException.Message,
+                    exceptionWithStackTrace.StackTrace,
+                    headers: cosmosException.Headers,
+                    cosmosException.Trace,
+                    cosmosException.Error,
+                    cosmosException.InnerException);
+            }
+
             return true;
         }
 
@@ -115,9 +111,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public override CosmosException Visit(MalformedContinuationTokenException malformedContinuationTokenException, ITrace trace)
             {
+                Headers headers = new Headers()
+                {
+                    SubStatusCode = Documents.SubStatusCodes.MalformedContinuationToken
+                }; 
                 return CosmosExceptionFactory.CreateBadRequestException(
                     message: malformedContinuationTokenException.Message,
-                    headers: new Headers(),
+                    headers: headers,
                     stackTrace: malformedContinuationTokenException.StackTrace,
                     innerException: malformedContinuationTokenException,
                     trace: trace);

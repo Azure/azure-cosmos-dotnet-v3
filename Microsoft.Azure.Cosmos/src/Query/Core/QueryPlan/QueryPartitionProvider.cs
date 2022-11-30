@@ -9,9 +9,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using System.Linq;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
     using PartitionKeyInternal = Documents.Routing.PartitionKeyInternal;
@@ -84,16 +86,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             {
                 lock (this.serviceProviderStateLock)
                 {
-                    this.queryengineConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
+                    string newConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
 
-                    if (!this.disposed && this.serviceProvider != IntPtr.Zero)
+                    if (!string.Equals(this.queryengineConfiguration, newConfiguration))
                     {
-                        uint errorCode = ServiceInteropWrapper.UpdateServiceProvider(
-                            this.serviceProvider,
-                            this.queryengineConfiguration);
+                        this.queryengineConfiguration = newConfiguration;
 
-                        Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-                        if (exception != null) throw exception;
+                        if (!this.disposed && this.serviceProvider != IntPtr.Zero)
+                        {
+                            uint errorCode = ServiceInteropWrapper.UpdateServiceProvider(
+                                this.serviceProvider,
+                                this.queryengineConfiguration);
+
+                            Exception exception = Marshal.GetExceptionForHR((int)errorCode);
+                            if (exception != null) throw exception;
+                        }
                     }
                 }
             }
@@ -104,22 +111,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
 
         public TryCatch<PartitionedQueryExecutionInfo> TryGetPartitionedQueryExecutionInfo(
-            SqlQuerySpec querySpec,
+            string querySpecJsonString,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
-            bool allowDCount)
+            bool allowDCount,
+            bool useSystemPrefix,
+            GeospatialType geospatialType)
         {
             TryCatch<PartitionedQueryExecutionInfoInternal> tryGetInternalQueryInfo = this.TryGetPartitionedQueryExecutionInfoInternal(
-                querySpec: querySpec,
+                querySpecJsonString: querySpecJsonString,
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
-                allowDCount: allowDCount);
+                allowDCount: allowDCount,
+                useSystemPrefix: useSystemPrefix,
+                geospatialType: geospatialType);
             if (!tryGetInternalQueryInfo.Succeeded)
             {
                 return TryCatch<PartitionedQueryExecutionInfo>.FromException(tryGetInternalQueryInfo.Exception);
@@ -153,20 +164,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
 
         internal TryCatch<PartitionedQueryExecutionInfoInternal> TryGetPartitionedQueryExecutionInfoInternal(
-            SqlQuerySpec querySpec,
+            string querySpecJsonString,
             PartitionKeyDefinition partitionKeyDefinition,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
-            bool allowDCount)
+            bool allowDCount,
+            bool useSystemPrefix,
+            GeospatialType geospatialType)
         {
-            if (querySpec == null || partitionKeyDefinition == null)
+            if (querySpecJsonString == null || partitionKeyDefinition == null)
             {
                 return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(DefaultInfoInternal);
             }
-
-            string queryText = JsonConvert.SerializeObject(querySpec);
 
             List<string> paths = new List<string>(partitionKeyDefinition.Paths);
             List<IReadOnlyList<string>> pathPartsList = new List<IReadOnlyList<string>>(paths.Count);
@@ -201,20 +212,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             unsafe
             {
+                ServiceInteropWrapper.PartitionKeyRangesApiOptions partitionKeyRangesApiOptions =
+                    new ServiceInteropWrapper.PartitionKeyRangesApiOptions()
+                    {
+                        bAllowDCount = Convert.ToInt32(allowDCount),
+                        bAllowNonValueAggregateQuery = Convert.ToInt32(allowNonValueAggregateQuery),
+                        bHasLogicalPartitionKey = Convert.ToInt32(hasLogicalPartitionKey),
+                        bIsContinuationExpected = Convert.ToInt32(isContinuationExpected),
+                        bRequireFormattableOrderByQuery = Convert.ToInt32(requireFormattableOrderByQuery),
+                        bUseSystemPrefix = Convert.ToInt32(useSystemPrefix),
+                        eGeospatialType = Convert.ToInt32(geospatialType),
+                        ePartitionKind = Convert.ToInt32(partitionKind)
+                    };
+
                 fixed (byte* bytePtr = buffer)
                 {
-                    errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery2(
+                    errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery3(
                         this.serviceProvider,
-                        queryText,
-                        requireFormattableOrderByQuery,
-                        isContinuationExpected,
-                        allowNonValueAggregateQuery,
-                        hasLogicalPartitionKey,
-                        allowDCount,
+                        querySpecJsonString,
+                        partitionKeyRangesApiOptions,
                         allParts,
                         partsLengths,
                         (uint)partitionKeyDefinition.Paths.Count,
-                        partitionKind,
                         new IntPtr(bytePtr),
                         (uint)buffer.Length,
                         out serializedQueryExecutionInfoResultLength);
@@ -228,18 +247,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                         fixed (byte* bytePtr2 = buffer)
                         {
-                            errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery2(
+                            errorCode = ServiceInteropWrapper.GetPartitionKeyRangesFromQuery3(
                                 this.serviceProvider,
-                                queryText,
-                                requireFormattableOrderByQuery,
-                                isContinuationExpected,
-                                allowNonValueAggregateQuery,
-                                hasLogicalPartitionKey, // has logical partition key
-                                allowDCount,
+                                querySpecJsonString,
+                                partitionKeyRangesApiOptions,
                                 allParts,
                                 partsLengths,
                                 (uint)partitionKeyDefinition.Paths.Count,
-                                partitionKind,
                                 new IntPtr(bytePtr2),
                                 (uint)buffer.Length,
                                 out serializedQueryExecutionInfoResultLength);
@@ -276,10 +290,35 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                    serializedQueryExecutionInfo,
                    new JsonSerializerSettings
                    {
-                       DateParseHandling = DateParseHandling.None
+                       DateParseHandling = DateParseHandling.None,
+                       MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                    });
 
             return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(queryInfoInternal);
+        }
+
+        internal static TryCatch<IntPtr> TryCreateServiceProvider(string queryEngineConfiguration)
+        {
+            try
+            {
+                IntPtr serviceProvider = IntPtr.Zero;
+                uint errorCode = ServiceInteropWrapper.CreateServiceProvider(
+                                queryEngineConfiguration,
+                                out serviceProvider);
+                Exception exception = Marshal.GetExceptionForHR((int)errorCode);
+                if (exception != null)
+                {
+                    DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", exception);
+                    return TryCatch<IntPtr>.FromException(exception);
+                }
+                
+                return TryCatch<IntPtr>.FromResult(serviceProvider);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", ex);
+                return TryCatch<IntPtr>.FromException(ex);
+            }
         }
 
         ~QueryPartitionProvider()
@@ -297,12 +336,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     {
                         if (!this.disposed && this.serviceProvider == IntPtr.Zero)
                         {
-                            uint errorCode = ServiceInteropWrapper.CreateServiceProvider(
-                                this.queryengineConfiguration,
-                                out this.serviceProvider);
+                            TryCatch<IntPtr> tryCreateServiceProvider = QueryPartitionProvider.TryCreateServiceProvider(this.queryengineConfiguration);
+                            if (tryCreateServiceProvider.Failed)
+                            {
+                                throw ExceptionWithStackTraceException.UnWrapMonadExcepion(tryCreateServiceProvider.Exception, NoOpTrace.Singleton);
+                            }
 
-                            Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-                            if (exception != null) throw exception;
+                            this.serviceProvider = tryCreateServiceProvider.Result;
                         }
                     }
                 }

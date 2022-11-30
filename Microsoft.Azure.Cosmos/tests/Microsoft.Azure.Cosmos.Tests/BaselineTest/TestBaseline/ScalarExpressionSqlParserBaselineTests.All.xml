@@ -1,0 +1,47 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic]]></Description>
+      <Query><![CDATA[SELECT VALUE ALL(SELECT *)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ALL(SELECT *)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[case insensitive]]></Description>
+      <Query><![CDATA[SELECT VALUE aLl(SELECT *)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ALL(SELECT *)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[nested]]></Description>
+      <Query><![CDATA[SELECT VALUE ALL( SELECT * WHERE ALL( SELECT *))]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ALL(SELECT * WHERE ALL(SELECT *))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[multiple nested]]></Description>
+      <Query><![CDATA[SELECT VALUE ALL(    SELECT *    WHERE ALL(        SELECT *       WHERE ALL(           SELECT *           WHERE ALL(               SELECT VALUE 1           )       )   ))]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ALL(SELECT * WHERE ALL(SELECT * WHERE ALL(SELECT * WHERE ALL(SELECT VALUE 1))))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[No closing parens]]></Description>
+      <Query><![CDATA[SELECT VALUE ALL(SELECT *]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+</Results>

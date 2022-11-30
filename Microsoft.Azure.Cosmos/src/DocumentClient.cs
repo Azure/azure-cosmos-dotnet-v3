@@ -19,9 +19,11 @@ namespace Microsoft.Azure.Cosmos
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -111,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly bool IsLocalQuorumConsistency = false;
         //Auth
-        private readonly AuthorizationTokenProvider cosmosAuthorization;
+        internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -131,11 +133,13 @@ namespace Microsoft.Azure.Cosmos
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
         private bool enableCpuMonitor = DefaultEnableCpuMonitor;
         private int rntbdMaxConcurrentOpeningConnectionCount = 5;
+        private string clientId;
 
         //Consistency
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
 
-        private CosmosAccountServiceConfiguration accountServiceConfiguration;
+        internal CosmosAccountServiceConfiguration accountServiceConfiguration { get; private set; }
+        internal ClientTelemetry clientTelemetry { get; set; }
 
         private ClientCollectionCache collectionCache;
 
@@ -162,11 +166,13 @@ namespace Microsoft.Azure.Cosmos
         //SessionContainer.
         internal ISessionContainer sessionContainer;
 
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
         private AsyncLazy<QueryPartitionProvider> queryPartitionProvider;
 
         private DocumentClientEventSource eventSource;
         private Func<bool, Task<bool>> initializeTaskFactory;
-        internal AsyncCacheNonBlocking<string, bool> initTaskCache = new AsyncCacheNonBlocking<string, bool>();
+        internal AsyncCacheNonBlocking<string, bool> initTaskCache;
 
         private JsonSerializerSettings serializerSettings;
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
@@ -217,6 +223,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
+            this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+
         }
 
         /// <summary>
@@ -412,6 +420,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
         /// <param name="isLocalQuorumConsistency">Flag to allow Quorum Read with Eventual Consistency Account</param>
+        /// <param name="cosmosClientId"></param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -436,7 +445,8 @@ namespace Microsoft.Azure.Cosmos
                               bool? enableCpuMonitor = null,
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
                               IStoreClientFactory storeClientFactory = null,
-                              bool isLocalQuorumConsistency = false)
+                              bool isLocalQuorumConsistency = false,
+                              string cosmosClientId = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -458,6 +468,7 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
+            this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -466,7 +477,8 @@ namespace Microsoft.Azure.Cosmos
                 handler: handler,
                 sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
-                storeClientFactory: storeClientFactory);
+                storeClientFactory: storeClientFactory,
+                cosmosClientId: cosmosClientId);
         }
 
         /// <summary>
@@ -628,7 +640,12 @@ namespace Microsoft.Azure.Cosmos
             catch (DocumentClientException ex)
             {
                 // Clear the caches to ensure that we don't have partial results
-                this.collectionCache = new ClientCollectionCache(this.sessionContainer, this.GatewayStoreModel, this, this.retryPolicy);
+                this.collectionCache = new ClientCollectionCache(
+                    sessionContainer: this.sessionContainer, 
+                    storeModel: this.GatewayStoreModel, 
+                    tokenProvider: this, 
+                    retryPolicy: this.retryPolicy,
+                    clientTelemetry: this.clientTelemetry);
                 this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
 
                 DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
@@ -642,12 +659,15 @@ namespace Microsoft.Azure.Cosmos
             ISessionContainer sessionContainer = null,
             bool? enableCpuMonitor = null,
             IStoreClientFactory storeClientFactory = null,
-            TokenCredential tokenCredential = null)
+            TokenCredential tokenCredential = null,
+            string cosmosClientId = null)
         {
             if (serviceEndpoint == null)
             {
                 throw new ArgumentNullException("serviceEndpoint");
             }
+
+            this.clientId = cosmosClientId;
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
@@ -897,6 +917,9 @@ namespace Microsoft.Azure.Cosmos
                 this.sendingRequest,
                 this.receivedResponse);
 
+            // Loading VM Information (non blocking call and initialization won't fail if this call fails)
+            VmMetadataApiHandler.TryInitialize(this.httpClient);
+
             if (sessionContainer != null)
             {
                 this.sessionContainer = sessionContainer;
@@ -918,6 +941,12 @@ namespace Microsoft.Azure.Cosmos
             // For gateway: GatewayProxy.
             // For direct: WFStoreProxy [set in OpenAsync()].
             this.eventSource = DocumentClientEventSource.Instance;
+
+            // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
+            // the system information so no need to track it.
+#if !INTERNAL
+            this.InitializeClientTelemetry();
+#endif
 
             this.initializeTaskFactory = (_) => TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
@@ -975,7 +1004,12 @@ namespace Microsoft.Azure.Cosmos
 
             this.GatewayStoreModel = gatewayStoreModel;
 
-            this.collectionCache = new ClientCollectionCache(this.sessionContainer, this.GatewayStoreModel, this, this.retryPolicy);
+            this.collectionCache = new ClientCollectionCache(
+                    sessionContainer: this.sessionContainer, 
+                    storeModel: this.GatewayStoreModel, 
+                    tokenProvider: this, 
+                    retryPolicy: this.retryPolicy,
+                    clientTelemetry: this.clientTelemetry);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
@@ -991,6 +1025,36 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return true;
+        }
+
+        private void InitializeClientTelemetry()
+        {
+            if (this.ConnectionPolicy.EnableClientTelemetry)
+            {
+                try
+                {
+                    this.clientTelemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
+                        clientId: this.clientId,
+                        httpClient: this.httpClient,
+                        userAgent: this.ConnectionPolicy.UserAgentContainer.UserAgent,
+                        connectionMode: this.ConnectionPolicy.ConnectionMode,
+                        authorizationTokenProvider: this.cosmosAuthorization,
+                        diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
+                        preferredRegions: this.ConnectionPolicy.PreferredLocations,
+                        globalEndpointManager: this.GlobalEndpointManager);
+
+                    DefaultTrace.TraceInformation("Client Telemetry Enabled.");
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
+                    this.ConnectionPolicy.EnableClientTelemetry = false;
+                }
+            }
+            else
+            {
+                DefaultTrace.TraceInformation("Client Telemetry Disabled.");
+            }
         }
 
         private async Task InitializeCachesAsync(string databaseName, DocumentCollection collection, CancellationToken cancellationToken)
@@ -1196,6 +1260,13 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
+            if (!this.cancellationTokenSource.IsCancellationRequested)
+            {
+                this.cancellationTokenSource.Cancel();
+            }
+
+            this.cancellationTokenSource.Dispose();
+
             if (this.StoreModel != null)
             {
                 this.StoreModel.Dispose();
@@ -1256,6 +1327,11 @@ namespace Microsoft.Azure.Cosmos
                 this.initTaskCache = null;
             }
 
+            if (this.clientTelemetry != null)
+            {
+                this.clientTelemetry.Dispose();
+            }
+
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
 
@@ -1283,7 +1359,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Test hook to enable unit test of DocumentClient.
         /// </remarks>
-        internal IStoreModel StoreModel { get; set; }
+        internal IStoreModelExtension StoreModel { get; set; }
 
         /// <summary>
         /// Gets and sets the gateway IStoreModel object.
@@ -1291,7 +1367,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Test hook to enable unit test of DocumentClient.
         /// </remarks>
-        internal IStoreModel GatewayStoreModel { get; set; }
+        internal IStoreModelExtension GatewayStoreModel { get; set; }
 
         /// <summary>
         /// Gets and sets on execute scalar query callback
@@ -1386,6 +1462,44 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Establishes and Initializes the Rntbd connection to all the backend replica nodes
+        /// for the given database name and container.
+        /// </summary>
+        /// <param name="databaseName">A string containing the cosmos database name.</param>
+        /// <param name="containerLinkUri">A string containing the cosmos container link uri.</param>
+        /// <param name="cancellationToken">An instance of the <see cref="CancellationToken"/>.</param>
+        internal async Task OpenConnectionsToAllReplicasAsync(
+            string databaseName,
+            string containerLinkUri,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(databaseName) ||
+                string.IsNullOrEmpty(containerLinkUri))
+            {
+                string resourceName = string.IsNullOrEmpty(databaseName) ?
+                    nameof(databaseName) :
+                    nameof(containerLinkUri);
+
+                throw new ArgumentNullException(resourceName);
+            }
+
+            if (this.StoreModel != null)
+            {
+                try
+                {
+                    await this.StoreModel.OpenConnectionsToAllReplicasAsync(
+                        databaseName,
+                        containerLinkUri,
+                        cancellationToken);
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+            }
+        }
+
         private static string NormalizeAuthorizationPayload(string input)
         {
             const int expansionBuffer = 12;
@@ -1419,19 +1533,9 @@ namespace Microsoft.Azure.Cosmos
                                 this.rntbdPortReuseMode);
         }
 
-        private void ThrowIfDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException("DocumentClient");
-            }
-        }
-
         internal virtual async Task EnsureValidClientAsync(ITrace trace)
         {
-            this.ThrowIfDisposed();
-
-            if (this.isSuccessfullyInitialized)
+            if (this.cancellationTokenSource.IsCancellationRequested || this.isSuccessfullyInitialized)
             {
                 return;
             }
@@ -5487,7 +5591,7 @@ namespace Microsoft.Azure.Cosmos
                         AuthorizationTokenType.PrimaryMasterKey,
                         headers))
                     {
-                        request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
+                        request.Headers[HttpConstants.HttpHeaders.XDate] = Rfc1123DateTimeCache.UtcNow();
                         if (options?.PartitionKeyRangeId == null)
                         {
                             await this.AddPartitionKeyInformationAsync(
@@ -6354,8 +6458,13 @@ namespace Microsoft.Azure.Cosmos
 
                 AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(CreateRequestMessage,
                                                                                                clientSideRequestStatistics: null);
-
                 this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
+
+                if (this.queryPartitionProvider.IsValueCreated)
+                {
+                    (await this.QueryPartitionProvider).Update(databaseAccount.QueryEngineConfiguration);
+                }
+
                 return databaseAccount;
             }
 
@@ -6592,7 +6701,8 @@ namespace Microsoft.Azure.Cosmos
                     serviceEndpoint: this.ServiceEndpoint,
                     cosmosAuthorization: this.cosmosAuthorization,
                     connectionPolicy: this.ConnectionPolicy,
-                    httpClient: this.httpClient);
+                    httpClient: this.httpClient,
+                    cancellationToken: this.cancellationTokenSource.Token);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
@@ -6728,7 +6838,7 @@ namespace Microsoft.Azure.Cosmos
                 this.isSuccessfullyInitialized,
                 "GetRequestHeaders should be called after initialization task has been awaited to avoid blocking while accessing ConsistencyLevel property");
 
-            INameValueCollection headers = new StoreRequestNameValueCollection();
+            RequestNameValueCollection headers = new RequestNameValueCollection();
 
             if (this.UseMultipleWriteLocations)
             {
@@ -6751,7 +6861,7 @@ namespace Microsoft.Azure.Cosmos
                             this.accountServiceConfiguration.DefaultConsistencyLevel));
                 }
 
-                headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, this.desiredConsistencyLevel.Value.ToString());
+                headers.ConsistencyLevel = this.desiredConsistencyLevel.Value.ToString();
             }
 
             if (options == null)
@@ -6763,11 +6873,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (options.AccessCondition.Type == Documents.Client.AccessConditionType.IfMatch)
                 {
-                    headers.Set(HttpConstants.HttpHeaders.IfMatch, options.AccessCondition.Condition);
+                    headers.IfMatch = options.AccessCondition.Condition;
                 }
                 else
                 {
-                    headers.Set(HttpConstants.HttpHeaders.IfNoneMatch, options.AccessCondition.Condition);
+                    headers.IfNoneMatch = options.AccessCondition.Condition;
                 }
             }
 

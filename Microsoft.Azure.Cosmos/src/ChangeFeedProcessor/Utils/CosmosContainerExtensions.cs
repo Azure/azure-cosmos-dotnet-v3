@@ -57,7 +57,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                         response.StatusCode, 
                         response.Headers, 
                         item, 
-                        response.Diagnostics);
+                        response.Diagnostics,
+                        response.RequestMessage);
                 }
             }
         }
@@ -79,7 +80,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                         response.StatusCode, 
                         response.Headers,
                         item, 
-                        response.Diagnostics);
+                        response.Diagnostics,
+                        response.RequestMessage);
                 }
             }
         }
@@ -119,7 +121,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 forceRefresh: false,
                 NoOpTrace.Singleton,
                 cancellationToken: cancellationToken);
-            string databaseRid = await ((DatabaseInternal)((ContainerInternal)monitoredContainer).Database).GetRIDAsync(cancellationToken);
+
+            // Extract DbRid from ContainerRid
+            Documents.ResourceId resourceId = Documents.ResourceId.Parse(containerRid);
+            string databaseRid = resourceId.DatabaseId.ToString();
+
             return $"{databaseRid}_{containerRid}";
         }
 

@@ -1,0 +1,26 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsoDateTimeConverter LocalTime = filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.IsoDateOnly == new DateTime(2016, 9, 13, 0, 0, 0, Local)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["IsoDateOnly"] = "2016-09-13")]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsoDateTimeConverter UniversalTime = filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.IsoDateOnly == new DateTime(2016, 9, 13, 0, 0, 0, Utc)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["IsoDateOnly"] = "2016-09-13")]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

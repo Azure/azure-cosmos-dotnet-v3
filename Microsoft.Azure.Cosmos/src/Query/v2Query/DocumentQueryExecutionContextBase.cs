@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query
         public static readonly DocumentFeedResponse<dynamic> EmptyFeedResponse = new DocumentFeedResponse<dynamic>(
             Enumerable.Empty<dynamic>(),
             Enumerable.Empty<dynamic>().Count(),
-            new StoreRequestNameValueCollection());
+            new RequestNameValueCollection());
         protected SqlQuerySpec querySpec;
         private readonly Expression expression;
         private readonly FeedOptions feedOptions;
@@ -160,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
             bool allowDCount,
+            Cosmos.GeospatialType geospatialType,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -167,13 +168,15 @@ namespace Microsoft.Azure.Cosmos.Query
 
             QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync();
             TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionedQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
-                querySpec: this.QuerySpec,
+                querySpecJsonString: JsonConvert.SerializeObject(this.QuerySpec),
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
-                allowDCount: allowDCount);
+                allowDCount: allowDCount,
+                geospatialType: geospatialType,
+                useSystemPrefix: false);
             if (!tryGetPartitionedQueryExecutionInfo.Succeeded)
             {
                 throw new BadRequestException(tryGetPartitionedQueryExecutionInfo.Exception);
@@ -202,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public async Task<INameValueCollection> CreateCommonHeadersAsync(FeedOptions feedOptions)
         {
-            INameValueCollection requestHeaders = new StoreRequestNameValueCollection();
+            INameValueCollection requestHeaders = new RequestNameValueCollection();
 
             Cosmos.ConsistencyLevel defaultConsistencyLevel = (Cosmos.ConsistencyLevel)await this.Client.GetDefaultConsistencyLevelAsync();
             Cosmos.ConsistencyLevel? desiredConsistencyLevel = (Cosmos.ConsistencyLevel?)await this.Client.GetDesiredConsistencyLevelAsync();

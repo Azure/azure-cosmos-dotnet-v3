@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -710,21 +711,29 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
+               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.OperationHelperAsync<ItemResponse<dynamic>>(
                 It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ItemResponse<dynamic>>>>(),
+                It.IsAny<Func<ItemResponse<dynamic>, OpenTelemetryAttributes>>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
+               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>, Func<ItemResponse<dynamic>, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),

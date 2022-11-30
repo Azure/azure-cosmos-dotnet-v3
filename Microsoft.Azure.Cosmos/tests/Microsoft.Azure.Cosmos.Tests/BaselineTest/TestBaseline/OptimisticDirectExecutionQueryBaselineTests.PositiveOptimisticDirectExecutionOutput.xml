@@ -1,0 +1,41 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Single Partition Key and Distinct</Description>
+      <Query>SELECT DISTINCT c.age FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Single Partition Key and Min Aggregate</Description>
+      <Query>SELECT VALUE MIN(c.age) FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Single Partition Key and Value Field</Description>
+      <Query>SELECT c.age FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
+    </Output>
+  </Result>
+</Results>

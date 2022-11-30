@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
@@ -42,7 +41,8 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions,
             RequestOptions requestOptions,
             CosmosClientContext clientContext,
-            Guid correlatedActivityId)
+            Guid correlatedActivityId,
+            ContainerInternal container)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.queryPipelineStage = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
@@ -51,6 +51,8 @@ namespace Microsoft.Azure.Cosmos.Query
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.hasMoreResults = true;
             this.correlatedActivityId = correlatedActivityId;
+
+            this.container = container;
         }
 
         public static QueryIterator Create(
@@ -81,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 resourceLink: resourceLink,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                useSystemPrefix: QueryIterator.IsSystemPrefixExpected(queryRequestOptions),
                 correlatedActivityId: correlatedActivityId);
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
@@ -108,7 +111,8 @@ namespace Microsoft.Azure.Cosmos.Query
                                 queryRequestOptions.CosmosSerializationFormatOptions,
                                 queryRequestOptions,
                                 clientContext,
-                                correlatedActivityId);
+                                correlatedActivityId,
+                                containerCore);
                         }
 
                         requestContinuationToken = tryParse.Result;
@@ -148,7 +152,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryRequestOptions.CosmosSerializationFormatOptions,
                 queryRequestOptions,
                 clientContext,
-                correlatedActivityId);
+                correlatedActivityId,
+                containerCore);
         }
 
         public override bool HasMoreResults => this.hasMoreResults;
@@ -279,6 +284,22 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             this.queryPipelineStage.DisposeAsync();
             base.Dispose(disposing);
+        }
+
+        internal static bool IsSystemPrefixExpected(QueryRequestOptions queryRequestOptions)
+        {
+            if (queryRequestOptions == null || queryRequestOptions.Properties == null)
+            {
+                return false;
+            }
+
+            if (queryRequestOptions.Properties.TryGetValue("x-ms-query-disableSystemPrefix", out object objDisableSystemPrefix) &&
+                bool.TryParse(objDisableSystemPrefix.ToString(), out bool disableSystemPrefix))
+            {
+                return !disableSystemPrefix;
+            }
+
+            return false;
         }
     }
 }

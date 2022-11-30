@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ValueTask<HttpRequestMessage>(httpRequestMessage),
                 ResourceType.Collection,
                 timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow,new TraceSummary()),
                 default);
 
             Assert.AreEqual(httpRequestMessage, responseMessage.RequestMessage);
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: currentTimeoutPolicy.Key,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                         cancellationToken: default);
 
                 Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
@@ -132,6 +132,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Assert.IsFalse(HttpTimeoutPolicyDefault.Instance.ShouldRetryBasedOnResponse(HttpMethod.Put, responseMessage));
                 Assert.IsFalse(HttpTimeoutPolicyControlPlaneRead.Instance.ShouldRetryBasedOnResponse(HttpMethod.Put, responseMessage));
+
+                Assert.IsFalse(HttpTimeoutPolicyNoRetry.Instance.ShouldRetryBasedOnResponse(HttpMethod.Put, responseMessage));
+                Assert.IsFalse(HttpTimeoutPolicyNoRetry.Instance.ShouldRetryBasedOnResponse(HttpMethod.Get, responseMessage));
 
                 if (statusCode == HttpStatusCode.RequestTimeout)
                 {
@@ -178,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                     resourceType: ResourceType.Collection,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                     cancellationToken: default);
 
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
@@ -216,10 +219,143 @@ namespace Microsoft.Azure.Cosmos.Tests
                     result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                     resourceType: ResourceType.Collection,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
-                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                     cancellationToken: default);
              
             Assert.AreEqual(HttpStatusCode.RequestTimeout, responseMessage.StatusCode, "Should be a request timeout");
+        }
+
+        [TestMethod]
+        public async Task Retry3TimesOnDefaultPolicyTestAsync()
+        {
+            int count = 0;
+            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                count++;
+
+                throw new OperationCanceledException("API with exception");
+
+            }
+
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            try
+            {
+                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(
+                        result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                        resourceType: ResourceType.Collection,
+                        timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                        cancellationToken: default);
+            }
+            catch (Exception ex)
+            {
+                //Ignore the exception
+            }
+
+            Assert.AreEqual(3, count, "Should retry 3 times");
+        }
+
+        [TestMethod]
+        public async Task HttpTimeoutThrow503TestAsync()
+        {
+
+            async Task TestScenarioAsync(HttpMethod method, ResourceType resourceType, HttpTimeoutPolicy timeoutPolicy, Type expectedException, int expectedNumberOfRetrys)
+            {
+                int count = 0;
+                async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+                {
+                    count++;
+
+                    throw new OperationCanceledException("API with exception");
+
+                }
+
+                DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+                HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+                using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+                try
+                {
+
+                    HttpResponseMessage responseMessage1 = await cosmoshttpClient.SendHttpAsync(() =>
+                        new ValueTask<HttpRequestMessage>(
+                            result: new HttpRequestMessage(method, new Uri("http://localhost"))),
+                            resourceType: resourceType,
+                            timeoutPolicy: timeoutPolicy,
+                            clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                            cancellationToken: default);
+                }
+                catch (Exception e)
+                {
+                    Assert.AreEqual(expectedNumberOfRetrys, count, "Should retry 3 times for read methods, for writes should only be tried once");
+                    Assert.AreEqual(e.GetType(), expectedException);
+
+                    if (e.GetType() == typeof(CosmosException))
+                    {
+                        CosmosException cosmosException = (CosmosException)e;
+                        Assert.AreEqual(cosmosException.StatusCode, System.Net.HttpStatusCode.ServiceUnavailable);
+                        Assert.AreEqual((int)cosmosException.SubStatusCode,(int)SubStatusCodes.TransportGenerated503);
+                    }
+                }
+
+            }
+
+            //Data plane read
+            await TestScenarioAsync(HttpMethod.Get, ResourceType.Document, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 3);
+
+            //Data plane write
+            await TestScenarioAsync(HttpMethod.Post, ResourceType.Document, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 1);
+
+            //Meta data read
+            await TestScenarioAsync(HttpMethod.Get, ResourceType.Database, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 3);
+
+            //Query plan read (note all query plan operations are reads).
+            await TestScenarioAsync(HttpMethod.Get, ResourceType.Document, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 3);
+
+            //Metadata Write (Should throw a 408 OperationCanceledException rather than a 503)
+            await TestScenarioAsync(HttpMethod.Post, ResourceType.Document, HttpTimeoutPolicyDefault.Instance, typeof(TaskCanceledException), 1);
+        }
+
+        [TestMethod]
+        public async Task NoRetryOnNoRetryPolicyTestAsync()
+        {
+            int count = 0;
+            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                if(count == 0)
+                {
+                    Assert.IsFalse(cancellationToken.IsCancellationRequested);
+                }
+                count++;
+
+                throw new OperationCanceledException("API with exception");
+
+            }
+
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+            try
+            {
+                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(
+                        result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                        resourceType: ResourceType.Collection,
+                        timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                        cancellationToken: default);
+            }
+            catch (Exception ex)
+            {
+                //Ignore the exception
+            }
+
+            Assert.AreEqual(1, count, "Should not retry at all");
         }
 
         [TestMethod]
@@ -231,10 +367,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 @"dbs/1889fcb0-7d02-41a4-94c9-189f6aa1b444/colls/c264ae0f-7708-46fb-a015-29a40ea3c18b",
                 new MemoryStream(),
                 AuthorizationTokenType.PrimaryMasterKey,
-                new StoreRequestNameValueCollection());
+                new Documents.Collections.RequestNameValueCollection());
 
             HttpTimeoutPolicy retryPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(documentServiceRequest);
-            Assert.AreEqual(HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance, retryPolicy);
+            Assert.AreEqual(HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout, retryPolicy);
 
             int count = 0;
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> retry = retryPolicy.GetTimeoutEnumerator();
@@ -268,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     result: new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"))),
                     resourceType: ResourceType.Document,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                     cancellationToken: default);
 
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);

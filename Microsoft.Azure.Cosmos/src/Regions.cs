@@ -186,12 +186,12 @@ namespace Microsoft.Azure.Cosmos
         public const string USGovVirginia = "USGov Virginia";
 
         /// <summary>
-        /// Name of the Azure East US 2 EUAP region in the Azure Cosmos DB service.
+        /// Name of the Azure East US 2 Early Updates Access Program (EUAP) region in the Azure Cosmos DB service.
         /// </summary>
         public const string EastUS2EUAP = "East US 2 EUAP";
 
         /// <summary>
-        /// Name of the Azure Central US EUAP region in the Azure Cosmos DB service.
+        /// Name of the Azure Central US Early Updates Access Program (EUAP) region in the Azure Cosmos DB service.
         /// </summary>
         public const string CentralUSEUAP = "Central US EUAP";
 
@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos
         public const string JioIndiaWest = "Jio India West";
 
         /// <summary>
-        /// Name of the Azure US SLV region in the Azure Cosmos DB service.
+        /// Name of the Azure East US SLV region in the Azure Cosmos DB service.
         /// </summary>
         public const string EastUSSLV = "East US SLV";
 
@@ -334,5 +334,15 @@ namespace Microsoft.Azure.Cosmos
         /// Name of the Azure Qatar Central region in the Azure Cosmos DB service.
         /// </summary>
         public const string QatarCentral = "Qatar Central";
+
+        /// <summary>
+        /// Name of the Azure China North 3 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string ChinaNorth3 = "China North 3";
+
+        /// <summary>
+        /// Name of the Azure China East 3 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string ChinaEast3 = "China East 3";
     }
 }

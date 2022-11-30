@@ -137,6 +137,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             Cosmos.PartitionKey? partitionKey,
             QueryPaginationOptions queryPaginationOptions,
             int maxConcurrency,
+            PrefetchPolicy prefetchPolicy,
             CosmosElement continuationToken,
             CancellationToken cancellationToken)
         {
@@ -159,10 +160,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             CrossFeedRangeState<QueryState> state = monadicExtractState.Result;
 
             CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionPageEnumerator = new CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState>(
-                documentContainer,
-                ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, queryPaginationOptions, partitionKey, cancellationToken),
+                feedRangeProvider: documentContainer,
+                createPartitionRangeEnumerator: ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, queryPaginationOptions, partitionKey, cancellationToken),
                 comparer: Comparer.Singleton,
-                maxConcurrency,
+                maxConcurrency: maxConcurrency,
+                prefetchPolicy: prefetchPolicy,
                 state: state,
                 cancellationToken: cancellationToken);
 

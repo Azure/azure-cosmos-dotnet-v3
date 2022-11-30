@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -40,12 +41,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) =>
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>,Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
@@ -68,7 +73,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ).ReturnsAsync(responseMessage);
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
-
+            containerMock.Setup(c => c.Id).Returns("containerId");
+            containerMock.Setup(c => c.Database.Id).Returns("databaseId");
+            
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
                 continuationToken: null,
@@ -113,12 +120,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) =>
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
@@ -143,7 +154,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             .ReturnsAsync(secondResponse);
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
-
+            containerMock.Setup(c => c.Id).Returns("containerId");
+            containerMock.Setup(c => c.Database.Id).Returns("databaseId");
+            
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
                 continuationToken: null,
@@ -176,12 +189,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) =>
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
@@ -204,7 +221,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ).ReturnsAsync(new ResponseMessage(System.Net.HttpStatusCode.OK));
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
-
+            containerMock.Setup(c => c.Id).Returns("containerId");
+            containerMock.Setup(c => c.Database.Id).Returns("databaseId");
+            
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
                 continuationToken: null,
@@ -251,12 +270,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.Is<string>(str => str.Contains("Change Feed Processor")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<Func<ResponseMessage, OpenTelemetryAttributes>>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
-                (operationName, requestOptions, func, comp, level) =>
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Func<ResponseMessage, OpenTelemetryAttributes>, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
                     {
@@ -278,7 +301,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 )
             ).ReturnsAsync(new ResponseMessage(System.Net.HttpStatusCode.OK));
             containerMock.Setup(c => c.ClientContext).Returns(mockContext.Object);
-            containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
+            containerMock.Setup(c => c.LinkUri).Returns("http://localhost");
+            containerMock.Setup(c => c.Id).Returns("containerId");
+            containerMock.Setup(c => c.Database.Id).Returns("databaseId");
+
             MockDocumentClient mockDocumentClient = new MockDocumentClient();
             mockContext.Setup(c => c.DocumentClient).Returns(mockDocumentClient);          
 
