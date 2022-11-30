@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     // Test code added to confirm the correct pipeline is being utilized
                     SetTestInjectionPipelineType(inputParameters, OptimisticDirectExecution);
 
-                    return OptimisticDirectExecutionContext(
+                    return TryCreateOptimisticDirectExecutionContext(
                                 documentContainer,
                                 cosmosQueryContext,
                                 inputParameters,
@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             {
                 SetTestInjectionPipelineType(inputParameters, OptimisticDirectExecution);
 
-                tryCreatePipelineStage = CosmosQueryExecutionContextFactory.OptimisticDirectExecutionContext(
+                tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreateOptimisticDirectExecutionContext(
                     documentContainer,
                     cosmosQueryContext,
                     inputParameters,
@@ -379,7 +379,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return tryCreatePipelineStage;
         }
         
-        private static TryCatch<IQueryPipelineStage> OptimisticDirectExecutionContext(
+        private static TryCatch<IQueryPipelineStage> TryCreateOptimisticDirectExecutionContext(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
@@ -392,7 +392,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 inputParameters: inputParameters,
                 targetRange: new FeedRangeEpk(targetRange.ToRange()),
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount),
-                queryPipelineStage: (InputParameters updatedInputParameters) =>
+                queryPipelineStage: (updatedInputParameters) =>
                 {
                     // Query Iterator requires that the creation of the query context is deferred until fallback pipeline is called
                     Task<TryCatch<IQueryPipelineStage>> tryCreateContext =
