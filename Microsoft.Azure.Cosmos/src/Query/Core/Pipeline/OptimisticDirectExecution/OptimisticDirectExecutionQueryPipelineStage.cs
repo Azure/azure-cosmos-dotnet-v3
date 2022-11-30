@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             {
                 if (this.Current.Result?.State?.Value != null)
                 {
-                    CosmosElement continuationToken = this.inner.Result.Current.Result.State.Value;
+                    CosmosElement continuationToken = this.Current.Result.State.Value;
                     this.SaveContinuation(continuationToken);
                     return result;
                 }
@@ -61,10 +61,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 if (isGoneException)
                 {
                     Debug.Assert(result != this.Current.Failed);
-
                     this.inputParameters.IsOdeFallBackPlan = true;
                     this.inner = await this.queryPipelineStageFactory.Invoke(this.inputParameters);
-                    return await this.inner.Result.MoveNextAsync(trace);
+                    // TODO: Failure check for this.inner
+                    bool fallbackPipelineResult = await this.inner.Result.MoveNextAsync(trace);
+
+                    if (this.Current.Result?.State?.Value != null)
+                    {
+                        if (this.Current.Result.State.Value is CosmosObject)
+                        {
+                            // Fallback plan returned a Ode pipeline which is wrong
+                            return false;
+                        }
+                    }
+                    return fallbackPipelineResult;
                 }
             }
 
