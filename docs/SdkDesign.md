@@ -203,10 +203,13 @@ flowchart TD
     subgraph TelemetryJob[Telemetry Job]
         subgraph Collectors
             subgraph DataCollector[Operational Data Collector]
-            OpsDatapoint(Operation Datapoint) --> OperationHistogram[(Histogram)]
+                OpsDatapoint(Operation Datapoint) --> OperationHistogram[(Histogram)]
             end
             subgraph CacheCollector[Cache Data Collector]
-            CacheDatapoint(Cache Request Datapoint) --> CacheHistogram[(Histogram)]
+                CacheDatapoint(Cache Request Datapoint) --> CacheHistogram[(Histogram)]
+            end
+            subgraph NetworkDataCollector[Network Data Collector]
+                TcpDatapoint(Network Request Datapoint) --> NetworkHistogram[(Histogram)]
             end
         end
         subgraph TelemetryTask[Telemetry Task Every 10 min]
@@ -245,13 +248,17 @@ flowchart TD
         ConnectionModeforkind -- Gateway --> SetClientKind(Set activity Kind as Client)
         SetInternalKind --> GeneratedActivity(Activity Initiated)
         SetClientKind --> GeneratedActivity
-        StopActivity
+        HandlerPipeline --> CheckLatencyThreshold{is high latency?}
+        CheckLatencyThreshold -- Yes --> GenerateEvent(Generate Event With Request Diagnostics) --> StopActivity
+        CheckLatencyThreshold -- No --> StopActivity
     end
     CheckSourceName --> |No| HandlerPipeline 
-    HandlerPipeline --> |Response/Exception| StopActivity
     HandlerPipeline --> ConnectionMode{Gateway Mode/Direct Mode?}
     subgraph DirectPackage["Direct Implementation (part of Direct package)"]
-        DRetryAndLogic(Retry/Failover/Replica selection etc Business Logic) --> TCPImpl(TCP Implementation) --> |RNTBD|BackendService(Back End Service)
+        subgraph TCPImpl[TCP Implementation]
+            GenerateActivity(Generate Activity with Source Name )
+        end
+        DRetryAndLogic(Retry/Failover/Replica selection etc Business Logic) --> TCPImpl --> |RNTBD|BackendService(Back End Service)
     end
     subgraph GatewayCode[Gateway Implementation]
         GRetryAndLogic(Retry Logic) --> |HTTP|GatewayCall(Gateway Service)
