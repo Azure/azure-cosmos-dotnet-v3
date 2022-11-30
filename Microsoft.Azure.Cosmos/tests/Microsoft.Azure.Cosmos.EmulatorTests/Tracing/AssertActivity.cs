@@ -13,8 +13,8 @@
         public static void IsValid(Activity activity)
         {
             Assert.IsTrue(activity.OperationName == activity.DisplayName);
-
-            if(activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Gateway.ToString())
+            Assert.IsNotNull(activity.GetTagItem("db.cosmosdb.connection_mode"));
+            if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Gateway.ToString())
             {
                 Assert.AreEqual(ActivityKind.Internal, activity.Kind);
             }

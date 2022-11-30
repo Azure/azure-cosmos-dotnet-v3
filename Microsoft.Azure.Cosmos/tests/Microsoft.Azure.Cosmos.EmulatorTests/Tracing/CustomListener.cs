@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
-            if (eventSource != null && this.sourceNameFilter != null && this.sourceNameFilter(eventSource.Name))
+            if (eventSource != null && eventSource.Name.Equals("Azure-Cosmos-Operation"))
             {
                 this.EnableEvents(eventSource, EventLevel.Informational); // Enable information level events
             }
@@ -157,6 +157,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
             StringBuilder builder = new StringBuilder();
+            Console.WriteLine(eventData.Payload[0].ToString());
             builder.Append("<EVENT>")
                    .Append("Ideally, this should contain request diagnostics but request diagnostics is " +
                    "subject to change with each request as it contains few unique id. " +
