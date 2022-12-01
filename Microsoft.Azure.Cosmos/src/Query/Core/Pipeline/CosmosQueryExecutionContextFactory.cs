@@ -392,8 +392,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 inputParameters: inputParameters,
                 targetRange: new FeedRangeEpk(targetRange.ToRange()),
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount),
-                queryPipelineStage: (updatedInputParameters) =>
+                queryPipelineStage: (CosmosElement continuationToken) =>
                 {
+                    InputParameters updatedInputParameters = new InputParameters(
+                      inputParameters.SqlQuerySpec,
+                      continuationToken,
+                      inputParameters.InitialFeedRange,
+                      inputParameters.MaxConcurrency,
+                      inputParameters.MaxItemCount,
+                      inputParameters.MaxBufferedItemCount,
+                      inputParameters.PartitionKey,
+                      inputParameters.Properties,
+                      inputParameters.PartitionedQueryExecutionInfo,
+                      inputParameters.ExecutionEnvironment,
+                      inputParameters.ReturnResultsInDeterministicOrder,
+                      inputParameters.ForcePassthrough,
+                      inputParameters.TestInjections)
+                    {
+                        IsOdeFallBackPlan = true
+                    };
+
                     // Query Iterator requires that the creation of the query context is deferred until fallback pipeline is called
                     Task<TryCatch<IQueryPipelineStage>> tryCreateContext =
                         CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(

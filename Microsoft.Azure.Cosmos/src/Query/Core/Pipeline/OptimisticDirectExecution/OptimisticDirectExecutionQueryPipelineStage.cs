@@ -20,43 +20,52 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.CosmosQueryExecutionContextFactory;
     using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.PartitionMapper;
 
     internal sealed class OptimisticDirectExecutionQueryPipelineStage : IQueryPipelineStage
     {
         private const string optimisticDirectExecutionToken = "OptimisticDirectExecutionToken";
-        private readonly Func<InputParameters, Task<TryCatch<IQueryPipelineStage>>> queryPipelineStageFactory;
+        public delegate Task<TryCatch<IQueryPipelineStage>> FallbackQueryPipelineStageFactory(CosmosElement continuationToken);
+        private readonly FallbackQueryPipelineStageFactory queryPipelineStageFactory;
         private TryCatch<IQueryPipelineStage> innerQueryPipelineStage;
-        private InputParameters inputParameters;
+        private CosmosElement continuationToken;
         
-        private OptimisticDirectExecutionQueryPipelineStage(TryCatch<IQueryPipelineStage> queryPipelineStage, Func<InputParameters, Task<TryCatch<IQueryPipelineStage>>> queryPipelineStageFactory, InputParameters inputParameters)
+        private OptimisticDirectExecutionQueryPipelineStage(TryCatch<IQueryPipelineStage> queryPipelineStage, FallbackQueryPipelineStageFactory queryPipelineStageFactory, CosmosElement continuationToken)
         {
             this.innerQueryPipelineStage = queryPipelineStage;
             this.queryPipelineStageFactory = queryPipelineStageFactory;
-            this.inputParameters = inputParameters;
+            this.continuationToken = continuationToken;
         }
 
         public TryCatch<QueryPage> Current => this.innerQueryPipelineStage.Result.Current;
 
-        public ValueTask DisposeAsync() => default;
+        public ValueTask DisposeAsync()
+        {
+            return this.innerQueryPipelineStage.Result.DisposeAsync();
+        }
        
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
+            if (this.innerQueryPipelineStage.Result == null)
+            {
+                return false;
+            }
+
             bool success = await this.innerQueryPipelineStage.Result.MoveNextAsync(trace);
             bool isGoneException = this.Current.Failed
                 && this.Current.InnerMostException is CosmosException exception
                 && exception.StatusCode == System.Net.HttpStatusCode.Gone
-                && exception.SubStatusCode == 1002;
+                && exception.SubStatusCode == (int)SubStatusCodes.PartitionKeyRangeGone;
 
             if (success)
             {
-                this.SaveContinuation(this.Current.Result?.State?.Value);
+                this.SaveContinuation(this.Current.Result.State?.Value);
             }
             else if (isGoneException)
             {
-                this.inputParameters.IsOdeFallBackPlan = true;
-                this.innerQueryPipelineStage = await this.queryPipelineStageFactory(this.inputParameters);
+                this.innerQueryPipelineStage = await this.queryPipelineStageFactory(this.continuationToken);
 
                 // TODO: Failure check for this.inner
                 bool fallbackPipelineSuccess = await this.innerQueryPipelineStage.Result.MoveNextAsync(trace);
@@ -85,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             InputParameters inputParameters,
             FeedRangeEpk targetRange,
             QueryPaginationOptions queryPaginationOptions,
-            Func<InputParameters, Task<TryCatch<IQueryPipelineStage>>> queryPipelineStage,
+            FallbackQueryPipelineStageFactory queryPipelineStage,
             CancellationToken cancellationToken)
         {
             TryCatch<IQueryPipelineStage> pipelineStage = OptimisticDirectExecutionQueryPipelineImpl.MonadicCreate(
@@ -102,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 return TryCatch<IQueryPipelineStage>.FromException(pipelineStage.Exception);
             }
 
-            OptimisticDirectExecutionQueryPipelineStage odePipelineStageMonadicCreate = new OptimisticDirectExecutionQueryPipelineStage(pipelineStage, queryPipelineStage, inputParameters);
+            OptimisticDirectExecutionQueryPipelineStage odePipelineStageMonadicCreate = new OptimisticDirectExecutionQueryPipelineStage(pipelineStage, queryPipelineStage, inputParameters.InitialUserContinuationToken);
 
             return TryCatch<IQueryPipelineStage>.FromResult(odePipelineStageMonadicCreate);
         }
@@ -120,23 +129,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 CosmosArray cosmosElementParallelContinuationToken = CosmosArray.Create(parallelContinuationToken);
                 continuationToken = cosmosElementParallelContinuationToken;
             }
-            
-            InputParameters inputParams = new InputParameters(
-                  this.inputParameters.SqlQuerySpec,
-                  continuationToken,
-                  this.inputParameters.InitialFeedRange,
-                  this.inputParameters.MaxConcurrency,
-                  this.inputParameters.MaxItemCount,
-                  this.inputParameters.MaxBufferedItemCount,
-                  this.inputParameters.PartitionKey,
-                  this.inputParameters.Properties,
-                  this.inputParameters.PartitionedQueryExecutionInfo,
-                  this.inputParameters.ExecutionEnvironment,
-                  this.inputParameters.ReturnResultsInDeterministicOrder,
-                  this.inputParameters.ForcePassthrough,
-                  this.inputParameters.TestInjections);
 
-            this.inputParameters = inputParams;
+            this.continuationToken = continuationToken;
         }
 
         private class OptimisticDirectExecutionQueryPipelineImpl : IQueryPipelineStage
