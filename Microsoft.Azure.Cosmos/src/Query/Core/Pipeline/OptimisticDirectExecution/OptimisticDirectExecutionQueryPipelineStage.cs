@@ -27,33 +27,36 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
     internal sealed class OptimisticDirectExecutionQueryPipelineStage : IQueryPipelineStage
     {
         private const string optimisticDirectExecutionToken = "OptimisticDirectExecutionToken";
+        private const string optimisticDirectExecution = "OptimisticDirectExecution";
+        private const string specializedDocumentQueryExecution = "SpecializedDocumentQueryExecution";
         public delegate Task<TryCatch<IQueryPipelineStage>> FallbackQueryPipelineStageFactory(CosmosElement continuationToken);
         private readonly FallbackQueryPipelineStageFactory queryPipelineStageFactory;
-        private TryCatch<IQueryPipelineStage> innerQueryPipelineStage;
+        private TryCatch<IQueryPipelineStage> inner;
         private CosmosElement continuationToken;
+        private string queryState;
         
         private OptimisticDirectExecutionQueryPipelineStage(TryCatch<IQueryPipelineStage> queryPipelineStage, FallbackQueryPipelineStageFactory queryPipelineStageFactory, CosmosElement continuationToken)
         {
-            this.innerQueryPipelineStage = queryPipelineStage;
+            this.inner = queryPipelineStage;
             this.queryPipelineStageFactory = queryPipelineStageFactory;
             this.continuationToken = continuationToken;
         }
 
-        public TryCatch<QueryPage> Current => this.innerQueryPipelineStage.Result.Current;
+        public TryCatch<QueryPage> Current => this.inner.Result.Current;
 
         public ValueTask DisposeAsync()
         {
-            return this.innerQueryPipelineStage.Result.DisposeAsync();
+            return this.inner.Result.DisposeAsync();
         }
        
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
-            if (this.innerQueryPipelineStage.Result == null)
+            if (this.inner.Result == null)
             {
                 return false;
             }
 
-            bool success = await this.innerQueryPipelineStage.Result.MoveNextAsync(trace);
+            bool success = await this.inner.Result.MoveNextAsync(trace);
             bool isGoneException = this.Current.Failed
                 && this.Current.InnerMostException is CosmosException exception
                 && exception.StatusCode == System.Net.HttpStatusCode.Gone
@@ -61,23 +64,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
             if (success)
             {
+                this.queryState = optimisticDirectExecution;
                 this.SaveContinuation(this.Current.Result.State?.Value);
             }
             else if (isGoneException)
             {
-                this.innerQueryPipelineStage = await this.queryPipelineStageFactory(this.continuationToken);
+                // Only Ode pipeline GoneException should be handled
+                Debug.Assert(this.queryState == optimisticDirectExecution);
 
+                this.inner = await this.queryPipelineStageFactory(this.UnwrapContinuationToken(this.continuationToken));
+                this.queryState = specializedDocumentQueryExecution;
+                
                 // TODO: Failure check for this.inner
-                bool fallbackPipelineSuccess = await this.innerQueryPipelineStage.Result.MoveNextAsync(trace);
+                bool fallbackPipelineSuccess = await this.inner.Result.MoveNextAsync(trace);
 
-                if (this.Current.Result?.State?.Value != null)
-                {
-                    if (this.Current.Result.State.Value is CosmosObject)
-                    {
-                        // Fallback plan returned a Ode pipeline which is wrong
-                        return false;
-                    }
-                }
                 return fallbackPipelineSuccess;
             }
 
@@ -86,7 +86,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public void SetCancellationToken(CancellationToken cancellationToken)
         {
-            this.innerQueryPipelineStage.Result.SetCancellationToken(cancellationToken);
+            this.inner.Result.SetCancellationToken(cancellationToken);
+        }
+
+        public CosmosElement UnwrapContinuationToken(CosmosElement continuationToken) 
+        {
+            ((CosmosObject)continuationToken).TryGetValue(optimisticDirectExecutionToken, out CosmosElement specializedContinuationToken);
+            CosmosArray cosmosElementFallbackToken = CosmosArray.Create(specializedContinuationToken);
+            return cosmosElementFallbackToken;
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
@@ -118,18 +125,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         private void SaveContinuation(CosmosElement continuationToken)
         {
-            if (continuationToken == null) 
-            { 
-                return; 
-            }
-
-            if (continuationToken is CosmosObject)
-            {
-                ((CosmosObject)continuationToken).TryGetValue(optimisticDirectExecutionToken, out CosmosElement parallelContinuationToken);
-                CosmosArray cosmosElementParallelContinuationToken = CosmosArray.Create(parallelContinuationToken);
-                continuationToken = cosmosElementParallelContinuationToken;
-            }
-
             this.continuationToken = continuationToken;
         }
 
