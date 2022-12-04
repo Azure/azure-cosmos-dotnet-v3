@@ -53,7 +53,7 @@
                 .Build();
 
             // Custom Listener
-            testListener = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*");
+            testListener = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*", "Azure-Cosmos-Operation-Request-Diagnostics");
 
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
                 useGateway: false);

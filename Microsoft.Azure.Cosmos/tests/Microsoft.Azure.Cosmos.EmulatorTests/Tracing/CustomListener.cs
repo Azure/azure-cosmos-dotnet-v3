@@ -25,21 +25,23 @@ namespace Microsoft.Azure.Cosmos.Tests
         IDisposable
     {
         private readonly Func<string, bool> sourceNameFilter;
-
+        private readonly string eventName;
+        
         private List<IDisposable> subscriptions = new();
         private List<ProducedDiagnosticScope> Scopes { get; } = new();
-
+        
         public static ConcurrentBag<Activity> CollectedActivities { private set; get; } = new();
         private static ConcurrentBag<string> CollectedEvents { set; get; } = new();
 
-        public CustomListener(string name)
-            : this(n => Regex.Match(n, name).Success)
+        public CustomListener(string name, string eventName)
+            : this(n => Regex.Match(n, name).Success, eventName)
         {
         }
 
-        public CustomListener(Func<string, bool> filter)
+        public CustomListener(Func<string, bool> filter, string eventName)
         {
             this.sourceNameFilter = filter;
+            this.eventName = eventName;
             
             DiagnosticListener.AllListeners.Subscribe(this);
         }
@@ -145,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
-            if (eventSource != null && eventSource.Name.Equals("Azure-Cosmos-Operation"))
+            if (eventSource != null && eventSource.Name.Equals(this.eventName))
             {
                 this.EnableEvents(eventSource, EventLevel.Informational); // Enable information level events
             }

@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     [EventSource(Name = EventSourceName)]
     internal sealed class CosmosDbEventSource : AzureEventSource
     {
-        private const string EventSourceName = "Azure-Cosmos-Operation";
+        internal const string EventSourceName = "Azure-Cosmos-Operation-Request-Diagnostics";
         
         private static CosmosDbEventSource Singleton { get; } = new CosmosDbEventSource();
 
