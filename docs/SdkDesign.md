@@ -192,6 +192,7 @@ flowchart LR
 
 ```mermaid
 flowchart TD
+ subgraph SDK[CosmosDB .Net Package]
     ClientInitiate[Client Initialization]
     OperationRequest[Operation Request] --> UserHandlers(User Handlers)
     subgraph HandlerPipeline[Handler Pipeline]
@@ -200,16 +201,19 @@ flowchart TD
         OtherHandlers(Other Handlers) --> |Response|TelmetryHandler
         OtherHandlers --> TransportHandler(Transport Handler)
     end
+    subgraph TracingModule[Tracing Module]
+        ClientSideRequestStatisticsTraceDatum(ClientSideRequestStatisticsTraceDatum contains HTTP/TCP statitics)
+    end
     subgraph TelemetryJob[Telemetry Job]
         subgraph Collectors
+            subgraph NetworkDataCollector[Network Data Collector]
+                TcpDatapoint(Network Request Datapoint) --> NetworkHistogram[(Histogram)]
+            end
             subgraph DataCollector[Operational Data Collector]
                 OpsDatapoint(Operation Datapoint) --> OperationHistogram[(Histogram)]
             end
             subgraph CacheCollector[Cache Data Collector]
                 CacheDatapoint(Cache Request Datapoint) --> CacheHistogram[(Histogram)]
-            end
-            subgraph NetworkDataCollector[Network Data Collector]
-                TcpDatapoint(Network Request Datapoint) --> NetworkHistogram[(Histogram)]
             end
         end
         subgraph TelemetryTask[Telemetry Task Every 10 min]
@@ -220,8 +224,10 @@ flowchart TD
         end
         GetDataFromCollector --> |Get Aggregated data|Collectors
     end
+    TelemetryJob -->|get network i.e. Http/TCP statistics for network Collector| TracingModule
     TelmetryHandler --> |Sends Data to Collector|TelemetryJob
-    ClientInitiate --> |Start the Job|TelemetryJob
+    IsCTEnabled -- Yes, Start the Job --> TelemetryJob
+    IsCTEnabled -- No --> ClientIntitiatedWithoutTelemetry
     TransportHandler --> ConnectionMode{Gateway Mode/Direct Mode?}
     subgraph DirectPackage["Direct Implementation (part of Direct package)"]
         DRetryAndLogic(Retry/Failover/Replica selection etc Business Logic) --> TCPImpl(TCP Implementation) --> |RNTBD|BackendService(Back End Service)
@@ -231,6 +237,12 @@ flowchart TD
     end
     ConnectionMode -- "Direct(Request Process on client Machine)" --> DirectPackage
     ConnectionMode -- Gateway --> GatewayCode
+end
+    TelemetryJob --> ClientTelemetryService(Client Telemetry Service)
+    ClientTelemetryService --> Kusto[(Kusto Storage i.e. ClientRequests10M)]
+    ClientInitiate[Client Initialization] --> CallGatewayAPI(Gateway Service i.e getClientConfigs)
+    CallGatewayAPI --> IsCTEnabled{Is Client Telemetry Enabled?}
+    
 ```
 
 ## Open Telemetry (Private Preview)
