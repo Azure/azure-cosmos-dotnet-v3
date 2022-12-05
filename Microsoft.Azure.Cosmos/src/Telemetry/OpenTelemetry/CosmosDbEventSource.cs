@@ -8,10 +8,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using global::Azure.Core.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
+    /// <summary>
+    /// This class is used to generate events with Azure.Cosmos.Operation Source Name
+    /// </summary>
     [EventSource(Name = EventSourceName)]
     internal sealed class CosmosDbEventSource : AzureEventSource
     {
-        private const string EventSourceName = OpenTelemetryAttributeKeys.DiagnosticNamespace;
+        internal const string EventSourceName = "Azure-Cosmos-Operation-Request-Diagnostics";
+        
         private static CosmosDbEventSource Singleton { get; } = new CosmosDbEventSource();
 
         private CosmosDbEventSource()
