@@ -808,7 +808,7 @@ namespace Microsoft.Azure.Cosmos
 
             await cosmosHttpClient.SendHttpAsync(() => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, "http://someuri.com")),
                                                   ResourceType.Document,
-                                                  HttpTimeoutPolicyDefault.Instance,
+                                                  HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
                                                   clientSideRequestStatistics,
                                                   CancellationToken.None);
 

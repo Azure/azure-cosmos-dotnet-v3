@@ -6,11 +6,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using Diagnostics;
-    using global::Azure;
     using global::Azure.Core.Pipeline;
-    using HdrHistogram;
 
+    /// <summary>
+    /// This class is used to add information in an Activity tags ref. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3058
+    /// </summary>
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
         private const string CosmosDb = "cosmosdb";
@@ -92,8 +92,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.NetPeerName, clientContext.Client?.Endpoint?.Host);
 
                 // Client Information
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id ?? OpenTelemetryAttributes.NotAvailable);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent ?? OpenTelemetryAttributes.NotAvailable);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, clientContext.ClientOptions.ConnectionMode);
             }
         }
@@ -108,20 +108,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, response.StatusCode);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, response.SubStatusCode);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)response.StatusCode);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, (int)response.SubStatusCode);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
                 
                 if (response.Diagnostics != null)
                 {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()) ?? OpenTelemetryAttributes.NotAvailable);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
                     CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, this.operationType, response);
-                }
-                else
-                {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, OpenTelemetryAttributes.NotAvailable);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestDiagnostics, OpenTelemetryAttributes.NotAvailable);
                 }
             }
         }

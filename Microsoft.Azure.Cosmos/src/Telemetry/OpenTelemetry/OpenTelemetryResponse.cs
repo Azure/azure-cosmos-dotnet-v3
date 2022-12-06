@@ -46,9 +46,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.StatusCode = statusCode;
             this.RequestCharge = requestCharge;
-            this.ResponseContentLength = responseContentLength ?? OpenTelemetryAttributes.NotAvailable;
+            this.ResponseContentLength = responseContentLength;
             this.Diagnostics = diagnostics;
-            this.ItemCount = itemCount ?? OpenTelemetryAttributes.NotAvailable; 
+            this.ItemCount = itemCount; 
             this.SubStatusCode = subStatusCode;
         }
 
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return response.Content.Length.ToString();
             }
-            return response?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
+            return response?.Headers?.ContentLength;
         }
     }
 }

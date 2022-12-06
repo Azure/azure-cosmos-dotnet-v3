@@ -8,10 +8,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using global::Azure.Core.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
+    /// <summary>
+    /// This class is used to generate events with Azure.Cosmos.Operation Source Name
+    /// </summary>
     [EventSource(Name = EventSourceName)]
     internal sealed class CosmosDbEventSource : AzureEventSource
     {
-        private const string EventSourceName = OpenTelemetryAttributeKeys.DiagnosticNamespace;
+        internal const string EventSourceName = "Azure-Cosmos-Operation-Request-Diagnostics";
+        
         private static CosmosDbEventSource Singleton { get; } = new CosmosDbEventSource();
 
         private CosmosDbEventSource()
@@ -31,19 +35,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            if (config is not null && config.EnableDiagnosticsTraceForAllRequests)
+            if (DiagnosticsFilterHelper.IsTracingNeeded(
+                    config: config,
+                    operationType: operationType,
+                    response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
-                CosmosDbEventSource.Singleton.WriteInfoEvent(response.Diagnostics.ToString());
-            } 
-            else
-            {
-                if (DiagnosticsFilterHelper.IsTracingNeeded(
-                        config: config,
-                        operationType: operationType,
-                        response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
-                {
-                    CosmosDbEventSource.Singleton.WriteWarningEvent(response.Diagnostics.ToString());
-                }
+                CosmosDbEventSource.Singleton.WriteWarningEvent(response.Diagnostics.ToString());
             }
         }
 
