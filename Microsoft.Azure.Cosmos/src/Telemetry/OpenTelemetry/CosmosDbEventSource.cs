@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            if (config.EnableDiagnosticsTraceForAllRequests)
+            if (config is not null && config.EnableDiagnosticsTraceForAllRequests)
             {
                 CosmosDbEventSource.Singleton.WriteInfoEvent(response.Diagnostics.ToString());
             } 
