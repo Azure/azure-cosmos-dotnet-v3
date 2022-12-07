@@ -424,12 +424,41 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// If Open Telemetry listener is subscribed for Azure.Cosmos namespace, There are <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can leverage to control it.<br></br>
+        /// Disables Operation level activity generation even if listener is subscribed to Azure.Cosmos.operation source and clears <see cref="DistributedTracingOptions"/> configured for this client instance.
         /// </summary>
-        /// <param name="options">Tracing Options <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        internal CosmosClientBuilder WithDistributingTracing(DistributedTracingOptions options)
+#if PREVIEW
+        public
+#else
+        internal
+#endif 
+            CosmosClientBuilder DisableDistributedTracing()
         {
+            this.clientOptions.DisableDistributedTracing = true;
+            this.clientOptions.DistributedTracingOptions = null;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets Distributed Tracing Configuration ref. <see cref="DistributedTracingOptions"/>
+        /// </summary>
+        /// <param name="options"><see cref="DistributedTracingOptions"/>.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <exception cref="ArgumentException">If Distributed Tracing is disabled</exception>
+        /// <remarks>Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif 
+            CosmosClientBuilder WithDistributedTracingOptions(DistributedTracingOptions options)
+        {
+            if (this.clientOptions.DisableDistributedTracing)
+            {
+                throw new ArgumentException("Operation level distributed tracing is disabled. Please remove the call to DisableOperationDistributedTracing() to enable it.");
+            }
+            
             this.clientOptions.DistributedTracingOptions = options;
 
             return this;

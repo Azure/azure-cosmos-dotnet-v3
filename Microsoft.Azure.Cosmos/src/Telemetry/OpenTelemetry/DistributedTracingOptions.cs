@@ -6,11 +6,12 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
 
-    /// <summary>
-    /// Open Telemetry Configuration
-    /// It needs to be public once AppInsight is ready
-    /// </summary>
-    internal sealed class DistributedTracingOptions
+#if PREVIEW
+    public
+#else
+    internal
+#endif 
+        sealed class DistributedTracingOptions
     {
         /// <summary>
         /// Default Latency threshold for other than query Operation
@@ -23,9 +24,9 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly TimeSpan DefaultQueryTimeoutThreshold = TimeSpan.FromMilliseconds(500);
 
         /// <summary>
-        /// Latency Threshold to generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) with Request diagnostics in distributing Tracing.<br></br>
-        /// If it is not set then by default it will generate (<see cref="System.Diagnostics.Tracing.EventSource"/>) for query operation which are taking more than 500 ms and non-query operations taking more than 100 ms.
+        /// SDK generates <see cref="System.Diagnostics.Tracing.EventSource"/> (Event Source Name is "Azure-Cosmos-Operation-Request-Diagnostics") with Request Diagnostics String, If Operation level distributed tracing is not disabled i.e. <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.DisableDistributedTracing"/>
         /// </summary>
-        public TimeSpan? DiagnosticsLatencyThreshold { get; set; }
+        /// <remarks>If it is not set then, by default, it will generate <see cref="System.Diagnostics.Tracing.EventSource"/> for query operation which are taking more than 500 ms and non-query operations taking more than 100 ms.</remarks>
+        public TimeSpan? LatencyThresholdForRequestDiagnosticEventTrace { get; set; }
     }
 }

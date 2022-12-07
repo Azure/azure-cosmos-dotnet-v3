@@ -64,23 +64,19 @@
                 builder
                     .AddCustomHandlers(requestHandler));
 
-            client.ClientOptions.EnableDistributedTracing = true;
-            bulkClient.ClientOptions.EnableDistributedTracing = true;
-            miscCosmosClient.ClientOptions.EnableDistributedTracing = true;
-
             client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                 DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                 LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(0)
             };
 
             bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(0)
             };
             
             miscCosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(0)
             };
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
@@ -1005,11 +1001,10 @@
                                 request,
                                 exceptionActivityId,
                                 errorMessage))));
-
-                throttleClient.ClientOptions.EnableDistributedTracing = true;
+                
                 throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                    LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(0)
                 };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
@@ -1292,11 +1287,10 @@
                                 request,
                                 exceptionActivityId,
                                 errorMessage))));
-
-                throttleClient.ClientOptions.EnableDistributedTracing = true;
+                
                 throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                    LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(0)
                 };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();

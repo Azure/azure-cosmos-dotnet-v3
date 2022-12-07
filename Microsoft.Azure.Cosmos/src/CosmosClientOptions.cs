@@ -992,13 +992,25 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>
         /// </summary>
-        internal DistributedTracingOptions DistributedTracingOptions { get; set; }
+        /// <remarks> Applicable only when Operation level distributed tracing is not disabled i.e. <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.DisableDistributedTracing"/></remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            DistributedTracingOptions DistributedTracingOptions { get; set; }
 
         /// <summary>
-        /// Gets or sets value indicating whether distributed tracing activities (<see cref="System.Diagnostics.Activity"/>) are going to be created for the SDK methods calls and HTTP calls.
-        /// By default true for Preview package
+        /// By default, SDK (Source Name is "Azure.Cosmos.Operation") generates operation level <see cref="System.Diagnostics.Activity"/> for methods calls.
+        /// This flag is there to disable it from source.
         /// </summary>
-        internal bool EnableDistributedTracing { get; set; }
+        /// <remarks>Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            bool DisableDistributedTracing { get; set; }
 
     }
 }

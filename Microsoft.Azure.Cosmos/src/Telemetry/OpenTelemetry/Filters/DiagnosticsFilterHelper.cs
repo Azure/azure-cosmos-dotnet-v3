@@ -22,9 +22,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         {
             TimeSpan latencyThreshold;
 
-            if (config?.DiagnosticsLatencyThreshold != null)
+            if (config?.LatencyThresholdForRequestDiagnosticEventTrace != null)
             {
-                latencyThreshold = config.DiagnosticsLatencyThreshold.Value;
+                latencyThreshold = config.LatencyThresholdForRequestDiagnosticEventTrace.Value;
             }
             else
             {

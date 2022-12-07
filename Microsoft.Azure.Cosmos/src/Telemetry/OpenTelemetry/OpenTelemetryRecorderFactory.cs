@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             RequestOptions requestOptions, 
             CosmosClientContext clientContext)
         {
-            if (clientContext is { ClientOptions.EnableDistributedTracing: true })
+            if (clientContext is { ClientOptions.DisableDistributedTracing: false })
             {
                 ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
                     resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
