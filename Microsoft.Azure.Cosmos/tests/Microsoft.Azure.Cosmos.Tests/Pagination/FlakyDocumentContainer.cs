@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             if (this.isODETest)
             {
                 this.iterationCount++;
-                if (this.iterationCount == 2)
+                if (this.iterationCount == 2 || this.iterationCount == 5)
                 {
                     Exception failure = await this.ShouldReturnFailure();
                     if (failure != null)

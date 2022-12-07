@@ -1,8 +1,8 @@
 ﻿<Results>
   <Result>
     <Input>
-      <Description>Partition Key + Value and Distinct</Description>
-      <Query>SELECT DISTINCT c.key FROM c</Query>
+      <Description>Single Partition Key and Distinct</Description>
+      <Query>SELECT DISTINCT c.age FROM c</Query>
       <PartitionKeys>
         <Key>/pk</Key>
       </PartitionKeys>
@@ -14,8 +14,8 @@
   </Result>
   <Result>
     <Input>
-      <Description>Partition Key + Value and Min Aggregate</Description>
-      <Query>SELECT VALUE MIN(c.key) FROM c</Query>
+      <Description>Single Partition Key and Min Aggregate</Description>
+      <Query>SELECT VALUE MIN(c.age) FROM c</Query>
       <PartitionKeys>
         <Key>/pk</Key>
       </PartitionKeys>
@@ -27,8 +27,34 @@
   </Result>
   <Result>
     <Input>
-      <Description>Partition Key + Value Fields</Description>
-      <Query>SELECT c.key FROM c</Query>
+      <Description>Single Partition Key and Value Field</Description>
+      <Query>SELECT c.age FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Single Partition Key and Value Field</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Single Partition Key and continuation token</Description>
+      <Query>SELECT * FROM c</Query>
       <PartitionKeys>
         <Key>/pk</Key>
       </PartitionKeys>

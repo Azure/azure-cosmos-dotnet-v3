@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -18,41 +17,44 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using static Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.CosmosQueryExecutionContextFactory;
-    using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.PartitionMapper;
 
     internal sealed class OptimisticDirectExecutionQueryPipelineStage : IQueryPipelineStage
     {
+        private enum ExecutionState
+        {
+            OptimisticDirectExecution,
+            SpecializedDocumentQueryExecution,
+        }
+
         private const string optimisticDirectExecutionToken = "OptimisticDirectExecutionToken";
-        private const string optimisticDirectExecution = "OptimisticDirectExecution";
-        private const string specializedDocumentQueryExecution = "SpecializedDocumentQueryExecution";
         public delegate Task<TryCatch<IQueryPipelineStage>> FallbackQueryPipelineStageFactory(CosmosElement continuationToken);
         private readonly FallbackQueryPipelineStageFactory queryPipelineStageFactory;
         private TryCatch<IQueryPipelineStage> inner;
         private CosmosElement continuationToken;
-        private string queryState;
-        
-        private OptimisticDirectExecutionQueryPipelineStage(TryCatch<IQueryPipelineStage> queryPipelineStage, FallbackQueryPipelineStageFactory queryPipelineStageFactory, CosmosElement continuationToken)
+        private ExecutionState executionState;
+
+        private OptimisticDirectExecutionQueryPipelineStage(TryCatch<IQueryPipelineStage> inner, FallbackQueryPipelineStageFactory queryPipelineStageFactory, CosmosElement continuationToken)
         {
-            this.inner = queryPipelineStage;
+            this.inner = inner;
             this.queryPipelineStageFactory = queryPipelineStageFactory;
             this.continuationToken = continuationToken;
+            this.executionState = ExecutionState.OptimisticDirectExecution;
         }
 
-        public TryCatch<QueryPage> Current => this.inner.Result.Current;
+        public TryCatch<QueryPage> Current => this.inner.Try<QueryPage>(pipelineStage => pipelineStage.Current);
 
         public ValueTask DisposeAsync()
         {
-            return this.inner.Result.DisposeAsync();
+            return this.inner.Try<ValueTask>(pipelineStage => pipelineStage.DisposeAsync()).Result;
         }
-       
+
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
-            if (this.inner.Result == null)
+            if (this.inner.Failed)
             {
+                this.inner = TryCatch<IQueryPipelineStage>.FromException(this.inner.Exception);
                 return false;
             }
 
@@ -64,44 +66,49 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
             if (success)
             {
-                this.queryState = optimisticDirectExecution;
                 this.SaveContinuation(this.Current.Result.State?.Value);
             }
-            else if (isGoneException)
+            else if (isGoneException && this.executionState == ExecutionState.OptimisticDirectExecution)
             {
-                // Only Ode pipeline GoneException should be handled
-                Debug.Assert(this.queryState == optimisticDirectExecution);
+                this.inner = await this.queryPipelineStageFactory(TryUnwrapContinuationToken(this.continuationToken).Result);
+                this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
 
-                this.inner = await this.queryPipelineStageFactory(this.UnwrapContinuationToken(this.continuationToken));
-                this.queryState = specializedDocumentQueryExecution;
-                
-                // TODO: Failure check for this.inner
-                bool fallbackPipelineSuccess = await this.inner.Result.MoveNextAsync(trace);
+                if (this.inner.Failed)
+                {
+                    this.inner = TryCatch<IQueryPipelineStage>.FromException(this.inner.Exception);
+                    return false;
+                }
 
-                return fallbackPipelineSuccess;
+                success = await this.inner.Result.MoveNextAsync(trace);
             }
 
-            return success; 
+            return success;
         }
 
         public void SetCancellationToken(CancellationToken cancellationToken)
         {
-            this.inner.Result.SetCancellationToken(cancellationToken);
+            this.inner.Try<IQueryPipelineStage>((pipelineStage) => pipelineStage = this.inner.Result).Result.SetCancellationToken(cancellationToken);
         }
 
-        public CosmosElement UnwrapContinuationToken(CosmosElement continuationToken) 
+        public static TryCatch<CosmosElement> TryUnwrapContinuationToken(CosmosElement continuationToken)
         {
-            ((CosmosObject)continuationToken).TryGetValue(optimisticDirectExecutionToken, out CosmosElement specializedContinuationToken);
+            if (!((CosmosObject)continuationToken).TryGetValue(optimisticDirectExecutionToken, out CosmosElement specializedContinuationToken))
+            {
+                return TryCatch<CosmosElement>.FromException(
+                    new FormatException(
+                        $"Unable to convert CosmosObject '{optimisticDirectExecutionToken}' to CosmosElement."));
+            }
+
             CosmosArray cosmosElementFallbackToken = CosmosArray.Create(specializedContinuationToken);
-            return cosmosElementFallbackToken;
+            return TryCatch<CosmosElement>.FromResult(cosmosElementFallbackToken);
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             DocumentContainer documentContainer,
-            InputParameters inputParameters,
+            CosmosQueryExecutionContextFactory.InputParameters inputParameters,
             FeedRangeEpk targetRange,
             QueryPaginationOptions queryPaginationOptions,
-            FallbackQueryPipelineStageFactory queryPipelineStage,
+            FallbackQueryPipelineStageFactory fallbackQueryPipelineStageFactory,
             CancellationToken cancellationToken)
         {
             TryCatch<IQueryPipelineStage> pipelineStage = OptimisticDirectExecutionQueryPipelineImpl.MonadicCreate(
@@ -118,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 return TryCatch<IQueryPipelineStage>.FromException(pipelineStage.Exception);
             }
 
-            OptimisticDirectExecutionQueryPipelineStage odePipelineStageMonadicCreate = new OptimisticDirectExecutionQueryPipelineStage(pipelineStage, queryPipelineStage, inputParameters.InitialUserContinuationToken);
+            OptimisticDirectExecutionQueryPipelineStage odePipelineStageMonadicCreate = new OptimisticDirectExecutionQueryPipelineStage(pipelineStage, fallbackQueryPipelineStageFactory, inputParameters.InitialUserContinuationToken);
 
             return TryCatch<IQueryPipelineStage>.FromResult(odePipelineStageMonadicCreate);
         }
@@ -262,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     return TryCatch<FeedRangeState<QueryState>>.FromException(tryCreateContinuationToken.Exception);
                 }
 
-                TryCatch<PartitionMapping<OptimisticDirectExecutionContinuationToken>> partitionMappingMonad = PartitionMapper.MonadicGetPartitionMapping(
+                TryCatch<PartitionMapper.PartitionMapping<OptimisticDirectExecutionContinuationToken>> partitionMappingMonad = PartitionMapper.MonadicGetPartitionMapping(
                     range,
                     tryCreateContinuationToken.Result);
 
@@ -272,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                         partitionMappingMonad.Exception);
                 }
 
-                PartitionMapping<OptimisticDirectExecutionContinuationToken> partitionMapping = partitionMappingMonad.Result;
+                PartitionMapper.PartitionMapping<OptimisticDirectExecutionContinuationToken> partitionMapping = partitionMappingMonad.Result;
 
                 KeyValuePair<FeedRangeEpk, OptimisticDirectExecutionContinuationToken> kvpRange = new KeyValuePair<FeedRangeEpk, OptimisticDirectExecutionContinuationToken>(
                     partitionMapping.TargetMapping.Keys.First(),
