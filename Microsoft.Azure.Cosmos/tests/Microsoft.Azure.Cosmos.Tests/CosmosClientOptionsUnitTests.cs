@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .DisableOperationDistributedTracing(new DistributedTracingOptions
+                .WithDistributedTracingOptions(new DistributedTracingOptions
                 {
                     LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(100)
                 });
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
             Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.DistributedTracingOptions.LatencyThresholdForRequestDiagnosticEventTrace);
-            Assert.IsFalse(clientOptions.EnableDistributedTracing);
+            Assert.IsFalse(clientOptions.DisableDistributedTracing);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);

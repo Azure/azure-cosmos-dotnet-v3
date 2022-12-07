@@ -1598,11 +1598,10 @@
                     request,
                     exceptionActivityId,
                     errorMessage))));
-
-    throttleClient.ClientOptions.EnableDistributedTracing = true;
+    
     throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
     {
-        DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
+        LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(0)
     };
 
     ItemRequestOptions requestOptions = new ItemRequestOptions();

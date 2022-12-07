@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
 
+    /// <summary>
+    /// Options for configuring the distributed tracing and event tracing
+    /// </summary>
 #if PREVIEW
     public
 #else
