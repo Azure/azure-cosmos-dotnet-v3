@@ -19,10 +19,7 @@
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
-    using OpenTelemetry;
-    using Telemetry;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
-    using OpenTelemetry.Trace;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
     [TestCategory("UpdateContract")]
@@ -34,6 +31,7 @@
 
         public static Database database;
         public static Container container;
+        
         private static CustomListener testListener;
         
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
