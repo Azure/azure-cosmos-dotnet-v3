@@ -174,14 +174,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// This extension method gets the StreamIterator from LINQ IQueryable to execute query asynchronously.
-        /// This will create the fresh new StreamIterator when called.
+        /// This extension method gets the FeedIterator from LINQ IQueryable to execute query asynchronously.
+        /// This will create the fresh new FeedIterator when called.
         /// </summary>
         /// <typeparam name="T">the type of object to query.</typeparam>
         /// <param name="query">the IQueryable{T} to be converted.</param>
         /// <returns>An iterator to go through the items.</returns>
         /// <example>
-        /// This example shows how to get StreamIterator from LINQ.
+        /// This example shows how to get FeedIterator from LINQ.
         ///
         /// <code language="c#">
         /// <![CDATA[
