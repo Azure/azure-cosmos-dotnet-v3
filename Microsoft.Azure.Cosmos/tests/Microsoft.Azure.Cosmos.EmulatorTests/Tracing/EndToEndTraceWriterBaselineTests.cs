@@ -34,27 +34,16 @@
 
         public static Database database;
         public static Container container;
-
         private static CustomListener testListener;
-        private static TracerProvider oTelTracerProvider;
-
+        
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
         [ClassInitialize()]
         public static async Task ClassInitAsync(TestContext context)
         {
-            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
-
-            // Open Telemetry Listener
-            oTelTracerProvider = Sdk.CreateTracerProviderBuilder()
-                .AddCustomOtelExporter() // use any exporter here
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*") // Right now, it will capture only "Azure.Cosmos.Operation"
-                .Build();
-
-            // Custom Listener
-            testListener = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*", "Azure-Cosmos-Operation-Request-Diagnostics");
-
+            testListener = Util.ConfigureOpenTelemetryAndCustomListeners();
+            
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
                 useGateway: false);
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
@@ -110,8 +99,7 @@
                 await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
             }
 
-            oTelTracerProvider?.Dispose();
-            testListener?.Dispose();
+            Util.DisposeOpenTelemetryAndCustomListeners();
 
             await Task.Delay(5000);
         }

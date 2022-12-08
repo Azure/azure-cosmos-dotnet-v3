@@ -3,6 +3,7 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using Castle.Core.Internal;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -13,16 +14,15 @@
         public static void IsValid(Activity activity)
         {
             Assert.IsTrue(activity.OperationName == activity.DisplayName);
-            Assert.IsNotNull(activity.GetTagItem("db.cosmosdb.connection_mode"));
+            Assert.IsFalse(activity.GetTagItem("db.cosmosdb.connection_mode").ToString().IsNullOrEmpty());
             if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Gateway.ToString())
             {
                 Assert.AreEqual(ActivityKind.Internal, activity.Kind);
             }
-            else
+            else if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Direct.ToString())
             {
                 Assert.AreEqual(ActivityKind.Client, activity.Kind);
             }
-            
             IList<string> expectedTags = new List<string>
             {
                  "az.namespace",
