@@ -565,6 +565,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Custom Listener
             Util.TestListener?.Dispose();
 
+            Util.OTelTracerProvider = null;
+            Util.TestListener = null;
+
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
         }
 
