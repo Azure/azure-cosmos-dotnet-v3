@@ -27,8 +27,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         private readonly Func<string, bool> sourceNameFilter;
         private readonly string eventName;
         
-        private List<IDisposable> subscriptions = new();
-        private List<ProducedDiagnosticScope> Scopes { get; } = new();
+        private ConcurrentBag<IDisposable> subscriptions = new();
+        private ConcurrentBag<ProducedDiagnosticScope> Scopes { get; } = new();
         
         public static ConcurrentBag<Activity> CollectedActivities { private set; get; } = new();
         private static ConcurrentBag<string> CollectedEvents { set; get; } = new();
@@ -76,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string stopSuffix = ".Stop";
                 string exceptionSuffix = ".Exception";
 
+                Console.WriteLine("--------------> " + value.Key);
                 if (value.Key.EndsWith(startSuffix))
                 {
                     string name = value.Key[..^startSuffix.Length];
@@ -181,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return;
             }
 
-            List<IDisposable> subscriptions;
+            ConcurrentBag<IDisposable> subscriptions;
             lock (this.Scopes)
             {
                 subscriptions = this.subscriptions;
