@@ -50,22 +50,7 @@
             miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
                 builder
                     .AddCustomHandlers(requestHandler));
-
-            client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-            {
-                 LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
-            };
-
-            bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-            {
-                LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
-            };
             
-            miscCosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-            {
-                LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
-            };
-
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     Guid.NewGuid().ToString(),
                     cancellationToken: default);
@@ -976,7 +961,12 @@
                 string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
                 Guid exceptionActivityId = Guid.NewGuid();
                 using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
-                    builder.WithThrottlingRetryOptions(
+                    builder
+                    .EnableDistributedTracingWithOptions(new DistributedTracingOptions()
+                    {
+                        LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                    })
+                    .WithThrottlingRetryOptions(
                         maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
                         maxRetryAttemptsOnThrottledRequests: 3)
                         .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
@@ -988,11 +978,6 @@
                                 exceptionActivityId,
                                 errorMessage))));
                 
-                throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-                {
-                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
-                };
-
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
                 Container containerWithThrottleException = throttleClient.GetContainer(
                     database.Id,
@@ -1265,6 +1250,10 @@
                         maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
                         maxRetryAttemptsOnThrottledRequests: 3)
                         .WithBulkExecution(true)
+                        .EnableDistributedTracingWithOptions(new DistributedTracingOptions()
+                        {
+                            LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                        })
                         .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                             transportClient,
                             (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
@@ -1273,11 +1262,6 @@
                                 request,
                                 exceptionActivityId,
                                 errorMessage))));
-                
-                throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-                {
-                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
-                };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
                 Container containerWithThrottleException = throttleClient.GetContainer(

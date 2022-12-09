@@ -140,7 +140,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 cosmosClientBuilder.WithConnectionModeGateway();
             }
-            
+
+            cosmosClientBuilder.EnableDistributedTracingWithOptions(new DistributedTracingOptions()
+            {
+                LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+            });
+
+
             return cosmosClientBuilder.Build();
         }
 

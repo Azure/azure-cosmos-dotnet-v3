@@ -157,7 +157,12 @@
     string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
     Guid exceptionActivityId = Guid.NewGuid();
     using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
-        builder.WithThrottlingRetryOptions(
+        builder
+        .EnableDistributedTracingWithOptions(new DistributedTracingOptions()
+        {
+            LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+        })
+        .WithThrottlingRetryOptions(
             maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
             maxRetryAttemptsOnThrottledRequests: 3)
             .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
@@ -169,11 +174,6 @@
                     exceptionActivityId,
                     errorMessage))));
     
-    throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-    {
-        LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
-    };
-
     ItemRequestOptions requestOptions = new ItemRequestOptions();
     Container containerWithThrottleException = throttleClient.GetContainer(
         database.Id,
@@ -387,6 +387,9 @@
     }
   ]
 }]]></Json>
+      <OTelActivities><ACTIVITY><OPERATION>Operation.CreateItemAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.stacktrace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-KEY>exception.message</ATTRIBUTE-KEY></ACTIVITY>
+<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
+</OTelActivities>
     </Output>
   </Result>
   <Result>

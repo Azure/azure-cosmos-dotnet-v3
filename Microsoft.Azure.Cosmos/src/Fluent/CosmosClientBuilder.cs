@@ -434,12 +434,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #endif 
             CosmosClientBuilder DisableDistributedTracing()
         {
-            this.clientOptions.IsDistributedTracingEnabled = true;
+            this.clientOptions.IsDistributedTracingEnabled = false;
             this.clientOptions.DistributedTracingOptions = null;
 
             return this;
         }
-
+        
         /// <summary>
         /// Sets Distributed Tracing Configuration ref. <see cref="DistributedTracingOptions"/>
         /// </summary>
@@ -447,18 +447,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <exception cref="ArgumentException">If Distributed Tracing is disabled</exception>
         /// <remarks>Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif 
-            CosmosClientBuilder WithDistributedTracingOptions(DistributedTracingOptions options)
+        internal CosmosClientBuilder EnableDistributedTracingWithOptions(DistributedTracingOptions options = default)
         {
-            if (this.clientOptions.IsDistributedTracingEnabled)
-            {
-                throw new ArgumentException("Operation level distributed tracing is disabled. Please remove the call to DisableOperationDistributedTracing() to enable it.");
-            }
-            
+            this.clientOptions.IsDistributedTracingEnabled = true;
             this.clientOptions.DistributedTracingOptions = options;
 
             return this;

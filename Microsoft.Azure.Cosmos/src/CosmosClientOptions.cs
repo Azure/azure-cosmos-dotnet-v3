@@ -993,12 +993,7 @@ namespace Microsoft.Azure.Cosmos
         /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>
         /// </summary>
         /// <remarks> Applicable only when Operation level distributed tracing is not disabled i.e. <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.IsDistributedTracingEnabled"/></remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            DistributedTracingOptions DistributedTracingOptions { get; set; }
+        internal DistributedTracingOptions DistributedTracingOptions { get; set; }
 
         /// <summary>
         /// By default, SDK (Source Name is "Azure.Cosmos.Operation") generates operation level <see cref="System.Diagnostics.Activity"/> for methods calls.

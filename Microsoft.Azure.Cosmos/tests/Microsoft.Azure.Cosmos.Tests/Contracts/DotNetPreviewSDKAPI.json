@@ -319,61 +319,12 @@
           "Attributes": [],
           "MethodInfo": "Boolean IsDistributedTracingEnabled;CanRead:True;CanWrite:True;Boolean get_IsDistributedTracingEnabled();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IsDistributedTracingEnabled(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.DistributedTracingOptions DistributedTracingOptions": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedTracingOptions DistributedTracingOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.DistributedTracingOptions get_DistributedTracingOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistributedTracingOptions(Microsoft.Azure.Cosmos.DistributedTracingOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.DistributedTracingOptions get_DistributedTracingOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedTracingOptions get_DistributedTracingOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_DistributedTracingOptions(Microsoft.Azure.Cosmos.DistributedTracingOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_DistributedTracingOptions(Microsoft.Azure.Cosmos.DistributedTracingOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Void set_IsDistributedTracingEnabled(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_IsDistributedTracingEnabled(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.DistributedTracingOptions;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "System.Nullable`1[System.TimeSpan] get_LatencyThresholdForDiagnosticEvent()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_LatencyThresholdForDiagnosticEvent();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Nullable`1[System.TimeSpan] LatencyThresholdForDiagnosticEvent": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.Nullable`1[System.TimeSpan] LatencyThresholdForDiagnosticEvent;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_LatencyThresholdForDiagnosticEvent();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_LatencyThresholdForDiagnosticEvent(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor()": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(), Void .ctor()]"
-        },
-        "Void set_LatencyThresholdForDiagnosticEvent(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_LatencyThresholdForDiagnosticEvent(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -407,11 +358,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder DisableDistributedTracing();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithDistributedTracingOptions(Microsoft.Azure.Cosmos.DistributedTracingOptions)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithDistributedTracingOptions(Microsoft.Azure.Cosmos.DistributedTracingOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -466,31 +412,6 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.RequestOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "Microsoft.Azure.Cosmos.DistributedTracingOptions DistributedTracingOptions": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedTracingOptions DistributedTracingOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.DistributedTracingOptions get_DistributedTracingOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistributedTracingOptions(Microsoft.Azure.Cosmos.DistributedTracingOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.DistributedTracingOptions get_DistributedTracingOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.DistributedTracingOptions get_DistributedTracingOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_DistributedTracingOptions(Microsoft.Azure.Cosmos.DistributedTracingOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_DistributedTracingOptions(Microsoft.Azure.Cosmos.DistributedTracingOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

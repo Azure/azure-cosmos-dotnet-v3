@@ -9,12 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Options for configuring the distributed tracing and event tracing
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif 
-        sealed class DistributedTracingOptions
+    internal sealed class DistributedTracingOptions
     {
         /// <summary>
         /// Default Latency threshold for other than query Operation
