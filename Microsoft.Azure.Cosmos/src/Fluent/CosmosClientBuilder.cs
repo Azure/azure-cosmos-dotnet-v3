@@ -434,7 +434,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #endif 
             CosmosClientBuilder DisableDistributedTracing()
         {
-            this.clientOptions.DisableDistributedTracing = true;
+            this.clientOptions.IsDistributedTracingEnabled = true;
             this.clientOptions.DistributedTracingOptions = null;
 
             return this;
@@ -454,7 +454,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #endif 
             CosmosClientBuilder WithDistributedTracingOptions(DistributedTracingOptions options)
         {
-            if (this.clientOptions.DisableDistributedTracing)
+            if (this.clientOptions.IsDistributedTracingEnabled)
             {
                 throw new ArgumentException("Operation level distributed tracing is disabled. Please remove the call to DisableOperationDistributedTracing() to enable it.");
             }

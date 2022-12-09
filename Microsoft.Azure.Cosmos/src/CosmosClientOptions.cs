@@ -992,7 +992,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>
         /// </summary>
-        /// <remarks> Applicable only when Operation level distributed tracing is not disabled i.e. <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.DisableDistributedTracing"/></remarks>
+        /// <remarks> Applicable only when Operation level distributed tracing is not disabled i.e. <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.IsDistributedTracingEnabled"/></remarks>
 #if PREVIEW
         public
 #else
@@ -1010,7 +1010,10 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-            bool DisableDistributedTracing { get; set; }
+            bool IsDistributedTracingEnabled { get; set; }
+#if PREVIEW
+        = true;
+#endif
 
     }
 }
