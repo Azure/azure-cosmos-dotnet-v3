@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 clientWithIntercepter.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(.0001)
+                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(.0001)
                 };
             }
 

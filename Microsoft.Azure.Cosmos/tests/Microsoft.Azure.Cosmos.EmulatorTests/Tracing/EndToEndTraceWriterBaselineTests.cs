@@ -53,17 +53,17 @@
 
             client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                 LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(0)
+                 LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
             };
 
             bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(0)
+                LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
             };
             
             miscCosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(0)
+                LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
             };
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
@@ -990,7 +990,7 @@
                 
                 throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(0)
+                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
                 };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
@@ -1276,7 +1276,7 @@
                 
                 throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    LatencyThresholdForRequestDiagnosticEventTrace = TimeSpan.FromMilliseconds(0)
+                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
                 };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
