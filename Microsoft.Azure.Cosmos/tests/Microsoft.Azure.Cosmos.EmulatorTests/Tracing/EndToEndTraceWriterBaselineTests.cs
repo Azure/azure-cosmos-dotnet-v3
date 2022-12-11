@@ -43,13 +43,22 @@
             testListener = Util.ConfigureOpenTelemetryAndCustomListeners();
             
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
-                useGateway: false);
+                useGateway: false,
+                enableDistributingTracing : true);
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
-                .WithBulkExecution(true));
+                .WithBulkExecution(true)
+                .EnableDistributedTracingWithOptions(new DistributedTracingOptions()
+                 {
+                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                 }));
             // Set a small retry count to reduce test time
             miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
                 builder
-                    .AddCustomHandlers(requestHandler));
+                    .AddCustomHandlers(requestHandler)
+                    .EnableDistributedTracingWithOptions(new DistributedTracingOptions()
+                    {
+                        LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                    }));
             
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     Guid.NewGuid().ToString(),

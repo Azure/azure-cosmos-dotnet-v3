@@ -130,7 +130,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static CosmosClient CreateCosmosClient(
             bool useGateway,
-            Action<CosmosClientBuilder> customizeClientBuilder = null)
+            Action<CosmosClientBuilder> customizeClientBuilder = null,
+            bool enableDistributingTracing = false)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
 
@@ -141,12 +142,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 cosmosClientBuilder.WithConnectionModeGateway();
             }
 
-            cosmosClientBuilder.EnableDistributedTracingWithOptions(new DistributedTracingOptions()
+            if(enableDistributingTracing)
             {
-                LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
-            });
-
-
+                cosmosClientBuilder.EnableDistributedTracingWithOptions(new DistributedTracingOptions()
+                {
+                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                });
+            }
+            
             return cosmosClientBuilder.Build();
         }
 
