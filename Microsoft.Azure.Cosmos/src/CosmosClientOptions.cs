@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -632,6 +634,22 @@ namespace Microsoft.Azure.Cosmos
         /// (Optional) transport interceptor factory
         /// </summary>
         internal Func<TransportClient, TransportClient> TransportClientHandlerFactory { get; set; }
+
+ 
+        public Func<X509Certificate, SslPolicyErrors, bool>? SslCustomValidationHanlder { get; set; }
+
+        internal RemoteCertificateValidationCallback SslCustomValidationCallBack
+        {
+            get
+            {
+                if(this.SslCustomValidationHanlder == null)
+                {
+                    return null;
+                }
+                return (_, cert, chain, policy) => this.SslCustomValidationHanlder(cert, policy);
+            }
+            
+        }
 
         /// <summary>
         /// API type for the account

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Diagnostics;
+    using System.Net.Security;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Client;
 
@@ -45,7 +46,8 @@ namespace Microsoft.Azure.Documents
             TimeSpan localRegionOpenTimeout = default,
             bool enableChannelMultiplexing = false,
             int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue, // Optional for Rntbd
-            MemoryStreamPool memoryStreamPool = null) 
+            MemoryStreamPool memoryStreamPool = null,
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null) 
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -224,6 +226,7 @@ namespace Microsoft.Azure.Documents
                         EnableChannelMultiplexing = enableChannelMultiplexing,
                         MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
                         MemoryStreamPool = memoryStreamPool,
+                        RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
                     });
             }
             else

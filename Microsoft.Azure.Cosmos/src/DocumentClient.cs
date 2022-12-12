@@ -12,7 +12,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Security;
     using System.Security;
+    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -162,6 +164,9 @@ namespace Microsoft.Azure.Cosmos
         private static int idCounter;
         //Trace Id.
         private int traceId;
+
+        //RemoteCertificateValidationCallback
+        internal RemoteCertificateValidationCallback remoteCertificateValidationCallback;
 
         //SessionContainer.
         internal ISessionContainer sessionContainer;
@@ -446,7 +451,8 @@ namespace Microsoft.Azure.Cosmos
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
                               IStoreClientFactory storeClientFactory = null,
                               bool isLocalQuorumConsistency = false,
-                              string cosmosClientId = null)
+                              string cosmosClientId = null,
+                              RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -478,7 +484,8 @@ namespace Microsoft.Azure.Cosmos
                 sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
                 storeClientFactory: storeClientFactory,
-                cosmosClientId: cosmosClientId);
+                cosmosClientId: cosmosClientId,
+                remoteCertificateValidationCallback: remoteCertificateValidationCallback);
         }
 
         /// <summary>
@@ -660,7 +667,8 @@ namespace Microsoft.Azure.Cosmos
             bool? enableCpuMonitor = null,
             IStoreClientFactory storeClientFactory = null,
             TokenCredential tokenCredential = null,
-            string cosmosClientId = null)
+            string cosmosClientId = null,
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
         {
             if (serviceEndpoint == null)
             {
@@ -668,6 +676,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.clientId = cosmosClientId;
+            this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
@@ -6648,7 +6657,8 @@ namespace Microsoft.Azure.Cosmos
                     retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration(),
                     enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
                     addressResolver: this.AddressResolver,
-                    rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount);
+                    rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
+                    remoteCertificateValidationCallback: this.remoteCertificateValidationCallback);
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -6662,6 +6672,7 @@ namespace Microsoft.Azure.Cosmos
             this.CreateStoreModel(subscribeRntbdStatus: true);
         }
 
+       
         private void CreateStoreModel(bool subscribeRntbdStatus)
         {
             //EnableReadRequestsFallback, if not explicity set on the connection policy,

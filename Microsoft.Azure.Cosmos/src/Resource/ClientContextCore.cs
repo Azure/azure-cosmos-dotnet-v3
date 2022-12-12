@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -79,7 +81,8 @@ namespace Microsoft.Azure.Cosmos
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
                handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer,
-               cosmosClientId: cosmosClient.Id);
+               cosmosClientId: cosmosClient.Id,
+               remoteCertificateValidationCallback: clientOptions.SslCustomValidationCallBack);
 
             return ClientContextCore.Create(
                 cosmosClient,

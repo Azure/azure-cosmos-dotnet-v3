@@ -6,11 +6,13 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System;
     using System.Diagnostics;
     using System.Globalization;
+    using System.Net;
     using System.Net.Security;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.ChangeFeed.DocDBErrors;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry;
 
@@ -74,15 +76,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.idleTimerPool = null;
             }
 
-            //ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
-            //           resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-            //           isActivityEnabled: true);
-            //scope = ScopeFactory.CreateScope($"{OpenTelemetryAttributeKeys.NetworkLevelPrefix}.{resourceOperation.operationType}");
-           
-            //if (scope.IsEnabled)
-            //{
-            //    scope.Start();
-            //}
+            ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
+                      resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
+                      isActivityEnabled: true);
 
             this.channelDictionary = new ChannelDictionary(
                 new ChannelProperties(
@@ -122,9 +118,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportAddressUri physicalAddress, ResourceOperation resourceOperation,
             DocumentServiceRequest request)
         {
-                ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
-                      resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                      isActivityEnabled: true);
+
                 using DiagnosticScope scope = ScopeFactory.CreateScope($"{OpenTelemetryAttributeKeys.NetworkLevelPrefix}.{resourceOperation.operationType}");
 
                 if (scope.IsEnabled)
@@ -133,7 +127,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
                 scope.AddAttribute("Name", request.ResourceAddress);
                 scope.AddAttribute("kind", DiagnosticScope.ActivityKind.Client);
-
+                scope.AddAttribute("StartDate", DateTime.Now);
                 this.ThrowIfDisposed();
 
                 Guid activityId = Trace.CorrelationManager.ActivityId;
@@ -161,13 +155,18 @@ namespace Microsoft.Azure.Documents.Rntbd
                     TransportClient.GetTransportPerformanceCounters().IncrementRntbdRequestCount(resourceOperation.resourceType, resourceOperation.operationType);
 
                     operation = "RequestAsync";
-                    storeResponse = await channel.RequestAsync(request, physicalAddress,
-                        resourceOperation, activityId, transportRequestStats);
-                    transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
-                    storeResponse.TransportRequestStats = transportRequestStats;
-                    scope.AddAttribute("SubStatusCode", storeResponse.SubStatusCode);
-                    scope.AddAttribute("StatusCode", storeResponse.StatusCode);
 
+                //scope.AddLink();
+                request.Headers[HttpConstants.HttpHeaders.Authorization] = Activity.Current.Id;
+
+                storeResponse = await channel.RequestAsync(request, physicalAddress,
+                        resourceOperation, activityId, transportRequestStats);
+                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
+                storeResponse.TransportRequestStats = transportRequestStats;
+                scope.AddAttribute("Uri", physicalAddress.Uri);
+                scope.AddAttribute("SubStatusCode", storeResponse.SubStatusCode);
+                scope.AddAttribute("StatusCode", storeResponse.StatusCode);
+                
             }
                 catch (TransportException ex)
                 {
@@ -239,6 +238,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                         physicalAddress, ex);
                     transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
                     ex.TransportRequestStats = transportRequestStats;
+                    scope.AddAttribute("StatusCode", ex.StatusCode);
+                    scope.AddAttribute("SubStatusCode", ex.GetSubStatusCode());
                     throw;
                 }
                 catch (Exception ex)
@@ -247,6 +248,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                         "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
                         physicalAddress, ex);
+                    
                     throw;
                 }
                 finally
