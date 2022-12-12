@@ -81,20 +81,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                        builder.WithSessionContainer(sessionContainer);
                    }
 
+                   if (enableDistributingTracing)
+                   {
+                       builder.EnableDistributedTracingWithOptions(new DistributedTracingOptions()
+                       {
+                           LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(.0001)
+                       });
+                   }
+
                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                        transportClient,
                        interceptor,
                        interceptorWithStoreResult));
                });
-
-            if(enableDistributingTracing)
-            {
-                clientWithIntercepter.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-                {
-                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(.0001)
-                };
-            }
-
+            
             return clientWithIntercepter.GetContainer(databaseId, containerId);
         }
 

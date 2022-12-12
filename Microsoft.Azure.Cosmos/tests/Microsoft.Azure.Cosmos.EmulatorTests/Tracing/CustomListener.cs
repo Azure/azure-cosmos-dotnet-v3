@@ -75,8 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string startSuffix = ".Start";
                 string stopSuffix = ".Stop";
                 string exceptionSuffix = ".Exception";
-
-                Console.WriteLine("--------------> " + value.Key);
+                
                 if (value.Key.EndsWith(startSuffix))
                 {
                     string name = value.Key[..^startSuffix.Length];
