@@ -17,74 +17,6 @@ flowchart LR
     TransportClient <--> Service[(Cosmos DB Service)]
 ```
 
-## Address caches conceptual model
-
-![image](https://user-images.githubusercontent.com/6880899/199167007-bcc054c3-ecb1-4469-ba7d-eae52362e9cd.png)
-
-
-- CollectionCache: Dictionary<CollectionName/Rid, CollectionProperties>
-- CollectionRoutingMap: Single collection PartitionKeyRanges map
-- PartitionKeyRangeCache: Dictionary<CollectionName/Rid, CollectionRoutingMap>
-- GlobalPartitionEndpointManager: Per partition override state. Every reqeust will flow throgh
-    -   Today GlobalEndpointManager is at region scope only and doesn't look at the partition
-    -   Ideal abstraction is to fold it into GlobalEndpointManager --> extra hash computation
-        - Posible to refactor direct code and flow HashedValue down stream (more contract work with direct package)
-- AddressResolver: It does use IAddressCache (Above diagram missing it)
-
-
-```mermaid
-flowchart LR
-    subgraph CDB_account
-        subgraph CDB_Account_Endpoint
-            CDB_EP[[CosmosDB-Account/Endpoint]]
-        end
-
-        subgraph CDB_Account_Region1
-            CDBR1_GW[[CosmosDB-Account/Gateway/Region1]]
-            CDBR1_BE[[CosmosDB-Account/Backend/Region1]]
-        end
-        subgraph CDB_Account_RegionN
-            CDBRN_GW[[CosmosDB-Account/Gateway/Region1]]
-            CDBRN_BE[[CosmosDB-Account/Backend/RegionN]]
-        end
-    end
-    subgraph AddressCaches
-        GAC1[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/R1</a>]
-        GACN[<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Routing/GatewayAddressCache.cs'>GatewayAddressCache/RN</a>]
-
-        GAC1 --> |NonBlockingAsyncCache| CDBR1_GW
-        GAC1 -.-> CDBR1_BE
-        GACN -->  |NonBlockingAsyncCache| CDBRN_GW
-        GACN -.-> CDBRN_BE
-    end
-```
-
-### Sequence of interaction
-
-```mermaid
-sequenceDiagram
-    GlobalAddressResolver->>GlobalEndpointManager: ResolveServiceEndpoint(DocumentServiceRequest)
-    GlobalEndpointManager-->>GlobalAddressResolver: URI (ServingRegion)
-    GlobalAddressResolver->>GlobalAddressResolver: GetEndpointCache(ServingRegion).AddressResolver
-
-    critical RegularAddressResolution(Implicit contract of dsr.RequestContext.ResolvedPartitionKeyRange population)
-        GlobalAddressResolver->>AddressResolver: ResolveAsync(DocumentServiceRequest)
-        AddressResolver-->>GlobalAddressResolver: PartitionAddressInformation
-    end
-
-    critical AnyPerpartitionOverrides
-        GlobalAddressResolver->>GlobalPartitionEndpointManager: TryAddPartitionLevelLocationOverride(DocumentServiceRequest)
-        GlobalPartitionEndpointManager-->>GlobalAddressResolver: (bool, DSR.RequestContext.RouteToLocation)
-
-        option YES
-            GlobalAddressResolver->>GlobalEndpointManager: ResolveServiceEndpoint(DocumentServiceRequest)
-            GlobalEndpointManager-->>GlobalAddressResolver: URI (ServingRegion)
-    end
-    GlobalAddressResolver->>GlobalAddressResolver: GetEndpointCache(ServingRegion)
-    GlobalAddressResolver->>AddressResolver: ResolveAsync(DocumentServiceRequest)
-    AddressResolver-->>GlobalAddressResolver: PartitionAddressInformation
-```
-
 ## Handler pipeline
 
 The handler pipeline processes the RequestMessage and each handler can choose to augment it in different ways, as shown in our [handler samples](../Microsoft.Azure.Cosmos.Samples/Usage/Handlers/) and also handle certain error conditions and retry, like our own [RetryHandler](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs). The RetryHandler will handle any failures from the [Transport layer](#transport) that should be [handled as regional failovers](#cross-region-retries).
@@ -234,6 +166,12 @@ flowchart
 
 ```
 
+## Direct mode caches
+
+Per our [connectivity documentation](https://learn.microsoft.com/azure/cosmos-db/nosql/sdk-connection-modes#routing), the SDK will store, in internal caches, critical information to allow for request routing.
+
+For details on the caches, please see the [cache design documentation](caches.md).
+
 ## Consistency (direct mode)
 
 When performing operations through Direct mode, the SDK is involved in checking consistency for Bounded Staleness and Strong accounts. Read requests are handled by the [ConsistencyReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyReader.cs) and write requests are handled by the [ConsistencyWriter](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyWriter.cs). The `ConsistencyReader` uses the [QuorumReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/QuorumReader.cs) when the consistency is Bounded Staleness or Strong to verify quorum after performing two requests and comparing the LSNs. If quorum cannot be achieved, the SDK starts what is defined as "barrier requests" to the container and waits for it to achieve quorum. The `ConsistencyWriter` also performs a similar LSN check after receiving the response from the write, the `GlobalCommittedLSN` and the item `LSN`. If they don't match, barrier requests are also performed.
@@ -248,5 +186,3 @@ flowchart LR
     ConsistencyWriter --> TCPClient
 
 ```
-
-

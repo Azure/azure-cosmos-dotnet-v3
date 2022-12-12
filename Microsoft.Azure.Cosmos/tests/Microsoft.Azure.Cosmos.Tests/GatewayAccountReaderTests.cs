@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
                 uri: new Uri("https://localhost"),
                 additionalHeaders: new RequestNameValueCollection(),
                 resourceType: ResourceType.Document,
-                timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
+                timeoutPolicy: HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
                 clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
                 cancellationToken: default);
 

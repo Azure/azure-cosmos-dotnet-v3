@@ -18,12 +18,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public async Task TestInit(
             bool validateSinglePartitionKeyRangeCacheCall = false,
-            Action<CosmosClientBuilder> customizeClientBuilder = null)
+            Action<CosmosClientBuilder> customizeClientBuilder = null,
+            string accountEndpointOverride = null)
         {
             this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationToken = this.cancellationTokenSource.Token;
 
-            this.cosmosClient = TestCommon.CreateCosmosClient(validatePartitionKeyRangeCalls: validateSinglePartitionKeyRangeCacheCall, customizeClientBuilder: customizeClientBuilder);
+            this.cosmosClient = TestCommon.CreateCosmosClient(
+                validatePartitionKeyRangeCalls: validateSinglePartitionKeyRangeCacheCall,
+                customizeClientBuilder: customizeClientBuilder,
+                accountEndpointOverride: accountEndpointOverride);
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
                 cancellationToken: this.cancellationToken);
         }

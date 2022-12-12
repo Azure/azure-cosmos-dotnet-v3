@@ -107,8 +107,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ContainerResourcePermissionTest()
+        [DataRow(ConnectionMode.Gateway)]
+        [DataRow(ConnectionMode.Direct)]
+        public async Task ContainerResourcePermissionTest(ConnectionMode mode)
         {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = mode,
+            };
+
             //create user
             string userId = Guid.NewGuid().ToString();
             UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
@@ -121,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Container container = containerResponse.Container;
-            
+
             //create permission
             string permissionId = Guid.NewGuid().ToString();
             PermissionProperties permissionProperties = new PermissionProperties(permissionId, PermissionMode.Read, container);
@@ -131,9 +138,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(permissionId, permission.Id);
             Assert.AreEqual(permissionProperties.PermissionMode, permission.PermissionMode);
 
-            //delete resource with PermissionMode.Read
-            using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: null, resourceToken: permission.Token))
+            using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(cosmosClientOptions, resourceToken: permission.Token))
             {
+                Container readContainerRef = tokenCosmosClient.GetContainer(this.cosmosDatabase.Id, containerId);
+
+                //read resource with PermissionMode.Read
+                using FeedIterator<dynamic> feedIterator = readContainerRef.GetItemQueryIterator<dynamic>("SELECT * FROM c");
+                while (feedIterator.HasMoreResults)
+                {
+                    _  = await feedIterator.ReadNextAsync();
+                }
+
+                //delete resource with PermissionMode.Read
                 try
                 {
                     ContainerResponse response = await tokenCosmosClient
@@ -147,14 +163,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(HttpStatusCode.Forbidden, ex.StatusCode);
                 }
             }
-           
+
             //update permission to PermissionMode.All
             permissionProperties = new PermissionProperties(permissionId, PermissionMode.All, container);
             permissionResponse = await user.GetPermission(permissionId).ReplaceAsync(permissionProperties);
             permission = permissionResponse.Resource;
 
             //delete resource with PermissionMode.All
-            using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: null, resourceToken: permission.Token))
+            using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(cosmosClientOptions, resourceToken: permission.Token))
             {
                 ContainerResponse response = await tokenCosmosClient
                     .GetDatabase(this.cosmosDatabase.Id)
@@ -284,8 +300,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ItemResourcePermissionTest()
+        [DataRow(ConnectionMode.Gateway)]
+        [DataRow(ConnectionMode.Direct)]
+        public async Task ItemResourcePermissionTest(ConnectionMode connectionMode)
         {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = connectionMode
+            };
+
             //create user
             string userId = Guid.NewGuid().ToString();
             UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
@@ -313,13 +336,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(permissionId, permission.Id);
             Assert.AreEqual(permissionProperties.PermissionMode, permission.PermissionMode);
 
-            //delete resource with PermissionMode.Read
-            using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: null, resourceToken: permission.Token))
+            using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: cosmosClientOptions, resourceToken: permission.Token))
             {
                 Container tokenContainer = tokenCosmosClient.GetContainer(this.cosmosDatabase.Id, containerId);
+
+                //read resource with PermissionMode.Read
                 ItemResponse<dynamic> readPermissionItem = await tokenContainer.ReadItemAsync<dynamic>(itemId, partitionKey);
                 Assert.AreEqual(itemId, readPermissionItem.Resource.id.ToString());
 
+                //delete resource with PermissionMode.Read
                 try
                 {
                     ItemResponse<dynamic> response = await tokenContainer.DeleteItemAsync<dynamic>(
@@ -340,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             permission = permissionResponse.Resource;
 
             //delete resource with PermissionMode.All
-            using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: null, resourceToken: permission.Token))
+            using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: cosmosClientOptions, resourceToken: permission.Token))
             {
                 using (FeedIterator<dynamic> feed = tokenCosmosClient
                     .GetDatabase(this.cosmosDatabase.Id)
@@ -357,8 +382,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EnsureUnauthorized_ThrowsCosmosClientException()
+        [DataRow(ConnectionMode.Gateway)]
+        [DataRow(ConnectionMode.Direct)]
+        public async Task EnsureUnauthorized_ThrowsCosmosClientException(ConnectionMode connectionMode)
         {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = connectionMode
+            };
+
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
@@ -367,21 +399,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             using CosmosClient cosmosClient = new CosmosClient(
                 endpoint,
-                authKey);
+                authKey,
+                cosmosClientOptions);
 
             CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.GetContainer("test", "test").ReadItemAsync<dynamic>("test", new PartitionKey("test")));
             Assert.AreEqual(HttpStatusCode.Unauthorized, exception.StatusCode);
         }
 
         [TestMethod]
-        public async Task EnsureUnauthorized_ThrowsCosmosClientException_ReadAccountAsync()
+        [DataRow(ConnectionMode.Gateway)]
+        [DataRow(ConnectionMode.Direct)]
+        public async Task EnsureUnauthorized_ThrowsCosmosClientException_ReadAccountAsync(ConnectionMode connectionMode)
         {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = connectionMode
+            };
+
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
             // Take the key and change some middle character
             authKey = authKey.Replace("m", "M");
-            CosmosClient  cosmosClient = new CosmosClient(endpoint, authKey);
+            using CosmosClient  cosmosClient = new CosmosClient(
+                endpoint,
+                authKey,
+                cosmosClientOptions);
 
             CosmosException exception1 = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.ReadAccountAsync());
             Assert.AreEqual(HttpStatusCode.Unauthorized, exception1.StatusCode);
@@ -389,33 +432,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EnsureUnauthorized_Writes_ThrowsCosmosClientException()
+        [DataRow(ConnectionMode.Gateway)]
+        [DataRow(ConnectionMode.Direct)]
+        public async Task EnsureUnauthorized_Writes_ThrowsCosmosClientException(ConnectionMode connectionMode)
         {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = connectionMode
+            };
+
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
-            
+
             // Take the key and change some middle character
             authKey = authKey.Replace("m", "M");
 
             using CosmosClient cosmosClient = new CosmosClient(
                 endpoint,
-                authKey);
+                authKey,
+                cosmosClientOptions);
+
             CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => cosmosClient.GetContainer("test", "test").CreateItemAsync<dynamic>(new { id = "test" }));
             Assert.AreEqual(HttpStatusCode.Unauthorized, exception.StatusCode);
         }
 
         [TestMethod]
-        public async Task EnsureUnauthorized_Query_ThrowsCosmosClientException()
+        [DataRow(ConnectionMode.Gateway)]
+        [DataRow(ConnectionMode.Direct)]
+        public async Task EnsureUnauthorized_Query_ThrowsCosmosClientException(ConnectionMode connectionMode)
         {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = connectionMode
+            };
+
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
-            
+
             // Take the key and change some middle character
             authKey = authKey.Replace("m", "M");
 
             using CosmosClient cosmosClient = new CosmosClient(
                 endpoint,
-                authKey);
+                authKey,
+                cosmosClientOptions);
 
             using FeedIterator<dynamic> iterator = cosmosClient.GetContainer("test", "test").GetItemQueryIterator<dynamic>("SELECT * FROM c");
 

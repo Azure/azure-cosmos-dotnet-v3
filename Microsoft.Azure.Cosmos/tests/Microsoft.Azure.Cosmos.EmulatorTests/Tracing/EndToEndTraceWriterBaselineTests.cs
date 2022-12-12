@@ -19,8 +19,10 @@
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
+    using OpenTelemetry;
     using Telemetry;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
+    using OpenTelemetry.Trace;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
     [TestCategory("UpdateContract")]
@@ -33,16 +35,26 @@
         public static Database database;
         public static Container container;
 
-        private static OpenTelemetryListener testListener;
+        private static CustomListener testListener;
+        private static TracerProvider oTelTracerProvider;
 
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
-        private const double DiagnosticsLatencyThresholdValue = .0001; // Very Very Small Value
         [ClassInitialize()]
         public static async Task ClassInitAsync(TestContext context)
         {
-            testListener = new OpenTelemetryListener(OpenTelemetryAttributeKeys.DiagnosticNamespace);
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+
+            // Open Telemetry Listener
+            oTelTracerProvider = Sdk.CreateTracerProviderBuilder()
+                .AddCustomOtelExporter() // use any exporter here
+                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*") // Right now, it will capture only "Azure.Cosmos.Operation"
+                .Build();
+
+            // Custom Listener
+            testListener = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*", "Azure-Cosmos-Operation-Request-Diagnostics");
+
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
                 useGateway: false);
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
@@ -58,17 +70,17 @@
 
             client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
+                 DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
             };
 
             bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
             };
             
             miscCosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
             {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
+                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
             };
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
@@ -91,7 +103,7 @@
                 await container.CreateItemAsync(JToken.Parse(cosmosObject.ToString()));
             }
 
-            testListener.ResetAttributes();
+            EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
         }
 
         [ClassCleanup()]
@@ -102,13 +114,25 @@
                 await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
             }
 
+            oTelTracerProvider?.Dispose();
             testListener?.Dispose();
+
+            await Task.Delay(5000);
         }
+
+        private static void AssertAndResetActivityInformation()
+        {
+            AssertActivity.AreEqualAcrossListeners();
+
+            CustomOtelExporter.CollectedActivities = new();
+            testListener.ResetAttributes();
+        }
+
 
         [TestMethod]
         public async Task ReadFeedAsync()
         {
-            testListener.ResetAttributes();
+            EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
 
             List<Input> inputs = new List<Input>();
 
@@ -141,7 +165,7 @@
                                     endLineNumber: endLineNumber, 
                                     oTelActivities: testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
 
             }
             //----------------------------------------------------------------
@@ -172,7 +196,7 @@
                                 endLineNumber: endLineNumber,
                                 oTelActivities: testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -203,7 +227,7 @@
                                 endLineNumber: endLineNumber,
                                 oTelActivities: testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -229,7 +253,7 @@
 
                 inputs.Add(new Input("ReadFeed Public API Typed", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -271,7 +295,7 @@
 
                 inputs.Add(new Input("ChangeFeed", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -303,7 +327,7 @@
 
                 inputs.Add(new Input("ChangeFeed Typed", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -336,7 +360,7 @@
 
                 inputs.Add(new Input("ChangeFeed Public API", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //---------------------------------------------------------------- 
 
@@ -369,7 +393,7 @@
 
                 inputs.Add(new Input("ChangeFeed Public API Typed", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -408,7 +432,8 @@
 
                 await processor.StopAsync();
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
+
                 startLineNumber = GetLineNumber();
                 ChangeFeedEstimator estimator = container.GetChangeFeedEstimator(
                     "test",
@@ -429,7 +454,7 @@
 
                 inputs.Add(new Input("Change Feed Estimator", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -465,7 +490,7 @@
 
                 inputs.Add(new Input("Query", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -490,7 +515,7 @@
 
                 inputs.Add(new Input("Query Typed", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -516,7 +541,7 @@
 
                 inputs.Add(new Input("Query Public API", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -542,7 +567,7 @@
 
                 inputs.Add(new Input("Query Public API Typed", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -571,7 +596,7 @@
 
                 inputs.Add(new Input("Query - Without ServiceInterop", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -599,7 +624,7 @@
 
                 inputs.Add(new Input("Query Public API with FeedRanges", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -627,13 +652,12 @@
 
                 inputs.Add(new Input("Query Public API Typed with FeedRanges", traceForest, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
             this.ExecuteTestSuite(inputs);
         }
-
 
         [TestMethod]
         public async Task ValidateInvalidCredentialsTraceAsync()
@@ -699,7 +723,7 @@
 
                 inputs.Add(new Input("Point Write", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -717,7 +741,7 @@
 
                 inputs.Add(new Input("Point Read", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -743,7 +767,7 @@
 
                 inputs.Add(new Input("Point Replace", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -785,7 +809,7 @@
 
                 inputs.Add(new Input("Point Delete", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -820,7 +844,7 @@
 
                 inputs.Add(new Input("Point Write", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -838,7 +862,7 @@
 
                 inputs.Add(new Input("Point Read", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -864,7 +888,7 @@
 
                 inputs.Add(new Input("Point Replace", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -909,7 +933,7 @@
 
                 inputs.Add(new Input("Point Delete", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -958,7 +982,7 @@
 
                 inputs.Add(new Input("Point Operation with Request Timeout", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -985,7 +1009,7 @@
                 throttleClient.ClientOptions.EnableDistributedTracing = true;
                 throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
+                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
                 };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
@@ -1011,7 +1035,7 @@
 
                 inputs.Add(new Input("Point Operation With Throttle", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -1091,7 +1115,7 @@
                     endLineNumber = GetLineNumber();
                     inputs.Add(new Input($"Point Operation With Forbidden + Max Count = {maxCount}", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                    testListener.ResetAttributes();
+                    EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
                 }
 
                 // Check if the exception message is not growing exponentially
@@ -1142,7 +1166,7 @@
 
                 inputs.Add(new Input("Point Operation with Service Unavailable", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -1193,7 +1217,7 @@
 
                 inputs.Add(new Input("Batch Operation", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -1244,7 +1268,7 @@
                     inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
                 }
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -1272,7 +1296,7 @@
                 throttleClient.ClientOptions.EnableDistributedTracing = true;
                 throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
                 {
-                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(DiagnosticsLatencyThresholdValue)
+                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
                 };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
@@ -1299,7 +1323,7 @@
 
                 inputs.Add(new Input("Bulk Operation With Throttle", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
 
             this.ExecuteTestSuite(inputs);
@@ -1331,7 +1355,7 @@
 
                 inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -1350,7 +1374,7 @@
 
                 inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -1391,7 +1415,7 @@
 
                 inputs.Add(new Input("Read Many Stream Api", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 
@@ -1406,7 +1430,7 @@
 
                 inputs.Add(new Input("Read Many Typed Api", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-                testListener.ResetAttributes();
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
             //----------------------------------------------------------------
 

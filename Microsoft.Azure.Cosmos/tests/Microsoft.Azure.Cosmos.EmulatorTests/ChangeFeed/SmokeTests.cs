@@ -78,6 +78,65 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
+        public async Task WritesTriggerDelegate_WithLeaseContainer_UsingResourceTokens()
+        {
+            User user = await this.Container.Database.CreateUserAsync("testUser");
+            PermissionResponse monitoredContainerPermissions = await user.CreatePermissionAsync(
+                new PermissionProperties(
+                    id: "testPermission",
+                    permissionMode: PermissionMode.All,
+                    container: this.Container)
+                );
+
+            PermissionResponse leaseContainerPermissions = await user.CreatePermissionAsync(
+                new PermissionProperties(
+                    id: "testPermission2",
+                    permissionMode: PermissionMode.All,
+                    container: this.LeaseContainer)
+                );
+
+            using CosmosClient clientForMonitoredContainer = new CosmosClient(this.Container.Database.Client.Endpoint.ToString(), authKeyOrResourceToken: monitoredContainerPermissions.Resource.Token);
+            using CosmosClient clientForLeaseContainer = new CosmosClient(this.Container.Database.Client.Endpoint.ToString(), authKeyOrResourceToken: leaseContainerPermissions.Resource.Token);
+
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            IEnumerable<int> expectedIds = Enumerable.Range(0, 100);
+            List<int> receivedIds = new List<int>();
+            ChangeFeedProcessor processor = clientForMonitoredContainer.GetContainer(this.Container.Database.Id, this.Container.Id)
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
+                {
+                    foreach (TestClass doc in docs)
+                    {
+                        receivedIds.Add(int.Parse(doc.id));
+                    }
+
+                    if (receivedIds.Count == 100)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(clientForLeaseContainer.GetContainer(this.LeaseContainer.Database.Id, this.LeaseContainer.Id)).Build();
+
+            await processor.StartAsync();
+            // Letting processor initialize
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            // Inserting documents
+            foreach (int id in expectedIds)
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+            }
+
+            // Waiting on all notifications to finish
+            bool isStartOk = allDocsProcessed.WaitOne(30 * BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
+            await processor.StopAsync();
+            Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
+            // Verify that we maintain order
+            CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
+        }
+
+        [TestMethod]
         public async Task ExceptionsRetryBatch()
         {
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
