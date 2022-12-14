@@ -424,7 +424,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Disables Operation level activity generation even if listener is subscribed to Azure.Cosmos.operation source and clears <see cref="DistributedTracingOptions"/> configured for this client instance.
+        /// Disables Operation level activity generation even if listener is subscribed to "Azure.Cosmos.Operation" source.
         /// </summary>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
 #if PREVIEW
@@ -441,11 +441,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
         
         /// <summary>
-        /// Sets Distributed Tracing Configuration ref. <see cref="DistributedTracingOptions"/>
+        /// Enables Distributed Tracing with a Configuration ref. <see cref="DistributedTracingOptions"/>
         /// </summary>
         /// <param name="options"><see cref="DistributedTracingOptions"/>.</param>
-        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        /// <exception cref="ArgumentException">If Distributed Tracing is disabled</exception>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>]
         /// <remarks>Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
         internal CosmosClientBuilder EnableDistributedTracingWithOptions(DistributedTracingOptions options = default)
         {
