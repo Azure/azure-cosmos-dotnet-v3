@@ -426,6 +426,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Disables Operation level activity generation even if listener is subscribed to "Azure.Cosmos.Operation" source.
         /// </summary>
+        /// <param name="isEnabled"></param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
 #if PREVIEW
         public
@@ -434,14 +435,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #endif 
             CosmosClientBuilder WithDistributedTracing(bool isEnabled = true)
         {
-            if (isEnabled)
-            {
-                return this.WithDistributedTracing(options: default);
-            }
-            
-            this.clientOptions.IsDistributedTracingEnabled = false;
-            this.clientOptions.DistributedTracingOptions = default;
-
+            this.clientOptions.IsDistributedTracingEnabled = isEnabled;
             return this;
         }
         

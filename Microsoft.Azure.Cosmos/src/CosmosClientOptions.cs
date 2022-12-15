@@ -996,13 +996,12 @@ namespace Microsoft.Azure.Cosmos
         internal DistributedTracingOptions DistributedTracingOptions { get; set; }
 
         /// <summary>
-        /// By default, SDK (Source Name is "Azure.Cosmos.Operation") generates operation level <see cref="System.Diagnostics.Activity"/> for methods calls.
-        /// This flag is there to disable it from source.
+        /// Gets or sets the flag to generate operation level <see cref="System.Diagnostics.Activity"/> for methods calls using the Source Name "Azure.Cosmos.Operation"..
         /// </summary>
         /// <value>
         /// The default value is true (for preview package).
         /// </value>
-        /// <remarks>Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
+        /// <remarks>This flag is there to disable it from source. Please Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
 #if PREVIEW
         public
 #else
