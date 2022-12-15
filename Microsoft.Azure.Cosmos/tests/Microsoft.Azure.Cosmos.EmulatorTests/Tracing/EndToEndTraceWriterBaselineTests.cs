@@ -47,7 +47,7 @@
                 enableDistributingTracing : true);
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
                 .WithBulkExecution(true)
-                .WithDistributedTracing(new DistributedTracingOptions()
+                .WithDistributedTracingOptions(new DistributedTracingOptions()
                  {
                     LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
                  }));
@@ -55,7 +55,7 @@
             miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
                 builder
                     .AddCustomHandlers(requestHandler)
-                    .WithDistributedTracing(new DistributedTracingOptions()
+                    .WithDistributedTracingOptions(new DistributedTracingOptions()
                     {
                         LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
                     }));
@@ -971,7 +971,7 @@
                 Guid exceptionActivityId = Guid.NewGuid();
                 using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
                     builder
-                    .WithDistributedTracing(new DistributedTracingOptions()
+                    .WithDistributedTracingOptions(new DistributedTracingOptions()
                     {
                         LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
                     })
@@ -1259,7 +1259,7 @@
                         maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
                         maxRetryAttemptsOnThrottledRequests: 3)
                         .WithBulkExecution(true)
-                        .WithDistributedTracing(new DistributedTracingOptions()
+                        .WithDistributedTracingOptions(new DistributedTracingOptions()
                         {
                             LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
                         })

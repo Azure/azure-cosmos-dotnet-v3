@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if(enableDistributingTracing)
             {
-                cosmosClientBuilder.WithDistributedTracing(new DistributedTracingOptions()
+                cosmosClientBuilder.WithDistributedTracingOptions(new DistributedTracingOptions()
                 {
                     LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
                 });

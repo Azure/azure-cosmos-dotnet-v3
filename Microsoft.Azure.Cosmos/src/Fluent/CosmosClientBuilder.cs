@@ -445,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="options"><see cref="DistributedTracingOptions"/>.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>]
         /// <remarks>Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
-        internal CosmosClientBuilder WithDistributedTracing(DistributedTracingOptions options)
+        internal CosmosClientBuilder WithDistributedTracingOptions(DistributedTracingOptions options)
         {
             this.clientOptions.IsDistributedTracingEnabled = true;
             this.clientOptions.DistributedTracingOptions = options;

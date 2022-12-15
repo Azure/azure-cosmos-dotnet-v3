@@ -1590,7 +1590,7 @@
             maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
             maxRetryAttemptsOnThrottledRequests: 3)
             .WithBulkExecution(true)
-            .EnableDistributedTracingWithOptions(new DistributedTracingOptions()
+            .WithDistributedTracingOptions(new DistributedTracingOptions()
             {
                 LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
             })

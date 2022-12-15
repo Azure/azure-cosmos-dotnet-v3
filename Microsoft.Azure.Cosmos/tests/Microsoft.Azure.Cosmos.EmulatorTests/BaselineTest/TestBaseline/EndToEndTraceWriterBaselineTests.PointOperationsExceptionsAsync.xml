@@ -161,7 +161,7 @@
     Guid exceptionActivityId = Guid.NewGuid();
     using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
         builder
-        .EnableDistributedTracingWithOptions(new DistributedTracingOptions()
+        .WithDistributedTracingOptions(new DistributedTracingOptions()
         {
             LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
         })

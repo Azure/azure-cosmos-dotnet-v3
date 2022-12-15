@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .WithDistributedTracing(new DistributedTracingOptions
+                .WithDistributedTracingOptions(new DistributedTracingOptions
                 {
                     LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(100)
                 });
