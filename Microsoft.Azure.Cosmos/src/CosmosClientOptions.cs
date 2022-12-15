@@ -988,15 +988,15 @@ namespace Microsoft.Azure.Cosmos
                 return objectType == typeof(DateTime);
             }
         }
-
+        
         /// <summary>
         /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>
         /// </summary>
-        /// <remarks> Applicable only when Operation level distributed tracing is not disabled i.e. <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.IsDistributedTracingEnabled"/></remarks>
+        /// <remarks> Applicable only when Operation level distributed tracing is enabled through <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.IsDistributedTracingEnabled"/></remarks>
         internal DistributedTracingOptions DistributedTracingOptions { get; set; }
 
         /// <summary>
-        /// Gets or sets the flag to generate operation level <see cref="System.Diagnostics.Activity"/> for methods calls using the Source Name "Azure.Cosmos.Operation"..
+        /// Gets or sets the flag to generate operation level <see cref="System.Diagnostics.Activity"/> for methods calls using the Source Name "Azure.Cosmos.Operation".
         /// </summary>
         /// <value>
         /// The default value is true (for preview package).

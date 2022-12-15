@@ -424,9 +424,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Disables Operation level activity generation even if listener is subscribed to "Azure.Cosmos.Operation" source.
+        /// Sets whether Distributed Tracing for "Azure.Cosmos.Operation" source is enabled.
         /// </summary>
-        /// <param name="isEnabled"></param>
+        /// <param name="isEnabled">Whether <see cref="CosmosClientOptions.IsDistributedTracingEnabled"/> is enabled.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
 #if PREVIEW
         public
