@@ -9,29 +9,25 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class OpenTelemetryResponse<T> : OpenTelemetryAttributes
     {
-        internal OpenTelemetryResponse(FeedResponse<T> responseMessage, string containerName = null, string databaseName = null)
+        internal OpenTelemetryResponse(FeedResponse<T> responseMessage)
         : this(
                statusCode: responseMessage.StatusCode,
                requestCharge: responseMessage.Headers?.RequestCharge,
                responseContentLength: responseMessage?.Headers?.ContentLength,
                diagnostics: responseMessage.Diagnostics,
                itemCount: responseMessage.Headers?.ItemCount,
-               databaseName: databaseName,
-               containerName: containerName,
                requestMessage: responseMessage.RequestMessage,
                subStatusCode: (int)responseMessage.Headers?.SubStatusCode)
         {
         }
 
-        internal OpenTelemetryResponse(Response<T> responseMessage, string containerName = null, string databaseName = null)
+        internal OpenTelemetryResponse(Response<T> responseMessage)
            : this(
                   statusCode: responseMessage.StatusCode,
                   requestCharge: responseMessage.Headers?.RequestCharge,
                   responseContentLength: responseMessage?.Headers?.ContentLength,
                   diagnostics: responseMessage.Diagnostics,
                   itemCount: responseMessage.Headers?.ItemCount,
-                  databaseName: databaseName,
-                  containerName: containerName,
                   requestMessage: responseMessage.RequestMessage,
                   subStatusCode: (int)responseMessage.Headers?.SubStatusCode)
         {
@@ -43,17 +39,15 @@ namespace Microsoft.Azure.Cosmos
            string responseContentLength,
            CosmosDiagnostics diagnostics,
            string itemCount,
-           string databaseName,
-           string containerName,
            RequestMessage requestMessage,
            int subStatusCode)
-           : base(requestMessage, containerName, databaseName)
+           : base(requestMessage)
         {
             this.StatusCode = statusCode;
             this.RequestCharge = requestCharge;
-            this.ResponseContentLength = responseContentLength ?? OpenTelemetryAttributes.NotAvailable;
+            this.ResponseContentLength = responseContentLength;
             this.Diagnostics = diagnostics;
-            this.ItemCount = itemCount ?? OpenTelemetryAttributes.NotAvailable;
+            this.ItemCount = itemCount;
             this.SubStatusCode = subStatusCode;
         }
     }

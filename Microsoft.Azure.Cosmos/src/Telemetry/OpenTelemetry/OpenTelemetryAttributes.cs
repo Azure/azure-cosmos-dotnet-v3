@@ -5,12 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System.Net;
-    using Microsoft.Azure.Documents;
 
     internal class OpenTelemetryAttributes
     {
-        internal const string NotAvailable = "information not available";
-
         /// <summary>
         /// For testing purpose only, to make initialization of this class easy 
         /// </summary>
@@ -18,12 +15,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
         }
 
-        internal OpenTelemetryAttributes(RequestMessage requestMessage, string containerName, string databaseName)
+        internal OpenTelemetryAttributes(RequestMessage requestMessage)
         {
-            this.RequestContentLength = requestMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
-            this.OperationType = requestMessage?.OperationType.ToOperationTypeString() ?? OpenTelemetryAttributes.NotAvailable;
-            this.DatabaseName = requestMessage?.DatabaseId ?? databaseName ?? OpenTelemetryAttributes.NotAvailable;
-            this.ContainerName = requestMessage?.ContainerId ?? containerName ?? OpenTelemetryAttributes.NotAvailable;
+            this.RequestContentLength = requestMessage?.Headers?.ContentLength;
         }
 
         /// <summary>
@@ -47,16 +41,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal string ResponseContentLength { get; set; }
 
         /// <summary>
-        /// DatabaseName
-        /// </summary>
-        internal string DatabaseName { get; set; }
-
-        /// <summary>
-        /// ContainerName
-        /// </summary>
-        internal string ContainerName { get; set; }
-
-        /// <summary>
         /// ItemCount
         /// </summary>
         internal string ItemCount { get; set; }
@@ -65,11 +49,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// ItemCount
         /// </summary>
         internal CosmosDiagnostics Diagnostics { get; set; }
-
-        /// <summary>
-        /// OperationType
-        /// </summary>
-        internal string OperationType { get; set; }
 
         /// <summary>
         /// SubStatusCode

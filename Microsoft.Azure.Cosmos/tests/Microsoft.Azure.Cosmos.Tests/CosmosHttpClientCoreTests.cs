@@ -321,6 +321,67 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task HttpTimeoutThrow503TestAsync()
+        {
+
+            async Task TestScenarioAsync(HttpMethod method, ResourceType resourceType, HttpTimeoutPolicy timeoutPolicy, Type expectedException, int expectedNumberOfRetrys)
+            {
+                int count = 0;
+                async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+                {
+                    count++;
+
+                    throw new OperationCanceledException("API with exception");
+
+                }
+
+                DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+                HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+                using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+                try
+                {
+
+                    HttpResponseMessage responseMessage1 = await cosmoshttpClient.SendHttpAsync(() =>
+                        new ValueTask<HttpRequestMessage>(
+                            result: new HttpRequestMessage(method, new Uri("http://localhost"))),
+                            resourceType: resourceType,
+                            timeoutPolicy: timeoutPolicy,
+                            clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                            cancellationToken: default);
+                }
+                catch (Exception e)
+                {
+                    Assert.AreEqual(expectedNumberOfRetrys, count, "Should retry 3 times for read methods, for writes should only be tried once");
+                    Assert.AreEqual(e.GetType(), expectedException);
+
+                    if (e.GetType() == typeof(CosmosException))
+                    {
+                        CosmosException cosmosException = (CosmosException)e;
+                        Assert.AreEqual(cosmosException.StatusCode, System.Net.HttpStatusCode.ServiceUnavailable);
+                        Assert.AreEqual((int)cosmosException.SubStatusCode,(int)SubStatusCodes.TransportGenerated503);
+                    }
+                }
+
+            }
+
+            //Data plane read
+            await TestScenarioAsync(HttpMethod.Get, ResourceType.Document, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 3);
+
+            //Data plane write
+            await TestScenarioAsync(HttpMethod.Post, ResourceType.Document, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 1);
+
+            //Meta data read
+            await TestScenarioAsync(HttpMethod.Get, ResourceType.Database, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 3);
+
+            //Query plan read (note all query plan operations are reads).
+            await TestScenarioAsync(HttpMethod.Get, ResourceType.Document, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 3);
+
+            //Metadata Write (Should throw a 408 OperationCanceledException rather than a 503)
+            await TestScenarioAsync(HttpMethod.Post, ResourceType.Document, HttpTimeoutPolicyDefault.Instance, typeof(TaskCanceledException), 1);
+        }
+
+        [TestMethod]
         public async Task NoRetryOnNoRetryPolicyTestAsync()
         {
             int count = 0;

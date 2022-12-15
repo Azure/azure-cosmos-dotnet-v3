@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
         }
 
-        public static async Task<TryCatch<IQueryPipelineStage>> TryCreateFromPartitionedQueryExecutionInfoAsync(
+        private static async Task<TryCatch<IQueryPipelineStage>> TryCreateFromPartitionedQueryExecutionInfoAsync(
             DocumentContainer documentContainer,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
@@ -537,7 +537,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return targetRanges;
         }
 
-        public static void SetTestInjectionPipelineType(InputParameters inputParameters, string pipelineType)
+        private static void SetTestInjectionPipelineType(InputParameters inputParameters, string pipelineType)
         {
             TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
             if (responseStats != null)
@@ -788,6 +788,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     }
 
                     public static readonly AggregateScalarExpressionDetector Singleton = new AggregateScalarExpressionDetector();
+
+                    public override bool Visit(SqlAllScalarExpression sqlAllScalarExpression)
+                    {
+                        // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                        return false;
+                    }
 
                     public override bool Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
                     {

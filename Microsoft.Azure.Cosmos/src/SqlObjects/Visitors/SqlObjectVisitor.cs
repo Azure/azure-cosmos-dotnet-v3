@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
     abstract class SqlObjectVisitor
     {
         public abstract void Visit(SqlAliasedCollectionExpression sqlObject);
+        public abstract void Visit(SqlAllScalarExpression sqlObject);
         public abstract void Visit(SqlArrayCreateScalarExpression sqlObject);
         public abstract void Visit(SqlArrayIteratorCollectionExpression sqlObject);
         public abstract void Visit(SqlArrayScalarExpression sqlObject);

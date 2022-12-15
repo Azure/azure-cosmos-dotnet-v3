@@ -645,6 +645,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
 
             List<T> resultsFromContinuationToken = new List<T>();
+            int resultCount = 0;
             string continuationToken = null;
             do
             {
@@ -668,6 +669,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             }
 
                             resultsFromContinuationToken.AddRange(cosmosQueryResponse);
+                            resultCount += cosmosQueryResponse.Count;
                             continuationToken = cosmosQueryResponse.ContinuationToken;
                             break;
                         }
@@ -687,6 +689,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 }
             } while (continuationToken != null);
 
+            Assert.AreEqual(resultsFromContinuationToken.Count, resultCount);
             return resultsFromContinuationToken;
         }
 
@@ -700,6 +703,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 queryRequestOptions = new QueryRequestOptions();
             }
 
+            int resultCount = 0;
             List<T> results = new List<T>();
             FeedIterator<T> itemQuery = container.GetItemQueryIterator<T>(
                 queryText: query,
@@ -713,6 +717,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     {
                         FeedResponse<T> page = await itemQuery.ReadNextAsync();
                         results.AddRange(page);
+                        resultCount += page.Count;
 
                         if (queryRequestOptions.MaxItemCount.HasValue)
                         {
@@ -746,6 +751,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         {
                             // The query failed and we don't have a save point, so just restart the whole thing.
                             results = new List<T>();
+                            resultCount = 0;
                         }
                     }
                 }
@@ -755,6 +761,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 itemQuery.Dispose();
             }
 
+            Assert.AreEqual(results.Count, resultCount);
             return results;
         }
 
@@ -904,6 +911,23 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     if (!resultSetIterator.HasMoreResults)
                         break;
                 }
+            }
+        }
+
+        internal static async IAsyncEnumerable<ResponseMessage> RunSimpleQueryAsync(
+           Container container,
+           string query,
+           QueryRequestOptions requestOptions = null)
+        {
+            using FeedIterator resultSetIterator = container.GetItemQueryStreamIterator(
+                query,
+                null,
+                requestOptions: requestOptions);
+
+            while (resultSetIterator.HasMoreResults)
+            {
+                ResponseMessage response = await resultSetIterator.ReadNextAsync();
+                yield return response;
             }
         }
 
