@@ -23,6 +23,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
         private static readonly Dictionary<double, SqlNumberLiteral> FrequentDoubles = Enumerable
             .Range(-Capacity, Capacity)
             .ToDictionary(x => (double)x, x => new SqlNumberLiteral((double)x));
+        private static readonly Dictionary<decimal, SqlNumberLiteral> FrequentDecimals = Enumerable
+            .Range(-Capacity, Capacity)
+            .ToDictionary(x => (decimal)x, x => new SqlNumberLiteral((decimal)x));
 
         private SqlNumberLiteral(Number64 value)
         {
@@ -37,6 +40,13 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             if (number64.IsDouble)
             {
                 if (!SqlNumberLiteral.FrequentDoubles.TryGetValue(Number64.ToDouble(number64), out sqlNumberLiteral))
+                {
+                    sqlNumberLiteral = new SqlNumberLiteral(number64);
+                }
+            }
+            else if (number64.IsDecimal)
+            {
+                if (!SqlNumberLiteral.FrequentDecimals.TryGetValue(Number64.ToDecimal(number64), out sqlNumberLiteral))
                 {
                     sqlNumberLiteral = new SqlNumberLiteral(number64);
                 }

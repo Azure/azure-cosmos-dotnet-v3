@@ -712,8 +712,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 CosmosObject continuationToken = CosmosObject.Create(
                     new Dictionary<string, CosmosElement>()
                     {
-                        { "PkRangeId", CosmosNumber64.Create(lastChange.PartitionKeyRangeId) },
-                        { "LSN", CosmosNumber64.Create(lastChange.LogicalSequenceNumber) }
+                        { "PkRangeId", CosmosNumber64.Create(Convert.ToDouble(lastChange.PartitionKeyRangeId)) },
+                        { "LSN", CosmosNumber64.Create(Convert.ToDouble(lastChange.LogicalSequenceNumber)) }
                     });
 
                 ChangeFeedState responseState = ChangeFeedState.Continuation(continuationToken);

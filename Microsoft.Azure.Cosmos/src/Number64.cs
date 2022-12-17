@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using BitUtils = Documents.BitUtils;
 
     /// <summary>
-    /// Struct that represents either a double or 64 bit int
+    /// Struct that represents either a double or a decimal or 64 bit int
     /// </summary>
     [JsonConverter(typeof(Number64JsonConverter))]
 #if INTERNAL
@@ -42,9 +42,21 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private readonly long? longValue;
 
+        /// <summary>
+        /// The decimal if the value is a decimal.
+        /// </summary>
+        private readonly decimal? decimalValue;
+        private Number64(decimal value)
+        {
+            this.decimalValue = value;
+            this.doubleValue = null;
+            this.longValue = null;
+        }
+
         private Number64(double value)
         {
             this.doubleValue = value;
+            this.decimalValue = null;
             this.longValue = null;
         }
 
@@ -52,39 +64,18 @@ namespace Microsoft.Azure.Cosmos
         {
             this.longValue = value;
             this.doubleValue = null;
+            this.decimalValue = null;
         }
 
-        public bool IsInteger
-        {
-            get
-            {
-                return this.longValue.HasValue;
-            }
-        }
+        public bool IsInteger => this.longValue.HasValue;
 
-        public bool IsDouble
-        {
-            get
-            {
-                return this.doubleValue.HasValue;
-            }
-        }
+        public bool IsDouble => this.doubleValue.HasValue;
 
-        public bool IsInfinity
-        {
-            get
-            {
-                return !this.IsInteger && double.IsInfinity(this.doubleValue.Value);
-            }
-        }
+        public bool IsDecimal => this.decimalValue.HasValue;
 
-        public bool IsNaN
-        {
-            get
-            {
-                return !this.IsInteger && double.IsNaN(this.doubleValue.Value);
-            }
-        }
+        public bool IsInfinity => !this.IsInteger && !this.IsDecimal && double.IsInfinity(this.doubleValue.Value);
+
+        public bool IsNaN => !this.IsInteger && !this.IsDecimal && double.IsNaN(this.doubleValue.Value);
 
         public override string ToString()
         {
@@ -103,17 +94,16 @@ namespace Microsoft.Azure.Cosmos
 
         public string ToString(string format, IFormatProvider formatProvider)
         {
-            string toString;
             if (this.IsDouble)
             {
-                toString = Number64.ToDouble(this).ToString(format, formatProvider);
+                return Number64.ToDouble(this).ToString(format, formatProvider);
             }
-            else
+            else if (this.IsDecimal)
             {
-                toString = Number64.ToLong(this).ToString(format, formatProvider);
+                return Number64.ToDecimal(this).ToString(format, formatProvider);
             }
-
-            return toString;
+            
+            return Number64.ToLong(this).ToString(format, formatProvider);
         }
 
         #region Static Operators
@@ -202,36 +192,57 @@ namespace Microsoft.Azure.Cosmos
         {
             return new Number64(value);
         }
+
+        /// <summary>
+        /// Implicitly converts a decimal to Number64.
+        /// </summary>
+        /// <param name="value">The decimal to convert.</param>
+        public static implicit operator Number64(decimal value)
+        {
+            return new Number64(value);
+        }
         #endregion
 
         public static long ToLong(Number64 number64)
         {
-            long value;
-            if (number64.IsInteger)
+            if (number64.IsDouble)
             {
-                value = number64.longValue.Value;
+                return (long)number64.doubleValue.Value;
             }
-            else
+            else if (number64.IsDecimal)
             {
-                value = (long)number64.doubleValue.Value;
+                return (long)number64.decimalValue.Value;
             }
 
-            return value;
+            return number64.longValue.Value;
         }
 
         public static double ToDouble(Number64 number64)
         {
-            double value;
-            if (number64.IsDouble)
+            if (number64.IsDecimal)
             {
-                value = number64.doubleValue.Value;
+                return (double)number64.decimalValue.Value;
             }
-            else
+            else if (number64.IsInteger)
             {
-                value = (double)number64.longValue.Value;
+                return (double)number64.longValue.Value;
             }
 
-            return value;
+            return number64.doubleValue.Value;
+        }
+
+        public static decimal ToDecimal(Number64 number64)
+        {
+            if (number64.IsDouble)
+            {
+                return (decimal)number64.doubleValue.Value;
+            }
+            else if (number64.IsInteger)
+            {
+                return (decimal)number64.decimalValue.Value;
+            }
+
+            return number64.decimalValue.Value;
         }
 
         public static DoubleEx ToDoubleEx(Number64 number64)
@@ -284,6 +295,10 @@ namespace Microsoft.Azure.Cosmos
             if (this.IsInteger && other.IsInteger)
             {
                 comparison = this.longValue.Value.CompareTo(other.longValue.Value);
+            }
+            else if (this.IsDecimal && other.IsDecimal)
+            {
+                comparison = this.decimalValue.Value.CompareTo(other.decimalValue.Value);
             }
             else if (this.IsDouble && other.IsDouble)
             {
@@ -608,6 +623,10 @@ namespace Microsoft.Azure.Cosmos
                 {
                     writer.WriteValue(Number64.ToDouble(number64));
                 }
+                else if (number64.IsDecimal)
+                {
+                    writer.WriteValue(Number64.ToDecimal(number64));
+                }
                 else
                 {
                     writer.WriteValue(Number64.ToLong(number64));
@@ -642,7 +661,8 @@ namespace Microsoft.Azure.Cosmos
                     || (objectType == typeof(long))
                     || (objectType == typeof(ulong))
                     || (objectType == typeof(float))
-                    || (objectType == typeof(double));
+                    || (objectType == typeof(double))
+                    || (objectType == typeof(decimal));
             }
         }
     }

@@ -696,6 +696,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                     stringBuilder.Append((char)buffer[i]);
                 }
             }
+            else if (value.IsDecimal)
+            {
+                stringBuilder.Append(value.ToString("G", CultureInfo.InvariantCulture));
+            }
             else
             {
                 // Until we move to Core 3.0 we have to call ToString(),

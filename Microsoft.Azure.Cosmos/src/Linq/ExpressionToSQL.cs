@@ -1387,14 +1387,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else if (value is decimal decimalValue)
             {
-                if ((decimalValue >= long.MinValue) && (decimalValue <= long.MaxValue) && (decimalValue % 1 == 0))
-                {
-                    sqlNumberLiteral = SqlNumberLiteral.Create(Convert.ToInt64(decimalValue));
-                }
-                else
-                {
-                    sqlNumberLiteral = SqlNumberLiteral.Create(Convert.ToDouble(decimalValue));
-                }
+                sqlNumberLiteral = SqlNumberLiteral.Create(decimalValue);
             }
             else if (value is double doubleValue)
             {

@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Linq.Expressions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -30,10 +31,52 @@ namespace Microsoft.Azure.Cosmos.Linq
             Assert.AreEqual("(a[\"StartDate\"] <= \"2022-05-26\")", sql);
         }
 
+        [TestMethod]
+        public void DecimalIsPreservedTest()
+        {
+            Dictionary<decimal, string> decimalTranslationDictionary = new Dictionary<decimal, string>()
+            {
+                { 123m, "123" },
+                { 104.37644171779141m, "104.37644171779141" },
+                { 0.00000000000000000012m, "0.00000000000000000012" },
+                { -0.00000000000000000012m, "-0.00000000000000000012" },
+            };
+
+            foreach(decimal key in decimalTranslationDictionary.Keys)
+            {
+                Expression<Func<TestDocument, bool>> expr = a => a.DecimalValue == key;
+
+                string sql = SqlTranslator.TranslateExpression(expr.Body);
+                Assert.AreEqual($"(a[\"DecimalValue\"] = {decimalTranslationDictionary[key]})", sql);
+            }
+        }
+
+        [TestMethod]
+        public void DecimalMaxValueIsPreservedTest()
+        {
+            decimal value = decimal.MaxValue;
+            Expression<Func<TestDocument, bool>> expr = a => a.DecimalValue == value;
+
+            string sql = SqlTranslator.TranslateExpression(expr.Body);
+            Assert.AreEqual("(a[\"DecimalValue\"] = 79228162514264337593543950335)", sql);
+        }
+
+        [TestMethod]
+        public void DecimalMinValueIsPreservedTest()
+        {
+            decimal value = decimal.MinValue;
+            Expression<Func<TestDocument, bool>> expr = a => a.DecimalValue == value;
+
+            string sql = SqlTranslator.TranslateExpression(expr.Body);
+            Assert.AreEqual("(a[\"DecimalValue\"] = -79228162514264337593543950335)", sql);
+        }
+
         class TestDocument
         {
             [JsonConverter(typeof(DateJsonConverter))]
             public DateTime StartDate { get; set; }
+
+            public decimal DecimalValue { get; set; }
         }
 
         class DateJsonConverter : IsoDateTimeConverter
