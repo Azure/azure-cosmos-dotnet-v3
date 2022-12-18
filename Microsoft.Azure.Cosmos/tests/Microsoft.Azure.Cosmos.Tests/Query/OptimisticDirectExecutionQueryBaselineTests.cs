@@ -12,9 +12,13 @@
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -24,7 +28,9 @@
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
+    using static Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.CosmosQueryExecutionContextFactory;
 
     [TestClass]
     public class OptimisticDirectExecutionQueryBaselineTests : BaselineTests<OptimisticDirectExecutionTestInput, OptimisticDirectExecutionTestOutput>
@@ -75,8 +81,6 @@
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a",
                     continuationToken: cosmosElementContinuationToken),
-
-                //TODO: Add non ODE continuation token case
             };
             this.ExecuteTestSuite(testVariations);
         }
@@ -107,10 +111,20 @@
                     expectedOptimisticDirectExecution: false,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: null),
+               
+                // Fail to execute due to MalFormedContinuationToken Exception
+                CreateInput(
+                    description: @"Exception with malformed continuation token",
+                    query: "SELECT * FROM c",
+                    expectedOptimisticDirectExecution: false,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: "a",
+                    continuationToken: CosmosString.Create("asdf"),
+                    expectException: true),
             };
             this.ExecuteTestSuite(testVariations);
         }
-
+        
         // This test confirms that TestInjection.EnableOptimisticDirectExection is set to false from default. 
         // Check test "TestPipelineForDistributedQueryAsync" to understand why this is done
         [TestMethod]
@@ -211,12 +225,104 @@
             Assert.AreEqual(1, result);
         }
 
+        [TestMethod]
+        public async Task TestHandlingOfFailedFallbackPipeline()
+        {
+            List<CosmosElement> documents = new List<CosmosElement>();
+            int numItems = 100;
+            int moveNextAsyncCounter = 0;
+
+            List<OptimisticDirectExecutionTestInput> input = new List<OptimisticDirectExecutionTestInput>
+            {
+                CreateInput(
+                description: @"Single Partition Key and Value Field",
+                query: "SELECT * FROM c",
+                expectedOptimisticDirectExecution: true,
+                partitionKeyPath: @"/pk",
+                partitionKeyValue: "a",
+                continuationToken: null)
+            };
+
+            CosmosException goneException = await CreateGoneException();
+            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(
+                    numItems,
+                    multiPartition: false,
+                    failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                        inject429s: false,
+                        injectEmptyPages: false,
+                        shouldReturnFailure: () => Task.FromResult<Exception>(moveNextAsyncCounter == 1 ? goneException : null)));
+
+            QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input[0], queryRequestOptions);
+
+            ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
+                    null,
+                    null,
+                    new PartitionKeyDefinition(),
+                    It.IsAny<Cosmos.GeospatialType>());
+
+            TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = OptimisticDirectExecutionQueryPipelineStage.MonadicCreate(
+                documentContainer: inMemoryCollection,
+                inputParameters: inputParameters,
+                targetRange: FeedRangeEpk.FullRange,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                fallbackQueryPipelineStageFactory: (continuationToken) =>
+                {
+                    InputParameters updatedInputParameters = new InputParameters(
+                      inputParameters.SqlQuerySpec,
+                       CosmosString.Create("asdf"),
+                      inputParameters.InitialFeedRange,
+                      inputParameters.MaxConcurrency,
+                      inputParameters.MaxItemCount,
+                      inputParameters.MaxBufferedItemCount,
+                      inputParameters.PartitionKey,
+                      inputParameters.Properties,
+                      inputParameters.PartitionedQueryExecutionInfo,
+                      inputParameters.ExecutionEnvironment,
+                      inputParameters.ReturnResultsInDeterministicOrder,
+                      inputParameters.ForcePassthrough,
+                      inputParameters.TestInjections);
+                    
+                    Task<TryCatch<IQueryPipelineStage>> tryCreateContext =
+                        CosmosQueryExecutionContextFactory.TryCreateOdeFallbackPipelineAsync(
+                            inMemoryCollection,
+                            cosmosQueryContextCore,
+                            containerQueryProperties,
+                            updatedInputParameters,
+                            NoOpTrace.Singleton,
+                            default);
+
+                    return tryCreateContext;
+                },
+                cancellationToken: default);
+
+            while (await monadicQueryPipelineStage.Result.MoveNextAsync(NoOpTrace.Singleton))
+            {
+                moveNextAsyncCounter++;
+
+                TryCatch<QueryPage> tryGetPage = monadicQueryPipelineStage.Result.Current;
+
+                if (tryGetPage.Failed)
+                {
+                    // failure should never come till here. Should be handled before
+                    Assert.Fail();
+                }
+
+                documents.AddRange(tryGetPage.Result.Documents);
+            }
+
+            Assert.IsTrue(monadicQueryPipelineStage.Result.Current.Failed);
+            Assert.IsTrue(monadicQueryPipelineStage.Result.Current.InnerMostException is MalformedContinuationTokenException);
+            Assert.AreNotEqual(numItems, documents.Count);
+        }
+
         // it creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
         // TODO: With the addition of the merge/split support, this queryPipelineStage should be able to return all documents regardless of a gone exception happening 
         private static async Task<bool> ExecuteGoneExceptionOnODEPipeline(bool isMultiPartition)
         {
+            List<CosmosElement> documents = new List<CosmosElement>();
             int numItems = 100;
-            string query = "SELECT * FROM c";
+            int moveNextAsyncCounter = 0;
 
             OptimisticDirectExecutionTestInput input = CreateInput(
                     description: @"Single Partition Key and Value Field",
@@ -225,18 +331,9 @@
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a");
 
-            List<CosmosElement> documents = new List<CosmosElement>();
-            string goneExceptionMessage = $"Epk Range: Partition does not exist at the given range.";
-            CosmosException goneException = new CosmosException(
-                message: goneExceptionMessage,
-                statusCode: System.Net.HttpStatusCode.Gone,
-                subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                activityId: "0f8fad5b-d9cb-469f-a165-70867728950e",
-                requestCharge: default);
-
+            CosmosException goneException = await CreateGoneException();
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
 
-            int moveNextAsyncCounter = 0;
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(
                     numItems,
                     multiPartition: isMultiPartition,
@@ -346,6 +443,17 @@
             return queryPipelineStage;
         }
 
+        private static async Task<CosmosException> CreateGoneException()
+        {
+            string goneExceptionMessage = $"Epk Range: Partition does not exist at the given range.";
+            return new CosmosException(
+                message: goneExceptionMessage,
+                statusCode: System.Net.HttpStatusCode.Gone,
+                subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                activityId: "0f8fad5b-d9cb-469f-a165-70867728950e",
+                requestCharge: default);
+        }
+
         private static async Task<DocumentContainer> CreateDocumentContainerAsync(
             int numItems,
             bool multiPartition,
@@ -416,12 +524,13 @@
             bool expectedOptimisticDirectExecution,
             string partitionKeyPath,
             string partitionKeyValue,
-            CosmosElement continuationToken = null)
+            CosmosElement continuationToken = null,
+            bool expectException = false)
         {
             PartitionKeyBuilder pkBuilder = new PartitionKeyBuilder();
             pkBuilder.Add(partitionKeyValue);
 
-            return CreateInput(description, query, expectedOptimisticDirectExecution, partitionKeyPath, pkBuilder.Build(), continuationToken);
+            return CreateInput(description, query, expectedOptimisticDirectExecution, partitionKeyPath, pkBuilder.Build(), continuationToken, expectException);
         }
 
         private static OptimisticDirectExecutionTestInput CreateInput(
@@ -430,9 +539,10 @@
             bool expectedOptimisticDirectExecution,
             string partitionKeyPath,
             Cosmos.PartitionKey partitionKeyValue,
-            CosmosElement continuationToken = null)
+            CosmosElement continuationToken = null,
+            bool expectException = false)
         {
-            return new OptimisticDirectExecutionTestInput(description, query, new SqlQuerySpec(query), expectedOptimisticDirectExecution, partitionKeyPath, partitionKeyValue, continuationToken);
+            return new OptimisticDirectExecutionTestInput(description, query, new SqlQuerySpec(query), expectedOptimisticDirectExecution, partitionKeyPath, partitionKeyValue, continuationToken, expectException);
         }
 
         public override OptimisticDirectExecutionTestOutput ExecuteTest(OptimisticDirectExecutionTestInput input)
@@ -452,6 +562,11 @@
                       NoOpTrace.Singleton);
 
             bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result;
+
+            if (input.ExpectException)
+            {
+                return new OptimisticDirectExecutionTestOutput(!queryPipelineStage.Current.Failed);
+            }
 
             if (input.ExpectedOptimisticDirectExecution)
             {
@@ -553,6 +668,7 @@
         internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
         internal string Query { get; set; }
         internal CosmosElement ContinuationToken { get; set; }
+        internal bool ExpectException { get; set; }
 
         internal OptimisticDirectExecutionTestInput(
             string description,
@@ -561,7 +677,8 @@
             bool expectedOptimisticDirectExecution,
             string partitionKeyPath,
             Cosmos.PartitionKey partitionKeyValue,
-            CosmosElement continuationToken)
+            CosmosElement continuationToken,
+            bool expectException)
             : base(description)
         {
             this.PartitionKeyDefinition = new PartitionKeyDefinition()
@@ -578,6 +695,7 @@
             this.Query = query;
             this.PartitionKeyValue = partitionKeyValue;
             this.ContinuationToken = continuationToken;
+            this.ExpectException = expectException;
         }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
@@ -681,9 +799,29 @@
             throw new NotImplementedException();
         }
 
-        public override Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
+        public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo()
+            {
+                QueryInfo = new QueryInfo()
+                {
+                    Aggregates = null,
+                    DistinctType = DistinctQueryType.None,
+                    GroupByAliases = null,
+                    GroupByAliasToAggregateType = null,
+                    GroupByExpressions = null,
+                    HasSelectValue = false,
+                    Limit = null,
+                    Offset = null,
+                    OrderBy = null,
+                    OrderByExpressions = null,
+                    RewrittenQuery = null,
+                    Top = null,
+                },
+                QueryRanges = new List<Documents.Routing.Range<string>>(),
+            };
+
+            return TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo);
         }
     }
 }

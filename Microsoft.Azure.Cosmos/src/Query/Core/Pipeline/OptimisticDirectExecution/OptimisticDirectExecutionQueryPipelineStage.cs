@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -52,34 +53,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
-            if (this.inner.Failed)
-            {
-                this.inner = TryCatch<IQueryPipelineStage>.FromException(this.inner.Exception);
-                return false;
-            }
-
             bool success = await this.inner.Result.MoveNextAsync(trace);
-            bool isGoneException = this.Current.Failed
-                && this.Current.InnerMostException is CosmosException exception
-                && exception.StatusCode == System.Net.HttpStatusCode.Gone
-                && exception.SubStatusCode == (int)SubStatusCodes.PartitionKeyRangeGone;
-
             if (success)
             {
                 this.SaveContinuation(this.Current.Result.State?.Value);
             }
-            else if (isGoneException && this.executionState == ExecutionState.OptimisticDirectExecution)
+            else if (this.executionState == ExecutionState.OptimisticDirectExecution)
             {
-                this.inner = await this.queryPipelineStageFactory(TryUnwrapContinuationToken(this.continuationToken).Result);
-                this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
-
-                if (this.inner.Failed)
+                if (Utils.IsPartitionSplitException(this.Current.InnerMostException))
                 {
-                    this.inner = TryCatch<IQueryPipelineStage>.FromException(this.inner.Exception);
-                    return false;
-                }
+                    this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken().Result);
+                    if (this.inner.Failed)
+                    {
+                        this.inner = TryCatch<IQueryPipelineStage>.FromException(this.inner.Exception);
+                        return false;
+                    }
 
-                success = await this.inner.Result.MoveNextAsync(trace);
+                    this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
+                    success = await this.inner.Result.MoveNextAsync(trace);
+                }
             }
 
             return success;
@@ -90,9 +82,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             this.inner.Try<IQueryPipelineStage>((pipelineStage) => pipelineStage = this.inner.Result).Result.SetCancellationToken(cancellationToken);
         }
 
-        public static TryCatch<CosmosElement> TryUnwrapContinuationToken(CosmosElement continuationToken)
+        public TryCatch<CosmosElement> TryUnwrapContinuationToken()
         {
-            if (!((CosmosObject)continuationToken).TryGetValue(optimisticDirectExecutionToken, out CosmosElement specializedContinuationToken))
+            Debug.Assert(this.continuationToken is CosmosObject);
+            if (!((CosmosObject)this.continuationToken).TryGetValue(optimisticDirectExecutionToken, out CosmosElement specializedContinuationToken))
             {
                 return TryCatch<CosmosElement>.FromException(
                     new FormatException(

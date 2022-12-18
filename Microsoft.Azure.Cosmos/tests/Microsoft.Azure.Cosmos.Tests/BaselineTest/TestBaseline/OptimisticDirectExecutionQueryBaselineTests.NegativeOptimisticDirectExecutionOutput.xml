@@ -38,4 +38,17 @@
       <ExecuteAsOptimisticDirectExecution>false</ExecuteAsOptimisticDirectExecution>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description>Exception with malformed continuation token</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsOptimisticDirectExecution>false</ExecuteAsOptimisticDirectExecution>
+    </Output>
+  </Result>
 </Results>
