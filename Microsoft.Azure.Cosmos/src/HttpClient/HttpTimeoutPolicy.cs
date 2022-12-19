@@ -36,8 +36,8 @@ namespace Microsoft.Azure.Cosmos
                 return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
             }
 
-            //Data Plane Read & Write
-            if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest))
+            //Data Plane Read
+            if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
             {
                 return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
             }
