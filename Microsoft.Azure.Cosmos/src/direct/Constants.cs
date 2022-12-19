@@ -1900,5 +1900,10 @@ namespace Microsoft.Azure.Documents
             // ConflictResolvedTimestamp(crts) exposed in this version.
             public static string SeparateMetadataWithCrts = "2021-09-15";
         }
+
+        public static class EnvironmentVariables
+        {
+            public const string ReplicaConnectivityValidationEnabled = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
+        }
     }
 }

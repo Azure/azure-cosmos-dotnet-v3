@@ -234,5 +234,32 @@ namespace Microsoft.Azure.Documents
             else if (statusCodeInt == 503) return "ServiceBusyError";
             else return "Other";
         }
+
+
+        /// <summary>
+        /// Gets the environment variable value using the user provided key.
+        /// </summary>
+        /// <param name="name">A string containing the environment variable name.</param>
+        /// <param name="defaultValue">A boolean field containing the default value of the variable.</param>
+        /// <returns>The environment variable value as a boolean field.</returns>
+        internal static bool GetEnvironmentVariableAsBool(
+            string name,
+            bool defaultValue)
+        {
+            string environmentVariableValue = Environment.GetEnvironmentVariable(name);
+
+            if (string.IsNullOrWhiteSpace(environmentVariableValue))
+            {
+                return defaultValue;
+            }
+
+            if (bool.TryParse(environmentVariableValue, out bool environmentVariableBool))
+            {
+                return environmentVariableBool;
+            }
+
+            // Value is not valid.
+            throw new ArgumentException($"{name} has an invalid boolean value of: {environmentVariableValue}.");
+        }
     }
 }

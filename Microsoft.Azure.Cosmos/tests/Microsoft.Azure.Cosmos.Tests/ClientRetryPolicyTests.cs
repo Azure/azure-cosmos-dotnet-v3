@@ -521,13 +521,17 @@
             public Task OpenConnectionsToAllReplicasAsync(
                 string databaseName,
                 string containerLinkUri,
-                Func<Uri, Task> openConnectionHandlerAsync,
                 CancellationToken cancellationToken = default)
             {
                 throw new NotImplementedException();
             }
 
             public Task UpdateAsync(Documents.Rntbd.ServerKey serverKey, CancellationToken cancellationToken = default)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionHandler)
             {
                 throw new NotImplementedException();
             }

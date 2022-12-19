@@ -46,10 +46,13 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
         private readonly CosmosHttpClient httpClient;
+        private readonly bool isReplicaAddressValidationEnabled;
+        private readonly ConcurrentBag<TransportAddressUri.HealthStatus> replicaValidationScopes;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
         private bool disposedValue;
+        private IOpenConnectionsHandler openConnectionsHandler;
 
         public GatewayAddressCache(
             Uri serviceEndpoint,
@@ -57,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             ICosmosAuthorizationTokenProvider tokenProvider,
             IServiceConfigurationReader serviceConfigReader,
             CosmosHttpClient httpClient,
+            IOpenConnectionsHandler openConnectionsHandler,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
             bool enableTcpConnectionEndpointRediscovery = false)
         {
@@ -80,6 +84,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GatewayAddressCache.protocolFilterFormat,
                 Constants.Properties.Protocol,
                 GatewayAddressCache.ProtocolString(this.protocol));
+
+            this.openConnectionsHandler = openConnectionsHandler;
+            this.isReplicaAddressValidationEnabled = ConfigurationManager.GetEnvironmentVariable(
+                variable: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
+                defaultValue: true);
+
+            this.replicaValidationScopes = new ConcurrentBag<TransportAddressUri.HealthStatus>();
+            if (this.isReplicaAddressValidationEnabled)
+            {
+                this.replicaValidationScopes.Add(TransportAddressUri.HealthStatus.UnhealthyPending);
+            }
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
@@ -88,7 +103,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             string databaseName,
             ContainerProperties collection,
             IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities,
-            Func<Uri, Task> openConnectionHandler,
             CancellationToken cancellationToken)
         {
             List<Task<TryCatch<DocumentServiceResponse>>> tasks = new ();
@@ -157,47 +171,21 @@ namespace Microsoft.Azure.Cosmos.Routing
                             new PartitionKeyRangeIdentity(collection.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
                             addressInfo.Item2);
 
-                        if (openConnectionHandler != null)
+                        if (this.openConnectionsHandler != null)
                         {
-                            await this.OpenRntbdChannelsAsync(
-                                addressInfo,
-                                openConnectionHandler);
+                            await this.openConnectionsHandler
+                                .TryOpenRntbdChannelsAsync(
+                                    addresses: addressInfo.Item2.Get(Protocol.Tcp)?.ReplicaTransportAddressUris);
                         }
                     }
                 }
             }
         }
 
-        /// <summary>
-        /// Invokes the transport client delegate to open the Rntbd connection
-        /// and establish Rntbd context negotiation to the backend replica nodes.
-        /// </summary>
-        /// <param name="addressInfo">An instance of <see cref="Tuple{T1, T2}"/> containing the partition key id
-        /// and it's corresponding address information.</param>
-        /// <param name="openConnectionHandlerAsync">The transport client callback delegate to be invoked at a
-        /// later point of time.</param>
-        private async Task OpenRntbdChannelsAsync(
-             Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo,
-             Func<Uri, Task> openConnectionHandlerAsync)
+        /// <inheritdoc/>
+        public void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler)
         {
-            foreach (AddressInformation address in addressInfo.Item2.AllAddresses)
-            {
-                DefaultTrace.TraceVerbose("Attempting to open Rntbd connection to backend uri: {0}. '{1}'",
-                    address.PhysicalUri,
-                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
-                try
-                {
-                    await openConnectionHandlerAsync(
-                        new Uri(address.PhysicalUri));
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceWarning("Failed to open Rntbd connection to backend uri: {0} with exception: {1}. '{2}'",
-                        address.PhysicalUri,
-                        ex,
-                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
-                }
-            }
+            this.openConnectionsHandler = openConnectionsHandler;
         }
 
         public async Task<PartitionAddressInformation> TryGetAddressesAsync(

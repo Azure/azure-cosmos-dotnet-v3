@@ -25,29 +25,42 @@ namespace Microsoft.Azure.Documents
                             .Where(address => !string.IsNullOrEmpty(address.PhysicalUri) && address.Protocol == protocol);
 
             IEnumerable<AddressInformation> internalAddresses = nonEmptyReplicaAddresses.Where(address => !address.IsPublic);
-            this.ReplicaAddresses = internalAddresses.Any() ? internalAddresses.ToArray() 
-                                : nonEmptyReplicaAddresses.Where(address => address.IsPublic).ToArray();
+            this.ReplicaAddresses = internalAddresses.Any() ? internalAddresses.ToList()
+                                : nonEmptyReplicaAddresses.Where(address => address.IsPublic).ToList();
 
             this.ReplicaUris = this.ReplicaAddresses
                                 .Select(e => new Uri(e.PhysicalUri))
-                                .ToArray();
+                                .ToList();
 
-            this.ReplicaTransportAddressUris = this.ReplicaUris
-                .Select(e => new TransportAddressUri(e))
-                .ToArray();
-
-            this.NonPrimaryReplicaTransportAddressUris = this.ReplicaAddresses
-                                .Where(e => !e.IsPrimary)
-                                .Select(e => new Uri(e.PhysicalUri))
-                                .Select(e => new TransportAddressUri(e))
-                                .ToArray();
-
-            AddressInformation primaryReplicaAddress = this.ReplicaAddresses.SingleOrDefault(
-                address => address.IsPrimary && !address.PhysicalUri.Contains('['));
-            if (primaryReplicaAddress != null)
+            // The TransportAddressUri object for a replica is expected to be shared across all of the different
+            // compositions, like the ReplicaTransportAddressUris, NonPrimaryReplicaTransportAddressUris and
+            // PrimaryReplicaTransportAddressUri. This means that unlike the prior implementation, there will be
+            // a same object shared across all of the primary and non-primary replica lists and any changes in
+            // one of the object will be reflected across.
+            List<Tuple<AddressInformation, TransportAddressUri>> transportAddressesDictionary = new();
+            foreach (AddressInformation addressInfo in this.ReplicaAddresses)
             {
-                this.PrimaryReplicaTransportAddressUri = new TransportAddressUri(new Uri(primaryReplicaAddress.PhysicalUri));
+                Tuple<AddressInformation, TransportAddressUri> transportAddressTuple = Tuple.Create(
+                    item1: addressInfo,
+                    item2: new TransportAddressUri(
+                        addressUri: new Uri(
+                            uriString: addressInfo.PhysicalUri)));
+
+                transportAddressesDictionary.Add(transportAddressTuple);
+                if (addressInfo.IsPrimary && !addressInfo.PhysicalUri.Contains('['))
+                {
+                    this.PrimaryReplicaTransportAddressUri = transportAddressTuple.Item2;
+                }
             }
+
+            this.ReplicaTransportAddressUris = transportAddressesDictionary
+                                                    .Select(x => x.Item2)
+                                                    .ToList();
+
+            this.NonPrimaryReplicaTransportAddressUris = transportAddressesDictionary
+                                                            .Where(x => !x.Item1.IsPrimary)
+                                                            .Select(x => x.Item2)
+                                                            .ToList();
 
             this.Protocol = protocol;
         }

@@ -29,5 +29,11 @@ namespace Microsoft.Azure.Cosmos.Common
             ServiceIdentity serviceIdentity,
             bool forceRefreshPartitionAddresses,
             CancellationToken cancellationToken);
+
+        /// <summary>
+        /// blabla
+        /// </summary>
+        /// <param name="openConnectionsHandler"></param>
+        void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler);
     }
 }

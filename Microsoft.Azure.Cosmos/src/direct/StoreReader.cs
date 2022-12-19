@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Documents
         private readonly IAddressEnumerator addressEnumerator;
         private readonly ISessionContainer sessionContainer;
         private readonly bool canUseLocalLSNBasedHeaders;
+        private readonly bool isReplicaAddressValidationEnabled;
 
         public StoreReader(
             TransportClient transportClient,
@@ -29,6 +30,9 @@ namespace Microsoft.Azure.Documents
             this.addressEnumerator = addressEnumerator ?? throw new ArgumentNullException(nameof(addressEnumerator));
             this.sessionContainer = sessionContainer;
             this.canUseLocalLSNBasedHeaders = VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.Versions.v2018_06_18);
+            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariableAsBool(
+                name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
+                defaultValue: false);
         }
 
         // Test hook
@@ -220,8 +224,10 @@ namespace Microsoft.Azure.Documents
             Exception exceptionToThrow = null;
             SubStatusCodes subStatusCodeForException = SubStatusCodes.Unknown;
             IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator
-                                                            .GetTransportAddresses(resolveApiResults, 
-                                                                                   entity.RequestContext.FailedEndpoints)
+                                                            .GetTransportAddresses(
+                                                                transportAddressUris: resolveApiResults,
+                                                                failedEndpoints: entity.RequestContext.FailedEndpoints,
+                                                                replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled)
                                                             .GetEnumerator();
 
             // Loop until we have the read quorum number of valid responses or if we have read all the replicas
