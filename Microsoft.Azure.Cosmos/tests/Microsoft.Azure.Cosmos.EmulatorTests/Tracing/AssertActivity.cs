@@ -1,10 +1,12 @@
-﻿namespace Microsoft.Azure.Cosmos.Tracing
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Tracing
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using Castle.Core.Internal;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -16,7 +18,7 @@
         {
             Assert.IsTrue(activity.OperationName == activity.DisplayName);
 
-            Assert.IsFalse(activity.GetTagItem("db.cosmosdb.connection_mode").ToString().IsNullOrEmpty(), $"connection mode is emtpy for {activity.OperationName}");
+            Assert.IsFalse(string.IsNullOrEmpty(activity.GetTagItem("db.cosmosdb.connection_mode").ToString()), $"connection mode is emtpy for {activity.OperationName}");
 
             if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Gateway.ToString())
             {

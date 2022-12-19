@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 {
     using System;
     using System.Collections.Generic;
