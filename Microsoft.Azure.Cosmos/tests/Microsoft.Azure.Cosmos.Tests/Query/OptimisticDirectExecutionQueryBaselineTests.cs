@@ -16,7 +16,6 @@
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
@@ -30,7 +29,6 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
-    using static Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.CosmosQueryExecutionContextFactory;
 
     [TestClass]
     public class OptimisticDirectExecutionQueryBaselineTests : BaselineTests<OptimisticDirectExecutionTestInput, OptimisticDirectExecutionTestOutput>
@@ -250,7 +248,7 @@
                     failureConfigs: new FlakyDocumentContainer.FailureConfigs(
                         inject429s: false,
                         injectEmptyPages: false,
-                        shouldReturnFailure: () => Task.FromResult<Exception>(moveNextAsyncCounter == 1 ? goneException : null)));
+                        shouldReturnFailure: () => Task.FromResult<Exception>(moveNextAsyncCounter == 1 || moveNextAsyncCounter == 4 ? goneException : null)));
 
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
             (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input[0], queryRequestOptions);
@@ -268,7 +266,7 @@
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 fallbackQueryPipelineStageFactory: (continuationToken) =>
                 {
-                    InputParameters updatedInputParameters = new InputParameters(
+                    CosmosQueryExecutionContextFactory.InputParameters updatedInputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                       inputParameters.SqlQuerySpec,
                        CosmosString.Create("asdf"),
                       inputParameters.InitialFeedRange,

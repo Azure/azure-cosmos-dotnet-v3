@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
 
     internal sealed class OptimisticDirectExecutionQueryPipelineStage : IQueryPipelineStage
     {
@@ -119,7 +118,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             }
 
             OptimisticDirectExecutionQueryPipelineStage odePipelineStageMonadicCreate = new OptimisticDirectExecutionQueryPipelineStage(pipelineStage, fallbackQueryPipelineStageFactory, inputParameters.InitialUserContinuationToken);
-
             return TryCatch<IQueryPipelineStage>.FromResult(odePipelineStageMonadicCreate);
         }
 
@@ -132,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
         {
             private readonly QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator;
 
-            internal OptimisticDirectExecutionQueryPipelineImpl(
+            private OptimisticDirectExecutionQueryPipelineImpl(
                 QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator)
             {
                 this.queryPartitionRangePageAsyncEnumerator = queryPartitionRangePageAsyncEnumerator ?? throw new ArgumentNullException(nameof(queryPartitionRangePageAsyncEnumerator));

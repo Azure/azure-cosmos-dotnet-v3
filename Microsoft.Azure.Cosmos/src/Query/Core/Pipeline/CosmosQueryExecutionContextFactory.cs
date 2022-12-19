@@ -417,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 cancellationToken: cancellationToken);
         }
 
-        public static async Task<TryCatch<IQueryPipelineStage>> TryCreateOdeFallbackPipelineAsync(
+        internal static async Task<TryCatch<IQueryPipelineStage>> TryCreateOdeFallbackPipelineAsync(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
             ContainerQueryProperties containerQueryProperties,
