@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Documents
             this.canUseLocalLSNBasedHeaders = VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.Versions.v2018_06_18);
             this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariableAsBool(
                 name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
-                defaultValue: false);
+                defaultValue: true);
         }
 
         // Test hook
