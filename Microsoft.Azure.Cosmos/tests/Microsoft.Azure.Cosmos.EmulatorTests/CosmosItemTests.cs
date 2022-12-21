@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Reflection;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using static System.Net.Mime.MediaTypeNames;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -3019,22 +3020,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ContainerProperties containerProperties = new ContainerProperties("mycoll", new List<string> { "/ZipCode", "/Address" });
                 Container container = await database.CreateContainerAsync(containerProperties);
-                
+                Cosmos.PartitionKey pKey;
+                Cosmos.PartitionKey badPKey;
+
                 //Document create.
                 ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
                 Document doc1 = new Document { Id = "document1" };
                 doc1.SetValue("ZipCode", "500026");
                 doc1.SetValue("Address", "Secunderabad");
+                doc1.SetValue("Type", "Residence");
                 documents[0] = await container.CreateItemAsync<Document>(doc1);
 
                 doc1 = new Document { Id = "document2" };
                 doc1.SetValue("ZipCode", "15232");
                 doc1.SetValue("Address", "Pittsburgh");
+                doc1.SetValue("Type", "Business");
                 documents[1] = await container.CreateItemAsync<Document>(doc1);
 
                 doc1 = new Document { Id = "document3" };
                 doc1.SetValue("ZipCode", "11790");
                 doc1.SetValue("Address", "Stonybrook");
+                doc1.SetValue("Type", "Goverment");
                 documents[2] = await container.CreateItemAsync<Document>(doc1);
 
                 Assert.AreEqual(3, documents.Select(document => ((Document)document).SelfLink).Distinct().Count());
@@ -3058,34 +3064,219 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Document Read.
                 foreach (Document document in documents)
                 {
-                    Cosmos.PartitionKey pKey = new PartitionKeyBuilder()
+                    pKey = new PartitionKeyBuilder()
                         .Add(document.GetPropertyValue<string>("ZipCode"))
                         .Add(document.GetPropertyValue<string>("Address"))
                         .Build();
 
                     Document readDocument = (await container.ReadItemAsync<Document>(document.Id, pKey)).Resource;
                     Assert.AreEqual(document.ToString(), readDocument.ToString());
+
+                    //Negative test - using incomplete partition key
+                    Boolean failedCorrextly = false;
+                    try
+                    {
+                        badPKey = new PartitionKeyBuilder()
+                            .Add(document.GetPropertyValue<string>("Address"))
+                            .Build();
+
+                        Document badReadDocument = (await container.ReadItemAsync<Document>(document.Id, pKey)).Resource;
+                    }
+                    catch (Exception ex) 
+                    {
+                        Assert.AreEqual("PartitionKey value must be supplied for this operation.",
+                            ex.Message);
+                        failedCorrextly = true;
+                    }
+                    Assert.IsTrue(failedCorrextly);
                 }
 
-                //Document Update.
-                foreach (ItemResponse<Document> obj in documents)
+                //Read Many
+                List<(string, Cosmos.PartitionKey)> itemList = new List<(string, Cosmos.PartitionKey)>();
+                foreach (Document document in documents)
                 {
-                    Cosmos.PartitionKey pKey = new PartitionKeyBuilder()
-                        .Add(obj.Resource.GetValue<string>("ZipCode"))
-                        .Add(obj.Resource.GetPropertyValue<string>("Address"))
+                    pKey = new PartitionKeyBuilder()
+                        .Add(document.GetPropertyValue<string>("ZipCode"))
+                        .Add(document.GetPropertyValue<string>("Address"))
                         .Build();
 
-                    Document document = (await container.ReadItemAsync<Document>(obj.Resource.Id, pKey)).Resource;
-                    document.SetPropertyValue("Name", document.Id);
+                    itemList.Add((document.Id, pKey));
+                }
 
-                    Document readDocument = (await container.ReplaceItemAsync<Document>(document, document.Id, pKey)).Resource;
-                    Assert.AreEqual(readDocument.GetValue<string>("Name"), document.GetValue<string>("Name"));
+                FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+
+                Assert.IsNotNull(feedResponse);
+                Assert.AreEqual(feedResponse.Count, 3);
+                Assert.IsTrue(feedResponse.Headers.RequestCharge > 0);
+                Assert.IsNotNull(feedResponse.Diagnostics);
+
+                int count = 0;
+                foreach (ToDoActivity item in feedResponse)
+                {
+                    count++;
+                    Assert.IsNotNull(item);
+                    Assert.IsNotNull(item.pk);
+                }
+                Assert.AreEqual(count, 3);
+
+                //Document Upsert
+                doc1 = new Document { Id = "document4" };
+                doc1.SetValue("ZipCode", "97756");
+                doc1.SetValue("Address", "Redmond");
+                doc1.SetValue("Type", "Residence");
+
+                pKey = new PartitionKeyBuilder()
+                        .Add(doc1.GetPropertyValue<string>("ZipCode"))
+                        .Add(doc1.GetPropertyValue<string>("Address"))
+                    .Build();
+
+                //insert check
+                await container.UpsertItemAsync<Document>(doc1, pKey);
+                
+                Document readCheck = (await container.ReadItemAsync<Document>(doc1.Id, pKey)).Resource;
+                
+                Assert.AreEqual(doc1.GetPropertyValue<string>("ZipCode"), readCheck.GetPropertyValue<string>("ZipCode"));
+                Assert.AreEqual(doc1.GetPropertyValue<string>("Address"), readCheck.GetPropertyValue<string>("Address"));
+                Assert.AreEqual(doc1.GetPropertyValue<string>("Type"), readCheck.GetPropertyValue<string>("Type"));
+
+                doc1 = new Document { Id = "document4" };
+                doc1.SetValue("ZipCode", "97756");
+                doc1.SetValue("Address", "Redmond");
+                doc1.SetValue("Type", "Business");
+
+                //update check
+                documents.Append<ItemResponse<Document>>(await container.UpsertItemAsync<Document>(doc1));
+
+                readCheck = (await container.ReadItemAsync<Document>(doc1.Id, pKey)).Resource;
+
+                Assert.AreEqual(doc1.GetPropertyValue<string>("ZipCode"), readCheck.GetPropertyValue<string>("ZipCode"));
+                Assert.AreEqual(doc1.GetPropertyValue<string>("Address"), readCheck.GetPropertyValue<string>("Address"));
+                Assert.AreEqual(doc1.GetPropertyValue<string>("Type"), readCheck.GetPropertyValue<string>("Type"));
+
+                count = 0;
+
+                foreach (Document doc in container.GetItemLinqQueryable<Document>(true))
+                {
+                    count++;
+                }
+                Assert.AreEqual(4, count);
+
+                //Negative test - using incomplete partition key
+                doc1 = new Document { Id = "document4" };
+                doc1.SetValue("ZipCode", "97756");
+                doc1.SetValue("Address", "Redmond");
+                doc1.SetValue("Type", "Residence");
+
+                badPKey = new PartitionKeyBuilder()
+                        .Add(doc1.GetPropertyValue<string>("ZipCode"))
+                    .Build();
+
+                Boolean failedCorrectly = false;
+                try
+                {
+                    await container.UpsertItemAsync<Document>(doc1);
+                }
+                catch (Exception ex)
+                {
+                    Assert.AreEqual("PartitionKey value must be supplied for this operation.",
+                            ex.Message);
+                    failedCorrectly = true;
+                }
+                Assert.IsTrue(failedCorrectly);
+
+                readCheck = (await container.ReadItemAsync<Document>(doc1.Id, pKey)).Resource;
+
+                Assert.AreEqual(doc1.GetPropertyValue<string>("ZipCode"), readCheck.GetPropertyValue<string>("ZipCode"));
+                Assert.AreEqual(doc1.GetPropertyValue<string>("Address"), readCheck.GetPropertyValue<string>("Address"));
+                Assert.AreNotEqual(doc1.GetPropertyValue<string>("Type"), readCheck.GetPropertyValue<string>("Type"));
+
+                //Query
+                foreach (Document document in documents)
+                {
+                    pKey = new PartitionKeyBuilder()
+                        .Add(document.GetPropertyValue<string>("ZipCode"))
+                        .Add(document.GetPropertyValue<string>("Address"))
+                    .Build();
+
+                    String query = $"SELECT * from c where c.id = {document.GetPropertyValue<string>("Id")}";
+
+                    using (FeedIterator<Document> feedIterator = this.Container.GetItemQueryIterator<Document>(
+                        query,
+                        null,
+                        new QueryRequestOptions() { PartitionKey = pKey }))
+                    {
+                        Assert.IsTrue(feedIterator.HasMoreResults);
+
+                        try
+                        {
+                            var queryDoc = await feedIterator.ReadNextAsync();
+                        }
+                        catch (Exception)
+                        {
+                            Assert.Fail("Should succeed");
+                        }
+                    }
+
+                }
+
+                //Document Replace
+                foreach (Document document in documents)
+                {
+                    pKey = new PartitionKeyBuilder()
+                        .Add(document.GetPropertyValue<string>("ZipCode"))
+                        .Add(document.GetPropertyValue<string>("Address"))
+                    .Build();
+
+
+                    Document readDocument = (await container.ReadItemAsync<Document>(document.Id, pKey)).Resource;
+                    readDocument.SetValue("Type", "Park");
+
+                    ItemResponse<Document> item = await container.ReplaceItemAsync<Document>(readDocument, readDocument.Id, pKey);
+
+                    Document checkDocument = (await container.ReadItemAsync<Document>(document.Id, pKey)).Resource;
+                    Assert.AreEqual(checkDocument.GetPropertyValue<string>("Type"), readDocument.GetPropertyValue<string>("Type"));
+
+                    //Negative test - using incomplete partition key
+                    Boolean failedCorrectly = false;
+                    try
+                    {
+                        badPKey = new PartitionKeyBuilder()
+                            .Add(document.GetPropertyValue<string>("Address"))
+                            .Build();
+
+                        readDocument.SetValue("Type", "Goverment");
+                        ItemResponse<Document> badItem = await container.ReplaceItemAsync<Document>(document, document.Id, partitionKey: badPKey);
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.AreEqual("PartitionKey value must be supplied for this operation.",
+                            ex.Message);
+                        failedCorrectly = true;
+                    }
+                    Assert.IsTrue(failedCorrectly);
                 }
 
                 //Document Delete.
                 foreach (Document document in documents)
                 {
-                    Cosmos.PartitionKey pKey = new PartitionKeyBuilder()
+                    //Negative test - using incomplete partition key
+                    Boolean failedCorrectly = false;
+                    try
+                    {
+                        badPKey = new PartitionKeyBuilder()
+                            .Add(document.GetPropertyValue<string>("Address"))
+                            .Build();
+
+                        Document badReadDocument = (await container.DeleteItemAsync<Document>(document.Id, badPKey)).Resource;
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.IsTrue(ex.Message.Contains("Partition key provided either doesn't correspond to definition in the collection or doesn't match partition key field values specified in the document"));
+                        failedCorrectly = true;
+                    }
+                    Assert.IsTrue(failedCorrectly);
+
+                    pKey = new PartitionKeyBuilder()
                         .Add(document.GetPropertyValue<string>("ZipCode"))
                         .Add(document.GetPropertyValue<string>("Address"))
                         .Build();
