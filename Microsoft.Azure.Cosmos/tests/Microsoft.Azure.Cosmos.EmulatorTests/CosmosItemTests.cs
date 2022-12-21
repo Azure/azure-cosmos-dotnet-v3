@@ -3073,7 +3073,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(document.ToString(), readDocument.ToString());
 
                     //Negative test - using incomplete partition key
-                    Boolean failedCorrextly = false;
                     try
                     {
                         badPKey = new PartitionKeyBuilder()
@@ -3086,9 +3085,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         Assert.AreEqual("PartitionKey value must be supplied for this operation.",
                             ex.Message);
-                        failedCorrextly = true;
                     }
-                    Assert.IsTrue(failedCorrextly);
                 }
 
                 //Read Many
@@ -3171,7 +3168,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .Add(doc1.GetPropertyValue<string>("ZipCode"))
                     .Build();
 
-                Boolean failedCorrectly = false;
                 try
                 {
                     await container.UpsertItemAsync<Document>(doc1);
@@ -3180,9 +3176,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.AreEqual("PartitionKey value must be supplied for this operation.",
                             ex.Message);
-                    failedCorrectly = true;
                 }
-                Assert.IsTrue(failedCorrectly);
 
                 readCheck = (await container.ReadItemAsync<Document>(doc1.Id, pKey)).Resource;
 
@@ -3237,7 +3231,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(checkDocument.GetPropertyValue<string>("Type"), readDocument.GetPropertyValue<string>("Type"));
 
                     //Negative test - using incomplete partition key
-                    Boolean failedCorrectly = false;
                     try
                     {
                         badPKey = new PartitionKeyBuilder()
@@ -3250,17 +3243,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     catch (Exception ex)
                     {
                         Assert.AreEqual("PartitionKey value must be supplied for this operation.",
-                            ex.Message);
-                        failedCorrectly = true;
+                            ex.Message); 
                     }
-                    Assert.IsTrue(failedCorrectly);
                 }
 
                 //Document Delete.
                 foreach (Document document in documents)
                 {
-                    //Negative test - using incomplete partition key
-                    Boolean failedCorrectly = false;
+                    //Negative test - using incomplete partition key                    
                     try
                     {
                         badPKey = new PartitionKeyBuilder()
@@ -3271,10 +3261,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                     catch (Exception ex)
                     {
-                        Assert.IsTrue(ex.Message.Contains("Partition key provided either doesn't correspond to definition in the collection or doesn't match partition key field values specified in the document"));
-                        failedCorrectly = true;
+                        Assert.IsTrue(ex.Message.Contains("Partition key provided either doesn't correspond to definition in the collection or doesn't match partition key field values specified in the document")); 
                     }
-                    Assert.IsTrue(failedCorrectly);
 
                     pKey = new PartitionKeyBuilder()
                         .Add(document.GetPropertyValue<string>("ZipCode"))
