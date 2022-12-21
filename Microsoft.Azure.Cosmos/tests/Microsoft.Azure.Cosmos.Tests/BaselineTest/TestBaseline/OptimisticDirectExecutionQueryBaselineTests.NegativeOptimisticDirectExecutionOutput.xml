@@ -40,7 +40,20 @@
   </Result>
   <Result>
     <Input>
-      <Description>Exception with malformed continuation token</Description>
+      <Description>MalformedException with Parallel continuation token</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsOptimisticDirectExecution>false</ExecuteAsOptimisticDirectExecution>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>MalformedException with OrderBy continuation token</Description>
       <Query>SELECT * FROM c</Query>
       <PartitionKeys>
         <Key>/pk</Key>

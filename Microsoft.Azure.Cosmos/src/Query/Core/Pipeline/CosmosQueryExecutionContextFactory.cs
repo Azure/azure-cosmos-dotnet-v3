@@ -148,13 +148,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     // Test code added to confirm the correct pipeline is being utilized
                     SetTestInjectionPipelineType(inputParameters, OptimisticDirectExecution);
 
-                    return TryCreateOptimisticDirectExecutionContext(
+                    TryCatch<IQueryPipelineStage> pipelineStage = TryCreateOptimisticDirectExecutionContext(
                                 documentContainer,
                                 cosmosQueryContext,
                                 containerQueryProperties,
                                 inputParameters,
                                 targetRange,
                                 cancellationToken);
+
+                    // A malformed continuation token exception would happen for 2 reasons here
+                    // 1. the token is actually malformed
+                    // 2. Its a non Ode continuation token
+                    // In both cases, Ode pipeline delegates the work to the Specialized pipeline
+                    // as Ode ppipeline should not take over execution while some other pipeline is already handling it
+                    if (pipelineStage.Failed && pipelineStage.InnerMostException is MalformedContinuationTokenException)
+                    {
+                        return await TryCreateSpecializedPipelineAsync(documentContainer, 
+                                        cosmosQueryContext, 
+                                        containerQueryProperties, 
+                                        inputParameters, 
+                                        trace, 
+                                        cancellationToken);
+                    }
+
+                    return pipelineStage;
                 }
 
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -228,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         }
                     }
 
-                    partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoFromGatewayOrServiceInteropAsync(
+                    partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
                         cosmosQueryContext,
                         inputParameters,
                         containerQueryProperties,
@@ -305,6 +322,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters,
                     targetRange,
                     cancellationToken);
+
+                if (tryCreatePipelineStage.Failed && tryCreatePipelineStage.InnerMostException is MalformedContinuationTokenException)
+                {
+                    tryCreatePipelineStage = CallSpecializedPipeline(
+                        documentContainer,
+                        cosmosQueryContext,
+                        inputParameters,
+                        targetRanges,
+                        partitionedQueryExecutionInfo,
+                        cancellationToken);
+                }
 
                 return tryCreatePipelineStage;
             }
@@ -404,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                     // In fallback scenario, the Specialized pipeline is always invoked
                     Task<TryCatch<IQueryPipelineStage>> tryCreateContext =
-                        CosmosQueryExecutionContextFactory.TryCreateOdeFallbackPipelineAsync(
+                        CosmosQueryExecutionContextFactory.TryCreateSpecializedPipelineAsync(
                             documentContainer,
                             cosmosQueryContext,
                             containerQueryProperties,
@@ -417,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 cancellationToken: cancellationToken);
         }
 
-        internal static async Task<TryCatch<IQueryPipelineStage>> TryCreateOdeFallbackPipelineAsync(
+        internal static async Task<TryCatch<IQueryPipelineStage>> TryCreateSpecializedPipelineAsync(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
             ContainerQueryProperties containerQueryProperties,
@@ -425,7 +453,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace,
             CancellationToken cancellationToken) 
         {
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoFromGatewayOrServiceInteropAsync(
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
                cosmosQueryContext,
                inputParameters,
                containerQueryProperties,
@@ -534,7 +562,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 requestCancellationToken: cancellationToken);
         }
 
-        private static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoFromGatewayOrServiceInteropAsync(
+        private static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
            CosmosQueryContext cosmosQueryContext,
            InputParameters inputParameters,
            ContainerQueryProperties containerQueryProperties,

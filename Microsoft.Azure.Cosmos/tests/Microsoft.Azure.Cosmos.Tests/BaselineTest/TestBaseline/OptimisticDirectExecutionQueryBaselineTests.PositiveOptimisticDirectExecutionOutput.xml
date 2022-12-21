@@ -53,7 +53,7 @@
   </Result>
   <Result>
     <Input>
-      <Description>Single Partition Key and continuation token</Description>
+      <Description>Single Partition Key and Ode continuation token</Description>
       <Query>SELECT * FROM c</Query>
       <PartitionKeys>
         <Key>/pk</Key>

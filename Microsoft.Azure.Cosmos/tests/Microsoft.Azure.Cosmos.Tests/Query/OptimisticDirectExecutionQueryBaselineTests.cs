@@ -8,6 +8,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
+    using System.Xml.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query;
@@ -16,6 +17,8 @@
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
@@ -37,7 +40,7 @@
         [Owner("akotalwar")]
         public void PositiveOptimisticDirectExecutionOutput()
         {
-            CosmosElement cosmosElementContinuationToken = CosmosElement.Parse(
+            CosmosElement cosmosElementOdeContinuationToken = CosmosElement.Parse(
                 "{\"OptimisticDirectExecutionToken\":{\"token\":\"{\\\"resourceId\\\":\\\"AQAAAMmFOw8LAAAAAAAAAA==\\\",\\\"skipCount\\\":1}\"," +
                 "\"range\":{\"min\":\"\",\"max\":\"FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF\"}}}");
 
@@ -73,12 +76,12 @@
                     continuationToken: null),
 
                 CreateInput(
-                    description: @"Single Partition Key and continuation token",
+                    description: @"Single Partition Key and Ode continuation token",
                     query: "SELECT * FROM c",
                     expectedOptimisticDirectExecution: true,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a",
-                    continuationToken: cosmosElementContinuationToken),
+                    continuationToken: cosmosElementOdeContinuationToken),
             };
             this.ExecuteTestSuite(testVariations);
         }
@@ -87,6 +90,25 @@
         [Owner("akotalwar")]
         public void NegativeOptimisticDirectExecutionOutput()
         {
+            ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                    token: Guid.NewGuid().ToString(),
+                    range: new Documents.Routing.Range<string>("A", "B", true, false));
+
+            OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                    parallelContinuationToken,
+                    new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", CosmosArray.Parse("[42, 37]") } })) },
+                    rid: "rid",
+                    skipCount: 42,
+                    filter: "filter");
+
+            CosmosElement cosmosElementOrderByContinuationToken = CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                        OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
+                        });
+
+            CosmosElement cosmosElementParallelContinuationToken = ParallelContinuationToken.ToCosmosElement(parallelContinuationToken);
+
             List<OptimisticDirectExecutionTestInput> testVariations = new List<OptimisticDirectExecutionTestInput>
             {
                 CreateInput(
@@ -110,14 +132,22 @@
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: null),
                
-                // Fail to execute due to MalFormedContinuationToken Exception
                 CreateInput(
-                    description: @"Exception with malformed continuation token",
+                    description: @"MalformedException with Parallel continuation token",
                     query: "SELECT * FROM c",
                     expectedOptimisticDirectExecution: false,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a",
-                    continuationToken: CosmosString.Create("asdf"),
+                    continuationToken: cosmosElementParallelContinuationToken,
+                    expectException: true),
+
+                CreateInput(
+                    description: @"MalformedException with OrderBy continuation token",
+                    query: "SELECT * FROM c",
+                    expectedOptimisticDirectExecution: false,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: "a",
+                    continuationToken: cosmosElementOrderByContinuationToken,
                     expectException: true),
             };
             this.ExecuteTestSuite(testVariations);
@@ -282,7 +312,7 @@
                       inputParameters.TestInjections);
                     
                     Task<TryCatch<IQueryPipelineStage>> tryCreateContext =
-                        CosmosQueryExecutionContextFactory.TryCreateOdeFallbackPipelineAsync(
+                        CosmosQueryExecutionContextFactory.TryCreateSpecializedPipelineAsync(
                             inMemoryCollection,
                             cosmosQueryContextCore,
                             containerQueryProperties,
