@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
         }
 
         private const string optimisticDirectExecutionToken = "OptimisticDirectExecutionToken";
-        public delegate Task<TryCatch<IQueryPipelineStage>> FallbackQueryPipelineStageFactory(CosmosElement continuationToken);
         private readonly FallbackQueryPipelineStageFactory queryPipelineStageFactory;
         private TryCatch<IQueryPipelineStage> inner;
         private CosmosElement continuationToken;
@@ -42,6 +41,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             this.continuationToken = continuationToken;
             this.executionState = ExecutionState.OptimisticDirectExecution;
         }
+
+        public delegate Task<TryCatch<IQueryPipelineStage>> FallbackQueryPipelineStageFactory(CosmosElement continuationToken);
 
         public TryCatch<QueryPage> Current => this.inner.Try<QueryPage>(pipelineStage => pipelineStage.Current);
 
