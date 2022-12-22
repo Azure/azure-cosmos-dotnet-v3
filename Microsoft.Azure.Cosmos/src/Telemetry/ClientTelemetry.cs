@@ -136,6 +136,29 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.telemetryTask = Task.Run(this.EnrichAndSendAsync, this.cancellationTokenSource.Token);
         }
 
+        private void CollectIt(CosmosDiagnostics cosmosDiagnostics,
+                            HttpStatusCode statusCode,
+                            long responseSizeInBytes,
+                            string containerId,
+                            string databaseId,
+                            OperationType operationType,
+                            ResourceType resourceType,
+                            string consistencyLevel,
+                            double requestCharge,
+                            SubStatusCodes subStatusCode)
+        {
+            _ = Task.Run(() => this.CollectOperationInfo(cosmosDiagnostics,
+                            statusCode,
+                            responseSizeInBytes,
+                            containerId,
+                            databaseId,
+                            operationType,
+                            resourceType,
+                            consistencyLevel,
+                            requestCharge,
+                            subStatusCode));
+        }
+
         /// <summary>
         /// Task which does below operations , periodically
         ///  1. Set Account information (one time at the time of initialization)
