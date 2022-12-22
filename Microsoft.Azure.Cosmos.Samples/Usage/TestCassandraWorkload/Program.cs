@@ -193,7 +193,7 @@ namespace Cosmos.Samples.Shared
 
             while (taskCompleteCounter < configuration.ItemsToCreate)
             {
-                Console.Write($"In progress. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}, Pending: {configuration.ItemsToCreate - taskCompleteCounter}");
+                Console.Write($"In progress for {stopwatch.Elapsed}. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}, Pending: {configuration.ItemsToCreate - taskCompleteCounter}");
                 int nonFailedCount = 0;
                 foreach (KeyValuePair<HttpStatusCode, int> countForStatus in countsByStatus)
                 {
