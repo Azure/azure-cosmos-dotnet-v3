@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             if (cosmosObjectContinuationToken == null || !cosmosObjectContinuationToken.ContainsKey(OptimisticDirectExecutionToken))
             {
                 return TryCatch<OptimisticDirectExecutionContinuationToken>.FromException(
-                                    new MalformedChangeFeedContinuationTokenException(
+                                    new MalformedContinuationTokenException(
                                         message: $"Malformed Continuation Token"));
             }
 

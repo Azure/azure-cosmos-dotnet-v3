@@ -96,8 +96,8 @@
 
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                     parallelContinuationToken,
-                    new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", CosmosArray.Parse("[42, 37]") } })) },
-                    rid: "rid",
+                    new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", CosmosString.Create("asdf") } })) },
+                    rid: "43223532",
                     skipCount: 42,
                     filter: "filter");
 
@@ -106,8 +106,6 @@
                         {
                         OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
                         });
-
-            CosmosElement cosmosElementParallelContinuationToken = ParallelContinuationToken.ToCosmosElement(parallelContinuationToken);
 
             List<OptimisticDirectExecutionTestInput> testVariations = new List<OptimisticDirectExecutionTestInput>
             {
@@ -133,22 +131,20 @@
                     partitionKeyValue: null),
                
                 CreateInput(
-                    description: @"MalformedException with Parallel continuation token",
+                    description: @"Single Partition Key with Parallel continuation token",
                     query: "SELECT * FROM c",
                     expectedOptimisticDirectExecution: false,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a",
-                    continuationToken: cosmosElementParallelContinuationToken,
-                    expectException: true),
-
+                    continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(parallelContinuationToken) })),
+      
                 CreateInput(
-                    description: @"MalformedException with OrderBy continuation token",
-                    query: "SELECT * FROM c",
+                    description: @"Single Partition Key with OrderBy continuation token",
+                    query: "SELECT * FROM c ORDER BY c._ts",
                     expectedOptimisticDirectExecution: false,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a",
-                    continuationToken: cosmosElementOrderByContinuationToken,
-                    expectException: true),
+                    continuationToken: cosmosElementOrderByContinuationToken),
             };
             this.ExecuteTestSuite(testVariations);
         }
@@ -552,13 +548,12 @@
             bool expectedOptimisticDirectExecution,
             string partitionKeyPath,
             string partitionKeyValue,
-            CosmosElement continuationToken = null,
-            bool expectException = false)
+            CosmosElement continuationToken = null)
         {
             PartitionKeyBuilder pkBuilder = new PartitionKeyBuilder();
             pkBuilder.Add(partitionKeyValue);
 
-            return CreateInput(description, query, expectedOptimisticDirectExecution, partitionKeyPath, pkBuilder.Build(), continuationToken, expectException);
+            return CreateInput(description, query, expectedOptimisticDirectExecution, partitionKeyPath, pkBuilder.Build(), continuationToken);
         }
 
         private static OptimisticDirectExecutionTestInput CreateInput(
@@ -567,10 +562,9 @@
             bool expectedOptimisticDirectExecution,
             string partitionKeyPath,
             Cosmos.PartitionKey partitionKeyValue,
-            CosmosElement continuationToken = null,
-            bool expectException = false)
+            CosmosElement continuationToken = null)
         {
-            return new OptimisticDirectExecutionTestInput(description, query, new SqlQuerySpec(query), expectedOptimisticDirectExecution, partitionKeyPath, partitionKeyValue, continuationToken, expectException);
+            return new OptimisticDirectExecutionTestInput(description, query, new SqlQuerySpec(query), expectedOptimisticDirectExecution, partitionKeyPath, partitionKeyValue, continuationToken);
         }
 
         public override OptimisticDirectExecutionTestOutput ExecuteTest(OptimisticDirectExecutionTestInput input)
@@ -590,11 +584,6 @@
                       NoOpTrace.Singleton);
 
             bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result;
-
-            if (input.ExpectException)
-            {
-                return new OptimisticDirectExecutionTestOutput(!queryPipelineStage.Current.Failed);
-            }
 
             if (input.ExpectedOptimisticDirectExecution)
             {
@@ -696,7 +685,6 @@
         internal PartitionKeyRangeIdentity PartitionKeyRangeId { get; set; }
         internal string Query { get; set; }
         internal CosmosElement ContinuationToken { get; set; }
-        internal bool ExpectException { get; set; }
 
         internal OptimisticDirectExecutionTestInput(
             string description,
@@ -705,8 +693,7 @@
             bool expectedOptimisticDirectExecution,
             string partitionKeyPath,
             Cosmos.PartitionKey partitionKeyValue,
-            CosmosElement continuationToken,
-            bool expectException)
+            CosmosElement continuationToken)
             : base(description)
         {
             this.PartitionKeyDefinition = new PartitionKeyDefinition()
@@ -723,7 +710,6 @@
             this.Query = query;
             this.PartitionKeyValue = partitionKeyValue;
             this.ContinuationToken = continuationToken;
-            this.ExpectException = expectException;
         }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
@@ -829,6 +815,16 @@
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
         {
+            IReadOnlyList<SortOrder> orderByColumn = new List<SortOrder>()
+                {
+                new SortOrder()
+                };
+
+            IReadOnlyList<string> orderByExpression = new List<string>()
+                {
+                "ORDER BY"
+                };
+
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo()
             {
                 QueryInfo = new QueryInfo()
@@ -841,8 +837,8 @@
                     HasSelectValue = false,
                     Limit = null,
                     Offset = null,
-                    OrderBy = null,
-                    OrderByExpressions = null,
+                    OrderBy = sqlQuerySpec.QueryText.Contains("ORDER BY") ? orderByColumn : null,
+                    OrderByExpressions = sqlQuerySpec.QueryText.Contains("ORDER BY") ? orderByExpression : null,
                     RewrittenQuery = null,
                     Top = null,
                 },

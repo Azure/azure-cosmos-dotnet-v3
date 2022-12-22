@@ -40,7 +40,7 @@
   </Result>
   <Result>
     <Input>
-      <Description>MalformedException with Parallel continuation token</Description>
+      <Description>Single Partition Key with Parallel continuation token</Description>
       <Query>SELECT * FROM c</Query>
       <PartitionKeys>
         <Key>/pk</Key>
@@ -53,8 +53,8 @@
   </Result>
   <Result>
     <Input>
-      <Description>MalformedException with OrderBy continuation token</Description>
-      <Query>SELECT * FROM c</Query>
+      <Description>Single Partition Key with OrderBy continuation token</Description>
+      <Query>SELECT * FROM c ORDER BY c._ts</Query>
       <PartitionKeys>
         <Key>/pk</Key>
       </PartitionKeys>
