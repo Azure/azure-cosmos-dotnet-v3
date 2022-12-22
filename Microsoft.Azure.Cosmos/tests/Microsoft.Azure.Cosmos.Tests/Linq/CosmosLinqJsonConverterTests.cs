@@ -36,6 +36,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             Dictionary<decimal, string> decimalTranslationDictionary = new Dictionary<decimal, string>()
             {
+                { decimal.MaxValue,  "79228162514264337593543950335" },
+                { decimal.MinValue,  "-79228162514264337593543950335" },
                 { 123m, "123" },
                 { 104.37644171779141m, "104.37644171779141" },
                 { 0.00000000000000000012m, "0.00000000000000000012" },
@@ -49,26 +51,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                 string sql = SqlTranslator.TranslateExpression(expr.Body);
                 Assert.AreEqual($"(a[\"DecimalValue\"] = {decimalTranslationDictionary[key]})", sql);
             }
-        }
-
-        [TestMethod]
-        public void DecimalMaxValueIsPreservedTest()
-        {
-            decimal value = decimal.MaxValue;
-            Expression<Func<TestDocument, bool>> expr = a => a.DecimalValue == value;
-
-            string sql = SqlTranslator.TranslateExpression(expr.Body);
-            Assert.AreEqual("(a[\"DecimalValue\"] = 79228162514264337593543950335)", sql);
-        }
-
-        [TestMethod]
-        public void DecimalMinValueIsPreservedTest()
-        {
-            decimal value = decimal.MinValue;
-            Expression<Func<TestDocument, bool>> expr = a => a.DecimalValue == value;
-
-            string sql = SqlTranslator.TranslateExpression(expr.Body);
-            Assert.AreEqual("(a[\"DecimalValue\"] = -79228162514264337593543950335)", sql);
         }
 
         class TestDocument

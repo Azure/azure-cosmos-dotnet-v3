@@ -46,6 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// The decimal if the value is a decimal.
         /// </summary>
         private readonly decimal? decimalValue;
+
         private Number64(decimal value)
         {
             this.decimalValue = value;
@@ -67,15 +68,45 @@ namespace Microsoft.Azure.Cosmos
             this.decimalValue = null;
         }
 
-        public bool IsInteger => this.longValue.HasValue;
+        public bool IsInteger
+        {
+            get
+            {
+                return this.longValue.HasValue;
+            }
+        }
 
-        public bool IsDouble => this.doubleValue.HasValue;
+        public bool IsDouble
+        {
+            get
+            {
+                return this.doubleValue.HasValue;
+            }
+        }
 
-        public bool IsDecimal => this.decimalValue.HasValue;
+        public bool IsDecimal
+        {
+            get
+            {
+                return this.decimalValue.HasValue;
+            }
+        }
 
-        public bool IsInfinity => !this.IsInteger && !this.IsDecimal && double.IsInfinity(this.doubleValue.Value);
+        public bool IsInfinity
+        {
+            get
+            {
+                return !this.IsInteger && !this.IsDecimal && double.IsInfinity(this.doubleValue.Value);
+            }
+        }
 
-        public bool IsNaN => !this.IsInteger && !this.IsDecimal && double.IsNaN(this.doubleValue.Value);
+        public bool IsNaN
+        {
+            get
+            {
+                return !this.IsInteger && !this.IsDecimal && double.IsNaN(this.doubleValue.Value);
+            }
+        }
 
         public override string ToString()
         {
@@ -94,16 +125,21 @@ namespace Microsoft.Azure.Cosmos
 
         public string ToString(string format, IFormatProvider formatProvider)
         {
+            string toString;
             if (this.IsDouble)
             {
-                return Number64.ToDouble(this).ToString(format, formatProvider);
+                toString = Number64.ToDouble(this).ToString(format, formatProvider);
             }
             else if (this.IsDecimal)
             {
-                return Number64.ToDecimal(this).ToString(format, formatProvider);
+                toString = Number64.ToDecimal(this).ToString(format, formatProvider);
             }
-            
-            return Number64.ToLong(this).ToString(format, formatProvider);
+            else
+            {
+                toString = Number64.ToLong(this).ToString(format, formatProvider);
+            }
+
+            return toString;
         }
 
         #region Static Operators
@@ -205,44 +241,59 @@ namespace Microsoft.Azure.Cosmos
 
         public static long ToLong(Number64 number64)
         {
-            if (number64.IsDouble)
+            long value;
+            if (number64.IsInteger)
             {
-                return (long)number64.doubleValue.Value;
+                value = number64.longValue.Value;
             }
             else if (number64.IsDecimal)
             {
-                return (long)number64.decimalValue.Value;
+                value = (long)number64.decimalValue.Value;
+            }
+            else
+            {
+                value = (long)number64.doubleValue.Value;
             }
 
-            return number64.longValue.Value;
+            return value;
         }
 
         public static double ToDouble(Number64 number64)
         {
-            if (number64.IsDecimal)
+            double value;
+            if (number64.IsDouble)
             {
-                return (double)number64.decimalValue.Value;
+                value = number64.doubleValue.Value;
+            } 
+            else if (number64.IsDecimal)
+            {
+                value = (double)number64.decimalValue.Value;
             }
-            else if (number64.IsInteger)
+            else
             {
-                return (double)number64.longValue.Value;
+                value = (double)number64.longValue.Value;
             }
 
-            return number64.doubleValue.Value;
+            return value;
         }
 
         public static decimal ToDecimal(Number64 number64)
         {
-            if (number64.IsDouble)
+            decimal value;
+            if (number64.IsDecimal)
             {
-                return (decimal)number64.doubleValue.Value;
+                value = number64.decimalValue.Value;
             }
-            else if (number64.IsInteger)
+            else if (number64.IsDouble)
             {
-                return (decimal)number64.decimalValue.Value;
+                value = (decimal)number64.doubleValue.Value;
+            }
+            else
+            {
+                value = number64.longValue.Value;
             }
 
-            return number64.decimalValue.Value;
+            return value;
         }
 
         public static DoubleEx ToDoubleEx(Number64 number64)
@@ -251,6 +302,10 @@ namespace Microsoft.Azure.Cosmos
             if (number64.IsDouble)
             {
                 doubleEx = number64.doubleValue.Value;
+            } 
+            else if (number64.IsDecimal)
+            {
+                doubleEx = (double)number64.decimalValue.Value;
             }
             else
             {
@@ -307,8 +362,8 @@ namespace Microsoft.Azure.Cosmos
             else
             {
                 // Convert both to doubleEx and compare
-                DoubleEx first = this.IsDouble ? this.doubleValue.Value : this.longValue.Value;
-                DoubleEx second = other.IsDouble ? other.doubleValue.Value : other.longValue.Value;
+                DoubleEx first = Number64.ToDouble(this);
+                DoubleEx second = Number64.ToDouble(other);
                 comparison = first.CompareTo(second);
             }
 
@@ -351,6 +406,11 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The hash code for this instance.</returns>
         public override int GetHashCode()
         {
+            if (this.IsDecimal)
+            {
+                return this.decimalValue.GetHashCode();
+            }
+
             DoubleEx doubleEx = Number64.ToDoubleEx(this);
             return doubleEx.GetHashCode();
         }

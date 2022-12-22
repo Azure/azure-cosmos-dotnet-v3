@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Extensions.Primitives;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using System;
@@ -209,6 +210,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queriable = linqQueryable.Where(item => item.taskNum < 100);
             Assert.AreEqual(1, queriable.Count());
             Assert.AreEqual(itemList[1].id, queriable.ToList()[0].id);
+        }
+
+        [TestMethod]
+        public async Task ItemLinqQuery_DecimalWithPercisionItemExists_ReturnsItem()
+        {
+            //Creating items for query.
+            string pk = Guid.NewGuid().ToString();
+            string id = Guid.NewGuid().ToString();
+            decimal decimalValue = 104.37644171779141m;
+
+            NumberLinqItem linqItem = new NumberLinqItem
+            {
+                pk = pk,
+                id = id,
+                decimaleValue = decimalValue,
+            };
+
+            await this.Container.CreateItemAsync(linqItem);
+
+            IQueryable<NumberLinqItem> linqQueryable = this.Container.GetItemLinqQueryable<NumberLinqItem>(requestOptions: new QueryRequestOptions() { MaxConcurrency = 1 })
+                .Where(e => e.pk == pk)   
+                .Where(e => e.id == id)   
+                .Where(e => e.decimaleValue == decimalValue);
+
+            FeedIterator<NumberLinqItem> setIterator = linqQueryable.ToFeedIterator();
+            List<NumberLinqItem> results = new ();
+            while (setIterator.HasMoreResults)
+            {
+                FeedResponse<NumberLinqItem> queryResponse = await setIterator.ReadNextAsync();
+                results.AddRange(queryResponse.Resource);
+            }
+
+            Assert.AreEqual(1, results.Count);
+            Assert.AreEqual(decimalValue, results[0].decimaleValue);
         }
 
         [TestMethod]
