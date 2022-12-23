@@ -14,23 +14,38 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
     [Serializable]
     internal sealed class MetricInfo
     {
-        internal MetricInfo(string metricsName, string unitName)
+        internal MetricInfo(string metricsName,
+            string unitName,
+            LongConcurrentHistogram histogram = null,
+            double adjustment = 1)
         {
             this.MetricsName = metricsName;
             this.UnitName = unitName;
+            this.Adjustment = adjustment;
+            this.Histogram = histogram;
         }
 
+        internal MetricInfo(string metricsName,
+           string unitName, int count)
+        {
+            this.MetricsName = metricsName;
+            this.UnitName = unitName;
+            this.count = count;
+        }
+
+        [JsonConstructor]
         public MetricInfo(string metricsName,
             string unitName,
-            double mean = 0,
-            long count = 0,
-            long min = 0,
-            long max = 0,
-            IReadOnlyDictionary<double, double> percentiles = null)
-            : this(metricsName, unitName)
+            long count,
+            double mean,
+            double min,
+            double max,
+            IReadOnlyDictionary<double, double> percentiles)
         {
-            this.Mean = mean;
+            this.MetricsName = metricsName;
+            this.UnitName = unitName;
             this.Count = count;
+            this.Mean = mean;
             this.Min = min;
             this.Max = max;
             this.Percentiles = percentiles;
@@ -42,46 +57,97 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         [JsonProperty(PropertyName = "unitName")]
         internal string UnitName { get; }
 
+        private double mean;
         [JsonProperty(PropertyName = "mean")]
-        internal double Mean { get; set; }
-
-        [JsonProperty(PropertyName = "count")]
-        internal long Count { get; set; }
-
-        [JsonProperty(PropertyName = "min")]
-        internal double Min { get; set; }
-
-        [JsonProperty(PropertyName = "max")]
-        internal double Max { get; set; }
-
-        [JsonProperty(PropertyName = "percentiles")]
-        internal IReadOnlyDictionary<double, double> Percentiles { get; set; }
-
-        /// <summary>
-        /// It will set the current object with the aggregated values from the given histogram
-        /// </summary>
-        /// <param name="histogram"></param>
-        /// <param name="adjustment"></param>
-        /// <returns>MetricInfo</returns>
-        internal MetricInfo SetAggregators(LongConcurrentHistogram histogram, double adjustment = 1)
+        internal double Mean
         {
-            if (histogram != null)
+            get
             {
-                this.Count = histogram.TotalCount;
-                this.Max = histogram.GetMaxValue() / adjustment;
-                this.Min = histogram.GetMinValue() / adjustment;
-                this.Mean = histogram.GetMean() / adjustment;
-                IReadOnlyDictionary<double, double> percentile = new Dictionary<double, double>
+                if (this.mean > 0)
                 {
-                    { ClientTelemetryOptions.Percentile50,  histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile50) / adjustment },
-                    { ClientTelemetryOptions.Percentile90,  histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile90) / adjustment },
-                    { ClientTelemetryOptions.Percentile95,  histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile95) / adjustment },
-                    { ClientTelemetryOptions.Percentile99,  histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile99) / adjustment },
-                    { ClientTelemetryOptions.Percentile999, histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile999) / adjustment }
-                };
-                this.Percentiles = percentile;
+                    return this.mean;
+                }
+                return (this.Histogram?.GetMean() ?? 0) / this.Adjustment;
             }
-            return this;
+
+            set => this.mean = value;
         }
+
+        private long count;
+        [JsonProperty(PropertyName = "count")]
+        internal long Count
+        {
+            get
+            {
+                if (this.count > 0)
+                {
+                    return this.count;
+                }
+                return this.Histogram?.TotalCount ?? 0;
+            }
+
+            set => this.count = value;
+        }
+
+        private double min;
+        [JsonProperty(PropertyName = "min")]
+        internal double Min
+        {
+            get
+            {
+                if (this.min > 0)
+                {
+                    return this.min;
+                }
+                return (this.Histogram?.GetMinValue() ?? 0) / this.Adjustment;
+            }
+
+            set => this.min = value;
+        }
+
+        private double max;
+        [JsonProperty(PropertyName = "max")]
+        internal double Max
+        {
+            get
+            {
+                if (this.max > 0)
+                {
+                    return this.max;
+                }
+                return (this.Histogram?.GetMaxValue() ?? 0) / this.Adjustment;
+            }
+
+            set => this.max = value;
+        }
+
+        private IReadOnlyDictionary<double, double> percentiles;
+        [JsonProperty(PropertyName = "percentiles")]
+        internal IReadOnlyDictionary<double, double> Percentiles
+        {
+            get
+            {
+                if (this.percentiles != null)
+                {
+                    return this.percentiles;
+                }
+                return new Dictionary<double, double>
+                {
+                    { ClientTelemetryOptions.Percentile50,  (this.Histogram?.GetValueAtPercentile(ClientTelemetryOptions.Percentile50) ?? 0) / this.Adjustment },
+                    { ClientTelemetryOptions.Percentile90,  (this.Histogram?.GetValueAtPercentile(ClientTelemetryOptions.Percentile90) ?? 0) / this.Adjustment },
+                    { ClientTelemetryOptions.Percentile95,  (this.Histogram?.GetValueAtPercentile(ClientTelemetryOptions.Percentile95) ?? 0) / this.Adjustment },
+                    { ClientTelemetryOptions.Percentile99,  (this.Histogram?.GetValueAtPercentile(ClientTelemetryOptions.Percentile99) ?? 0) / this.Adjustment },
+                    { ClientTelemetryOptions.Percentile999, (this.Histogram?.GetValueAtPercentile(ClientTelemetryOptions.Percentile999) ?? 0) / this.Adjustment }
+                };
+            }
+
+            set => this.percentiles = value;
+        }
+        
+        [JsonIgnore]
+        internal LongConcurrentHistogram Histogram { get; }
+
+        [JsonIgnore]
+        internal double Adjustment { get; } = 1;
     }
 }

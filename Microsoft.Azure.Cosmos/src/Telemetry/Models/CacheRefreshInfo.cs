@@ -5,57 +5,43 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
-    using Microsoft.Azure.Documents;
+    using HdrHistogram;
     using Newtonsoft.Json;
 
     [Serializable]
-    internal sealed class CacheRefreshInfo : OperationInfo
+    internal class CacheRefreshInfo : OperationInfoKey
     {
-        [JsonProperty(PropertyName = "cacheRefreshSource")]
-        internal string CacheRefreshSource { get; }
-
-        internal CacheRefreshInfo(string metricsName, string unitName)
-            : base(metricsName, unitName)
+        [JsonProperty(PropertyName = "metricInfo")]
+        internal MetricInfo MetricInfo { get; set; }
+        
+        internal CacheRefreshInfo(OperationInfoKey infoKey, string metricsName,
+            string unitName,
+            LongConcurrentHistogram histogram,
+            double adjustment = 1)
         {
+            this.RegionsContacted = infoKey.RegionsContacted;
+            this.GreaterThan1Kb = infoKey.GreaterThan1Kb;
+            this.Consistency = infoKey.Consistency;
+            this.DatabaseName = infoKey.DatabaseName;
+            this.ContainerName = infoKey.ContainerName;
+            this.Operation = infoKey.Operation;
+            this.Resource = infoKey.Resource;
+            this.StatusCode = infoKey.StatusCode;
+            this.SubStatusCode = infoKey.SubStatusCode;
+            this.CacheRefreshSource = infoKey.CacheRefreshSource;
+            
+            this.MetricInfo = new MetricInfo(metricsName, unitName, histogram, adjustment);
         }
 
         [JsonConstructor]
-        internal CacheRefreshInfo(string regionsContacted,
-            long? responseSizeInBytes,
-            string consistency,
-            string databaseName,
-            string containerName,
-            OperationType? operation,
-            ResourceType? resource,
-            int? statusCode,
-            int subStatusCode,
-            string cacheRefreshSource)
-            : base(
-                  regionsContacted: regionsContacted,
-                  responseSizeInBytes: responseSizeInBytes,
-                  consistency: consistency,
-                  databaseName: databaseName,
-                  containerName: containerName,
-                  operation: operation,
-                  resource: resource,
-                  statusCode: statusCode,
-                  subStatusCode: subStatusCode)
+        public CacheRefreshInfo(MetricInfo metricInfo)
         {
-            this.CacheRefreshSource = cacheRefreshSource;
+            this.MetricInfo = metricInfo;
         }
 
-        public override int GetHashCode()
+        internal void RecordValue(long value)
         {
-            int hash = base.GetHashCode();
-            hash = (hash * 7) ^ (this.CacheRefreshSource == null ? 0 : this.CacheRefreshSource.GetHashCode());
-            return hash;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return base.Equals(obj) && 
-                obj is CacheRefreshInfo payload &&
-                String.CompareOrdinal(this.CacheRefreshSource, payload.CacheRefreshSource) == 0;
+            this.MetricInfo.Histogram.RecordValue(value);
         }
     }
 }

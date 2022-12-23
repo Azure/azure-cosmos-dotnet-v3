@@ -52,13 +52,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         internal int AggregationIntervalInSec { get; set; }
 
         [JsonProperty(PropertyName = "systemInfo")]
-        internal List<SystemInfo> SystemInfo { get; set; }
+        internal List<SystemInfo> SystemInfo { get; } = new List<SystemInfo>();
 
         [JsonProperty(PropertyName = "cacheRefreshInfo")]
-        internal List<CacheRefreshInfo> CacheRefreshInfo { get; set; }
+        internal List<CacheRefreshInfo> CacheRefreshInfo { get; } = new List<CacheRefreshInfo>();
 
         [JsonProperty(PropertyName = "operationInfo")]
-        internal List<OperationInfo> OperationInfo { get; set; }
+        internal List<OperationInfo> OperationInfo { get; } = new List<OperationInfo>();
 
         [JsonIgnore]
         internal bool IsDirectConnectionMode { get; }

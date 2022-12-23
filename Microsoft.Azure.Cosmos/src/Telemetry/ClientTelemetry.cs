@@ -42,16 +42,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
 
         private readonly CancellationTokenSource cancellationTokenSource;
-
+        
         private readonly GlobalEndpointManager globalEndpointManager;
 
         private Task telemetryTask;
 
-        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
-            = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
+        private ConcurrentDictionary<OperationInfoKey, OperationInfo> operationWithLatencyMetrics
+            = new ConcurrentDictionary<OperationInfoKey, OperationInfo>();
+        private ConcurrentDictionary<OperationInfoKey, OperationInfo> operationWithRUMetrics
+    = new ConcurrentDictionary<OperationInfoKey, OperationInfo>();
 
-        private ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoMap 
-            = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
+        private ConcurrentDictionary<OperationInfoKey, CacheRefreshInfo> cacheRefreshInfoMap 
+            = new ConcurrentDictionary<OperationInfoKey, CacheRefreshInfo>();
 
         private int numberOfFailures = 0;
 
@@ -182,15 +184,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.RecordSystemUtilization();
 
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
+                    
+                    ConcurrentDictionary<OperationInfoKey, OperationInfo> operationWithLatencyMetricsSnapshot
+                        = Interlocked.Exchange(ref this.operationWithLatencyMetrics, new ConcurrentDictionary<OperationInfoKey, OperationInfo>());
+                    ConcurrentDictionary<OperationInfoKey, OperationInfo> operationWithRUMetricsSnapshot
+                        = Interlocked.Exchange(ref this.operationWithRUMetrics, new ConcurrentDictionary<OperationInfoKey, OperationInfo>());
 
-                    ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
-                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
+                    this.clientTelemetryInfo.OperationInfo
+                        .AddRange(operationWithLatencyMetricsSnapshot.Values);
+                    this.clientTelemetryInfo.OperationInfo
+                        .AddRange(operationWithRUMetricsSnapshot.Values);
+                    
+                    ConcurrentDictionary<OperationInfoKey, CacheRefreshInfo> cacheRefreshInfoSnapshot
+                       = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<OperationInfoKey, CacheRefreshInfo>());
 
-                    ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
-                       = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
-
-                    this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
-                    this.clientTelemetryInfo.CacheRefreshInfo = ClientTelemetryHelper.ToListWithMetricsInfo(cacheRefreshInfoSnapshot);
+                    this.clientTelemetryInfo.CacheRefreshInfo
+                       .AddRange(cacheRefreshInfoSnapshot.Values);
 
                     await this.SendAsync();
                 }
@@ -228,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(regionsContactedList);
 
             // Recording Request Latency
-            CacheRefreshInfo payloadKey = new CacheRefreshInfo(cacheRefreshSource: cacheRefreshSource,
+            OperationInfoKey operationInfoKey = new OperationInfoKey(cacheRefreshSource: cacheRefreshSource,
                                             regionsContacted: regionsContacted?.ToString(),
                                             responseSizeInBytes: responseSizeInBytes,
                                             consistency: consistencyLevel,
@@ -238,14 +247,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             resource: resourceType,
                                             statusCode: (int)statusCode,
                                             subStatusCode: (int)subStatusCode);
-
-            LongConcurrentHistogram latency = this.cacheRefreshInfoMap
-                    .GetOrAdd(payloadKey, new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+            
+            CacheRefreshInfo cacheLatencyInfo = this.cacheRefreshInfoMap.GetOrAdd(operationInfoKey, new CacheRefreshInfo(
+               operationInfoKey,
+               ClientTelemetryOptions.RequestLatencyName,
+               ClientTelemetryOptions.RequestLatencyUnit,
+               new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
-                                                        ClientTelemetryOptions.RequestLatencyPrecision));
+                                                        ClientTelemetryOptions.RequestLatencyPrecision),
+               ClientTelemetryOptions.TicksToMsFactor));
             try
             {
-                latency.RecordValue(requestLatency.Value.Ticks);
+                cacheLatencyInfo.RecordValue(requestLatency.Value.Ticks);
             }
             catch (Exception ex)
             {
@@ -287,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
 
             // Recording Request Latency and Request Charge
-            OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
+            OperationInfoKey operationInfoKey = new OperationInfoKey(regionsContacted: regionsContacted?.ToString(),
                                             responseSizeInBytes: responseSizeInBytes,
                                             consistency: consistencyLevel,
                                             databaseName: databaseId,
@@ -297,26 +310,37 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             statusCode: (int)statusCode,
                                             subStatusCode: (int)subStatusCode);
 
-            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
-                    .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+            OperationInfo operationLatencyInfo = this.operationWithLatencyMetrics.GetOrAdd(operationInfoKey, new OperationInfo(
+                operationInfoKey,
+                ClientTelemetryOptions.RequestLatencyName,
+                ClientTelemetryOptions.RequestLatencyUnit,
+                new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
                                                         ClientTelemetryOptions.RequestLatencyPrecision),
-                            requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
-                                                        ClientTelemetryOptions.RequestChargeMax,
-                                                        ClientTelemetryOptions.RequestChargePrecision)));
+                ClientTelemetryOptions.TicksToMsFactor));
+                
             try
             {
-                latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
+                operationLatencyInfo.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
             } 
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
             }
 
+            OperationInfo operationRUInfo = this.operationWithRUMetrics.GetOrAdd(operationInfoKey, new OperationInfo(
+               operationInfoKey,
+               ClientTelemetryOptions.RequestChargeName, 
+               ClientTelemetryOptions.RequestChargeUnit,
+               new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                                                        ClientTelemetryOptions.RequestChargeMax,
+                                                        ClientTelemetryOptions.RequestChargePrecision),
+               ClientTelemetryOptions.HistogramPrecisionFactor));
+            
             long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
             try
             {
-                requestcharge.RecordValue(requestChargeToRecord);
+                operationRUInfo.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
             }
             catch (Exception ex)
             {

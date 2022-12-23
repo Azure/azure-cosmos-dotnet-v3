@@ -17,24 +17,30 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
 
-        internal SystemInfo(string metricsName, string unitName)
-        {
-            this.MetricInfo = new MetricInfo(metricsName, unitName);
-        }
-
-        internal SystemInfo(string metricsName, string unitName, int count)
-        {
-            this.MetricInfo = new MetricInfo(metricsName, unitName, count: count);
-        }
-
+        [JsonConstructor]
         public SystemInfo(MetricInfo metricInfo)
         {
             this.MetricInfo = metricInfo;
         }
 
-        internal void SetAggregators(LongConcurrentHistogram histogram, double adjustment = 1)
+        internal SystemInfo(string metricsName,
+           string unitName,
+           int count)
         {
-            this.MetricInfo.SetAggregators(histogram, adjustment);
+            this.MetricInfo = new MetricInfo(metricsName, unitName, count);
+        }
+        
+        internal SystemInfo(string metricsName, 
+            string unitName, 
+            LongConcurrentHistogram histogram,
+            double adjustment = 1)
+        {
+            this.MetricInfo = new MetricInfo(metricsName, unitName, histogram, adjustment);
+        }
+
+        internal void RecordValue(long value)
+        {
+            this.MetricInfo.Histogram.RecordValue(value);
         }
 
     }

@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Common;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -70,12 +68,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
+                        
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
                         }
-
                         return Task.FromResult(result);
                     }
                     else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri))
@@ -100,12 +97,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
                         }
-
                         return Task.FromResult(result);
                     }
                     return null;
@@ -220,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Delete an Item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
-
+            
             IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
             {
                 { Documents.OperationType.Create.ToString(), 1},

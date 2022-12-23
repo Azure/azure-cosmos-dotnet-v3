@@ -26,7 +26,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                         ClientTelemetryOptions.CpuMax,
                                                         ClientTelemetryOptions.CpuPrecision);
 
-            SystemInfo systemInfo = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
+            SystemInfo systemInfo = new SystemInfo(
+                ClientTelemetryOptions.CpuName, 
+                ClientTelemetryOptions.CpuUnit,
+                histogram,
+                ClientTelemetryOptions.HistogramPrecisionFactor);
+            
             foreach (SystemUsageLoad load in systemUsageCollection)
             {
                 if (float.IsNaN(load.CpuUsage.Value))
@@ -37,15 +42,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 long? infoToRecord = (long?)load.CpuUsage * ClientTelemetryOptions.HistogramPrecisionFactor;
                 if (infoToRecord.HasValue)
                 {
-                    histogram.RecordValue(infoToRecord.Value);
+                    systemInfo.RecordValue(infoToRecord.Value);
                 }
             }
-
-            if (histogram.TotalCount > 0)
-            {
-                systemInfo.SetAggregators(histogram, ClientTelemetryOptions.HistogramPrecisionFactor);
-            }
-            
             return systemInfo;
         }
 
@@ -60,21 +59,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                         ClientTelemetryOptions.MemoryMax,
                                                         ClientTelemetryOptions.MemoryPrecision);
 
-            SystemInfo systemInfo = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
+            SystemInfo systemInfo = new SystemInfo(
+                ClientTelemetryOptions.MemoryName, 
+                ClientTelemetryOptions.MemoryUnit,
+                histogram,
+                ClientTelemetryOptions.KbToMbFactor);
             foreach (SystemUsageLoad load in systemUsageCollection)
             {
                 long? infoToRecord = (long?)load.MemoryAvailable;
                 if (infoToRecord.HasValue)
                 {
-                    histogram.RecordValue(infoToRecord.Value);
+                    systemInfo.RecordValue(infoToRecord.Value);
                 }
             }
-
-            if (histogram.TotalCount > 0)
-            {
-                systemInfo.SetAggregators(histogram, ClientTelemetryOptions.KbToMbFactor);
-            }
-
+            
             return systemInfo;
         }
 
@@ -89,21 +87,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                         ClientTelemetryOptions.AvailableThreadsMax,
                                                         ClientTelemetryOptions.AvailableThreadsPrecision);
 
-            SystemInfo systemInfo = new SystemInfo(ClientTelemetryOptions.AvailableThreadsName, ClientTelemetryOptions.AvailableThreadsUnit);
+            SystemInfo systemInfo = new SystemInfo(
+                ClientTelemetryOptions.AvailableThreadsName, 
+                ClientTelemetryOptions.AvailableThreadsUnit,
+                histogram);
             foreach (SystemUsageLoad load in systemUsageCollection)
             {
                 long? infoToRecord = (long?)load.ThreadInfo?.AvailableThreads;
                 if (infoToRecord.HasValue)
                 {
-                    histogram.RecordValue(infoToRecord.Value);
+                    systemInfo.RecordValue(infoToRecord.Value);
                 }
             }
-
-            if (histogram.TotalCount > 0)
-            {
-                systemInfo.SetAggregators(histogram);
-            }
-
+            
             return systemInfo;
         }
 
@@ -143,21 +139,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                         ClientTelemetryOptions.ThreadWaitIntervalInMsMax,
                                                         ClientTelemetryOptions.ThreadWaitIntervalInMsPrecision);
 
-            SystemInfo systemInfo = new SystemInfo(ClientTelemetryOptions.ThreadWaitIntervalInMsName, ClientTelemetryOptions.ThreadWaitIntervalInMsUnit);
+            SystemInfo systemInfo = new SystemInfo(
+                ClientTelemetryOptions.ThreadWaitIntervalInMsName, 
+                ClientTelemetryOptions.ThreadWaitIntervalInMsUnit,
+                histogram,
+                ClientTelemetryOptions.TicksToMsFactor);
+            
             foreach (SystemUsageLoad load in systemUsageCollection)
             {
                 double? infoToRecord = load.ThreadInfo?.ThreadWaitIntervalInMs;
                 if (infoToRecord.HasValue)
                 {
-                    histogram.RecordValue(TimeSpan.FromMilliseconds(infoToRecord.Value).Ticks);
+                    systemInfo.RecordValue(TimeSpan.FromMilliseconds(infoToRecord.Value).Ticks);
                 }
             }
-
-            if (histogram.TotalCount > 0)
-            {
-                systemInfo.SetAggregators(histogram, ClientTelemetryOptions.TicksToMsFactor);
-            }
-
+            
             return systemInfo;
         }
 
@@ -172,7 +168,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                         ClientTelemetryOptions.NumberOfTcpConnectionMax,
                                                         ClientTelemetryOptions.NumberOfTcpConnectionPrecision);
 
-            SystemInfo systemInfo = new SystemInfo(ClientTelemetryOptions.NumberOfTcpConnectionName, ClientTelemetryOptions.NumberOfTcpConnectionUnit);
+            SystemInfo systemInfo = new SystemInfo(
+                ClientTelemetryOptions.NumberOfTcpConnectionName, 
+                ClientTelemetryOptions.NumberOfTcpConnectionUnit,
+                histogram);
             foreach (SystemUsageLoad load in systemUsageCollection)
             {
                 int? infoToRecord = load.NumberOfOpenTcpConnections;
@@ -185,13 +184,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 if (infoToRecord.HasValue)
                 {
-                    histogram.RecordValue(infoToRecord.Value);
+                    systemInfo.RecordValue(infoToRecord.Value);
                 }
-            }
-
-            if (histogram.TotalCount > 0)
-            {
-                systemInfo.SetAggregators(histogram);
             }
 
             return systemInfo;

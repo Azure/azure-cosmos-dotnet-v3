@@ -75,63 +75,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
         }
-
-        /// <summary>
-        /// Convert map with operation information to list of operations along with request latency and request charge metrics
-        /// </summary>
-        /// <param name="metrics"></param>
-        /// <returns>Collection of ReportPayload</returns>
-        internal static List<OperationInfo> ToListWithMetricsInfo(
-                IDictionary<OperationInfo, 
-                (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
-        {
-            DefaultTrace.TraceVerbose("Aggregating operation information to list started");
-
-            List<OperationInfo> payloadWithMetricInformation = new List<OperationInfo>();
-            foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
-            {
-                OperationInfo payloadForLatency = entry.Key;
-                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
-
-                payloadWithMetricInformation.Add(payloadForLatency);
-
-                OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
-                payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
-
-                payloadWithMetricInformation.Add(payloadForRequestCharge);
-            }
-
-            DefaultTrace.TraceInformation("Aggregating operation information to list done");
-
-            return payloadWithMetricInformation;
-        }
-
-        /// <summary>
-        /// Convert map with CacheRefreshInfo information to list of operations along with request latency and request charge metrics
-        /// </summary>
-        /// <param name="metrics"></param>
-        /// <returns>Collection of ReportPayload</returns>
-        internal static List<CacheRefreshInfo> ToListWithMetricsInfo(IDictionary<CacheRefreshInfo, LongConcurrentHistogram> metrics)
-        {
-            DefaultTrace.TraceVerbose("Aggregating CacheRefreshInfo information to list started");
-
-            List<CacheRefreshInfo> payloadWithMetricInformation = new List<CacheRefreshInfo>();
-            foreach (KeyValuePair<CacheRefreshInfo, LongConcurrentHistogram> entry in metrics)
-            {
-                CacheRefreshInfo payloadForLatency = entry.Key;
-                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
-
-                payloadWithMetricInformation.Add(payloadForLatency);
-            }
-
-            DefaultTrace.TraceVerbose("Aggregating CacheRefreshInfo information to list done");
-
-            return payloadWithMetricInformation;
-        }
-
+        
         /// <summary>
         /// Get comma separated list of regions contacted from the diagnostic
         /// </summary>
