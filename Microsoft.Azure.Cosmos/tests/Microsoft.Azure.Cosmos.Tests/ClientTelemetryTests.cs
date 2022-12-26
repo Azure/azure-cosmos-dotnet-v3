@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 connectionMode: ConnectionMode.Direct, 
                 preferredRegions: null, 
                 aggregationIntervalInSec: 10), ClientTelemetryOptions.JsonSerializerSettings);
-            Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"aggregationIntervalInSec\":10,\"systemInfo\":[]}", json);
+            Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"aggregationIntervalInSec\":10,\"systemInfo\":[],\"cacheRefreshInfo\":[],\"operationInfo\":[]}", json);
         }
         
         [TestMethod]
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 connectionMode: ConnectionMode.Direct, 
                 preferredRegions: preferredRegion,
                 aggregationIntervalInSec: 1), ClientTelemetryOptions.JsonSerializerSettings);
-            Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[]}", json);
+            Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[],\"cacheRefreshInfo\":[],\"operationInfo\":[]}", json);
         }
 
         [TestMethod]
