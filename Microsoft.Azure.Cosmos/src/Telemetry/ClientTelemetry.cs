@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
             try
             {
-                operationRUInfo.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
+                operationRUInfo.RecordValue(requestChargeToRecord);
             }
             catch (Exception ex)
             {
