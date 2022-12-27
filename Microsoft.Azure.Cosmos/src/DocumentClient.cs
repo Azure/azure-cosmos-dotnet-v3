@@ -12,7 +12,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Security;
     using System.Security;
+    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -162,6 +164,9 @@ namespace Microsoft.Azure.Cosmos
         private static int idCounter;
         //Trace Id.
         private int traceId;
+
+        //RemoteCertificateValidationCallback
+        internal RemoteCertificateValidationCallback remoteCertificateValidationCallback;
 
         //SessionContainer.
         internal ISessionContainer sessionContainer;
@@ -421,6 +426,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
         /// <param name="isLocalQuorumConsistency">Flag to allow Quorum Read with Eventual Consistency Account</param>
         /// <param name="cosmosClientId"></param>
+        /// <param name="remoteCertificateValidationCallback"></param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -446,7 +452,8 @@ namespace Microsoft.Azure.Cosmos
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
                               IStoreClientFactory storeClientFactory = null,
                               bool isLocalQuorumConsistency = false,
-                              string cosmosClientId = null)
+                              string cosmosClientId = null,
+                              RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -478,7 +485,8 @@ namespace Microsoft.Azure.Cosmos
                 sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
                 storeClientFactory: storeClientFactory,
-                cosmosClientId: cosmosClientId);
+                cosmosClientId: cosmosClientId,
+                remoteCertificateValidationCallback: remoteCertificateValidationCallback);
         }
 
         /// <summary>
@@ -577,7 +585,7 @@ namespace Microsoft.Azure.Cosmos
         internal GlobalAddressResolver AddressResolver { get; private set; }
 
         internal GlobalEndpointManager GlobalEndpointManager { get; private set; }
-        
+
         internal GlobalPartitionEndpointManager PartitionKeyRangeLocation { get; private set; }
 
         /// <summary>
@@ -641,9 +649,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Clear the caches to ensure that we don't have partial results
                 this.collectionCache = new ClientCollectionCache(
-                    sessionContainer: this.sessionContainer, 
-                    storeModel: this.GatewayStoreModel, 
-                    tokenProvider: this, 
+                    sessionContainer: this.sessionContainer,
+                    storeModel: this.GatewayStoreModel,
+                    tokenProvider: this,
                     retryPolicy: this.retryPolicy,
                     clientTelemetry: this.clientTelemetry);
                 this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
@@ -660,7 +668,8 @@ namespace Microsoft.Azure.Cosmos
             bool? enableCpuMonitor = null,
             IStoreClientFactory storeClientFactory = null,
             TokenCredential tokenCredential = null,
-            string cosmosClientId = null)
+            string cosmosClientId = null,
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
         {
             if (serviceEndpoint == null)
             {
@@ -668,6 +677,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.clientId = cosmosClientId;
+            this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
@@ -695,8 +705,7 @@ namespace Microsoft.Azure.Cosmos
                 string maxConcurrentConnectionOpenRequestsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxConcurrentConnectionOpenConfig];
                 if (!string.IsNullOrEmpty(maxConcurrentConnectionOpenRequestsOverrideString))
                 {
-                    int maxConcurrentConnectionOpenRequestOverrideInt = 0;
-                    if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out maxConcurrentConnectionOpenRequestOverrideInt))
+                    if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out int maxConcurrentConnectionOpenRequestOverrideInt))
                     {
                         this.maxConcurrentConnectionOpenRequests = maxConcurrentConnectionOpenRequestOverrideInt;
                     }
@@ -705,8 +714,7 @@ namespace Microsoft.Azure.Cosmos
                 string openConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.OpenConnectionTimeoutInSecondsConfig];
                 if (!string.IsNullOrEmpty(openConnectionTimeoutInSecondsOverrideString))
                 {
-                    int openConnectionTimeoutInSecondsOverrideInt = 0;
-                    if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out openConnectionTimeoutInSecondsOverrideInt))
+                    if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out int openConnectionTimeoutInSecondsOverrideInt))
                     {
                         this.openConnectionTimeoutInSeconds = openConnectionTimeoutInSecondsOverrideInt;
                     }
@@ -715,8 +723,7 @@ namespace Microsoft.Azure.Cosmos
                 string idleConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.IdleConnectionTimeoutInSecondsConfig];
                 if (!string.IsNullOrEmpty(idleConnectionTimeoutInSecondsOverrideString))
                 {
-                    int idleConnectionTimeoutInSecondsOverrideInt = 0;
-                    if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out idleConnectionTimeoutInSecondsOverrideInt))
+                    if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out int idleConnectionTimeoutInSecondsOverrideInt))
                     {
                         this.idleConnectionTimeoutInSeconds = idleConnectionTimeoutInSecondsOverrideInt;
                     }
@@ -725,8 +732,7 @@ namespace Microsoft.Azure.Cosmos
                 string transportTimerPoolGranularityInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.TransportTimerPoolGranularityInSecondsConfig];
                 if (!string.IsNullOrEmpty(transportTimerPoolGranularityInSecondsOverrideString))
                 {
-                    int timerPoolGranularityInSecondsOverrideInt = 0;
-                    if (Int32.TryParse(transportTimerPoolGranularityInSecondsOverrideString, out timerPoolGranularityInSecondsOverrideInt))
+                    if (Int32.TryParse(transportTimerPoolGranularityInSecondsOverrideString, out int timerPoolGranularityInSecondsOverrideInt))
                     {
                         // timeoutgranularity specified should be greater than min(5 seconds)
                         if (timerPoolGranularityInSecondsOverrideInt > this.timerPoolGranularityInSeconds)
@@ -739,8 +745,7 @@ namespace Microsoft.Azure.Cosmos
                 string enableRntbdChannelOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.EnableTcpChannelConfig];
                 if (!string.IsNullOrEmpty(enableRntbdChannelOverrideString))
                 {
-                    bool enableRntbdChannel = false;
-                    if (bool.TryParse(enableRntbdChannelOverrideString, out enableRntbdChannel))
+                    if (bool.TryParse(enableRntbdChannelOverrideString, out bool enableRntbdChannel))
                     {
                         this.enableRntbdChannel = enableRntbdChannel;
                     }
@@ -1005,9 +1010,9 @@ namespace Microsoft.Azure.Cosmos
             this.GatewayStoreModel = gatewayStoreModel;
 
             this.collectionCache = new ClientCollectionCache(
-                    sessionContainer: this.sessionContainer, 
-                    storeModel: this.GatewayStoreModel, 
-                    tokenProvider: this, 
+                    sessionContainer: this.sessionContainer,
+                    storeModel: this.GatewayStoreModel,
+                    tokenProvider: this,
                     retryPolicy: this.retryPolicy,
                     clientTelemetry: this.clientTelemetry);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
@@ -1843,7 +1848,7 @@ namespace Microsoft.Azure.Cosmos
             if (options?.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
@@ -3217,18 +3222,18 @@ namespace Microsoft.Azure.Cosmos
             if ((options == null) || (options.PartitionKey == null))
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
             return await TaskHelper.InlineIfPossible(
                 () => this.ReplaceDocumentPrivateAsync(
-                    documentLink, 
-                    document, 
-                    options, 
-                    requestRetryPolicy, 
-                    cancellationToken), 
-                requestRetryPolicy, 
+                    documentLink,
+                    document,
+                    options,
+                    requestRetryPolicy,
+                    cancellationToken),
+                requestRetryPolicy,
                 cancellationToken);
         }
 
@@ -5795,7 +5800,7 @@ namespace Microsoft.Azure.Cosmos
             if (options?.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
@@ -6573,7 +6578,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Documents.ConsistencyLevel defaultConsistencyLevel = this.accountServiceConfiguration.DefaultConsistencyLevel;
             if (!this.IsValidConsistency(
-                        defaultConsistencyLevel, 
+                        defaultConsistencyLevel,
                         desiredConsistencyLevel,
                         operationType,
                         resourceType))
@@ -6587,7 +6592,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private bool IsValidConsistency(
-            Documents.ConsistencyLevel backendConsistency, 
+            Documents.ConsistencyLevel backendConsistency,
             Documents.ConsistencyLevel desiredConsistency,
             OperationType? operationType,
             ResourceType? resourceType)
@@ -6648,7 +6653,8 @@ namespace Microsoft.Azure.Cosmos
                     retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration(),
                     enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
                     addressResolver: this.AddressResolver,
-                    rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount);
+                    rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
+                    remoteCertificateValidationCallback: this.remoteCertificateValidationCallback);
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -6776,6 +6782,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             PartitionKeyInternal partitionKey;
+#pragma warning disable IDE0045 // Convert to conditional expression
             if (options?.PartitionKey != null && options.PartitionKey.Equals(Documents.PartitionKey.None))
             {
                 partitionKey = collection.GetNoneValue();
@@ -6788,6 +6795,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 partitionKey = DocumentAnalyzer.ExtractPartitionKeyValue(document, partitionKeyDefinition);
             }
+#pragma warning restore IDE0045 // Convert to conditional expression
 
             request.Headers.Set(HttpConstants.HttpHeaders.PartitionKey, partitionKey.ToJsonString());
         }
@@ -6849,7 +6857,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // check anyways since default consistency level might have been refreshed.
                 if (!this.IsValidConsistency(
-                            backendConsistency: this.accountServiceConfiguration.DefaultConsistencyLevel, 
+                            backendConsistency: this.accountServiceConfiguration.DefaultConsistencyLevel,
                             desiredConsistency: this.desiredConsistencyLevel.Value,
                             operationType: operationType,
                             resourceType: resourceType))
