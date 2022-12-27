@@ -438,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     this.numberOfFailures++;
 
-                    DefaultTrace.TraceError("Juno API response not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase);
+                    DefaultTrace.TraceError("Client telemetry service response is not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase);
                 } 
                 else
                 {
