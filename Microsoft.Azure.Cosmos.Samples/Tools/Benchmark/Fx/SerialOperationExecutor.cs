@@ -96,6 +96,10 @@ namespace CosmosBenchmark
 
                 Trace.TraceInformation($"Executor {this.executorId} completed");
             }
+            catch(Exception ex)
+            {
+                Console.WriteLine("Inside catch " + ex.ToString());
+            }
             finally
             {
                 completionCallback();

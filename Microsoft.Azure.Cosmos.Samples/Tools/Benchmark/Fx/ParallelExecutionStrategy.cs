@@ -69,6 +69,8 @@ namespace CosmosBenchmark
             {
                 Console.WriteLine($"ParallelExecutionStrategy ExecuteAsync Exception: {ex.Message}");
                 Console.WriteLine($"ParallelExecutionStrategy ExecuteAsync Exception: {ex.StackTrace}");
+
+                throw;
             }
           
             return await this.LogOutputStats(
