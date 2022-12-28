@@ -33,6 +33,8 @@ namespace CosmosBenchmark
             IExecutor[] executors = null;
             try
             {
+                Console.WriteLine("Inside try");
+                
                 IExecutor warmupExecutor = new SerialOperationExecutor(
                       executorId: "Warmup",
                       benchmarkOperation: this.benchmarkOperation());
@@ -59,6 +61,9 @@ namespace CosmosBenchmark
                             traceFailures: benchmarkConfig.TraceFailures,
                             completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
                 }
+
+                Console.WriteLine("Try ended");
+
             }
             catch (Exception ex)
             {
