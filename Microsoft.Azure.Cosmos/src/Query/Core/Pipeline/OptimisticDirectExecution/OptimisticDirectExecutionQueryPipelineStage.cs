@@ -56,20 +56,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             bool success = await this.inner.Result.MoveNextAsync(trace);
             if (success)
             {
-                this.SaveContinuation(this.Current.Result.State?.Value);
+                this.continuationToken = this.Current.Result.State?.Value;
             }
             else if (this.executionState == ExecutionState.OptimisticDirectExecution)
             {
-                if (Utils.IsPartitionSplitException(this.Current.InnerMostException))
+                if (CosmosExceptionExtensions.IsPartitionSplitException(this.Current.InnerMostException))
                 {
                     this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken().Result);
+                    this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
                     if (this.inner.Failed)
                     {
-                        this.inner = TryCatch<IQueryPipelineStage>.FromException(this.inner.Exception);
                         return false;
                     }
 
-                    this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
                     success = await this.inner.Result.MoveNextAsync(trace);
                 }
             }
@@ -120,11 +119,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
             OptimisticDirectExecutionQueryPipelineStage odePipelineStageMonadicCreate = new OptimisticDirectExecutionQueryPipelineStage(pipelineStage, fallbackQueryPipelineStageFactory, inputParameters.InitialUserContinuationToken);
             return TryCatch<IQueryPipelineStage>.FromResult(odePipelineStageMonadicCreate);
-        }
-
-        private void SaveContinuation(CosmosElement continuationToken)
-        {
-            this.continuationToken = continuationToken;
         }
 
         private class OptimisticDirectExecutionQueryPipelineImpl : IQueryPipelineStage

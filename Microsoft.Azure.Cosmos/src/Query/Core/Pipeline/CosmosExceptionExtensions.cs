@@ -5,10 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
 
-    internal static class Utils
+    internal static class CosmosExceptionExtensions
     {
         public static bool IsPartitionSplitException(this Exception ex)
         {

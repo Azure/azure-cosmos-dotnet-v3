@@ -308,7 +308,7 @@
                       inputParameters.TestInjections);
                     
                     Task<TryCatch<IQueryPipelineStage>> tryCreateContext =
-                        CosmosQueryExecutionContextFactory.TryCreateSpecializedPipelineAsync(
+                        CosmosQueryExecutionContextFactory.TryCreateSpecializedDocumentQueryExecutionContextAsync(
                             inMemoryCollection,
                             cosmosQueryContextCore,
                             containerQueryProperties,
