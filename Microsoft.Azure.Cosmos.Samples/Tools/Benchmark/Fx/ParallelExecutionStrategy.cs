@@ -30,36 +30,45 @@ namespace CosmosBenchmark
             int serialExecutorIterationCount,
             double warmupFraction)
         {
-            IExecutor warmupExecutor = new SerialOperationExecutor(
-                        executorId: "Warmup",
-                        benchmarkOperation: this.benchmarkOperation());
-            await warmupExecutor.ExecuteAsync(
-                    (int)(serialExecutorIterationCount * warmupFraction),
-                    isWarmup: true,
-                    traceFailures: benchmarkConfig.TraceFailures,
-                    completionCallback: () => { });
-
-            IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
-            for (int i = 0; i < serialExecutorConcurrency; i++)
+            IExecutor[] executors = null;
+            try
             {
-                executors[i] = new SerialOperationExecutor(
-                            executorId: i.ToString(),
-                            benchmarkOperation: this.benchmarkOperation());
-            }
-
-            this.pendingExecutorCount = serialExecutorConcurrency;
-            for (int i = 0; i < serialExecutorConcurrency; i++)
-            {
-                _ = executors[i].ExecuteAsync(
-                        iterationCount: serialExecutorIterationCount,
-                        isWarmup: false,
+                IExecutor warmupExecutor = new SerialOperationExecutor(
+                      executorId: "Warmup",
+                      benchmarkOperation: this.benchmarkOperation());
+                await warmupExecutor.ExecuteAsync(
+                        (int)(serialExecutorIterationCount * warmupFraction),
+                        isWarmup: true,
                         traceFailures: benchmarkConfig.TraceFailures,
-                        completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
-            }
+                        completionCallback: () => { });
 
+                executors = new IExecutor[serialExecutorConcurrency];
+                for (int i = 0; i < serialExecutorConcurrency; i++)
+                {
+                    executors[i] = new SerialOperationExecutor(
+                                executorId: i.ToString(),
+                                benchmarkOperation: this.benchmarkOperation());
+                }
+
+                this.pendingExecutorCount = serialExecutorConcurrency;
+                for (int i = 0; i < serialExecutorConcurrency; i++)
+                {
+                    _ = executors[i].ExecuteAsync(
+                            iterationCount: serialExecutorIterationCount,
+                            isWarmup: false,
+                            traceFailures: benchmarkConfig.TraceFailures,
+                            completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ParallelExecutionStrategy ExecuteAsync Exception: {ex.Message}");
+                Console.WriteLine($"ParallelExecutionStrategy ExecuteAsync Exception: {ex.StackTrace}");
+            }
+          
             return await this.LogOutputStats(
-                benchmarkConfig, 
-                executors);
+                benchmarkConfig,
+                 executors);
         }
 
         private async Task<RunSummary> LogOutputStats(
@@ -73,38 +82,46 @@ namespace CosmosBenchmark
             Stopwatch watch = new Stopwatch();
             watch.Start();
 
-            bool isLastIterationCompleted = false;
-            do
+            try
             {
-                isLastIterationCompleted = this.pendingExecutorCount <= 0;
-
-                Summary currentTotalSummary = new Summary();
-                for (int i = 0; i < executors.Length; i++)
+                bool isLastIterationCompleted = false;
+                do
                 {
-                    IExecutor executor = executors[i];
-                    Summary executorSummary = new Summary()
+                    isLastIterationCompleted = this.pendingExecutorCount <= 0;
+
+                    Summary currentTotalSummary = new Summary();
+                    for (int i = 0; i < executors.Length; i++)
                     {
-                        successfulOpsCount = executor.SuccessOperationCount,
-                        failedOpsCount = executor.FailedOperationCount,
-                        ruCharges = executor.TotalRuCharges,
-                    };
+                        IExecutor executor = executors[i];
+                        Summary executorSummary = new Summary()
+                        {
+                            successfulOpsCount = executor.SuccessOperationCount,
+                            failedOpsCount = executor.FailedOperationCount,
+                            ruCharges = executor.TotalRuCharges,
+                        };
 
-                    currentTotalSummary += executorSummary;
+                        currentTotalSummary += executorSummary;
+                    }
+
+                    // In-theory summary might be lower than real as its not transactional on time
+                    currentTotalSummary.elapsedMs = watch.Elapsed.TotalMilliseconds;
+
+                    Summary diff = currentTotalSummary - lastSummary;
+                    lastSummary = currentTotalSummary;
+
+                    diff.Print(currentTotalSummary.failedOpsCount + currentTotalSummary.successfulOpsCount);
+                    perLoopCounters.Add((int)diff.Rps());
+
+                    await Task.Delay(TimeSpan.FromSeconds(outputLoopDelayInSeconds));
                 }
-
-                // In-theory summary might be lower than real as its not transactional on time
-                currentTotalSummary.elapsedMs = watch.Elapsed.TotalMilliseconds;
-
-                Summary diff = currentTotalSummary - lastSummary;
-                lastSummary = currentTotalSummary;
-
-                diff.Print(currentTotalSummary.failedOpsCount + currentTotalSummary.successfulOpsCount);
-                perLoopCounters.Add((int)diff.Rps());
-
-                await Task.Delay(TimeSpan.FromSeconds(outputLoopDelayInSeconds));
+                while (!isLastIterationCompleted);
             }
-            while (!isLastIterationCompleted);
-
+            catch(Exception ex)
+            {
+                Console.WriteLine($"ParallelExecutionStrategy LogOutputStats Exception: {ex.Message}");
+                Console.WriteLine($"ParallelExecutionStrategy LogOutputStats Exception: {ex.StackTrace}");
+            }
+            
             using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Green))
             {
                 Console.WriteLine();
