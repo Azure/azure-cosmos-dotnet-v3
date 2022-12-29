@@ -91,6 +91,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     + " Please refer to https://aka.ms/CosmosClientEncryption for more details.");
             }
 
+            if (string.Equals(encryptionCosmosClient.KeyEncryptionKeyResolverName, KeyEncryptionKeyResolverName.AzureKeyVault))
+            {
+                // https://KEYVAULTNAME.vault.azure.net/keys/KEYNAME/ID
+                string[] keyVaultUriSegments = new Uri(encryptionKeyWrapMetadata.Value).Segments;
+
+                if (keyVaultUriSegments.Length != 4 || !string.Equals(keyVaultUriSegments[1], "keys/", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    throw new ArgumentException($"Invalid key vault uri'{encryptionKeyWrapMetadata.Value}' passed. Pass the complete Azure keyvault key identifier. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
+                }
+            }
+
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 encryptionKeyWrapMetadata.Name,
                 encryptionKeyWrapMetadata.Value,
@@ -190,6 +201,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentException($"The Type of the EncryptionKeyWrapMetadata '{newEncryptionKeyWrapMetadata.Type}' does not match"
                     + $" with the keyEncryptionKeyResolverName '{encryptionCosmosClient.KeyEncryptionKeyResolverName}' configured."
                     + " Please refer to https://aka.ms/CosmosClientEncryption for more details.");
+            }
+
+            if (string.Equals(encryptionCosmosClient.KeyEncryptionKeyResolverName, KeyEncryptionKeyResolverName.AzureKeyVault))
+            {
+                // https://KEYVAULTNAME.vault.azure.net/keys/KEYNAME/ID
+                string[] keyVaultUriSegments = new Uri(newEncryptionKeyWrapMetadata.Value).Segments;
+
+                if (keyVaultUriSegments.Length != 4 || !string.Equals(keyVaultUriSegments[1], "keys/", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    throw new ArgumentException($"Invalid key vault uri'{newEncryptionKeyWrapMetadata.Value}' passed. Pass the complete Azure keyvault key identifier. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
+                }
             }
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);

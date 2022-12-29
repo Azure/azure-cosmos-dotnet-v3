@@ -296,6 +296,69 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 if (ex is CosmosException cosmosException)
                     Assert.AreEqual(HttpStatusCode.Conflict, cosmosException.StatusCode);
             }
+
+            cekId = "testAkvKid";
+            CosmosClient client = TestCommon.CreateCosmosClient();
+            TestKeyEncryptionKeyResolver testKeyEncryptionKeyResolver = new TestKeyEncryptionKeyResolver();
+
+            EncryptionKeyWrapMetadata metadata = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(KeyEncryptionKeyResolverName.AzureKeyVault, "key1", "https://testkeyvault.vault.azure.net/keys/testkey/12345678");
+
+            CosmosClient encryptionCosmosClient = client.WithEncryption(
+                testKeyEncryptionKeyResolver,
+                KeyEncryptionKeyResolverName.AzureKeyVault,
+                TimeSpan.Zero);
+
+            Database database = await encryptionCosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+
+            ClientEncryptionKeyResponse clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
+                    cekId,
+                    DataEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    metadata);
+
+            Assert.AreEqual(HttpStatusCode.Created, clientEncrytionKeyResponse.StatusCode);
+
+            metadata = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(KeyEncryptionKeyResolverName.AzureKeyVault, "key1", "https://testkeyvault.vault.azure.net/keys/testkey/9101112");
+
+            clientEncrytionKeyResponse = await database.RewrapClientEncryptionKeyAsync(
+                  cekId,
+                  metadata);
+
+            Assert.AreEqual(HttpStatusCode.OK, clientEncrytionKeyResponse.StatusCode);
+
+            // complete key identifier not passed
+            metadata = MdeEncryptionTests.CreateEncryptionKeyWrapMetadata(KeyEncryptionKeyResolverName.AzureKeyVault, "key1", "https://testkeyvault.vault.azure.net/keys/testkey");
+
+            try
+            {
+                clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
+                   cekId,
+                   DataEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                   metadata);
+
+                Assert.Fail("Key creation should have failed.");
+
+            }
+            catch(Exception ex)
+            {
+                Assert.AreEqual(ex.Message.Contains("Invalid key vault uri"), true);
+            }
+
+            // rewrap old key with new key vault uri without complete key identifier
+            try
+            {
+                clientEncrytionKeyResponse = await database.RewrapClientEncryptionKeyAsync(
+                  cekId,
+                  metadata);
+
+                Assert.Fail("Key rewrap should have failed.");
+
+            }
+            catch (Exception ex)
+            {
+                Assert.AreEqual(ex.Message.Contains("Invalid key vault uri"), true);
+            }
+
+            encryptionCosmosClient.Dispose();
         }
 
         [TestMethod]
