@@ -48,12 +48,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public ValueTask DisposeAsync()
         {
-            return this.inner.Try<ValueTask>(pipelineStage => pipelineStage.DisposeAsync()).Result;
+            return this.inner.Failed ? default : this.inner.Result.DisposeAsync();
         }
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
-            bool success = await this.inner.Result.MoveNextAsync(trace);
+            bool success = !this.inner.Failed && await this.inner.Result.MoveNextAsync(trace);
             if (success)
             {
                 this.continuationToken = this.Current.Result.State?.Value;
@@ -78,19 +78,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public void SetCancellationToken(CancellationToken cancellationToken)
         {
-            this.inner.Try<IQueryPipelineStage>((pipelineStage) => pipelineStage = this.inner.Result).Result.SetCancellationToken(cancellationToken);
+            if (this.inner.Failed)
+            {
+                throw new ArgumentNullException($"PipelineStage failed with '{this.inner.InnerMostException}'.");
+            }
+
+            this.inner.Result.SetCancellationToken(cancellationToken);
         }
 
         public TryCatch<CosmosElement> TryUnwrapContinuationToken()
         {
             Debug.Assert(this.continuationToken is CosmosObject);
-            if (!((CosmosObject)this.continuationToken).TryGetValue(optimisticDirectExecutionToken, out CosmosElement specializedContinuationToken))
-            {
-                return TryCatch<CosmosElement>.FromException(
-                    new FormatException(
-                        $"Unable to convert CosmosObject '{optimisticDirectExecutionToken}' to CosmosElement."));
-            }
-
+            ((CosmosObject)this.continuationToken).TryGetValue(optimisticDirectExecutionToken, out CosmosElement specializedContinuationToken);
             CosmosArray cosmosElementFallbackToken = CosmosArray.Create(specializedContinuationToken);
             return TryCatch<CosmosElement>.FromResult(cosmosElementFallbackToken);
         }
