@@ -71,7 +71,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         
                         lock (this.actualInfo)
                         {
-                            this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
+                            ClientTelemetryProperties properties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject);
+                            this.actualInfo.Add(properties);
                         }
                         return Task.FromResult(result);
                     }
@@ -99,7 +100,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
                         lock (this.actualInfo)
                         {
-                            this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
+                            ClientTelemetryProperties properties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject);
+                            this.actualInfo.Add(properties);
                         }
                         return Task.FromResult(result);
                     }
@@ -196,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Read an Item
             await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
-
+            
             // Upsert an Item
             await container.UpsertItemAsync<ToDoActivity>(testItem);
 
@@ -212,7 +214,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.id),
                 patch);
-
             // Delete an Item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
             
@@ -931,7 +932,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (expectedOperationRecordCountMap != null)
             {
-                    Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({actualOperationRecordCountMap}) for operation does not match with expected record i.e. ({expectedOperationRecordCountMap})");
+                    Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({string.Join(", ", actualOperationRecordCountMap.Select(pair => $"{pair.Key} => {pair.Value}"))}) for operation does not match with expected record i.e. ({string.Join(", ", expectedOperationRecordCountMap.Select(pair => $"{pair.Key} => {pair.Value}"))})");
             }
         }
 

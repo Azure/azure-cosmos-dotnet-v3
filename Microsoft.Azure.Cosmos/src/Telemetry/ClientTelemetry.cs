@@ -466,6 +466,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private void Reset()
         {
             this.clientTelemetryInfo.SystemInfo.Clear();
+            this.clientTelemetryInfo.OperationInfo.Clear();
+            this.clientTelemetryInfo.CacheRefreshInfo.Clear();
         }
 
         /// <summary>
