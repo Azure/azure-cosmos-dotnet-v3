@@ -52,8 +52,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private ConcurrentDictionary<OperationInfoKey, OperationInfo> operationWithRUMetrics
     = new ConcurrentDictionary<OperationInfoKey, OperationInfo>();
 
-        private ConcurrentDictionary<OperationInfoKey, CacheRefreshInfo> cacheRefreshInfoMap 
-            = new ConcurrentDictionary<OperationInfoKey, CacheRefreshInfo>();
+        private ConcurrentDictionary<OperationInfoKey, OperationInfo> cacheRefreshInfoMap 
+            = new ConcurrentDictionary<OperationInfoKey, OperationInfo>();
 
         private int numberOfFailures = 0;
 
@@ -195,8 +195,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.clientTelemetryInfo.OperationInfo
                         .AddRange(operationWithRUMetricsSnapshot.Values);
                     
-                    ConcurrentDictionary<OperationInfoKey, CacheRefreshInfo> cacheRefreshInfoSnapshot
-                       = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<OperationInfoKey, CacheRefreshInfo>());
+                    ConcurrentDictionary<OperationInfoKey, OperationInfo> cacheRefreshInfoSnapshot
+                       = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<OperationInfoKey, OperationInfo>());
 
                     this.clientTelemetryInfo.CacheRefreshInfo
                        .AddRange(cacheRefreshInfoSnapshot.Values);
@@ -247,8 +247,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             resource: resourceType,
                                             statusCode: (int)statusCode,
                                             subStatusCode: (int)subStatusCode);
-            
-            CacheRefreshInfo cacheLatencyInfo = this.cacheRefreshInfoMap.GetOrAdd(operationInfoKey, new CacheRefreshInfo(
+
+            OperationInfo cacheLatencyInfo = this.cacheRefreshInfoMap.GetOrAdd(operationInfoKey, new OperationInfo(
                operationInfoKey,
                ClientTelemetryOptions.RequestLatencyName,
                ClientTelemetryOptions.RequestLatencyUnit,

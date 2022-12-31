@@ -14,7 +14,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
         
-        internal OperationInfo(OperationInfoKey infoKey, string metricsName,
+        internal OperationInfo(OperationInfoKey infoKey, 
+            string metricsName,
             string unitName,
             LongConcurrentHistogram histogram,
             double adjustment = 1)
@@ -28,7 +29,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             this.Resource = infoKey.Resource;
             this.StatusCode = infoKey.StatusCode;
             this.SubStatusCode = infoKey.SubStatusCode;
-
+            this.CacheRefreshSource = infoKey.CacheRefreshSource;
+            
             this.MetricInfo = new MetricInfo(metricsName, unitName, histogram, adjustment);
         }
 

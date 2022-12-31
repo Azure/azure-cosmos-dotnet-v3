@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         internal List<SystemInfo> SystemInfo { get; } = new List<SystemInfo>();
 
         [JsonProperty(PropertyName = "cacheRefreshInfo")]
-        internal List<CacheRefreshInfo> CacheRefreshInfo { get; } = new List<CacheRefreshInfo>();
+        internal List<OperationInfo> CacheRefreshInfo { get; } = new List<OperationInfo>();
 
         [JsonProperty(PropertyName = "operationInfo")]
         internal List<OperationInfo> OperationInfo { get; } = new List<OperationInfo>();
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             bool? acceleratedNetworking,
             IReadOnlyList<string> preferredRegions,
             List<SystemInfo> systemInfo,
-            List<CacheRefreshInfo> cacheRefreshInfo,
+            List<OperationInfo> cacheRefreshInfo,
             List<OperationInfo> operationInfo,
             string machineId)
         {

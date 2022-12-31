@@ -99,12 +99,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             hash = (hash * 7) ^ (this.Resource == null ? 0 : this.Resource.GetHashCode());
             hash = (hash * 7) ^ (this.StatusCode == null ? 0 : this.StatusCode.GetHashCode());
             hash = (hash * 7) ^ (this.SubStatusCode.GetHashCode());
+            hash = (hash * 7) ^ (this.CacheRefreshSource == null ? 0 : this.CacheRefreshSource.GetHashCode());
+            
             return hash;
         }
 
         public override bool Equals(object obj)
         {
-            bool isequal = obj is OperationInfo payload &&
+            bool isequal = obj is OperationInfoKey payload &&
                    ((this.RegionsContacted == null && payload.RegionsContacted == null) || (this.RegionsContacted != null && payload.RegionsContacted != null && this.RegionsContacted.Equals(payload.RegionsContacted))) &&
                    ((this.GreaterThan1Kb == null && payload.GreaterThan1Kb == null) || (this.GreaterThan1Kb != null && payload.GreaterThan1Kb != null && this.GreaterThan1Kb.Equals(payload.GreaterThan1Kb))) &&
                    ((this.Consistency == null && payload.Consistency == null) || (this.Consistency != null && payload.Consistency != null && this.Consistency.Equals(payload.Consistency))) &&
@@ -113,7 +115,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
                    ((this.Operation == null && payload.Operation == null) || (this.Operation != null && payload.Operation != null && this.Operation.Equals(payload.Operation))) &&
                    ((this.Resource == null && payload.Resource == null) || (this.Resource != null && payload.Resource != null && this.Resource.Equals(payload.Resource))) &&
                    ((this.StatusCode == null && payload.StatusCode == null) || (this.StatusCode != null && payload.StatusCode != null && this.StatusCode.Equals(payload.StatusCode))) &&
-                   this.SubStatusCode.Equals(payload.SubStatusCode);
+                   this.SubStatusCode.Equals(payload.SubStatusCode) &&
+                   ((this.CacheRefreshSource == null && payload.CacheRefreshSource == null) || (this.CacheRefreshSource != null && payload.CacheRefreshSource != null && this.CacheRefreshSource.Equals(payload.CacheRefreshSource)));
 
             return isequal;
         }

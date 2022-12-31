@@ -780,7 +780,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // As this feature is thread based execution so wait for the results to avoid test flakiness
             List<ClientTelemetryProperties> localCopyOfActualInfo = null;
             ValueStopwatch stopwatch = ValueStopwatch.StartNew();
-            HashSet<CacheRefreshInfo> cacheRefreshInfoSet = new HashSet<CacheRefreshInfo>();
+            HashSet<OperationInfo> cacheRefreshInfoSet = new HashSet<OperationInfo>();
             do
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(1500)); // wait at least for 1 round of telemetry
@@ -993,10 +993,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 
         private static void AssertCacheRefreshInfoInformation(
-            HashSet<CacheRefreshInfo> cacheRefreshInfoSet,
+            HashSet<OperationInfo> cacheRefreshInfoSet,
             string expectedCacheSource)
         {
-            foreach(CacheRefreshInfo cacheRefreshInfo in cacheRefreshInfoSet)
+            foreach(OperationInfo cacheRefreshInfo in cacheRefreshInfoSet)
             {
                 Assert.IsNotNull(cacheRefreshInfo.CacheRefreshSource);
                 Assert.IsTrue(expectedCacheSource.Contains(cacheRefreshInfo.CacheRefreshSource));
