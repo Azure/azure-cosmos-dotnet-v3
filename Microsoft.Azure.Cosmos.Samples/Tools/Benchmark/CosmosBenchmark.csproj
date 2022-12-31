@@ -22,6 +22,11 @@
     <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="*" />
   </ItemGroup>
 
+  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <!-- Enabled easier integration into master -->
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
+  </ItemGroup>
+
   <ItemGroup Condition=" '$(ProjectRef)' == 'True' ">
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
