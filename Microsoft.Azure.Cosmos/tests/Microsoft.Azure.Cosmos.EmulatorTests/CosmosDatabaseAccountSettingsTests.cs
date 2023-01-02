@@ -47,5 +47,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(accountProperties.WritableRegions);
             Assert.IsTrue(accountProperties.WritableRegions.Count() > 0);
         }
+
+        [TestMethod]
+        public async Task GetCosmosDatabaseAccountCLientConfigurationSettings()
+        {
+            AccountClientConfiguration accountProperties = await this.cosmosClient.ReadAccountClientConfigAsync();
+            Assert.IsNotNull(accountProperties);
+            Assert.IsNotNull(accountProperties.ClientTelemetryConfiguration);
+        }
     }
 }
