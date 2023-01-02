@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -161,6 +160,28 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return databaseAccount;
+        }
+        
+        public virtual async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigAsync(Func<ValueTask<HttpRequestMessage>> requestMessage)
+        {
+            AccountClientConfiguration clientConfiguration = null;
+
+            // Get the ServiceDocumentResource from the gateway.
+            using (HttpResponseMessage responseMessage = await this.gatewayStoreClient.SendHttpAsync(
+                requestMessage,
+                ResourceType.DatabaseAccount,
+                HttpTimeoutPolicyControlPlaneRead.Instance,
+                null,
+                default))
+            {
+                using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                {
+                    clientConfiguration = CosmosResource.FromStream<AccountClientConfiguration>(documentServiceResponse);
+                }
+                
+            }
+
+            return clientConfiguration;
         }
 
         public void SetCaches(PartitionKeyRangeCache partitionKeyRangeCache, 

@@ -636,12 +636,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Reads the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> for the Azure Cosmos DB account.
+        /// Reads the <see cref="Microsoft.Azure.Cosmos.AccountClientConfiguration"/> for the Azure Cosmos DB account.
         /// </summary>
         /// <returns>
-        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountClientConfiguration"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public virtual Task<string> ReadAccountClientConfigAsync()
+        public virtual Task<AccountClientConfiguration> ReadAccountClientConfigAsync()
         {
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadAccountClientConfigAsync),

@@ -6424,27 +6424,27 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Read the <see cref="AccountProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// Read the <see cref="AccountClientConfiguration"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <returns>
-        /// A <see cref="AccountProperties"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
+        /// A <see cref="AccountClientConfiguration"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public Task<string> GetDatabaseAccountClientConfigurationAsync()
+        public Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationAsync()
         {
             return TaskHelper.InlineIfPossible(() => this.GetDatabaseAccountClientConfigurationPrivateAsync(this.ReadEndpoint), this.ResetSessionTokenRetryPolicy.GetRequestPolicy());
         }
 
-        Task<string> IDocumentClientInternal.GetDatabaseAccountClientConfigurationInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
+        Task<AccountClientConfiguration> IDocumentClientInternal.GetDatabaseAccountClientConfigurationInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
         {
             return this.GetDatabaseAccountClientConfigurationPrivateAsync(serviceEndpoint, cancellationToken);
         }
 
-        private async Task<string> GetDatabaseAccountClientConfigurationPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default)
+        private async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default)
         {
             serviceEndpoint = new Uri(serviceEndpoint.OriginalString + "clientconfigs");
 
             await this.EnsureValidClientAsync(NoOpTrace.Singleton);
-            if (this.GatewayStoreModel is GatewayStoreModel)
+            if (this.GatewayStoreModel is GatewayStoreModel gatewayModel)
             {
                 async ValueTask<HttpRequestMessage> CreateRequestMessage()
                 {
@@ -6469,18 +6469,7 @@ namespace Microsoft.Azure.Cosmos
                     return request;
                 }
 
-                using (HttpResponseMessage responseMessage = await this.httpClient
-                    .SendHttpAsync(
-                        CreateRequestMessage,
-                        ResourceType.DatabaseAccount,
-                        HttpTimeoutPolicyControlPlaneRead.Instance,
-                        null, cancellationToken))
-                {
-                    using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
-                    {
-                        return documentServiceResponse.ResponseBody.ReadAsString();
-                    }
-                }
+                return await gatewayModel.GetDatabaseAccountClientConfigAsync(CreateRequestMessage);
             }
 
             return null;
