@@ -877,14 +877,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(systemInfo.MetricInfo.Count > 0, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Count is not greater than 0");
                     Assert.IsNotNull(systemInfo.MetricInfo.Percentiles, $"Percentiles is null for metrics ({systemInfo.MetricInfo.MetricsName})");
                 }
-                Assert.IsTrue(systemInfo.MetricInfo.Mean >= 0, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Mean is not greater than or equal to 0");
-                Assert.IsTrue(systemInfo.MetricInfo.Max >= 0, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Max is not greater than or equal to 0");
-                Assert.IsTrue(systemInfo.MetricInfo.Min >= 0, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Min is not greater than or equal to 0");
+                Assert.IsTrue(systemInfo.MetricInfo.Mean >= 0, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Mean can not greater than or equal to 0 i.e. {systemInfo.MetricInfo.Mean}");
+                Assert.IsTrue(systemInfo.MetricInfo.Max >= 0, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Max can not greater than or equal to 0 i.e. {systemInfo.MetricInfo.Max}");
+                Assert.IsTrue(systemInfo.MetricInfo.Min >= 0, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Min can not greater than or equal to 0 i.e. {systemInfo.MetricInfo.Min}");
                 if (systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.CpuName))
                 {
-                    Assert.IsTrue(systemInfo.MetricInfo.Mean <= 100, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Mean is not greater than 100 for CPU Usage");
-                    Assert.IsTrue(systemInfo.MetricInfo.Max <= 100, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Max is not greater than 100 for CPU Usage");
-                    Assert.IsTrue(systemInfo.MetricInfo.Min <= 100, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Min is not greater than 100 for CPU Usage");
+                    Assert.IsTrue(systemInfo.MetricInfo.Mean <= 100, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Mean can not greater than 100 for CPU Usage i.e. {systemInfo.MetricInfo.Mean}");
+                    Assert.IsTrue(systemInfo.MetricInfo.Max <= 100, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Max can not greater than 100 for CPU Usage i.e. {systemInfo.MetricInfo.Max}");
+                    Assert.IsTrue(systemInfo.MetricInfo.Min <= 100, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Min can not greater than 100 for CPU Usage i.e. {systemInfo.MetricInfo.Min}");
                 };
             }
 

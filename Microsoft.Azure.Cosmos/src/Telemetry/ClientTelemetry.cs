@@ -480,7 +480,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.cancellationTokenSource.Cancel();
                 this.cancellationTokenSource.Dispose();
             }
+
+            this.Reset();
+            
+            this.operationWithLatencyMetrics = null;
+            this.operationWithRUMetrics = null;
+            this.cacheRefreshInfoMap = null;
+
             this.telemetryTask = null;
+            
         }
     }
 }
