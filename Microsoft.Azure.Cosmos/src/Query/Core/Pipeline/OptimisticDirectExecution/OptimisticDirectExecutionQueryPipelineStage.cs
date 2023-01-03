@@ -53,7 +53,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
-            bool success = !this.inner.Failed && await this.inner.Result.MoveNextAsync(trace);
+            TryCatch<bool> result = this.inner.Try((pipelineStage) => pipelineStage = this.inner.Result)
+                .Try(pipelineStage => pipelineStage.MoveNextAsync(trace)).Try(moveNextValue => moveNextValue.Result);
+            bool success = result.Succeeded && result.Result;
+
             if (success)
             {
                 this.continuationToken = this.Current.Result.State?.Value;
@@ -78,12 +81,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public void SetCancellationToken(CancellationToken cancellationToken)
         {
-            if (this.inner.Failed)
-            {
-                throw new ArgumentNullException($"PipelineStage failed with '{this.inner.InnerMostException}'.");
-            }
-
-            this.inner.Result.SetCancellationToken(cancellationToken);
+            this.inner.Try((pipelineStage) => pipelineStage = this.inner.Result)
+                .Try(pipelineStage => pipelineStage.SetCancellationToken(cancellationToken));
         }
 
         public TryCatch<CosmosElement> TryUnwrapContinuationToken()
