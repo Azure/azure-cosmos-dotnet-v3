@@ -82,7 +82,7 @@ namespace CosmosBenchmark
 
                     if (itemResponse.StatusCode != HttpStatusCode.Created)
                     {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode} {itemResponse.ErrorMessage}");
+                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
                     }
                 }
             }
