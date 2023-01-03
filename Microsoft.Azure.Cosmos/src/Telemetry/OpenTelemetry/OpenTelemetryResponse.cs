@@ -18,7 +18,8 @@ namespace Microsoft.Azure.Cosmos
                   diagnostics: responseMessage.Diagnostics,
                   itemCount: responseMessage.Headers?.ItemCount,
                   requestMessage: null,
-                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode)
+                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
+                  activityId: responseMessage.Headers?.ActivityId)
         {
         }
 
@@ -30,7 +31,8 @@ namespace Microsoft.Azure.Cosmos
                   diagnostics: responseMessage.Diagnostics,
                   itemCount: responseMessage.Headers?.ItemCount,
                   requestMessage: responseMessage.RequestMessage,
-                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode)
+                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
+                  activityId: responseMessage.Headers?.ActivityId)
         {
         }
 
@@ -41,7 +43,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnostics diagnostics,
             string itemCount,
             RequestMessage requestMessage,
-            int subStatusCode)
+            int subStatusCode,
+            string activityId)
             : base(requestMessage)
         {
             this.StatusCode = statusCode;
@@ -50,6 +53,7 @@ namespace Microsoft.Azure.Cosmos
             this.Diagnostics = diagnostics;
             this.ItemCount = itemCount; 
             this.SubStatusCode = subStatusCode;
+            this.ActivityId = activityId;
         }
 
         private static string GetPayloadSize(ResponseMessage response)
