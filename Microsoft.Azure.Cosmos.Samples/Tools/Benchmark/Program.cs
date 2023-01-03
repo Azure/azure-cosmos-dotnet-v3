@@ -41,7 +41,7 @@ namespace CosmosBenchmark
                     TelemetrySpan.ResetLatencyHistogram(config.ItemCount);
                 }
 
-                config.Print();
+               // config.Print();
 
                 Program program = new Program();
 
