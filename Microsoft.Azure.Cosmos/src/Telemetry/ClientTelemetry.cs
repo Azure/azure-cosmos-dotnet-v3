@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private ConcurrentDictionary<OperationInfoKey, OperationInfo> operationWithLatencyMetrics
             = new ConcurrentDictionary<OperationInfoKey, OperationInfo>();
         private ConcurrentDictionary<OperationInfoKey, OperationInfo> operationWithRUMetrics
-    = new ConcurrentDictionary<OperationInfoKey, OperationInfo>();
+            = new ConcurrentDictionary<OperationInfoKey, OperationInfo>();
 
         private ConcurrentDictionary<OperationInfoKey, OperationInfo> cacheRefreshInfoMap 
             = new ConcurrentDictionary<OperationInfoKey, OperationInfo>();
