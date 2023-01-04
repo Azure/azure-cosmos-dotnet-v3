@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         if (producedDiagnosticScope.Activity.Id == Activity.Current.Id)
                         {
-                            //AssertActivity.IsValid(producedDiagnosticScope.Activity);
+                            AssertActivity.IsValid(producedDiagnosticScope.Activity);
                             
                             CustomListener.CollectedActivities.Add(producedDiagnosticScope.Activity);
 

@@ -151,14 +151,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 Debug.WriteLine("Expected: {0}, Actual: {1}", baselineText, outputText);
             }
 
-         /*   Assert.IsTrue(
+            Assert.IsTrue(
                 matched,
                 $@"
                     Please run the ..\azure-cosmos-dotnet-v3\UpdateContracts.ps1 script to update the baselines.
                     Expected: {baselineTextSuffix},
                     Actual:   {outputTextSuffix},
                     OutputPath: {outputPath},
-                    BaselinePath: {baselinePath}");*/
+                    BaselinePath: {baselinePath}");
         }
 
         /// <summary>
