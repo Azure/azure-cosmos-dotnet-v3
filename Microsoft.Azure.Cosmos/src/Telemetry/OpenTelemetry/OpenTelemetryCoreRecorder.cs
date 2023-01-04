@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
+    using global::Azure;
     using global::Azure.Core.Pipeline;
 
     /// <summary>
@@ -18,8 +19,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly DiagnosticScope scope;
         private readonly DistributedTracingOptions config;
 
-        private readonly Documents.OperationType operationType;
-        
+        private readonly string operationType;
+        private OpenTelemetryAttributes response = null;
+
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> OTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
         {
             { typeof(CosmosNullReferenceException), (exception, scope) => CosmosNullReferenceException.RecordOtelAttributes((CosmosNullReferenceException)exception, scope)},
@@ -39,9 +41,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             this.scope = scope;
             this.config = config;
-            this.operationType = operationType;
+            this.operationType = operationType.ToString();
             
-            if (this.IsEnabled)
+            if (scope.IsEnabled)
             {
                 this.scope.Start();
 
@@ -102,21 +104,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.IsEnabled)
             {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)response.StatusCode);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, (int)response.SubStatusCode);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, response.ActivityId);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, response.CorrelatedActivityId);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, response.OperationType ?? this.operationType.ToString());
-                
-                if (response.Diagnostics != null)
-                {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
-                    CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, this.operationType, response);
-                }
+                this.response = response;
             }
         }
 
@@ -167,6 +155,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.scope.IsEnabled)
             {
+                string operationType = this.response?.OperationType ?? this.operationType;
+
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationType);
+
+                if (this.response != null)
+                {
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, (int)this.response.SubStatusCode);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, this.response.RequestCharge);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, this.response.ItemCount);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, this.response.CorrelatedActivityId);
+
+                    if (this.response.Diagnostics != null)
+                    {
+                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(this.response.Diagnostics.GetContactedRegions()));
+                        CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, operationType, this.response);
+                    }
+                }
+
                 this.scope.Dispose();
             }
         }

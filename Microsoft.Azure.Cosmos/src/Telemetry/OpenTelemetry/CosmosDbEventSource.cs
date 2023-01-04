@@ -28,11 +28,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             return CosmosDbEventSource.Singleton.IsEnabled(level, EventKeywords.None);
         }
-
+        
         [NonEvent]
         public static void RecordDiagnosticsForRequests(
             DistributedTracingOptions config,
-            Documents.OperationType operationType,
+            string operationType,
             OpenTelemetryAttributes response)
         {
             if (DiagnosticsFilterHelper.IsTracingNeeded(

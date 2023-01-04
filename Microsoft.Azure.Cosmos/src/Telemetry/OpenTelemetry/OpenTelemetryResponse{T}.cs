@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System.Diagnostics;
     using System.Net;
     using Telemetry;
 
