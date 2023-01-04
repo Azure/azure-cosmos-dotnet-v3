@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or Set the CoorelatedActivityId in the current <see cref="ResponseMessage"/>.
         /// </summary>
-        internal virtual string CorrelationId
+        internal virtual string CorrelatedActivityId
         {
             get => this.CosmosMessageHeaders.INameValueCollection.Get(HttpConstants.HttpHeaders.CorrelatedActivityId);
             set => this.CosmosMessageHeaders.INameValueCollection.Set(HttpConstants.HttpHeaders.CorrelatedActivityId, value);

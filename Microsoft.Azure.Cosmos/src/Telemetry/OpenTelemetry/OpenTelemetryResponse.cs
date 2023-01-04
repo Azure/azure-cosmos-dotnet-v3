@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
                   requestMessage: null,
                   subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
                   activityId: string.Join(",", responseMessage.GetActivityIds()),
-                  correlationId: responseMessage.Headers?.CorrelationId)
+                  correlationId: responseMessage.Headers?.CorrelatedActivityId)
         {
         }
 
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
                   requestMessage: responseMessage.RequestMessage,
                   subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
                   activityId: responseMessage.Headers?.ActivityId,
-                  correlationId: responseMessage.Headers?.CorrelationId,
+                  correlationId: responseMessage.Headers?.CorrelatedActivityId,
                   operationType: responseMessage is QueryResponse ? Documents.OperationType.Query.ToString() : null
                  )
         {
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
             this.ItemCount = itemCount; 
             this.SubStatusCode = subStatusCode;
             this.ActivityId = activityId;
-            this.CorrelationId = correlationId;
+            this.CorrelatedActivityId = correlationId;
             this.OperationType = operationType;
         }
 

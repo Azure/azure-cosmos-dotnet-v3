@@ -61,9 +61,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal string ActivityId { get; set; }
 
         /// <summary>
-        /// ActivityId
+        /// CorrelatedActivityId
         /// </summary>
-        internal string CorrelationId { get; set; }
+        internal string CorrelatedActivityId { get; set; }
 
         /// <summary>
         /// OperationType

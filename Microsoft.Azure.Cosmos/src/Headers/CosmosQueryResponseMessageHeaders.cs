@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
                 ContentType = this.ContentType,
                 QueryMetricsText = QueryMetricsText,
                 IndexUtilizationText = IndexUtilizationText,
-                CorrelationId = this.CorrelationId
+                CorrelatedActivityId = this.CorrelatedActivityId
             };
         }
 
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
                 ContentType = sourceHeaders.ContentType,
                 QueryMetricsText = sourceHeaders.QueryMetricsText,
                 IndexUtilizationText = sourceHeaders.IndexUtilizationText,
-                CorrelationId = sourceHeaders.CorrelationId
+                CorrelatedActivityId = sourceHeaders.CorrelatedActivityId
             };
         }
     }

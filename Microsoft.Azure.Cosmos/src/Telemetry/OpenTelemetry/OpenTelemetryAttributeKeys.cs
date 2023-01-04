@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string ItemCount = "db.cosmosdb.item_count";
         public const string RequestDiagnostics = "db.cosmosdb.request_diagnostics";
         public const string ActivityId = "db.cosmosdb.activity_id";
-        public const string CorrelationId = "db.cosmosdb.correlation_id";
+        public const string CorrelatedActivityId = "db.cosmosdb.correlated_activity_id";
 
         // Exceptions
         public const string ExceptionType = "exception.type";

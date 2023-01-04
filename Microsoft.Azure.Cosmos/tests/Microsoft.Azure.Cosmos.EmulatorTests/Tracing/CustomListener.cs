@@ -228,7 +228,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "db.operation",
                 "db.system",
                 "net.peer.name",
-                "db.cosmosdb.user_agent",
                 "db.cosmosdb.connection_mode",
                 "db.cosmosdb.status_code",
                 "db.cosmosdb.sub_status_code",
