@@ -173,6 +173,8 @@ primary_expression
     | K_EXISTS '(' sql_query ')' #ExistsScalarExpression
     | K_ARRAY '(' sql_query ')' #ArrayScalarExpression
     | K_ALL '(' sql_query ')' #AllScalarExpression
+	| K_FIRST '(' sql_query ')' #FirstScalarExpression
+	| K_LAST '(' sql_query ')' #LastScalarExpression
     | function_call_scalar_expression #FunctionCallScalarExpression
     ;
 
@@ -191,6 +193,8 @@ object_property : STRING_LITERAL ':' scalar_expression ;
 identifier
     : LEX_IDENTIFIER
     | K_ALL
+	| K_FIRST
+	| K_LAST
     ;
 /*--------------------------------------------------------------------------------*/
 
@@ -208,11 +212,13 @@ K_DESC : D E S C;
 K_DISTINCT : D I S T I N C T;
 K_ESCAPE: E S C A P E;
 K_EXISTS : E X I S T S;
+K_FIRST : F I R S T;
 K_FALSE : 'false';
 K_FROM : F R O M;
 K_GROUP : G R O U P;
 K_IN : I N ;
 K_JOIN : J O I N;
+K_LAST : L A S T;
 K_LEFT : L E F T;
 K_LIKE : L I K E;
 K_LIMIT : L I M I T;
