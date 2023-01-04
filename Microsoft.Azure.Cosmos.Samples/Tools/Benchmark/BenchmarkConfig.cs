@@ -101,6 +101,9 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Enable Client Telemetry")]
         public bool EnableTelemetry { get; set; }
 
+        [Option(Required = false, HelpText = "Enable Distributed Tracing")]
+        public bool EnableDistributedTracing { get; set; }
+
         [Option(Required = false, HelpText = "Client Telemetry Schedule in Seconds")]
         public int  TelemetryScheduleInSec { get; set; }
 
@@ -140,7 +143,9 @@ namespace CosmosBenchmark
                 Utility.TeeTraceInformation($"{nameof(BenchmarkConfig)} arguments");
                 Utility.TeeTraceInformation($"IsServerGC: {GCSettings.IsServerGC}");
                 Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
-                Utility.TeeTraceInformation(JsonHelper.ToString(this));
+                Utility.TeeTraceInformation(JsonHelper.ToString(
+                    input: this, 
+                    capacity: 2048));
                 Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
                 Utility.TeeTraceInformation(string.Empty);
             }
@@ -218,6 +223,8 @@ namespace CosmosBenchmark
             {
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
+
+            clientOptions.EnableDistributedTracing = this.EnableDistributedTracing;
 
             return new Microsoft.Azure.Cosmos.CosmosClient(
                         this.EndPoint,
