@@ -49,7 +49,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         operationName: operationName,
                         containerName: containerName,
                         databaseName: databaseName,
-                        operationType: operationType,
                         clientContext: clientContext);
             }
         }
@@ -70,13 +69,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="operationName"></param>
         /// <param name="containerName"></param>
         /// <param name="databaseName"></param>
-        /// <param name="operationType"></param>
         /// <param name="clientContext"></param>
         public void Record(
             string operationName,
             string containerName,
             string databaseName,
-            Documents.OperationType operationType,
             CosmosClientContext clientContext)
         {
             if (this.IsEnabled)
@@ -84,7 +81,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationType);
                 
                 // Other information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
@@ -114,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, response.ActivityId);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelationId, response.CorrelationId);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, response.OperationType ?? this.operationType.ToString());
                 
                 if (response.Diagnostics != null)
                 {
