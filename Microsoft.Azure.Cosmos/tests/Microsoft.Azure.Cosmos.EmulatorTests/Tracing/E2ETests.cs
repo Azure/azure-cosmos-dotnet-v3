@@ -36,6 +36,7 @@
     using System.Security.Authentication.ExtendedProtection;
     using System.Security.Policy;
     using System.Net.Security;
+    using Microsoft.Extensions.Logging;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
     [TestCategory("UpdateContract")]
@@ -163,8 +164,6 @@
 
                 using (InitializeDependencyTracking(configuration))
                 {
-                    telemetryClient.TrackTrace("Hello World!");
-
                     using CosmosClient client = new(
                     accountEndpoint: "https://cosmosdbaavasthy.documents.azure.com:443/",
                     authKeyOrResourceToken: "GuDON7mQabFeo1KQUZSV3N3D4srOuJFNheIPIumYIogKIHAyevrxPF52ddFDvQXRPfrNUVvjRh5JBDCWpSKo3A==",
@@ -173,6 +172,125 @@
                         SerializerOptions = new CosmosSerializationOptions { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase },
                         ConnectionMode = ConnectionMode.Direct,
                         ConnectionProtocol = Protocol.Tcp,
+                        EnableDistributedTracing = true,
+                        
+                    });
+
+                    Database database = await client.CreateDatabaseIfNotExistsAsync(
+                        id: "adventureworks"
+                    );
+                }
+                // activity.Stop();
+                // before exit, flush the remaining data
+                telemetryClient.Flush();
+
+                Task.Delay(5000).Wait();
+            }
+            catch (CosmosException cosmosException)
+            {
+                Console.WriteLine("The current UI culture is {0}",
+                                   Thread.CurrentThread.CurrentUICulture.Name);
+                string a = cosmosException.Diagnostics.ToString();
+                //Console.WriteLine($"Error log:\t{cosmosException.ToString()}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error Custom {0}", ex.Message.ToString());
+            }
+        }
+        [TestMethod]
+        public async Task NewTest_HTTP_New()
+        {
+            try
+            {
+                AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+                oTelTracerProvider = Sdk.CreateTracerProviderBuilder()
+                .AddCustomOtelExporter() // use any exporter here
+                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.{OpenTelemetryAttributeKeys.NetworkLevelPrefix}") // Right now, it will capture only "Azure.Cosmos.Operation"
+                .AddConsoleExporter()
+                .Build();
+
+                TelemetryConfiguration configuration = TelemetryConfiguration.CreateDefault();
+
+                //configuration.ConnectionString = "InstrumentationKey=0b7bcdc4-cb13-44c5-9544-aba02b8b8123;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/";
+                // configuration.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
+
+                TelemetryClient telemetryClient = new TelemetryClient(configuration);
+
+                using (InitializeDependencyTracking(configuration))
+                {
+                    using CosmosClient client = new(
+                    accountEndpoint: "https://cosmosdbaavasthy.documents.azure.com:443/",
+                    authKeyOrResourceToken: "GuDON7mQabFeo1KQUZSV3N3D4srOuJFNheIPIumYIogKIHAyevrxPF52ddFDvQXRPfrNUVvjRh5JBDCWpSKo3A==",
+                    new CosmosClientOptions
+                    {
+                        SerializerOptions = new CosmosSerializationOptions { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase },
+                        ConnectionMode = ConnectionMode.Gateway,
+                        ConnectionProtocol = Protocol.Https,
+                        EnableDistributedTracing = true,
+
+                    });
+
+                    Database database = await client.CreateDatabaseIfNotExistsAsync(
+                        id: "adventureworks"
+                    );
+                    // Container reference with creation if it does not alredy exist
+                    Container container = await database.CreateContainerIfNotExistsAsync(
+                        id: "products",
+                        partitionKeyPath: "/category",
+                        throughput: 400
+                    );
+                }
+                // activity.Stop();
+                // before exit, flush the remaining data
+                telemetryClient.Flush();
+
+                Task.Delay(5000).Wait();
+            }
+            catch (CosmosException cosmosException)
+            {
+                Console.WriteLine("The current UI culture is {0}",
+                                   Thread.CurrentThread.CurrentUICulture.Name);
+                string a = cosmosException.Diagnostics.ToString();
+                //Console.WriteLine($"Error log:\t{cosmosException.ToString()}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error Custom {0}", ex.Message.ToString());
+            }
+        }
+
+        [TestMethod]
+        public async Task NewTest_HTTP()
+        {
+            try
+            {
+                AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+                oTelTracerProvider = Sdk.CreateTracerProviderBuilder()
+                .AddCustomOtelExporter() // use any exporter here
+                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.{OpenTelemetryAttributeKeys.OperationPrefix}") // Right now, it will capture only "Azure.Cosmos.Operation"
+                .AddConsoleExporter()
+                .Build();
+
+                TelemetryConfiguration configuration = TelemetryConfiguration.CreateDefault();
+
+                //configuration.ConnectionString = "InstrumentationKey=0b7bcdc4-cb13-44c5-9544-aba02b8b8123;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/";
+                // configuration.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
+
+                TelemetryClient telemetryClient = new TelemetryClient(configuration);
+
+                using (InitializeDependencyTracking(configuration))
+                {
+                    telemetryClient.TrackTrace("Hello World!");
+
+                    using CosmosClient client = new(
+                    accountEndpoint: "https://cosmosdbaavasthy.documents.azure.com:443/",
+                    authKeyOrResourceToken: "GuDON7mQabFeo1KQUZSV3N3D4srOuJFNheIPIumYIogKIHAyevrxPF52ddFDvQXRPfrNUVvjRh5JBDCWpSKo3A==",
+                    new CosmosClientOptions
+                    {
+                        SerializerOptions = new CosmosSerializationOptions { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase },
+                        ConnectionMode = ConnectionMode.Gateway,
+                        ConnectionProtocol = Protocol.Https,
                         EnableDistributedTracing = true,
                         SslCustomValidationHanlder = (cert, policy) =>
                         {
@@ -256,237 +374,132 @@
             }
         }
 
-        [TestMethod]
-        public async Task NewTest_HTTP()
-        {
-            try
-            {
-                AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
-                oTelTracerProvider = Sdk.CreateTracerProviderBuilder()
-                .AddCustomOtelExporter() // use any exporter here
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*") // Right now, it will capture only "Azure.Cosmos.Operation"
-                .AddConsoleExporter()
-                .Build();
+        //[TestMethod]
+        //public async Task NewTest_TCP_SSL()
+        //{
+        //    try
+        //    {
+        //        AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+        //        oTelTracerProvider = Sdk.CreateTracerProviderBuilder()
+        //        .AddCustomOtelExporter() // use any exporter here
+        //        .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.{OpenTelemetryAttributeKeys.NetworkLevelPrefix}") // Right now, it will capture only "Azure.Cosmos.Operation"
+        //        .AddConsoleExporter()
+        //        .Build();
 
-                TelemetryConfiguration configuration = TelemetryConfiguration.CreateDefault();
+        //        TelemetryConfiguration configuration = TelemetryConfiguration.CreateDefault();
 
-                configuration.ConnectionString = "InstrumentationKey=0b7bcdc4-cb13-44c5-9544-aba02b8b8123;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/";
-                configuration.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
+        //        //configuration.ConnectionString = "InstrumentationKey=0b7bcdc4-cb13-44c5-9544-aba02b8b8123;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/";
+        //        configuration.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
 
-                TelemetryClient telemetryClient = new TelemetryClient(configuration);
+        //        TelemetryClient telemetryClient = new TelemetryClient(configuration);
 
-                using (InitializeDependencyTracking(configuration))
-                {
-                    telemetryClient.TrackTrace("Hello World!");
+        //        using (InitializeDependencyTracking(configuration))
+        //        {
 
-                    using CosmosClient client = new(
-                    accountEndpoint: "https://cosmosdbaavasthy.documents.azure.com:443/",
-                    authKeyOrResourceToken: "GuDON7mQabFeo1KQUZSV3N3D4srOuJFNheIPIumYIogKIHAyevrxPF52ddFDvQXRPfrNUVvjRh5JBDCWpSKo3A==",
-                    new CosmosClientOptions
-                    {
-                        SerializerOptions = new CosmosSerializationOptions { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase },
-                        ConnectionMode = ConnectionMode.Gateway,
-                        ConnectionProtocol = Protocol.Https,
-                        //EnableDistributedTracing = true
-                    });
+        //            using CosmosClient client = new(
+        //            accountEndpoint: "https://www.cosmosdbaavasthy.documents.azure.com:443/",
+        //            authKeyOrResourceToken: "GuDON7mQabFeo1KQUZSV3N3D4srOuJFNheIPIumYIogKIHAyevrxPF52ddFDvQXRPfrNUVvjRh5JBDCWpSKo3A==",
+        //            new CosmosClientOptions
+        //            {
+        //                SerializerOptions = new CosmosSerializationOptions { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase },
+        //                ConnectionMode = ConnectionMode.Direct,
+        //                ConnectionProtocol = Protocol.Tcp,
+        //                EnableDistributedTracing = true,
+        //                //SslCustomValidationHanlder = (cert, policy) => 
+        //                //{
+        //                //    if (policy == System.Net.Security.SslPolicyErrors.None
+        //                //        || policy == System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch)
+        //                //    {
+        //                //        return true;
+        //                //    }
+        //                //    return false;
+        //                //}
+        //                SslCustomValidationHanlder = checkssl
 
-                    Database database = await client.CreateDatabaseIfNotExistsAsync(
-                        id: "adventureworks"
-                    );
-                    // Container reference with creation if it does not alredy exist
-                    Container container = await database.CreateContainerIfNotExistsAsync(
-                        id: "products",
-                        partitionKeyPath: "/category",
-                        throughput: 400
-                    );
+        //            });
 
-                    // Create new object and upsert (create or replace) to container
-                    Product newItem = new(
-                        Id: "68719518391",
-                        Category: "gear-surf-surfboards",
-                        Name: "Yamba Surfboard",
-                        Quantity: 12,
-                        Sale: false
-                    );
+        //            static bool checkssl(X509Certificate cert, SslPolicyErrors policy)
+        //            {
+        //                string name = cert.Subject;
+        //                if (policy == System.Net.Security.SslPolicyErrors.None
+        //                        || policy == System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch)
+        //                {
+        //                    return true;
+        //                }
+        //                return false;
 
-                    ItemResponse<Product> createdItem = await container.UpsertItemAsync<Product>(
-                        item: newItem,
-                        partitionKey: new PartitionKey("gear-surf-surfboards")
-                    );
+        //            }
 
-                    TimeSpan interval = new TimeSpan(0, 0, 0, 1);
+        //            Database database = await client.CreateDatabaseIfNotExistsAsync(
+        //                id: "adventureworks"
+        //            );
+        //            // Container reference with creation if it does not alredy exist
+        //            Container container = await database.CreateContainerIfNotExistsAsync(
+        //                id: "products",
+        //                partitionKeyPath: "/category",
+        //                throughput: 400
+        //            );
 
-                    // Point read item from container using the id and partitionKey
-                    Product readItem = await container.ReadItemAsync<Product>(
-                        id: "68719518391",
-                        partitionKey: new PartitionKey("gear-surf-surfboards")
-                    );
+        //            // Create new object and upsert (create or replace) to container
+        //            Product newItem = new(
+        //                Id: "68719518391",
+        //                Category: "gear-surf-surfboards",
+        //                Name: "Yamba Surfboard",
+        //                Quantity: 12,
+        //                Sale: false
+        //            );
 
-                    // Create query using a SQL string and parameters
-                    QueryDefinition query = new QueryDefinition(
-                        query: "SELECT * FROM products p WHERE p.category = @key"
-                    )
-                        .WithParameter("@key", "gear-surf-surfboards");
+        //            ItemResponse<Product> createdItem = await container.UpsertItemAsync<Product>(
+        //                item: newItem,
+        //                partitionKey: new PartitionKey("gear-surf-surfboards")
+        //            );
 
-                    using FeedIterator<Product> feed = container.GetItemQueryIterator<Product>(
-                        queryDefinition: query
-                    );
+        //            TimeSpan interval = new TimeSpan(0, 0, 0, 1);
 
-                    while (feed.HasMoreResults)
-                    {
-                        FeedResponse<Product> response = await feed.ReadNextAsync();
-                        foreach (Product item in response)
-                        {
-                            Console.WriteLine($"Found item:\t{item.Name}");
-                        }
-                    }
+        //            // Point read item from container using the id and partitionKey
+        //            Product readItem = await container.ReadItemAsync<Product>(
+        //                id: "68719518391",
+        //                partitionKey: new PartitionKey("gear-surf-surfboards")
+        //            );
 
-                }
-                // activity.Stop();
-                // before exit, flush the remaining data
-                telemetryClient.Flush();
+        //            // Create query using a SQL string and parameters
+        //            QueryDefinition query = new QueryDefinition(
+        //                query: "SELECT * FROM products p WHERE p.category = @key"
+        //            )
+        //                .WithParameter("@key", "gear-surf-surfboards");
 
-                Task.Delay(5000).Wait();
-            }
-            catch (CosmosException cosmosException)
-            {
-                Console.WriteLine("The current UI culture is {0}",
-                                   Thread.CurrentThread.CurrentUICulture.Name);
-                string a = cosmosException.Diagnostics.ToString();
-                //Console.WriteLine($"Error log:\t{cosmosException.ToString()}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error Custom {0}", ex.Message.ToString());
-            }
-        }
+        //            using FeedIterator<Product> feed = container.GetItemQueryIterator<Product>(
+        //                queryDefinition: query
+        //            );
 
-        [TestMethod]
-        public async Task NewTest_TCP_SSL()
-        {
-            try
-            {
-                AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
-                oTelTracerProvider = Sdk.CreateTracerProviderBuilder()
-                .AddCustomOtelExporter() // use any exporter here
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*") // Right now, it will capture only "Azure.Cosmos.Operation"
-                .AddConsoleExporter()
-                .Build();
+        //            while (feed.HasMoreResults)
+        //            {
+        //                FeedResponse<Product> response = await feed.ReadNextAsync();
+        //                foreach (Product item in response)
+        //                {
+        //                    Console.WriteLine($"Found item:\t{item.Name}");
+        //                }
+        //            }
 
-                TelemetryConfiguration configuration = TelemetryConfiguration.CreateDefault();
+        //        }
+        //        // activity.Stop();
+        //        // before exit, flush the remaining data
+        //        telemetryClient.Flush();
 
-                //configuration.ConnectionString = "InstrumentationKey=0b7bcdc4-cb13-44c5-9544-aba02b8b8123;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/";
-                configuration.TelemetryInitializers.Add(new HttpDependenciesParsingTelemetryInitializer());
-
-                TelemetryClient telemetryClient = new TelemetryClient(configuration);
-
-                using (InitializeDependencyTracking(configuration))
-                {
-
-                    using CosmosClient client = new(
-                    accountEndpoint: "https://www.cosmosdbaavasthy.documents.azure.com:443/",
-                    authKeyOrResourceToken: "GuDON7mQabFeo1KQUZSV3N3D4srOuJFNheIPIumYIogKIHAyevrxPF52ddFDvQXRPfrNUVvjRh5JBDCWpSKo3A==",
-                    new CosmosClientOptions
-                    {
-                        SerializerOptions = new CosmosSerializationOptions { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase },
-                        ConnectionMode = ConnectionMode.Direct,
-                        ConnectionProtocol = Protocol.Tcp,
-                        EnableDistributedTracing = true,
-                        //SslCustomValidationHanlder = (cert, policy) => 
-                        //{
-                        //    if (policy == System.Net.Security.SslPolicyErrors.None
-                        //        || policy == System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch)
-                        //    {
-                        //        return true;
-                        //    }
-                        //    return false;
-                        //}
-                        SslCustomValidationHanlder = checkssl
-
-                    });
-
-                    static bool checkssl(X509Certificate cert, SslPolicyErrors policy)
-                    {
-                        string name = cert.Subject;
-                        if (policy == System.Net.Security.SslPolicyErrors.None
-                                || policy == System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch)
-                        {
-                            return true;
-                        }
-                        return false;
-
-                    }
-
-                    Database database = await client.CreateDatabaseIfNotExistsAsync(
-                        id: "adventureworks"
-                    );
-                    // Container reference with creation if it does not alredy exist
-                    Container container = await database.CreateContainerIfNotExistsAsync(
-                        id: "products",
-                        partitionKeyPath: "/category",
-                        throughput: 400
-                    );
-
-                    // Create new object and upsert (create or replace) to container
-                    Product newItem = new(
-                        Id: "68719518391",
-                        Category: "gear-surf-surfboards",
-                        Name: "Yamba Surfboard",
-                        Quantity: 12,
-                        Sale: false
-                    );
-
-                    ItemResponse<Product> createdItem = await container.UpsertItemAsync<Product>(
-                        item: newItem,
-                        partitionKey: new PartitionKey("gear-surf-surfboards")
-                    );
-
-                    TimeSpan interval = new TimeSpan(0, 0, 0, 1);
-
-                    // Point read item from container using the id and partitionKey
-                    Product readItem = await container.ReadItemAsync<Product>(
-                        id: "68719518391",
-                        partitionKey: new PartitionKey("gear-surf-surfboards")
-                    );
-
-                    // Create query using a SQL string and parameters
-                    QueryDefinition query = new QueryDefinition(
-                        query: "SELECT * FROM products p WHERE p.category = @key"
-                    )
-                        .WithParameter("@key", "gear-surf-surfboards");
-
-                    using FeedIterator<Product> feed = container.GetItemQueryIterator<Product>(
-                        queryDefinition: query
-                    );
-
-                    while (feed.HasMoreResults)
-                    {
-                        FeedResponse<Product> response = await feed.ReadNextAsync();
-                        foreach (Product item in response)
-                        {
-                            Console.WriteLine($"Found item:\t{item.Name}");
-                        }
-                    }
-
-                }
-                // activity.Stop();
-                // before exit, flush the remaining data
-                telemetryClient.Flush();
-
-                Task.Delay(5000).Wait();
-            }
-            catch (CosmosException cosmosException)
-            {
-                Console.WriteLine("The current UI culture is {0}",
-                                   Thread.CurrentThread.CurrentUICulture.Name);
-                string a = cosmosException.Diagnostics.ToString();
-                //Console.WriteLine($"Error log:\t{cosmosException.ToString()}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error Custom {0}", ex.Message.ToString());
-            }
-        }
+        //        Task.Delay(5000).Wait();
+        //    }
+        //    catch (CosmosException cosmosException)
+        //    {
+        //        Console.WriteLine("The current UI culture is {0}",
+        //                           Thread.CurrentThread.CurrentUICulture.Name);
+        //        string a = cosmosException.Diagnostics.ToString();
+        //        //Console.WriteLine($"Error log:\t{cosmosException.ToString()}");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine("Error Custom {0}", ex.Message.ToString());
+        //    }
+        //}
 
         static DependencyTrackingTelemetryModule InitializeDependencyTracking(TelemetryConfiguration configuration)
         {

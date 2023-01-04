@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
     using global::Azure.Core.Pipeline;
 
     /// <summary>
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     .ScopeFactory
                     .CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
                                  kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
-
+                Console.WriteLine(scope.IsEnabled);
                 // Record values only when we have a valid Diagnostic Scope
                 if (scope.IsEnabled)
                 {

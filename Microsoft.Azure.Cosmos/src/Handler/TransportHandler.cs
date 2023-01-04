@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 request.Trace = processMessageAsyncTrace;
                 processMessageAsyncTrace.AddDatum("Client Side Request Stats", clientSideRequestStatisticsTraceDatum);
-
+                //clientSideRequestStatisticsTraceDatum.Storerespons
                 DocumentServiceResponse response = null;
                 try
                 {

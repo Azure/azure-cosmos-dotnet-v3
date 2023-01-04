@@ -495,6 +495,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
+                    Console.WriteLine(Activity.Current.Id);
                     TResult result = await task(trace).ConfigureAwait(false);
                     if (openTelemetry != null && recorder.IsEnabled)
                     {

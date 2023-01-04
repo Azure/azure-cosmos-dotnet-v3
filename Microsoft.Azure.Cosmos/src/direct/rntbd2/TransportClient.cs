@@ -119,19 +119,19 @@ namespace Microsoft.Azure.Documents.Rntbd
             DocumentServiceRequest request)
         {
 
-                using DiagnosticScope scope = ScopeFactory.CreateScope($"{OpenTelemetryAttributeKeys.NetworkLevelPrefix}.{resourceOperation.operationType}");
+                using DiagnosticScope scope = ScopeFactory.CreateScope($"{OpenTelemetryAttributeKeys.NetworkLevelPrefix}");
 
                 if (scope.IsEnabled)
                 {
                     scope.Start();
                 }
-                scope.AddAttribute("Name", request.ResourceAddress);
-                scope.AddAttribute("kind", DiagnosticScope.ActivityKind.Client);
-                scope.AddAttribute("StartDate", DateTime.Now);
                 this.ThrowIfDisposed();
 
                 Guid activityId = Trace.CorrelationManager.ActivityId;
-
+                Console.WriteLine("correlation");
+                Console.WriteLine(activityId);
+                Console.WriteLine("new");
+                Console.WriteLine(Activity.Current.Id);
                 if (!request.IsBodySeekableClonableAndCountable)
                 {
                     throw new InternalServerErrorException();
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     operation = "RequestAsync";
 
                 //scope.AddLink();
-                request.Headers[HttpConstants.HttpHeaders.Authorization] = Activity.Current.Id;
+                request.Headers["traceparent"] = Activity.Current.Id;
 
                 storeResponse = await channel.RequestAsync(request, physicalAddress,
                         resourceOperation, activityId, transportRequestStats);
