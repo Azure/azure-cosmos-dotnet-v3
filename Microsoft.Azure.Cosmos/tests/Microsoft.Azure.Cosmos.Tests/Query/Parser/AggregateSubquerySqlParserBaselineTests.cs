@@ -60,6 +60,107 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
             this.ExecuteTestSuite(inputs);
         }
 
+        [TestMethod]
+        public void First()
+        {
+            List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()
+            {
+                CreateInput(
+                    description: "FIRST in an SqlSelectItem as an alias",
+                    query: "SELECT 1 AS FIRST"),
+                CreateInput(
+                    description: "FIRST in an AliasedCollectionExpression as an alias",
+                    query: "SELECT * " +
+                           "FROM (SELECT VALUE 1) AS FIRST"),
+                CreateInput(
+                    description: "FIRST in an ArrayIteratorCollectionExpression",
+                    query: "SELECT * " +
+                           "FROM FIRST IN (SELECT VALUE 1)"),
+                CreateInput(
+                    description: "FIRST in an InputPathCollection and IdentifierPathExpression",
+                    query: "SELECT * " +
+                           "FROM FIRST.FIRST"),
+                CreateInput(
+                    description: "FIRST in a PropertyRefScalarExpression",
+                    query: "SELECT FIRST"),
+                CreateInput(
+                    description: "FIRST in a PropertyRefScalarExpression as child",
+                    query: "SELECT c.FIRST"),
+                CreateInput(
+                    description: "FIRST in a PropertyRefScalarExpression as parent and child",
+                    query: "SELECT FIRST.FIRST"),
+                CreateInput(
+                    description: "FIRST in a function cFIRST",
+                    query: "SELECT FIRST(1, 2)"),
+                CreateInput(
+                    description: "FIRST in a UDF function cFIRST",
+                    query: "SELECT udf.FIRST(1, 2)"),
+                CreateInput(
+                    description: "FIRST in every possible grammar rule at the same time",
+                    query: "SELECT FIRST(1, 2) AS FIRST " +
+                           "FROM FIRST IN (SELECT FIRST.FIRST) " +
+                           "WHERE FIRST( " +
+                           "    SELECT FIRST " +
+                           "    FROM (SELECT udf.FIRST(1, 2)) AS FIRST " +
+                           "    WHERE FIRST( SELECT VALUE 1) " +
+                           ")")
+
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void Last()
+        {
+            List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()
+            {
+                CreateInput(
+                    description: "LAST in an SqlSelectItem as an alias",
+                    query: "SELECT 1 AS LAST"),
+                CreateInput(
+                    description: "LAST in an AliasedCollectionExpression as an alias",
+                    query: "SELECT * " +
+                           "FROM (SELECT VALUE 1) AS LAST"),
+                CreateInput(
+                    description: "LAST in an ArrayIteratorCollectionExpression",
+                    query: "SELECT * " +
+                           "FROM LAST IN (SELECT VALUE 1)"),
+                CreateInput(
+                    description: "LAST in an InputPathCollection and IdentifierPathExpression",
+                    query: "SELECT * " +
+                           "FROM LAST.LAST"),
+                CreateInput(
+                    description: "LAST in a PropertyRefScalarExpression",
+                    query: "SELECT LAST"),
+                CreateInput(
+                    description: "LAST in a PropertyRefScalarExpression as child",
+                    query: "SELECT c.LAST"),
+                CreateInput(
+                    description: "LAST in a PropertyRefScalarExpression as parent and child",
+                    query: "SELECT LAST.LAST"),
+                CreateInput(
+                    description: "LAST in a function cLAST",
+                    query: "SELECT LAST(1, 2)"),
+                CreateInput(
+                    description: "LAST in a UDF function cLAST",
+                    query: "SELECT udf.LAST(1, 2)"),
+                CreateInput(
+                    description: "LAST in every possible grammar rule at the same time",
+                    query: "SELECT LAST(1, 2) AS LAST " +
+                           "FROM LAST IN (SELECT LAST.LAST) " +
+                           "WHERE LAST( " +
+                           "    SELECT LAST " +
+                           "    FROM (SELECT udf.LAST(1, 2)) AS LAST " +
+                           "    WHERE LAST( SELECT VALUE 1) " +
+                           ")")
+
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+
         public static SqlParserBaselineTestInput CreateInput(string description, string query)
         {
             return new SqlParserBaselineTestInput(description, query);
