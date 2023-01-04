@@ -113,7 +113,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, response.ActivityId);
-
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelationId, response.CorrelationId);
+                
                 if (response.Diagnostics != null)
                 {
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));

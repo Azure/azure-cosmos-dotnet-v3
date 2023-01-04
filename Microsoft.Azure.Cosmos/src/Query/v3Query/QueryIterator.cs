@@ -235,6 +235,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     RequestCharge = tryGetQueryPage.Result.RequestCharge,
                     ActivityId = tryGetQueryPage.Result.ActivityId,
+                    CorrelationId = this.correlatedActivityId.ToString(),
                     SubStatusCode = Documents.SubStatusCodes.Unknown
                 };
 

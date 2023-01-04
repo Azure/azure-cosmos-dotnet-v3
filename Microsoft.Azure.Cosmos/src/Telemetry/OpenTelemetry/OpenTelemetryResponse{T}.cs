@@ -19,7 +19,8 @@ namespace Microsoft.Azure.Cosmos
                itemCount: responseMessage.Headers?.ItemCount,
                requestMessage: responseMessage.RequestMessage,
                subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
-               activityId: responseMessage.Headers?.ActivityId)
+               activityId: responseMessage.Headers?.ActivityId,
+               correlationId: responseMessage.Headers?.CorrelationId)
         {
         }
 
@@ -32,7 +33,8 @@ namespace Microsoft.Azure.Cosmos
                   itemCount: responseMessage.Headers?.ItemCount,
                   requestMessage: responseMessage.RequestMessage,
                   subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
-                  activityId: responseMessage.Headers?.ActivityId)
+                  activityId: responseMessage.Headers?.ActivityId,
+                  correlationId: responseMessage.Headers?.CorrelationId)
         {
         }
 
@@ -44,7 +46,8 @@ namespace Microsoft.Azure.Cosmos
            string itemCount,
            RequestMessage requestMessage,
            int subStatusCode,
-           string activityId)
+           string activityId,
+           string correlationId)
            : base(requestMessage)
         {
             this.StatusCode = statusCode;
@@ -54,6 +57,7 @@ namespace Microsoft.Azure.Cosmos
             this.ItemCount = itemCount;
             this.SubStatusCode = subStatusCode;
             this.ActivityId = activityId;
+            this.CorrelationId = correlationId;
         }
     }
 }
