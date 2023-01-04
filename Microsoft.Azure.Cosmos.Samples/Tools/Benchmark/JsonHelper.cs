@@ -22,10 +22,7 @@ namespace CosmosBenchmark
             using (MemoryStream stream = JsonHelper.ToStream(input, capacity))
             using (StreamReader sr = new StreamReader(stream))
             {
-                string str = sr.ReadToEnd();
-                System.Buffers.ArrayPool<byte>.Shared.Return(stream.GetBuffer());
-                
-                return str;
+                return sr.ReadToEnd();
             }
         }
 
