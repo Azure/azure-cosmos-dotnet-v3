@@ -844,7 +844,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         return false;
                     }
 
-                    public override bool Visit(SqlFirstScalarExpression sqlLastScalarExpression)
+                    public override bool Visit(SqlFirstScalarExpression sqlFirstScalarExpression)
                     {
                         // No need to worry about aggregates within the subquery (they will recursively get rewritten).
                         return false;
