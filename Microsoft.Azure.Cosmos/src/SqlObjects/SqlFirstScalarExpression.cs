@@ -1,5 +1,5 @@
 ﻿//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  First rights reserved.
+// Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
 namespace Microsoft.Azure.Cosmos.SqlObjects
