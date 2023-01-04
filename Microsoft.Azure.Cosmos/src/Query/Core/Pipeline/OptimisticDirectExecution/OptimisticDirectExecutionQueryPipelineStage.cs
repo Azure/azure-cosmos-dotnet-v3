@@ -59,13 +59,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
             if (success)
             {
-                this.continuationToken = this.Current.Result.State?.Value;
+                this.continuationToken = this.Current.Succeeded ? this.Current.Result.State?.Value : null;
             }
-            else if (this.executionState == ExecutionState.OptimisticDirectExecution)
+            else if (this.executionState == ExecutionState.OptimisticDirectExecution && result.Succeeded)
             {
-                if (CosmosExceptionExtensions.IsPartitionSplitException(this.Current.InnerMostException))
+                if (this.Current.InnerMostException.IsPartitionSplitException())
                 {
-                    this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken().Result);
+                    this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken());
                     this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
                     if (this.inner.Failed)
                     {
@@ -85,12 +85,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 .Try(pipelineStage => pipelineStage.SetCancellationToken(cancellationToken));
         }
 
-        public TryCatch<CosmosElement> TryUnwrapContinuationToken()
+        private CosmosElement TryUnwrapContinuationToken()
         {
-            Debug.Assert(this.continuationToken is CosmosObject);
-            ((CosmosObject)this.continuationToken).TryGetValue(optimisticDirectExecutionToken, out CosmosElement specializedContinuationToken);
-            CosmosArray cosmosElementFallbackToken = CosmosArray.Create(specializedContinuationToken);
-            return TryCatch<CosmosElement>.FromResult(cosmosElementFallbackToken);
+            CosmosObject cosmosObject = this.continuationToken as CosmosObject;
+            CosmosElement specializedContinuationToken = cosmosObject[optimisticDirectExecutionToken];
+            return CosmosArray.Create(specializedContinuationToken);
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
@@ -112,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
             if (pipelineStage.Failed)
             {
-                return TryCatch<IQueryPipelineStage>.FromException(pipelineStage.Exception);
+                return pipelineStage;
             }
 
             OptimisticDirectExecutionQueryPipelineStage odePipelineStageMonadicCreate = new OptimisticDirectExecutionQueryPipelineStage(pipelineStage, fallbackQueryPipelineStageFactory, inputParameters.InitialUserContinuationToken);

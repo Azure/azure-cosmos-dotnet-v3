@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
     using Microsoft.Azure.Cosmos.Tracing;
-    using static Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.CosmosQueryExecutionContextFactory;
 
     internal static class CosmosQueryExecutionContextFactory
     {
@@ -149,6 +148,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 {
                     return await TryCreateExecutionContextAsync(
                         documentContainer,
+                        null,
                         cosmosQueryContext,
                         containerQueryProperties,
                         inputParameters,
@@ -291,23 +291,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 inputParameters, 
                 partitionedQueryExecutionInfo, 
                 cosmosQueryContext, 
-                containerQueryProperties, 
+                containerQueryProperties,
                 trace);
 
             if (targetRange != null)
             {
-                return await TryCreateExecutionContextAsync(
+                tryCreatePipelineStage = await TryCreateExecutionContextAsync(
                     documentContainer,
+                    partitionedQueryExecutionInfo,
                     cosmosQueryContext,
                     containerQueryProperties,
                     inputParameters,
                     targetRange,
                     trace,
-                    cancellationToken,
-                    partitionedQueryExecutionInfo);
+                    cancellationToken);
             }
-            
-            if (createPassthroughQuery)
+            else if (createPassthroughQuery)
             {
                 SetTestInjectionPipelineType(inputParameters, Passthrough);
 
@@ -327,13 +326,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
         private static async Task<TryCatch<IQueryPipelineStage>> TryCreateExecutionContextAsync(
             DocumentContainer documentContainer,
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             CosmosQueryContext cosmosQueryContext,
             ContainerQueryProperties containerQueryProperties,
             InputParameters inputParameters,
             Documents.PartitionKeyRange targetRange,
             ITrace trace,
-            CancellationToken cancellationToken,
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = null)
+            CancellationToken cancellationToken)
         {
             // Test code added to confirm the correct pipeline is being utilized
             SetTestInjectionPipelineType(inputParameters, OptimisticDirectExecution);
@@ -353,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             // as Ode ppipeline should not take over execution while some other pipeline is already handling it
             if (tryCreatePipelineStage.Failed && tryCreatePipelineStage.InnerMostException is MalformedContinuationTokenException)
             {
-                SetTestInjectionPipelineType(inputParameters, OptimisticDirectExecution);
+                SetTestInjectionPipelineType(inputParameters, Specialized);
 
                 if (partitionedQueryExecutionInfo != null)
                 {

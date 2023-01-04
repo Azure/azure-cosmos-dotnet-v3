@@ -1153,7 +1153,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 exception = exception.InnerException;
             }
 
-            return CosmosExceptionExtensions.IsPartitionSplitException(exception);
+            return exception.IsPartitionSplitException();
         }
 
         public void SetCancellationToken(CancellationToken cancellationToken)
