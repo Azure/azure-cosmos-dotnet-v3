@@ -257,6 +257,26 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return CosmosBoolean.Create(subqueryResults.Any());
         }
 
+        public override CosmosElement Visit(SqlFirstScalarExpression scalarExpression, CosmosElement document)
+        {
+            // Only run on the current document since the subquery is always correlated.
+            IEnumerable<CosmosElement> subqueryResults = SqlInterpreter.ExecuteQuery(
+                new CosmosElement[] { document },
+                scalarExpression.Subquery);
+
+            CosmosElement result;
+            if (subqueryResults.Count() > 0)
+            {
+                result = subqueryResults.First();
+            }
+            else
+            {
+                result = CosmosUndefined.Create();
+            }
+
+            return result;
+        }
+
         public override CosmosElement Visit(SqlFunctionCallScalarExpression scalarExpression, CosmosElement document)
         {
             List<CosmosElement> arguments = new List<CosmosElement>();
@@ -302,6 +322,26 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             }
 
             return CosmosBoolean.Create(contains);
+        }
+
+        public override CosmosElement Visit(SqlLastScalarExpression scalarExpression, CosmosElement document)
+        {
+            // Only run on the current document since the subquery is always correlated.
+            IEnumerable<CosmosElement> subqueryResults = SqlInterpreter.ExecuteQuery(
+                new CosmosElement[] { document },
+                scalarExpression.Subquery);
+
+            CosmosElement result;
+            if (subqueryResults.Count() > 0)
+            {
+                result = subqueryResults.Last();
+            }
+            else
+            {
+                result = CosmosUndefined.Create();
+            }
+
+            return result;
         }
 
         public override CosmosElement Visit(SqlLikeScalarExpression scalarExpression, CosmosElement document)
