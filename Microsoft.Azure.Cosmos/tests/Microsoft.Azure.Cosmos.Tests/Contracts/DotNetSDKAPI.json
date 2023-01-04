@@ -4648,6 +4648,11 @@
           "Attributes": [],
           "MethodInfo": "System.String ContinuationToken;CanRead:True;CanWrite:True;System.String get_ContinuationToken();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.String CorrelationId": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String CorrelationId;CanRead:True;CanWrite:True;System.String get_CorrelationId();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.String ETag": {
           "Type": "Property",
           "Attributes": [],
@@ -4672,6 +4677,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String get_ContinuationToken();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_CorrelationId()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_CorrelationId();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String get_ETag()": {
           "Type": "Method",

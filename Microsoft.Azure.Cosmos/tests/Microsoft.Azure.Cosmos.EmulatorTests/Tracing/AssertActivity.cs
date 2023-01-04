@@ -48,7 +48,9 @@
                  "db.cosmosdb.request_diagnostics",
                  "exception.type",
                  "exception.message",
-                 "exception.stacktrace"
+                 "exception.stacktrace",
+                 "db.cosmosdb.activity_id",
+                 "db.cosmosdb.correlation_id"
             };
 
             foreach (KeyValuePair<string, string> actualTag in activity.Tags)
