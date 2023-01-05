@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(3, count, "Should retry 3 times");
         }
-
+ 
         [TestMethod]
         public async Task HttpTimeoutThrow503TestAsync()
         {
@@ -307,8 +307,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             //Data plane read
             await TestScenarioAsync(HttpMethod.Get, ResourceType.Document, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 3);
 
-            //Data plane write
-            await TestScenarioAsync(HttpMethod.Post, ResourceType.Document, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 1);
+            //Data plane write (Should throw a 408 OperationCanceledException rather than a 503)
+            await TestScenarioAsync(HttpMethod.Post, ResourceType.Document, HttpTimeoutPolicyDefault.Instance, typeof(TaskCanceledException), 1);
 
             //Meta data read
             await TestScenarioAsync(HttpMethod.Get, ResourceType.Database, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 3);
