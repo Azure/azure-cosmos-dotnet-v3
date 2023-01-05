@@ -15,11 +15,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
         private const string CosmosDb = "cosmosdb";
-
+        
         private readonly DiagnosticScope scope;
         private readonly DistributedTracingOptions config;
 
-        private readonly string operationType;
+        private readonly Documents.OperationType operationType;
         private OpenTelemetryAttributes response = null;
 
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> OTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             this.scope = scope;
             this.config = config;
-            this.operationType = operationType.ToString();
+            this.operationType = operationType;
             
             if (scope.IsEnabled)
             {
@@ -155,7 +155,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.scope.IsEnabled)
             {
-                string operationType = this.response?.OperationType ?? this.operationType;
+                Documents.OperationType operationType 
+                    = (this.response == null || this.response?.OperationType == Documents.OperationType.Invalid) ? this.operationType : this.response.OperationType;
 
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationType);
 

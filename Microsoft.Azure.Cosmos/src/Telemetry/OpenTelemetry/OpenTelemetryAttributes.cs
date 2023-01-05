@@ -68,6 +68,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// OperationType
         /// </summary>
-        internal string OperationType { get; set; }
+        internal Documents.OperationType OperationType { get; set; }
     }
 }

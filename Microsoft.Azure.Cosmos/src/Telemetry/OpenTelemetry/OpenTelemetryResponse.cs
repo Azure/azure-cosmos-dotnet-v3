@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
                   itemCount: responseMessage.Headers?.ItemCount,
                   requestMessage: null,
                   subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
-                  activityId: string.Join(",", responseMessage.GetActivityIds()),
+                  activityId: responseMessage.Headers?.ActivityId,
                   correlationId: responseMessage.Headers?.CorrelatedActivityId)
         {
         }
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
                   subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
                   activityId: responseMessage.Headers?.ActivityId,
                   correlationId: responseMessage.Headers?.CorrelatedActivityId,
-                  operationType: responseMessage is QueryResponse ? Documents.OperationType.Query.ToString() : null
+                  operationType: responseMessage is QueryResponse ? Documents.OperationType.Query : Documents.OperationType.Invalid
                  )
         {
         }
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             int subStatusCode,
             string activityId,
             string correlationId,
-            string operationType = null)
+            Documents.OperationType operationType = Documents.OperationType.Invalid)
             : base(requestMessage)
         {
             this.StatusCode = statusCode;

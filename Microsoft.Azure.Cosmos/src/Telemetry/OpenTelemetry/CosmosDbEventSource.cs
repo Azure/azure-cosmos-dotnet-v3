@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [NonEvent]
         public static void RecordDiagnosticsForRequests(
             DistributedTracingOptions config,
-            string operationType,
+            Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
             if (DiagnosticsFilterHelper.IsTracingNeeded(
