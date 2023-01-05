@@ -143,7 +143,9 @@ namespace CosmosBenchmark
                 Utility.TeeTraceInformation($"{nameof(BenchmarkConfig)} arguments");
                 Utility.TeeTraceInformation($"IsServerGC: {GCSettings.IsServerGC}");
                 Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
-                Utility.TeeTraceInformation(JsonHelper.ToString(this));
+                Utility.TeeTraceInformation(JsonHelper.ToString(
+                    input: this, 
+                    capacity: 2048));
                 Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
                 Utility.TeeTraceInformation(string.Empty);
             }

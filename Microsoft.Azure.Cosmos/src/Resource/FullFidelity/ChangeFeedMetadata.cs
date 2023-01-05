@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json.Converters;
 
     /// <summary>
-    /// The metadata of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.FullFidelity"/>.
+    /// The metadata of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.AllVersionsAndDeletes"/>.
     /// </summary>
 #if PREVIEW
     public
