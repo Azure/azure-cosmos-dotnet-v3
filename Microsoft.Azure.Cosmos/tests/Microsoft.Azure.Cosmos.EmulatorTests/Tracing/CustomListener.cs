@@ -241,21 +241,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             
             foreach (KeyValuePair<string, string> tag in activity.Tags)
             {
-                // Put only those attributes which are not hull
-                if (!string.IsNullOrEmpty(tag.Value))
+                builder
+                .Append("<ATTRIBUTE-KEY>")
+                .Append(tag.Key)
+                .Append("</ATTRIBUTE-KEY>");
+
+                if (tagsWithStaticValue.Contains(tag.Key))
                 {
                     builder
-                    .Append("<ATTRIBUTE-KEY>")
-                    .Append(tag.Key)
-                    .Append("</ATTRIBUTE-KEY>");
-
-                    if (tagsWithStaticValue.Contains(tag.Key))
-                    {
-                        builder
-                        .Append("<ATTRIBUTE-VALUE>")
-                        .Append(tag.Value)
-                        .Append("</ATTRIBUTE-VALUE>");
-                    }
+                    .Append("<ATTRIBUTE-VALUE>")
+                    .Append(tag.Value)
+                    .Append("</ATTRIBUTE-VALUE>");
                 }
             }
             
@@ -268,9 +264,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             List<string> generatedActivityTagsForBaselineXmls = new();
             List<Activity> collectedActivities = new List<Activity>(CustomListener.CollectedActivities);
-            
-            collectedActivities.OrderBy<Activity, string>(activity => activity.OperationName);
 
+            collectedActivities.OrderBy(act => act.OperationName);
+            
             foreach (Activity activity in collectedActivities)
             {
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
