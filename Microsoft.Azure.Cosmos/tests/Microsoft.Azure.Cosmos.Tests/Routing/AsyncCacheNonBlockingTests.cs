@@ -392,5 +392,93 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             Assert.AreEqual(1, totalLazyCalls);
             Assert.AreEqual("Test3", result);
         }
+
+        /// <summary>
+        /// Test to validate that when RefreshAsync() is invoked for a valid existing key, the
+        /// cache refreshes the key successfully and the new value is updated in the cache.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task RefreshAsync_WhenRefreshRequestedForAnExistingKey_ShouldRefreshTheCache()
+        {
+            // Arrange.
+            AsyncCacheNonBlocking<string, string> asyncCache = new ();
+
+            // Act and Assert.
+            string result = await asyncCache.GetAsync(
+                "key",
+                (_) => Task.FromResult("value1"),
+                (_) => false);
+
+            Assert.AreEqual("value1", result);
+
+            await asyncCache.RefreshAsync(
+                "key",
+                (_) => Task.FromResult("value2"));
+
+            result = await asyncCache.GetAsync(
+                "key",
+                (_) => throw new Exception("Should not refresh."),
+                (_) => false);
+
+            Assert.AreEqual("value2", result);
+        }
+
+        /// <summary>
+        /// Test to validate that when an exception is thrown during RefreshAsync() operation
+        /// the cache removes the key for which a refresh was requested.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task RefreshAsync_WhenThrowsException_ShouldRemoveKeyFromTheCache()
+        {
+            // Arrange.
+            AsyncCacheNonBlocking<string, string> asyncCache = new ();
+
+            // Act and Assert.
+            string result = await asyncCache.GetAsync(
+                "key",
+                (_) => Task.FromResult("value1"),
+                (_) => false);
+
+            Assert.AreEqual("value1", result);
+
+            result = await asyncCache.GetAsync(
+                "key",
+                (_) => Task.FromResult("value2"),
+                (_) => false);
+
+            // Because the key is already present in the cache and a force refresh was not requested
+            // the func delegate should not get invoked and thus the cache should not be updated
+            // and still return the old cached value.
+            Assert.AreEqual("value1", result);
+
+            NotFoundException notFoundException = new (
+                message: "Item was deleted.");
+            try
+            {
+                await asyncCache.RefreshAsync(
+                    "key",
+                    async (_) =>
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(5));
+                        throw notFoundException;
+                    });
+                Assert.Fail("Should throw a NotFoundException");
+            }
+            catch (NotFoundException exception)
+            {
+                Assert.AreEqual(notFoundException, exception);
+            }
+
+            // Because the key was deleted from the cache, the func delegate should get invoked at
+            // this point and update the value to test3.
+            result = await asyncCache.GetAsync(
+                "key",
+                (_) => Task.FromResult("value2"),
+                (_) => false);
+
+            Assert.AreEqual("value2", result);
+        }
     }
 }

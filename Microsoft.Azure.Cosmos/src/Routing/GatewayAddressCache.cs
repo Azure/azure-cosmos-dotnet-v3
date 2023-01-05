@@ -46,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
         private readonly CosmosHttpClient httpClient;
+        private readonly bool isReplicaAddressValidationEnabled;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
@@ -84,6 +85,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GatewayAddressCache.ProtocolString(this.protocol));
 
             this.openConnectionsHandler = openConnectionsHandler;
+            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariableAsBool(
+                name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
+                defaultValue: false);
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
@@ -178,6 +182,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.openConnectionsHandler = openConnectionsHandler;
         }
 
+        /// <inheritdoc/>
         public async Task<PartitionAddressInformation> TryGetAddressesAsync(
             DocumentServiceRequest request,
             PartitionKeyRangeIdentity partitionKeyRangeIdentity,
@@ -229,6 +234,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                             return this.GetAddressesForRangeIdAsync(
                                 request,
+                                cachedAddresses: currentCachedValue,
                                 partitionKeyRangeIdentity.CollectionRid,
                                 partitionKeyRangeIdentity.PartitionKeyRangeId,
                                 forceRefresh: forceRefreshPartitionAddresses);
@@ -259,6 +265,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         key: partitionKeyRangeIdentity,
                         singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
                             request,
+                            cachedAddresses: null,
                             partitionKeyRangeIdentity.CollectionRid,
                             partitionKeyRangeIdentity.PartitionKeyRangeId,
                             forceRefresh: false),
@@ -276,6 +283,27 @@ namespace Microsoft.Azure.Cosmos.Routing
                 if (addresses.AllAddresses.Count() < targetReplicaSetSize)
                 {
                     this.suboptimalServerPartitionTimestamps.TryAdd(partitionKeyRangeIdentity, DateTime.UtcNow);
+                }
+
+                // Refresh the cache on-demand, if there were some address that remained as unhealthy long enough (more than 1 minute)
+                // and need to revalidate its status. The reason it is not dependent on 410 to force refresh the addresses, is being:
+                // When an address is marked as unhealthy, then the address enumerator will deprioritize it and move it back to the
+                // end of the transport uris list. Therefore, it could happen that no request will land on the unhealthy address for
+                // an extended period of time therefore, the chances of 410 (Gone Exception) to trigger the forceRefresh workflow may
+                // not happen for that particular replica.
+                if (addresses
+                    .Get(Protocol.Tcp)
+                    .ReplicaTransportAddressUris
+                    .Any(x => x.ShouldRefreshHealthStatus()))
+                {
+                    Task refreshAddressesInBackgroundTask = Task.Run(async () => await this.serverPartitionAddressCache.RefreshAsync(
+                        key: partitionKeyRangeIdentity,
+                        singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
+                                request,
+                                cachedAddresses: currentCachedValue,
+                                partitionKeyRangeIdentity.CollectionRid,
+                                partitionKeyRangeIdentity.PartitionKeyRangeId,
+                                forceRefresh: true)));
                 }
 
                 return addresses;
@@ -384,6 +412,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                        key: partitionKeyRangeIdentity,
                        singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
                            null,
+                           cachedAddresses: null,
                            partitionKeyRangeIdentity.CollectionRid,
                            partitionKeyRangeIdentity.PartitionKeyRangeId,
                            forceRefresh: true),
@@ -444,6 +473,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private async Task<PartitionAddressInformation> GetAddressesForRangeIdAsync(
             DocumentServiceRequest request,
+            PartitionAddressInformation cachedAddresses,
             string collectionRid,
             string partitionKeyRangeId,
             bool forceRefresh)
@@ -473,6 +503,27 @@ namespace Microsoft.Azure.Cosmos.Routing
                         collectionRid);
 
                     throw new PartitionKeyRangeGoneException(errorMessage) { ResourceAddress = collectionRid };
+                }
+
+                if (this.isReplicaAddressValidationEnabled)
+                {
+                    // The purpose of this step is to merge the new transport addresses with the old one. What this means is -
+                    // 1. If a newly returned address from gateway is already a part of the cache, then restore the health state
+                    // of the new address with that of the cached one.
+                    // 2. If a newly returned address from gateway doesn't exist in the cache, then keep using the new address
+                    // with `Unknown` (initial) status.
+                    PartitionAddressInformation mergedAddresses = GatewayAddressCache.MergeAddresses(result.Item2, cachedAddresses);
+                    IReadOnlyList<TransportAddressUri> transportAddressUris = mergedAddresses.Get(Protocol.Tcp)?.ReplicaTransportAddressUris;
+
+                    foreach (TransportAddressUri address in transportAddressUris)
+                    {
+                        // The main purpose for this step is to move address health status from Unhealthy to UnhealthyPending.
+                        address.SetRefreshedIfUnhealthy();
+                    }
+
+                    this.ValidateUnhealthyPendingReplicas(transportAddressUris);
+
+                    return mergedAddresses;
                 }
 
                 return result.Item2;
@@ -758,6 +809,86 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 return TryCatch<DocumentServiceResponse>.FromException(ex);
             }
+        }
+
+        /// <summary>
+        /// Validates the unhealthy pending replicas by attempting to open the Rntbd connection. This operation
+        /// will eventually marks the unhealthy pending replicas to healthy, if the rntbd connection attempt made was
+        /// successful or unhealthy otherwise.
+        /// </summary>
+        /// <param name="addresses">A read-only list of <see cref="TransportAddressUri"/> needs to be validated.</param>
+        private void ValidateUnhealthyPendingReplicas(
+            IReadOnlyList<TransportAddressUri> addresses)
+        {
+            if (addresses == null)
+            {
+                throw new ArgumentNullException(nameof(addresses));
+            }
+
+            IEnumerable<TransportAddressUri> addressesNeedToValidation = addresses
+                .Where(address => address
+                    .GetCurrentHealthState()
+                    .GetHealthStatus() == TransportAddressHealthState.HealthStatus.UnhealthyPending);
+
+            if (addressesNeedToValidation.Any())
+            {
+                Task openConnectionsInBackgroundTask = Task.Run(async () => await this.openConnectionsHandler.TryOpenRntbdChannelsAsync(
+                    addresses: addressesNeedToValidation.ToList()));
+            }
+        }
+
+        /// <summary>
+        /// Merge the new addresses returned from gateway service with that of the cached addresses. If the returned
+        /// new addresses list contains some of the addresses, which are already cached, then reset the health state
+        /// of the new address to that of the cached one. If the the new addresses doesn't contain any of the cached
+        /// addresses, then keep using the health state of the new addresses, which should be `unknown`.
+        /// </summary>
+        /// <param name="newAddresses">A list of <see cref="PartitionAddressInformation"/> containing the latest
+        /// addresses being returned from gateway.</param>
+        /// <param name="cachedAddresses">A list of <see cref="PartitionAddressInformation"/> containing the cached
+        /// addresses from the async non blocking cache.</param>
+        /// <returns>A list of <see cref="PartitionAddressInformation"/> containing the merged addresses.</returns>
+        private static PartitionAddressInformation MergeAddresses(
+            PartitionAddressInformation newAddresses,
+            PartitionAddressInformation cachedAddresses)
+        {
+            if (newAddresses == null)
+            {
+                throw new ArgumentNullException(nameof(newAddresses));
+            }
+
+            if (cachedAddresses == null)
+            {
+                return newAddresses;
+            }
+
+            PerProtocolPartitionAddressInformation currentAddressInfo = newAddresses.Get(Protocol.Tcp);
+            PerProtocolPartitionAddressInformation cachedAddressInfo = cachedAddresses.Get(Protocol.Tcp);
+            Dictionary<string, TransportAddressUri> cachedAddressDict = new ();
+
+            foreach (TransportAddressUri transportAddressUri in cachedAddressInfo.ReplicaTransportAddressUris)
+            {
+                cachedAddressDict[transportAddressUri.ToString()] = transportAddressUri;
+            }
+
+            foreach (TransportAddressUri transportAddressUri in currentAddressInfo.ReplicaTransportAddressUris)
+            {
+                if (cachedAddressDict.ContainsKey(transportAddressUri.ToString()))
+                {
+                    TransportAddressUri cachedTransportAddressUri = cachedAddressDict[transportAddressUri.ToString()];
+                    transportAddressUri.ResetHealthStatus(
+                        status: cachedTransportAddressUri.GetCurrentHealthState().GetHealthStatus(),
+                        lastUnknownTimestamp: cachedTransportAddressUri.GetCurrentHealthState().GetLastKnownTimestampByHealthStatus(
+                            healthStatus: TransportAddressHealthState.HealthStatus.Unknown),
+                        lastUnhealthyPendingTimestamp: cachedTransportAddressUri.GetCurrentHealthState().GetLastKnownTimestampByHealthStatus(
+                            healthStatus: TransportAddressHealthState.HealthStatus.UnhealthyPending),
+                        lastUnhealthyTimestamp: cachedTransportAddressUri.GetCurrentHealthState().GetLastKnownTimestampByHealthStatus(
+                            healthStatus: TransportAddressHealthState.HealthStatus.Unhealthy));
+
+                }
+            }
+
+            return newAddresses;
         }
 
         protected virtual void Dispose(bool disposing)

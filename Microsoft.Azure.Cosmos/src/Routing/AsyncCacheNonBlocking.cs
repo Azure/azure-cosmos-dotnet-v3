@@ -197,6 +197,39 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Refreshes the async non blocking cache on-demand for the given <paramref name="key"/>
+        /// and caches the result for later usage.
+        /// </summary>
+        /// <param name="key">The requested key to be refreshed.</param>
+        /// <param name="singleValueInitFunc">A func delegate to be invoked at a later point of time.</param>
+        public async Task RefreshAsync(
+           TKey key,
+           Func<TValue, Task<TValue>> singleValueInitFunc)
+        {
+            if (this.values.TryGetValue(key, out AsyncLazyWithRefreshTask<TValue> initialLazyValue))
+            {
+                try
+                {
+                    await initialLazyValue.CreateAndWaitForBackgroundRefreshTaskAsync(singleValueInitFunc);
+                }
+                catch (Exception ex)
+                {
+                    if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
+                    {
+                        bool removed = this.TryRemove(key);
+                        DefaultTrace.TraceError(
+                            "AsyncCacheNonBlocking Failed RefreshAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
+                            key,
+                            removed,
+                            ex);
+                    }
+
+                    throw;
+                }
+            }
+        }
+
+        /// <summary>
         /// This is AsyncLazy that has an additional Task that can
         /// be used to update the value. This allows concurrent requests
         /// to use the stale value while the refresh is occurring. 
