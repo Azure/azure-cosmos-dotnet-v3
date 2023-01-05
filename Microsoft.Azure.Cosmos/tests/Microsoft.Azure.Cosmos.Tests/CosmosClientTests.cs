@@ -53,7 +53,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             List<Func<Task>> validateAsync = new List<Func<Task>>()
             {
-                () => cosmosClient.ReadAccountClientConfigAsync(),
                 () => cosmosClient.ReadAccountAsync(),
                 () => cosmosClient.CreateDatabaseAsync("asdf"),
                 () => database.CreateContainerAsync("asdf", "/pkpathasdf", 200),
