@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
             return databaseAccount;
         }
         
-        public virtual async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigAsync(Func<ValueTask<HttpRequestMessage>> requestMessage)
+        internal virtual async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigAsync(Func<ValueTask<HttpRequestMessage>> requestMessage)
         {
             AccountClientConfiguration clientConfiguration = null;
 

@@ -6429,7 +6429,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="AccountClientConfiguration"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
         /// </returns>
-        public Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationAsync()
+        internal Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationAsync()
         {
             return TaskHelper.InlineIfPossible(() => this.GetDatabaseAccountClientConfigurationPrivateAsync(this.ReadEndpoint), this.ResetSessionTokenRetryPolicy.GetRequestPolicy());
         }
