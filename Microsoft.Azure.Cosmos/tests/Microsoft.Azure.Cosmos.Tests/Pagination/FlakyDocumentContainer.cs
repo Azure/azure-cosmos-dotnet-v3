@@ -27,9 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     /// </summary>
     internal sealed class FlakyDocumentContainer : IMonadicDocumentContainer
     {
-        private FailureConfigs failureConfigs;
-        private bool isODETest;
-        private int iterationCount = 0;
+        private readonly FailureConfigs failureConfigs;
         private readonly Random random;
 
         private static class Throttle
@@ -66,12 +64,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public FlakyDocumentContainer(
             IMonadicDocumentContainer documentContainer,
-            FailureConfigs failureConfigs,
-            bool isODETest = false)
+            FailureConfigs failureConfigs)
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.failureConfigs = failureConfigs ?? throw new ArgumentNullException(nameof(failureConfigs));
-            this.isODETest = isODETest;
             this.random = new Random();
         }
 
@@ -179,25 +175,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             state: feedRangeState.State ?? StateForStartedButNoDocumentsReturned));
             }
 
-            if (this.isODETest)
+            Exception failure = await this.ShouldReturnFailure();
+            if (failure != null)
             {
-                this.iterationCount++;
-                if (this.iterationCount == 2 || this.iterationCount == 5)
-                {
-                    Exception failure = await this.ShouldReturnFailure();
-                    if (failure != null)
-                    {
-                        return TryCatch<QueryPage>.FromException(failure);
-                    }
-                }
-            }
-            else
-            {
-                Exception failure = await this.ShouldReturnFailure();
-                if (failure != null)
-                {
-                    return TryCatch<QueryPage>.FromException(failure);
-                }
+                return TryCatch<QueryPage>.FromException(failure);
             }
 
             return await this.documentContainer.MonadicQueryAsync(

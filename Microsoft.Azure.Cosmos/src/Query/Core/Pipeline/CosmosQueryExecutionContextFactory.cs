@@ -429,7 +429,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 cancellationToken);
         }
 
-        internal static async Task<TryCatch<IQueryPipelineStage>> TryCreateSpecializedDocumentQueryExecutionContextAsync(
+        private static async Task<TryCatch<IQueryPipelineStage>> TryCreateSpecializedDocumentQueryExecutionContextAsync(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
             ContainerQueryProperties containerQueryProperties,
