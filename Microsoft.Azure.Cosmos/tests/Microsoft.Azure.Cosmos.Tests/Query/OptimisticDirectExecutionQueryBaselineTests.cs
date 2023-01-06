@@ -298,8 +298,7 @@
             }
         }
 
-        // it creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
-        // TODO: With the addition of the merge/split support, this queryPipelineStage should be able to return all documents regardless of a gone exception happening 
+        // Creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
         private static async Task<bool> ExecuteGoneExceptionOnODEPipeline(bool isMultiPartition)
         {
             List<CosmosElement> documents = new List<CosmosElement>();
