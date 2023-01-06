@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -634,6 +636,21 @@ namespace Microsoft.Azure.Cosmos
         internal Func<TransportClient, TransportClient> TransportClientHandlerFactory { get; set; }
 
         /// <summary>
+        /// Certificate validation function
+        /// </summary>
+        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
+        internal RemoteCertificateValidationCallback SslCustomValidationCallBack
+        {
+            get
+            {
+                if (this.ServerCertificateCustomValidationCallback == null)
+                {
+                    return null;
+                }
+                return (obj, cert, chain, policy) => this.ServerCertificateCustomValidationCallback((HttpRequestMessage)obj, cert, chain, policy);
+            }
+        }
+        /// <summary>
         /// API type for the account
         /// </summary>
         internal ApiType ApiType { get; set; }
@@ -747,6 +764,7 @@ namespace Microsoft.Azure.Cosmos
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 HttpClientFactory = this.httpClientFactory
+                ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };
 
             if (this.EnableClientTelemetry.HasValue)

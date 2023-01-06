@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -73,7 +75,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
                         gatewayModeMaxConnectionLimit: connectionPolicy.MaxConnectionLimit,
-                        webProxy: null);
+                        webProxy: null,
+                        serverCertificateCustomValidationCallback: connectionPolicy.ServerCertificateCustomValidationCallback);
             }
 
             if (sendingRequestEventArgs != null ||
@@ -96,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 eventSource: eventSource);
         }
 
-        public static HttpMessageHandler CreateHttpClientHandler(int gatewayModeMaxConnectionLimit, IWebProxy webProxy)
+        public static HttpMessageHandler CreateHttpClientHandler(int gatewayModeMaxConnectionLimit, IWebProxy webProxy, Func<HttpRequestMessage, X509Certificate, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             HttpClientHandler httpClientHandler = new HttpClientHandler();
 
@@ -110,6 +113,7 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 httpClientHandler.MaxConnectionsPerServer = gatewayModeMaxConnectionLimit;
+                httpClientHandler.ServerCertificateCustomValidationCallback = serverCertificateCustomValidationCallback;
             }
             // MaxConnectionsPerServer is not supported on some platforms.
             catch (PlatformNotSupportedException)

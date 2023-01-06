@@ -65,7 +65,8 @@ namespace Microsoft.Azure.Cosmos
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
                 clientOptions.GatewayModeMaxConnectionLimit,
-                clientOptions.WebProxy);
+                clientOptions.WebProxy,
+                clientOptions.ServerCertificateCustomValidationCallback);
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
@@ -79,7 +80,8 @@ namespace Microsoft.Azure.Cosmos
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
                handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer,
-               cosmosClientId: cosmosClient.Id);
+               cosmosClientId: cosmosClient.Id,
+               remoteCertificateValidationCallback: clientOptions.SslCustomValidationCallBack);
 
             return ClientContextCore.Create(
                 cosmosClient,

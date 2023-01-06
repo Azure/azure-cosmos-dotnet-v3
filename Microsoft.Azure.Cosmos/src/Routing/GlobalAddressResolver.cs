@@ -318,6 +318,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             return endpointCache;
         }
 
+        public Task OpenConnectionsToAllReplicasAsync(string databaseName, string containerLinkUri, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionHandler)
+        {
+            throw new NotImplementedException();
+        }
+
         private sealed class EndpointCache
         {
             public GatewayAddressCache AddressCache { get; set; }

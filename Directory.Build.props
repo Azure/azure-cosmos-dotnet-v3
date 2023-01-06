@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<ClientOfficialVersion>3.31.2</ClientOfficialVersion>
-		<ClientPreviewVersion>3.31.2</ClientPreviewVersion>
+		<ClientOfficialVersion>3.31.3</ClientOfficialVersion>
+		<ClientPreviewVersion>3.31.3</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview</ClientPreviewSuffixVersion>
-		<DirectVersion>3.29.4</DirectVersion>
+		<DirectVersion>3.30.0</DirectVersion>
 		<EncryptionOfficialVersion>2.0.0</EncryptionOfficialVersion>
 		<EncryptionPreviewVersion>2.0.0</EncryptionPreviewVersion>
 		<EncryptionPreviewSuffixVersion>preview</EncryptionPreviewSuffixVersion>
