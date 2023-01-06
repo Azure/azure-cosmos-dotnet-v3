@@ -151,7 +151,7 @@
                 AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
                 oTelTracerProvider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter() // use any exporter here
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*") // Right now, it will capture only "Azure.Cosmos.Operation"
+                //.AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*") // Right now, it will capture only "Azure.Cosmos.Operation"
                 .AddConsoleExporter()
                 .Build();
 

@@ -483,7 +483,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions)
         {
-            using (OpenTelemetryCoreRecorder recorder = 
+            using (OpenTelemetryCoreRecorder recorder =
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     operationName: operationName,
                                     containerName: containerName,
@@ -493,8 +493,10 @@ namespace Microsoft.Azure.Cosmos
                                     clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {
+                Activity activity = new("Test");
                 try
                 {
+                    activity.Start();
                     Console.WriteLine(Activity.Current.Id);
                     TResult result = await task(trace).ConfigureAwait(false);
                     if (openTelemetry != null && recorder.IsEnabled)
@@ -510,7 +512,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
                     recorder.MarkFailed(operationCancelledException);
-                    
+
                     throw operationCancelledException;
                 }
                 catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
@@ -537,6 +539,10 @@ namespace Microsoft.Azure.Cosmos
                     recorder.MarkFailed(ex);
 
                     throw;
+                }
+                finally
+                {
+                    activity.Stop();
                 }
             }
         }

@@ -128,9 +128,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.ThrowIfDisposed();
 
                 Guid activityId = Trace.CorrelationManager.ActivityId;
-                Console.WriteLine("correlation");
-                Console.WriteLine(activityId);
-                Console.WriteLine("new");
+               
                 Console.WriteLine(Activity.Current.Id);
                 if (!request.IsBodySeekableClonableAndCountable)
                 {
