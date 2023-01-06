@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ClientTelemetryTests.ResetSystemUsageMonitor(false);
         }
-
+            
         [TestMethod]
         [DataRow(ConnectionMode.Direct, true)]
         [DataRow(ConnectionMode.Gateway, true)]

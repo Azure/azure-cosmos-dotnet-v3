@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ConnectionPolicy connectionPolicy;
         private readonly IDocumentClientInternal owner;
         private readonly AsyncCache<string, AccountProperties> databaseAccountCache = new AsyncCache<string, AccountProperties>();
-        private readonly AsyncCache<string, AccountClientConfiguration> databaseAccountClientConfigCache = new AsyncCache<string, AccountClientConfiguration>();
+        internal readonly AsyncCache<string, AccountClientConfiguration> databaseAccountClientConfigCache = new AsyncCache<string, AccountClientConfiguration>();
         private readonly TimeSpan MinTimeBetweenAccountRefresh = TimeSpan.FromSeconds(15);
         private readonly int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
         private readonly object backgroundAccountRefreshLock = new object();
@@ -543,7 +543,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
                 this.locationCache.OnDatabaseAccountRead(await this.GetDatabaseAccountAsync(true));
                 // Refresh Database client configuration along with database account property
-                await this.GetCachedDatabaseAccountClientConfigAsync(true);
+                await this.GetDatabaseAccountClientConfigAsync(true);
             }
             finally
             {
@@ -570,7 +570,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 #nullable enable
         }
 
-        internal async Task<AccountClientConfiguration> GetCachedDatabaseAccountClientConfigAsync(bool forceRefresh = false)
+        internal async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigAsync(bool forceRefresh = false)
         {
 #nullable disable  // Needed because AsyncCache does not have nullable enabled
             return await this.databaseAccountClientConfigCache.GetAsync(
