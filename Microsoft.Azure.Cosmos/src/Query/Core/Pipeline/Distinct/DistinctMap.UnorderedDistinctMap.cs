@@ -147,15 +147,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
             /// <summary>
             /// HashSet for all CosmosGuids seen.
-            /// This set only stores the hash, since we don't want to spend the space for storing large arrays.
+            /// This set only stores the hash, since we don't want to spend the space for storing large CosmosGuids.
             /// </summary>
             private readonly HashSet<UInt128> guids;
 
             /// <summary>
             /// HashSet for all CosmosBinarys seen.
-            /// This set only stores the hash, since we don't want to spend the space for storing large objects.
+            /// This set only stores the hash, since we don't want to spend the space for storing large CosmosBinary objects.
             /// </summary>
             private readonly HashSet<UInt128> blobs;
+
+            /// <summary>
+            /// Used to dispatch Add calls.
+            /// </summary>
+            private readonly CosmosElementVisitor visitor;
 
             /// <summary>
             /// Stores all the simple values that we don't want to dedicate a hash set for.
@@ -184,6 +189,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 this.guids = guids ?? throw new ArgumentNullException(nameof(guids));
                 this.blobs = blobs ?? throw new ArgumentNullException(nameof(blobs));
                 this.simpleValues = simpleValues;
+                this.visitor = new CosmosElementVisitor(this);
             }
 
             /// <summary>
@@ -197,8 +203,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 // Unordered distinct does not need to return a valid hash.
                 // Since it doesn't need the last hash for a continuation.
                 hash = default;
-                CosmosElementVisitor visitor = new CosmosElementVisitor(this);
-                return cosmosElement.Accept(visitor);
+                return cosmosElement.Accept(this.visitor);
             }
 
             public override string GetContinuationToken()

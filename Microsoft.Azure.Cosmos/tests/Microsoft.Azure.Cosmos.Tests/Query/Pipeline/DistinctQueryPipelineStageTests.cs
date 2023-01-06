@@ -20,6 +20,7 @@
     {
         private const int InputElementCount = 400;
 
+        // This list SHOULD NOT contain duplicates
         private static readonly IReadOnlyList<CosmosElement> Literals = new List<CosmosElement>
         {
             CosmosUndefined.Create(),
@@ -150,25 +151,19 @@
         [TestMethod]
         public async Task MixedTypeTests()
         {
-            List<CosmosElement> mixedTypeValues = new List<CosmosElement>();
-            mixedTypeValues.Capacity = InputElementCount;
-            for (int index = 0; index < InputElementCount; ++index)
-            {
-                mixedTypeValues.Add(Literals[index % Literals.Count]);
-            }
+            IEnumerable<CosmosElement> mixedTypeValues = Enumerable
+                .Range(0, InputElementCount)
+                .Select(index => Literals[index % Literals.Count]);
 
             DistinctQueryPipelineStageTestCase MakeTest(int pageSize)
             {
                 return new DistinctQueryPipelineStageTestCase(input: mixedTypeValues, pageSize: pageSize, expected: Literals);
             }
 
-            IEnumerable<DistinctQueryPipelineStageTestCase> testCases = new List<DistinctQueryPipelineStageTestCase>
-            {
-                MakeTest(pageSize: 400),
-                MakeTest(pageSize: 100),
-                MakeTest(pageSize: 10),
-                MakeTest(pageSize: 1),
-            };
+            int[] pageSizes = { 400, 100, 10, 1 };
+            IEnumerable<DistinctQueryPipelineStageTestCase> testCases = pageSizes
+                .Select(x => MakeTest(pageSize: x))
+                .ToList();
 
             await RunTests(testCases);
         }
@@ -182,21 +177,19 @@
                 List<List<CosmosElement>> pages = new List<List<CosmosElement>>() { new List<CosmosElement>() };
                 while(enumerator.MoveNext())
                 {
-                    if(pageSize <= testCase.PageSize)
-                    {
-                        pages[pages.Count - 1].Add(enumerator.Current);
-                        ++pageSize;
-                    }
-                    else
+                    if (pageSize > testCase.PageSize)
                     {
                         pageSize = 0;
                         pages.Add(new List<CosmosElement>());
                     }
+
+                    pages[pages.Count - 1].Add(enumerator.Current);
+                    ++pageSize;
                 }
     
                 foreach (ExecutionEnvironment env in new[] { ExecutionEnvironment.Compute, ExecutionEnvironment.Client })
                 {
-                    List<CosmosElement> elements = await DistinctQueryPipelineStageTests.CreateAndDrainAsync(
+                    IEnumerable<CosmosElement> elements = await DistinctQueryPipelineStageTests.CreateAndDrainAsync(
                         pages: pages,
                         executionEnvironment: env,
                         continuationToken: null,
@@ -215,7 +208,7 @@
             }
         }
 
-        private static async Task<List<CosmosElement>> CreateAndDrainAsync(
+        private static async Task<IEnumerable<CosmosElement>> CreateAndDrainAsync(
             IReadOnlyList<IReadOnlyList<CosmosElement>> pages,
             ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
@@ -233,12 +226,12 @@
 
             IQueryPipelineStage distinctQueryPipelineStage = tryCreateDistinctQueryPipelineStage.Result;
 
-            List<CosmosElement> elements = new List<CosmosElement>();
+            IEnumerable<CosmosElement> elements = Enumerable.Empty<CosmosElement>();
             await foreach (TryCatch<QueryPage> page in new EnumerableStage(distinctQueryPipelineStage, NoOpTrace.Singleton))
             {
                 page.ThrowIfFailed();
 
-                elements.AddRange(page.Result.Documents);
+                elements = elements.Concat(page.Result.Documents);
             }
 
             return elements;
