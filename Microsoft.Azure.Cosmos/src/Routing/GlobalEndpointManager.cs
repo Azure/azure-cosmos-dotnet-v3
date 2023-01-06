@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal class GlobalEndpointManager : IGlobalEndpointManager
     {
         private const int DefaultBackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
+        private const int DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 10 * 60 * 1000;
 
         private const string BackgroundRefreshLocationTimeIntervalInMS = "BackgroundRefreshLocationTimeIntervalInMS";
         private const string MinimumIntervalForNonForceRefreshLocationInMS = "MinimumIntervalForNonForceRefreshLocationInMS";
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         internal readonly AsyncCache<string, AccountClientConfiguration> databaseAccountClientConfigCache = new AsyncCache<string, AccountClientConfiguration>();
         private readonly TimeSpan MinTimeBetweenAccountRefresh = TimeSpan.FromSeconds(15);
         private readonly int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
+        private readonly int backgroundRefreshClientConfigTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshClientConfigTimeIntervalInMS;
         private readonly object backgroundAccountRefreshLock = new object();
         private readonly object isAccountRefreshInProgressLock = new object();
         private bool isAccountRefreshInProgress = false;
@@ -396,6 +398,19 @@ namespace Microsoft.Azure.Cosmos.Routing
                 // that is never awaited on so it will not be thrown back to the caller.
                 this.cancellationTokenSource.Dispose();
             }
+        }
+
+        public virtual void InitializeClientConfigBackgroundRefresh()
+        {
+            _ = Task.Run(async () =>
+            {
+                while (!this.cancellationTokenSource.IsCancellationRequested)
+                {
+                    await Task.Delay(this.backgroundRefreshClientConfigTimeIntervalInMS);
+
+                    await this.GetDatabaseAccountClientConfigAsync(true);
+                }
+            }, this.cancellationTokenSource.Token);
         }
 
         public virtual void InitializeAccountPropertiesAndStartBackgroundRefresh(AccountProperties databaseAccount)
