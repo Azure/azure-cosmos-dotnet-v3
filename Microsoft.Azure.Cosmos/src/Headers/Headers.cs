@@ -41,8 +41,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal virtual string CorrelatedActivityId
         {
-            get => this.CosmosMessageHeaders.INameValueCollection?.Get(HttpConstants.HttpHeaders.CorrelatedActivityId);
-            set => this.CosmosMessageHeaders.INameValueCollection?.Set(HttpConstants.HttpHeaders.CorrelatedActivityId, value);
+            get => this.CosmosMessageHeaders.Get(HttpConstants.HttpHeaders.CorrelatedActivityId);
+            set => this.CosmosMessageHeaders.Set(HttpConstants.HttpHeaders.CorrelatedActivityId, value);
         }
 
         /// <summary>
