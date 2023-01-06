@@ -3073,19 +3073,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(document.ToString(), readDocument.ToString());
 
                     //Negative test - using incomplete partition key
-                    try
-                    {
-                        badPKey = new PartitionKeyBuilder()
+                    badPKey = new PartitionKeyBuilder()
                             .Add(document.GetPropertyValue<string>("Address"))
                             .Build();
 
-                        Document badReadDocument = (await container.ReadItemAsync<Document>(document.Id, pKey)).Resource;
-                    }
-                    catch (Exception ex) 
-                    {
-                        Assert.AreEqual("PartitionKey value must be supplied for this operation.",
-                            ex.Message);
-                    }
+                    CosmosException clientException = await Assert.ThrowsExceptionAsync<CosmosException>(() =>
+                        container.ReadItemAsync<Document>(document.Id, badPKey)
+                    );
+
+                    Assert.AreEqual(clientException.StatusCode, HttpStatusCode.BadRequest);
                 }
 
                 //Read Many
@@ -3142,7 +3138,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 doc1.SetValue("Type", "Business");
 
                 //update check
-                documents.Append<ItemResponse<Document>>(await container.UpsertItemAsync<Document>(doc1));
+                pKey = new PartitionKeyBuilder()
+                        .Add(doc1.GetPropertyValue<string>("ZipCode"))
+                        .Add(doc1.GetPropertyValue<string>("Address"))
+                    .Build();
+
+                documents.Append<ItemResponse<Document>>(await container.UpsertItemAsync<Document>(doc1, pKey));
 
                 readCheck = (await container.ReadItemAsync<Document>(doc1.Id, pKey)).Resource;
 
@@ -3168,15 +3169,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .Add(doc1.GetPropertyValue<string>("ZipCode"))
                     .Build();
 
-                try
-                {
-                    await container.UpsertItemAsync<Document>(doc1);
-                }
-                catch (Exception ex)
-                {
-                    Assert.AreEqual("PartitionKey value must be supplied for this operation.",
-                            ex.Message);
-                }
+                await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                    container.UpsertItemAsync<Document>(doc1, badPKey)
+                );
 
                 readCheck = (await container.ReadItemAsync<Document>(doc1.Id, pKey)).Resource;
 
@@ -3203,7 +3198,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         try
                         {
-                            var queryDoc = await feedIterator.ReadNextAsync();
+                            FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
                         }
                         catch (Exception)
                         {
@@ -3231,38 +3226,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(checkDocument.GetPropertyValue<string>("Type"), readDocument.GetPropertyValue<string>("Type"));
 
                     //Negative test - using incomplete partition key
-                    try
-                    {
-                        badPKey = new PartitionKeyBuilder()
+                    badPKey = new PartitionKeyBuilder()
                             .Add(document.GetPropertyValue<string>("Address"))
                             .Build();
 
-                        readDocument.SetValue("Type", "Goverment");
-                        ItemResponse<Document> badItem = await container.ReplaceItemAsync<Document>(document, document.Id, partitionKey: badPKey);
-                    }
-                    catch (Exception ex)
-                    {
-                        Assert.AreEqual("PartitionKey value must be supplied for this operation.",
-                            ex.Message); 
-                    }
+                    readDocument.SetValue("Type", "Goverment");
+                    
+                    await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                        container.ReplaceItemAsync<Document>(document, document.Id, partitionKey: badPKey)
+                    );
                 }
 
                 //Document Delete.
                 foreach (Document document in documents)
                 {
-                    //Negative test - using incomplete partition key                    
-                    try
-                    {
-                        badPKey = new PartitionKeyBuilder()
+                    //Negative test - using incomplete partition key
+                    badPKey = new PartitionKeyBuilder()
                             .Add(document.GetPropertyValue<string>("Address"))
                             .Build();
 
-                        Document badReadDocument = (await container.DeleteItemAsync<Document>(document.Id, badPKey)).Resource;
-                    }
-                    catch (Exception ex)
-                    {
-                        Assert.IsTrue(ex.Message.Contains("Partition key provided either doesn't correspond to definition in the collection or doesn't match partition key field values specified in the document")); 
-                    }
+                    await Assert.ThrowsExceptionAsync<CosmosException>(() =>
+                        container.DeleteItemAsync<Document>(document.Id, badPKey)
+                    );
 
                     pKey = new PartitionKeyBuilder()
                         .Add(document.GetPropertyValue<string>("ZipCode"))
@@ -3270,14 +3255,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .Build();
 
                     Document readDocument = (await container.DeleteItemAsync<Document>(document.Id, pKey)).Resource;
-                    try
-                    {
-                        readDocument = await container.ReadItemAsync<Document>(document.Id, pKey);
-                    }
-                    catch (CosmosException clientException)
-                    {
-                        Assert.AreEqual(clientException.StatusCode, HttpStatusCode.NotFound);
-                    }
+                    
+                    CosmosException clientException = await Assert.ThrowsExceptionAsync<CosmosException>(() =>
+                        container.ReadItemAsync<Document>(document.Id, pKey)
+                    );
+
+                    Assert.AreEqual(clientException.StatusCode, HttpStatusCode.NotFound);
                 }
 
             }
