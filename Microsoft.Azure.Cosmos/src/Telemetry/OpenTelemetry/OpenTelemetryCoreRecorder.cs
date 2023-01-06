@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using global::Azure;
     using global::Azure.Core.Pipeline;
 
     /// <summary>

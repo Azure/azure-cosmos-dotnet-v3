@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// <returns>true or false</returns>
         public static bool IsTracingNeeded(
             DistributedTracingOptions config,
-            Documents.OperationType operationType,
+            OperationType operationType,
             OpenTelemetryAttributes response)
         {
             TimeSpan latencyThreshold;
