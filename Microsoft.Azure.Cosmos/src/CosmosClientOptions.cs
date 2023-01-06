@@ -644,7 +644,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         public Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
-       
+
         /// <summary>
         /// API type for the account
         /// </summary>
@@ -1001,7 +1001,7 @@ namespace Microsoft.Azure.Cosmos
                 return objectType == typeof(DateTime);
             }
         }
-        
+
         /// <summary>
         /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>
         /// </summary>
