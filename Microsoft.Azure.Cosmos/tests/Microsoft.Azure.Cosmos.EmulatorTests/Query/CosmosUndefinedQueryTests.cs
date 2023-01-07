@@ -76,6 +76,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 MakeUndefinedProjectionTest(
                     query: $"SELECT VALUE AVG(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
                     expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query: $"SELECT DISTINCT VALUE SUM(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
+                    expectedCount: 0)
             };
 
             foreach (UndefinedProjectionTestCase testCase in undefinedProjectionTestCases)
