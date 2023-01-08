@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// AddressCache implementation for client SDK. Supports cross region address routing based on 
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal class GlobalEndpointManager : IGlobalEndpointManager
     {
         private const int DefaultBackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
-        private const int DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 10 * 60 * 1000;
+        private const int DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 2 * 60 * 1000; // 10 minutes
 
         private const string BackgroundRefreshLocationTimeIntervalInMS = "BackgroundRefreshLocationTimeIntervalInMS";
         private const string MinimumIntervalForNonForceRefreshLocationInMS = "MinimumIntervalForNonForceRefreshLocationInMS";
@@ -400,19 +401,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public virtual void InitializeClientConfigBackgroundRefresh()
-        {
-            _ = Task.Run(async () =>
-            {
-                while (!this.cancellationTokenSource.IsCancellationRequested)
-                {
-                    await Task.Delay(this.backgroundRefreshClientConfigTimeIntervalInMS);
-
-                    await this.GetDatabaseAccountClientConfigAsync(true);
-                }
-            }, this.cancellationTokenSource.Token);
-        }
-
         public virtual void InitializeAccountPropertiesAndStartBackgroundRefresh(AccountProperties databaseAccount)
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
@@ -557,8 +545,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
                 this.locationCache.OnDatabaseAccountRead(await this.GetDatabaseAccountAsync(true));
-                // Refresh Database client configuration along with database account property
-                await this.GetDatabaseAccountClientConfigAsync(true);
             }
             finally
             {
@@ -583,23 +569,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                               cancellationToken: this.cancellationTokenSource.Token,
                               forceRefresh: forceRefresh);
 #nullable enable
-        }
-
-        internal async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigAsync(bool forceRefresh = false)
-        {
-#nullable disable  // Needed because AsyncCache does not have nullable enabled
-            return await this.databaseAccountClientConfigCache.GetAsync(
-                              key: string.Empty,
-                              obsoleteValue: null,
-                              singleValueInitFunc: this.GetDatabaseAccountClientConfigAsync,
-                              cancellationToken: this.cancellationTokenSource.Token,
-                              forceRefresh: forceRefresh);
-#nullable enable
-        }
-
-        private Task<AccountClientConfiguration> GetDatabaseAccountClientConfigAsync()
-        {
-            return this.owner.GetDatabaseAccountClientConfigurationInternalAsync(this.defaultEndpoint, this.cancellationTokenSource.Token);
         }
 
         /// <summary>

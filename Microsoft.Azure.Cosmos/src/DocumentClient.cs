@@ -6423,22 +6423,6 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.InlineIfPossible(() => this.GetDatabaseAccountPrivateAsync(this.ReadEndpoint), this.ResetSessionTokenRetryPolicy.GetRequestPolicy());
         }
 
-        /// <summary>
-        /// Read the <see cref="AccountClientConfiguration"/> from the Azure Cosmos DB service as an asynchronous operation.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="AccountClientConfiguration"/> wrapped in a <see cref="System.Threading.Tasks.Task"/> object.
-        /// </returns>
-        internal Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationAsync()
-        {
-            return TaskHelper.InlineIfPossible(() => this.GetDatabaseAccountClientConfigurationPrivateAsync(this.ReadEndpoint), this.ResetSessionTokenRetryPolicy.GetRequestPolicy());
-        }
-
-        Task<AccountClientConfiguration> IDocumentClientInternal.GetDatabaseAccountClientConfigurationInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken)
-        {
-            return this.GetDatabaseAccountClientConfigurationPrivateAsync(serviceEndpoint, cancellationToken);
-        }
-
         private async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default)
         {
             serviceEndpoint = new Uri(serviceEndpoint.OriginalString + "clientconfigs");
@@ -6525,6 +6509,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     (await this.QueryPartitionProvider).Update(databaseAccount.QueryEngineConfiguration);
                 }
+
+                databaseAccount.ClientConfiguration = await this.GetDatabaseAccountClientConfigurationPrivateAsync(serviceEndpoint, cancellationToken);
 
                 return databaseAccount;
             }
@@ -6773,8 +6759,6 @@ namespace Microsoft.Azure.Cosmos
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
 
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
-            
-            this.GlobalEndpointManager.InitializeClientConfigBackgroundRefresh();
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
