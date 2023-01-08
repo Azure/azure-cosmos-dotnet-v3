@@ -13,9 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -48,18 +46,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(accountProperties.ReadableRegions.Count() > 0);
             Assert.IsNotNull(accountProperties.WritableRegions);
             Assert.IsTrue(accountProperties.WritableRegions.Count() > 0);
-        }
-
-        [TestMethod]
-        public async Task GetCosmosDatabaseAccountClientConfigurationSettings()
-        {
-            AccountClientConfiguration accountProperties = await this.cosmosClient.DocumentClient.GetDatabaseAccountClientConfigurationAsync();
-            
-            Console.WriteLine(JsonConvert.SerializeObject(accountProperties));
-            Assert.IsNotNull(accountProperties);
-            Assert.IsNotNull(accountProperties.ClientTelemetryConfiguration);
-
-            await Task.Delay(6 * 60 * 1000);
         }
     }
 }

@@ -241,6 +241,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// This contains Account Client Configuration such as client telemetry configuration fetched using separate gateway API i.e. /clientconfigs
+        /// </summary>
         internal AccountClientConfiguration ClientConfiguration { get; set; }
 
         /// <summary>

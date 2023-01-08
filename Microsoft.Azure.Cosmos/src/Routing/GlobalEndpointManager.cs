@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// AddressCache implementation for client SDK. Supports cross region address routing based on 
@@ -26,7 +25,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal class GlobalEndpointManager : IGlobalEndpointManager
     {
         private const int DefaultBackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
-        private const int DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 2 * 60 * 1000; // 10 minutes
 
         private const string BackgroundRefreshLocationTimeIntervalInMS = "BackgroundRefreshLocationTimeIntervalInMS";
         private const string MinimumIntervalForNonForceRefreshLocationInMS = "MinimumIntervalForNonForceRefreshLocationInMS";
@@ -36,10 +34,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ConnectionPolicy connectionPolicy;
         private readonly IDocumentClientInternal owner;
         private readonly AsyncCache<string, AccountProperties> databaseAccountCache = new AsyncCache<string, AccountProperties>();
-        internal readonly AsyncCache<string, AccountClientConfiguration> databaseAccountClientConfigCache = new AsyncCache<string, AccountClientConfiguration>();
         private readonly TimeSpan MinTimeBetweenAccountRefresh = TimeSpan.FromSeconds(15);
         private readonly int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
-        private readonly int backgroundRefreshClientConfigTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshClientConfigTimeIntervalInMS;
         private readonly object backgroundAccountRefreshLock = new object();
         private readonly object isAccountRefreshInProgressLock = new object();
         private bool isAccountRefreshInProgress = false;
@@ -545,6 +541,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
                 this.locationCache.OnDatabaseAccountRead(await this.GetDatabaseAccountAsync(true));
+
             }
             finally
             {
@@ -554,7 +551,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
         }
-
         internal async Task<AccountProperties> GetDatabaseAccountAsync(bool forceRefresh = false)
         {
 #nullable disable  // Needed because AsyncCache does not have nullable enabled
