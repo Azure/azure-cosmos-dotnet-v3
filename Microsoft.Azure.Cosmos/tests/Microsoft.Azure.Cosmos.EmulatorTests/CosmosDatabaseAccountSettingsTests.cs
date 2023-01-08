@@ -51,13 +51,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task GetCosmosDatabaseAccountCLientConfigurationSettings()
+        public async Task GetCosmosDatabaseAccountClientConfigurationSettings()
         {
             AccountClientConfiguration accountProperties = await this.cosmosClient.DocumentClient.GetDatabaseAccountClientConfigurationAsync();
             
             Console.WriteLine(JsonConvert.SerializeObject(accountProperties));
             Assert.IsNotNull(accountProperties);
             Assert.IsNotNull(accountProperties.ClientTelemetryConfiguration);
+
+            await Task.Delay(6 * 60 * 1000);
         }
     }
 }
