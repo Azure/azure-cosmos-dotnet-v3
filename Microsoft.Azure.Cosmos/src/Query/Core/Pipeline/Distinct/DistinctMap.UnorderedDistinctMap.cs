@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
         /// This class does that with the additional optimization that it doesn't store the whole JSON.
         /// Instead this class takes a GUID like hash and store that instead.
         /// </summary>
-        private sealed class UnorderdDistinctMap : DistinctMap
+        private sealed class UnorderedDistinctMap : DistinctMap
         {
             /// <summary>
             /// Length of UInt128 (in bytes).
@@ -98,6 +98,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 public const string StringsLength16Plus = "StringsLength16+";
                 public const string Arrays = "Arrays";
                 public const string Object = "Object";
+                public const string Guids = "Guids";
+                public const string Blobs = "Blobs";
                 public const string SimpleValues = "SimpleValues";
             }
 
@@ -144,11 +146,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             private readonly HashSet<UInt128> objects;
 
             /// <summary>
+            /// HashSet for all CosmosGuids seen.
+            /// This set only stores the hash, since we don't want to spend the space for storing large CosmosGuids.
+            /// </summary>
+            private readonly HashSet<UInt128> guids;
+
+            /// <summary>
+            /// HashSet for all CosmosBinarys seen.
+            /// This set only stores the hash, since we don't want to spend the space for storing large CosmosBinary objects.
+            /// </summary>
+            private readonly HashSet<UInt128> blobs;
+
+            /// <summary>
+            /// Used to dispatch Add calls.
+            /// </summary>
+            private readonly CosmosElementVisitor visitor;
+
+            /// <summary>
             /// Stores all the simple values that we don't want to dedicate a hash set for.
             /// </summary>
             private SimpleValues simpleValues;
 
-            private UnorderdDistinctMap(
+            private UnorderedDistinctMap(
                 HashSet<Number64> numbers,
                 HashSet<uint> stringsLength4,
                 HashSet<ulong> stringsLength8,
@@ -156,6 +175,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 HashSet<UInt128> stringsLength16Plus,
                 HashSet<UInt128> arrays,
                 HashSet<UInt128> objects,
+                HashSet<UInt128> guids,
+                HashSet<UInt128> blobs,
                 SimpleValues simpleValues)
             {
                 this.numbers = numbers ?? throw new ArgumentNullException(nameof(numbers));
@@ -165,7 +186,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 this.stringsLength16Plus = stringsLength16Plus ?? throw new ArgumentNullException(nameof(stringsLength16Plus));
                 this.arrays = arrays ?? throw new ArgumentNullException(nameof(arrays));
                 this.objects = objects ?? throw new ArgumentNullException(nameof(objects));
+                this.guids = guids ?? throw new ArgumentNullException(nameof(guids));
+                this.blobs = blobs ?? throw new ArgumentNullException(nameof(blobs));
                 this.simpleValues = simpleValues;
+                this.visitor = new CosmosElementVisitor(this);
             }
 
             /// <summary>
@@ -179,16 +203,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 // Unordered distinct does not need to return a valid hash.
                 // Since it doesn't need the last hash for a continuation.
                 hash = default;
-                return cosmosElement switch
-                {
-                    CosmosArray cosmosArray => this.AddArrayValue(cosmosArray),
-                    CosmosBoolean cosmosBoolean => this.AddSimpleValue(cosmosBoolean.Value ? SimpleValues.True : SimpleValues.False),
-                    CosmosNull _ => this.AddSimpleValue(SimpleValues.Null),
-                    CosmosNumber cosmosNumber => this.AddNumberValue(cosmosNumber.Value),
-                    CosmosObject cosmosObject => this.AddObjectValue(cosmosObject),
-                    CosmosString cosmosString => this.AddStringValue(cosmosString.Value),
-                    _ => throw new ArgumentOutOfRangeException($"Unexpected {nameof(CosmosElement)}: {cosmosElement}"),
-                };
+                return cosmosElement.Accept(this.visitor);
             }
 
             public override string GetContinuationToken()
@@ -201,35 +216,43 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>()
                 {
                     {
-                        UnorderdDistinctMap.PropertyNames.Numbers,
+                        UnorderedDistinctMap.PropertyNames.Numbers,
                         CosmosArray.Create(this.numbers.Select(x => CosmosNumber64.Create(x)))
                     },
                     {
-                        UnorderdDistinctMap.PropertyNames.StringsLength4,
+                        UnorderedDistinctMap.PropertyNames.StringsLength4,
                         CosmosArray.Create(this.stringsLength4.Select(x => CosmosUInt32.Create(x)))
                     },
                     {
-                        UnorderdDistinctMap.PropertyNames.StringsLength8,
+                        UnorderedDistinctMap.PropertyNames.StringsLength8,
                         CosmosArray.Create(this.stringsLength8.Select(x => CosmosInt64.Create((long)x)))
                     },
                     {
-                        UnorderdDistinctMap.PropertyNames.StringsLength16,
+                        UnorderedDistinctMap.PropertyNames.StringsLength16,
                         CosmosArray.Create(this.stringsLength16.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
                     },
                     {
-                        UnorderdDistinctMap.PropertyNames.StringsLength16Plus,
+                        UnorderedDistinctMap.PropertyNames.StringsLength16Plus,
                         CosmosArray.Create(this.stringsLength16Plus.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
                     },
                     {
-                        UnorderdDistinctMap.PropertyNames.Arrays,
+                        UnorderedDistinctMap.PropertyNames.Arrays,
                         CosmosArray.Create(this.arrays.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
                     },
                     {
-                        UnorderdDistinctMap.PropertyNames.Object,
+                        UnorderedDistinctMap.PropertyNames.Object,
                         CosmosArray.Create(this.objects.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
                     },
                     {
-                        UnorderdDistinctMap.PropertyNames.SimpleValues,
+                        UnorderedDistinctMap.PropertyNames.Guids,
+                        CosmosArray.Create(this.guids.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
+                    },
+                    {
+                        UnorderedDistinctMap.PropertyNames.Blobs,
+                        CosmosArray.Create(this.blobs.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
+                    },
+                    {
+                        UnorderedDistinctMap.PropertyNames.SimpleValues,
                         CosmosString.Create(this.simpleValues.ToString())
                     }
                 };
@@ -274,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 int utf8Length = Encoding.UTF8.GetByteCount(value);
 
                 // If you can fit the string with full fidelity in 16 bytes, then you might as well just hash the string itself.
-                if (utf8Length <= UnorderdDistinctMap.UInt128Length)
+                if (utf8Length <= UnorderedDistinctMap.UInt128Length)
                 {
                     Span<byte> utf8Buffer = stackalloc byte[UInt128Length];
                     Encoding.UTF8.GetBytes(value, utf8Buffer);
@@ -282,12 +305,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     {
                         added = this.AddSimpleValue(SimpleValues.EmptyString);
                     }
-                    else if (utf8Length <= UnorderdDistinctMap.UIntLength)
+                    else if (utf8Length <= UnorderedDistinctMap.UIntLength)
                     {
                         uint uintValue = MemoryMarshal.Read<uint>(utf8Buffer);
                         added = this.stringsLength4.Add(uintValue);
                     }
-                    else if (utf8Length <= UnorderdDistinctMap.ULongLength)
+                    else if (utf8Length <= UnorderedDistinctMap.ULongLength)
                     {
                         ulong uLongValue = MemoryMarshal.Read<ulong>(utf8Buffer);
                         added = this.stringsLength8.Add(uLongValue);
@@ -330,6 +353,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 return this.objects.Add(hash);
             }
 
+            /// <summary>
+            /// Adds a guid value to the distinct map.
+            /// </summary>
+            /// <param name="guid">The guid to add.</param>
+            /// <returns>Whether or not the value was successfully added.</returns>
+            private bool AddGuidValue(CosmosGuid guid)
+            {
+                UInt128 hash = DistinctHash.GetHash(guid);
+                return this.guids.Add(hash);
+            }
+
+            /// <summary>
+            /// Adds a binary value to the distinct map.
+            /// </summary>
+            /// <param name="binary">The array to add.</param>
+            /// <returns>Whether or not the value was successfully added.</returns>
+            private bool AddBinaryValue(CosmosBinary binary)
+            {
+                UInt128 hash = DistinctHash.GetHash(binary);
+                return this.blobs.Add(hash);
+            }
+
             public static TryCatch<DistinctMap> TryCreate(CosmosElement continuationToken)
             {
                 HashSet<Number64> numbers = new HashSet<Number64>();
@@ -339,6 +384,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 HashSet<UInt128> stringsLength16Plus = new HashSet<UInt128>();
                 HashSet<UInt128> arrays = new HashSet<UInt128>();
                 HashSet<UInt128> objects = new HashSet<UInt128>();
+                HashSet<UInt128> guids = new HashSet<UInt128>();
+                HashSet<UInt128> blobs = new HashSet<UInt128>();
                 SimpleValues simpleValues = SimpleValues.None;
 
                 if (continuationToken != null)
@@ -347,15 +394,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     {
                         return TryCatch<DistinctMap>.FromException(
                             new MalformedContinuationTokenException(
-                                $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
+                                $"{nameof(UnorderedDistinctMap)} continuation token was malformed."));
                     }
 
                     // Numbers
-                    if (!hashDictionary.TryGetValue(UnorderdDistinctMap.PropertyNames.Numbers, out CosmosArray numbersArray))
+                    if (!hashDictionary.TryGetValue(UnorderedDistinctMap.PropertyNames.Numbers, out CosmosArray numbersArray))
                     {
                         return TryCatch<DistinctMap>.FromException(
                             new MalformedContinuationTokenException(
-                                $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
+                                $"{nameof(UnorderedDistinctMap)} continuation token was malformed."));
                     }
 
                     foreach (CosmosElement rawNumber in numbersArray)
@@ -364,18 +411,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         {
                             return TryCatch<DistinctMap>.FromException(
                                 new MalformedContinuationTokenException(
-                                    $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
+                                    $"{nameof(UnorderedDistinctMap)} continuation token was malformed."));
                         }
 
                         numbers.Add(number.GetValue());
                     }
 
                     // Strings Length 4
-                    if (!hashDictionary.TryGetValue(UnorderdDistinctMap.PropertyNames.StringsLength4, out CosmosArray stringsLength4Array))
+                    if (!hashDictionary.TryGetValue(UnorderedDistinctMap.PropertyNames.StringsLength4, out CosmosArray stringsLength4Array))
                     {
                         return TryCatch<DistinctMap>.FromException(
                                 new MalformedContinuationTokenException(
-                                    $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
+                                    $"{nameof(UnorderedDistinctMap)} continuation token was malformed."));
                     }
 
                     foreach (CosmosElement rawStringLength4 in stringsLength4Array)
@@ -384,18 +431,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         {
                             return TryCatch<DistinctMap>.FromException(
                                 new MalformedContinuationTokenException(
-                                    $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
+                                    $"{nameof(UnorderedDistinctMap)} continuation token was malformed."));
                         }
 
                         stringsLength4.Add(stringlength4.GetValue());
                     }
 
                     // Strings Length 8
-                    if (!hashDictionary.TryGetValue(UnorderdDistinctMap.PropertyNames.StringsLength8, out CosmosArray stringsLength8Array))
+                    if (!hashDictionary.TryGetValue(UnorderedDistinctMap.PropertyNames.StringsLength8, out CosmosArray stringsLength8Array))
                     {
                         return TryCatch<DistinctMap>.FromException(
                             new MalformedContinuationTokenException(
-                                $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
+                                $"{nameof(UnorderedDistinctMap)} continuation token was malformed."));
                     }
 
                     foreach (CosmosElement rawStringLength8 in stringsLength8Array)
@@ -404,42 +451,42 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         {
                             return TryCatch<DistinctMap>.FromException(
                                 new MalformedContinuationTokenException(
-                                    $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
+                                    $"{nameof(UnorderedDistinctMap)} continuation token was malformed."));
                         }
 
                         stringsLength8.Add((ulong)stringlength8.GetValue());
                     }
 
-                    // Strings Length 16
-                    stringsLength16 = Parse128BitHashes(hashDictionary, UnorderdDistinctMap.PropertyNames.StringsLength16);
+                    stringsLength16 = Parse128BitHashes(hashDictionary, UnorderedDistinctMap.PropertyNames.StringsLength16);
 
-                    // Strings Length 24
-                    stringsLength16Plus = Parse128BitHashes(hashDictionary, UnorderdDistinctMap.PropertyNames.StringsLength16Plus);
+                    stringsLength16Plus = Parse128BitHashes(hashDictionary, UnorderedDistinctMap.PropertyNames.StringsLength16Plus);
 
-                    // Array
-                    arrays = Parse128BitHashes(hashDictionary, UnorderdDistinctMap.PropertyNames.Arrays);
+                    arrays = Parse128BitHashes(hashDictionary, UnorderedDistinctMap.PropertyNames.Arrays);
 
-                    // Object
-                    objects = Parse128BitHashes(hashDictionary, UnorderdDistinctMap.PropertyNames.Object);
+                    objects = Parse128BitHashes(hashDictionary, UnorderedDistinctMap.PropertyNames.Object);
+
+                    guids = Parse128BitHashes(hashDictionary, UnorderedDistinctMap.PropertyNames.Guids);
+
+                    blobs = Parse128BitHashes(hashDictionary, UnorderedDistinctMap.PropertyNames.Blobs);
 
                     // Simple Values
-                    CosmosElement rawSimpleValues = hashDictionary[UnorderdDistinctMap.PropertyNames.SimpleValues];
+                    CosmosElement rawSimpleValues = hashDictionary[UnorderedDistinctMap.PropertyNames.SimpleValues];
                     if (!(rawSimpleValues is CosmosString simpleValuesString))
                     {
                         return TryCatch<DistinctMap>.FromException(
                             new MalformedContinuationTokenException(
-                                $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
+                                $"{nameof(UnorderedDistinctMap)} continuation token was malformed."));
                     }
 
                     if (!Enum.TryParse<SimpleValues>(simpleValuesString.Value, out simpleValues))
                     {
                         return TryCatch<DistinctMap>.FromException(
                             new MalformedContinuationTokenException(
-                                $"{nameof(UnorderdDistinctMap)} continuation token was malformed."));
+                                $"{nameof(UnorderedDistinctMap)} continuation token was malformed."));
                     }
                 }
 
-                return TryCatch<DistinctMap>.FromResult(new UnorderdDistinctMap(
+                return TryCatch<DistinctMap>.FromResult(new UnorderedDistinctMap(
                     numbers,
                     stringsLength4,
                     stringsLength8,
@@ -447,6 +494,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     stringsLength16Plus,
                     arrays,
                     objects,
+                    guids,
+                    blobs,
                     simpleValues));
             }
 
@@ -456,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 if (!hashDictionary.TryGetValue(propertyName, out CosmosArray array))
                 {
                     throw new MalformedContinuationTokenException(
-                        $"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                        $"{nameof(UnorderedDistinctMap)} continuation token was malformed.");
                 }
 
                 foreach (CosmosElement item in array)
@@ -464,7 +513,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     if (!(item is CosmosBinary binary))
                     {
                         throw new MalformedContinuationTokenException(
-                            $"{nameof(UnorderdDistinctMap)} continuation token was malformed.");
+                            $"{nameof(UnorderedDistinctMap)} continuation token was malformed.");
                     }
 
                     UInt128 uint128 = UInt128.FromByteArray(binary.Value.Span);
@@ -472,6 +521,61 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 }
 
                 return hashSet;
+            }
+
+            private sealed class CosmosElementVisitor : ICosmosElementVisitor<bool>
+            {
+                private readonly UnorderedDistinctMap parent;
+
+                public CosmosElementVisitor(UnorderedDistinctMap parent)
+                {
+                    this.parent = parent ?? throw new ArgumentNullException(nameof(parent));
+                }
+
+                public bool Visit(CosmosArray cosmosArray)
+                {
+                    return this.parent.AddArrayValue(cosmosArray);
+                }
+
+                public bool Visit(CosmosBinary cosmosBinary)
+                {
+                    return this.parent.AddBinaryValue(cosmosBinary);
+                }
+
+                public bool Visit(CosmosBoolean cosmosBoolean)
+                {
+                    return this.parent.AddSimpleValue(cosmosBoolean.Value ? SimpleValues.True : SimpleValues.False);
+                }
+
+                public bool Visit(CosmosGuid cosmosGuid)
+                {
+                    return this.parent.AddGuidValue(cosmosGuid);
+                }
+
+                public bool Visit(CosmosNull cosmosNull)
+                {
+                    return this.parent.AddSimpleValue(SimpleValues.Null);
+                }
+
+                public bool Visit(CosmosNumber cosmosNumber)
+                {
+                    return this.parent.AddNumberValue(cosmosNumber.Value);
+                }
+
+                public bool Visit(CosmosObject cosmosObject)
+                {
+                    return this.parent.AddObjectValue(cosmosObject);
+                }
+
+                public bool Visit(CosmosString cosmosString)
+                {
+                    return this.parent.AddStringValue(cosmosString.Value);
+                }
+
+                public bool Visit(CosmosUndefined cosmosUndefined)
+                {
+                    return this.parent.AddSimpleValue(SimpleValues.Undefined);
+                }
             }
         }
     }
