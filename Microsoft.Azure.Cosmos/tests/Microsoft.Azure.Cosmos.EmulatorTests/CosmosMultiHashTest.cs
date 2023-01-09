@@ -434,14 +434,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsTrue(feedIterator.HasMoreResults);
 
-                    try
-                    {
-                        FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
-                    }
-                    catch (Exception)
-                    {
-                        Assert.Fail("Should succeed");
-                    }
+                    FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
                 }
 
             }
