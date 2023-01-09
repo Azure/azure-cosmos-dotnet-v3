@@ -320,12 +320,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public Task OpenConnectionsToAllReplicasAsync(string databaseName, string containerLinkUri, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return Task.CompletedTask;
         }
 
         public void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionHandler)
         {
-            throw new NotImplementedException();
         }
 
         private sealed class EndpointCache
