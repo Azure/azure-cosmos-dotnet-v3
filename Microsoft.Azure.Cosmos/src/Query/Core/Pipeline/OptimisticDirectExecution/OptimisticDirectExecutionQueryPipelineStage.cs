@@ -88,8 +88,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
         private CosmosElement TryUnwrapContinuationToken()
         {
             CosmosObject cosmosObject = this.continuationToken as CosmosObject;
-            CosmosElement backendContinuationToken = cosmosObject[optimisticDirectExecutionToken];
-            return CosmosArray.Create(backendContinuationToken);
+            if (cosmosObject != null)
+            {
+                CosmosElement backendContinuationToken = cosmosObject[optimisticDirectExecutionToken];
+                return CosmosArray.Create(backendContinuationToken);
+            }
+
+            return null;
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
