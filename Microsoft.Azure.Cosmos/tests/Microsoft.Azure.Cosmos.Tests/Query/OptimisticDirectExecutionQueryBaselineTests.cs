@@ -18,7 +18,6 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -261,7 +260,7 @@
             int numItems = 100;
             List<CosmosElement> documents = new List<CosmosElement>();
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-            (MergeTestUtil mergeTest, IQueryPipelineStage queryPipelineStage) = await CreateFallbackPipelineTestInfra(numItems, isFailedFallbackPipelineTest: false, isMultiPartition, queryRequestOptions);
+            (MergeTestUtil mergeTest, IQueryPipelineStage queryPipelineStage) = await CreateFallbackPipelineTestInfrastructure(numItems, isFailedFallbackPipelineTest: false, isMultiPartition, queryRequestOptions);
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
@@ -294,7 +293,7 @@
             int numItems = 100;
             List<CosmosElement> documents = new List<CosmosElement>();
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-            (MergeTestUtil mergeTest, IQueryPipelineStage queryPipelineStage) = await CreateFallbackPipelineTestInfra(numItems, isFailedFallbackPipelineTest: true, isMultiPartition, queryRequestOptions);
+            (MergeTestUtil mergeTest, IQueryPipelineStage queryPipelineStage) = await CreateFallbackPipelineTestInfrastructure(numItems, isFailedFallbackPipelineTest: true, isMultiPartition, queryRequestOptions);
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
@@ -320,7 +319,7 @@
             return false;
         }
 
-        private static async Task<(MergeTestUtil, IQueryPipelineStage)> CreateFallbackPipelineTestInfra(int numItems, bool isFailedFallbackPipelineTest, bool isMultiPartition, QueryRequestOptions queryRequestOptions)
+        private static async Task<(MergeTestUtil, IQueryPipelineStage)> CreateFallbackPipelineTestInfrastructure(int numItems, bool isFailedFallbackPipelineTest, bool isMultiPartition, QueryRequestOptions queryRequestOptions)
         {
             List<CosmosElement> documents = new List<CosmosElement>();
             MergeTestUtil mergeTest = new MergeTestUtil

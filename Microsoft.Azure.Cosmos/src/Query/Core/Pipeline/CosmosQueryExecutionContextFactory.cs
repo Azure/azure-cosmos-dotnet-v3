@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Core.Collections;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -148,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 {
                     return await TryCreateExecutionContextAsync(
                         documentContainer,
-                        null,
+                        partitionedQueryExecutionInfo: null,
                         cosmosQueryContext,
                         containerQueryProperties,
                         inputParameters,
@@ -349,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             // 1. the token is actually malformed
             // 2. Its a non Ode continuation token
             // In both cases, Ode pipeline delegates the work to the Specialized pipeline
-            // as Ode ppipeline should not take over execution while some other pipeline is already handling it
+            // as Ode pipeline should not take over execution while some other pipeline is already handling it
             if (tryCreatePipelineStage.Failed && tryCreatePipelineStage.InnerMostException is MalformedContinuationTokenException)
             {
                 SetTestInjectionPipelineType(inputParameters, Specialized);

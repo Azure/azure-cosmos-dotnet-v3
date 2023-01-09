@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             }
             else if (this.executionState == ExecutionState.OptimisticDirectExecution && hasNext.Succeeded)
             {
-                // only the case where hasNext.Succeeded = true and hasNext.Result = false should enter this code block
+                // only if hasNext.Succeeded = true and hasNext.Result = false should this code block be hit
 
                 if (this.Current.InnerMostException.IsPartitionSplitException())
                 {
