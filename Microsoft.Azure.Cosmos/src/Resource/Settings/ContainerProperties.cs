@@ -362,10 +362,17 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentNullException(nameof(this.PartitionKeyPath));
                 }
 
+                PartitionKeyDefinitionVersion? currentDefinitionVersion = this.PartitionKeyDefinitionVersion;
+
                 this.PartitionKey = new PartitionKeyDefinition
                 {
                     Paths = new Collection<string>() { value }
                 };
+                
+                if (currentDefinitionVersion.HasValue)
+                {
+                    this.PartitionKeyDefinitionVersion = currentDefinitionVersion.Value;
+                }
             }
         }
 
