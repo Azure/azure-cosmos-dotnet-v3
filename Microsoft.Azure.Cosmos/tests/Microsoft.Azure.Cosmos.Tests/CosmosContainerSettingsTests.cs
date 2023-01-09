@@ -165,6 +165,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public void SettingPKShouldNotResetVersion()
+        {
+            ContainerProperties containerProperties = new();
+            containerProperties.Id = "test";
+            containerProperties.PartitionKeyDefinitionVersion = Cosmos.PartitionKeyDefinitionVersion.V2;
+            containerProperties.PartitionKeyPath = "/id";
+
+            Assert.AreEqual(Cosmos.PartitionKeyDefinitionVersion.V2, containerProperties.PartitionKeyDefinitionVersion);
+        }
+
         private static string SerializeDocumentCollection(DocumentCollection collection)
         {
             using (MemoryStream ms = new MemoryStream())
