@@ -378,7 +378,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         trace,
                         cancellationToken);
                 }
-                
             }
 
             return tryCreatePipelineStage;

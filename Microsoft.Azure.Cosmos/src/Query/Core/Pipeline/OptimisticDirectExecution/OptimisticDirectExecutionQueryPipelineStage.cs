@@ -62,8 +62,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             }
             else if (this.executionState == ExecutionState.OptimisticDirectExecution && hasNext.Succeeded)
             {
-                // only if hasNext.Succeeded = true and hasNext.Result = false should this code block be hit
-
+                Debug.Assert(hasNext.Result == false);
                 if (this.Current.InnerMostException.IsPartitionSplitException())
                 {
                     this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken());
@@ -87,10 +86,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         private CosmosElement TryUnwrapContinuationToken()
         {
-            CosmosObject cosmosObject = this.continuationToken as CosmosObject;
-            if (cosmosObject != null)
+            if (this.continuationToken != null)
             {
+                CosmosObject cosmosObject = this.continuationToken as CosmosObject;
                 CosmosElement backendContinuationToken = cosmosObject[optimisticDirectExecutionToken];
+                Debug.Assert(backendContinuationToken != null);
                 return CosmosArray.Create(backendContinuationToken);
             }
 

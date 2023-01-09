@@ -278,7 +278,7 @@
                 if (tryGetPage.Failed)
                 {
                     // failure should never come till here. Should be handled before
-                    Assert.Fail();
+                    Assert.Fail("Unexpected error. Gone Exception should not reach till here");
                 }
 
                 documents.AddRange(tryGetPage.Result.Documents);
@@ -308,7 +308,7 @@
                     }
                     else
                     {
-                        Assert.Fail();
+                        Assert.Fail("Fallback pipeline failure not handled correctly");
                         return false;
                     }
                 }
