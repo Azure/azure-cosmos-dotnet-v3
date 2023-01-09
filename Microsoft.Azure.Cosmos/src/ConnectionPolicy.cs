@@ -31,8 +31,6 @@ namespace Microsoft.Azure.Cosmos
         private Protocol connectionProtocol;
         private ObservableCollection<string> preferredLocations;
 
-        public Func<HttpRequestMessage, X509Certificate, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
         /// </summary>
@@ -298,7 +296,7 @@ namespace Microsoft.Azure.Cosmos
             get;
             set;
         }
-        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, Boolean> serverCertificateCustomValidationCallback
+        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, Boolean> ServerCertificateCustomValidationCallback
         {
             get;
             set;

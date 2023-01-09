@@ -214,26 +214,7 @@
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                 DateTime.MinValue,
                 DateTime.MaxValue,
-                new Documents.StoreResult(
-                    storeResponse: new StoreResponse(),
-                    exception: null,
-                    partitionKeyRangeId: 42.ToString(),
-                    lsn: 1337,
-                    quorumAckedLsn: 23,
-                    requestCharge: 3.14,
-                    currentReplicaSetSize: 4,
-                    currentWriteQuorum: 3,
-                    isValid: true,
-                    storePhysicalAddress: new Uri("http://storephysicaladdress.com"),
-                    globalCommittedLSN: 1234,
-                    numberOfReadRegions: 13,
-                    itemLSN: 15,
-                    sessionToken: new SimpleSessionToken(42),
-                    usingLocalLSN: true,
-                    activityId: Guid.Empty.ToString(),
-                    backendRequestDurationInMs: "4.2",
-                    retryAfterInMs: "42",
-                    transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
+                StoreResult.CreateForTesting(storeResponse: new StoreResponse()).Target,
                 ResourceType.Document,
                 OperationType.Query,
                 "42",
@@ -273,20 +254,20 @@
               Resource Type: Document
               Operation Type: Query
               Store Result
-                Activity Id: 00000000-0000-0000-0000-000000000000
-                Store Physical Address: http://storephysicaladdress.com/
+                Activity Id: <null>
+                Store Physical Address: <null>
                 Status Code: 0/Unknown
-                Is Valid: True
+                Is Valid: False
                 LSN Info
-                  LSN: 1337
-                  Item LSN: 15
-                  Global LSN: 1234
-                  Quorum Acked LSN: 23
-                  Using LSN: True
-                Session Token: 42
+                  LSN: 0
+                  Item LSN: 0
+                  Global LSN: 0
+                  Quorum Acked LSN: 0
+                  Using LSN: False
+                Session Token: <null>
                 Quorum Info
-                  Current Replica Set Size: 4
-                  Current Write Quorum: 3
+                  Current Replica Set Size: 0
+                  Current Write Quorum: 0
                 Exception
         )
 ]]></Text>
@@ -341,73 +322,25 @@
           "RequestSessionToken": "42",
           "LocationEndpoint": "http://someuri1.com/",
           "StoreResult": {
-            "ActivityId": "00000000-0000-0000-0000-000000000000",
+            "ActivityId": null,
             "StatusCode": "0",
             "SubStatusCode": "Unknown",
-            "LSN": 1337,
-            "PartitionKeyRangeId": "42",
-            "GlobalCommittedLSN": 1234,
-            "ItemLSN": 15,
-            "UsingLocalLSN": true,
-            "QuorumAckedLSN": 23,
-            "SessionToken": "42",
-            "CurrentWriteQuorum": 3,
-            "CurrentReplicaSetSize": 4,
-            "NumberOfReadRegions": 13,
-            "IsValid": true,
-            "StorePhysicalAddress": "http://storephysicaladdress.com/",
-            "RequestCharge": 3.14,
-            "RetryAfterInMs": "42",
-            "BELatencyInMs": "4.2",
-            "transportRequestTimeline": {
-              "requestTimeline": [
-                {
-                  "event": "Created",
-                  "startTimeUtc": "2021-12-31T23:59:59.059Z",
-                  "durationInMs": 1
-                },
-                {
-                  "event": "ChannelAcquisitionStarted",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                },
-                {
-                  "event": "Pipelined",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                },
-                {
-                  "event": "Transit Time",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                },
-                {
-                  "event": "Received",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                },
-                {
-                  "event": "Completed",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                }
-              ],
-              "serviceEndpointStats": {
-                "inflightRequests": 2,
-                "openConnections": 1
-              },
-              "connectionStats": {
-                "waitforConnectionInit": "True",
-                "callsPendingReceive": 1,
-                "lastSendAttempt": "2021-12-31T23:59:59.059Z",
-                "lastSend": "2021-12-31T23:59:59.059Z",
-                "lastReceive": "2021-12-31T23:59:59.059Z"
-              },
-              "requestSizeInBytes": 2,
-              "requestBodySizeInBytes": 1,
-              "responseMetadataSizeInBytes": 1,
-              "responseBodySizeInBytes": 1
-            },
+            "LSN": 0,
+            "PartitionKeyRangeId": null,
+            "GlobalCommittedLSN": 0,
+            "ItemLSN": 0,
+            "UsingLocalLSN": false,
+            "QuorumAckedLSN": 0,
+            "SessionToken": null,
+            "CurrentWriteQuorum": 0,
+            "CurrentReplicaSetSize": 0,
+            "NumberOfReadRegions": 0,
+            "IsValid": false,
+            "StorePhysicalAddress": null,
+            "RequestCharge": 0,
+            "RetryAfterInMs": null,
+            "BELatencyInMs": null,
+            "transportRequestTimeline": null,
             "TransportException": null
           }
         }
@@ -439,26 +372,7 @@
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                 requestStartTime: default,
                 requestResponseTime: default,
-                new Documents.StoreResult(
-                    storeResponse: new StoreResponse(),
-                    exception: default,
-                    partitionKeyRangeId: default,
-                    lsn: default,
-                    quorumAckedLsn: default,
-                    requestCharge: default,
-                    currentReplicaSetSize: default,
-                    currentWriteQuorum: default,
-                    isValid: default,
-                    storePhysicalAddress: default,
-                    globalCommittedLSN: default,
-                    numberOfReadRegions: default,
-                    itemLSN: default,
-                    sessionToken: default,
-                    usingLocalLSN: default,
-                    activityId: default,
-                    retryAfterInMs: default,
-                    backendRequestDurationInMs: default,
-                     transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
+                StoreResult.CreateForTesting(storeResponse: new StoreResponse()).Target,
                 resourceType: default,
                 operationType: default,
                 requestSessionToken: default,
@@ -567,55 +481,7 @@
             "RequestCharge": 0,
             "RetryAfterInMs": null,
             "BELatencyInMs": null,
-            "transportRequestTimeline": {
-              "requestTimeline": [
-                {
-                  "event": "Created",
-                  "startTimeUtc": "2021-12-31T23:59:59.059Z",
-                  "durationInMs": 1
-                },
-                {
-                  "event": "ChannelAcquisitionStarted",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                },
-                {
-                  "event": "Pipelined",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                },
-                {
-                  "event": "Transit Time",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                },
-                {
-                  "event": "Received",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                },
-                {
-                  "event": "Completed",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                }
-              ],
-              "serviceEndpointStats": {
-                "inflightRequests": 2,
-                "openConnections": 1
-              },
-              "connectionStats": {
-                "waitforConnectionInit": "True",
-                "callsPendingReceive": 1,
-                "lastSendAttempt": "2021-12-31T23:59:59.059Z",
-                "lastSend": "2021-12-31T23:59:59.059Z",
-                "lastReceive": "2021-12-31T23:59:59.059Z"
-              },
-              "requestSizeInBytes": 2,
-              "requestBodySizeInBytes": 1,
-              "responseMetadataSizeInBytes": 1,
-              "responseBodySizeInBytes": 1
-            },
+            "transportRequestTimeline": null,
             "TransportException": null
           }
         }

@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 eventSource: eventSource);
         }
 
-        public static HttpMessageHandler CreateHttpClientHandler(int gatewayModeMaxConnectionLimit, IWebProxy webProxy, Func<HttpRequestMessage, X509Certificate, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        public static HttpMessageHandler CreateHttpClientHandler(int gatewayModeMaxConnectionLimit, IWebProxy webProxy, Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             HttpClientHandler httpClientHandler = new HttpClientHandler();
 

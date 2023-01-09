@@ -647,7 +647,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     return null;
                 }
-                return (obj, cert, chain, policy) => this.ServerCertificateCustomValidationCallback((HttpRequestMessage)obj, cert, chain, policy);
+                return (obj, cert, chain, policy) => this.ServerCertificateCustomValidationCallback((HttpRequestMessage)obj, (X509Certificate2)cert, chain, policy);
             }
         }
         /// <summary>
@@ -763,7 +763,7 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                HttpClientFactory = this.httpClientFactory
+                HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };
 
