@@ -264,17 +264,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 new CosmosElement[] { document },
                 scalarExpression.Subquery);
 
-            CosmosElement result;
-            if (subqueryResults.Count() > 0)
-            {
-                result = subqueryResults.First();
-            }
-            else
-            {
-                result = CosmosUndefined.Create();
-            }
-
-            return result;
+            return subqueryResults.FirstOrDefault(CosmosUndefined.Create());
         }
 
         public override CosmosElement Visit(SqlFunctionCallScalarExpression scalarExpression, CosmosElement document)
@@ -331,17 +321,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 new CosmosElement[] { document },
                 scalarExpression.Subquery);
 
-            CosmosElement result;
-            if (subqueryResults.Count() > 0)
-            {
-                result = subqueryResults.Last();
-            }
-            else
-            {
-                result = CosmosUndefined.Create();
-            }
-
-            return result;
+            return subqueryResults.LastOrDefault(CosmosUndefined.Create());
         }
 
         public override CosmosElement Visit(SqlLikeScalarExpression scalarExpression, CosmosElement document)

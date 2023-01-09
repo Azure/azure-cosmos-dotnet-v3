@@ -54,7 +54,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
                            "    FROM (SELECT udf.ALL(1, 2)) AS ALL " +
                            "    WHERE ALL( SELECT VALUE 1) " +
                            ")")
-
             };
             
             this.ExecuteTestSuite(inputs);
@@ -104,7 +103,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
                            "    FROM (SELECT udf.FIRST(1, 2)) AS FIRST " +
                            "    WHERE FIRST( SELECT VALUE 1) " +
                            ")")
-
             };
 
             this.ExecuteTestSuite(inputs);
@@ -154,7 +152,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
                            "    FROM (SELECT udf.LAST(1, 2)) AS LAST " +
                            "    WHERE LAST( SELECT VALUE 1) " +
                            ")")
-
             };
 
             this.ExecuteTestSuite(inputs);

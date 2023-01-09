@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         private const int SqlCoalesceScalarExpressionHashCode = -1400659633;
         private const int SqlConditionalScalarExpressionHashCode = -421337832;
         private const int SqlExistsScalarExpressionHashCode = 1168675587;
-        private const int SqlFirstScalarExpressionHashCode = -0754458752;
+        private const int SqlFirstScalarExpressionHashCode = -754458752;
         private const int SqlFromClauseHashCode = 52588336;
         private const int SqlFunctionCallScalarExpressionHashCode = 496783446;
         private const int SqlFunctionCallScalarExpressionUdfHashCode = 1547906315;
