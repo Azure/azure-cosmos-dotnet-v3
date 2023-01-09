@@ -190,8 +190,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         public async Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
-            FeedRangeState<ChangeFeedState> feedRangeState,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            FeedRangeState<ChangeFeedState> feedRangeState, 
+            ChangeFeedPaginationOptions changeFeedPaginationOptions, 
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public delegate Task<Exception> ShouldReturnFailure();
 
             public FailureConfigs(
-                bool inject429s,
+                bool inject429s, 
                 bool injectEmptyPages,
                 Exception throwException = null,
                 Exception returnFailure = null)
