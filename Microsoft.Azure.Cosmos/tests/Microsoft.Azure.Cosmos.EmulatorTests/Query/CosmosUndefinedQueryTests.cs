@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Threading.Tasks;
+    using Azure;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
@@ -50,6 +51,73 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             await OrderByTests(container);
             await GroupByTests(container);
+            await UntypedTests(container);
+        }
+
+        private static async Task UntypedTests(Container container)
+        {
+            UndefinedProjectionTestCase[] undefinedProjectionTestCases = new[]
+            {
+                MakeUndefinedProjectionTest(
+                    query: "SELECT VALUE c.AlwaysUndefinedField FROM c",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query: "SELECT VALUE c.AlwaysUndefinedField FROM c ORDER BY c.AlwaysUndefinedField",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query: "SELECT c.AlwaysUndefinedField FROM c ORDER BY c.AlwaysUndefinedField",
+                    expectedCount: DocumentCount),
+                MakeUndefinedProjectionTest(
+                    query: "SELECT VALUE c.AlwaysUndefinedField FROM c GROUP BY c.AlwaysUndefinedField",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query: $"SELECT VALUE SUM(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query: $"SELECT VALUE AVG(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query: $"SELECT DISTINCT VALUE SUM(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
+                    expectedCount: 0)
+            };
+
+            foreach (UndefinedProjectionTestCase testCase in undefinedProjectionTestCases)
+            {
+                foreach (int pageSize in PageSizes)
+                {
+                    IAsyncEnumerable<ResponseMessage> results = RunSimpleQueryAsync(
+                        container,
+                        testCase.Query,
+                        new QueryRequestOptions { MaxItemCount = pageSize });
+
+                    long actualCount = 0;
+                    await foreach (ResponseMessage responseMessage in results)
+                    {
+                        Assert.IsTrue(responseMessage.IsSuccessStatusCode);
+
+                        string content = responseMessage.Content.ReadAsString();
+                        IJsonNavigator navigator = JsonNavigator.Create(System.Text.Encoding.UTF8.GetBytes(content));
+                        IJsonNavigatorNode rootNode = navigator.GetRootNode();
+                        Assert.IsTrue(navigator.TryGetObjectProperty(rootNode, "_count", out ObjectProperty countProperty));
+
+                        long count = Number64.ToLong(navigator.GetNumber64Value(countProperty.ValueNode));
+                        actualCount += count;
+
+                        Assert.IsTrue(navigator.TryGetObjectProperty(rootNode, "Documents", out ObjectProperty documentsProperty));
+                        int documentCount = navigator.GetArrayItemCount(documentsProperty.ValueNode);
+                        Assert.AreEqual(count, documentCount);
+
+                        for (int index= 0; index < documentCount; ++index)
+                        {
+                            IJsonNavigatorNode documentNode = navigator.GetArrayItemAt(documentsProperty.ValueNode, index);
+                            int propertyCount = navigator.GetObjectPropertyCount(documentNode);
+                            Assert.AreEqual(0, propertyCount);
+                        }
+                    }
+
+                    Assert.AreEqual(testCase.ExpectedResultCount, actualCount);
+                }
+            }
         }
 
         private static async Task OrderByTests(Container container)

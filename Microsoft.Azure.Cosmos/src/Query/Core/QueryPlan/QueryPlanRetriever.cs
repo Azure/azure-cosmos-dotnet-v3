@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             Documents.ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
+            GeospatialType geospatialType,
             bool useSystemPrefix,
             ITrace trace,
             CancellationToken cancellationToken = default)
@@ -70,22 +71,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     QueryPlanRetriever.SupportedQueryFeatures,
                     hasLogicalPartitionKey,
                     useSystemPrefix,
+                    geospatialType,
                     cancellationToken);
 
                 if (!tryGetQueryPlan.Succeeded)
                 {
-                    Exception originalException = ExceptionWithStackTraceException.UnWrapMonadExcepion(tryGetQueryPlan.Exception, serviceInteropTrace);
-                    if (originalException is CosmosException)
+                    if (ExceptionToCosmosException.TryCreateFromException(tryGetQueryPlan.Exception, serviceInteropTrace, out CosmosException cosmosException))
                     {
-                        throw originalException;
+                        throw cosmosException;
                     }
-
-                    throw CosmosExceptionFactory.CreateBadRequestException(
-                        message: originalException.Message,
-                        headers: new Headers(),
-                        stackTrace: tryGetQueryPlan.Exception.StackTrace,
-                        innerException: originalException,
-                        trace: trace);
+                    else
+                    {
+                        throw ExceptionWithStackTraceException.UnWrapMonadExcepion(tryGetQueryPlan.Exception, serviceInteropTrace);
+                    }
                 }
 
                 return tryGetQueryPlan.Result;

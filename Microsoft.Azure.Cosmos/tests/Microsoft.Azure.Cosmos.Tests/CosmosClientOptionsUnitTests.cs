@@ -505,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey)
                     .WithApplicationRegion(notAValidAzureRegion);
 
-                ArgumentException argumentException = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.Build(new MockDocumentClient()));
+                ArgumentException argumentException = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.Build());
 
                 Assert.IsTrue(argumentException.Message.Contains(notAValidAzureRegion), $"Expected error message to contain {notAValidAzureRegion} but got: {argumentException.Message}");
             }
@@ -537,6 +537,33 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
             Assert.IsTrue(cosmosClientOptions.EnableUpgradeConsistencyToLocalQuorum);
+        }
+
+        [TestMethod]
+        public void InvalidApplicationNameCatchTest()
+        {
+
+            string[] illegalChars = new string[] { "<", ">", "\"", "{", "}", "\\", "[", "]", ";", ":", "@", "=", "(", ")", "," };
+            string baseName = "illegal";
+
+            foreach (string illegal in illegalChars)
+            {
+                Assert.ThrowsException<ArgumentException>(() => new CosmosClientOptions
+                {
+                    ApplicationName = baseName + illegal
+                });
+
+
+                Assert.ThrowsException<ArgumentException>(() => new CosmosClientOptions
+                {
+                    ApplicationName = illegal + baseName
+                });
+
+                Assert.ThrowsException<ArgumentException>(() => new CosmosClientOptions
+                {
+                    ApplicationName = illegal
+                });
+            }
         }
 
         private class TestWebProxy : IWebProxy

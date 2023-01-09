@@ -89,6 +89,15 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void NoneToStringNotNullRef()
+        {
+            const string noneString = "None";
+            Cosmos.PartitionKey noneKey = Cosmos.PartitionKey.None;
+
+            Assert.AreEqual(noneString, noneKey.ToString());
+        }
+
+        [TestMethod]
         public void RoundTripTests()
         {
             Cosmos.PartitionKey[] partitionKeys = new Cosmos.PartitionKey[]

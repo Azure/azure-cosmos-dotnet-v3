@@ -351,6 +351,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions requestOptions,
+            GeospatialType geospatialType,
             CancellationToken cancellationToken = default)
         {
             if (queryDefinition == null)
@@ -418,6 +419,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyDefinition,
                 requestOptions.PartitionKey.HasValue,
                 useSystemPrefix: QueryIterator.IsSystemPrefixExpected(requestOptions),
+                geospatialType: geospatialType,
                 cancellationToken);
 
             if (tryGetQueryInfoAndIfSupported.Failed)
@@ -503,11 +505,14 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions ??= new QueryRequestOptions();
 
-            if (linqSerializerOptions == null && this.ClientContext.ClientOptions.SerializerOptions != null)
+            if (linqSerializerOptions == null && this.ClientContext.ClientOptions != null)
             {
                 linqSerializerOptions = new CosmosLinqSerializerOptions
                 {
-                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
+                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions != null 
+                                            ? this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
+                                            : CosmosPropertyNamingPolicy.Default,
+                    CustomCosmosSerializer = this.ClientContext.ClientOptions.Serializer
                 };
             }
 
@@ -821,6 +826,7 @@ namespace Microsoft.Azure.Cosmos
                     continuationToken,
                     readFeedPaginationOptions,
                     requestOptions,
+                    this,
                     cancellationToken: default);
             }
 
@@ -893,6 +899,7 @@ namespace Microsoft.Azure.Cosmos
                     queryRequestOptions: queryRequestOptions,
                     continuationToken: continuationToken,
                     readFeedPaginationOptions: readFeedPaginationOptions,
+                    container: this,
                     cancellationToken: default);
             }
 

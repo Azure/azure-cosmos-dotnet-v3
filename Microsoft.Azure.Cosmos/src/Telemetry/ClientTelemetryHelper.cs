@@ -5,12 +5,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -20,14 +23,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Task to get Account Properties from cache if available otherwise make a network call.
         /// </summary>
         /// <returns>Async Task</returns>
-        internal static async Task<AccountProperties> SetAccountNameAsync(DocumentClient documentclient)
+        internal static async Task<AccountProperties> SetAccountNameAsync(GlobalEndpointManager globalEndpointManager)
         {
             DefaultTrace.TraceVerbose("Getting Account Information for Telemetry.");
             try
             {
-                if (documentclient.GlobalEndpointManager != null)
+                if (globalEndpointManager != null)
                 {
-                    return await documentclient.GlobalEndpointManager.GetDatabaseAccountAsync();
+                    return await globalEndpointManager.GetDatabaseAccountAsync();
                 }
             }
             catch (Exception ex)
@@ -58,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return;
             }
 
-            DefaultTrace.TraceInformation("System Usage recorded by telemetry is : {0}", systemUsageHistory);
+            DefaultTrace.TraceVerbose("System Usage recorded by telemetry is : {0}", systemUsageHistory);
 
             systemInfoCollection.Add(TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values));
             systemInfoCollection.Add(TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values));
@@ -82,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 IDictionary<OperationInfo, 
                 (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
         {
-            DefaultTrace.TraceInformation("Aggregating operation information to list started");
+            DefaultTrace.TraceVerbose("Aggregating operation information to list started");
 
             List<OperationInfo> payloadWithMetricInformation = new List<OperationInfo>();
             foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
@@ -106,14 +109,35 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
+        /// Convert map with CacheRefreshInfo information to list of operations along with request latency and request charge metrics
+        /// </summary>
+        /// <param name="metrics"></param>
+        /// <returns>Collection of ReportPayload</returns>
+        internal static List<CacheRefreshInfo> ToListWithMetricsInfo(IDictionary<CacheRefreshInfo, LongConcurrentHistogram> metrics)
+        {
+            DefaultTrace.TraceVerbose("Aggregating CacheRefreshInfo information to list started");
+
+            List<CacheRefreshInfo> payloadWithMetricInformation = new List<CacheRefreshInfo>();
+            foreach (KeyValuePair<CacheRefreshInfo, LongConcurrentHistogram> entry in metrics)
+            {
+                CacheRefreshInfo payloadForLatency = entry.Key;
+                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
+                payloadForLatency.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
+
+                payloadWithMetricInformation.Add(payloadForLatency);
+            }
+
+            DefaultTrace.TraceVerbose("Aggregating CacheRefreshInfo information to list done");
+
+            return payloadWithMetricInformation;
+        }
+
+        /// <summary>
         /// Get comma separated list of regions contacted from the diagnostic
         /// </summary>
-        /// <param name="cosmosDiagnostics"></param>
         /// <returns>Comma separated region list</returns>
-        internal static string GetContactedRegions(CosmosDiagnostics cosmosDiagnostics)
+        internal static string GetContactedRegions(IReadOnlyCollection<(string regionName, Uri uri)> regionList)
         {
-            IReadOnlyList<(string regionName, Uri uri)> regionList = cosmosDiagnostics.GetContactedRegions();
-
             if (regionList == null || regionList.Count == 0)
             {
                 return null;
@@ -121,9 +145,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             if (regionList.Count == 1)
             {
-                return regionList[0].regionName;
+                return regionList.ElementAt(0).regionName;
             }
-
+            
             StringBuilder regionsContacted = new StringBuilder();
             foreach ((string name, _) in regionList)
             {
