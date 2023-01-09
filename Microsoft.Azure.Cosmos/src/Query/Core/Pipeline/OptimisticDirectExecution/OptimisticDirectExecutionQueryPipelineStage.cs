@@ -53,16 +53,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
-            TryCatch<bool> result = this.inner.Try((pipelineStage) => pipelineStage = this.inner.Result)
-                .Try(pipelineStage => pipelineStage.MoveNextAsync(trace)).Try(moveNextValue => moveNextValue.Result);
-            bool success = result.Succeeded && result.Result;
+            TryCatch<bool> hasNext = await this.inner.TryAsync(pipelineStage => pipelineStage.MoveNextAsync(trace));
+            bool success = hasNext.Succeeded && hasNext.Result;
 
             if (success)
             {
                 this.continuationToken = this.Current.Succeeded ? this.Current.Result.State?.Value : null;
             }
-            else if (this.executionState == ExecutionState.OptimisticDirectExecution && result.Succeeded)
+            else if (this.executionState == ExecutionState.OptimisticDirectExecution && hasNext.Succeeded)
             {
+                // only the case where hasNext.Succeeded = true and hasNext.Result = false should enter this code block
+
                 if (this.Current.InnerMostException.IsPartitionSplitException())
                 {
                     this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken());
@@ -81,15 +82,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public void SetCancellationToken(CancellationToken cancellationToken)
         {
-            this.inner.Try((pipelineStage) => pipelineStage = this.inner.Result)
-                .Try(pipelineStage => pipelineStage.SetCancellationToken(cancellationToken));
+            this.inner.Try(pipelineStage => pipelineStage.SetCancellationToken(cancellationToken));
         }
 
         private CosmosElement TryUnwrapContinuationToken()
         {
             CosmosObject cosmosObject = this.continuationToken as CosmosObject;
-            CosmosElement specializedContinuationToken = cosmosObject[optimisticDirectExecutionToken];
-            return CosmosArray.Create(specializedContinuationToken);
+            CosmosElement backendContinuationToken = cosmosObject[optimisticDirectExecutionToken];
+            return CosmosArray.Create(backendContinuationToken);
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(

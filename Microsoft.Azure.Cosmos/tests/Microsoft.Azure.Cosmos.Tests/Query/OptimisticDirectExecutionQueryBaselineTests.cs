@@ -222,6 +222,15 @@
             Assert.IsTrue(await ExecuteGoneExceptionOnODEPipeline(isMultiPartition: true));
         }
 
+        // test to check if failing fallback pipeline is handled properly
+        [TestMethod]
+        public async Task TestHandlingOfFailedFallbackPipelineOnSingleAndMultiplePartitionAsync()
+        {
+            Assert.IsTrue(await TestHandlingOfFailedFallbackPipeline(isMultiPartition: false));
+
+            Assert.IsTrue(await TestHandlingOfFailedFallbackPipeline(isMultiPartition: true));
+        }
+
         // The reason we have the below test is to show the missing capabilities of the OptimisticDirectExecution pipeline.
         // Currently this pipeline cannot handle distributed queries as it does not have the logic to sum up the values it gets from the backend in partial results.
         // This functionality is available for other pipelines such as the ParallelCrossPartitionQueryPipelineStage.
@@ -246,95 +255,21 @@
             Assert.AreEqual(1, result);
         }
 
-        [TestMethod]
-        public async Task TestHandlingOfFailedFallbackPipeline()
-        {
-            List<CosmosElement> documents = new List<CosmosElement>();
-            MergeTestUtil mergeTest = new MergeTestUtil
-            {
-                MoveNextCounter = 0,
-                IsFailedFallbackPipelineTest = true
-            };
-
-            int numItems = 100;
-            OptimisticDirectExecutionTestInput input = CreateInput(
-                    description: @"Single Partition Key and Value Field",
-                    query: "SELECT * FROM c",
-                    expectedOptimisticDirectExecution: true,
-                    partitionKeyPath: @"/pk",
-                    partitionKeyValue: "a");
-
-            QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(
-                    numItems,
-                    multiPartition: false,
-                    failureConfigs: new FlakyDocumentContainer.FailureConfigs(
-                        inject429s: false,
-                        injectEmptyPages: false,
-                        shouldReturnFailure: mergeTest.ShouldReturnFailure));
-
-            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
-
-            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
-            {
-                mergeTest.MoveNextCounter++;
-                TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
-
-                if (tryGetPage.Failed)
-                {
-                    if (mergeTest.MoveNextCounter == 2)
-                    {
-                        Assert.IsTrue(tryGetPage.InnerMostException.Message.Equals("Injected failure"));
-                        Assert.AreNotEqual(numItems, documents.Count);
-                        return;
-                    }
-                    else
-                    {
-                        Assert.Fail();
-                    }
-                }
-
-                documents.AddRange(tryGetPage.Result.Documents);
-            }
-        }
-
         // Creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
         private static async Task<bool> ExecuteGoneExceptionOnODEPipeline(bool isMultiPartition)
         {
-            List<CosmosElement> documents = new List<CosmosElement>();
-            MergeTestUtil mergeTest = new MergeTestUtil
-            {
-                MoveNextCounter = 0,
-                IsFailedFallbackPipelineTest = false
-            };
-
             int numItems = 100;
-            OptimisticDirectExecutionTestInput input = CreateInput(
-                    description: @"Single Partition Key and Value Field",
-                    query: "SELECT * FROM c",
-                    expectedOptimisticDirectExecution: true,
-                    partitionKeyPath: @"/pk",
-                    partitionKeyValue: "a");
-
+            List<CosmosElement> documents = new List<CosmosElement>();
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(
-                    numItems,
-                    multiPartition: isMultiPartition,
-                    failureConfigs: new FlakyDocumentContainer.FailureConfigs(
-                        inject429s: false,
-                        injectEmptyPages: false,
-                        shouldReturnFailure: mergeTest.ShouldReturnFailure));
-
-            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
+            (MergeTestUtil mergeTest, IQueryPipelineStage queryPipelineStage) = await CreateFallbackPipelineTestInfra(numItems, isFailedFallbackPipelineTest: false, isMultiPartition, queryRequestOptions);
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
-                mergeTest.MoveNextCounter++;
                 if (mergeTest.MoveNextCounter == 1)
                 {
                     Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
                 }
-                else
+                else 
                 {
                     Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
                 }
@@ -350,8 +285,67 @@
                 documents.AddRange(tryGetPage.Result.Documents);
             }
 
-            Assert.AreEqual(100, documents.Count);
+            Assert.AreEqual(numItems, documents.Count);
             return true;
+        }
+
+        private static async Task<bool> TestHandlingOfFailedFallbackPipeline(bool isMultiPartition)
+        {
+            int numItems = 100;
+            List<CosmosElement> documents = new List<CosmosElement>();
+            QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
+            (MergeTestUtil mergeTest, IQueryPipelineStage queryPipelineStage) = await CreateFallbackPipelineTestInfra(numItems, isFailedFallbackPipelineTest: true, isMultiPartition, queryRequestOptions);
+
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            {
+                TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
+                if (tryGetPage.Failed)
+                {
+                    if (mergeTest.MoveNextCounter == 3)
+                    {
+                        Assert.IsTrue(tryGetPage.InnerMostException.Message.Equals("Injected failure"));
+                        Assert.AreNotEqual(numItems, documents.Count);
+                        return true;
+                    }
+                    else
+                    {
+                        Assert.Fail();
+                        return false;
+                    }
+                }
+
+                documents.AddRange(tryGetPage.Result.Documents);
+            }
+
+            return false;
+        }
+
+        private static async Task<(MergeTestUtil, IQueryPipelineStage)> CreateFallbackPipelineTestInfra(int numItems, bool isFailedFallbackPipelineTest, bool isMultiPartition, QueryRequestOptions queryRequestOptions)
+        {
+            List<CosmosElement> documents = new List<CosmosElement>();
+            MergeTestUtil mergeTest = new MergeTestUtil
+            {
+                IsFailedFallbackPipelineTest = isFailedFallbackPipelineTest
+            };
+
+            OptimisticDirectExecutionTestInput input = CreateInput(
+                    description: @"Single Partition Key and Value Field",
+                    query: "SELECT * FROM c",
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: "a");
+
+            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(
+                    numItems,
+                    multiPartition: isMultiPartition,
+                    failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                        inject429s: false,
+                        injectEmptyPages: false,
+                        shouldReturnFailure: mergeTest.ShouldReturnFailure));
+
+            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
+
+            return (mergeTest, queryPipelineStage);
         }
 
         private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount)
@@ -396,7 +390,7 @@
             return documents.Count;
         }
 
-        private static PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(string querySpecJsonString, PartitionKeyDefinition pkDefinition)
+        internal static PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(string querySpecJsonString, PartitionKeyDefinition pkDefinition)
         {
             TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfo(
                 querySpecJsonString: querySpecJsonString,
@@ -608,18 +602,18 @@
 
         private class MergeTestUtil
         {
-            public int MoveNextCounter { get; set; }
+            public int MoveNextCounter { get; private set; }
 
-            public bool GoneExceptionCreated { get; set; }
+            public bool GoneExceptionCreated { get; private set; }
 
-            public bool InjectionFailureCreated { get; set; }
+            public bool TooManyRequestsFailureCreated { get; private set; }
 
             public bool IsFailedFallbackPipelineTest { get; set; }
 
             public async Task<Exception> ShouldReturnFailure()
             {
-
-                if (this.MoveNextCounter == 1 && !this.GoneExceptionCreated)
+                this.MoveNextCounter++;
+                if (this.MoveNextCounter == 2 && !this.GoneExceptionCreated)
                 {
                     this.GoneExceptionCreated = true;
                     return new CosmosException(
@@ -629,9 +623,9 @@
                         activityId: "0f8fad5b-d9cb-469f-a165-70867728950e",
                         requestCharge: default);
                 }
-                else if (this.IsFailedFallbackPipelineTest && this.GoneExceptionCreated && !this.InjectionFailureCreated)
+                else if (this.IsFailedFallbackPipelineTest && this.GoneExceptionCreated && !this.TooManyRequestsFailureCreated)
                 {
-                    this.InjectionFailureCreated = true;
+                    this.TooManyRequestsFailureCreated = true;
                     return new CosmosException(
                             message: "Injected failure",
                             statusCode: HttpStatusCode.TooManyRequests,
@@ -802,37 +796,12 @@
         }
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
-        {
-            IReadOnlyList<SortOrder> orderByColumn = new List<SortOrder>()
-                {
-                new SortOrder()
-                };
+        { 
+            CosmosSerializerCore serializerCore = new();
+            using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
+            string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
-            IReadOnlyList<string> orderByExpression = new List<string>()
-                {
-                "ORDER BY"
-                };
-
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo()
-            {
-                QueryInfo = new QueryInfo()
-                {
-                    Aggregates = null,
-                    DistinctType = DistinctQueryType.None,
-                    GroupByAliases = null,
-                    GroupByAliasToAggregateType = null,
-                    GroupByExpressions = null,
-                    HasSelectValue = false,
-                    Limit = null,
-                    Offset = null,
-                    OrderBy = sqlQuerySpec.QueryText.Contains("ORDER BY") ? orderByColumn : null,
-                    OrderByExpressions = sqlQuerySpec.QueryText.Contains("ORDER BY") ? orderByExpression : null,
-                    RewrittenQuery = null,
-                    Top = null,
-                },
-                QueryRanges = new List<Documents.Routing.Range<string>>(),
-            };
-
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = OptimisticDirectExecutionQueryBaselineTests.GetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, partitionKeyDefinition);
             return TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo);
         }
     }

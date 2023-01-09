@@ -126,6 +126,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
             return matchResult;
         }
 
+        public async ValueTask<TryCatch<T>> TryAsync<T>(
+            Func<TResult, ValueTask<T>> onSuccess)
+        {
+            TryCatch<T> matchResult;
+            if (this.Succeeded)
+            {
+                matchResult = TryCatch<T>.FromResult(await onSuccess(this.either.FromRight(default)));
+            }
+            else
+            {
+                matchResult = TryCatch<T>.FromException(this.either.FromLeft(default));
+            }
+
+            return matchResult;
+        }
+
         public TryCatch<T> Try<T>(
             Func<TResult, TryCatch<T>> onSuccess)
         {
