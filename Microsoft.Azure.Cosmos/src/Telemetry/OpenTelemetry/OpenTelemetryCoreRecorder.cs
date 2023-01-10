@@ -14,12 +14,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
         private const string CosmosDb = "cosmosdb";
-
+        
         private readonly DiagnosticScope scope;
         private readonly DistributedTracingOptions config;
 
         private readonly Documents.OperationType operationType;
-        
+        private OpenTelemetryAttributes response = null;
+
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> OTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
         {
             { typeof(CosmosNullReferenceException), (exception, scope) => CosmosNullReferenceException.RecordOtelAttributes((CosmosNullReferenceException)exception, scope)},
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.config = config;
             this.operationType = operationType;
             
-            if (this.IsEnabled)
+            if (scope.IsEnabled)
             {
                 this.scope.Start();
 
@@ -49,7 +50,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         operationName: operationName,
                         containerName: containerName,
                         databaseName: databaseName,
-                        operationType: operationType,
                         clientContext: clientContext);
             }
         }
@@ -70,13 +70,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="operationName"></param>
         /// <param name="containerName"></param>
         /// <param name="databaseName"></param>
-        /// <param name="operationType"></param>
         /// <param name="clientContext"></param>
         public void Record(
             string operationName,
             string containerName,
             string databaseName,
-            Documents.OperationType operationType,
             CosmosClientContext clientContext)
         {
             if (this.IsEnabled)
@@ -84,7 +82,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationType);
                 
                 // Other information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
@@ -106,18 +103,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.IsEnabled)
             {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)response.StatusCode);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, (int)response.SubStatusCode);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, response.RequestCharge);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
-                
-                if (response.Diagnostics != null)
-                {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
-                    CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, this.operationType, response);
-                }
+                this.response = response;
             }
         }
 
@@ -168,6 +154,29 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.scope.IsEnabled)
             {
+                Documents.OperationType operationType 
+                    = (this.response == null || this.response?.OperationType == Documents.OperationType.Invalid) ? this.operationType : this.response.OperationType;
+
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationType);
+
+                if (this.response != null)
+                {
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, (int)this.response.SubStatusCode);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, this.response.RequestCharge);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, this.response.ItemCount);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, this.response.CorrelatedActivityId);
+
+                    if (this.response.Diagnostics != null)
+                    {
+                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(this.response.Diagnostics.GetContactedRegions()));
+                        CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, operationType, this.response);
+                    }
+                }
+
                 this.scope.Dispose();
             }
         }
