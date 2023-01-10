@@ -524,8 +524,8 @@
                       inputParameters,
                       NoOpTrace.Singleton);
 
-            bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).Result;
-
+            bool result = queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton).AsTask().GetAwaiter().GetResult();
+            
             if (input.ExpectedOptimisticDirectExecution)
             {
                 Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
