@@ -17,7 +17,10 @@ namespace Microsoft.Azure.Cosmos
                diagnostics: responseMessage.Diagnostics,
                itemCount: responseMessage.Headers?.ItemCount,
                requestMessage: responseMessage.RequestMessage,
-               subStatusCode: (int)responseMessage.Headers?.SubStatusCode)
+               subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
+               activityId: responseMessage.Headers?.ActivityId,
+               correlatedActivityId: responseMessage.Headers?.CorrelatedActivityId,
+               operationType: responseMessage is QueryResponse<T> ? Documents.OperationType.Query : Documents.OperationType.Invalid)
         {
         }
 
@@ -29,7 +32,10 @@ namespace Microsoft.Azure.Cosmos
                   diagnostics: responseMessage.Diagnostics,
                   itemCount: responseMessage.Headers?.ItemCount,
                   requestMessage: responseMessage.RequestMessage,
-                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode)
+                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
+                  activityId: responseMessage.Headers?.ActivityId,
+                  correlatedActivityId: responseMessage.Headers?.CorrelatedActivityId,
+                  operationType: responseMessage is QueryResponse ? Documents.OperationType.Query : Documents.OperationType.Invalid)
         {
         }
 
@@ -40,7 +46,10 @@ namespace Microsoft.Azure.Cosmos
            CosmosDiagnostics diagnostics,
            string itemCount,
            RequestMessage requestMessage,
-           int subStatusCode)
+           int subStatusCode,
+           string activityId,
+           string correlatedActivityId,
+           Documents.OperationType operationType)
            : base(requestMessage)
         {
             this.StatusCode = statusCode;
@@ -49,6 +58,9 @@ namespace Microsoft.Azure.Cosmos
             this.Diagnostics = diagnostics;
             this.ItemCount = itemCount;
             this.SubStatusCode = subStatusCode;
+            this.ActivityId = activityId;
+            this.CorrelatedActivityId = correlatedActivityId;
+            this.OperationType = operationType;
         }
     }
 }
