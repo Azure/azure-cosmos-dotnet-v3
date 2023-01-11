@@ -221,6 +221,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         
         private string GenerateTagForBaselineTest(Activity activity)
         {
+            List<string> tagsWithStaticValue = new List<string>
+            {
+                "kind",
+                "az.namespace",
+                "db.operation",
+                "db.system",
+                "net.peer.name",
+                "db.cosmosdb.connection_mode",
+                "db.cosmosdb.operation_type",
+                "db.cosmosdb.regions_contacted"
+            };
             
             StringBuilder builder = new StringBuilder();
             builder.Append("<ACTIVITY>")
@@ -234,7 +245,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Append("<ATTRIBUTE-KEY>")
                 .Append(tag.Key)
                 .Append("</ATTRIBUTE-KEY>");
+
+                if (tagsWithStaticValue.Contains(tag.Key))
+                {
+                    builder
+                    .Append("<ATTRIBUTE-VALUE>")
+                    .Append(tag.Value)
+                    .Append("</ATTRIBUTE-VALUE>");
+                }
             }
+            
             builder.Append("</ACTIVITY>");
             
             return builder.ToString();
@@ -245,7 +265,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<string> generatedActivityTagsForBaselineXmls = new();
             List<Activity> collectedActivities = new List<Activity>(CustomListener.CollectedActivities);
 
-            collectedActivities.ForEach(activity => generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity)));
+            collectedActivities.OrderBy(act => act.OperationName);
+            
+            foreach (Activity activity in collectedActivities)
+            {
+                generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
+            }
             
             List<string> outputList = new List<string>();
             if(generatedActivityTagsForBaselineXmls != null && generatedActivityTagsForBaselineXmls.Count > 0)
