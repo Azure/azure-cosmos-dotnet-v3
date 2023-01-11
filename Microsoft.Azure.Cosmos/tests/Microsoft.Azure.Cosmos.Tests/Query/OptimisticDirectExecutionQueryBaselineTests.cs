@@ -322,10 +322,7 @@
         private static async Task<(MergeTestUtil, IQueryPipelineStage)> CreateFallbackPipelineTestInfrastructure(int numItems, bool isFailedFallbackPipelineTest, bool isMultiPartition, QueryRequestOptions queryRequestOptions)
         {
             List<CosmosElement> documents = new List<CosmosElement>();
-            MergeTestUtil mergeTest = new MergeTestUtil
-            {
-                IsFailedFallbackPipelineTest = isFailedFallbackPipelineTest
-            };
+            MergeTestUtil mergeTest = new MergeTestUtil(isFailedFallbackPipelineTest);
 
             OptimisticDirectExecutionTestInput input = CreateInput(
                     description: @"Single Partition Key and Value Field",
@@ -565,7 +562,7 @@
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
-                forcePassthrough: true,
+                forcePassthrough: false,
                 testInjections: queryRequestOptions.TestSettings);
 
             string databaseId = "db1234";
@@ -590,11 +587,10 @@
             {
                 MaxConcurrency = 0,
                 MaxItemCount = 10,
-                MaxBufferedItemCount = 7000,
                 TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false, enableOptimisticDirectExecution: enableOptimisticDirectExecution, new TestInjections.ResponseStats()),
                 Properties = new Dictionary<string, object>()
             {
-                { HttpConstants.HttpHeaders.EnumerationDirection, "test" },
+                { HttpConstants.HttpHeaders.EnumerationDirection, ""},
             }
             };
         }
@@ -607,7 +603,12 @@
 
             public bool TooManyRequestsFailureCreated { get; private set; }
 
-            public bool IsFailedFallbackPipelineTest { get; set; }
+            public bool IsFailedFallbackPipelineTest { get; }
+
+            public MergeTestUtil(bool isFailedFallbackPipelineTest)
+            {
+                this.IsFailedFallbackPipelineTest = isFailedFallbackPipelineTest;
+            }
 
             public async Task<Exception> ShouldReturnFailure()
             {
