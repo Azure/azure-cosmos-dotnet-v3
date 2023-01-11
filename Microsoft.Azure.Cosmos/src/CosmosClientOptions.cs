@@ -1016,7 +1016,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets value indicating whether distributed tracing activities (<see cref="System.Diagnostics.Activity"/>) are going to be created for the SDK methods calls and HTTP calls.
         /// By default true for Preview package
         /// </summary>
-        internal bool EnableDistributedTracing { get; set; }
+        public bool EnableDistributedTracing { get; set; }
 
     }
 }

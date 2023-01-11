@@ -168,6 +168,9 @@ namespace Microsoft.Azure.Cosmos
         //RemoteCertificateValidationCallback
         internal RemoteCertificateValidationCallback remoteCertificateValidationCallback;
 
+        //EnableDistributedTracingFlag
+        internal bool enableDistributedTracing;
+
         //SessionContainer.
         internal ISessionContainer sessionContainer;
 
@@ -426,6 +429,8 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
         /// <param name="isLocalQuorumConsistency">Flag to allow Quorum Read with Eventual Consistency Account</param>
         /// <param name="cosmosClientId"></param>
+        /// <param name="remoteCertificateValidationCallback"></param>
+        /// <param name="enableDistributedTracing"></param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -452,7 +457,8 @@ namespace Microsoft.Azure.Cosmos
                               IStoreClientFactory storeClientFactory = null,
                               bool isLocalQuorumConsistency = false,
                               string cosmosClientId = null,
-                              RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
+                              RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
+                              bool enableDistributedTracing = false)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -485,7 +491,8 @@ namespace Microsoft.Azure.Cosmos
                 enableCpuMonitor: enableCpuMonitor,
                 storeClientFactory: storeClientFactory,
                 cosmosClientId: cosmosClientId,
-                remoteCertificateValidationCallback: remoteCertificateValidationCallback);
+                remoteCertificateValidationCallback: remoteCertificateValidationCallback,
+                enableDistributedTracing: enableDistributedTracing);
         }
 
         /// <summary>
@@ -668,7 +675,8 @@ namespace Microsoft.Azure.Cosmos
             IStoreClientFactory storeClientFactory = null,
             TokenCredential tokenCredential = null,
             string cosmosClientId = null,
-            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
+            bool enableDistributedTracing = false)
         {
             if (serviceEndpoint == null)
             {
@@ -677,6 +685,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.clientId = cosmosClientId;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
+            this.enableDistributedTracing = enableDistributedTracing;
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
@@ -6658,7 +6667,8 @@ namespace Microsoft.Azure.Cosmos
                     enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
                     addressResolver: this.AddressResolver,
                     rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
-                    remoteCertificateValidationCallback: this.remoteCertificateValidationCallback);
+                    remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
+                    enableDistributedTracing: this.enableDistributedTracing);
 
                 if (this.transportClientHandlerFactory != null)
                 {

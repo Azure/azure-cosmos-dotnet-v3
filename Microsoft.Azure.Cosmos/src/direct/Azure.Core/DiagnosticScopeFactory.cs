@@ -30,14 +30,14 @@ namespace Azure.Core.Pipeline
                 var listeners = LazyInitializer.EnsureInitialized<Dictionary<string, DiagnosticListener>>(ref DiagnosticScopeFactory.listeners);
 #pragma warning restore CS8601 // Possible null reference assignment.
 
-                //lock (listeners!)
-                //{
-                //    if (!listeners.TryGetValue(clientNamespace, out this.source))
-                //    {
-                //        this.source = new DiagnosticListener(clientNamespace);
-                //        listeners[clientNamespace] = this.source;
-                //    }
-                //}
+                lock (listeners!)
+                {
+                    if (!listeners.TryGetValue(clientNamespace, out this.source))
+                    {
+                        this.source = new DiagnosticListener(clientNamespace);
+                        listeners[clientNamespace] = this.source;
+                    }
+                }
             }
         }
 

@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly TimerPool idleTimerPool;
         private readonly ChannelDictionary channelDictionary;
         private bool disposed = false;
+        private bool enableDistributedTracing = false;
 
         #region RNTBD Transition
 
@@ -75,6 +76,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 this.idleTimerPool = null;
             }
+
+            this.enableDistributedTracing = clientOptions.EnableDistributedTracing;
 
             ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
                       resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
@@ -118,18 +121,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportAddressUri physicalAddress, ResourceOperation resourceOperation,
             DocumentServiceRequest request)
         {
-
-                using DiagnosticScope scope = ScopeFactory.CreateScope($"{OpenTelemetryAttributeKeys.NetworkLevelPrefix}");
-
-                if (scope.IsEnabled)
-                {
-                    scope.Start();
-                }
                 this.ThrowIfDisposed();
 
                 Guid activityId = Trace.CorrelationManager.ActivityId;
                
-                Console.WriteLine(Activity.Current.Id);
                 if (!request.IsBodySeekableClonableAndCountable)
                 {
                     throw new InternalServerErrorException();
@@ -140,6 +135,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 string operation = "Unknown operation";
                 DateTime requestStartTime = DateTime.UtcNow;
                 int transportResponseStatusCode = (int)TransportResponseStatusCode.Success;
+                using DiagnosticScope scope = ScopeFactory.CreateScope($"{OpenTelemetryAttributeKeys.NetworkLevelPrefix}");
+
                 try
                 {
                     TransportClient.IncrementCounters();
@@ -154,8 +151,15 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                     operation = "RequestAsync";
 
-                //scope.AddLink();
-                request.Headers["traceparent"] = Activity.Current.Id;
+                
+                if (this.enableDistributedTracing)
+                {
+                    if (scope.IsEnabled)
+                    {
+                        scope.Start();
+                    }
+                    request.Headers["traceparent"] = Activity.Current.Id;
+                }
 
                 storeResponse = await channel.RequestAsync(request, physicalAddress,
                         resourceOperation, activityId, transportRequestStats);
@@ -165,7 +169,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 scope.AddAttribute("SubStatusCode", storeResponse.SubStatusCode);
                 scope.AddAttribute("StatusCode", storeResponse.StatusCode);
                 
-            }
+                }
                 catch (TransportException ex)
                 {
                     // App-compat shim: On transport failure, TransportClient callers
@@ -496,6 +500,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; internal set; }
 
+            public bool EnableDistributedTracing { get; set; }
             public override string ToString()
             {
                 StringBuilder s = new StringBuilder();

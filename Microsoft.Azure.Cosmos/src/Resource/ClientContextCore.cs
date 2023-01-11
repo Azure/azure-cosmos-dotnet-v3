@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -82,7 +83,8 @@ namespace Microsoft.Azure.Cosmos
                handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer,
                cosmosClientId: cosmosClient.Id,
-               remoteCertificateValidationCallback: clientOptions.SslCustomValidationCallBack);
+               remoteCertificateValidationCallback: clientOptions.SslCustomValidationCallBack,
+               enableDistributedTracing: clientOptions.EnableDistributedTracing);
 
             return ClientContextCore.Create(
                 cosmosClient,
@@ -493,20 +495,30 @@ namespace Microsoft.Azure.Cosmos
                                     clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {
-                Activity activity = new("Test");
+               
                 try
                 {
-                    activity.Start();
-                    Console.WriteLine(Activity.Current.Id);
-                    TResult result = await task(trace).ConfigureAwait(false);
-                    if (openTelemetry != null && recorder.IsEnabled)
+                    if (recorder.IsEnabled == false)
                     {
-                        // Record request response information
-                        OpenTelemetryAttributes response = openTelemetry(result);
-                        recorder.Record(response);
+                        Activity activity = new("Test");
+                        activity.Start();
+                        Console.WriteLine("Dummy Activity:" + activity.Id);
+                        Console.WriteLine(activity.IsW3CFormat());
+                        TResult result = await task(trace).ConfigureAwait(false);
+                        activity.Stop();
+                        return result;
                     }
-
-                    return result;
+                    else
+                    {
+                        TResult result = await task(trace).ConfigureAwait(false);
+                        if (openTelemetry != null && recorder.IsEnabled)
+                        {
+                            // Record request response information
+                            OpenTelemetryAttributes response = openTelemetry(result);
+                            recorder.Record(response);
+                        }
+                        return result;
+                    }
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
@@ -539,10 +551,6 @@ namespace Microsoft.Azure.Cosmos
                     recorder.MarkFailed(ex);
 
                     throw;
-                }
-                finally
-                {
-                    activity.Stop();
                 }
             }
         }

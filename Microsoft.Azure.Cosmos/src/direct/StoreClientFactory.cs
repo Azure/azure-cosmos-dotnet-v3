@@ -47,7 +47,8 @@ namespace Microsoft.Azure.Documents
             bool enableChannelMultiplexing = false,
             int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue, // Optional for Rntbd
             MemoryStreamPool memoryStreamPool = null,
-            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null) 
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
+            bool enableDistributedTracing = false) 
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -227,6 +228,7 @@ namespace Microsoft.Azure.Documents
                         MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
                         MemoryStreamPool = memoryStreamPool,
                         RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
+                        EnableDistributedTracing = enableDistributedTracing,
                     });
             }
             else
