@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// Sample Response:
     /// {"clientTelemetryConfiguration":{"isEnabled":false,"endpoint":null}}
     /// </summary>
-    public sealed class AccountClientConfiguration
+    internal sealed class AccountClientConfiguration
     {
         /// <summary>
         /// Gets the client telemetry configuration.
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
     }
 
     /// <summary>
-    /// CLient Telemetry Configuration
+    /// Client Telemetry Configuration
     /// </summary>
     public sealed class ClientTelemetryConfiguration
     {
