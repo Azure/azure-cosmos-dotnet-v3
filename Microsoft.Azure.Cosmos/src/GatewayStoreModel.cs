@@ -164,16 +164,21 @@ namespace Microsoft.Azure.Cosmos
         
         internal virtual async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigAsync(Func<ValueTask<HttpRequestMessage>> requestMessage)
         {
-            AccountClientConfiguration clientConfiguration = null;
+            AccountClientConfiguration clientConfiguration = new AccountClientConfiguration();
 
             // Get the ServiceDocumentResource from the gateway.
             using (HttpResponseMessage responseMessage = await this.gatewayStoreClient.SendHttpAsync(
                 requestMessage,
                 ResourceType.DatabaseAccount,
-                HttpTimeoutPolicyControlPlaneRead.Instance,
+                HttpTimeoutPolicyNoRetry.Instance,
                 null,
                 default))
             {
+                if (!responseMessage.IsSuccessStatusCode)
+                {
+                    return clientConfiguration;
+                }
+
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
                     clientConfiguration = CosmosResource.FromStream<AccountClientConfiguration>(documentServiceResponse);
