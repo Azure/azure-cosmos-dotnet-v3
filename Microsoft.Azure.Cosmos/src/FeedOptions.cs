@@ -69,6 +69,7 @@ namespace Microsoft.Azure.Cosmos
             this.EnableGroupBy = options.EnableGroupBy;
             this.MergeStaticId = options.MergeStaticId;
             this.Properties = options.Properties;
+            this.SupportedSerializationFormats = options.SupportedSerializationFormats;
         }
 
         /// <summary>
@@ -404,6 +405,14 @@ namespace Microsoft.Azure.Cosmos
         /// If the document is stored in a different serialization format then the one requested, then there will be a rewrite over the wire, but the source document will be untouched.
         /// </remarks>
         internal ContentSerializationFormat? ContentSerializationFormat { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SupportedSerializationFormats for the feed (query/read feed) operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// Serialization format is selected based on the values requested and the serialization format the document is stored in.
+        /// </remarks>
+        internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
 
         internal bool EnableGroupBy { get; set; }
 

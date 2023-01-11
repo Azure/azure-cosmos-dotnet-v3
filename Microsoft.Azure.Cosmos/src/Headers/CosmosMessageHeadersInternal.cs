@@ -159,6 +159,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.SetProperty(HttpConstants.HttpHeaders.ContentSerializationFormat, value);
         }
 
+        public virtual string SupportedSerializationFormats
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.SupportedSerializationFormats);
+            set => this.SetProperty(HttpConstants.HttpHeaders.SupportedSerializationFormats, value);
+        }
+
         public virtual string ReadFeedKeyType
         {
             get => this.GetValueOrDefault(HttpConstants.HttpHeaders.ReadFeedKeyType);

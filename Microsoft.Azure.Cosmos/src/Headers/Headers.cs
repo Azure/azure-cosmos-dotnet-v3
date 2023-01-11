@@ -228,6 +228,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.CosmosMessageHeaders.ContentSerializationFormat = value;
         }
 
+        internal virtual string Supportedserializationformats
+        {
+            get => this.CosmosMessageHeaders.SupportedSerializationFormats;
+            set => this.CosmosMessageHeaders.SupportedSerializationFormats = value;
+        }
+
         internal virtual string ReadFeedKeyType
         {
             get => this.CosmosMessageHeaders.ReadFeedKeyType;
