@@ -17,6 +17,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public string ContentSerializationFormat { get; }
 
+        /// <summary>
+        /// Request multiple serialization formats, backend will decide which formats is best and choose appropriate format.
+        /// </summary>
+        public string SupportedSerializationFormats { get; }
+
         /// <summary>
         /// Creates a navigator that can navigate a JSON in the specified ContentSerializationFormat
         /// </summary>
@@ -29,12 +34,18 @@ namespace Microsoft.Azure.Cosmos
 
         public CosmosSerializationFormatOptions(
             string contentSerializationFormat,
+            string supportedSerializationFormats,
             CreateCustomNavigator createCustomNavigator,
             CreateCustomWriter createCustomWriter)
         {
             if (contentSerializationFormat == null)
             {
                 throw new ArgumentNullException(nameof(contentSerializationFormat));
+            }
+
+            if (supportedSerializationFormats == null)
+            {
+                throw new ArgumentNullException(nameof(supportedSerializationFormats));
             }
 
             if (createCustomNavigator == null)
@@ -48,6 +59,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.ContentSerializationFormat = contentSerializationFormat;
+            this.SupportedSerializationFormats = supportedSerializationFormats.Length == 0 ? "JsonText, CosmosBinary" : supportedSerializationFormats;
             this.CreateCustomNavigatorCallback = createCustomNavigator;
             this.CreateCustomWriterCallback = createCustomWriter;
         }

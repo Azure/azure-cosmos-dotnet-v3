@@ -172,6 +172,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
+        internal BackendSerializationFormatOptions BackendSerializationFormatOptions { get; set; }
+
         internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
 
         internal bool? ReturnResultsInDeterministicOrder { get; set; }
@@ -228,6 +230,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.CosmosSerializationFormatOptions != null)
             {
                 request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.CosmosSerializationFormatOptions.ContentSerializationFormat;
+            }
+
+            if (this.BackendSerializationFormatOptions != null)
+            {
+                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.BackendSerializationFormatOptions.SupportedSerializationFormats;
             }
 
             if (this.StartId != null)

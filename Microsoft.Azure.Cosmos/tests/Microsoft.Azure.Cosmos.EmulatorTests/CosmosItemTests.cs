@@ -1631,6 +1631,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosSerializationFormatOptions options = new CosmosSerializationFormatOptions(
                 ContentSerializationFormat.CosmosBinary.ToString(),
+                "CosmosBinary",
                 (content) => JsonNavigator.Create(content),
                 () => JsonWriter.Create(JsonSerializationFormat.Binary));
 

@@ -70,6 +70,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.requestNameValueCollection.ContentSerializationFormat = value;
         }
 
+        public override string SupportedSerializationFormats
+        {
+            get => this.requestNameValueCollection.SupportedSerializationFormats;
+            set => this.requestNameValueCollection.SupportedSerializationFormats = value;
+        }
+
         public override string ReadFeedKeyType
         {
             get => this.requestNameValueCollection.ReadFeedKeyType;

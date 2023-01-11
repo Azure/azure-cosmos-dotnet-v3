@@ -8,7 +8,7 @@
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    [Ignore]
+    //[Ignore]
     [TestClass]
     public class ContentSerializationPerformanceTests
     {
@@ -85,6 +85,7 @@
                 MaxItemCount = this.MaxItemCount,
                 CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
                             contentSerializationFormat: this.contentSerialization,
+                            supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
                             createCustomNavigator: (content) => JsonNavigator.Create(content),
                             createCustomWriter: () => JsonWriter.Create(this.contentSerialization == "JsonText" ? JsonSerializationFormat.Text : JsonSerializationFormat.Binary))
             };
