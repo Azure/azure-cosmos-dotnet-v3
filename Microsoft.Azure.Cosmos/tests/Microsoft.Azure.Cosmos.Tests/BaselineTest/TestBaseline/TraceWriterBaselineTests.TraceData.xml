@@ -214,7 +214,7 @@
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                 DateTime.MinValue,
                 DateTime.MaxValue,
-                StoreResult.CreateForTesting(storeResponse: new StoreResponse()).Target,
+                StoreResult.CreateForTesting(transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()).Target,
                 ResourceType.Document,
                 OperationType.Query,
                 "42",
@@ -325,22 +325,70 @@
             "ActivityId": null,
             "StatusCode": "0",
             "SubStatusCode": "Unknown",
-            "LSN": 0,
-            "PartitionKeyRangeId": null,
-            "GlobalCommittedLSN": 0,
-            "ItemLSN": 0,
-            "UsingLocalLSN": false,
-            "QuorumAckedLSN": 0,
-            "SessionToken": null,
-            "CurrentWriteQuorum": 0,
-            "CurrentReplicaSetSize": 0,
-            "NumberOfReadRegions": 0,
-            "IsValid": false,
-            "StorePhysicalAddress": null,
-            "RequestCharge": 0,
-            "RetryAfterInMs": null,
-            "BELatencyInMs": null,
-            "transportRequestTimeline": null,
+            "LSN": 1337,
+            "PartitionKeyRangeId": "42",
+            "GlobalCommittedLSN": 1234,
+            "ItemLSN": 15,
+            "UsingLocalLSN": true,
+            "QuorumAckedLSN": 23,
+            "SessionToken": "42",
+            "CurrentWriteQuorum": 3,
+            "CurrentReplicaSetSize": 4,
+            "NumberOfReadRegions": 13,
+            "IsValid": true,
+            "StorePhysicalAddress": "http://storephysicaladdress.com/",
+            "RequestCharge": 3.14,
+            "RetryAfterInMs": "9000",
+            "BELatencyInMs": "4.2",
+            "transportRequestTimeline": {
+              "requestTimeline": [
+                {
+                  "event": "Created",
+                  "startTimeUtc": "2021-12-31T23:59:59.059Z",
+                  "durationInMs": 1
+                },
+                {
+                  "event": "ChannelAcquisitionStarted",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                },
+                {
+                  "event": "Pipelined",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                },
+                {
+                  "event": "Transit Time",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                },
+                {
+                  "event": "Received",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                },
+                {
+                  "event": "Completed",
+                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
+                  "durationInMs": 0
+                }
+              ],
+              "serviceEndpointStats": {
+                "inflightRequests": 2,
+                "openConnections": 1
+              },
+              "connectionStats": {
+                "waitforConnectionInit": "True",
+                "callsPendingReceive": 1,
+                "lastSendAttempt": "2021-12-31T23:59:59.059Z",
+                "lastSend": "2021-12-31T23:59:59.059Z",
+                "lastReceive": "2021-12-31T23:59:59.059Z"
+              },
+              "requestSizeInBytes": 2,
+              "requestBodySizeInBytes": 1,
+              "responseMetadataSizeInBytes": 1,
+              "responseBodySizeInBytes": 1
+            },
             "TransportException": null
           }
         }

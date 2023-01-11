@@ -81,6 +81,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                openConnectionsHandler: null,
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2);
 
             int initialAddressesCount = cache.TryGetAddressesAsync(
@@ -116,6 +117,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                openConnectionsHandler: null,
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true);
 
@@ -173,6 +175,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                openConnectionsHandler: null,
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true);
 
@@ -223,7 +226,6 @@ namespace Microsoft.Azure.Cosmos
 
             mockHttpHandler.VerifyAll();
         }
-
 
         [TestMethod]
         [Timeout(2000)]
@@ -287,6 +289,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                openConnectionsHandler: null,
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true);
 
@@ -323,15 +326,15 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Test to validate that when <see cref="GatewayAddressCache.OpenConnectionsAsync()"/> is called with a
-        /// valid open connection handler callback delegate, the delegate method is indeed invoked.
+        /// valid open connection handler, the handler method is indeed invoked.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        public async Task OpenConnectionsAsync_WithValidOpenConnectionHandlerDelegate_ShouldInvokeDelegateMethod()
+        public async Task OpenConnectionsAsync_WithValidOpenConnectionHandler_ShouldInvokeHandlerMethod()
         {
             // Arrange.
             FakeMessageHandler messageHandler = new ();
-            FakeTransportClient transportClient = new (shouldFailTransport: false);
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>());
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
@@ -346,6 +349,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                openConnectionsHandler: fakeOpenConnectionHandler,
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2);
 
             // Act.
@@ -356,26 +360,30 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.testPartitionKeyRangeIdentity
                 },
-                openConnectionHandler: transportClient.OpenConnectionAsync,
+                shouldOpenRntbdChannels: true,
                 cancellationToken: CancellationToken.None);
 
             // Assert.
-            Assert.AreEqual(0, transportClient.GetExceptionCount());
-            Assert.AreEqual(3, transportClient.GetSuccessfulInvocationCount());
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 0,
+                expectedMethodInvocationCount: 1,
+                expectedReceivedAddressesCount: 3,
+                expectedSuccessCount: 3);
         }
 
         /// <summary>
         /// Test to validate that when <see cref="GatewayAddressCache.OpenConnectionsAsync()"/> is invoked with a
-        /// open connection handler callback delegate that throws an exception, the delegate method is indeed invoked
+        /// open connection handler that throws an exception, the handler method is indeed invoked
         /// and the exception is handled in such a way that the cosmos client initialization does not fail.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        public async Task OpenConnectionsAsync_WhenConnectionHandlerDelegateThrowsException_ShouldNotFailInitialization()
+        public async Task OpenConnectionsAsync_WhenConnectionHandlerThrowsException_ShouldNotFailInitialization()
         {
             // Arrange.
             FakeMessageHandler messageHandler = new ();
-            FakeTransportClient transportClient = new (shouldFailTransport: true);
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>() { 0, 1, 2});
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
@@ -387,6 +395,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                openConnectionsHandler: fakeOpenConnectionHandler,
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2);
 
             // Act.
@@ -397,26 +406,30 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.testPartitionKeyRangeIdentity
                 },
-                openConnectionHandler: transportClient.OpenConnectionAsync,
+                shouldOpenRntbdChannels: true,
                 cancellationToken: CancellationToken.None);
 
             // Assert.
-            Assert.AreEqual(3, transportClient.GetExceptionCount());
-            Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 3,
+                expectedMethodInvocationCount: 1,
+                expectedReceivedAddressesCount: 3,
+                expectedSuccessCount: 0);
         }
 
         /// <summary>
         /// Test to validate that when <see cref="GatewayAddressCache.OpenConnectionsAsync()"/> is invoked with a null
-        /// open connection handler callback delegate, the delegate is never invoked, thus no attempt to open connection
+        /// open connection handler, the handler method is never invoked, thus no attempt to open connections
         /// to the backend replica happens.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        public async Task OpenConnectionsAsync_WithNullOpenConnectionHandlerDelegate_ShouldNotInvokeDelegateMethod()
+        public async Task OpenConnectionsAsync_WithNullOpenConnectionHandler_ShouldNotInvokeHandlerMethod()
         {
             // Arrange.
             FakeMessageHandler messageHandler = new ();
-            FakeTransportClient transportClient = new(shouldFailTransport: false);
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>());
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
@@ -431,6 +444,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                openConnectionsHandler: null,
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2);
 
             // Act.
@@ -441,25 +455,29 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.testPartitionKeyRangeIdentity
                 },
-                openConnectionHandler: null,
+                shouldOpenRntbdChannels: true,
                 cancellationToken: CancellationToken.None);
 
             // Assert.
-            Assert.AreEqual(0, transportClient.GetExceptionCount());
-            Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 0,
+                expectedMethodInvocationCount: 0,
+                expectedReceivedAddressesCount: 0,
+                expectedSuccessCount: 0);
         }
 
         /// <summary>
         /// Test to validate that when <see cref="GlobalAddressResolver.OpenConnectionsToAllReplicasAsync()"/> is called with a
-        /// valid open connection handler callback delegate, the delegate method is indeed invoked and an attempt is made to open
+        /// valid open connection handler, the handler method is indeed invoked and an attempt is made to open
         /// the connections to the backend replicas.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WithValidHandlerDelegate_ShouldOpenConnectionsToBackend()
+        public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WithValidHandler_ShouldOpenConnectionsToBackend()
         {
             // Arrange.
-            FakeTransportClient transportClient = new (shouldFailTransport: false);
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>());
             UserAgentContainer container = new (clientId: 0);
             FakeMessageHandler messageHandler = new ();
             AccountProperties databaseAccount = new ();
@@ -509,29 +527,35 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy: connectionPolicy,
                 httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
+            globalAddressResolver.SetOpenConnectionsHandler(
+                openConnectionsHandler: fakeOpenConnectionHandler);
+
             // Act.
             await globalAddressResolver.OpenConnectionsToAllReplicasAsync(
                 databaseName: "test-db",
                 containerLinkUri: "https://test.uri.cosmos.com",
-                openConnectionHandlerAsync: transportClient.OpenConnectionAsync,
                 CancellationToken.None);
 
             // Assert.
-            Assert.AreEqual(0, transportClient.GetExceptionCount());
-            Assert.AreEqual(3, transportClient.GetSuccessfulInvocationCount());
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 0,
+                expectedMethodInvocationCount: 1,
+                expectedReceivedAddressesCount: 3,
+                expectedSuccessCount: 3);
         }
 
         /// <summary>
         /// Test to validate that when <see cref="GlobalAddressResolver.OpenConnectionsToAllReplicasAsync()"/> is called with a
-        /// open connection handler callback delegate that throws an exception, the delegate method is indeed invoked and the
-        /// exception is handled in such a way that the cosmos client initialization does not fail.
+        /// open connection handler that throws an exception, the handler method is indeed invoked and the exception is handled
+        /// in such a way that the cosmos client initialization does not fail.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
         public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenHandlerDelegateThrowsException_ShouldNotFailInitialization()
         {
             // Arrange.
-            FakeTransportClient transportClient = new(shouldFailTransport: true);
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>() { 0, 2});
             UserAgentContainer container = new(clientId: 0);
             FakeMessageHandler messageHandler = new();
             AccountProperties databaseAccount = new();
@@ -581,16 +605,22 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy: connectionPolicy,
                 httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
+            globalAddressResolver.SetOpenConnectionsHandler(
+                openConnectionsHandler: fakeOpenConnectionHandler);
+
             // Act.
             await globalAddressResolver.OpenConnectionsToAllReplicasAsync(
                 databaseName: "test-db",
                 containerLinkUri: "https://test.uri.cosmos.com",
-                openConnectionHandlerAsync: transportClient.OpenConnectionAsync,
                 CancellationToken.None);
 
             // Assert.
-            Assert.AreEqual(3, transportClient.GetExceptionCount());
-            Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 2,
+                expectedMethodInvocationCount: 1,
+                expectedReceivedAddressesCount: 3,
+                expectedSuccessCount: 1);
         }
 
         /// <summary>
@@ -603,7 +633,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenInternalExceptionThrownApartFromTransportError_ShouldThrowException()
         {
             // Arrange.
-            FakeTransportClient transportClient = new(shouldFailTransport: false);
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>());
             UserAgentContainer container = new(clientId: 0);
             FakeMessageHandler messageHandler = new();
             AccountProperties databaseAccount = new();
@@ -664,18 +694,24 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy: connectionPolicy,
                 httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
+            globalAddressResolver.SetOpenConnectionsHandler(
+                openConnectionsHandler: fakeOpenConnectionHandler);
+
             // Act.
             Exception ex = await Assert.ThrowsExceptionAsync<Exception>(() => globalAddressResolver.OpenConnectionsToAllReplicasAsync(
                 databaseName: "test-db",
                 containerLinkUri: "https://test.uri.cosmos.com",
-                openConnectionHandlerAsync: transportClient.OpenConnectionAsync,
                 CancellationToken.None));
 
             // Assert.
             Assert.IsNotNull(ex);
             Assert.AreEqual(exceptionMessage, ex.Message);
-            Assert.AreEqual(0, transportClient.GetExceptionCount());
-            Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 0,
+                expectedMethodInvocationCount: 0,
+                expectedReceivedAddressesCount: 0,
+                expectedSuccessCount: 0);
         }
 
         /// <summary>
@@ -688,7 +724,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenNullCollectionReturned_ShouldThrowException()
         {
             // Arrange.
-            FakeTransportClient transportClient = new (shouldFailTransport: false);
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>());
             UserAgentContainer container = new (clientId: 0);
             FakeMessageHandler messageHandler = new ();
             AccountProperties databaseAccount = new ();
@@ -734,33 +770,39 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy: connectionPolicy,
                 httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
+            globalAddressResolver.SetOpenConnectionsHandler(
+                openConnectionsHandler: fakeOpenConnectionHandler);
+
             // Act.
             CosmosException ce = await Assert.ThrowsExceptionAsync<CosmosException>(() => globalAddressResolver.OpenConnectionsToAllReplicasAsync(
                 databaseName: "test-db",
                 containerLinkUri: "https://test.uri.cosmos.com",
-                openConnectionHandlerAsync: transportClient.OpenConnectionAsync,
                 CancellationToken.None));
 
             // Assert.
             Assert.IsNotNull(ce);
             Assert.IsTrue(ce.Message.Contains("Could not resolve the collection"));
-            Assert.AreEqual(0, transportClient.GetExceptionCount());
-            Assert.AreEqual(0, transportClient.GetSuccessfulInvocationCount());
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 0,
+                expectedMethodInvocationCount: 0,
+                expectedReceivedAddressesCount: 0,
+                expectedSuccessCount: 0);
         }
 
         /// <summary>
         /// Test to validate that when <see cref="GatewayAddressCache.OpenConnectionsAsync()"/> is called with a
-        /// valid open connection handler callback delegate and some of the address resolving fails with exception,
-        /// then the GatewayAddressCache should ignore the failed addresses and the delegate method is indeed invoked
+        /// valid open connection handler and some of the address resolving fails with exception, then the
+        /// GatewayAddressCache should ignore the failed addresses and the handler method is indeed invoked
         /// for all resolved addresses.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        public async Task OpenConnectionsAsync_WhenSomeAddressResolvingFailsWithException_ShouldIgnoreExceptionsAndInvokeDelegateMethodForOtherAddresses()
+        public async Task OpenConnectionsAsync_WhenSomeAddressResolvingFailsWithException_ShouldIgnoreExceptionsAndInvokeHandlerMethodForOtherAddresses()
         {
             // Arrange.
             FakeMessageHandler messageHandler = new ();
-            FakeTransportClient transportClient = new (shouldFailTransport: false);
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>());
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
@@ -810,6 +852,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 mockHttpClient.Object,
+                openConnectionsHandler: fakeOpenConnectionHandler,
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2);
 
             // Act.
@@ -817,12 +860,38 @@ namespace Microsoft.Azure.Cosmos
                 databaseName: "test-database",
                 collection: containerProperties,
                 partitionKeyRangeIdentities: partitionKeyRangeIdentities,
-                openConnectionHandler: transportClient.OpenConnectionAsync,
+                shouldOpenRntbdChannels: true,
                 cancellationToken: CancellationToken.None);
 
             // Assert.
-            Assert.AreEqual(0, transportClient.GetExceptionCount());
-            Assert.AreEqual(addresses.Count, transportClient.GetSuccessfulInvocationCount());
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 0,
+                expectedMethodInvocationCount: 1,
+                expectedReceivedAddressesCount: addresses.Count,
+                expectedSuccessCount: addresses.Count);
+        }
+
+        /// <summary>
+        /// Helper method to assert on the <see cref="FakeOpenConnectionHandler"/> class attributes
+        /// to match with that of the expected ones.
+        /// </summary>
+        /// <param name="fakeOpenConnectionHandler">An instance of the <see cref="FakeOpenConnectionHandler"/>.</param>
+        /// <param name="expectedExceptionCount">The expected exception count for the test.</param>
+        /// <param name="expectedMethodInvocationCount">The expected method invocation count for the test.</param>
+        /// <param name="expectedReceivedAddressesCount">The expected received addresses count for the test.</param>
+        /// <param name="expectedSuccessCount">The expected successful messages count for the test.</param>
+        private static void AssertOpenConnectionHandlerAttributes(
+            FakeOpenConnectionHandler fakeOpenConnectionHandler,
+            int expectedExceptionCount,
+            int expectedMethodInvocationCount,
+            int expectedReceivedAddressesCount,
+            int expectedSuccessCount)
+        {
+            Assert.AreEqual(expectedExceptionCount, fakeOpenConnectionHandler.GetExceptionCount());
+            Assert.AreEqual(expectedMethodInvocationCount, fakeOpenConnectionHandler.GetMethodInvocationCount());
+            Assert.AreEqual(expectedReceivedAddressesCount, fakeOpenConnectionHandler.GetReceivedAddressesCount());
+            Assert.AreEqual(expectedSuccessCount, fakeOpenConnectionHandler.GetSuccessfulInvocationCount());
         }
 
         private class FakeMessageHandler : HttpMessageHandler
@@ -911,34 +980,32 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public class FakeTransportClient
+        public class FakeOpenConnectionHandler : IOpenConnectionsHandler
         {
             private int exceptionCounter = 0;
+            private int methodInvocationCounter = 0;
             private int successInvocationCounter = 0;
-            private readonly bool shouldFailTransport;
+            private int totalReceivedAddressesCounter = 0;
+            private readonly HashSet<int> failingIndexes;
+            private readonly bool useAttemptBasedFailingIndexs;
+            private readonly ManualResetEvent manualResetEvent;
+            private readonly Dictionary<int, HashSet<int>> failIndexesByAttempts;
 
-            public FakeTransportClient(bool shouldFailTransport)
+            public FakeOpenConnectionHandler(
+                HashSet<int> failingIndexes,
+                ManualResetEvent manualResetEvent = null)
             {
-                this.shouldFailTransport = shouldFailTransport;
+                this.failingIndexes = failingIndexes;
+                this.manualResetEvent = manualResetEvent;
             }
 
-            public Task OpenConnectionAsync(Uri physicalAddress)
+            public FakeOpenConnectionHandler(
+                Dictionary<int, HashSet<int>> failIndexesByAttempts,
+                ManualResetEvent manualResetEvent = null)
             {
-                if (this.shouldFailTransport)
-                {
-                    this.exceptionCounter++;
-                    throw new TransportException(
-                        errorCode: TransportErrorCode.ConnectionBroken,
-                        innerException: new Exception("Transport Error Occurred."),
-                        activityId: Guid.NewGuid(),
-                        requestUri: physicalAddress,
-                        sourceDescription: "SourceDescription",
-                        userPayload: true,
-                        payloadSent: false);
-                }
-
-                this.successInvocationCounter++;
-                return Task.CompletedTask;
+                this.useAttemptBasedFailingIndexs = true;
+                this.failIndexesByAttempts = failIndexesByAttempts;
+                this.manualResetEvent = manualResetEvent;
             }
 
             public int GetSuccessfulInvocationCount()
@@ -949,6 +1016,75 @@ namespace Microsoft.Azure.Cosmos
             public int GetExceptionCount()
             {
                 return this.exceptionCounter;
+            }
+
+            public int GetReceivedAddressesCount()
+            {
+                return this.totalReceivedAddressesCounter;
+            }
+
+            public int GetMethodInvocationCount()
+            {
+                return this.methodInvocationCounter;
+            }
+
+            Task IOpenConnectionsHandler.TryOpenRntbdChannelsAsync(
+                IReadOnlyList<TransportAddressUri> addresses)
+            {
+                this.totalReceivedAddressesCounter = addresses.Count;
+                for (int i = 0; i < addresses.Count; i++)
+                {
+                    if (this.useAttemptBasedFailingIndexs)
+                    {
+                        if (this.failIndexesByAttempts.ContainsKey(i) && this.failIndexesByAttempts[i].Contains(this.methodInvocationCounter))
+                        {
+                            this.ExecuteFailureCondition(
+                                addresses: addresses,
+                                index: i);
+                        }
+                        else
+                        {
+                            this.ExecuteSuccessCondition(
+                                addresses: addresses,
+                                index: i);
+                        }
+                    }
+                    else
+                    {
+                        if (this.failingIndexes.Contains(i))
+                        {
+                            this.ExecuteFailureCondition(
+                                addresses: addresses,
+                                index: i);
+                        }
+                        else
+                        {
+                            this.ExecuteSuccessCondition(
+                                addresses: addresses,
+                                index: i);
+                        }
+                    }
+                }
+
+                this.methodInvocationCounter++;
+                this.manualResetEvent?.Set();
+                return Task.CompletedTask;
+            }
+
+            private void ExecuteSuccessCondition(
+                IReadOnlyList<TransportAddressUri> addresses,
+                int index)
+            {
+                addresses[index].SetConnected();
+                this.successInvocationCounter++;
+            }
+
+            private void ExecuteFailureCondition(
+                IReadOnlyList<TransportAddressUri> addresses,
+                int index)
+            {
+                addresses[index].SetUnhealthy();
+                this.exceptionCounter++;
             }
         }
     }

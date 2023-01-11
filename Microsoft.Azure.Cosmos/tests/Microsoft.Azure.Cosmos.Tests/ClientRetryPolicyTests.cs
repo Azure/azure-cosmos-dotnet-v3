@@ -530,8 +530,9 @@
             {
                 throw new NotImplementedException();
             }
+
             public void SetOpenConnectionsHandler(
-               IOpenConnectionsHandler openConnectionHandler)
+                IOpenConnectionsHandler openConnectionHandler)
             {
                 throw new NotImplementedException();
             }

@@ -363,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                             DateTime.MinValue,
                             DateTime.MaxValue,
-                            StoreResult.CreateForTesting(storeResponse: new StoreResponse()).Target,
+                            StoreResult.CreateForTesting(transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()).Target,
                             ResourceType.Document,
                             OperationType.Query,
                             "42",

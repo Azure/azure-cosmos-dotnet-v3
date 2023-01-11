@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 IClientSideRequestStatistics requestStatistics = request.RequestContext.ClientRequestStatistics;
                 requestStatistics.RecordResponse(
-                    request,
+                    request, 
                     StoreResult.CreateForTesting(transportRequestStats: new TransportRequestStats()).Target,
                     DateTime.MinValue,
                     DateTime.MaxValue);
