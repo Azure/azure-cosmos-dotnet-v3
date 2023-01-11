@@ -344,10 +344,5 @@ namespace Microsoft.Azure.Cosmos
         /// Name of the Azure China East 3 region in the Azure Cosmos DB service.
         /// </summary>
         public const string ChinaEast3 = "China East 3";
-
-        /// <summary>
-        /// Name of the Azure Poland Central region in the Azure Cosmos DB service.
-        /// </summary>
-        public const string PolandCentral = "Poland Central";
     }
 }
