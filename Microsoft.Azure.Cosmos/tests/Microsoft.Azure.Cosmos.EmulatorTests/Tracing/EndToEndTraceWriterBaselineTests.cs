@@ -43,7 +43,7 @@
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
         [ClassInitialize()]
-        public static async Task ClassInitAsync(TestContext context)
+        public static async Task ClassInitAsync()
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
 

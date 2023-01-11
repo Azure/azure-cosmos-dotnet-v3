@@ -24,6 +24,11 @@
     <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard;client;encryption;byok</PackageTags>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="EncryptionType.cs" />
+    <Compile Remove="MdeSrc\AzureKeyVaultProvider\KeyCryptographer.cs" />
+    <Compile Remove="MdeSupport\EncryptionType.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <AdditionalFiles Include="..\..\Microsoft.Azure.Cosmos\src\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 	

@@ -18,6 +18,7 @@
     <Compile Remove="ClientTelemetryTests.cs" />
     <Compile Remove="CosmosContainerTests.cs" />
     <Compile Remove="GlobalDatabaseAccountTests.cs" />
+    <Compile Remove="Tracing\E2ETests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
