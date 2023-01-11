@@ -438,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Sets the connection mode to Gateway. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
-        /// <param name="maxConnectionLimit">The number specifies the time to wait for response to come back from network peer. Default is 60 connections</param>
+        /// <param name="maxConnectionLimit">The number specifies the number of connections which may be executed simultaneously. Default is 50 connections</param>
         /// <param name="webProxy">Get or set the proxy information used for web requests.</param>
         /// <remarks>
         /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
