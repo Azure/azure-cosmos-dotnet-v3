@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class RegionFailoverTests
@@ -87,8 +88,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Create a mock http handler to inject gateway responses.
             // MockBehavior.Strict ensures that only the mocked APIs get called
             Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);
-
-
+            
             mockHttpHandler.Setup(x => x.SendAsync(
                 It.Is<HttpRequestMessage>(m => m.RequestUri == globalEndpointUri || m.RequestUri.ToString().Contains(primaryRegionNameForUri)),
                 It.IsAny<CancellationToken>())).Throws(new HttpRequestException("Mock HttpRequestException to simulate region being down"));
@@ -110,7 +110,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                        return Task.FromResult(MockSetupsHelper.CreateStrongAccount(accountName, writeRegionFailedOver, readRegionsFailedOver));
                    }
                });
-
+            
+            mockHttpHandler.Setup(x => x.SendAsync(
+                It.Is<HttpRequestMessage>(x => x.RequestUri.ToString().Contains("clientconfigs")),
+                It.IsAny<CancellationToken>()))
+                .Returns(() => Task.FromResult(new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(JsonConvert.SerializeObject(new AccountClientConfiguration()))
+                }));
 
             MockSetupsHelper.SetupContainerProperties(
                 mockHttpHandler: mockHttpHandler,
