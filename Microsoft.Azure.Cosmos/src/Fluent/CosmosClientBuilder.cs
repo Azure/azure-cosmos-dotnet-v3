@@ -424,12 +424,30 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// If Open Telemetry listener is subscribed for Azure.Cosmos namespace, There are <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/> you can leverage to control it.<br></br>
+        /// Sets whether Distributed Tracing for "Azure.Cosmos.Operation" source is enabled.
         /// </summary>
-        /// <param name="options">Tracing Options <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/></param>
+        /// <param name="isEnabled">Whether <see cref="CosmosClientOptions.IsDistributedTracingEnabled"/> is enabled.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
-        internal CosmosClientBuilder WithDistributingTracing(DistributedTracingOptions options)
+#if PREVIEW
+        public
+#else
+        internal
+#endif 
+            CosmosClientBuilder WithDistributedTracing(bool isEnabled = true)
         {
+            this.clientOptions.IsDistributedTracingEnabled = isEnabled;
+            return this;
+        }
+        
+        /// <summary>
+        /// Enables Distributed Tracing with a Configuration ref. <see cref="DistributedTracingOptions"/>
+        /// </summary>
+        /// <param name="options"><see cref="DistributedTracingOptions"/>.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>]
+        /// <remarks>Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
+        internal CosmosClientBuilder WithDistributedTracingOptions(DistributedTracingOptions options)
+        {
+            this.clientOptions.IsDistributedTracingEnabled = true;
             this.clientOptions.DistributedTracingOptions = options;
 
             return this;
