@@ -254,20 +254,20 @@
               Resource Type: Document
               Operation Type: Query
               Store Result
-                Activity Id: <null>
-                Store Physical Address: <null>
+                Activity Id: 00000000-0000-0000-0000-000000000000
+                Store Physical Address: http://storephysicaladdress.com/
                 Status Code: 0/Unknown
-                Is Valid: False
+                Is Valid: True
                 LSN Info
-                  LSN: 0
-                  Item LSN: 0
-                  Global LSN: 0
-                  Quorum Acked LSN: 0
-                  Using LSN: False
-                Session Token: <null>
+                  LSN: 1337
+                  Item LSN: 15
+                  Global LSN: 1234
+                  Quorum Acked LSN: 23
+                  Using LSN: True
+                Session Token: 42
                 Quorum Info
-                  Current Replica Set Size: 0
-                  Current Write Quorum: 0
+                  Current Replica Set Size: 4
+                  Current Write Quorum: 3
                 Exception
         )
 ]]></Text>
@@ -322,7 +322,7 @@
           "RequestSessionToken": "42",
           "LocationEndpoint": "http://someuri1.com/",
           "StoreResult": {
-            "ActivityId": null,
+            "ActivityId": "00000000-0000-0000-0000-000000000000",
             "StatusCode": "0",
             "SubStatusCode": "Unknown",
             "LSN": 1337,
