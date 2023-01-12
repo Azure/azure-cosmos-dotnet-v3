@@ -16,30 +16,14 @@
         private static readonly string databaseName = "db";
         private static readonly string containerName = "container";
 
-        private static CosmosClient cosmosClient;
+        private static CosmosClient _cosmosClient;
         private Container container;
         private int deleteItemCounter;
         private string? allVersionsContinuationToken;
 
-        public ChangeFeedDemo()
+        public ChangeFeedDemo(CosmosClient client)
         {
-            IConfigurationRoot configuration = new ConfigurationBuilder()
-                                   .AddJsonFile("appSettings.json")
-                                   .Build();
-
-            string endpoint = configuration["EndPointUrl"];
-            if (string.IsNullOrEmpty(endpoint))
-            {
-                throw new ArgumentNullException("Please specify a valid EndPointUrl in the appSettings.json");
-            }
-
-            string authKey = configuration["AuthorizationKey"];
-            if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
-            {
-                throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
-            }
-
-            cosmosClient = new CosmosClient(endpoint, authKey);
+            _cosmosClient = client;
 
             this.deleteItemCounter = 0;
         }
@@ -50,8 +34,8 @@
 
             ContainerProperties properties = new ContainerProperties(containerName, partitionKeyPath: "/Pk");
 
-            await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
-            this.container = await cosmosClient.GetDatabase(databaseName).CreateContainerIfNotExistsAsync(properties);
+            await _cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
+            this.container = await _cosmosClient.GetDatabase(databaseName).CreateContainerIfNotExistsAsync(properties);
         }
 
         public async Task CreateAllVersionsAndDeletesChangeFeedIterator()
