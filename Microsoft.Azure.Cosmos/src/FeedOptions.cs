@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the SupportedSerializationFormats for the feed (query/read feed) operation in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
-        /// Serialization format is selected based on the values requested and the serialization format the document is stored in.
+        /// Serialization format for the response is selected based on the values requested and the serialization format the document is stored in.
         /// </remarks>
         internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
 

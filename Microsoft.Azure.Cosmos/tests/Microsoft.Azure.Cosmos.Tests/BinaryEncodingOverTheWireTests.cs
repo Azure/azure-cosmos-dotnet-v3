@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
                         "JsonText",
-                        "CosmosBinary",
+                        "",
                         (content) => JsonNavigator.Create(content),
                         () => Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text)),
                 });
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
                         "CosmosBinary",
-                        "CosmosBinary",
+                        "",
                         (content) => JsonNavigator.Create(content),
                         () => Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text)),
                 });

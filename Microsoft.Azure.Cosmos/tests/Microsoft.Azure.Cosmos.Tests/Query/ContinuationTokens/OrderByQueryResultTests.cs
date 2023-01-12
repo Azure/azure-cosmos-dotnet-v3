@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 Documents.ResourceType.Document,
                 new CosmosSerializationFormatOptions(
                     "JsonText",
-                    "CosmosBinary",
+                    "",
                     (content) => JsonNavigator.Create(content),
                     () => JsonWriter.Create(JsonSerializationFormat.Text)));
 
