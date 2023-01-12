@@ -23,7 +23,6 @@
     using Telemetry;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
     using OpenTelemetry.Trace;
-    using Microsoft.Azure.Documents.Client;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
     [TestCategory("UpdateContract")]
@@ -43,7 +42,7 @@
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
         [ClassInitialize()]
-        public static async Task ClassInitAsync()
+        public static async Task ClassInitAsync(TestContext context)
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
 
@@ -56,26 +55,8 @@
             // Custom Listener
             testListener = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*", "Azure-Cosmos-Operation-Request-Diagnostics");
 
-            using CosmosClient client = new(
-                   accountEndpoint: "https://cosmosdbaavasthy.documents.azure.com:443/",
-                   authKeyOrResourceToken: "GuDON7mQabFeo1KQUZSV3N3D4srOuJFNheIPIumYIogKIHAyevrxPF52ddFDvQXRPfrNUVvjRh5JBDCWpSKo3A==",
-                   new CosmosClientOptions
-                   {
-                       SerializerOptions = new CosmosSerializationOptions { PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase },
-                       ConnectionMode = ConnectionMode.Direct,
-                       ConnectionProtocol = Protocol.Tcp,
-                       EnableDistributedTracing = true,
-                       SslCustomValidationHanlder = (cert, policy) =>
-                       {
-                           if (policy == System.Net.Security.SslPolicyErrors.None
-                               || policy == System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch)
-                           {
-                               return true;
-                           }
-                           return false;
-                       }
-
-                   });
+            client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
+                useGateway: false);
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
                 .WithBulkExecution(true));
             // Set a small retry count to reduce test time
@@ -111,16 +92,16 @@
                     partitionKeyPath: "/id",
                     throughput: 20000);
 
-            //for (int i = 0; i < 100; i++)
-            //{
-            //    CosmosObject cosmosObject = CosmosObject.Create(
-            //        new Dictionary<string, CosmosElement>()
-            //        {
-            //            { "id", CosmosString.Create(i.ToString()) }
-            //        });
+            for (int i = 0; i < 100; i++)
+            {
+                CosmosObject cosmosObject = CosmosObject.Create(
+                    new Dictionary<string, CosmosElement>()
+                    {
+                        { "id", CosmosString.Create(i.ToString()) }
+                    });
 
-            //    await container.CreateItemAsync(JToken.Parse(cosmosObject.ToString()));
-            //}
+                await container.CreateItemAsync(JToken.Parse(cosmosObject.ToString()));
+            }
 
             EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
         }
@@ -1348,57 +1329,57 @@
             this.ExecuteTestSuite(inputs);
         }
 
-        //[TestMethod]
-        //public async Task MiscellanousAsync()
-        //{
-        //    List<Input> inputs = new List<Input>();
+        [TestMethod]
+        public async Task MiscellanousAsync()
+        {
+            List<Input> inputs = new List<Input>();
 
-        //    int startLineNumber;
-        //    int endLineNumber;
+            int startLineNumber;
+            int endLineNumber;
 
-        //    //----------------------------------------------------------------
-        //    //  Custom Handler
-        //    //----------------------------------------------------------------
-        //    {
-        //        startLineNumber = GetLineNumber();
+            //----------------------------------------------------------------
+            //  Custom Handler
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
 
-        //        DatabaseResponse databaseResponse = await miscCosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
-        //        EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
-        //            databaseResponse.Diagnostics.ToString(),
-        //            requestHandler.FullHandlerName,
-        //            delayTime);
+                DatabaseResponse databaseResponse = await miscCosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+                EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
+                    databaseResponse.Diagnostics.ToString(),
+                    requestHandler.FullHandlerName,
+                    delayTime);
 
-        //        ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
-        //        await databaseResponse.Database.DeleteAsync();
-        //        endLineNumber = GetLineNumber();
+                ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
+                await databaseResponse.Database.DeleteAsync();
+                endLineNumber = GetLineNumber();
 
-        //        inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+                inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-        //        EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
-        //    }
-        //    //----------------------------------------------------------------
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
+            }
+            //----------------------------------------------------------------
 
-        //    //----------------------------------------------------------------
-        //    //  Non Data Plane
-        //    //----------------------------------------------------------------
-        //    {
-        //        startLineNumber = GetLineNumber();
-        //        RequestOptions requestOptions = new RequestOptions();
-        //        DatabaseResponse databaseResponse = await client.CreateDatabaseAsync(
-        //            id: Guid.NewGuid().ToString(),
-        //            requestOptions: requestOptions);
-        //        ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
-        //        await databaseResponse.Database.DeleteAsync();
-        //        endLineNumber = GetLineNumber();
+            //----------------------------------------------------------------
+            //  Non Data Plane
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                RequestOptions requestOptions = new RequestOptions();
+                DatabaseResponse databaseResponse = await client.CreateDatabaseAsync(
+                    id: Guid.NewGuid().ToString(),
+                    requestOptions: requestOptions);
+                ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
+                await databaseResponse.Database.DeleteAsync();
+                endLineNumber = GetLineNumber();
 
-        //        inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+                inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
 
-        //        EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
-        //    }
-        //    //----------------------------------------------------------------
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
+            }
+            //----------------------------------------------------------------
 
-        //    this.ExecuteTestSuite(inputs);
-        //}
+            this.ExecuteTestSuite(inputs);
+        }
 
         [TestMethod]
         public async Task ReadManyAsync()
@@ -1754,10 +1735,10 @@
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
             }
 
-            //public void UpdateRegionContacted(TraceDatum traceDatum)
-            //{
-            //    //NoImplementation
-            //}
+            public void UpdateRegionContacted(TraceDatum traceDatum)
+            {
+                //NoImplementation
+            }
 
             public void AddOrUpdateDatum(string key, object value)
             {
