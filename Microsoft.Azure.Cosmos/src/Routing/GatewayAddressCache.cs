@@ -92,6 +92,17 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
 
+        /// <summary>
+        /// Gets the address information from the gateway and sets them into the async non blocking cache for later lookup.
+        /// Additionally attempts to establish Rntbd connections to the backend replicas based on `shouldOpenRntbdChannels`
+        /// boolean flag.
+        /// </summary>
+        /// <param name="databaseName">A string containing the database name.</param>
+        /// <param name="collection">An instance of <see cref="ContainerProperties"/> containing the collection properties.</param>
+        /// <param name="partitionKeyRangeIdentities">A read only list containing the partition key range identities.</param>
+        /// <param name="shouldOpenRntbdChannels">A boolean flag indicating whether Rntbd connections are required to be
+        /// established to the backend replica nodes.</param>
+        /// <param name="cancellationToken">An instance of <see cref="CancellationToken"/>.</param>
         public async Task OpenConnectionsAsync(
             string databaseName,
             ContainerProperties collection,
@@ -165,6 +176,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                             new PartitionKeyRangeIdentity(collection.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
                             addressInfo.Item2);
 
+                        // The `shouldOpenRntbdChannels` boolean flag indicates whether the SDK should establish Rntbd connections to the
+                        // backend replica nodes. For the `CosmosClient.CreateAndInitializeAsync()` flow, the flag should be passed as
+                        // `true` so that the Rntbd connections to the backend replicas could be established deterministically. For any
+                        // other flow, the flag should be passed as `false`.
                         if (this.openConnectionsHandler != null && shouldOpenRntbdChannels)
                         {
                             await this.openConnectionsHandler
