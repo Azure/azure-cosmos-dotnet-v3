@@ -18,7 +18,9 @@ namespace Microsoft.Azure.Cosmos
                   diagnostics: responseMessage.Diagnostics,
                   itemCount: responseMessage.Headers?.ItemCount,
                   requestMessage: null,
-                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode)
+                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
+                  activityId: responseMessage.Headers?.ActivityId,
+                  correlationId: responseMessage.Headers?.CorrelatedActivityId)
         {
         }
 
@@ -30,7 +32,11 @@ namespace Microsoft.Azure.Cosmos
                   diagnostics: responseMessage.Diagnostics,
                   itemCount: responseMessage.Headers?.ItemCount,
                   requestMessage: responseMessage.RequestMessage,
-                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode)
+                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
+                  activityId: responseMessage.Headers?.ActivityId,
+                  correlationId: responseMessage.Headers?.CorrelatedActivityId,
+                  operationType: responseMessage is QueryResponse ? Documents.OperationType.Query : Documents.OperationType.Invalid
+                 )
         {
         }
 
@@ -41,7 +47,10 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnostics diagnostics,
             string itemCount,
             RequestMessage requestMessage,
-            int subStatusCode)
+            int subStatusCode,
+            string activityId,
+            string correlationId,
+            Documents.OperationType operationType = Documents.OperationType.Invalid)
             : base(requestMessage)
         {
             this.StatusCode = statusCode;
@@ -50,6 +59,9 @@ namespace Microsoft.Azure.Cosmos
             this.Diagnostics = diagnostics;
             this.ItemCount = itemCount; 
             this.SubStatusCode = subStatusCode;
+            this.ActivityId = activityId;
+            this.CorrelatedActivityId = correlationId;
+            this.OperationType = operationType;
         }
 
         private static string GetPayloadSize(ResponseMessage response)
