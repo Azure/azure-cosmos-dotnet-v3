@@ -6423,40 +6423,34 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.InlineIfPossible(() => this.GetDatabaseAccountPrivateAsync(this.ReadEndpoint), this.ResetSessionTokenRetryPolicy.GetRequestPolicy());
         }
 
-        private async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default)
+        private async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationPrivateAsync(GatewayStoreModel gatewayModel, Uri serviceEndpoint, CancellationToken cancellationToken = default)
         {
             serviceEndpoint = new Uri(serviceEndpoint.OriginalString + "clientconfigs");
-
-            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
-            if (this.GatewayStoreModel is GatewayStoreModel gatewayModel)
+         
+            async ValueTask<HttpRequestMessage> CreateRequestMessage()
             {
-                async ValueTask<HttpRequestMessage> CreateRequestMessage()
+                HttpRequestMessage request = new HttpRequestMessage
                 {
-                    HttpRequestMessage request = new HttpRequestMessage
-                    {
-                        Method = HttpMethod.Get,
-                        RequestUri = serviceEndpoint
-                    };
+                    Method = HttpMethod.Get,
+                    RequestUri = serviceEndpoint
+                };
 
-                    INameValueCollection headersCollection = new StoreResponseNameValueCollection();
-                    await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
-                        headersCollection,
-                        serviceEndpoint,
-                        "GET",
-                        AuthorizationTokenType.PrimaryMasterKey);
+                INameValueCollection headersCollection = new StoreResponseNameValueCollection();
+                await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
+                    headersCollection,
+                    serviceEndpoint,
+                    "GET",
+                    AuthorizationTokenType.PrimaryMasterKey);
 
-                    foreach (string key in headersCollection.AllKeys())
-                    {
-                        request.Headers.Add(key, headersCollection[key]);
-                    }
-
-                    return request;
+                foreach (string key in headersCollection.AllKeys())
+                {
+                    request.Headers.Add(key, headersCollection[key]);
                 }
 
-                return await gatewayModel.GetDatabaseAccountClientConfigAsync(CreateRequestMessage);
+                return request;
             }
 
-            return null;
+            return await gatewayModel.GetDatabaseAccountClientConfigAsync(CreateRequestMessage);
         }
 
         /// <summary>
@@ -6510,7 +6504,7 @@ namespace Microsoft.Azure.Cosmos
                     (await this.QueryPartitionProvider).Update(databaseAccount.QueryEngineConfiguration);
                 }
 
-                databaseAccount.ClientConfiguration = await this.GetDatabaseAccountClientConfigurationPrivateAsync(serviceEndpoint, cancellationToken);
+                databaseAccount.ClientConfiguration = await this.GetDatabaseAccountClientConfigurationPrivateAsync(gatewayModel, serviceEndpoint, cancellationToken);
 
                 return databaseAccount;
             }
