@@ -100,8 +100,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="databaseName">A string containing the database name.</param>
         /// <param name="collection">An instance of <see cref="ContainerProperties"/> containing the collection properties.</param>
         /// <param name="partitionKeyRangeIdentities">A read only list containing the partition key range identities.</param>
-        /// <param name="shouldOpenRntbdChannels">A boolean flag indicating whether Rntbd connections are required to be
-        /// established to the backend replica nodes.</param>
+        /// <param name="shouldOpenRntbdChannels">A boolean flag indicating whether Rntbd connections are required to be established
+        /// to the backend replica nodes. For cosmos client initialization and cache warmups, the Rntbd connection are needed to be
+        /// openned deterministically to the backend replicas to reduce latency, thus the <paramref name="shouldOpenRntbdChannels"/>
+        /// should be set to `true` during cosmos client initialization and cache warmups. The OpenAsync flow from DocumentClient
+        /// doesn't require the connections to be opened deterministically thus should set the parameter to `false`.</param>
         /// <param name="cancellationToken">An instance of <see cref="CancellationToken"/>.</param>
         public async Task OpenConnectionsAsync(
             string databaseName,
@@ -530,10 +533,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                     PartitionAddressInformation mergedAddresses = GatewayAddressCache.MergeAddresses(result.Item2, cachedAddresses);
                     IReadOnlyList<TransportAddressUri> transportAddressUris = mergedAddresses.Get(Protocol.Tcp)?.ReplicaTransportAddressUris;
 
-                    foreach (TransportAddressUri address in transportAddressUris)
+                    // If cachedAddresses are null, that would mean that the returned address from gateway would remain in Unknown
+                    // status and there is no cached state that could transition them into Unhealthy.
+                    if (cachedAddresses != null)
                     {
-                        // The main purpose for this step is to move address health status from Unhealthy to UnhealthyPending.
-                        address.SetRefreshedIfUnhealthy();
+                        foreach (TransportAddressUri address in transportAddressUris)
+                        {
+                            // The main purpose for this step is to move address health status from Unhealthy to UnhealthyPending.
+                            address.SetRefreshedIfUnhealthy();
+                        }
                     }
 
                     this.ValidateUnhealthyPendingReplicas(transportAddressUris);
