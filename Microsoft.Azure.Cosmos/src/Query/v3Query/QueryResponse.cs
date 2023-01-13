@@ -163,6 +163,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly CosmosSerializerCore serializerCore;
         private readonly CosmosSerializationFormatOptions serializationOptions;
+        private readonly IReadOnlyList<T> resource;
 
         private QueryResponse(
             HttpStatusCode httpStatusCode,
@@ -178,8 +179,7 @@ namespace Microsoft.Azure.Cosmos
             this.serializerCore = serializerCore;
             this.serializationOptions = serializationOptions;
             this.StatusCode = httpStatusCode;
-            this.Count = cosmosElements.Count;
-            this.Resource = CosmosElementSerializer.GetResources<T>(
+            this.resource = CosmosElementSerializer.GetResources<T>(
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
 
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override CosmosDiagnostics Diagnostics { get; }
 
-        public override int Count { get; }
+        public override int Count => this.resource.Count;
 
         internal CosmosQueryResponseMessageHeaders QueryHeaders { get; }
 
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
             return this.Resource.GetEnumerator();
         }
 
-        public override IEnumerable<T> Resource { get; }
+        public override IEnumerable<T> Resource => this.resource;
 
         internal override RequestMessage RequestMessage { get; }
 

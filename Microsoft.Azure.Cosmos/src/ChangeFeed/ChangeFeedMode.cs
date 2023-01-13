@@ -32,6 +32,20 @@ namespace Microsoft.Azure.Cosmos
         public static ChangeFeedMode Incremental => ChangeFeedModeIncremental.Instance;
 
         /// <summary>
+        /// Creates a <see cref="ChangeFeedMode"/> to receive latest version item changes.
+        /// </summary>
+        /// <remarks>
+        /// Latest version mode includes item creations and updates, not deletions.
+        /// </remarks>
+        /// <returns>A <see cref="ChangeFeedMode"/>  to receive latest version item changes.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        static ChangeFeedMode LatestVersion => ChangeFeedModeIncremental.Instance;
+
+        /// <summary>
         /// Creates a <see cref="ChangeFeedMode"/> to receive notifications for creations, deletes, as well as all intermediary snapshots for updates.
         /// </summary>
         /// <remarks>
@@ -49,6 +63,6 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        static ChangeFeedMode FullFidelity => ChangeFeedModeFullFidelity.Instance;
+        static ChangeFeedMode AllVersionsAndDeletes => ChangeFeedModeFullFidelity.Instance;
     }
 }
