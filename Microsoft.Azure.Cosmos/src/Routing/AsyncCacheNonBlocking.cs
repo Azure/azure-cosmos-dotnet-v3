@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception ex)
                 {
-                    if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
+                    if (this.removeFromCacheOnBackgroundRefreshException(ex))
                     {
                         bool removed = this.TryRemove(key);
                         DefaultTrace.TraceError(
