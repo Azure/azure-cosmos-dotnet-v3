@@ -623,7 +623,8 @@
                         activityId: "0f8fad5b-d9cb-469f-a165-70867728950e",
                         requestCharge: default);
                 }
-                else if (this.IsFailedFallbackPipelineTest && this.GoneExceptionCreated && !this.TooManyRequestsFailureCreated)
+                
+                if (this.IsFailedFallbackPipelineTest && this.GoneExceptionCreated && !this.TooManyRequestsFailureCreated)
                 {
                     this.TooManyRequestsFailureCreated = true;
                     return new CosmosException(
@@ -633,10 +634,8 @@
                             activityId: "111fad5b-d9cb-469f-a165-70867728950e",
                             requestCharge: 0);
                 }
-                else
-                {
-                    return null;
-                }
+
+                return null;
             }
         }
     }

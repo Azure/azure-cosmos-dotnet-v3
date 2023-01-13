@@ -305,19 +305,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     trace,
                     cancellationToken);
             }
-            else if (createPassthroughQuery)
-            {
-                SetTestInjectionPipelineType(inputParameters, Passthrough);
-
-                tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
-                    documentContainer,
-                    inputParameters,
-                    targetRanges,
-                    cancellationToken);
-            }
             else
             {
-                tryCreatePipelineStage = TryCreateSpecializedDocumentQueryExecutionContext(documentContainer, cosmosQueryContext, inputParameters, targetRanges, partitionedQueryExecutionInfo, cancellationToken);
+                if (createPassthroughQuery)
+                {
+                    SetTestInjectionPipelineType(inputParameters, Passthrough);
+
+                    tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
+                        documentContainer,
+                        inputParameters,
+                        targetRanges,
+                        cancellationToken);
+                }
+                else
+                {
+                    tryCreatePipelineStage = TryCreateSpecializedDocumentQueryExecutionContext(documentContainer, cosmosQueryContext, inputParameters, targetRanges, partitionedQueryExecutionInfo, cancellationToken);
+                }
             }
 
             return tryCreatePipelineStage;
