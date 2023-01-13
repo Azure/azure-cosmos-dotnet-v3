@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 {
     using System;
     using System.Collections.Generic;
@@ -19,10 +23,7 @@
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
-    using OpenTelemetry;
-    using Telemetry;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
-    using OpenTelemetry.Trace;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
     [TestCategory("UpdateContract")]
@@ -34,55 +35,35 @@
 
         public static Database database;
         public static Container container;
-
+        
         private static CustomListener testListener;
-        private static TracerProvider oTelTracerProvider;
-
+        
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
         [ClassInitialize()]
         public static async Task ClassInitAsync(TestContext context)
         {
-            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
-
-            // Open Telemetry Listener
-            oTelTracerProvider = Sdk.CreateTracerProviderBuilder()
-                .AddCustomOtelExporter() // use any exporter here
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*") // Right now, it will capture only "Azure.Cosmos.Operation"
-                .Build();
-
-            // Custom Listener
-            testListener = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*", "Azure-Cosmos-Operation-Request-Diagnostics");
-
+            testListener = Util.ConfigureOpenTelemetryAndCustomListeners();
+            
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
-                useGateway: false);
+                useGateway: false,
+                enableDistributingTracing : true);
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
-                .WithBulkExecution(true));
+                .WithBulkExecution(true)
+                .WithDistributedTracingOptions(new DistributedTracingOptions()
+                 {
+                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                 }));
             // Set a small retry count to reduce test time
             miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
                 builder
-                    .AddCustomHandlers(requestHandler));
-
-            client.ClientOptions.EnableDistributedTracing = true;
-            bulkClient.ClientOptions.EnableDistributedTracing = true;
-            miscCosmosClient.ClientOptions.EnableDistributedTracing = true;
-
-            client.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-            {
-                 DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
-            };
-
-            bulkClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-            {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
-            };
+                    .AddCustomHandlers(requestHandler)
+                    .WithDistributedTracingOptions(new DistributedTracingOptions()
+                    {
+                        LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                    }));
             
-            miscCosmosClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-            {
-                DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
-            };
-
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     Guid.NewGuid().ToString(),
                     cancellationToken: default);
@@ -114,8 +95,7 @@
                 await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
             }
 
-            oTelTracerProvider?.Dispose();
-            testListener?.Dispose();
+            Util.DisposeOpenTelemetryAndCustomListeners();
 
             await Task.Delay(5000);
         }
@@ -994,7 +974,12 @@
                 string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
                 Guid exceptionActivityId = Guid.NewGuid();
                 using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
-                    builder.WithThrottlingRetryOptions(
+                    builder
+                    .WithDistributedTracingOptions(new DistributedTracingOptions()
+                    {
+                        LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                    })
+                    .WithThrottlingRetryOptions(
                         maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
                         maxRetryAttemptsOnThrottledRequests: 3)
                         .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
@@ -1005,13 +990,7 @@
                                 request,
                                 exceptionActivityId,
                                 errorMessage))));
-
-                throttleClient.ClientOptions.EnableDistributedTracing = true;
-                throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-                {
-                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
-                };
-
+                
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
                 Container containerWithThrottleException = throttleClient.GetContainer(
                     database.Id,
@@ -1284,6 +1263,10 @@
                         maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
                         maxRetryAttemptsOnThrottledRequests: 3)
                         .WithBulkExecution(true)
+                        .WithDistributedTracingOptions(new DistributedTracingOptions()
+                        {
+                            LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                        })
                         .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                             transportClient,
                             (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
@@ -1292,12 +1275,6 @@
                                 request,
                                 exceptionActivityId,
                                 errorMessage))));
-
-                throttleClient.ClientOptions.EnableDistributedTracing = true;
-                throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-                {
-                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
-                };
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions();
                 Container containerWithThrottleException = throttleClient.GetContainer(
