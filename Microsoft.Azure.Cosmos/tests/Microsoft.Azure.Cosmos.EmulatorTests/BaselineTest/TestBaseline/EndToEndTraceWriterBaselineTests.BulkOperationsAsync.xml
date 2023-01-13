@@ -1590,6 +1590,10 @@
             maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
             maxRetryAttemptsOnThrottledRequests: 3)
             .WithBulkExecution(true)
+            .WithDistributedTracingOptions(new DistributedTracingOptions()
+            {
+                LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+            })
             .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                 transportClient,
                 (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
@@ -1598,12 +1602,6 @@
                     request,
                     exceptionActivityId,
                     errorMessage))));
-
-    throttleClient.ClientOptions.EnableDistributedTracing = true;
-    throttleClient.ClientOptions.DistributedTracingOptions = new DistributedTracingOptions()
-    {
-        DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(0)
-    };
 
     ItemRequestOptions requestOptions = new ItemRequestOptions();
     Container containerWithThrottleException = throttleClient.GetContainer(

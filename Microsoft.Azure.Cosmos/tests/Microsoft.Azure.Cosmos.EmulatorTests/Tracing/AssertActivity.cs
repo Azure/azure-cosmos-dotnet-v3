@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos.Tracing
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -13,14 +17,16 @@
         public static void IsValid(Activity activity)
         {
             Assert.IsTrue(activity.OperationName == activity.DisplayName);
-            Assert.IsNotNull(activity.GetTagItem("db.cosmosdb.connection_mode"));
+
+            Assert.IsFalse(string.IsNullOrEmpty(activity.GetTagItem("db.cosmosdb.connection_mode").ToString()), $"connection mode is emtpy for {activity.OperationName}");
+
             if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Gateway.ToString())
             {
-                Assert.AreEqual(ActivityKind.Internal, activity.Kind);
+                Assert.AreEqual(ActivityKind.Internal, activity.Kind, $" Actual Kind is {activity.Kind} but expected is {ActivityKind.Internal} for {activity.OperationName}");
             }
-            else
+            else if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Direct.ToString())
             {
-                Assert.AreEqual(ActivityKind.Client, activity.Kind);
+                Assert.AreEqual(ActivityKind.Client, activity.Kind, $" Actual Kind is {activity.Kind} but expected is {ActivityKind.Client} for {activity.OperationName}");
             }
             
             IList<string> expectedTags = new List<string>
@@ -73,8 +79,10 @@
             IList<string> exceptionsForContainerAttribute = new List<string>
             {
                 "Operation.CreateDatabaseAsync",
+                "Operation.CreateDatabaseIfNotExistsAsync",
                 "Operation.ReadAsync",
-                "Operation.DeleteAsync"
+                "Operation.DeleteAsync",
+                "Operation.DeleteStreamAsync"
             };
             
             if ((tag.Key == OpenTelemetryAttributeKeys.ContainerName && !exceptionsForContainerAttribute.Contains(name)) ||
