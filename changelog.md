@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Fixed
 - [#3632](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3632) Query: Fixes handling of CosmosUndefined, CosmosGuid and CosmosBinary in unordered DISTINCT
 - [#3574](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3574) Query: Fixes incorrect FeedResponse.Count when result contains undefined elements
+- [#3399](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3399) Query: Fixes default to BadRequestException in case of internal errors in ServiceInterop
 
 ### <a name="3.31.2"/> [3.31.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.2) - 2022-11-03
 ### <a name="3.31.2-preview"/> [3.31.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.2-preview) - 2022-11-03
