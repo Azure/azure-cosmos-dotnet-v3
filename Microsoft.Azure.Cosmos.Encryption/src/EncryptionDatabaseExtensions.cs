@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (string.Equals(encryptionCosmosClient.KeyEncryptionKeyResolverName, KeyEncryptionKeyResolverName.AzureKeyVault))
             {
-                // https://KEYVAULTNAME.vault.azure.net/keys/KEYNAME/ID
+                // https://KEYVAULTNAME.vault.azure.net/keys/KEYNAME/KEYVERSION
                 string[] keyVaultUriSegments = new Uri(encryptionKeyWrapMetadata.Value).Segments;
 
                 if (keyVaultUriSegments.Length != 4 || !string.Equals(keyVaultUriSegments[1], "keys/", StringComparison.InvariantCultureIgnoreCase))
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (string.Equals(encryptionCosmosClient.KeyEncryptionKeyResolverName, KeyEncryptionKeyResolverName.AzureKeyVault))
             {
-                // https://KEYVAULTNAME.vault.azure.net/keys/KEYNAME/ID
+                // https://KEYVAULTNAME.vault.azure.net/keys/KEYNAME/KEYVERSION
                 string[] keyVaultUriSegments = new Uri(newEncryptionKeyWrapMetadata.Value).Segments;
 
                 if (keyVaultUriSegments.Length != 4 || !string.Equals(keyVaultUriSegments[1], "keys/", StringComparison.InvariantCultureIgnoreCase))
