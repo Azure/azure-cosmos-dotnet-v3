@@ -55,10 +55,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         internal List<SystemInfo> SystemInfo { get; } = new List<SystemInfo>();
 
         [JsonProperty(PropertyName = "cacheRefreshInfo")]
-        internal List<OperationInfo> CacheRefreshInfo { get; } = new List<OperationInfo>();
+        internal List<OperationInfo> CacheRefreshInfo { get; set; }
 
         [JsonProperty(PropertyName = "operationInfo")]
-        internal List<OperationInfo> OperationInfo { get; } = new List<OperationInfo>();
+        internal List<OperationInfo> OperationInfo { get; set; }
 
         [JsonIgnore]
         internal bool IsDirectConnectionMode { get; }

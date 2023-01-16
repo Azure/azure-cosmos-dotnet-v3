@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 
-        private readonly ClientTelemetryProperties clientTelemetryInfo;
+        private ClientTelemetryProperties clientTelemetryInfo;
         private readonly CosmosHttpClient httpClient;
         private readonly AuthorizationTokenProvider tokenProvider;
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
@@ -190,16 +190,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     ConcurrentDictionary<OperationInfoKey, OperationInfo> operationWithRUMetricsSnapshot
                         = Interlocked.Exchange(ref this.operationWithRUMetrics, new ConcurrentDictionary<OperationInfoKey, OperationInfo>());
 
-                    this.clientTelemetryInfo.OperationInfo
-                        .AddRange(operationWithLatencyMetricsSnapshot.Values);
-                    this.clientTelemetryInfo.OperationInfo
-                        .AddRange(operationWithRUMetricsSnapshot.Values);
+                    this.clientTelemetryInfo.OperationInfo = new List<OperationInfo>(operationWithLatencyMetricsSnapshot.Values);
+                    this.clientTelemetryInfo.OperationInfo.AddRange(operationWithRUMetricsSnapshot.Values);
                     
                     ConcurrentDictionary<OperationInfoKey, OperationInfo> cacheRefreshInfoSnapshot
-                       = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<OperationInfoKey, OperationInfo>());
+                        = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<OperationInfoKey, OperationInfo>());
 
-                    this.clientTelemetryInfo.CacheRefreshInfo
-                       .AddRange(cacheRefreshInfoSnapshot.Values);
+                    this.clientTelemetryInfo.CacheRefreshInfo = new List<OperationInfo>(cacheRefreshInfoSnapshot.Values);
 
                     await this.SendAsync();
                 }
@@ -466,8 +463,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private void Reset()
         {
             this.clientTelemetryInfo?.SystemInfo?.Clear();
-            this.clientTelemetryInfo?.OperationInfo?.Clear();
-            this.clientTelemetryInfo?.CacheRefreshInfo?.Clear();
         }
 
         /// <summary>
@@ -487,6 +482,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.operationWithRUMetrics = null;
             this.cacheRefreshInfoMap = null;
 
+            this.clientTelemetryInfo = null;
+            
+            this.telemetryTask.Dispose();
+            
             this.telemetryTask = null;
             
         }
