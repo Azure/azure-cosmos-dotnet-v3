@@ -7,13 +7,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     /// <summary>
-    /// The total count of failed requests for an <see cref="ITrace"/>.
+    /// Aggregated data from Trace tree
     /// </summary>
 #if INTERNAL
     public

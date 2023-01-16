@@ -83,8 +83,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The list of tuples containing the Region name and the URI</returns>
         public abstract IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions();
 
-        internal abstract IReadOnlyList<StoreResponseStatistics> StoreResponseStatistics { get; }
+        internal virtual IReadOnlyList<StoreResponseStatistics> StoreResponseStatistics { get; }
 
-        internal abstract IReadOnlyList<HttpResponseStatistics> HttpResponseStatistics { get; }
+        internal virtual IReadOnlyList<HttpResponseStatistics> HttpResponseStatistics { get; }
     }
 }

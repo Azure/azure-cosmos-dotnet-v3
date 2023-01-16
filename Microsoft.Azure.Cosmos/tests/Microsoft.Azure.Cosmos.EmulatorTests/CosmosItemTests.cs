@@ -2986,8 +2986,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient(clientOptions);
             Container container = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            await container.CreateItemAsync<ToDoActivity>(testItem);
+            
+            ItemResponse<ToDoActivity> response = await container.CreateItemAsync<ToDoActivity>(testItem);
 
+            // Network information on successful request
+            Assert.IsNotNull(response.Diagnostics.HttpResponseStatistics);
+            Assert.IsTrue(response.Diagnostics.HttpResponseStatistics.Count > 0);
+            Assert.IsNotNull(response.Diagnostics.StoreResponseStatistics);
+            Assert.IsTrue(response.Diagnostics.StoreResponseStatistics.Count > 0);
+            
             try
             {
                 await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
@@ -3003,6 +3010,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(diagnosticString.Contains("No change to cache"));
                 Assert.AreNotEqual(0, diagnostics.GetFailedRequestCount());
 
+                // Network information on failed request
                 Assert.IsNotNull(diagnostics.HttpResponseStatistics);
                 Assert.IsTrue(diagnostics.HttpResponseStatistics.Count > 0);
                 Assert.IsNotNull(diagnostics.StoreResponseStatistics);
