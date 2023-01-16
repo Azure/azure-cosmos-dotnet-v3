@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Text;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     /// <summary>
     /// The total count of failed requests for an <see cref="ITrace"/>.
@@ -44,6 +45,44 @@ namespace Microsoft.Azure.Cosmos.Tracing
         }
 
         /// <summary>
+        /// List of all HTTP requests and its statistics
+        /// </summary>
+        public IReadOnlyList<HttpResponseStatistics> HttpResponseStatistics => this.httpResponseStatisticsInternal;
+
+        /// <summary>
+        /// List of all TCP requests and its statistics
+        /// </summary>
+        public IReadOnlyList<StoreResponseStatistics> StoreResponseStatistics => this.storeResponseStatisticsInternal;
+
+        private readonly List<HttpResponseStatistics> httpResponseStatisticsInternal = new List<HttpResponseStatistics>();
+        private readonly List<StoreResponseStatistics> storeResponseStatisticsInternal = new List<StoreResponseStatistics>();
+
+        /// <summary>
+        /// Consolidates HTTP and Store response statistics
+        /// </summary>
+        /// <param name="clientSideRequestStatisticsTraceDatum"></param>
+        internal void UpdateNetworkStatistics(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+        {
+            if ((clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList == null ||
+                        clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count == 0) &&
+                        (clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList == null ||
+                            clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList.Count == 0))
+            {
+                return;
+            }
+
+            lock (this.httpResponseStatisticsInternal)
+            {
+                this.httpResponseStatisticsInternal.AddRange(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
+            }
+
+            lock (this.storeResponseStatisticsInternal)
+            {
+                this.storeResponseStatisticsInternal.AddRange(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
+            }
+        }
+        
+        /// <summary>
         /// Consolidated Region contacted Information of this and children nodes
         /// </summary>
         private readonly HashSet<(string, Uri)> regionContactedInternal = new HashSet<(string, Uri)>();
@@ -63,23 +102,20 @@ namespace Microsoft.Azure.Cosmos.Tracing
         }
 
         /// <summary>
-        /// Update region contacted information to this node
+        /// Update region contacted information in the Summary
         /// </summary>
-        /// <param name="traceDatum"></param>
-        public void UpdateRegionContacted(TraceDatum traceDatum)
+        /// <param name="clientSideRequestStatisticsTraceDatum"></param>
+        internal void UpdateRegionContacted(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
         {
-            if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+            if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null ||
+                        clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
             {
-                if (clientSideRequestStatisticsTraceDatum.RegionsContacted == null ||
-                            clientSideRequestStatisticsTraceDatum.RegionsContacted.Count == 0)
-                {
-                    return;
-                }
+                return;
+            }
 
-                lock (this.regionContactedInternal)
-                {
-                    this.regionContactedInternal.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                }
+            lock (this.regionContactedInternal)
+            {
+                this.regionContactedInternal.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContacted);
             }
         }
 
@@ -94,6 +130,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
                 this.regionContactedInternal.Add((regionName, locationEndpoint));
             }
+        }
+
+        internal void UpdateSummary(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+        {
+            this.UpdateNetworkStatistics(clientSideRequestStatisticsTraceDatum);
+            this.UpdateRegionContacted(clientSideRequestStatisticsTraceDatum);
         }
 
     }

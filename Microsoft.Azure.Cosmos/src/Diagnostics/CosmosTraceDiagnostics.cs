@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -48,6 +47,10 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             return this.Value?.Summary?.RegionsContacted;
         }
+
+        internal override IReadOnlyList<HttpResponseStatistics> HttpResponseStatistics => this.Value?.Summary?.HttpResponseStatistics;
+
+        internal override IReadOnlyList<StoreResponseStatistics> StoreResponseStatistics => this.Value?.Summary?.StoreResponseStatistics;
 
         internal bool IsGoneExceptionHit()
         {

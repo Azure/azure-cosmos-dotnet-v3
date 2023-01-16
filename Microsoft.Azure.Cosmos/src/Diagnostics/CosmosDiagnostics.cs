@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     /// <summary>
     ///  Contains the cosmos diagnostic information for the current request to Azure Cosmos DB service.
@@ -81,5 +82,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <returns>The list of tuples containing the Region name and the URI</returns>
         public abstract IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions();
+
+        internal abstract IReadOnlyList<StoreResponseStatistics> StoreResponseStatistics { get; }
+
+        internal abstract IReadOnlyList<HttpResponseStatistics> HttpResponseStatistics { get; }
     }
 }

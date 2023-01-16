@@ -6,9 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
 
@@ -121,11 +118,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 parent: null,
                 summary: new TraceSummary());
         }
-
+        
         public void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Value.Add(key, traceDatum);
-            this.Summary.UpdateRegionContacted(traceDatum);
+            
+            if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+            {
+                this.Summary.UpdateSummary(clientSideRequestStatisticsTraceDatum);
+            }
+            
         }
 
         public void AddDatum(string key, object value)
