@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Added
 - [#3642](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3642) Adds validation code to check if the Key Vault URI provided in wrap metadata is a valid key identifier.
 
-### <a name="2.0.0-previewV02"/> [2.0.0-preview02](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.0-preview02) - 2023-01-11
+### <a name="2.0.1-preview"/> [2.0.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.1-preview) - 2023-01-11
 
 #### Added
 - [#3642](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3642) Adds validation code to check if the Key Vault URI provided in wrap metadata is a valid key identifier.
