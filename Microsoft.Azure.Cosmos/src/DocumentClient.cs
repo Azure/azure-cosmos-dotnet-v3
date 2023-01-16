@@ -6899,6 +6899,11 @@ namespace Microsoft.Azure.Cosmos
                 headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, options.ConsistencyLevel.ToString());
             }
 
+            if (options.PriorityLevel.HasValue)
+            {
+                headers.Set(HttpConstants.HttpHeaders.PriorityLevel, options.PriorityLevel.ToString());
+            }
+
             if (options.IndexingDirective.HasValue)
             {
                 headers.Set(HttpConstants.HttpHeaders.IndexingDirective, options.IndexingDirective.ToString());

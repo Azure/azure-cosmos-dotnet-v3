@@ -43,6 +43,11 @@ namespace Microsoft.Azure.Cosmos
         public Action<Headers> AddRequestHeaders { get; set; }
 
         /// <summary>
+        /// Gets or sets the priority level for a request.
+        /// </summary>
+        public PriorityLevel? PriorityLevel { get; set; }
+
+        /// <summary>
         /// Set Request Level Distributed Tracing Options.
         /// </summary>
         internal DistributedTracingOptions DistributedTracingOptions { get; set; }
@@ -89,6 +94,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.IfNoneMatchEtag != null)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
+            }
+
+            if (this.PriorityLevel.HasValue)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.PriorityLevel, this.PriorityLevel.ToString());
             }
 
             this.AddRequestHeaders?.Invoke(request.Headers);
