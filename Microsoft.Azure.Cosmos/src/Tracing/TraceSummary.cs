@@ -47,12 +47,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// List of all HTTP requests and its statistics
         /// </summary>
-        public IReadOnlyList<HttpResponseStatistics> HttpResponseStatistics => this.httpResponseStatisticsInternal;
+        internal IReadOnlyList<HttpResponseStatistics> HttpResponseStatistics => this.httpResponseStatisticsInternal;
 
         /// <summary>
         /// List of all TCP requests and its statistics
         /// </summary>
-        public IReadOnlyList<StoreResponseStatistics> StoreResponseStatistics => this.storeResponseStatisticsInternal;
+        internal IReadOnlyList<StoreResponseStatistics> StoreResponseStatistics => this.storeResponseStatisticsInternal;
 
         private readonly List<HttpResponseStatistics> httpResponseStatisticsInternal = new List<HttpResponseStatistics>();
         private readonly List<StoreResponseStatistics> storeResponseStatisticsInternal = new List<StoreResponseStatistics>();

@@ -3002,6 +3002,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(diagnosticString.Contains("ForceAddressRefresh"));
                 Assert.IsTrue(diagnosticString.Contains("No change to cache"));
                 Assert.AreNotEqual(0, diagnostics.GetFailedRequestCount());
+
+                Assert.IsNotNull(diagnostics.HttpResponseStatistics);
+                Assert.IsTrue(diagnostics.HttpResponseStatistics.Count > 0);
+                Assert.IsNotNull(diagnostics.StoreResponseStatistics);
+                Assert.IsTrue(diagnostics.StoreResponseStatistics.Count > 0);
             }
         }
 
