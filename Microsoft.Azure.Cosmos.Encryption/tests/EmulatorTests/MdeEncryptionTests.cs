@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch(Exception ex)
             {
-                Assert.AreEqual(true, ex.Message.Contains("Invalid key vault uri"));
+                Assert.AreEqual(true, ex.Message.Contains("Invalid Key Vault URI"));
             }
 
             // rewrap old key with new key vault uri without complete key identifier
@@ -355,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch (Exception ex)
             {
-                Assert.AreEqual(true, ex.Message.Contains("Invalid key vault uri"));
+                Assert.AreEqual(true, ex.Message.Contains("Invalid Key Vault URI"));
             }
 
             encryptionCosmosClient.Dispose();

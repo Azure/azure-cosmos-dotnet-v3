@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (keyVaultUriSegments.Length != 4 || !string.Equals(keyVaultUriSegments[1], "keys/", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    throw new ArgumentException($"Invalid key vault uri'{encryptionKeyWrapMetadata.Value}' passed. Pass the complete Azure keyvault key identifier. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
+                    throw new ArgumentException($"Invalid Key Vault URI'{encryptionKeyWrapMetadata.Value}' passed. Pass the complete Azure keyvault key identifier. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
                 }
             }
 
@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (keyVaultUriSegments.Length != 4 || !string.Equals(keyVaultUriSegments[1], "keys/", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    throw new ArgumentException($"Invalid key vault uri'{newEncryptionKeyWrapMetadata.Value}' passed. Pass the complete Azure keyvault key identifier. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
+                    throw new ArgumentException($"Invalid Key Vault URI'{newEncryptionKeyWrapMetadata.Value}' passed. Pass the complete Azure keyvault key identifier. Please refer to https://aka.ms/CosmosClientEncryption for more details.");
                 }
             }
 
