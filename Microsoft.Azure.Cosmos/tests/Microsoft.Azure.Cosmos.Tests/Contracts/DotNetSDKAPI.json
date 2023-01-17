@@ -6570,6 +6570,11 @@
           "Attributes": [],
           "MethodInfo": "System.String NorwayWest;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String PolandCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String PolandCentral;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String QatarCentral": {
           "Type": "Field",
           "Attributes": [],
