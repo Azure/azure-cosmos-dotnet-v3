@@ -640,7 +640,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// <para>
-        /// This is applicable when client service has issue connecting to server using and needs certificate validation.
+        /// This is applicable when client service has issue connecting to server using IP and needs certificate validation.
+        /// This is the contract available to client which would override RemoteCertificateValidationCallback for TCP and ServerCertificateCustomValidationCallback for HTTP.
         /// </para>
         /// </remarks>
         public Func<object, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
