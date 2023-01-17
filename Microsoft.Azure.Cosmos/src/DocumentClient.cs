@@ -6450,7 +6450,17 @@ namespace Microsoft.Azure.Cosmos
                 return request;
             }
 
-            return await gatewayModel.GetDatabaseAccountClientConfigAsync(CreateRequestMessage);
+            try
+            {
+                return await gatewayModel.GetDatabaseAccountClientConfigAsync(CreateRequestMessage);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError($"Error while fetching client configuration. Sevice Endpoint: {serviceEndpoint}, Exception: {ex.StackTrace}");
+            }
+
+            //In case of any exception, return this as null.
+            return null;
         }
 
         /// <summary>
