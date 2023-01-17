@@ -1036,7 +1036,7 @@ namespace Microsoft.Azure.Cosmos
                     this.clientTelemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
                         clientId: this.clientId,
                         httpClient: this.httpClient,
-                        userAgent: this.ConnectionPolicy.UserAgentContainer.UserAgent,
+                        userAgent: this.ConnectionPolicy.UserAgentContainer.BaseUserAgent,
                         connectionMode: this.ConnectionPolicy.ConnectionMode,
                         authorizationTokenProvider: this.cosmosAuthorization,
                         diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
