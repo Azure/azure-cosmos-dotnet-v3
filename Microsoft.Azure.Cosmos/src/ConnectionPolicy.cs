@@ -296,7 +296,8 @@ namespace Microsoft.Azure.Cosmos
             get;
             set;
         }
-        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, Boolean> ServerCertificateCustomValidationCallback
+
+        public Func<object, X509Certificate2, X509Chain, SslPolicyErrors, Boolean> ServerCertificateCustomValidationCallback
         {
             get;
             set;

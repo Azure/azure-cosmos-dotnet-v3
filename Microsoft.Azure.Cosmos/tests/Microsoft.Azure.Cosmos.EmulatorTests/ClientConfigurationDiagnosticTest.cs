@@ -101,6 +101,48 @@
         }
 
         [TestMethod]
+        public void ClientConfigWithOptionsTest2()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                RequestTimeout = TimeSpan.FromSeconds(50),
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(30),
+                GatewayModeMaxConnectionLimit = 20,
+                MaxRequestsPerTcpConnection = 30,
+                MaxTcpConnectionsPerEndpoint = 30,
+                LimitToEndpoint = true,
+                ConsistencyLevel = ConsistencyLevel.Session
+            };
+
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(options);
+            RntbdConnectionConfig tcpconfig = cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+            Assert.AreEqual(tcpconfig.ConnectionTimeout, 30);
+            Assert.AreEqual(tcpconfig.IdleConnectionTimeout, -1);
+            Assert.AreEqual(tcpconfig.MaxRequestsPerChannel, 30);
+            Assert.AreEqual(tcpconfig.TcpEndpointRediscovery, true);
+
+            GatewayConnectionConfig gwConfig = cosmosClient.ClientConfigurationTraceDatum.GatewayConnectionConfig;
+            Assert.AreEqual(gwConfig.UserRequestTimeout, 50);
+            Assert.AreEqual(gwConfig.MaxConnectionLimit, 20);
+
+            ConsistencyConfig consistencyConfig = cosmosClient.ClientConfigurationTraceDatum.ConsistencyConfig;
+            Assert.AreEqual(consistencyConfig.ConsistencyLevel.Value, ConsistencyLevel.Session);
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                ApplicationRegion = "East US",
+                ServerCertificateCustomValidationCallback = null,
+            };
+
+            CosmosClientContext context = ClientContextCore.Create(
+                cosmosClient,
+                clientOptions);
+
+            ClientConfigurationTraceDatum clientConfig = new ClientConfigurationTraceDatum(context.DocumentClient, DateTime.UtcNow);
+            
+        }
+
+        [TestMethod]
         public void ConsistencyConfigSerializationTest()
         {
             List<string> preferredRegions = new List<string> { "EastUS", "WestUs" };

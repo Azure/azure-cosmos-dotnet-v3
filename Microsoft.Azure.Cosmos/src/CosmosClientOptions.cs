@@ -638,18 +638,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Certificate validation function
         /// </summary>
-        public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
-        internal RemoteCertificateValidationCallback SslCustomValidationCallBack
-        {
-            get
-            {
-                if (this.ServerCertificateCustomValidationCallback == null)
-                {
-                    return null;
-                }
-                return (obj, cert, chain, policy) => this.ServerCertificateCustomValidationCallback((HttpRequestMessage)obj, (X509Certificate2)cert, chain, policy);
-            }
-        }
+        /// <remarks>
+        /// <para>
+        /// When a request fails due to a RetryWith error, the client delays and retries the request. This configures the client
+        /// to delay the time specified before retrying the request.
+        /// </para>
+        /// </remarks>
+        public Func<object, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
+       
         /// <summary>
         /// API type for the account
         /// </summary>

@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -81,12 +83,21 @@ namespace Microsoft.Azure.Cosmos
                handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer,
                cosmosClientId: cosmosClient.Id,
-               remoteCertificateValidationCallback: clientOptions.SslCustomValidationCallBack);
+               remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback));
 
             return ClientContextCore.Create(
                 cosmosClient,
                 documentClient,
                 clientOptions);
+        }
+
+        internal static RemoteCertificateValidationCallback SslCustomValidationCallBack(Func<object, X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        {
+                if (serverCertificateCustomValidationCallback == null)
+                {
+                    return null;
+                }
+                return (obj, cert, chain, policy) => serverCertificateCustomValidationCallback(obj, (X509Certificate2)cert, chain, policy);
         }
 
         internal static CosmosClientContext Create(
