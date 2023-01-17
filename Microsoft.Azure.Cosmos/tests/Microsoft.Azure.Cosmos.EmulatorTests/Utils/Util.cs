@@ -14,10 +14,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using OpenTelemetry;
+    using OpenTelemetry.Trace;
 
     internal enum DocumentClientType
     {
@@ -531,6 +535,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
+        }
+
+        private static TracerProvider OTelTracerProvider;
+        private static CustomListener TestListener;
+        
+        internal static CustomListener ConfigureOpenTelemetryAndCustomListeners()
+        {
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+
+            // Open Telemetry Listener
+            Util.OTelTracerProvider = Sdk.CreateTracerProviderBuilder()
+                .AddCustomOtelExporter() // use any exporter here
+                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*") // Right now, it will capture only "Azure.Cosmos.Operation"
+                .Build();
+
+            // Custom Listener
+            Util.TestListener = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*", "Azure-Cosmos-Operation-Request-Diagnostics");
+
+            return Util.TestListener;
+
+        }
+
+        internal static void DisposeOpenTelemetryAndCustomListeners()
+        {
+            // Open Telemetry Listener
+            Util.OTelTracerProvider?.Dispose();
+
+            // Custom Listener
+            Util.TestListener?.Dispose();
+
+            Util.OTelTracerProvider = null;
+            Util.TestListener = null;
+
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
         }
 
         /// <summary>
