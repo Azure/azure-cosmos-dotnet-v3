@@ -120,30 +120,11 @@ namespace Microsoft.Azure.Cosmos
                     throw;
                 }
 
-                try
-                {
-                    return await initialLazyValue.CreateAndWaitForBackgroundRefreshTaskAsync(
-                       createRefreshTask: singleValueInitFunc);
-                }
-                catch (Exception e)
-                {
-                    if (initialLazyValue.ShouldRemoveFromCacheThreadSafe())
-                    {
-                        DefaultTrace.TraceError(
-                            "AsyncCacheNonBlocking.GetAsync with ForceRefresh Failed. key: {0}, Exception: {1}",
-                            key,
-                            e);
-
-                        // In some scenarios when a background failure occurs like a 404
-                        // the initial cache value should be removed.
-                        if (this.removeFromCacheOnBackgroundRefreshException(e))
-                        {
-                            this.TryRemove(key);
-                        }
-                    }
-
-                    throw;
-                }
+                return await this.UpdateCacheAndGetValueFromBackgroundTaskAsync(
+                    key: key,
+                    initialValue: initialLazyValue,
+                    callbackDelegate: singleValueInitFunc,
+                    operationName: "GetAsync");
             }
 
             // The AsyncLazyWithRefreshTask is lazy and won't create the task until GetValue is called.
@@ -208,24 +189,55 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.values.TryGetValue(key, out AsyncLazyWithRefreshTask<TValue> initialLazyValue))
             {
-                try
+                await this.UpdateCacheAndGetValueFromBackgroundTaskAsync(
+                    key: key,
+                    initialValue: initialLazyValue,
+                    callbackDelegate: singleValueInitFunc,
+                    operationName: "RefreshAsync");
+            }
+        }
+
+        /// <summary>
+        /// Creates a background task to invoke the callback delegate and updates the cache with the value returned from the delegate.
+        /// </summary>
+        /// <param name="key">The requested key to be updated.</param>
+        /// <param name="initialValue">An instance of <see cref="AsyncLazyWithRefreshTask{T}"/> containing the initial cached value.</param>
+        /// <param name="callbackDelegate">A func callback delegate to be invoked at a later point of time.</param>
+        /// <param name="operationName">A string indicating the operation on the cache.</param>
+        /// <returns>A <see cref="Task{TValue}"/> containing the updated, refreshed value.</returns>
+        private async Task<TValue> UpdateCacheAndGetValueFromBackgroundTaskAsync(
+            TKey key,
+            AsyncLazyWithRefreshTask<TValue> initialValue,
+            Func<TValue, Task<TValue>> callbackDelegate,
+            string operationName)
+        {
+            try
+            {
+                return await initialValue.CreateAndWaitForBackgroundRefreshTaskAsync(
+                   createRefreshTask: callbackDelegate);
+            }
+            catch (Exception ex)
+            {
+                if (initialValue.ShouldRemoveFromCacheThreadSafe())
                 {
-                    await initialLazyValue.CreateAndWaitForBackgroundRefreshTaskAsync(singleValueInitFunc);
-                }
-                catch (Exception ex)
-                {
+                    bool removed = false;
+
+                    // In some scenarios when a background failure occurs like a 404
+                    // the initial cache value should be removed.
                     if (this.removeFromCacheOnBackgroundRefreshException(ex))
                     {
-                        bool removed = this.TryRemove(key);
-                        DefaultTrace.TraceError(
-                            "AsyncCacheNonBlocking Failed RefreshAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
-                            key,
-                            removed,
-                            ex);
+                        removed = this.TryRemove(key);
                     }
 
-                    throw;
+                    DefaultTrace.TraceError(
+                        "AsyncCacheNonBlocking Failed. key: {0}, operation: {1}, tryRemoved: {2}, Exception: {3}",
+                        key,
+                        operationName,
+                        removed,
+                        ex);
                 }
+
+                throw;
             }
         }
 
