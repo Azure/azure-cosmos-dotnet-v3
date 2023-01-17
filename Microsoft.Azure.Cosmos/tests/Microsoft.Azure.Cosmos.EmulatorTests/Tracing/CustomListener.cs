@@ -160,10 +160,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             StringBuilder builder = new StringBuilder();
             builder.Append("<EVENT>")
-                   .Append("Ideally, this should contain request diagnostics but request diagnostics is " +
+                   .Append("<EVENT-NAME>").Append(eventData.EventName).Append("</EVENT-NAME>")
+                   .Append("<EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is " +
                    "subject to change with each request as it contains few unique id. " +
                    "So just putting this tag with this static text to make sure event is getting generated" +
-                   " for each test.")
+                   " for each test.</EVENT-TEXT>")
                    .Append("</EVENT>");
             CustomListener.CollectedEvents.Add(builder.ToString());
         }
