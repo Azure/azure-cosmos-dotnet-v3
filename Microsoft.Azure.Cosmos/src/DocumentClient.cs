@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
         /// <param name="isLocalQuorumConsistency">Flag to allow Quorum Read with Eventual Consistency Account</param>
         /// <param name="cosmosClientId"></param>
-        /// <param name="remoteCertificateValidationCallback"></param>
+        /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal

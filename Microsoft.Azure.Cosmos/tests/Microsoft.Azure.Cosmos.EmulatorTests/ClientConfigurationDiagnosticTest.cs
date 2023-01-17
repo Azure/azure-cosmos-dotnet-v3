@@ -3,6 +3,9 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Net.Security;
+    using System.Security.Cryptography;
+    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -101,7 +104,7 @@
         }
 
         [TestMethod]
-        public void ClientConfigWithOptionsTest2()
+        public void ValidateCertificateValidationCallbackWithClientOptions()
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
@@ -116,30 +119,22 @@
 
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient(options);
             RntbdConnectionConfig tcpconfig = cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
-            Assert.AreEqual(tcpconfig.ConnectionTimeout, 30);
-            Assert.AreEqual(tcpconfig.IdleConnectionTimeout, -1);
-            Assert.AreEqual(tcpconfig.MaxRequestsPerChannel, 30);
-            Assert.AreEqual(tcpconfig.TcpEndpointRediscovery, true);
-
-            GatewayConnectionConfig gwConfig = cosmosClient.ClientConfigurationTraceDatum.GatewayConnectionConfig;
-            Assert.AreEqual(gwConfig.UserRequestTimeout, 50);
-            Assert.AreEqual(gwConfig.MaxConnectionLimit, 20);
-
-            ConsistencyConfig consistencyConfig = cosmosClient.ClientConfigurationTraceDatum.ConsistencyConfig;
-            Assert.AreEqual(consistencyConfig.ConsistencyLevel.Value, ConsistencyLevel.Session);
 
             CosmosClientOptions clientOptions = new CosmosClientOptions
             {
                 ApplicationRegion = "East US",
-                ServerCertificateCustomValidationCallback = null,
+                ServerCertificateCustomValidationCallback = (object obj, X509Certificate2 cerf, X509Chain chain, SslPolicyErrors error) => true
             };
+
+            X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
+            X509Chain x509Chain = new X509Chain();
+            SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
 
             CosmosClientContext context = ClientContextCore.Create(
                 cosmosClient,
                 clientOptions);
-
-            ClientConfigurationTraceDatum clientConfig = new ClientConfigurationTraceDatum(context.DocumentClient, DateTime.UtcNow);
-            
+            Assert.IsTrue(context.DocumentClient.remoteCertificateValidationCallback(new object(), x509Certificate2, x509Chain, sslPolicyErrors));
+     
         }
 
         [TestMethod]

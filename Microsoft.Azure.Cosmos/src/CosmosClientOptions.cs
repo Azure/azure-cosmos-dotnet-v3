@@ -636,12 +636,11 @@ namespace Microsoft.Azure.Cosmos
         internal Func<TransportClient, TransportClient> TransportClientHandlerFactory { get; set; }
 
         /// <summary>
-        /// Certificate validation function
+        /// A callback delegate to validate the server certificate.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// When a request fails due to a RetryWith error, the client delays and retries the request. This configures the client
-        /// to delay the time specified before retrying the request.
+        /// This is applicable when client service has issue connecting to server using and needs certificate validation.
         /// </para>
         /// </remarks>
         public Func<object, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
