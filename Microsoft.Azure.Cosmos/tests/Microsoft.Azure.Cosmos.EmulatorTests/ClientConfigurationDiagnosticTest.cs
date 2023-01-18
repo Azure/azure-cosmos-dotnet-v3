@@ -104,40 +104,6 @@
         }
 
         [TestMethod]
-        public void ValidateCertificateValidationCallbackGetsAddedWithClientOptionsCreation()
-        {
-            CosmosClientOptions options = new CosmosClientOptions
-            {
-                RequestTimeout = TimeSpan.FromSeconds(50),
-                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(30),
-                GatewayModeMaxConnectionLimit = 20,
-                MaxRequestsPerTcpConnection = 30,
-                MaxTcpConnectionsPerEndpoint = 30,
-                LimitToEndpoint = true,
-                ConsistencyLevel = ConsistencyLevel.Session
-            };
-
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(options);
-            RntbdConnectionConfig tcpconfig = cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
-
-            CosmosClientOptions clientOptions = new CosmosClientOptions
-            {
-                ApplicationRegion = "East US",
-                ServerCertificateCustomValidationCallback = (X509Certificate2 cerf, X509Chain chain, SslPolicyErrors error) => true
-            };
-
-            X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
-            X509Chain x509Chain = new X509Chain();
-            SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
-
-            CosmosClientContext context = ClientContextCore.Create(
-                cosmosClient,
-                clientOptions);
-            Assert.IsTrue(context.DocumentClient.remoteCertificateValidationCallback(new object(), x509Certificate2, x509Chain, sslPolicyErrors));
-     
-        }
-
-        [TestMethod]
         public void ConsistencyConfigSerializationTest()
         {
             List<string> preferredRegions = new List<string> { "EastUS", "WestUs" };
