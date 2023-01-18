@@ -55,25 +55,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
         {
             TryCatch<bool> hasNext = await this.inner.TryAsync(pipelineStage => pipelineStage.MoveNextAsync(trace));
             bool success = hasNext.Succeeded && hasNext.Result;
+            bool isPartitionSplitException = hasNext.Succeeded && this.Current.Failed && this.Current.InnerMostException.IsPartitionSplitException();
 
-            if (success)
+            if (success && !isPartitionSplitException)
             {
                 this.continuationToken = this.Current.Succeeded ? this.Current.Result.State?.Value : null;
             }
-            else if (this.executionState == ExecutionState.OptimisticDirectExecution && hasNext.Succeeded)
+            else if (isPartitionSplitException && this.executionState == ExecutionState.OptimisticDirectExecution)
             {
-                Debug.Assert(hasNext.Result == false);
-                if (this.Current.InnerMostException.IsPartitionSplitException())
+                this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken());
+                this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
+                if (this.inner.Failed)
                 {
-                    this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken());
-                    this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
-                    if (this.inner.Failed)
-                    {
-                        return false;
-                    }
-
-                    success = await this.inner.Result.MoveNextAsync(trace);
+                    return false;
                 }
+
+                success = await this.inner.Result.MoveNextAsync(trace);
             }
 
             return success;
@@ -161,8 +158,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 TryCatch<QueryPage> partitionPage = this.queryPartitionRangePageAsyncEnumerator.Current;
                 if (partitionPage.Failed)
                 {
-                    this.Current = partitionPage;
-                    return false;
+                    this.Current = TryCatch<QueryPage>.FromException(partitionPage.Exception);
+                    return true;
                 }
 
                 QueryPage backendQueryPage = partitionPage.Result;
