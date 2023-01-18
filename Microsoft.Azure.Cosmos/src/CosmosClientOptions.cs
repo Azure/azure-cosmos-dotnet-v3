@@ -644,7 +644,7 @@ namespace Microsoft.Azure.Cosmos
         /// This is the contract available to client which would override RemoteCertificateValidationCallback for TCP and ServerCertificateCustomValidationCallback for HTTP.
         /// </para>
         /// </remarks>
-        public Func<object, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
+        public Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
        
         /// <summary>
         /// API type for the account

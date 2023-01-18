@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 eventSource: eventSource);
         }
 
-        public static HttpMessageHandler CreateHttpClientHandler(int gatewayModeMaxConnectionLimit, IWebProxy webProxy, Func<object, X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        public static HttpMessageHandler CreateHttpClientHandler(int gatewayModeMaxConnectionLimit, IWebProxy webProxy, Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             HttpClientHandler httpClientHandler = new HttpClientHandler();
 
@@ -113,7 +113,10 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 httpClientHandler.MaxConnectionsPerServer = gatewayModeMaxConnectionLimit;
-                httpClientHandler.ServerCertificateCustomValidationCallback = serverCertificateCustomValidationCallback;
+                if (serverCertificateCustomValidationCallback != null)
+                {
+                    httpClientHandler.ServerCertificateCustomValidationCallback = (_, certificate2, x509Chain, sslPolicyErrors) => serverCertificateCustomValidationCallback(certificate2, x509Chain, sslPolicyErrors);
+                }
             }
             // MaxConnectionsPerServer is not supported on some platforms.
             catch (PlatformNotSupportedException)

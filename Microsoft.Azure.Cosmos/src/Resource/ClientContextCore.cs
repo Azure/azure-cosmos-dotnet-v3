@@ -91,13 +91,9 @@ namespace Microsoft.Azure.Cosmos
                 clientOptions);
         }
 
-        internal static RemoteCertificateValidationCallback SslCustomValidationCallBack(Func<object, X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        internal static RemoteCertificateValidationCallback SslCustomValidationCallBack(Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
-                if (serverCertificateCustomValidationCallback == null)
-                {
-                    return null;
-                }
-                return (obj, cert, chain, policy) => serverCertificateCustomValidationCallback(obj, (X509Certificate2)cert, chain, policy);
+            return serverCertificateCustomValidationCallback == null ? null : (_, cert, chain, policy) => serverCertificateCustomValidationCallback((X509Certificate2)cert, chain, policy);
         }
 
         internal static CosmosClientContext Create(

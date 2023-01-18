@@ -165,6 +165,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedMode AllVersionsAndDeletes;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.ChangeFeedMode get_AllVersionsAndDeletes();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.ChangeFeedMode LatestVersion": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedMode LatestVersion;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.ChangeFeedMode get_LatestVersion();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.ChangeFeedMode get_AllVersionsAndDeletes()": {
           "Type": "Method",
           "Attributes": [],
@@ -174,11 +179,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedMode get_LatestVersion();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.ChangeFeedMode LatestVersion": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedMode LatestVersion;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.ChangeFeedMode get_LatestVersion();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

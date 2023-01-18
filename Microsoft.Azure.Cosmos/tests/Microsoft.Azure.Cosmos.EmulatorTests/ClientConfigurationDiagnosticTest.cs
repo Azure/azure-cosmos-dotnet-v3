@@ -104,7 +104,7 @@
         }
 
         [TestMethod]
-        public void ValidateCertificateValidationCallbackWithClientOptions()
+        public void ValidateCertificateValidationCallbackGetsAddedWithClientOptionsCreation()
         {
             CosmosClientOptions options = new CosmosClientOptions
             {
@@ -123,7 +123,7 @@
             CosmosClientOptions clientOptions = new CosmosClientOptions
             {
                 ApplicationRegion = "East US",
-                ServerCertificateCustomValidationCallback = (object obj, X509Certificate2 cerf, X509Chain chain, SslPolicyErrors error) => true
+                ServerCertificateCustomValidationCallback = (X509Certificate2 cerf, X509Chain chain, SslPolicyErrors error) => true
             };
 
             X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
