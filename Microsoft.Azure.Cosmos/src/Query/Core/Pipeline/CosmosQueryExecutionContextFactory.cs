@@ -371,6 +371,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters,
                     partitionedQueryExecutionInfo,
                     targetRanges,
+                    trace,
                     cancellationToken);
             }
 
@@ -426,10 +427,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            List<Documents.PartitionKeyRange> targetRanges, 
+            List<Documents.PartitionKeyRange> targetRanges,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
+
+            trace.AddDatum(nameof(inputParameters.MaxItemCount), inputParameters.MaxItemCount);
 
             // We need to compute the optimal initial page size for order-by queries
             long optimalPageSize = inputParameters.MaxItemCount;
@@ -456,6 +460,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             Debug.Assert(
                 (optimalPageSize > 0) && (optimalPageSize <= int.MaxValue),
                 $"Invalid MaxItemCount {optimalPageSize}");
+
+            trace.AddDatum("OptimalPageSize", optimalPageSize);
+            trace.AddDatum("TargetRangeCount", targetRanges.Count);
 
             return PipelineFactory.MonadicCreate(
                 executionEnvironment: inputParameters.ExecutionEnvironment,
