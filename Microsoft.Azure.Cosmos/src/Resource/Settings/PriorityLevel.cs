@@ -12,11 +12,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary> 
         /// High Priority
         /// </summary>
-        High,
+        High = 1,
 
         /// <summary> 
         /// Low Priority
         /// </summary>
-        Low
+        Low = 2,
     }
 }
