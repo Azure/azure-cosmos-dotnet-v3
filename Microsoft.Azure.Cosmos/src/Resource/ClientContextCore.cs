@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
                 clientOptions);
         }
 
-        internal static RemoteCertificateValidationCallback SslCustomValidationCallBack(Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        private static RemoteCertificateValidationCallback SslCustomValidationCallBack(Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             return serverCertificateCustomValidationCallback == null ? null : (_, cert, chain, policy) => serverCertificateCustomValidationCallback((X509Certificate2)cert, chain, policy);
         }
