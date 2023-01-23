@@ -636,12 +636,11 @@ namespace Microsoft.Azure.Cosmos
         internal Func<TransportClient, TransportClient> TransportClientHandlerFactory { get; set; }
 
         /// <summary>
-        /// A callback delegate to validate the server certificate.
+        /// A callback delegate to do custom certificate validation for both HTTP and TCP.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// This is applicable when client service has issue connecting to server using IP and needs certificate validation.
-        /// This is the contract available to client which would override RemoteCertificateValidationCallback for TCP and ServerCertificateCustomValidationCallback for HTTP.
+        /// Customizing SSL verification is not recommended in production environments.
         /// </para>
         /// </remarks>
         public Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
