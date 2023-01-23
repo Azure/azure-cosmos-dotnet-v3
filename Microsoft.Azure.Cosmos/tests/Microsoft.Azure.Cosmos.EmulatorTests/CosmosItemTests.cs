@@ -837,7 +837,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             finally
             {
                 HttpConstants.Versions.CurrentVersion = currentVersion;
-                if (database != null) await database.DeleteAsync();
+                if(database != null) await database.DeleteAsync();
             }
         }
 
@@ -966,7 +966,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Each parameter in query spec should be a call to the custom serializer
                 int parameterCount = queryDefinition.ToSqlQuerySpec().Parameters.Count;
-                Assert.AreEqual((parameterCount * pageCount) + parameterCount, toStreamCount, $"missing to stream call. Expected: {(parameterCount * pageCount) + parameterCount}, Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+                Assert.AreEqual((parameterCount*pageCount)+parameterCount, toStreamCount, $"missing to stream call. Expected: {(parameterCount * pageCount) + parameterCount}, Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
                 Assert.AreEqual(pageCount, fromStreamCount);
             }
         }
@@ -1339,7 +1339,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
                 Assert.IsTrue(iter.Count() <= 1);
-                if (iter.Count() == 1)
+                if(iter.Count() == 1)
                 {
                     found = true;
                     ToDoActivity response = iter.First();
