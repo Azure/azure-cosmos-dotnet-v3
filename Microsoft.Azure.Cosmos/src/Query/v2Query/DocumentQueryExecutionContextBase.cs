@@ -335,13 +335,13 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.ContentSerializationFormat.Value.ToString();
             }
 
-            if (this.feedOptions.CosmosSerializationFormatOptions != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = this.feedOptions.CosmosSerializationFormatOptions.SupportedSerializationFormats;
-            }
-            else if (this.feedOptions.SupportedSerializationFormats.HasValue)
+            if (this.feedOptions.SupportedSerializationFormats != null)
             {
                 requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = this.feedOptions.SupportedSerializationFormats.Value.ToString();
+            }
+            else
+            {
+                requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = Headers.defaultSupportedSerializationFormats;
             }
 
             return requestHeaders;

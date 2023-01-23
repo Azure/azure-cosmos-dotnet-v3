@@ -219,7 +219,6 @@
 
             CosmosSerializationFormatOptions formatOptions = new CosmosSerializationFormatOptions(
                 contentSerializationFormat,
-                "",
                 (content) => JsonNavigator.Create(content),
                 () => JsonWriter.Create(JsonSerializationFormat.Text));
 

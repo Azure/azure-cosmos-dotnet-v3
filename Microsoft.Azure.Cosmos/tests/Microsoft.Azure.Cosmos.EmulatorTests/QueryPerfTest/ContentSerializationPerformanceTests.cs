@@ -85,7 +85,6 @@
                 MaxItemCount = this.MaxItemCount,
                 CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
                             contentSerializationFormat: this.contentSerialization,
-                            supportedSerializationFormats: "",
                             createCustomNavigator: (content) => JsonNavigator.Create(content),
                             createCustomWriter: () => JsonWriter.Create(this.contentSerialization == "JsonText" ? JsonSerializationFormat.Text : JsonSerializationFormat.Binary))
             };
