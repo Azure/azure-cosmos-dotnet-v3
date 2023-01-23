@@ -356,12 +356,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.ValidateSupportedSerializationFormatsQuery(client, collection);
         }
 
-        private void SupportedSerializationFormatsNegativeCases(DocumentClient client, DocumentCollection collection, string value, bool isQuery = true, SqlQuerySpec sqlQuerySpec = null)
+        private void SupportedSerializationFormatsNegativeCases(
+            DocumentClient client, 
+            DocumentCollection collection, 
+            string value,
+            SqlQuerySpec sqlQuerySpec)
         {
             INameValueCollection headers = new RequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, value);
 
-            if (isQuery)
+            if (sqlQuerySpec != null)
             {
                 try
                 {
@@ -429,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             INameValueCollection headers = new RequestNameValueCollection();
             // Value not supported
-            this.SupportedSerializationFormatsNegativeCases(client, collection, "Invalid value", isQuery: false);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "Invalid value", sqlQuerySpec: null);
 
             // Supported values
             this.SupportedSerializationFormatsPositiveCases(client, collection, expectedResultIsBinary: false, sqlQuerySpec: null, supportedSerializationFormats: "JSONText");
@@ -442,7 +446,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             SqlQuerySpec sqlQuerySpec = new SqlQuerySpec("SELECT * FROM c");
             INameValueCollection headers = new RequestNameValueCollection();
             // Values not supported
-            this.SupportedSerializationFormatsNegativeCases(client, collection, "Invalid value");
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "Invalid value", sqlQuerySpec:sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, ", ,", sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, ",,", sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "JsonText CosmosBinary", sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, ",JsonText|CosmosBinary", sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "Json Text", sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "Json,Text", sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "JsonText, ", sqlQuerySpec: sqlQuerySpec);
 
             // Supported values
             this.SupportedSerializationFormatsPositiveCases(client, collection,
