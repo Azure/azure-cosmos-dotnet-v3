@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos
                 operationName: nameof(ExecuteAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
-                operationType: Documents.OperationType.Replace,
+                operationType: Documents.OperationType.Batch,
                 requestOptions: requestOptions,
                 task: (trace) =>
                 {
