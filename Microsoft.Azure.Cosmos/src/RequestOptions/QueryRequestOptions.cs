@@ -171,6 +171,7 @@ namespace Microsoft.Azure.Cosmos
         internal EnumerationDirection? EnumerationDirection { get; set; }
 
         internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
+
         internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
 
         internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
