@@ -384,13 +384,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 }
 
                 this.shallowCopyOfHttpResponseStatistics = null;
-                this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
+
+                new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
                                                                            request.RequestUri,
                                                                            request.Method,
                                                                            resourceType,
                                                                            responseMessage: null,
-                                                                           exception: exception));
+                                                                           exception: exception);
             }
         }
 

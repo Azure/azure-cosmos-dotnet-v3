@@ -50,9 +50,9 @@
             trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             summaryDiagnostics = new SummaryDiagnostics(trace);
 
-            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(200, 0)], 1);
+            Assert.AreEqual(1, summaryDiagnostics.DirectRequestsSummary.Value[(200, 0)]);
             Assert.IsFalse(summaryDiagnostics.GatewayRequestsSummary.IsValueCreated);
-            Assert.AreEqual(trace.Summary.RegionsContacted.Count, 1);
+            Assert.AreEqual(1, trace.Summary.RegionsContacted.Count);
         }
 
         [TestMethod]
@@ -60,7 +60,7 @@
         {
             CosmosClient gwCosmosClient = TestCommon.CreateCosmosClient(useGateway: true);
             Container container = gwCosmosClient.GetContainer(this.Database.Id, this.Container.Id);
-
+            
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> response = await container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response.Diagnostics);
@@ -91,6 +91,7 @@
                 FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
                 traces.Add(((CosmosTraceDiagnostics)response.Diagnostics).Value);
             }
+            
             HashSet<(string, Uri)> headers = new HashSet<(string, Uri)>();
             foreach (Trace item in traces)
             {
@@ -98,9 +99,9 @@
             }
 
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(TraceJoiner.JoinTraces(traces));
-            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value.Keys.Count, 1);
+            Assert.AreEqual(1, summaryDiagnostics.DirectRequestsSummary.Value.Keys.Count);
             Assert.IsTrue(summaryDiagnostics.DirectRequestsSummary.Value[(200, 0)] > 1);
-            Assert.AreEqual(headers.Count, 1);
+            Assert.AreEqual(1, headers.Count);
         }
 
         [TestMethod]
@@ -123,9 +124,9 @@
             ItemResponse<ToDoActivity> response = await withTransportErrors.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
-            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value.Keys.Count, 2);
-            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(410, (int)SubStatusCodes.TransportGenerated410)], 3);
-            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(201, 0)], 1);
+            Assert.AreEqual(2, summaryDiagnostics.DirectRequestsSummary.Value.Keys.Count);
+            Assert.AreEqual(3, summaryDiagnostics.DirectRequestsSummary.Value[(410, (int)SubStatusCodes.TransportGenerated410)]);
+            Assert.AreEqual(1, summaryDiagnostics.DirectRequestsSummary.Value[(201, 0)]);
         }
     }
 }

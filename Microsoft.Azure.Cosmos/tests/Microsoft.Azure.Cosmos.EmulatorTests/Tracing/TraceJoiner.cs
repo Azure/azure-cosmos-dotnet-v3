@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     internal static class TraceJoiner
     {
@@ -34,13 +35,23 @@ namespace Microsoft.Azure.Cosmos.Tracing
         private sealed class TraceForest : ITrace
         {
             private readonly Dictionary<string, object> data;
-
+            
             private readonly List<ITrace> children;
+
+            private readonly List<StoreResponseStatistics> storestatistics = new List<StoreResponseStatistics>();
+            private readonly List<HttpResponseStatistics> httpStatistics = new List<HttpResponseStatistics>();
 
             public TraceForest(IReadOnlyList<ITrace> children)
             {
                 this.children = new List<ITrace>(children);
                 this.data = new Dictionary<string, object>();
+
+               
+                foreach (ITrace trace in children)
+                {
+                    this.storestatistics.AddRange(trace.Summary.StoreResponseStatistics);
+                    this.httpStatistics.AddRange(trace.Summary.HttpResponseStatistics);
+                }
             }
 
             public string Name => "Trace Forest";
@@ -53,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public TraceLevel Level => TraceLevel.Info;
 
-            public TraceSummary Summary => new TraceSummary();
+            public TraceSummary Summary => new TraceSummary(this.httpStatistics, this.storestatistics);
 
             public TraceComponent Component => TraceComponent.Unknown;
 

@@ -14,40 +14,25 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public SummaryDiagnostics(ITrace trace)
             : this()
         {
-            this.DirectRequestsSummary = new Lazy<Dictionary<(int, int), int>>(() =>
-                                                new Dictionary<(int, int), int>());
-            this.GatewayRequestsSummary = new Lazy<Dictionary<(int, int), int>>(() =>
-                                                new Dictionary<(int, int), int>());
-            this.AllRegionsContacted = new Lazy<HashSet<Uri>>(() => new HashSet<Uri>());
-            this.CollectSummaryFromTraceTree(trace);
+            this.CollectSummaryFromTraceTree(trace.Summary);
         }
 
-        public Lazy<HashSet<Uri>> AllRegionsContacted { get; private set; }
+        public Lazy<HashSet<Uri>> AllRegionsContacted { get; private set; } = new Lazy<HashSet<Uri>>();
 
         // Count of (StatusCode, SubStatusCode) tuples
-        public Lazy<Dictionary<(int statusCode, int subStatusCode), int>> DirectRequestsSummary { get; private set; }
+        public Lazy<Dictionary<(int statusCode, int subStatusCode), int>> DirectRequestsSummary { get; private set; } = new Lazy<Dictionary<(int statusCode, int subStatusCode), int>>();
 
-        public Lazy<Dictionary<(int statusCode, int subStatusCode), int>> GatewayRequestsSummary { get; private set; }
+        // Count of (StatusCode, SubStatusCode) tuples
+        public Lazy<Dictionary<(int statusCode, int subStatusCode), int>> GatewayRequestsSummary { get; private set; } = new Lazy<Dictionary<(int statusCode, int subStatusCode), int>>();
 
-        private void CollectSummaryFromTraceTree(ITrace currentTrace)
+        private void CollectSummaryFromTraceTree(TraceSummary summary)
         {
-            foreach (object datums in currentTrace.Data.Values)
-            {
-                if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-                {
-                    this.AggregateStatsFromStoreResults(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
-                    this.AggregateGatewayStatistics(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
-                    this.AggregateRegionsContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
-                }
-            }
-
-            foreach (ITrace childTrace in currentTrace.Children)
-            {
-                this.CollectSummaryFromTraceTree(childTrace);
-            }
+            this.AggregateStatsFromStoreResults(summary.StoreResponseStatistics);
+            this.AggregateGatewayStatistics(summary.HttpResponseStatistics);
+            this.AggregateRegionsContacted(summary.RegionsContacted);
         }
 
-        private void AggregateRegionsContacted(HashSet<(string, Uri)> regionsContacted)
+        private void AggregateRegionsContacted(IReadOnlyList<(string, Uri)> regionsContacted)
         {
             foreach ((string _, Uri uri) in regionsContacted)
             {

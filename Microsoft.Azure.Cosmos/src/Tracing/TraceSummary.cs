@@ -21,6 +21,17 @@ namespace Microsoft.Azure.Cosmos.Tracing
 #endif 
     class TraceSummary
     {
+        internal TraceSummary()
+        {
+        }
+        
+        internal TraceSummary(List<HttpResponseStatistics> httpResponseStatistics,
+            List<StoreResponseStatistics> storeResponseStatistics)
+        {
+            this.HttpResponseStatistics = httpResponseStatistics;
+            this.StoreResponseStatistics = storeResponseStatistics;
+        }
+        
         /// <summary>
         ///  The total count of failed requests for an <see cref="ITrace"/>
         /// </summary>
@@ -46,15 +57,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// List of all HTTP requests and its statistics
         /// </summary>
-        internal IReadOnlyList<HttpResponseStatistics> HttpResponseStatistics => this.httpResponseStatisticsInternal;
+        internal List<HttpResponseStatistics> HttpResponseStatistics { get; set; } = new List<HttpResponseStatistics>();
 
         /// <summary>
         /// List of all TCP requests and its statistics
         /// </summary>
-        internal IReadOnlyList<StoreResponseStatistics> StoreResponseStatistics => this.storeResponseStatisticsInternal;
-
-        private readonly List<HttpResponseStatistics> httpResponseStatisticsInternal = new List<HttpResponseStatistics>();
-        private readonly List<StoreResponseStatistics> storeResponseStatisticsInternal = new List<StoreResponseStatistics>();
+        internal List<StoreResponseStatistics> StoreResponseStatistics { get; set; } = new List<StoreResponseStatistics>();
 
         /// <summary>
         /// Consolidates HTTP and Store response statistics
@@ -62,23 +70,25 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <param name="clientSideRequestStatisticsTraceDatum"></param>
         internal void UpdateNetworkStatistics(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
         {
-            if ((clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList == null ||
-                        clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count == 0) &&
-                        (clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList == null ||
+            if (!(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList == null ||
+                        clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count == 0))
+            {
+                lock (this.HttpResponseStatistics)
+                {
+                    this.HttpResponseStatistics.AddRange(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
+                }
+
+            }
+            
+            if (!(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList == null ||
                             clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList.Count == 0))
             {
-                return;
+                lock (this.StoreResponseStatistics)
+                {
+                    this.StoreResponseStatistics.AddRange(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
+                }
             }
-
-            lock (this.httpResponseStatisticsInternal)
-            {
-                this.httpResponseStatisticsInternal.AddRange(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
-            }
-
-            lock (this.storeResponseStatisticsInternal)
-            {
-                this.storeResponseStatisticsInternal.AddRange(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
-            }
+            
         }
         
         /// <summary>
