@@ -526,10 +526,12 @@
             if (input.ExpectedOptimisticDirectExecution)
             {
                 Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
+                Assert.IsTrue(inputParameters.SqlQuerySpec.OptimisticDirectExecution);
             }
             else
             {
                 Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
+                Assert.IsFalse(inputParameters.SqlQuerySpec.OptimisticDirectExecution);
             }
 
             Assert.IsNotNull(queryPipelineStage);

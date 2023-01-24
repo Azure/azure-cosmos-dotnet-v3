@@ -53,6 +53,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         public string QueryText { get; set; }
 
         /// <summary>
+        /// Gets or sets whether the OpimisticDirectExecution pipeline was utilized or not.
+        /// </summary>
+        /// <value>A boolean value indicating whether the OptimisticDirextExecution pipeline was used or not.</value>
+        [DataMember(Name = "optimisticDirectExecution")]
+        public bool OptimisticDirectExecution { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets the <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of Azure Cosmos DB query parameters.
         /// </summary>
         /// <value>The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance.</value>

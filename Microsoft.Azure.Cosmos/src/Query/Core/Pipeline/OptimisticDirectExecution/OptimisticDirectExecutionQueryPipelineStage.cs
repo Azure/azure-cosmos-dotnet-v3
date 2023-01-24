@@ -226,6 +226,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 }
 
                 FeedRangeState<QueryState> feedRangeState = monadicExtractState.Result;
+                sqlQuerySpec.OptimisticDirectExecution = true;
 
                 QueryPartitionRangePageAsyncEnumerator partitionPageEnumerator = new QueryPartitionRangePageAsyncEnumerator(
                     documentContainer,

@@ -355,6 +355,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             if (tryCreatePipelineStage.Failed && tryCreatePipelineStage.InnerMostException is MalformedContinuationTokenException)
             {
                 SetTestInjectionPipelineType(inputParameters, Specialized);
+                inputParameters.SqlQuerySpec.OptimisticDirectExecution = false;
 
                 if (partitionedQueryExecutionInfo != null)
                 {
@@ -479,6 +480,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount),
                 fallbackQueryPipelineStageFactory: (continuationToken) =>
                 {
+                    inputParameters.SqlQuerySpec.OptimisticDirectExecution = false;
+
                     // In fallback scenario, the Specialized pipeline is always invoked
                     Task<TryCatch<IQueryPipelineStage>> tryCreateContext =
                         CosmosQueryExecutionContextFactory.TryCreateSpecializedDocumentQueryExecutionContextAsync(
