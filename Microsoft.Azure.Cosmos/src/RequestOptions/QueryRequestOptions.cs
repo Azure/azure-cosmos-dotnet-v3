@@ -44,10 +44,10 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableLowPrecisionOrderBy { get; set; }
 
         /// <summary>
-        /// Gets or sets the option for customers to use the new OptimisticDirectExecution pipeline.
+        /// Gets or sets the option for customers to opt in or out of the new OptimisticDirectExecution pipeline.
         /// </summary>
         /// <value>
-        /// The Ode pipeline is a performance improvement in comparison to existing pipelines if the queries being run are single partition.
+        /// The OptimisticDirectExecution pipeline offers improved performance for single partition queries when compared to existing pipelines.
         /// </value>
         internal bool EnableOptimisticDirectExecution { get; set; } = false;
 
