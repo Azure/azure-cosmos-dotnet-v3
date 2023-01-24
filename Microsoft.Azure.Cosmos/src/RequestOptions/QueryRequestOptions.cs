@@ -44,6 +44,14 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableLowPrecisionOrderBy { get; set; }
 
         /// <summary>
+        /// Gets or sets the option for customers to use the new OptimisticDirectExecution pipeline.
+        /// </summary>
+        /// <value>
+        /// The Ode pipeline is a performance improvement in comparison to existing pipelines if the queries being run are single partition.
+        /// </value>
+        internal bool EnableOptimisticDirectExecution { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets the maximum number of items that can be buffered client side during 
         /// parallel query execution in the Azure Cosmos DB service. 
         /// A positive property value limits the number of buffered 
