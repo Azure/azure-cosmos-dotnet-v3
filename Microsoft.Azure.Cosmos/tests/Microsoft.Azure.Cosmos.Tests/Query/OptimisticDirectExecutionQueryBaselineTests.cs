@@ -87,21 +87,21 @@
         public void NegativeOptimisticDirectExecutionOutput()
         {
             ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
-                    token: Guid.NewGuid().ToString(),
-                    range: new Documents.Routing.Range<string>("A", "B", true, false));
+                token: Guid.NewGuid().ToString(),
+                range: new Documents.Routing.Range<string>("A", "B", true, false));
 
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                    parallelContinuationToken,
-                    new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", CosmosString.Create("asdf") } })) },
-                    rid: "43223532",
-                    skipCount: 42,
-                    filter: "filter");
+                parallelContinuationToken,
+                new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", CosmosString.Create("asdf") } })) },
+                rid: "43223532",
+                skipCount: 42,
+                filter: "filter");
 
             CosmosElement cosmosElementOrderByContinuationToken = CosmosArray.Create(
-                        new List<CosmosElement>()
-                        {
-                        OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
-                        });
+                new List<CosmosElement>()
+                {
+                OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
+                });
 
             List<OptimisticDirectExecutionTestInput> testVariations = new List<OptimisticDirectExecutionTestInput>
             {
@@ -168,14 +168,18 @@
                     partitionKeyValue: "a");
 
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: false);
-            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
+
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
+            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(inputParameters, inMemoryCollection, cosmosQueryContextCore);
             int documentCountInSinglePartition = 0;
+
+            Assert.IsFalse(inputParameters.SqlQuerySpec.OptimisticDirectExecution);
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
                 Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
+                Assert.IsTrue(inputParameters.SqlQuerySpec.OptimisticDirectExecution);
 
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 tryGetPage.ThrowIfFailed();
@@ -260,17 +264,25 @@
             int numItems = 100;
             List<CosmosElement> documents = new List<CosmosElement>();
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-            (MergeTestUtil mergeTest, IQueryPipelineStage queryPipelineStage) = await CreateFallbackPipelineTestInfrastructure(numItems, isFailedFallbackPipelineTest: false, isMultiPartition, queryRequestOptions);
+            (MergeTestUtil mergeTest, CosmosQueryExecutionContextFactory.InputParameters inputParameters, IQueryPipelineStage queryPipelineStage) = await CreateFallbackPipelineTestInfrastructure(
+                numItems, 
+                isFailedFallbackPipelineTest: false, 
+                isMultiPartition, 
+                queryRequestOptions);
+
+            Assert.IsFalse(inputParameters.SqlQuerySpec.OptimisticDirectExecution);
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
                 if (mergeTest.MoveNextCounter == 1)
                 {
                     Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
+                    Assert.IsTrue(inputParameters.SqlQuerySpec.OptimisticDirectExecution);
                 }
                 else 
                 {
                     Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
+                    Assert.IsFalse(inputParameters.SqlQuerySpec.OptimisticDirectExecution);
                 }
 
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
@@ -293,13 +305,21 @@
             int numItems = 100;
             List<CosmosElement> documents = new List<CosmosElement>();
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-            (MergeTestUtil mergeTest, IQueryPipelineStage queryPipelineStage) = await CreateFallbackPipelineTestInfrastructure(numItems, isFailedFallbackPipelineTest: true, isMultiPartition, queryRequestOptions);
+            (MergeTestUtil mergeTest, CosmosQueryExecutionContextFactory.InputParameters inputParameters, IQueryPipelineStage queryPipelineStage) = await CreateFallbackPipelineTestInfrastructure(
+                numItems, 
+                isFailedFallbackPipelineTest: true, 
+                isMultiPartition, 
+                queryRequestOptions);
+
+            Assert.IsFalse(inputParameters.SqlQuerySpec.OptimisticDirectExecution);
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 if (tryGetPage.Failed)
                 {
+                    Assert.IsFalse(inputParameters.SqlQuerySpec.OptimisticDirectExecution);
+
                     if (mergeTest.MoveNextCounter == 3)
                     {
                         Assert.IsTrue(tryGetPage.InnerMostException.Message.Equals("Injected failure"));
@@ -319,7 +339,7 @@
             return false;
         }
 
-        private static async Task<(MergeTestUtil, IQueryPipelineStage)> CreateFallbackPipelineTestInfrastructure(int numItems, bool isFailedFallbackPipelineTest, bool isMultiPartition, QueryRequestOptions queryRequestOptions)
+        private static async Task<(MergeTestUtil, CosmosQueryExecutionContextFactory.InputParameters, IQueryPipelineStage)> CreateFallbackPipelineTestInfrastructure(int numItems, bool isFailedFallbackPipelineTest, bool isMultiPartition, QueryRequestOptions queryRequestOptions)
         {
             List<CosmosElement> documents = new List<CosmosElement>();
             MergeTestUtil mergeTest = new MergeTestUtil(isFailedFallbackPipelineTest);
@@ -339,23 +359,29 @@
                         injectEmptyPages: false,
                         shouldReturnFailure: mergeTest.ShouldReturnFailure));
 
-            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
+            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(inputParameters, inMemoryCollection, cosmosQueryContextCore);
 
-            return (mergeTest, queryPipelineStage);
+            return (mergeTest, inputParameters, queryPipelineStage);
         }
 
         private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount)
         {
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition);
-            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
+
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
+            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(inputParameters, inMemoryCollection, cosmosQueryContextCore);
 
             List<CosmosElement> documents = new List<CosmosElement>();
             int continuationTokenCount = 0;
 
+            Assert.IsFalse(inputParameters.SqlQuerySpec.OptimisticDirectExecution);
+
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
                 Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
+                Assert.IsTrue(inputParameters.SqlQuerySpec.OptimisticDirectExecution);
 
                 TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
                 tryGetPage.ThrowIfFailed();
@@ -368,15 +394,22 @@
                 }
                 else
                 {
-                    input = CreateInput(
-                        description: input.Description,
-                        query: input.Query,
-                        expectedOptimisticDirectExecution: input.ExpectedOptimisticDirectExecution,
-                        partitionKeyPath: @"/pk",
-                        partitionKeyValue: input.PartitionKeyValue,
-                        continuationToken: tryGetPage.Result.State.Value);
-
-                    queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
+                    inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
+                        inputParameters.SqlQuerySpec,
+                        tryGetPage.Result.State.Value,
+                        inputParameters.InitialFeedRange,
+                        inputParameters.MaxConcurrency,
+                        inputParameters.MaxItemCount,
+                        inputParameters.MaxBufferedItemCount,
+                        inputParameters.PartitionKey,
+                        inputParameters.Properties,
+                        inputParameters.PartitionedQueryExecutionInfo,
+                        inputParameters.ExecutionEnvironment,
+                        inputParameters.ReturnResultsInDeterministicOrder,
+                        inputParameters.ForcePassthrough,
+                        inputParameters.TestInjections);
+                    
+                    queryPipelineStage = await GetOdePipelineAsync(inputParameters, inMemoryCollection, cosmosQueryContextCore);
                 }
 
                 continuationTokenCount++;
@@ -402,10 +435,8 @@
             return tryGetQueryPlan.Result;
         }
 
-        private static async Task<IQueryPipelineStage> GetOdePipelineAsync(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions)
+        private static async Task<IQueryPipelineStage> GetOdePipelineAsync(CosmosQueryExecutionContextFactory.InputParameters inputParameters, DocumentContainer documentContainer, CosmosQueryContextCore cosmosQueryContextCore)
         {
-            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
-
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                       documentContainer,
                       cosmosQueryContextCore,
@@ -580,6 +611,8 @@
                 useSystemPrefix: false,
                 correlatedActivityId: Guid.NewGuid());
 
+            //confirm the default value of OptimisticDirectExecution flag
+            Assert.IsFalse(inputParameters.SqlQuerySpec.OptimisticDirectExecution);
             return Tuple.Create(inputParameters, cosmosQueryContextCore);
         }
 
