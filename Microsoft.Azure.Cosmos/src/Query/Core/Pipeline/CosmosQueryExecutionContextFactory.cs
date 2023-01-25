@@ -355,7 +355,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             if (tryCreatePipelineStage.Failed && tryCreatePipelineStage.InnerMostException is MalformedContinuationTokenException)
             {
                 SetTestInjectionPipelineType(inputParameters, Specialized);
-                inputParameters.SqlQuerySpec.OptimisticDirectExecution = false;
 
                 if (partitionedQueryExecutionInfo != null)
                 {
