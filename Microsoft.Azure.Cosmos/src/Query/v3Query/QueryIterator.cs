@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 executionEnvironment: queryRequestOptions.ExecutionEnvironment,
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
                 forcePassthrough: forcePassthrough,
-                enabledOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
+                enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 testInjections: queryRequestOptions.TestSettings);
 
             return new QueryIterator(

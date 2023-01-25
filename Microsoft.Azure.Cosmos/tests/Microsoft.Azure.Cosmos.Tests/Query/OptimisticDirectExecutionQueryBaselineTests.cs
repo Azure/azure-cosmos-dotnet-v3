@@ -564,7 +564,7 @@
                 executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
                 forcePassthrough: false,
-                enabledOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
+                enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 testInjections: queryRequestOptions.TestSettings);
 
             string databaseId = "db1234";

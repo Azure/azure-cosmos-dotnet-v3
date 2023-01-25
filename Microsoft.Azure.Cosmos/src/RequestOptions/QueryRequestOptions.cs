@@ -44,10 +44,10 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableLowPrecisionOrderBy { get; set; }
 
         /// <summary>
-        /// Gets or sets the option for customers to opt in or out of the new OptimisticDirectExecution pipeline.
+        /// Gets or sets the option for customers to opt in for direct (optimistic) execution of the query..
         /// </summary>
         /// <value>
-        /// The OptimisticDirectExecution pipeline offers improved performance for single partition queries when compared to existing pipelines.
+        /// Direct (optimistic) execution offers improved performance for several kinds of queries such as a single partition streaming query.
         /// </value>
         internal bool EnableOptimisticDirectExecution { get; set; } = false;
 

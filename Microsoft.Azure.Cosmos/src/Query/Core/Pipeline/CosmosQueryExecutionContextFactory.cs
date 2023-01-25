@@ -418,7 +418,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.ExecutionEnvironment,
                     inputParameters.ReturnResultsInDeterministicOrder,
                     inputParameters.ForcePassthrough,
-                    inputParameters.EnabledOptimisticDirectExecution,
+                    inputParameters.EnableOptimisticDirectExecution,
                     inputParameters.TestInjections);
             }
 
@@ -753,7 +753,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ContainerQueryProperties containerQueryProperties,
             ITrace trace)
         {
-            if (!inputParameters.EnabledOptimisticDirectExecution) return null;
+            if (!inputParameters.EnableOptimisticDirectExecution) return null;
 
             // case 1: Is query going to a single partition
             bool hasPartitionKey = inputParameters.PartitionKey.HasValue
@@ -825,7 +825,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 ExecutionEnvironment? executionEnvironment,
                 bool? returnResultsInDeterministicOrder,
                 bool forcePassthrough,
-                bool enabledOptimisticDirectExecution,
+                bool enableOptimisticDirectExecution,
                 TestInjections testInjections)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
@@ -859,7 +859,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.ExecutionEnvironment = executionEnvironment.GetValueOrDefault(InputParameters.DefaultExecutionEnvironment);
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder);
                 this.ForcePassthrough = forcePassthrough;
-                this.EnabledOptimisticDirectExecution = enabledOptimisticDirectExecution;
+                this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
                 this.TestInjections = testInjections;
             }
 
@@ -876,7 +876,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public bool ReturnResultsInDeterministicOrder { get; }
             public TestInjections TestInjections { get; }
             public bool ForcePassthrough { get; }
-            public bool EnabledOptimisticDirectExecution { get; }
+            public bool EnableOptimisticDirectExecution { get; }
 
             public InputParameters WithContinuationToken(CosmosElement token)
             {
@@ -893,7 +893,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     this.ExecutionEnvironment,
                     this.ReturnResultsInDeterministicOrder,
                     this.ForcePassthrough,
-                    this.EnabledOptimisticDirectExecution,
+                    this.EnableOptimisticDirectExecution,
                     this.TestInjections);
             }
         }
