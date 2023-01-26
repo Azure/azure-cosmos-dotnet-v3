@@ -97,6 +97,7 @@
                     if (response.StatusCode == HttpStatusCode.NotModified)
                     {
                         Console.WriteLine($"No new changes");
+                        await Task.Delay(1000);
                     }
                     else
                     {
@@ -110,7 +111,6 @@
                     {
                         break;
                     }
-                    await Task.Delay(1000);
                 }
             }
             // <ReadLatestVersionChanges>

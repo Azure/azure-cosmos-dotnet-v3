@@ -143,6 +143,7 @@ namespace CFPullModelAllVersionsAndDeletesMode
                     if (response.StatusCode == HttpStatusCode.NotModified)
                     {
                         Console.WriteLine($"No new changes");
+                        await Task.Delay(1000);
                     }
                     else
                     {
@@ -172,7 +173,6 @@ namespace CFPullModelAllVersionsAndDeletesMode
                         }
                     }
 
-                    await Task.Delay(1000);
                     if (Console.KeyAvailable)
                     {
                         break;
