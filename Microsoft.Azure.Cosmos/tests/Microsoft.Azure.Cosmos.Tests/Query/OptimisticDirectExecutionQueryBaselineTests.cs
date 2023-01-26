@@ -148,11 +148,12 @@
         // This test confirms that TestInjection.EnableOptimisticDirectExection is set to false from default. 
         // Check test "TestPipelineForDistributedQueryAsync" to understand why this is done
         [TestMethod]
-        public async Task TestDefaultTestInjectionSettingsAsync()
+        public async Task TestDefaultQueryRequestOptionsSettings()
         {
-            TestInjections testInjection = new TestInjections(simulate429s: false, simulateEmptyPages: false);
 
-            Assert.AreEqual(testInjection.EnableOptimisticDirectExecution, false);
+            QueryRequestOptions requestOptions = new QueryRequestOptions();
+
+            Assert.AreEqual(requestOptions.EnableOptimisticDirectExecution, false);
         }
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s).
@@ -563,6 +564,7 @@
                 executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
                 forcePassthrough: false,
+                enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 testInjections: queryRequestOptions.TestSettings);
 
             string databaseId = "db1234";
@@ -587,7 +589,8 @@
             {
                 MaxConcurrency = 0,
                 MaxItemCount = 10,
-                TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false, enableOptimisticDirectExecution: enableOptimisticDirectExecution, new TestInjections.ResponseStats()),
+                EnableOptimisticDirectExecution = enableOptimisticDirectExecution,
+                TestSettings = new TestInjections(simulate429s: true, simulateEmptyPages: false, new TestInjections.ResponseStats()),
                 Properties = new Dictionary<string, object>()
             {
                 { HttpConstants.HttpHeaders.EnumerationDirection, ""},
