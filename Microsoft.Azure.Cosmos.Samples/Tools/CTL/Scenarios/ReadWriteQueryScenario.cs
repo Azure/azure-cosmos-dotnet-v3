@@ -145,30 +145,33 @@ namespace CosmosCTL
                 long index = i % 100;
                 if (index < readWriteQueryPercentage.ReadPercentage)
                 {
-                    operations.Add(CTLOperationHandler<ItemResponse<Dictionary<string, string>>>.PerformOperationAsync(
-                        createTimerContext: () => metrics.Measure.Timer.Time(readLatencyTimer),
-                        resultProducer: new SingleExecutionResultProducer<ItemResponse<Dictionary<string, string>>>(() => this.CreateReadOperation(
-                            operation: i,
-                            partitionKeyAttributeName: config.CollectionPartitionKey,
-                            containers: initializationResult.Containers,
-                            createdDocumentsPerContainer: this.createdDocuments)),
-                        onSuccess: () =>
-                        {
-                            concurrencyControlSemaphore.Release();
-                            metrics.Measure.Counter.Increment(readSuccessMeter);
-                        },
-                        onFailure: (Exception ex) =>
-                        {
-                            concurrencyControlSemaphore.Release();
-                            metrics.Measure.Counter.Increment(readFailureMeter);
-                            Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during read operation");
-                        },
-                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnostics(
-                            logger: logger,
-                            operationName: "Read",
-                            timerContextLatency: latency,
-                            config: config,
-                            cosmosDiagnostics: response.Diagnostics)));
+                    for (int j=0; j<5; j++)
+                    {
+                        operations.Add(CTLOperationHandler<ItemResponse<Dictionary<string, string>>>.PerformOperationAsync(
+                            createTimerContext: () => metrics.Measure.Timer.Time(readLatencyTimer),
+                            resultProducer: new SingleExecutionResultProducer<ItemResponse<Dictionary<string, string>>>(() => this.CreateReadOperation(
+                                operation: i,
+                                partitionKeyAttributeName: config.CollectionPartitionKey,
+                                containers: initializationResult.Containers,
+                                createdDocumentsPerContainer: this.createdDocuments)),
+                            onSuccess: () =>
+                            {
+                                concurrencyControlSemaphore.Release();
+                                metrics.Measure.Counter.Increment(readSuccessMeter);
+                            },
+                            onFailure: (Exception ex) =>
+                            {
+                                concurrencyControlSemaphore.Release();
+                                metrics.Measure.Counter.Increment(readFailureMeter);
+                                Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during read operation");
+                            },
+                            logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnostics(
+                                logger: logger,
+                                operationName: "Read",
+                                timerContextLatency: latency,
+                                config: config,
+                                cosmosDiagnostics: response.Diagnostics)));
+                    }
                 }
                 else if (index < writeRange)
                 {
@@ -204,7 +207,8 @@ namespace CosmosCTL
                         createTimerContext: () => metrics.Measure.Timer.Time(queryLatencyTimer),
                         resultProducer: new IteratorResultProducer<Dictionary<string, string>>(this.CreateQueryOperation(
                             operation: i,
-                            containers: initializationResult.Containers)),
+                            containers: initializationResult.Containers,
+                            config.CollectionPartitionKey)),
                         onSuccess: () =>
                         {
                             concurrencyControlSemaphore.Release();
@@ -261,10 +265,15 @@ namespace CosmosCTL
 
         private FeedIterator<Dictionary<string, string>> CreateQueryOperation(
                 long operation,
-                IReadOnlyList<Container> containers)
+                IReadOnlyList<Container> containers,
+                string partitionKey)
         {
             Container container = containers[(int)operation % containers.Count];
-            QueryRequestOptions queryRequestOptions = new QueryRequestOptions() { MaxItemCount = 10 };
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = 10,
+                PartitionKey = new (partitionKey),
+            };
             return container.GetItemQueryIterator<Dictionary<string, string>>(
                 queryText: "Select top 100 * from c order by c._ts",
                 requestOptions: queryRequestOptions);
