@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 OperationInfo payloadForLatency = entry.Key;
                 payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
                 payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
-
+                
                 payloadWithMetricInformation.Add(payloadForLatency);
 
                 OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
@@ -104,6 +104,34 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             DefaultTrace.TraceInformation("Aggregating operation information to list done");
+
+            return payloadWithMetricInformation;
+        }
+
+        /// <summary>
+        /// Convert map with request information to list of operations along with request latency and request charge metrics
+        /// </summary>
+        /// <param name="metrics"></param>
+        /// <returns>Collection of ReportPayload</returns>
+        internal static List<RequestInfo> ToListWithMetricsInfo(
+                IDictionary<RequestInfo,
+                LongConcurrentHistogram> metrics)
+        {
+            DefaultTrace.TraceVerbose("Aggregating RequestInfo information to list started");
+
+            List<RequestInfo> payloadWithMetricInformation = new List<RequestInfo>();
+            foreach (KeyValuePair<RequestInfo, LongConcurrentHistogram> entry in metrics)
+            {
+                MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
+                metricInfo.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
+                
+                RequestInfo payloadForLatency = entry.Key;
+                payloadForLatency.Metrics.Add(metricInfo);
+              
+                payloadWithMetricInformation.Add(payloadForLatency);
+            }
+
+            DefaultTrace.TraceInformation("Aggregating RequestInfo information to list done");
 
             return payloadWithMetricInformation;
         }

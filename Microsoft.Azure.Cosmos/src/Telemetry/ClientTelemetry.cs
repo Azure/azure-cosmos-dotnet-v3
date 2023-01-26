@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
+    using System.Net.NetworkInformation;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -17,11 +18,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
     using Newtonsoft.Json;
     using Util;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     /// <summary>
     /// This class collects and send all the telemetry information.
@@ -52,6 +56,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoMap 
             = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
+
+        private ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoMap
+            = new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>();
 
         private int numberOfFailures = 0;
 
@@ -182,16 +189,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.RecordSystemUtilization();
 
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
-
+                    
                     ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
 
                     ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
                        = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
 
+                    ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot
+                      = Interlocked.Exchange(ref this.requestInfoMap, new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>());
+
                     this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
                     this.clientTelemetryInfo.CacheRefreshInfo = ClientTelemetryHelper.ToListWithMetricsInfo(cacheRefreshInfoSnapshot);
-
+                    this.clientTelemetryInfo.RequestInfo = ClientTelemetryHelper.ToListWithMetricsInfo(requestInfoSnapshot);
+                    
                     await this.SendAsync();
                 }
             }
@@ -266,6 +277,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="consistencyLevel"></param>
         /// <param name="requestCharge"></param>
         /// <param name="subStatusCode"></param>
+        /// <param name="trace"></param>
         internal void CollectOperationInfo(CosmosDiagnostics cosmosDiagnostics,
                             HttpStatusCode statusCode,
                             long responseSizeInBytes,
@@ -275,53 +287,99 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             ResourceType resourceType,
                             string consistencyLevel,
                             double requestCharge,
-                            SubStatusCodes subStatusCode)
+                            SubStatusCodes subStatusCode,
+                            ITrace trace)
         {
-            DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
-
-            if (cosmosDiagnostics == null)
+            _ = Task.Run(() =>
             {
-                throw new ArgumentNullException(nameof(cosmosDiagnostics));
-            }
+                DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
+                if (cosmosDiagnostics == null)
+                {
+                    throw new ArgumentNullException(nameof(cosmosDiagnostics));
+                }
+                
+                string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
 
-            // Recording Request Latency and Request Charge
-            OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
-                                            responseSizeInBytes: responseSizeInBytes,
-                                            consistency: consistencyLevel,
-                                            databaseName: databaseId,
-                                            containerName: containerId,
-                                            operation: operationType,
-                                            resource: resourceType,
-                                            statusCode: (int)statusCode,
-                                            subStatusCode: (int)subStatusCode);
+                SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
 
-            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
-                    .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                        ClientTelemetryOptions.RequestLatencyMax,
-                                                        ClientTelemetryOptions.RequestLatencyPrecision),
-                            requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
-                                                        ClientTelemetryOptions.RequestChargeMax,
-                                                        ClientTelemetryOptions.RequestChargePrecision)));
-            try
-            {
-                latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
-            } 
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
-            }
+                List<HttpResponseStatistics> httpResponseStatisticsList = summaryDiagnostics.HttpResponseStatistics.Value;
+                foreach (HttpResponseStatistics httpstatistics in httpResponseStatisticsList)
+                {
+                    RequestInfo requestInfo = new RequestInfo()
+                    {
+                        DatabaseName = databaseId,
+                        ContainerName = containerId,
+                        Uri = httpstatistics.RequestUri.ToString(),
+                        StatusCode = (int)httpstatistics.HttpResponseMessage.StatusCode,
+                        SubStatusCode = (int)subStatusCode,
+                        Resource = httpstatistics.ResourceType.ToResourceTypeString(),
+                        Operation = httpstatistics.HttpMethod.ToString(),
+                    };
 
-            long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
-            try
-            {
-                requestcharge.RecordValue(requestChargeToRecord);
-            }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
-            }
+                    LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                            ClientTelemetryOptions.RequestLatencyMax,
+                                                            ClientTelemetryOptions.RequestLatencyPrecision));
+                    latencyHist.RecordValue(httpstatistics.Duration.Ticks);
+                }
+                
+                List<StoreResponseStatistics> storeResponseStatistics = summaryDiagnostics.StoreResponseStatistics.Value;
+                foreach (StoreResponseStatistics storetatistics in storeResponseStatistics)
+                {
+                    RequestInfo requestInfo = new RequestInfo()
+                    {
+                        DatabaseName = databaseId,
+                        ContainerName = containerId,
+                        Uri = storetatistics.StoreResult.StorePhysicalAddress.ToString(),
+                        StatusCode = (int)storetatistics.StoreResult.StatusCode,
+                        SubStatusCode = (int)subStatusCode,
+                        Resource = storetatistics.RequestResourceType.ToString(),
+                        Operation = storetatistics.RequestOperationType.ToString(),
+                    };
+                    
+                    LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                           ClientTelemetryOptions.RequestLatencyMax,
+                                                           ClientTelemetryOptions.RequestLatencyPrecision));
+                    latencyHist.RecordValue(storetatistics.RequestLatency.Ticks);
+                }
+                
+                // Recording Request Latency and Request Charge
+                OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
+                                                responseSizeInBytes: responseSizeInBytes,
+                                                consistency: consistencyLevel,
+                                                databaseName: databaseId,
+                                                containerName: containerId,
+                                                operation: operationType,
+                                                resource: resourceType,
+                                                statusCode: (int)statusCode,
+                                                subStatusCode: (int)subStatusCode);
+
+                (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
+                        .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                            ClientTelemetryOptions.RequestLatencyMax,
+                                                            ClientTelemetryOptions.RequestLatencyPrecision),
+                                requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                                                            ClientTelemetryOptions.RequestChargeMax,
+                                                            ClientTelemetryOptions.RequestChargePrecision)));
+                try
+                {
+                    latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
+                }
+
+                long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
+                try
+                {
+                    requestcharge.RecordValue(requestChargeToRecord);
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
+                }
+            });
         }
 
         /// <summary>

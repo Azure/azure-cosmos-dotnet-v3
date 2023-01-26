@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal class TelemetryHandler : RequestHandler
     {
@@ -40,7 +41,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 resourceType: request.ResourceType,
                                 consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
                                 requestCharge: response.Headers.RequestCharge,
-                                subStatusCode: response.Headers.SubStatusCode);
+                                subStatusCode: response.Headers.SubStatusCode,
+                                trace: response.Trace);
                 }
                 catch (Exception ex)
                 {
