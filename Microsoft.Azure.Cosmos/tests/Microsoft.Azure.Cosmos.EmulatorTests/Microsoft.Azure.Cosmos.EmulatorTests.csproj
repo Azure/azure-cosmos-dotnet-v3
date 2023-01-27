@@ -299,6 +299,9 @@
     <None Update="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestSpecialMethods.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestStringCompareStatic.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Query\AggregateQueryTests.AggregateMixedTypes_baseline.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

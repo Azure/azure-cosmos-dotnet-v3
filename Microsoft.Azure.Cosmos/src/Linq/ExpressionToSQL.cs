@@ -458,6 +458,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     return ExpressionToSql.VisitStringCompareTo(methodCallExpression, constantExpression, inputExpression.NodeType, reverseNodeType, context);
                 }
+                if (TryMatchStringCompare(methodCallExpression, constantExpression, inputExpression.NodeType))
+                {
+                    return ExpressionToSql.VisitStringCompare(methodCallExpression, constantExpression, inputExpression.NodeType, reverseNodeType, context);
+                }
             }
 
             SqlScalarExpression left = ExpressionToSql.VisitScalarExpression(inputExpression.Left, context);
@@ -642,6 +646,76 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             SqlScalarExpression leftExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(left.Object, context);
             SqlScalarExpression rightExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(left.Arguments[0], context);
+
+            return SqlBinaryScalarExpression.Create(op, leftExpression, rightExpression);
+        }
+
+        private static bool TryMatchStringCompare(MethodCallExpression left, ConstantExpression right, ExpressionType compareOperator)
+        {
+            if (left.Method.Equals(typeof(string).GetMethod("Compare", new Type[] { typeof(string), typeof(string) })) && left.Arguments.Count == 2)
+            {
+                // operator can only be =, >, >=, <, <=
+                switch (compareOperator)
+                {
+                    case ExpressionType.Equal:
+                    case ExpressionType.GreaterThan:
+                    case ExpressionType.GreaterThanOrEqual:
+                    case ExpressionType.LessThan:
+                    case ExpressionType.LessThanOrEqual:
+                        break;
+                    default:
+                        throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareToInvalidOperator));
+                }
+
+                // the constant value should be zero, otherwise we can't determine how to translate the expression
+                // it could be either integer or nullable integer
+                if (!(right.Type == typeof(int) && (int)right.Value == 0) &&
+                    !(right.Type == typeof(int?) && ((int?)right.Value).HasValue && ((int?)right.Value).Value == 0))
+                {
+                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareToInvalidConstant));
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private static SqlScalarExpression VisitStringCompare(
+            MethodCallExpression left,
+            ConstantExpression right,
+            ExpressionType compareOperator,
+            bool reverseNodeType,
+            TranslationContext context)
+        {
+            if (reverseNodeType)
+            {
+                switch (compareOperator)
+                {
+                    case ExpressionType.Equal:
+                        // do nothing
+                        break;
+                    case ExpressionType.GreaterThan:
+                        compareOperator = ExpressionType.LessThan;
+                        break;
+                    case ExpressionType.GreaterThanOrEqual:
+                        compareOperator = ExpressionType.LessThanOrEqual;
+                        break;
+                    case ExpressionType.LessThan:
+                        compareOperator = ExpressionType.GreaterThan;
+                        break;
+                    case ExpressionType.LessThanOrEqual:
+                        compareOperator = ExpressionType.GreaterThanOrEqual;
+                        break;
+                    default:
+                        throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareToInvalidOperator));
+                }
+            }
+
+            SqlBinaryScalarOperatorKind op = GetBinaryOperatorKind(compareOperator, null);
+
+            SqlScalarExpression leftExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(left.Arguments[0], context);
+            SqlScalarExpression rightExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(left.Arguments[1], context);
 
             return SqlBinaryScalarExpression.Create(op, leftExpression, rightExpression);
         }
