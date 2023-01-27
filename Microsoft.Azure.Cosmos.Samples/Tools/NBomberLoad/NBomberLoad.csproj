@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="NBomber" Version="4.0.0-rc.1" />
+        <PackageReference Include="NBomber.Data" Version="4.0.0-beta" />
+        <PackageReference Include="NBomber.Http" Version="4.0.0-beta3" />
+        <PackageReference Include="MQTTnet" Version="3.1.2" />
+		<PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
+		<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" />
+	</ItemGroup>
+
+    <ItemGroup>
+        <None Update="Features\CustomSettings\config.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Features\DataFeed\users-feed-data.csv">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Features\DataFeed\users-feed-data.json">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Features\ClientPool\config.json">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="Features\CliArgs\config.json">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+	
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+    </ItemGroup>
+
+</Project>
