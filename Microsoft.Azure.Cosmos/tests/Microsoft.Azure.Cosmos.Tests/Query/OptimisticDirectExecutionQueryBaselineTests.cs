@@ -87,21 +87,21 @@
         public void NegativeOptimisticDirectExecutionOutput()
         {
             ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
-                    token: Guid.NewGuid().ToString(),
-                    range: new Documents.Routing.Range<string>("A", "B", true, false));
+                token: Guid.NewGuid().ToString(),
+                range: new Documents.Routing.Range<string>("A", "B", true, false));
 
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                    parallelContinuationToken,
-                    new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", CosmosString.Create("asdf") } })) },
-                    rid: "43223532",
-                    skipCount: 42,
-                    filter: "filter");
+                parallelContinuationToken,
+                new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", CosmosString.Create("asdf") } })) },
+                rid: "43223532",
+                skipCount: 42,
+                filter: "filter");
 
             CosmosElement cosmosElementOrderByContinuationToken = CosmosArray.Create(
-                        new List<CosmosElement>()
-                        {
-                        OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
-                        });
+                new List<CosmosElement>()
+                {
+                OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
+                });
 
             List<OptimisticDirectExecutionTestInput> testVariations = new List<OptimisticDirectExecutionTestInput>
             {
@@ -145,16 +145,25 @@
             this.ExecuteTestSuite(testVariations);
         }
         
-        // This test confirms that TestInjection.EnableOptimisticDirectExection is set to false from default. 
+        // This test confirms that QueryRequestOptions.EnableOptimisticDirectExection is set to false from default. 
         // Check test "TestPipelineForDistributedQueryAsync" to understand why this is done
         [TestMethod]
         public async Task TestDefaultQueryRequestOptionsSettings()
         {
-
             QueryRequestOptions requestOptions = new QueryRequestOptions();
 
             Assert.AreEqual(requestOptions.EnableOptimisticDirectExecution, false);
         }
+
+        // This test confirms that SqlQuerySpec.OptimisticDirectExecution is set to false from default. 
+        [TestMethod]
+        public async Task TestDefaultSqlQuerySpecSettings()
+        {
+            SqlQuerySpec querySpec = new SqlQuerySpec();
+
+            Assert.IsFalse(querySpec.OptimisticDirectExecution);
+        }
+
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s).
         [TestMethod]
@@ -169,8 +178,9 @@
                     partitionKeyValue: "a");
 
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-
-            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: false);
+            Action<SqlQuerySpec> sqlQuerySpecCallback = GetSqlQuerySpecCallback(expectedOdeFlagValue: true);
+            
+            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: false, sqlQuerySpecCallback);
             IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
             int documentCountInSinglePartition = 0;
 
@@ -335,6 +345,7 @@
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(
                     numItems,
                     multiPartition: isMultiPartition,
+                    sqlQuerySpecCallback: mergeTest.ReturnQuerySpecCallback(),
                     failureConfigs: new FlakyDocumentContainer.FailureConfigs(
                         inject429s: false,
                         injectEmptyPages: false,
@@ -348,7 +359,9 @@
         private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount)
         {
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition);
+            Action<SqlQuerySpec> sqlQuerySpecCallback = GetSqlQuerySpecCallback(expectedOdeFlagValue: true);
+           
+            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition, sqlQuerySpecCallback);
             IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
 
             List<CosmosElement> documents = new List<CosmosElement>();
@@ -420,6 +433,7 @@
         private static async Task<DocumentContainer> CreateDocumentContainerAsync(
             int numItems,
             bool multiPartition,
+            Action<SqlQuerySpec> sqlQuerySpecCallback = null,
             FlakyDocumentContainer.FailureConfigs failureConfigs = null)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
@@ -432,7 +446,7 @@
                 Version = PartitionKeyDefinitionVersion.V2,
             };
 
-            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
+            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition, sqlQuerySpecCallback ?? null);
             if (failureConfigs != null)
             {
                 monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
@@ -493,6 +507,19 @@
             pkBuilder.Add(partitionKeyValue);
 
             return CreateInput(description, query, expectedOptimisticDirectExecution, partitionKeyPath, pkBuilder.Build(), continuationToken);
+        }
+
+        private static Action<SqlQuerySpec> GetSqlQuerySpecCallback(bool expectedOdeFlagValue)
+        {
+            Action<SqlQuerySpec> sqlQuerySpecCallback;
+            if (expectedOdeFlagValue)
+            {
+                return sqlQuerySpecCallback = (sqlQuerySpec) => Assert.IsTrue(sqlQuerySpec.OptimisticDirectExecution);
+            }
+            else
+            {
+                return sqlQuerySpecCallback = (sqlQuerySpec) => Assert.IsFalse(sqlQuerySpec.OptimisticDirectExecution);
+            }
         }
 
         private static OptimisticDirectExecutionTestInput CreateInput(
@@ -611,6 +638,12 @@
             public MergeTestUtil(bool isFailedFallbackPipelineTest)
             {
                 this.IsFailedFallbackPipelineTest = isFailedFallbackPipelineTest;
+            }
+
+            public Action<SqlQuerySpec> ReturnQuerySpecCallback()
+            {
+                this.MoveNextCounter++;
+                return GetSqlQuerySpecCallback(expectedOdeFlagValue: false);
             }
 
             public async Task<Exception> ShouldReturnFailure()

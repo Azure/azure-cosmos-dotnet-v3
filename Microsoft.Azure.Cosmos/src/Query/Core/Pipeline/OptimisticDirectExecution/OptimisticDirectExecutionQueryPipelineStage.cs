@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 if (this.inner.Failed)
                 {
                     return false;
-                }
+                }  
 
                 success = await this.inner.Result.MoveNextAsync(trace);
             }
@@ -226,10 +226,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 }
 
                 FeedRangeState<QueryState> feedRangeState = monadicExtractState.Result;
+                SqlQuerySpec updatedSqlQuerySpec = new SqlQuerySpec(sqlQuerySpec.QueryText, sqlQuerySpec.Parameters, true);
 
                 QueryPartitionRangePageAsyncEnumerator partitionPageEnumerator = new QueryPartitionRangePageAsyncEnumerator(
                     documentContainer,
-                    sqlQuerySpec,
+                    updatedSqlQuerySpec,
                     feedRangeState,
                     partitionKey,
                     queryPaginationOptions,
