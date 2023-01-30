@@ -11,6 +11,7 @@ namespace CosmosCTL
     using System.Threading.Tasks;
     using App.Metrics;
     using App.Metrics.Counter;
+    using App.Metrics.Logging;
     using App.Metrics.Timer;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
@@ -141,7 +142,15 @@ namespace CosmosCTL
             List<Task> operations = new List<Task>();
             for (long i = 0; ShouldContinue(stopwatch, i, config); i++)
             {
-                await concurrencyControlSemaphore.WaitAsync(cancellationToken);
+                try
+                {
+                    await concurrencyControlSemaphore.WaitAsync(cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogInformation($"Exception Occurred while acquiring semephore.{ex.Message}");
+                }
+
                 long index = i % 100;
                 if (index < readWriteQueryPercentage.ReadPercentage)
                 {
@@ -151,7 +160,8 @@ namespace CosmosCTL
                             operation: i,
                             partitionKeyAttributeName: config.CollectionPartitionKey,
                             containers: initializationResult.Containers,
-                            createdDocumentsPerContainer: this.createdDocuments)),
+                            createdDocumentsPerContainer: this.createdDocuments,
+                            logger)),
                         onSuccess: () =>
                         {
                             concurrencyControlSemaphore.Release();
@@ -235,12 +245,15 @@ namespace CosmosCTL
             long operation,
             string partitionKeyAttributeName,
             IReadOnlyList<Container> containers,
-            IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> createdDocumentsPerContainer)
+            IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> createdDocumentsPerContainer,
+            ILogger logger)
         {
             Container container = containers[(int)operation % containers.Count];
             IReadOnlyList<Dictionary<string, string>> documents = createdDocumentsPerContainer[container.Id];
             Dictionary<string, string> document = documents[this.random.Next(documents.Count)];
-            return container.ReadItemAsync<Dictionary<string, string>>(document["id"], new PartitionKey(document[partitionKeyAttributeName]));
+            Task<ItemResponse<Dictionary<string, string>>> result = container.ReadItemAsync<Dictionary<string, string>>(document["id"], new PartitionKey(document[partitionKeyAttributeName]));
+            logger.LogInformation($"Total Time Taken: {result.Result.Diagnostics.GetClientElapsedTime().TotalMilliseconds}");
+            return result;
         }
 
         private Task<ItemResponse<Dictionary<string, string>>> CreateWriteOperation(

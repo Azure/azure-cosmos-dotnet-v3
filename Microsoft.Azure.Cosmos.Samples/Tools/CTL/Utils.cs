@@ -173,6 +173,8 @@ namespace CosmosCTL
             CosmosDiagnostics cosmosDiagnostics)
         {
 
+            logger.LogInformation($"{operationName} - Graphana reported latency: {timerContextLatency.TotalMilliseconds}");
+
             if (timerContextLatency > config.DiagnosticsThresholdDurationAsTimespan)
             {
                 logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request took more than latency threshold {config.DiagnosticsThresholdDuration}, diagnostics: {cosmosDiagnostics}");
