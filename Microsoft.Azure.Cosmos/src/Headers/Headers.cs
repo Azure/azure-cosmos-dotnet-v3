@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="RequestMessage"/>
     public class Headers : IEnumerable
     {
-        internal static readonly string defaultSupportedSerializationFormats = "JsonText, CosmosBinary";
+        internal const string DefaultSupportedSerializationFormats = "JsonText, CosmosBinary";
         internal static readonly string SDKSUPPORTEDCAPABILITIES = SDKSupportedCapabilitiesHelpers.GetSDKSupportedCapabilities().ToString(
             CultureInfo.InvariantCulture);
 

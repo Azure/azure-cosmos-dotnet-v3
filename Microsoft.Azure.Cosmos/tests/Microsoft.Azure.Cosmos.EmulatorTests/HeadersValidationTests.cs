@@ -353,43 +353,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DocumentCollection collection = TestCommon.CreateOrGetDocumentCollection(client);
             this.ValidateSupportedSerializationFormatsReadFeed(client, collection);
-            this.ValidateSupportedSerializationFormatsQuery(client, collection);
+
+            SqlQuerySpec sqlQuerySelectStar = new SqlQuerySpec("SELECT * FROM c");
+            SqlQuerySpec sqlQueryOrderBy = new SqlQuerySpec("SELECT c.id FROM c ORDER BY c.partitionKey");
+            SqlQuerySpec sqlQueryGroupBy = new SqlQuerySpec("SELECT c.name FROM c GROUP BY c.name");
+            this.ValidateSupportedSerializationFormatsQuery(client, collection, sqlQuerySelectStar);
+            this.ValidateSupportedSerializationFormatsQuery(client, collection, sqlQueryOrderBy);
+            this.ValidateSupportedSerializationFormatsQuery(client, collection, sqlQueryGroupBy);
         }
 
         private void SupportedSerializationFormatsNegativeCases(
             DocumentClient client, 
             DocumentCollection collection, 
             string value,
-            SqlQuerySpec sqlQuerySpec)
+            SqlQuerySpec sqlQuerySpec = null)
         {
             INameValueCollection headers = new RequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, value);
 
-            if (sqlQuerySpec != null)
+            try
             {
-                try
+                if (sqlQuerySpec != null)
                 {
                     this.QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
-                    Assert.Fail("Should throw an exception");
                 }
-                catch (Exception ex)
+                else
                 {
-                    DocumentClientException innerException = ex.InnerException as DocumentClientException;
-                    Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "invalid status code");
+                    this.ReadDocumentFeedRequestSinglePartition(client, collection.ResourceId, headers);                   
                 }
+
+                Assert.Fail("Should throw an exception");
             }
-            else
+            catch (Exception ex)
             {
-                try
-                {
-                    this.ReadDocumentFeedRequestSinglePartition(client, collection.ResourceId, headers);
-                    Assert.Fail("Should throw an exception");
-                }
-                catch (Exception ex)
-                {
-                    DocumentClientException innerException = ex.InnerException as DocumentClientException;
-                    Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "invalid status code");
-                }
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
+                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "invalid status code");
             }
         }
 
@@ -397,54 +395,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient client,
             DocumentCollection collection,
             bool expectedResultIsBinary,
-            SqlQuerySpec sqlQuerySpec,
             string supportedSerializationFormats,
-            string contentSerializationFormats = "")
+            string contentSerializationFormats,
+            SqlQuerySpec sqlQuerySpec = null)
         {
             INameValueCollection headers = new RequestNameValueCollection();
-            if (sqlQuerySpec != null)
+            if(contentSerializationFormats!=null)
             {
-                if (!expectedResultIsBinary)
-                {
-                    headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, contentSerializationFormats);
-                    headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, supportedSerializationFormats);
-                    DocumentServiceResponse response = this.QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
-                    Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
-                    Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
-                }
-                else
-                {
-                    headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, contentSerializationFormats);
-                    headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, supportedSerializationFormats);
-                    DocumentServiceResponse response = this.QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
-                    Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
-                    Assert.IsTrue(response.ResponseBody.ReadByte() == HeadersValidationTests.BinarySerializationByteMarkValue);
-                }
+                headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, contentSerializationFormats);
+            }
+            headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, supportedSerializationFormats);
+            DocumentServiceResponse response = sqlQuerySpec != null ? this.QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers) :
+                                                                this.ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
+            Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            
+            if(!expectedResultIsBinary)
+            {
+                Assert.IsTrue(response.ResponseBody.ReadByte() < BinarySerializationByteMarkValue);
             }
             else
             {
-                headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, supportedSerializationFormats);
-                DocumentServiceResponse response = this.ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
-                Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
-                Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
+                Assert.IsTrue(response.ResponseBody.ReadByte() == BinarySerializationByteMarkValue);
             }
+
         }
         private void ValidateSupportedSerializationFormatsReadFeed(DocumentClient client, DocumentCollection collection)
         {
-            INameValueCollection headers = new RequestNameValueCollection();
             // Value not supported
-            this.SupportedSerializationFormatsNegativeCases(client, collection, "Invalid value", sqlQuerySpec: null);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "Invalid value");
 
             // Supported values
-            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedResultIsBinary: false, sqlQuerySpec: null, supportedSerializationFormats: "JSONText");
-            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedResultIsBinary: false, sqlQuerySpec: null, supportedSerializationFormats: "COSMOSbinary");
-            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedResultIsBinary: false, sqlQuerySpec: null, supportedSerializationFormats: "JsonText, CosmosBinary");
+            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedResultIsBinary: false, supportedSerializationFormats: "JSONText", contentSerializationFormats: null);
+            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedResultIsBinary: false, supportedSerializationFormats: "COSMOSbinary", contentSerializationFormats: null);
+            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedResultIsBinary: false, supportedSerializationFormats: "JsonText, CosmosBinary", contentSerializationFormats: null);
         }
 
-        private void ValidateSupportedSerializationFormatsQuery(DocumentClient client, DocumentCollection collection)
+        private void ValidateSupportedSerializationFormatsQuery(DocumentClient client, DocumentCollection collection, SqlQuerySpec sqlQuerySpec)
         {
-            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec("SELECT * FROM c");
-            INameValueCollection headers = new RequestNameValueCollection();
             // Values not supported
             this.SupportedSerializationFormatsNegativeCases(client, collection, "Invalid value", sqlQuerySpec:sqlQuerySpec);
             this.SupportedSerializationFormatsNegativeCases(client, collection, ", ,", sqlQuerySpec: sqlQuerySpec);
@@ -458,34 +445,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Supported values
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedResultIsBinary: false,
-                sqlQuerySpec: sqlQuerySpec,
-                supportedSerializationFormats: "jsontext");
+                supportedSerializationFormats: "jsontext",
+                contentSerializationFormats: null,
+                sqlQuerySpec: sqlQuerySpec);
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedResultIsBinary: true,
-                sqlQuerySpec: sqlQuerySpec,
-                supportedSerializationFormats: "COSMOSBINARY");
+                supportedSerializationFormats: "COSMOSBINARY",
+                contentSerializationFormats: null,
+                sqlQuerySpec: sqlQuerySpec);
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedResultIsBinary: false,
-                sqlQuerySpec: sqlQuerySpec,
-                supportedSerializationFormats: "JsonText, CosmosBinary");
+                supportedSerializationFormats: "JsonText, CosmosBinary",
+                contentSerializationFormats: null,
+                sqlQuerySpec: sqlQuerySpec);
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedResultIsBinary: true,
-                sqlQuerySpec: sqlQuerySpec,
-                supportedSerializationFormats: "CosmosBinary, HybridRow");
+                supportedSerializationFormats: "CosmosBinary, HybridRow",
+                contentSerializationFormats: null,
+                sqlQuerySpec: sqlQuerySpec);
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedResultIsBinary: false,
-                sqlQuerySpec: sqlQuerySpec,
-                supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow");
-            this.SupportedSerializationFormatsPositiveCases(client, collection,
-                expectedResultIsBinary: true,
-                sqlQuerySpec: sqlQuerySpec,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
-                contentSerializationFormats: "CosmosBinary");
+                contentSerializationFormats: null,
+                sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsPositiveCases(client, collection,
+                expectedResultIsBinary: true,
+                supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
+                contentSerializationFormats: "CosmosBinary",
+                sqlQuerySpec: sqlQuerySpec);
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedResultIsBinary: false,
-                sqlQuerySpec: sqlQuerySpec,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
-                contentSerializationFormats: "JsonText");
+                contentSerializationFormats: "JsonText",
+                sqlQuerySpec: sqlQuerySpec);
         }
 
         [TestMethod]

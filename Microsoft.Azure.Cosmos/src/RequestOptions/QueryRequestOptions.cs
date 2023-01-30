@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = Headers.defaultSupportedSerializationFormats;
+                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = Headers.DefaultSupportedSerializationFormats;
             }
 
             if (this.StartId != null)
