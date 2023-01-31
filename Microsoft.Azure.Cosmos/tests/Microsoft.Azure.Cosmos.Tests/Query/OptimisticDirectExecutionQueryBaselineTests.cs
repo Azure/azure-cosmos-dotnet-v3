@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
@@ -18,6 +19,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -27,6 +29,7 @@
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -161,7 +164,54 @@
         {
             SqlQuerySpec querySpec = new SqlQuerySpec();
 
-            Assert.IsFalse(querySpec.OptimisticDirectExecution);
+            Assert.IsFalse(querySpec.OptimisticDirectExecute);
+        }
+
+        [TestMethod]
+        public async Task TestUpdatedSqlQuerySpecSettings()
+        {
+            int numItems = 100;
+            OptimisticDirectExecutionTestInput input = CreateInput(
+                    description: @"Single Partition Key and Value Field",
+                    query: "SELECT VALUE COUNT(1) FROM c",
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: "a");
+
+            Mock<IDocumentContainer> docContainer = new Mock<IDocumentContainer>();
+            QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
+            
+            docContainer.Setup(dc => dc.MonadicQueryAsync(It.IsAny<SqlQuerySpec>(), It.IsAny<FeedRangeState<QueryState>>(), It.IsAny<QueryPaginationOptions>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+            .Returns(async (SqlQuerySpec querySpec, FeedRangeState<QueryState> range, QueryPaginationOptions options, ITrace trace, CancellationToken ct) =>
+            {
+                Assert.IsTrue(querySpec.OptimisticDirectExecute);
+
+                ImmutableDictionary<string, string>.Builder additionalHeaders = ImmutableDictionary.CreateBuilder<string, string>();
+                additionalHeaders.Add("x-ms-documentdb-partitionkeyrangeid", "0");
+                additionalHeaders.Add("x-ms-test-header", "true");
+
+                return TryCatch<QueryPage>.FromResult(
+                    new QueryPage(
+                        new List<CosmosElement>(),
+                        requestCharge: 42,
+                        activityId: Guid.NewGuid().ToString(),
+                        responseLengthInBytes: 1337,
+                        cosmosQueryExecutionInfo: default,
+                        disallowContinuationTokenMessage: default,
+                        additionalHeaders: additionalHeaders.ToImmutable(),
+                        state: default));
+            });
+
+            TryCatch<IQueryPipelineStage> queryPipelineStage = OptimisticDirectExecutionQueryPipelineStage.MonadicCreate(
+                docContainer.Object,
+                inputParameters: inputParameters,
+                targetRange: FeedRangeEpk.FullRange,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                fallbackQueryPipelineStageFactory: null,
+                cancellationToken: default);
+
+            bool result = await queryPipelineStage.Result.MoveNextAsync(NoOpTrace.Singleton);
         }
 
 
@@ -178,9 +228,7 @@
                     partitionKeyValue: "a");
 
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-            Action<SqlQuerySpec> sqlQuerySpecCallback = GetSqlQuerySpecCallback(expectedOdeFlagValue: true);
-            
-            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: false, sqlQuerySpecCallback);
+            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: false);
             IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
             int documentCountInSinglePartition = 0;
 
@@ -345,7 +393,6 @@
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(
                     numItems,
                     multiPartition: isMultiPartition,
-                    sqlQuerySpecCallback: mergeTest.ReturnQuerySpecCallback(),
                     failureConfigs: new FlakyDocumentContainer.FailureConfigs(
                         inject429s: false,
                         injectEmptyPages: false,
@@ -359,9 +406,8 @@
         private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount)
         {
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-            Action<SqlQuerySpec> sqlQuerySpecCallback = GetSqlQuerySpecCallback(expectedOdeFlagValue: true);
            
-            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition, sqlQuerySpecCallback);
+            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition);
             IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
 
             List<CosmosElement> documents = new List<CosmosElement>();
@@ -433,7 +479,6 @@
         private static async Task<DocumentContainer> CreateDocumentContainerAsync(
             int numItems,
             bool multiPartition,
-            Action<SqlQuerySpec> sqlQuerySpecCallback = null,
             FlakyDocumentContainer.FailureConfigs failureConfigs = null)
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
@@ -446,7 +491,7 @@
                 Version = PartitionKeyDefinitionVersion.V2,
             };
 
-            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition, sqlQuerySpecCallback ?? null);
+            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
             if (failureConfigs != null)
             {
                 monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
@@ -507,19 +552,6 @@
             pkBuilder.Add(partitionKeyValue);
 
             return CreateInput(description, query, expectedOptimisticDirectExecution, partitionKeyPath, pkBuilder.Build(), continuationToken);
-        }
-
-        private static Action<SqlQuerySpec> GetSqlQuerySpecCallback(bool expectedOdeFlagValue)
-        {
-            Action<SqlQuerySpec> sqlQuerySpecCallback;
-            if (expectedOdeFlagValue)
-            {
-                return sqlQuerySpecCallback = (sqlQuerySpec) => Assert.IsTrue(sqlQuerySpec.OptimisticDirectExecution);
-            }
-            else
-            {
-                return sqlQuerySpecCallback = (sqlQuerySpec) => Assert.IsFalse(sqlQuerySpec.OptimisticDirectExecution);
-            }
         }
 
         private static OptimisticDirectExecutionTestInput CreateInput(
@@ -638,12 +670,6 @@
             public MergeTestUtil(bool isFailedFallbackPipelineTest)
             {
                 this.IsFailedFallbackPipelineTest = isFailedFallbackPipelineTest;
-            }
-
-            public Action<SqlQuerySpec> ReturnQuerySpecCallback()
-            {
-                this.MoveNextCounter++;
-                return GetSqlQuerySpecCallback(expectedOdeFlagValue: false);
             }
 
             public async Task<Exception> ShouldReturnFailure()

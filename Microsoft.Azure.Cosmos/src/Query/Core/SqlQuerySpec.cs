@@ -39,12 +39,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </summary>
         /// <param name="queryText">The text of the database query.</param>
         /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
-        /// /// <param name="optimisticDirectExecution">Boolean indicating whether query is direct (optimistic) execution.</param>
-        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, bool optimisticDirectExecution = false)
+        /// /// <param name="optimisticDirectExecute">Boolean indicating whether query is direct (optimistic) execution.</param>
+        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, bool optimisticDirectExecute = false)
         {
             this.QueryText = queryText;
             this.parameters = parameters ?? throw new ArgumentNullException("parameters");
-            this.OptimisticDirectExecution = optimisticDirectExecution;
+            this.OptimisticDirectExecute = optimisticDirectExecute;
         }
         
         /// <summary>
@@ -58,8 +58,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// Gets or sets whether Optimistic Direct execution is desired for this query.
         /// </summary>
         /// <value>Boolean indicating whether query is direct (optimistic) execution.</value>
-        [DataMember(Name = "optimisticDirectExecution")]
-        public bool OptimisticDirectExecution { get; set; }
+        [DataMember(Name = "optimisticDirectExecute")]
+        public bool OptimisticDirectExecute { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of Azure Cosmos DB query parameters.

@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     {
         private readonly PartitionKeyDefinition partitionKeyDefinition;
         private readonly Dictionary<int, (int, int)> parentToChildMapping;
-        public readonly Action<SqlQuerySpec> SqlQuerySpecCallback;
 
         private PartitionKeyHashRangeDictionary<Records> partitionedRecords;
         private PartitionKeyHashRangeDictionary<List<Change>> partitionedChanges;
@@ -45,8 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         private Dictionary<int, PartitionKeyHashRange> cachedPartitionKeyRangeIdToHashRange;
 
         public InMemoryContainer(
-            PartitionKeyDefinition partitionKeyDefinition, 
-            Action<SqlQuerySpec> sqlQuerySpecCallback = null)
+            PartitionKeyDefinition partitionKeyDefinition)
         {
             this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
             PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: new PartitionKeyHash(Cosmos.UInt128.MaxValue));
@@ -64,7 +62,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 { 0, fullRange }
             };
             this.parentToChildMapping = new Dictionary<int, (int, int)>();
-            this.SqlQuerySpecCallback = sqlQuerySpecCallback;
         }
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
@@ -467,8 +464,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 throw new ArgumentNullException(nameof(sqlQuerySpec));
             }
-
-            this.SqlQuerySpecCallback?.Invoke(sqlQuerySpec);
 
             using (ITrace childTrace = trace.StartChild("Query Transport", TraceComponent.Transport, TraceLevel.Info))
             {
