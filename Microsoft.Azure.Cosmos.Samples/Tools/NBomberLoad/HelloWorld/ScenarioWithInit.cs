@@ -1,6 +1,7 @@
 
 namespace NBomber
 {
+    using System.Collections.Concurrent;
     using Microsoft.Azure.Cosmos;
     using NBomber.CSharp;
 
@@ -12,15 +13,14 @@ namespace NBomber
 
         private Container container;
 
-        private readonly Dictionary<string, string> idPkMap = new Dictionary<string, string>();
+        private readonly ConcurrentDictionary<string, string> idPkMap = new ConcurrentDictionary<string, string>();
 
         public void Run()
         {
             var scn1 = Scenario.Create("scenario_1", async context =>
             {
-                string randomKey = this.idPkMap.Keys.ElementAt(this.rand.Next(0, this.idPkMap.Count));
-                string pk = this.idPkMap[randomKey];
-                ItemResponse<ToDoActivity> readResponse = await this.container.ReadItemAsync<ToDoActivity>(randomKey, new PartitionKey(pk));
+                string randomPk = this.idPkMap.Values.ElementAt(this.rand.Next(0, this.idPkMap.Count));
+                ItemResponse<ToDoActivity> readResponse = await this.container.ReadItemAsync<ToDoActivity>(randomPk, new PartitionKey(pk));
                 return Response.Ok();
             })
             .WithoutWarmUp()
