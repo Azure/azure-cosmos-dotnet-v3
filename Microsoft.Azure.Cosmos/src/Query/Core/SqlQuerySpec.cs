@@ -39,8 +39,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </summary>
         /// <param name="queryText">The text of the database query.</param>
         /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
+        public SqlQuerySpec(string queryText, SqlParameterCollection parameters)
+            : this(queryText, parameters, false)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="T:Microsoft.Azure.Documents.SqlQuerySpec"/> class for the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="queryText">The text of the database query.</param>
+        /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
         /// /// <param name="optimisticDirectExecute">Boolean indicating whether query is direct (optimistic) execution.</param>
-        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, bool optimisticDirectExecute = false)
+        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, bool optimisticDirectExecute)
         {
             this.QueryText = queryText;
             this.parameters = parameters ?? throw new ArgumentNullException("parameters");

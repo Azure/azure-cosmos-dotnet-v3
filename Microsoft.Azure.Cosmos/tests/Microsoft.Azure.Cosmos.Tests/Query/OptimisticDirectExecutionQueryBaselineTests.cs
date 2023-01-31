@@ -214,7 +214,6 @@
             bool result = await queryPipelineStage.Result.MoveNextAsync(NoOpTrace.Singleton);
         }
 
-
         // test checks that the pipeline can take a query to the backend and returns its associated document(s).
         [TestMethod]
         public async Task TestPipelineForBackendDocumentsOnSinglePartitionAsync()
@@ -406,7 +405,6 @@
         private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount)
         {
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-           
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition);
             IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
 
