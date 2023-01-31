@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             DistributedTracingOptions distributedTracingOptions = new DistributedTracingOptions
             {
-                DiagnosticsLatencyThreshold = this.rootTrace.Duration.Add(TimeSpan.FromSeconds(1))
+                LatencyThresholdForDiagnosticEvent = this.rootTrace.Duration.Add(TimeSpan.FromSeconds(1))
             };
             
             OpenTelemetryAttributes response = new OpenTelemetryAttributes
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 DiagnosticsFilterHelper
                                 .IsTracingNeeded(distributedTracingOptions, OperationType.Read, response), 
                 $" Response time is {response.Diagnostics.GetClientElapsedTime().Milliseconds}ms " +
-                $"and Configured threshold value is {distributedTracingOptions.DiagnosticsLatencyThreshold.Value.Milliseconds}ms " +
+                $"and Configured threshold value is {distributedTracingOptions.LatencyThresholdForDiagnosticEvent.Value.Milliseconds}ms " +
                 $"and Is response Success : {response.StatusCode.IsSuccess()}" );
         }
 
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             DistributedTracingOptions distributedTracingOptions = new DistributedTracingOptions
             {
-                DiagnosticsLatencyThreshold = this.rootTrace.Duration.Add(TimeSpan.FromSeconds(1))
+                LatencyThresholdForDiagnosticEvent = this.rootTrace.Duration.Add(TimeSpan.FromSeconds(1))
             };
 
             OpenTelemetryAttributes response = new OpenTelemetryAttributes
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 DiagnosticsFilterHelper
                     .IsTracingNeeded(distributedTracingOptions, OperationType.Read, response),
                 $" Response time is {response.Diagnostics.GetClientElapsedTime().Milliseconds}ms " +
-                $"and Configured threshold value is {distributedTracingOptions.DiagnosticsLatencyThreshold.Value.Milliseconds}ms " +
+                $"and Configured threshold value is {distributedTracingOptions.LatencyThresholdForDiagnosticEvent.Value.Milliseconds}ms " +
                 $"and Is response Success : {response.StatusCode.IsSuccess()}");
 
         }
