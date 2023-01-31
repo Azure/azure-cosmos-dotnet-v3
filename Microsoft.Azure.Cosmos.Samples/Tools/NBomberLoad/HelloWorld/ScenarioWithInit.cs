@@ -7,8 +7,6 @@ namespace NBomber
 
     public class ScenarioWithInit
     {
-        private readonly Random rand = new Random();
-
         private Database database;
 
         private Container container;
@@ -19,7 +17,7 @@ namespace NBomber
         {
             var scn1 = Scenario.Create("scenario_1", async context =>
             {
-                string randomPk = this.idPkMap.Values.ElementAt(this.rand.Next(0, this.idPkMap.Count));
+                string randomPk = this.idPkMap.Values.ElementAt(Random.Shared.Next(0, this.idPkMap.Count));
                 ItemResponse<ToDoActivity> readResponse = await this.container.ReadItemAsync<ToDoActivity>(randomPk, new PartitionKey(pk));
                 return Response.Ok();
             })
