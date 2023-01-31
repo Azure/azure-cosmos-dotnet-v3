@@ -951,12 +951,6 @@ namespace Microsoft.Azure.Cosmos
             // For direct: WFStoreProxy [set in OpenAsync()].
             this.eventSource = DocumentClientEventSource.Instance;
 
-            // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
-            // the system information so no need to track it.
-#if !INTERNAL
-            this.InitializeClientTelemetry();
-#endif
-
             this.initializeTaskFactory = (_) => TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
                     new ResourceThrottleRetryPolicy(
@@ -1036,9 +1030,9 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        private void InitializeClientTelemetry()
+        private void InitializeClientTelemetry(ClientTelemetryConfiguration clientTelemetryConfig)
         {
-            if (this.ConnectionPolicy.EnableClientTelemetry)
+            if (clientTelemetryConfig.IsEnabled)
             {
                 try
                 {
@@ -1050,18 +1044,22 @@ namespace Microsoft.Azure.Cosmos
                         authorizationTokenProvider: this.cosmosAuthorization,
                         diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
                         preferredRegions: this.ConnectionPolicy.PreferredLocations,
-                        globalEndpointManager: this.GlobalEndpointManager);
+                        globalEndpointManager: this.GlobalEndpointManager,
+                        clientTelemetryConfig: clientTelemetryConfig);
 
                     DefaultTrace.TraceInformation("Client Telemetry Enabled.");
                 }
                 catch (Exception ex)
                 {
                     DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
-                    this.ConnectionPolicy.EnableClientTelemetry = false;
                 }
             }
             else
             {
+                // Stop the job if disabled.
+                this.clientTelemetry?.Dispose();
+                this.clientTelemetry = null;
+                
                 DefaultTrace.TraceInformation("Client Telemetry Disabled.");
             }
         }
@@ -6452,7 +6450,15 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                return await gatewayModel.GetDatabaseAccountClientConfigAsync(CreateRequestMessage);
+                AccountClientConfiguration clientConfiguration = await gatewayModel.GetDatabaseAccountClientConfigAsync(CreateRequestMessage);
+                
+                // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
+                // the system information so no need to track it.
+#if !INTERNAL
+                this.InitializeClientTelemetry(clientConfiguration.ClientTelemetryConfiguration);
+#endif
+                
+                return clientConfiguration;
             }
             catch (Exception ex)
             {

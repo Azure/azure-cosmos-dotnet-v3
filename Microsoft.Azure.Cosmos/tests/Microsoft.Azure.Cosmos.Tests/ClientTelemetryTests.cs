@@ -18,11 +18,11 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ClientTelemetryTests
     {
-        [TestCleanup]
+        /*[TestCleanup]
         public void Cleanup()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
-        }
+        }*/
 
         [TestMethod]
         public void CheckMetricsAggregationLogic()
@@ -109,13 +109,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 aggregationIntervalInSec: 1), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[]}", json);
         }
-
+/*
         [TestMethod]
         [ExpectedException(typeof(System.FormatException))]
         public void CheckMisconfiguredTelemetry_should_fail()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "non-boolean");
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-        }
+        }*/
     }
 }

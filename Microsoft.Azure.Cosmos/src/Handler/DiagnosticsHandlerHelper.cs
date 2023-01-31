@@ -33,9 +33,6 @@ namespace Microsoft.Azure.Cosmos.Handler
             historyLength: 120,
             refreshInterval: DiagnosticsHandlerHelper.ClientTelemetryRefreshInterval);
 
-        private static bool isDiagnosticsMonitoringEnabled = false;
-        private static bool isTelemetryMonitoringEnabled = false;
-
         /// <summary>
         /// Singleton to make sure only one instance of DiagnosticHandlerHelper is there.
         /// The system usage collection is disabled for internal builds so it is set to null to avoid
@@ -51,38 +48,24 @@ namespace Microsoft.Azure.Cosmos.Handler
         private readonly SystemUsageMonitor systemUsageMonitor = null;
 
         /// <summary>
-        /// Start System Usage Monitor with Diagnostic and Telemetry Recorder if Telemetry is enabled 
-        /// Otherwise Start System Usage Monitor with only Diagnostic Recorder
+        /// Start System Usage Monitor with Diagnostic and Telemetry Recorder
         /// </summary>
         private DiagnosticsHandlerHelper()
         {
-            DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled = false;
-
             // If the CPU monitor fails for some reason don't block the application
             try
             {
-                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled();
-
                 List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
                 {
                     this.diagnosticSystemUsageRecorder,
+                    this.telemetrySystemUsageRecorder
                 };
-
-                if (DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
-                {
-                    recorders.Add(this.telemetrySystemUsageRecorder);
-                }
-
+                
                 this.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
-
-                DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled = true;
             }
             catch (Exception ex)
             {
                 DefaultTrace.TraceError(ex.Message);
-
-                DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled = false;
-                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = false;
             }
         }
 
@@ -92,11 +75,6 @@ namespace Microsoft.Azure.Cosmos.Handler
         /// </summary>
         public SystemUsageHistory GetDiagnosticsSystemHistory()
         {
-            if (!DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled)
-            {
-                return null;
-            }
-
             try
             {
                 return this.diagnosticSystemUsageRecorder.Data;
@@ -104,7 +82,6 @@ namespace Microsoft.Azure.Cosmos.Handler
             catch (Exception ex)
             {
                 DefaultTrace.TraceError(ex.Message);
-                DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled = false;
                 return null;
             }
         }
@@ -116,11 +93,6 @@ namespace Microsoft.Azure.Cosmos.Handler
         /// <returns> CpuAndMemoryUsageRecorder</returns>
         public SystemUsageHistory GetClientTelemetrySystemHistory()
         {
-            if (!DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
-            {
-                return null;
-            }
-
             try
             {
                 return this.telemetrySystemUsageRecorder.Data;
@@ -128,7 +100,6 @@ namespace Microsoft.Azure.Cosmos.Handler
             catch (Exception ex)
             {
                 DefaultTrace.TraceError(ex.Message);
-                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = false;
                 return null;
             }
         }

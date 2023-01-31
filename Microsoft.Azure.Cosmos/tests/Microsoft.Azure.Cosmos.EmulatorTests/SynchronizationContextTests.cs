@@ -19,11 +19,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Timeout(30000)]
         public void VerifySynchronizationContextDoesNotLock(bool withClientTelemetry)
         {
-            if (withClientTelemetry)
-            {
-                Util.EnableClientTelemetryEnvironmentVariables();
-            }
-
             string databaseId = Guid.NewGuid().ToString();
             SynchronizationContext prevContext = SynchronizationContext.Current;
             try
@@ -137,11 +132,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (CosmosClient client = TestCommon.CreateCosmosClient())
                 {
                     client.GetDatabase(databaseId).DeleteAsync().GetAwaiter().GetResult();
-                }
-
-                if (withClientTelemetry)
-                {
-                    Util.DisableClientTelemetryEnvironmentVariables();
                 }
             }
         }

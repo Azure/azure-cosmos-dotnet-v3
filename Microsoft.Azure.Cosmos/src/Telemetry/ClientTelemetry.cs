@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -33,8 +34,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private const int allowedNumberOfFailures = 3;
 
-        private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
-        private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
+        private static readonly TimeSpan observingWindow = TimeSpan.FromSeconds(ClientTelemetryOptions.DefaultTimeStampInSeconds);
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly CosmosHttpClient httpClient;
@@ -45,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private readonly GlobalEndpointManager globalEndpointManager;
 
+        private static Uri EndpointUrl { get; set; }
         private Task telemetryTask;
 
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
@@ -74,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="diagnosticsHelper"></param>
         /// <param name="preferredRegions"></param>
         /// <param name="globalEndpointManager"></param>
+        /// <param name="clientTelemetryConfig"></param>
         /// <returns>ClientTelemetry</returns>
         public static ClientTelemetry CreateAndStartBackgroundTelemetry(
             string clientId,
@@ -83,10 +85,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper,
             IReadOnlyList<string> preferredRegions,
-            GlobalEndpointManager globalEndpointManager)
+            GlobalEndpointManager globalEndpointManager,
+            ClientTelemetryConfiguration clientTelemetryConfig)
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
 
+            ClientTelemetry.EndpointUrl = new Uri(clientTelemetryConfig.Endpoint);
+            
             ClientTelemetry clientTelemetry = new ClientTelemetry(
                 clientId,
                 httpClient,
@@ -361,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         private async Task SendAsync()
         {
-            if (endpointUrl == null)
+            if (ClientTelemetry.EndpointUrl == null)
             {
                 DefaultTrace.TraceError("Telemetry is enabled but endpoint is not configured");
                 return;
@@ -369,14 +374,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             try
             {
-                DefaultTrace.TraceInformation("Sending Telemetry Data to {0}", endpointUrl.AbsoluteUri);
+                DefaultTrace.TraceInformation("Sending Telemetry Data to {0}", ClientTelemetry.EndpointUrl.AbsoluteUri);
 
                 string json = JsonConvert.SerializeObject(this.clientTelemetryInfo, ClientTelemetryOptions.JsonSerializerSettings);
 
                 using HttpRequestMessage request = new HttpRequestMessage
                 {
                     Method = HttpMethod.Post,
-                    RequestUri = endpointUrl,
+                    RequestUri = ClientTelemetry.EndpointUrl,
                     Content = new StringContent(json, Encoding.UTF8, "application/json")
                 };
 
@@ -385,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     INameValueCollection headersCollection = new StoreResponseNameValueCollection();
                     await this.tokenProvider.AddAuthorizationHeaderAsync(
                             headersCollection,
-                            endpointUrl,
+                            ClientTelemetry.EndpointUrl,
                             "POST",
                             AuthorizationTokenType.PrimaryMasterKey);
 

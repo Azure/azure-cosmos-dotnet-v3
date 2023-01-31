@@ -48,7 +48,6 @@ namespace Microsoft.Azure.Cosmos
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
-            this.EnableClientTelemetry = ClientTelemetryOptions.IsClientTelemetryEnabled();
             this.ServerCertificateCustomValidationCallback = null;
         }
 
