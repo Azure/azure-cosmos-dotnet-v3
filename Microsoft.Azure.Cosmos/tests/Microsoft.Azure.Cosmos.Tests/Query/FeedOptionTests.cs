@@ -50,6 +50,28 @@ namespace Microsoft.Azure.Cosmos.Query
             _ = new FeedOptions(fo);
         }
 
+        [TestMethod]
+        public async Task TestSupportedSerializationFormatsAsync()
+        {
+            FeedOptions fo = new FeedOptions();
+            Mock<IDocumentQueryClient> dcClient = new Mock<IDocumentQueryClient>();
+            Expression<Func<int, int>> randomFunc = x => x * 2;
+
+            TestQueryExecutionContext cxt = new TestQueryExecutionContext(
+                dcClient.Object,
+                ResourceType.Document,
+                typeof(TestQueryExecutionContext),
+                randomFunc,
+                fo,
+                string.Empty,
+                true, Guid.NewGuid());
+            INameValueCollection headers = await cxt.CreateCommonHeadersAsync(fo);
+            Assert.AreEqual("JsonText, CosmosBinary", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
+
+            fo.SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow;
+            headers = await cxt.CreateCommonHeadersAsync(fo);
+            Assert.AreEqual("CosmosBinary, HybridRow", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
+        }
         internal class TestQueryExecutionContext : DocumentQueryExecutionContextBase
         {
             public TestQueryExecutionContext(

@@ -33,7 +33,7 @@
 
                 QueryRequestOptions requestOptions = new QueryRequestOptions
                 {
-                    SupportedSerializationFormats = Documents.SupportedSerializationFormats.JsonText | Documents.SupportedSerializationFormats.CosmosBinary
+                    SupportedSerializationFormats = Documents.SupportedSerializationFormats.CosmosBinary | Documents.SupportedSerializationFormats.HybridRow
                 };
 
                 FeedIterator<CosmosElement> feedIterator = container.GetItemQueryIterator<CosmosElement>(
