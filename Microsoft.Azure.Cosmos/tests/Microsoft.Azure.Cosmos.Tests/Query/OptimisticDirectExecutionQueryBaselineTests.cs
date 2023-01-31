@@ -188,7 +188,6 @@
                 Assert.IsTrue(querySpec.OptimisticDirectExecute);
 
                 ImmutableDictionary<string, string>.Builder additionalHeaders = ImmutableDictionary.CreateBuilder<string, string>();
-                additionalHeaders.Add("x-ms-documentdb-partitionkeyrangeid", "0");
                 additionalHeaders.Add("x-ms-test-header", "true");
 
                 return TryCatch<QueryPage>.FromResult(
