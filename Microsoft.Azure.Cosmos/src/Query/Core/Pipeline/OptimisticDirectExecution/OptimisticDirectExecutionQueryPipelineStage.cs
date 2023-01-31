@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 if (this.inner.Failed)
                 {
                     return false;
-                }  
+                }
 
                 success = await this.inner.Result.MoveNextAsync(trace);
             }
