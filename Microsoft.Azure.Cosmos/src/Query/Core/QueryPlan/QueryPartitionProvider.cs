@@ -86,16 +86,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             {
                 lock (this.serviceProviderStateLock)
                 {
-                    this.queryengineConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
+                    string newConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
 
-                    if (!this.disposed && this.serviceProvider != IntPtr.Zero)
+                    if (!string.Equals(this.queryengineConfiguration, newConfiguration))
                     {
-                        uint errorCode = ServiceInteropWrapper.UpdateServiceProvider(
-                            this.serviceProvider,
-                            this.queryengineConfiguration);
+                        this.queryengineConfiguration = newConfiguration;
 
-                        Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-                        if (exception != null) throw exception;
+                        if (!this.disposed && this.serviceProvider != IntPtr.Zero)
+                        {
+                            uint errorCode = ServiceInteropWrapper.UpdateServiceProvider(
+                                this.serviceProvider,
+                                this.queryengineConfiguration);
+
+                            Exception exception = Marshal.GetExceptionForHR((int)errorCode);
+                            if (exception != null) throw exception;
+                        }
                     }
                 }
             }
@@ -113,7 +118,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
             bool allowDCount,
-            bool useSystemPrefix)
+            bool useSystemPrefix,
+            GeospatialType geospatialType)
         {
             TryCatch<PartitionedQueryExecutionInfoInternal> tryGetInternalQueryInfo = this.TryGetPartitionedQueryExecutionInfoInternal(
                 querySpecJsonString: querySpecJsonString,
@@ -123,7 +129,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount,
-                useSystemPrefix: useSystemPrefix);
+                useSystemPrefix: useSystemPrefix,
+                geospatialType: geospatialType);
             if (!tryGetInternalQueryInfo.Succeeded)
             {
                 return TryCatch<PartitionedQueryExecutionInfo>.FromException(tryGetInternalQueryInfo.Exception);
@@ -164,7 +171,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
             bool allowDCount,
-            bool useSystemPrefix)
+            bool useSystemPrefix,
+            GeospatialType geospatialType)
         {
             if (querySpecJsonString == null || partitionKeyDefinition == null)
             {
@@ -195,7 +203,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
 
             PartitionKind partitionKind = partitionKeyDefinition.Kind;
-            GeospatialType defaultGeopatialType = GeospatialType.Geography;
 
             this.Initialize();
 
@@ -214,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                         bIsContinuationExpected = Convert.ToInt32(isContinuationExpected),
                         bRequireFormattableOrderByQuery = Convert.ToInt32(requireFormattableOrderByQuery),
                         bUseSystemPrefix = Convert.ToInt32(useSystemPrefix),
-                        eGeospatialType = Convert.ToInt32(defaultGeopatialType),
+                        eGeospatialType = Convert.ToInt32(geospatialType),
                         ePartitionKind = Convert.ToInt32(partitionKind)
                     };
 

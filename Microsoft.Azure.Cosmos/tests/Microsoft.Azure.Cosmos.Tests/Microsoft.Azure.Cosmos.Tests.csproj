@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
@@ -174,6 +174,12 @@
     <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.ArrayCreate.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+	<None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.All.xml">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
+	<None Update="BaselineTest\TestBaseline\AggregateSubquerySqlParserBaselineTests.All.xml">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.SystemFunctions.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -222,18 +228,21 @@
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.RangePartitionKey.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Spatial.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Subqueries.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Top.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-	<None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.PositivePassThroughOutput.xml">
+    <None Update="BaselineTest\TestBaseline\OptimisticDirectExecutionQueryBaselineTests.PositiveOptimisticDirectExecutionOutput.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	</None>
-	<None Update="BaselineTest\TestBaseline\PassThroughQueryBaselineTests.NegativePassThroughOutput.xml">
+    </None>
+    <None Update="BaselineTest\TestBaseline\OptimisticDirectExecutionQueryBaselineTests.NegativeOptimisticDirectExecutionOutput.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	</None>
+    </None>
     <None Update="Contracts\DotNetPreviewSDKAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

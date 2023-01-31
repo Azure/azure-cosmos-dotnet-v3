@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// Describes the list of Patch supported operation types.
     /// </summary>
     /// <remarks>
-    /// Further enum additions are expected in the future, application should be authored to cover this scenario
+    /// For more information, see <see href="https://docs.microsoft.com/azure/cosmos-db/partial-document-update#supported-operations">Partial document update in Azure Cosmos DB: Supported operations</see>
     /// </remarks>
     [JsonConverter(typeof(StringEnumConverter))]
 

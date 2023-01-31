@@ -89,6 +89,48 @@ All test projects can be interacted with through an IDE (some IDEs like Visual S
 
 When evaluating adding new tests, please search in the existing test files if there is already a test file for the scenario or feature you are working on.
 
+## Contribution flow
+
+1. Create a branch for your contribution (if you are an external contributor, on your own fork).
+1. Make sure your work is adding [tests](#tests) as required (either unit and/or emulator tests depending on the scope of the work).
+1. Send a Pull Request to the master branch once your work is ready to be reviewed.
+1. The CI pipeline will start any required tests. If you are an external contributor, a team member will start the verification once we confirm the nature of the contribution through a `/azp run` comment in your Pull Request.
+1. Look for review comments and attempt to answer/address them to the best of your ability.
+1. Check for [test failures](#test-failures) and address them if they are not transient.
+1. Review the **Checks** section to confirm there are no pending steps that might be blocking your work from merging.
+
+### Test failures
+
+If the Pull Request is experiencing test failures, these will appear as failed checks:
+
+![Failed checks](docs/images/contributing-details.png)
+
+Clicking on `Details` will take you to the **Checks** section. Each failed check will contain a link to `View more details on Azure Pipelines`:
+
+![View more details](docs/images/contributing-viewmore.png)
+
+Which takes you to the pipeline run. Clicking on the run number will take you to the run **Overview**:
+
+![See pipeline overview](docs/images/contributing-pipeline.png)
+
+And you can see which Tests failed during that check and click on the individual test to see the error message:
+
+![See tests](docs/images/contributing-pipelinetests.png)
+
+In some cases, the failures are unrelated to your changes and might result from a transient issue on the test environment. On the **Checks** section, you can decide to **Re-run** the tests individually:
+
+![Re-run failure](docs/images/contributing-rerun.png)
+
+Or all through `Re-run failed checks` on the top right corner:
+
+![Re-run all failures](docs/images/contributing-rerunall.png)
+
+## Usage of Cosmos DB Emulator for running unit tests
+
+- - The same version of the emulator used in the CI pipelines can be downloaded [here](https://aka.ms/cosmosdb-emulator)
+- More information about how ro use the emulator for development is documented [here](https://github.com/Azure/azure-documentdb-dotnet/blob/master/docs/documentdb-nosql-local-emulator.md)
+- You can start the emulator with same parameters as the emulator unit tests in the CI pipeline via `.\CosmosDB.Emulator.exe /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /enableRio /EnablePreview /EnableAadAuthentication /EnableSqlComputeEndpoint`
+
 ## Troubleshooting
 
 - [General .NET SDK Troubleshooting](https://docs.microsoft.com/azure/cosmos-db/sql/troubleshoot-dot-net-sdk)

@@ -7,13 +7,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Formats.Asn1;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.NetworkInformation;
+    using System.Net.Security;
     using System.Reflection;
+    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -446,6 +446,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
         }
+        
+        [TestMethod]
+        public async Task Verify_CertificateCallBackGetsCalled_ForTCP_HTTP()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+            int counter = 0;
+            AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
+            CosmosClient cosmosClient = new CosmosClient(
+                    endpoint,
+                    masterKeyCredential,
+                    new CosmosClientOptions()
+                    {
+                        ConnectionMode = ConnectionMode.Direct,
+                        ConnectionProtocol = Protocol.Tcp,
+                        ServerCertificateCustomValidationCallback = (X509Certificate2 cerf, X509Chain chain, SslPolicyErrors error) => { counter ++; return true; }
+                    });
+
+            string databaseName = Guid.NewGuid().ToString();
+            string databaseId = Guid.NewGuid().ToString();
+            Cosmos.Database database = null;
+            //HTTP callback
+            database = await cosmosClient.CreateDatabaseAsync(databaseId);
+            
+            Cosmos.Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+
+            //TCP callback
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+            ResponseMessage responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
+
+            Assert.IsTrue(counter >= 2);
+
+        }
 
         [TestMethod]
         public void SqlQuerySpecSerializationTest()
@@ -535,16 +568,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     QueryText = "SELECT 1",
                     Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new JRaw("{\"a\":[1,2,3]}")) },
-                    PassThrough = false
                 });
             verifyJsonSerialization("{\"query\":\"SELECT 1\",\"parameters\":[" +
                     "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,3]}}" + 
-                "]," + "\"passThrough\":true}",
+                "]}",
                 new SqlQuerySpec()
                 {
                     QueryText = "SELECT 1",
                     Parameters = new SqlParameterCollection() { new SqlParameter("@p1", new JRaw("{\"a\":[1,2,3]}")) },
-                    PassThrough = true
                 });
 
             // Verify roundtrips
@@ -604,7 +635,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "\"query\":\"SELECT 1\"," +
                     "\"parameters\":[" +
                         "{\"name\":\"@p1\",\"value\":{\"a\":[1,2,\"abc\"]}}" +
-                    "]," + "\"passThrough\":true" + 
+                    "]" +
                 "}");
         }
 

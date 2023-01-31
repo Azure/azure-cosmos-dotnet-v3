@@ -31,9 +31,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             bool indexPlanFullFidelity,
             string indexImpactScore)
         {
-            this.IndexDocumentExpressions = indexDocumentExpressions ?? throw new ArgumentNullException(nameof(indexDocumentExpressions));
+            this.IndexDocumentExpressions = indexDocumentExpressions;
             this.IndexPlanFullFidelity = indexPlanFullFidelity;
-            this.IndexImpactScore = indexImpactScore ?? throw new ArgumentNullException(nameof(indexImpactScore));
+            this.IndexImpactScore = indexImpactScore;
         }
 
         [JsonProperty(PropertyName = "IndexSpecs")]

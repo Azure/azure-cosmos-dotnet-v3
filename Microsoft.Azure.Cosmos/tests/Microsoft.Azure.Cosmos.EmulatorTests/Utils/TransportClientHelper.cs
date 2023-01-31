@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
+    using Castle.DynamicProxy;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -24,34 +25,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string databaseId,
             string containerId,
             Guid activityId,
-            string transportExceptionSourceDescription)
+            string transportExceptionSourceDescription,
+            bool enableDistributingTracing = false)
         {
             return GetContainerWithIntercepter(
-                databaseId,
-                containerId,
-                (uri, resourceOperation, request) => TransportClientHelper.ThrowTransportExceptionOnItemOperation(
+                databaseId: databaseId,
+                containerId: containerId,
+                interceptor: (uri, resourceOperation, request) => TransportClientHelper.ThrowTransportExceptionOnItemOperation(
                     uri,
                     resourceOperation,
                     request,
                     activityId,
-                    transportExceptionSourceDescription));
+                    transportExceptionSourceDescription),
+                enableDistributingTracing: enableDistributingTracing);
         }
 
         internal static Container GetContainerWithItemServiceUnavailableException(
             string databaseId,
             string containerId,
             Guid activityId,
-            string serviceUnavailableExceptionSourceDescription)
+            string serviceUnavailableExceptionSourceDescription,
+            bool enableDistributingTracing = false)
         {
             return GetContainerWithIntercepter(
-                databaseId,
-                containerId,
-                (uri, resourceOperation, request) => TransportClientHelper.ThrowServiceUnavailableExceptionOnItemOperation(
+                databaseId: databaseId,
+                containerId: containerId,
+                interceptor : (uri, resourceOperation, request) => TransportClientHelper.ThrowServiceUnavailableExceptionOnItemOperation(
                     uri,
                     resourceOperation,
                     request,
                     activityId,
-                    serviceUnavailableExceptionSourceDescription));
+                    serviceUnavailableExceptionSourceDescription),
+                enableDistributingTracing: enableDistributingTracing);
         }
 
         internal static Container GetContainerWithIntercepter(
@@ -60,7 +65,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor,
             bool useGatewayMode = false,
             Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null,
-            ISessionContainer sessionContainer = null)
+            ISessionContainer sessionContainer = null,
+            bool enableDistributingTracing = false)
         {
             CosmosClient clientWithIntercepter = TestCommon.CreateCosmosClient(
                builder =>
@@ -75,12 +81,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                        builder.WithSessionContainer(sessionContainer);
                    }
 
+                   if (enableDistributingTracing)
+                   {
+                       builder.WithDistributedTracingOptions(new DistributedTracingOptions()
+                       {
+                           LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(.0001)
+                       });
+                   }
+
                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                        transportClient,
                        interceptor,
                        interceptorWithStoreResult));
                });
-
+            
             return clientWithIntercepter.GetContainer(databaseId, containerId);
         }
 

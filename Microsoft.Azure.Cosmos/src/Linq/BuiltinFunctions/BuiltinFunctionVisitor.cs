@@ -65,8 +65,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return MathBuiltinFunctions.Visit(methodCallExpression, context);
             }
 
-            // String functions
-            if (declaringType == typeof(string))
+            // ToString with String and Guid only becomes passthrough
+            if (methodCallExpression.Method.Name == "ToString" &&
+                 methodCallExpression.Arguments.Count == 0 &&
+                 methodCallExpression.Object != null && 
+                 ((methodCallExpression.Object.Type == typeof(string)) ||
+                 (methodCallExpression.Object.Type == typeof(Guid))))
+            {
+                return ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context);
+            }
+
+            // String functions or ToString with Objects that are not strings and guids
+            if ((declaringType == typeof(string)) ||
+                (methodCallExpression.Method.Name == "ToString" &&
+                 methodCallExpression.Arguments.Count == 0 &&
+                 methodCallExpression.Object != null))
             {
                 return StringBuiltinFunctions.Visit(methodCallExpression, context);
             }
@@ -81,14 +94,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (typeof(Geometry).IsAssignableFrom(declaringType))
             {
                 return SpatialBuiltinFunctions.Visit(methodCallExpression, context);
-            }
-
-            // ToString with Objects (String and Guid only)
-            if (methodCallExpression.Method.Name == "ToString" &&
-                methodCallExpression.Arguments.Count == 0 &&
-                methodCallExpression.Object != null)
-            {
-                return ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context);
             }
 
             throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));

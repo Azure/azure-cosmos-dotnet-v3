@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
     using System.Net;
@@ -16,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
         private bool disposedValue;
+        private IOpenConnectionsHandler openConnectionsHandler;
 
         public GatewayAddressCache(
             Uri serviceEndpoint,
@@ -57,6 +58,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             ICosmosAuthorizationTokenProvider tokenProvider,
             IServiceConfigurationReader serviceConfigReader,
             CosmosHttpClient httpClient,
+            IOpenConnectionsHandler openConnectionsHandler,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
             bool enableTcpConnectionEndpointRediscovery = false)
         {
@@ -80,19 +82,20 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GatewayAddressCache.protocolFilterFormat,
                 Constants.Properties.Protocol,
                 GatewayAddressCache.ProtocolString(this.protocol));
+
+            this.openConnectionsHandler = openConnectionsHandler;
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
 
-        [SuppressMessage("", "AsyncFixer02", Justification = "Multi task completed with await")]
-        [SuppressMessage("", "AsyncFixer04", Justification = "Multi task completed outside of await")]
-        public async Task OpenAsync(
+        public async Task OpenConnectionsAsync(
             string databaseName,
             ContainerProperties collection,
             IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities,
+            bool shouldOpenRntbdChannels,
             CancellationToken cancellationToken)
         {
-            List<Task<DocumentServiceResponse>> tasks = new List<Task<DocumentServiceResponse>>();
+            List<Task<TryCatch<DocumentServiceResponse>>> tasks = new ();
             int batchSize = GatewayAddressCache.DefaultBatchSize;
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
@@ -110,8 +113,14 @@ namespace Microsoft.Azure.Cosmos.Routing
 #endif  
 #endif
 
-            string collectionAltLink = string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}", Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseName),
-                Paths.CollectionsPathSegment, Uri.EscapeUriString(collection.Id));
+            string collectionAltLink = string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}/{1}/{2}/{3}",
+                Paths.DatabasesPathSegment,
+                Uri.EscapeUriString(databaseName),
+                Paths.CollectionsPathSegment,
+                Uri.EscapeUriString(collection.Id));
+
             using (DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
                 OperationType.Read,
                 collectionAltLink,
@@ -120,17 +129,22 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 for (int i = 0; i < partitionKeyRangeIdentities.Count; i += batchSize)
                 {
-                    tasks.Add(this.GetServerAddressesViaGatewayAsync(
-                        request,
-                        collection.ResourceId,
-                        partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId),
-                        false));
+                    tasks
+                        .Add(this.GetAddressesAsync(
+                            request: request,
+                            collectionRid: collection.ResourceId,
+                            partitionKeyRangeIds: partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId)));
                 }
             }
 
-            foreach (DocumentServiceResponse response in await Task.WhenAll(tasks))
+            foreach (TryCatch<DocumentServiceResponse> task in await Task.WhenAll(tasks))
             {
-                using (response)
+                if (task.Failed)
+                {
+                    continue;
+                }
+
+                using (DocumentServiceResponse response = task.Result)
                 {
                     FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
 
@@ -146,9 +160,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.serverPartitionAddressCache.Set(
                             new PartitionKeyRangeIdentity(collection.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
                             addressInfo.Item2);
+
+                        if (this.openConnectionsHandler != null && shouldOpenRntbdChannels)
+                        {
+                            await this.openConnectionsHandler
+                                .TryOpenRntbdChannelsAsync(
+                                    addresses: addressInfo.Item2.Get(Protocol.Tcp)?.ReplicaTransportAddressUris);
+                        }
                     }
                 }
             }
+        }
+
+        /// <inheritdoc/>
+        public void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler)
+        {
+            this.openConnectionsHandler = openConnectionsHandler;
         }
 
         public async Task<PartitionAddressInformation> TryGetAddressesAsync(
@@ -696,6 +723,41 @@ namespace Microsoft.Azure.Cosmos.Routing
                 (int)Protocol.Tcp => RuntimeConstants.Protocols.RNTBD,
                 _ => throw new ArgumentOutOfRangeException("protocol"),
             };
+        }
+
+        /// <summary>
+        /// Utilizes the <see cref="TryCatch{TResult}"/> to get the server addresses. If an
+        /// exception is thrown during the invocation, it handles it gracefully and returns
+        /// a <see cref="TryCatch{TResult}"/> Task containing the exception.
+        /// </summary>
+        /// <param name="request">An instance of <see cref="DocumentServiceRequest"/> containing the request payload.</param>
+        /// <param name="collectionRid">A string containing the collection ids.</param>
+        /// <param name="partitionKeyRangeIds">An instance of <see cref="IEnumerable{T}"/> containing the list of partition key range ids.</param>
+        /// <returns>A task of <see cref="TryCatch{TResult}"/> containing the result.</returns>
+        private async Task<TryCatch<DocumentServiceResponse>> GetAddressesAsync(
+            DocumentServiceRequest request,
+            string collectionRid,
+            IEnumerable<string> partitionKeyRangeIds)
+        {
+            try
+            {
+                return TryCatch<DocumentServiceResponse>
+                    .FromResult(
+                        await this.GetServerAddressesViaGatewayAsync(
+                            request: request,
+                            collectionRid: collectionRid,
+                            partitionKeyRangeIds: partitionKeyRangeIds,
+                            forceRefresh: false));
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("Failed to fetch the server addresses for: {0} with exception: {1}. '{2}'",
+                    collectionRid,
+                    ex,
+                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+
+                return TryCatch<DocumentServiceResponse>.FromException(ex);
+            }
         }
 
         protected virtual void Dispose(bool disposing)

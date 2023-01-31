@@ -29,7 +29,8 @@ flowchart
     UserHandlers <--> DiagnosticHandler
     DiagnosticHandler <--> TelemetryHandler
     TelemetryHandler <--> RetryHandler[Cross region retries]
-    RetryHandler <--> RouteHandler
+    RetryHandler <--> ThrottlingRetries[Throttling retries]
+    ThrottlingRetries <--> RouteHandler
     RouteHandler <--> IsPartitionedFeedOperation{{Partitioned Feed operation?}}
     IsPartitionedFeedOperation <-- No --> TransportHandler
     IsPartitionedFeedOperation <-- Yes --> InvalidPartitionExceptionRetryHandler
@@ -37,6 +38,12 @@ flowchart
     PartitionKeyRangeHandler <--> TransportHandler
     TransportHandler <--> TransportClient[[Selected Transport]]
 ```
+
+## Throttling retries
+
+Any HTTP response, with a status code `429` from the service means the current operation is being [rate limited](https://learn.microsoft.com/azure/cosmos-db/sql/troubleshoot-request-rate-too-large) and it's handled by the [RetryHandler](../Microsoft.Azure.Cosmos/src/Handler/RetryHandler.cs) through the [ResourceThrottleRetryPolicy](../Microsoft.Azure.Cosmos/src/ResourceThrottleRetryPolicy.cs).
+
+The policy will retry the operation using the delay indicated in the `x-ms-retryafter` response header up to the maximum configured in `CosmosClientOptions.MaxRetryAttemptsOnRateLimitedRequests` with a default value of 9.
 
 ## Cross region retries
 
@@ -159,6 +166,12 @@ flowchart
 
 ```
 
+## Direct mode caches
+
+Per our [connectivity documentation](https://learn.microsoft.com/azure/cosmos-db/nosql/sdk-connection-modes#routing), the SDK will store, in internal caches, critical information to allow for request routing.
+
+For details on the caches, please see the [cache design documentation](caches.md).
+
 ## Consistency (direct mode)
 
 When performing operations through Direct mode, the SDK is involved in checking consistency for Bounded Staleness and Strong accounts. Read requests are handled by the [ConsistencyReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyReader.cs) and write requests are handled by the [ConsistencyWriter](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/ConsistencyWriter.cs). The `ConsistencyReader` uses the [QuorumReader](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/msdata/direct/Microsoft.Azure.Cosmos/src/direct/QuorumReader.cs) when the consistency is Bounded Staleness or Strong to verify quorum after performing two requests and comparing the LSNs. If quorum cannot be achieved, the SDK starts what is defined as "barrier requests" to the container and waits for it to achieve quorum. The `ConsistencyWriter` also performs a similar LSN check after receiving the response from the write, the `GlobalCommittedLSN` and the item `LSN`. If they don't match, barrier requests are also performed.
@@ -173,5 +186,3 @@ flowchart LR
     ConsistencyWriter --> TCPClient
 
 ```
-
-

@@ -1027,9 +1027,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 }
             }
 
-            // For the target filter we can make an optimization to just return "true",
-            // since we already have the backend continuation token to resume with.
-            return (left.ToString(), TrueFilter, right.ToString());
+            return (left.ToString(), target.ToString(), right.ToString());
         }
 
         private static async Task<TryCatch<(bool doneFiltering, int itemsLeftToSkip, TryCatch<OrderByQueryPage> monadicQueryByPage)>> FilterNextAsync(
@@ -1155,9 +1153,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 exception = exception.InnerException;
             }
 
-            return exception is CosmosException cosmosException
-                && (cosmosException.StatusCode == HttpStatusCode.Gone)
-                && (cosmosException.SubStatusCode == (int)Documents.SubStatusCodes.PartitionKeyRangeGone);
+            return exception.IsPartitionSplitException();
         }
 
         public void SetCancellationToken(CancellationToken cancellationToken)

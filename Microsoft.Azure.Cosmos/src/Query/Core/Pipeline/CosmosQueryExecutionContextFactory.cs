@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Tokens;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -30,6 +31,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     internal static class CosmosQueryExecutionContextFactory
     {
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
+        private const string OptimisticDirectExecution = "OptimisticDirectExecution";
+        private const string Passthrough = "Passthrough";
+        private const string Specialized = "Specialized";
         private const int PageSizeFactorForTop = 5;
 
         public static IQueryPipelineStage Create(
@@ -124,6 +128,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 }
 
                 CosmosQueryClient cosmosQueryClient = cosmosQueryContext.QueryClient;
+
                 ContainerQueryProperties containerQueryProperties = await cosmosQueryClient.GetCachedContainerQueryPropertiesAsync(
                     cosmosQueryContext.ResourceLink,
                     inputParameters.PartitionKey,
@@ -131,11 +136,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cancellationToken);
                 cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
-                inputParameters.SqlQuerySpec.PassThrough = IsPassThroughCandidate(inputParameters, queryPlanFromContinuationToken);
+                Documents.PartitionKeyRange targetRange = await TryGetTargetRangeOptimisticDirectExecutionAsync(
+                    inputParameters,
+                    queryPlanFromContinuationToken,
+                    cosmosQueryContext,
+                    containerQueryProperties,
+                    trace);
 
-                if (inputParameters.SqlQuerySpec.PassThrough)
+                if (targetRange != null)
                 {
-                    //TODO: Add new pass through pipeline code here 
+                    return await TryCreateExecutionContextAsync(
+                        documentContainer,
+                        partitionedQueryExecutionInfo: null,
+                        cosmosQueryContext,
+                        containerQueryProperties,
+                        inputParameters,
+                        targetRange,
+                        trace,
+                        cancellationToken);
                 }
 
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -189,11 +207,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                             if (createPassthroughQuery)
                             {
-                                TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
-                                if (responseStats != null)
-                                {
-                                    responseStats.PipelineType = TestInjections.PipelineType.Passthrough;
-                                }
+                                SetTestInjectionPipelineType(inputParameters, Passthrough);
 
                                 // Only thing that matters is that we target the correct range.
                                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
@@ -213,32 +227,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         }
                     }
 
-                    if (cosmosQueryContext.QueryClient.ByPassQueryParsing())
-                    {
-                        // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
-                        // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
-                        partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
-                            cosmosQueryContext,
-                            inputParameters.SqlQuerySpec,
-                            cosmosQueryContext.ResourceLink,
-                            inputParameters.PartitionKey,
-                            createQueryPipelineTrace,
-                            cancellationToken);
-                    }
-                    else
-                    {
-                        Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-
-                        partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
-                            cosmosQueryContext.QueryClient,
-                            inputParameters.SqlQuerySpec,
-                            cosmosQueryContext.ResourceTypeEnum,
-                            partitionKeyDefinition,
-                            inputParameters.PartitionKey != null,
-                            cosmosQueryContext.UseSystemPrefix,
-                            createQueryPipelineTrace,
-                            cancellationToken);
-                    }
+                    partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
+                        cosmosQueryContext,
+                        inputParameters,
+                        containerQueryProperties,
+                        createQueryPipelineTrace,
+                        cancellationToken);
                 }
 
                 return await TryCreateFromPartitionedQueryExecutionInfoAsync(
@@ -252,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
         }
 
-        public static async Task<TryCatch<IQueryPipelineStage>> TryCreateFromPartitionedQueryExecutionInfoAsync(
+        private static async Task<TryCatch<IQueryPipelineStage>> TryCreateFromPartitionedQueryExecutionInfoAsync(
             DocumentContainer documentContainer,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
@@ -292,71 +286,213 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
 
-            // After getting the Query Plan if we find out that the query is single logical partition, then short circuit and send straight to Backend
-            inputParameters.SqlQuerySpec.PassThrough = IsPassThroughCandidate(inputParameters, partitionedQueryExecutionInfo);
+            Documents.PartitionKeyRange targetRange = await TryGetTargetRangeOptimisticDirectExecutionAsync(
+                inputParameters, 
+                partitionedQueryExecutionInfo, 
+                cosmosQueryContext, 
+                containerQueryProperties,
+                trace);
 
-            if (inputParameters.SqlQuerySpec.PassThrough)
+            if (targetRange != null)
             {
-                //TODO: Add new pass through pipeline code here 
-            }
-
-            if (createPassthroughQuery)
-            {
-                TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
-                if (responseStats != null)
-                {
-                    responseStats.PipelineType = TestInjections.PipelineType.Passthrough;
-                }
-
-                tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
+                tryCreatePipelineStage = await TryCreateExecutionContextAsync(
                     documentContainer,
+                    partitionedQueryExecutionInfo,
+                    cosmosQueryContext,
+                    containerQueryProperties,
                     inputParameters,
-                    targetRanges,
+                    targetRange,
+                    trace,
                     cancellationToken);
             }
             else
             {
-                TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
-                if (responseStats != null)
+                if (createPassthroughQuery)
                 {
-                    responseStats.PipelineType = TestInjections.PipelineType.Specialized;
-                }
+                    SetTestInjectionPipelineType(inputParameters, Passthrough);
 
-                if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
+                    tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
+                        documentContainer,
+                        inputParameters,
+                        targetRanges,
+                        cancellationToken);
+                }
+                else
                 {
-                    // We need pass down the rewritten query.
-                    SqlQuerySpec rewrittenQuerySpec = new SqlQuerySpec()
-                    {
-                        QueryText = partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
-                        Parameters = inputParameters.SqlQuerySpec.Parameters
-                    };
-
-                    inputParameters = new InputParameters(
-                        rewrittenQuerySpec,
-                        inputParameters.InitialUserContinuationToken,
-                        inputParameters.InitialFeedRange,
-                        inputParameters.MaxConcurrency,
-                        inputParameters.MaxItemCount,
-                        inputParameters.MaxBufferedItemCount,
-                        inputParameters.PartitionKey,
-                        inputParameters.Properties,
-                        inputParameters.PartitionedQueryExecutionInfo,
-                        inputParameters.ExecutionEnvironment,
-                        inputParameters.ReturnResultsInDeterministicOrder,
-                        inputParameters.ForcePassthrough,
-                        inputParameters.TestInjections);
+                    tryCreatePipelineStage = TryCreateSpecializedDocumentQueryExecutionContext(documentContainer, cosmosQueryContext, inputParameters, targetRanges, partitionedQueryExecutionInfo, cancellationToken);
                 }
-
-                tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreateSpecializedDocumentQueryExecutionContext(
-                    documentContainer,
-                    cosmosQueryContext,
-                    inputParameters,
-                    partitionedQueryExecutionInfo,
-                    targetRanges,
-                    cancellationToken);
             }
 
             return tryCreatePipelineStage;
+        }
+
+        private static async Task<TryCatch<IQueryPipelineStage>> TryCreateExecutionContextAsync(
+            DocumentContainer documentContainer,
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+            CosmosQueryContext cosmosQueryContext,
+            ContainerQueryProperties containerQueryProperties,
+            InputParameters inputParameters,
+            Documents.PartitionKeyRange targetRange,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            // Test code added to confirm the correct pipeline is being utilized
+            SetTestInjectionPipelineType(inputParameters, OptimisticDirectExecution);
+
+            TryCatch<IQueryPipelineStage> tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreateOptimisticDirectExecutionContext(
+                documentContainer,
+                cosmosQueryContext,
+                containerQueryProperties,
+                inputParameters,
+                targetRange,
+                cancellationToken);
+
+            // A malformed continuation token exception would happen for 2 reasons here
+            // 1. the token is actually malformed
+            // 2. Its a non Ode continuation token
+            // In both cases, Ode pipeline delegates the work to the Specialized pipeline
+            // as Ode pipeline should not take over execution while some other pipeline is already handling it
+            if (tryCreatePipelineStage.Failed && tryCreatePipelineStage.InnerMostException is MalformedContinuationTokenException)
+            {
+                SetTestInjectionPipelineType(inputParameters, Specialized);
+
+                if (partitionedQueryExecutionInfo != null)
+                {
+                    List<Documents.PartitionKeyRange> targetRanges = new List<Documents.PartitionKeyRange>
+                    {
+                        targetRange
+                    };
+
+                    tryCreatePipelineStage = TryCreateSpecializedDocumentQueryExecutionContext(
+                        documentContainer,
+                        cosmosQueryContext,
+                        inputParameters,
+                        targetRanges,
+                        partitionedQueryExecutionInfo,
+                        cancellationToken);
+                }
+                else 
+                { 
+                    tryCreatePipelineStage = await TryCreateSpecializedDocumentQueryExecutionContextAsync(
+                        documentContainer,
+                        cosmosQueryContext,
+                        containerQueryProperties,
+                        inputParameters,
+                        trace,
+                        cancellationToken);
+                }
+            }
+
+            return tryCreatePipelineStage;
+        }
+
+        private static TryCatch<IQueryPipelineStage> TryCreateSpecializedDocumentQueryExecutionContext(
+            DocumentContainer documentContainer,
+            CosmosQueryContext cosmosQueryContext,
+            InputParameters inputParameters,
+            List<Documents.PartitionKeyRange> targetRanges,
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+            CancellationToken cancellationToken)
+        {
+            SetTestInjectionPipelineType(inputParameters, Specialized);
+
+            if (!string.IsNullOrEmpty(partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery))
+            {
+                // We need pass down the rewritten query.
+                SqlQuerySpec rewrittenQuerySpec = new SqlQuerySpec()
+                {
+                    QueryText = partitionedQueryExecutionInfo.QueryInfo.RewrittenQuery,
+                    Parameters = inputParameters.SqlQuerySpec.Parameters
+                };
+
+                inputParameters = new InputParameters(
+                    rewrittenQuerySpec,
+                    inputParameters.InitialUserContinuationToken,
+                    inputParameters.InitialFeedRange,
+                    inputParameters.MaxConcurrency,
+                    inputParameters.MaxItemCount,
+                    inputParameters.MaxBufferedItemCount,
+                    inputParameters.PartitionKey,
+                    inputParameters.Properties,
+                    inputParameters.PartitionedQueryExecutionInfo,
+                    inputParameters.ExecutionEnvironment,
+                    inputParameters.ReturnResultsInDeterministicOrder,
+                    inputParameters.ForcePassthrough,
+                    inputParameters.EnableOptimisticDirectExecution,
+                    inputParameters.TestInjections);
+            }
+
+            return CosmosQueryExecutionContextFactory.TryCreateSpecializedDocumentQueryExecutionContext(
+                documentContainer,
+                cosmosQueryContext,
+                inputParameters,
+                partitionedQueryExecutionInfo,
+                targetRanges,
+                cancellationToken);
+        }
+
+        private static async Task<TryCatch<IQueryPipelineStage>> TryCreateSpecializedDocumentQueryExecutionContextAsync(
+            DocumentContainer documentContainer,
+            CosmosQueryContext cosmosQueryContext,
+            ContainerQueryProperties containerQueryProperties,
+            InputParameters inputParameters,
+            ITrace trace,
+            CancellationToken cancellationToken) 
+        {
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
+               cosmosQueryContext,
+               inputParameters,
+               containerQueryProperties,
+               trace,
+               cancellationToken);
+
+            List<Documents.PartitionKeyRange> targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
+                  cosmosQueryContext.QueryClient,
+                  cosmosQueryContext.ResourceLink,
+                  partitionedQueryExecutionInfo,
+                  containerQueryProperties,
+                  inputParameters.Properties,
+                  inputParameters.InitialFeedRange,
+                  trace);
+
+            return TryCreateSpecializedDocumentQueryExecutionContext(
+                documentContainer,
+                cosmosQueryContext,
+                inputParameters,
+                targetRanges,
+                partitionedQueryExecutionInfo,
+                cancellationToken);
+        }
+
+        private static TryCatch<IQueryPipelineStage> TryCreateOptimisticDirectExecutionContext(
+            DocumentContainer documentContainer,
+            CosmosQueryContext cosmosQueryContext,
+            ContainerQueryProperties containerQueryProperties,
+            InputParameters inputParameters,
+            Documents.PartitionKeyRange targetRange,
+            CancellationToken cancellationToken)
+        {
+            // Return a OptimisticDirectExecution context
+            return OptimisticDirectExecutionQueryPipelineStage.MonadicCreate(
+                documentContainer: documentContainer,
+                inputParameters: inputParameters,
+                targetRange: new FeedRangeEpk(targetRange.ToRange()),
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount),
+                fallbackQueryPipelineStageFactory: (continuationToken) =>
+                {
+                    // In fallback scenario, the Specialized pipeline is always invoked
+                    Task<TryCatch<IQueryPipelineStage>> tryCreateContext =
+                        CosmosQueryExecutionContextFactory.TryCreateSpecializedDocumentQueryExecutionContextAsync(
+                            documentContainer,
+                            cosmosQueryContext,
+                            containerQueryProperties,
+                            inputParameters.WithContinuationToken(continuationToken),
+                            NoOpTrace.Singleton,
+                            default);
+
+                    return tryCreateContext;
+                },
+                cancellationToken: cancellationToken);
         }
 
         private static TryCatch<IQueryPipelineStage> TryCreatePassthroughQueryExecutionContext(
@@ -443,8 +579,47 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 requestCancellationToken: cancellationToken);
         }
 
+        private static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
+           CosmosQueryContext cosmosQueryContext,
+           InputParameters inputParameters,
+           ContainerQueryProperties containerQueryProperties,
+           ITrace trace,
+           CancellationToken cancellationToken)
+        {
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
+            if (cosmosQueryContext.QueryClient.ByPassQueryParsing())
+            {
+                // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
+                // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
+                partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanThroughGatewayAsync(
+                    cosmosQueryContext,
+                    inputParameters.SqlQuerySpec,
+                    cosmosQueryContext.ResourceLink,
+                    inputParameters.PartitionKey,
+                    trace,
+                    cancellationToken);
+            }
+            else
+            {
+                Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
+
+                partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
+                    cosmosQueryContext.QueryClient,
+                    inputParameters.SqlQuerySpec,
+                    cosmosQueryContext.ResourceTypeEnum,
+                    partitionKeyDefinition,
+                    inputParameters.PartitionKey != null,
+                    containerQueryProperties.GeospatialType,
+                    cosmosQueryContext.UseSystemPrefix,
+                    trace,
+                    cancellationToken);
+            }
+
+            return partitionedQueryExecutionInfo;
+        }
+
         /// <summary>
-        /// Gets the list of partition key ranges. 
+        /// Gets the list of partition key ranges.
         /// 1. Check partition key range id
         /// 2. Check Partition key
         /// 3. Check the effective partition key
@@ -502,6 +677,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return targetRanges;
         }
 
+        private static void SetTestInjectionPipelineType(InputParameters inputParameters, string pipelineType)
+        {
+            TestInjections.ResponseStats responseStats = inputParameters?.TestInjections?.Stats;
+            if (responseStats != null)
+            {
+                if (pipelineType == OptimisticDirectExecution)
+                {
+                    responseStats.PipelineType = TestInjections.PipelineType.OptimisticDirectExecution;
+                }
+                else if (pipelineType == Specialized)
+                {
+                    responseStats.PipelineType = TestInjections.PipelineType.Specialized;
+                }
+                else 
+                {
+                    responseStats.PipelineType = TestInjections.PipelineType.Passthrough;
+                }
+            }
+        }
+
         private static bool TryGetEpkProperty(
             IReadOnlyDictionary<string, object> properties,
             out string effectivePartitionKeyString)
@@ -551,27 +746,62 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return partitionKeyDefinition;
         }
 
-        private static bool IsPassThroughCandidate(InputParameters inputParameters, PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)
+        private static async Task<Documents.PartitionKeyRange> TryGetTargetRangeOptimisticDirectExecutionAsync(
+            InputParameters inputParameters,
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
+            CosmosQueryContext cosmosQueryContext,
+            ContainerQueryProperties containerQueryProperties,
+            ITrace trace)
         {
+            if (!inputParameters.EnableOptimisticDirectExecution) return null;
+
             // case 1: Is query going to a single partition
             bool hasPartitionKey = inputParameters.PartitionKey.HasValue
                 && inputParameters.PartitionKey != PartitionKey.Null
                 && inputParameters.PartitionKey != PartitionKey.None;
 
-            if (hasPartitionKey) return true;
-            
             // case 2: does query execution plan have a single query range
+            bool hasQueryRanges = partitionedQueryExecutionInfo != null 
+                && partitionedQueryExecutionInfo.QueryRanges.Count == 1 
+                && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue;
+           
+            if (!hasPartitionKey && !hasQueryRanges) return null;
+
+            //TODO: does collection have only one physical partition
+
+            List<Documents.PartitionKeyRange> targetRanges = new List<Documents.PartitionKeyRange>();
+
             if (partitionedQueryExecutionInfo != null)
             {
-                bool hasQueryRanges = (partitionedQueryExecutionInfo.QueryRanges.Count == 1)
-                && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue;
-
-                if (hasQueryRanges) return hasQueryRanges;
+                targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
+                    cosmosQueryContext.QueryClient,
+                    cosmosQueryContext.ResourceLink,
+                    partitionedQueryExecutionInfo,
+                    containerQueryProperties,
+                    inputParameters.Properties,
+                    inputParameters.InitialFeedRange,
+                    trace);
             }
-        
-            // TODO: case 3: does collection have only one physical partition
+            else
+            {
+                Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
+                if (partitionKeyDefinition != null && containerQueryProperties.ResourceId != null && inputParameters.PartitionKey != null)
+                {
+                    targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                        cosmosQueryContext.ResourceLink,
+                        containerQueryProperties.ResourceId,
+                        inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
+                        forceRefresh: false,
+                        trace);
+                }
+            }
 
-            return false;
+            if (targetRanges.Count == 1)
+            {
+                return targetRanges.Single();
+            }
+
+            return null;
         }
 
         public sealed class InputParameters
@@ -595,6 +825,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 ExecutionEnvironment? executionEnvironment,
                 bool? returnResultsInDeterministicOrder,
                 bool forcePassthrough,
+                bool enableOptimisticDirectExecution,
                 TestInjections testInjections)
             {
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
@@ -628,6 +859,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 this.ExecutionEnvironment = executionEnvironment.GetValueOrDefault(InputParameters.DefaultExecutionEnvironment);
                 this.ReturnResultsInDeterministicOrder = returnResultsInDeterministicOrder.GetValueOrDefault(InputParameters.DefaultReturnResultsInDeterministicOrder);
                 this.ForcePassthrough = forcePassthrough;
+                this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
                 this.TestInjections = testInjections;
             }
 
@@ -644,6 +876,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public bool ReturnResultsInDeterministicOrder { get; }
             public TestInjections TestInjections { get; }
             public bool ForcePassthrough { get; }
+            public bool EnableOptimisticDirectExecution { get; }
+
+            public InputParameters WithContinuationToken(CosmosElement token)
+            {
+                return new InputParameters(
+                    this.SqlQuerySpec,
+                    token,
+                    this.InitialFeedRange,
+                    this.MaxConcurrency,
+                    this.MaxItemCount,
+                    this.MaxBufferedItemCount,
+                    this.PartitionKey,
+                    this.Properties,
+                    this.PartitionedQueryExecutionInfo,
+                    this.ExecutionEnvironment,
+                    this.ReturnResultsInDeterministicOrder,
+                    this.ForcePassthrough,
+                    this.EnableOptimisticDirectExecution,
+                    this.TestInjections);
+            }
         }
 
         internal sealed class AggregateProjectionDetector
@@ -698,6 +950,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     }
 
                     public static readonly AggregateScalarExpressionDetector Singleton = new AggregateScalarExpressionDetector();
+
+                    public override bool Visit(SqlAllScalarExpression sqlAllScalarExpression)
+                    {
+                        // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                        return false;
+                    }
 
                     public override bool Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
                     {
