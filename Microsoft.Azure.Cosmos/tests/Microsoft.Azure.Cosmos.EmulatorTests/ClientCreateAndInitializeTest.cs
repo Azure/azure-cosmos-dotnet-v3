@@ -1,18 +1,19 @@
 ﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Moq.Protected;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class ClientCreateAndInitializeTest : BaseCosmosClientHelper
@@ -53,18 +54,67 @@
         }
 
         [TestMethod]
-        public async Task CreateAndInitializeTest()
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task CreateAndInitializeTest(bool withClientTelemetry)
         {
             int httpCallsMade = 0;
-            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper
-            {
-                RequestCallBack = (request, cancellationToken) =>
-                {
-                    httpCallsMade++;
-                    return null;
-                }
-            };
 
+            HttpClientHandlerHelper httpClientHandlerHelper = null;
+            if (withClientTelemetry)
+            {
+                httpClientHandlerHelper = new HttpClientHandlerHelper
+                {
+
+                    RequestCallBack = (request, cancellationToken) =>
+                    {
+                        if (request.RequestUri.ToString().Contains(Paths.ClientConfigPathSegment))
+                        {
+                            HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+
+                            AccountClientConfiguration accountClientConfiguration = new AccountClientConfiguration
+                            {
+                                ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                                {
+                                    IsEnabled = true,
+                                    Endpoint = "https://dummyedpoint"
+                                }
+                            };
+                            string payload = JsonConvert.SerializeObject(accountClientConfiguration);
+                            ;
+                            result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+                            return Task.FromResult(result);
+                        }
+
+                        httpCallsMade++;
+                        return null;
+                    }
+                };
+            }
+            else
+            {
+                httpClientHandlerHelper = new HttpClientHandlerHelper
+                {
+
+                    RequestCallBack = (request, cancellationToken) =>
+                    {
+                        if (request.RequestUri.ToString().Contains(Paths.ClientConfigPathSegment))
+                        {
+                            HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+                            string payload = JsonConvert.SerializeObject(new AccountClientConfiguration());
+                            ;
+                            result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+                            return Task.FromResult(result);
+                        }
+
+                        httpCallsMade++;
+                        return null;
+                    }
+                };
+            }
+           
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             List<(string, string)> containers = new List<(string, string)> 
             { ("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer")};
@@ -73,10 +123,21 @@
             {
                 HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
             };
-
+            
             CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers, cosmosClientOptions);
             Assert.IsNotNull(cosmosClient);
             int httpCallsMadeAfterCreation = httpCallsMade;
+
+            Assert.IsNotNull(cosmosClient.DocumentClient.accountServiceConfiguration.AccountProperties.ClientConfiguration);
+            if (withClientTelemetry)
+            {
+                Assert.IsTrue(cosmosClient.DocumentClient.accountServiceConfiguration.AccountProperties.ClientConfiguration.ClientTelemetryConfiguration.IsEnabled);
+                Assert.IsNotNull(cosmosClient.DocumentClient.accountServiceConfiguration.AccountProperties.ClientConfiguration.ClientTelemetryConfiguration.Endpoint);
+            }
+            else
+            {
+                Assert.IsNull(cosmosClient.DocumentClient.accountServiceConfiguration.AccountProperties.ClientConfiguration.ClientTelemetryConfiguration);
+            }
 
             ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer");
             ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
