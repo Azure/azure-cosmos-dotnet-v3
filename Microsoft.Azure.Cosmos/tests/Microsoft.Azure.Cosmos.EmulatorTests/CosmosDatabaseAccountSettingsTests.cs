@@ -10,36 +10,56 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Documents;
 
     [TestClass]
     public class CosmosDatabaseAccountSettingsTests
     {
-        private CosmosClient cosmosClient = null;
-
-        [TestInitialize]
-        public void TestInit()
-        {
-            this.cosmosClient = TestCommon.CreateCosmosClient();
-        }
-
-        [TestCleanup]
-        public void TestCleanup()
-        {
-            if (this.cosmosClient != null)
-            {
-                this.cosmosClient.Dispose();
-            }
-        }
-
+        private static readonly string telemetryEndpoint = "https://dummy.clienttelemetry.url";
+        
+      
         [TestMethod]
-        public async Task GetCosmosDatabaseAccountSettings()
+        public async Task GetCosmosDatabaseAccountSettings_WhenEnabledClientTelemetry()
         {
-            AccountProperties accountProperties = await this.cosmosClient.ReadAccountAsync();
+            AccountClientConfiguration clientConfig = new AccountClientConfiguration
+            {
+                ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                {
+                    IsEnabled = true,
+                    Endpoint = telemetryEndpoint
+                }
+            };
+
+            HttpClientHandlerHelper handlerHelper = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellation) =>
+                {
+                    if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                    {
+                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+                        string payload = JsonConvert.SerializeObject(clientConfig);
+                        result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+                        return Task.FromResult(result);
+                    }
+                    return null;
+                }
+            };
+
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
+                useGateway: true,
+                customizeClientBuilder: clientBuilder => clientBuilder.WithHttpClientFactory(() => new HttpClient(handlerHelper)));
+            
+            AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
             Assert.IsNotNull(accountProperties);
             Assert.IsNotNull(accountProperties.Id);
             Assert.IsNotNull(accountProperties.ReadableRegions);
@@ -49,7 +69,93 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsNotNull(accountProperties.ClientConfiguration);
             Assert.IsNotNull(accountProperties.ClientConfiguration.ClientTelemetryConfiguration);
+            Assert.AreEqual(telemetryEndpoint, accountProperties.ClientConfiguration.ClientTelemetryConfiguration.Endpoint);
+            Assert.IsTrue(accountProperties.ClientConfiguration.ClientTelemetryConfiguration.IsEnabled);
+
+            cosmosClient.Dispose();
+        }
+
+
+        [TestMethod]
+        public async Task GetCosmosDatabaseAccountSettings_WhenDisabledClientTelemetry()
+        {
+            AccountClientConfiguration clientConfig = new AccountClientConfiguration
+            {
+                ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                {
+                    IsEnabled = false
+                }
+            };
+            
+            HttpClientHandlerHelper handlerHelper = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellation) =>
+                {
+                    if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                    {
+                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+                        string payload = JsonConvert.SerializeObject(clientConfig);
+                        result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+                        return Task.FromResult(result);
+                    }
+                    return null;
+                }
+            };
+
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
+                useGateway: true,
+                customizeClientBuilder: clientBuilder => clientBuilder.WithHttpClientFactory(() => new HttpClient(handlerHelper)));
+
+            AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
+            Assert.IsNotNull(accountProperties);
+            Assert.IsNotNull(accountProperties.Id);
+            Assert.IsNotNull(accountProperties.ReadableRegions);
+            Assert.IsTrue(accountProperties.ReadableRegions.Count() > 0);
+            Assert.IsNotNull(accountProperties.WritableRegions);
+            Assert.IsTrue(accountProperties.WritableRegions.Count() > 0);
+
+            Assert.IsNotNull(accountProperties.ClientConfiguration);
+            Assert.IsNotNull(accountProperties.ClientConfiguration.ClientTelemetryConfiguration);
+            Assert.IsNull(accountProperties.ClientConfiguration.ClientTelemetryConfiguration.Endpoint);
             Assert.IsFalse(accountProperties.ClientConfiguration.ClientTelemetryConfiguration.IsEnabled);
+
+            cosmosClient.Dispose();
+        }
+
+        [TestMethod]
+        public async Task GetCosmosDatabaseAccountSettings_WhenClientConfigAPIFailed()
+        {
+            HttpClientHandlerHelper handlerHelper = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellation) =>
+                {
+                    if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                    {
+                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.Forbidden);
+
+                        return Task.FromResult(result);
+                    }
+                    return null;
+                }
+            };
+
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
+                useGateway: true,
+                customizeClientBuilder: clientBuilder => clientBuilder.WithHttpClientFactory(() => new HttpClient(handlerHelper)));
+
+            AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
+            Assert.IsNotNull(accountProperties);
+            Assert.IsNotNull(accountProperties.Id);
+            Assert.IsNotNull(accountProperties.ReadableRegions);
+            Assert.IsTrue(accountProperties.ReadableRegions.Count() > 0);
+            Assert.IsNotNull(accountProperties.WritableRegions);
+            Assert.IsTrue(accountProperties.WritableRegions.Count() > 0);
+
+            Assert.IsNotNull(accountProperties.ClientConfiguration);
+            Assert.IsNull(accountProperties.ClientConfiguration.ClientTelemetryConfiguration);
+            
+            cosmosClient.Dispose();
         }
     }
 }
