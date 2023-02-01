@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using HdrHistogram.Encoding;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -84,12 +85,67 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        private async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationAsync(Uri serviceEndpoint)
+        {
+            INameValueCollection headers = new StoreResponseNameValueCollection();
+            await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
+                headers,
+                serviceEndpoint,
+                "GET",
+                AuthorizationTokenType.PrimaryMasterKey);
+
+            serviceEndpoint = new Uri(serviceEndpoint.OriginalString + "clientconfigs");
+            
+            using (ITrace trace = Trace.GetRootTrace("Account Client Config Read", TraceComponent.Transport, TraceLevel.Info))
+            {
+                IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
+
+                try
+                {
+                    using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
+                        uri: serviceEndpoint,
+                        additionalHeaders: headers,
+                        resourceType: ResourceType.DatabaseAccount,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                        clientSideRequestStatistics: stats,
+                        cancellationToken: default))
+                    
+                    using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                    {
+                        return CosmosResource.FromStream<AccountClientConfiguration>(documentServiceResponse);
+                    }
+                }
+                catch (ObjectDisposedException) when (this.cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException($"Client is being disposed for {serviceEndpoint} at {DateTime.UtcNow}, cancelling further operations.");
+                }
+                catch (OperationCanceledException ex)
+                {
+                    trace.AddDatum("Client Side Request Stats", stats);
+                    throw CosmosExceptionFactory.CreateRequestTimeoutException(
+                                                message: ex.Data?["Message"]?.ToString() ?? ex.Message,
+                                                headers: new Headers()
+                                                {
+                                                    ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
+                                                },
+                                                innerException: ex,
+                                                trace: trace);
+                }
+            }
+        }
+        
         public async Task<AccountProperties> InitializeReaderAsync()
         {
             AccountProperties databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                 defaultEndpoint: this.serviceEndpoint,
                 locations: this.connectionPolicy.PreferredLocations,
-                getDatabaseAccountFn: this.GetDatabaseAccountAsync,
+                getDatabaseAccountFn: async (defaultEndpoint) => 
+                {
+                    AccountProperties accountProperties = await this.GetDatabaseAccountAsync(defaultEndpoint);
+                    accountProperties.ClientConfiguration = await this.GetDatabaseAccountClientConfigurationAsync(defaultEndpoint);
+                    
+                    return accountProperties;
+                },
                 cancellationToken: this.cancellationToken);
 
             return databaseAccount;
