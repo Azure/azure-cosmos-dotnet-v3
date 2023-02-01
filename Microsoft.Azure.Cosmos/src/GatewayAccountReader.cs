@@ -38,8 +38,8 @@ namespace Microsoft.Azure.Cosmos
             this.connectionPolicy = connectionPolicy;
             this.cancellationToken = cancellationToken;
         }
-
-        private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
+        
+        private async Task<T> GetDatabaseAccountAsync<T>(Uri serviceEndpoint)
         {
             INameValueCollection headers = new RequestNameValueCollection();
             await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                         cancellationToken: default))
                     using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                     {
-                        return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
+                        return CosmosResource.FromStream<T>(documentServiceResponse);
                     }
                 }
                 catch (ObjectDisposedException) when (this.cancellationToken.IsCancellationRequested)
@@ -85,55 +85,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationAsync(Uri serviceEndpoint)
-        {
-            INameValueCollection headers = new StoreResponseNameValueCollection();
-            await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
-                headers,
-                serviceEndpoint,
-                "GET",
-                AuthorizationTokenType.PrimaryMasterKey);
-
-            serviceEndpoint = new Uri(serviceEndpoint.OriginalString + Paths.ClientConfigPathSegment);
-            
-            using (ITrace trace = Trace.GetRootTrace("Account Client Config Read", TraceComponent.Transport, TraceLevel.Info))
-            {
-                IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
-
-                try
-                {
-                    using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
-                        uri: serviceEndpoint,
-                        additionalHeaders: headers,
-                        resourceType: ResourceType.DatabaseAccount,
-                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
-                        clientSideRequestStatistics: stats,
-                        cancellationToken: default))
-                    
-                    using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
-                    {
-                        return CosmosResource.FromStream<AccountClientConfiguration>(documentServiceResponse);
-                    }
-                }
-                catch (ObjectDisposedException) when (this.cancellationToken.IsCancellationRequested)
-                {
-                    throw new OperationCanceledException($"Client is being disposed for {serviceEndpoint} at {DateTime.UtcNow}, cancelling further operations.");
-                }
-                catch (OperationCanceledException ex)
-                {
-                    trace.AddDatum("Client Side Request Stats", stats);
-                    throw CosmosExceptionFactory.CreateRequestTimeoutException(
-                                                message: ex.Data?["Message"]?.ToString() ?? ex.Message,
-                                                headers: new Headers()
-                                                {
-                                                    ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
-                                                },
-                                                innerException: ex,
-                                                trace: trace);
-                }
-            }
-        }
-        
         public async Task<AccountProperties> InitializeReaderAsync()
         {
             AccountProperties databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
@@ -141,8 +92,9 @@ namespace Microsoft.Azure.Cosmos
                 locations: this.connectionPolicy.PreferredLocations,
                 getDatabaseAccountFn: async (defaultEndpoint) => 
                 {
-                    AccountProperties accountProperties = await this.GetDatabaseAccountAsync(defaultEndpoint);
-                    accountProperties.ClientConfiguration = await this.GetDatabaseAccountClientConfigurationAsync(defaultEndpoint);
+                    AccountProperties accountProperties = await this.GetDatabaseAccountAsync<AccountProperties>(defaultEndpoint);
+                    
+                    accountProperties.ClientConfiguration = await this.GetDatabaseAccountAsync<AccountClientConfiguration>(new Uri(defaultEndpoint.ToString() + Paths.ClientConfigPathSegment));
                     
                     return accountProperties;
                 },
