@@ -144,33 +144,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     userPayload: true,
                     payloadSent: false);
 
-                DocumentClientException documentClientException = new DocumentClientException(
-                    message: "Exception",
-                    innerException: transportException,
-                    statusCode: System.Net.HttpStatusCode.Gone);
                 IClientSideRequestStatistics requestStatistics = request.RequestContext.ClientRequestStatistics;
                 requestStatistics.RecordResponse(
                     request, 
-                    new StoreResult(
-                        storeResponse: null,
-                        exception: documentClientException,
-                        partitionKeyRangeId: "PkRange",
-                        lsn: 42,
-                        quorumAckedLsn: 4242,
-                        requestCharge: 9000.42,
-                        currentReplicaSetSize: 3,
-                        currentWriteQuorum: 4,
-                        isValid: true,
-                        storePhysicalAddress: physicalAddress,
-                        globalCommittedLSN: 2,
-                        numberOfReadRegions: 1,
-                        itemLSN: 5,
-                        sessionToken: null,
-                        usingLocalLSN: true,
-                        activityId: Guid.NewGuid().ToString(),
-                        backendRequestDurationInMs: "0",
-                        retryAfterInMs: "42",
-                        transportRequestStats: new TransportRequestStats()),
+                    StoreResult.CreateForTesting(transportRequestStats: new TransportRequestStats()).Target,
                     DateTime.MinValue,
                     DateTime.MaxValue);
 

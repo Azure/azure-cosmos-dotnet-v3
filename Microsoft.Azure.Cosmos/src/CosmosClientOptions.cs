@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -634,6 +636,16 @@ namespace Microsoft.Azure.Cosmos
         internal Func<TransportClient, TransportClient> TransportClientHandlerFactory { get; set; }
 
         /// <summary>
+        /// A callback delegate to do custom certificate validation for both HTTP and TCP.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Customizing SSL verification is not recommended in production environments.
+        /// </para>
+        /// </remarks>
+        public Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
+       
+        /// <summary>
         /// API type for the account
         /// </summary>
         internal ApiType ApiType { get; set; }
@@ -746,7 +758,8 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                HttpClientFactory = this.httpClientFactory
+                HttpClientFactory = this.httpClientFactory,
+                ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };
 
             if (this.EnableClientTelemetry.HasValue)
@@ -988,17 +1001,29 @@ namespace Microsoft.Azure.Cosmos
                 return objectType == typeof(DateTime);
             }
         }
-
+        
         /// <summary>
         /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>
         /// </summary>
+        /// <remarks> Applicable only when Operation level distributed tracing is enabled through <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.IsDistributedTracingEnabled"/></remarks>
         internal DistributedTracingOptions DistributedTracingOptions { get; set; }
 
         /// <summary>
-        /// Gets or sets value indicating whether distributed tracing activities (<see cref="System.Diagnostics.Activity"/>) are going to be created for the SDK methods calls and HTTP calls.
-        /// By default true for Preview package
+        /// Gets or sets the flag to generate operation level <see cref="System.Diagnostics.Activity"/> for methods calls using the Source Name "Azure.Cosmos.Operation".
         /// </summary>
-        internal bool EnableDistributedTracing { get; set; }
+        /// <value>
+        /// The default value is true (for preview package).
+        /// </value>
+        /// <remarks>This flag is there to disable it from source. Please Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            bool IsDistributedTracingEnabled { get; set; }
+#if PREVIEW
+        = true;
+#endif
 
     }
 }
