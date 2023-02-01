@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.Instance);
             oldSystemUsageMonitor.Stop();
 
-            ClientTelemetryTests.ResetSystemUsageMonitor(true);
+            ClientTelemetryTests.ResetSystemUsageMonitor();
         }
 
         [TestInitialize]
@@ -158,26 +158,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                         .WithApplicationPreferredRegions(this.preferredRegionList);
         }
 
-        private static void ResetSystemUsageMonitor(bool isTelemetryEnabled)
+        private static void ResetSystemUsageMonitor()
         {
             ClientTelemetryTests.systemUsageMonitor?.Stop();
 
             List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
             {
                 (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
-                        .GetField("diagnosticSystemUsageRecorder", 
+                        .GetField("diagnosticSystemUsageRecorder",
                                                 BindingFlags.Instance | BindingFlags.NonPublic)
-                        .GetValue(DiagnosticsHandlerHelper.Instance)
+                        .GetValue(DiagnosticsHandlerHelper.Instance),
+                (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
+                            .GetField("telemetrySystemUsageRecorder",
+                                                BindingFlags.Instance | BindingFlags.NonPublic)
+                            .GetValue(DiagnosticsHandlerHelper.Instance)
             };
-
-            if (isTelemetryEnabled)
-            {
-                recorders.Add(
-                    (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
-                                .GetField("telemetrySystemUsageRecorder", 
-                                                            BindingFlags.Instance | BindingFlags.NonPublic)
-                                .GetValue(DiagnosticsHandlerHelper.Instance));
-            }
 
             ClientTelemetryTests.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
         }
@@ -201,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassCleanup]
         public static void FinalCleanup()
         {
-            ClientTelemetryTests.ResetSystemUsageMonitor(false);
+            ClientTelemetryTests.ResetSystemUsageMonitor();
         }
             
         [TestMethod]
@@ -383,6 +378,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task BatchOperationsTest(ConnectionMode mode)
         {
             Container container = await this.CreateClientAndContainer(mode, Microsoft.Azure.Cosmos.ConsistencyLevel.Eventual); // Client level consistency
+
             using (BatchAsyncContainerExecutor executor =
                 new BatchAsyncContainerExecutor(
                     (ContainerInlineCore)container,

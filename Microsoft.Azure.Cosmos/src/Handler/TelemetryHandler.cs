@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal class TelemetryHandler : RequestHandler
     {
@@ -17,7 +18,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         public TelemetryHandler(ClientTelemetry telemetry)
         {
-            this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
+            Console.WriteLine("TelemetryHandler is null == " + telemetry == null);
+            this.telemetry = telemetry;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -25,26 +27,31 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
-            if (this.IsAllowed(request))
+            if (this.telemetry != null && 
+                    this.telemetry.IsRunningOrQueued() && 
+                        this.IsAllowed(request))
             {
-                try
+                using (ITrace childTrace = request.Trace.StartChild("Collect Client Telemetry Data", TraceComponent.Transport, Tracing.TraceLevel.Info))
                 {
-                    this.telemetry
-                        .CollectOperationInfo(
-                                cosmosDiagnostics: response.Diagnostics,
-                                statusCode: response.StatusCode,
-                                responseSizeInBytes: this.GetPayloadSize(response),
-                                containerId: request.ContainerId,
-                                databaseId: request.DatabaseId,
-                                operationType: request.OperationType,
-                                resourceType: request.ResourceType,
-                                consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
-                                requestCharge: response.Headers.RequestCharge,
-                                subStatusCode: response.Headers.SubStatusCode);
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceError("Error while collecting telemetry information : " + ex.Message);
+                    try
+                    {
+                        this.telemetry
+                            .CollectOperationInfo(
+                                    cosmosDiagnostics: response.Diagnostics,
+                                    statusCode: response.StatusCode,
+                                    responseSizeInBytes: this.GetPayloadSize(response),
+                                    containerId: request.ContainerId,
+                                    databaseId: request.DatabaseId,
+                                    operationType: request.OperationType,
+                                    resourceType: request.ResourceType,
+                                    consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
+                                    requestCharge: response.Headers.RequestCharge,
+                                    subStatusCode: response.Headers.SubStatusCode);
+                    }
+                    catch (Exception ex)
+                    {
+                        DefaultTrace.TraceError("Error while collecting telemetry information : " + ex.Message);
+                    }
                 }
             }
             return response;
