@@ -310,7 +310,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             out Mock<IHttpHandler> mockHttpHandler,
             out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds,
             out TransportAddressUri primaryRegionprimaryReplicaUri,
-            [CallerMemberName] string accountName = nameof(GlobalPartitionEndpointManagerTests))
+            [CallerMemberName] string accountName = nameof(GlobalPartitionEndpointManagerTests),
+            bool isClientTelemetryEnabled = false)
         {
             string primaryRegionNameForUri = "eastus";
             secondaryRegionNameForUri = "westus";
@@ -354,7 +355,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 endpoint: globalEndpointUri.ToString(),
                 accountName: accountName,
                 writeRegions: writeRegion,
-                readRegions: readRegions);
+                readRegions: readRegions,
+                isClientTelemetryEnabled: isClientTelemetryEnabled);
 
             MockSetupsHelper.SetupContainerProperties(
                 mockHttpHandler: mockHttpHandler,

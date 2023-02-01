@@ -29,7 +29,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             string accountName,
             string endpoint,
             IList<AccountRegion> writeRegions,
-            IList<AccountRegion> readRegions)
+            IList<AccountRegion> readRegions,
+            bool isClientTelemetryEnabled)
         {
             HttpResponseMessage httpResponseMessage = MockSetupsHelper.CreateStrongAccount(
                 accountName,
@@ -41,6 +42,30 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.Is<HttpRequestMessage>(x => x.RequestUri == endpointUri),
                 It.IsAny<CancellationToken>()))
                 .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) => Task.FromResult(httpResponseMessage));
+
+            AccountClientConfiguration clientConfig = new AccountClientConfiguration();
+
+            if (isClientTelemetryEnabled)
+            {
+                clientConfig.ClientTelemetryConfiguration = new ClientTelemetryConfiguration()
+                {
+                    IsEnabled = true,
+                    Endpoint = "https://dummy:telemetry.url/"
+                };
+            }
+            
+            mockHttpClientHandler.Setup(x => x.SendAsync(
+                It.Is<HttpRequestMessage>(x => x.RequestUri == new Uri(endpoint + Paths.ClientConfigPathSegment)),
+                It.IsAny<CancellationToken>()))
+                .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) =>
+                {
+                    HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+
+                    string payload = JsonConvert.SerializeObject(clientConfig);
+                    result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+                    return Task.FromResult(result);
+                });
         }
 
         public static Uri SetupSingleRegionAccount(
