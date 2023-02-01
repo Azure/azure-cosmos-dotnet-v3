@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
                 "GET",
                 AuthorizationTokenType.PrimaryMasterKey);
 
-            serviceEndpoint = new Uri(serviceEndpoint.OriginalString + "clientconfigs");
+            serviceEndpoint = new Uri(serviceEndpoint.OriginalString + Paths.ClientConfigPathSegment);
             
             using (ITrace trace = Trace.GetRootTrace("Account Client Config Read", TraceComponent.Transport, TraceLevel.Info))
             {

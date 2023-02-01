@@ -2,7 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
+    using System.Net.Http;
+    using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -10,6 +11,7 @@
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class ClientConfigurationDiagnosticTest : BaseCosmosClientHelper
