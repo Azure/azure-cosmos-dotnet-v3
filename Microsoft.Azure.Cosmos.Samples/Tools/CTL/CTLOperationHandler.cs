@@ -28,7 +28,7 @@ namespace CosmosCTL
             Func<TimerContext> createTimerContext,
             ICTLResultProducer<T> resultProducer,
             Action onSuccess,
-            Action<Exception> onFailure,
+            Action<Exception, TimeSpan> onFailure,
             Action<T, TimeSpan> logDiagnostics)
         {
             while (resultProducer.HasMoreResults)
@@ -48,7 +48,7 @@ namespace CosmosCTL
                         }
                         else
                         {
-                            onFailure(task.Exception);
+                            onFailure(task.Exception, timerContext.Elapsed);
                         }
                     });
                 }

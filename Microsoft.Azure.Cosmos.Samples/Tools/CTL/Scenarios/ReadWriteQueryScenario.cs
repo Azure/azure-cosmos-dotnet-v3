@@ -112,7 +112,7 @@ namespace CosmosCTL
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
                 Context = loggingContextIdentifier,
-                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+                Reservoir = () => new App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir()
             };
 
             TimerOptions writeLatencyTimer = new TimerOptions
@@ -122,7 +122,7 @@ namespace CosmosCTL
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
                 Context = loggingContextIdentifier,
-                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+                Reservoir = () => new App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir()
             };
 
             TimerOptions queryLatencyTimer = new TimerOptions
@@ -132,7 +132,7 @@ namespace CosmosCTL
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
                 Context = loggingContextIdentifier,
-                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+                Reservoir = () => new App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir()
             };
 
             SemaphoreSlim concurrencyControlSemaphore = new SemaphoreSlim(config.Concurrency);
@@ -157,11 +157,11 @@ namespace CosmosCTL
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(readSuccessMeter);
                         },
-                        onFailure: (Exception ex) =>
+                        onFailure: (Exception ex, TimeSpan latency) =>
                         {
                             concurrencyControlSemaphore.Release();
+                            logger.LogInformation($"Read Failure; Reported Metrics Latency: {latency.TotalMilliseconds}; Exception Type: {ex.GetType()}");
                             metrics.Measure.Counter.Increment(readFailureMeter);
-                            Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during read operation");
                         },
                         logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnostics(
                             logger: logger,
@@ -184,7 +184,7 @@ namespace CosmosCTL
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(writeSuccessMeter);
                         },
-                        onFailure: (Exception ex) =>
+                        onFailure: (Exception ex, TimeSpan latency) =>
                         {
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(writeFailureMeter);
@@ -210,7 +210,7 @@ namespace CosmosCTL
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(querySuccessMeter);
                         },
-                        onFailure: (Exception ex) =>
+                        onFailure: (Exception ex, TimeSpan latency) =>
                         {
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(queryFailureMeter);

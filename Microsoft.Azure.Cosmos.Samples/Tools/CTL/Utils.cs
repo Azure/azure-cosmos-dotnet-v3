@@ -181,7 +181,7 @@ namespace CosmosCTL
             CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)cosmosDiagnostics;
             if (traceDiagnostics.IsGoneExceptionHit())
             {
-                logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request contains 410(GoneExceptions), diagnostics:{cosmosDiagnostics}");
+                logger.LogInformation($"{operationName} contains 410(GoneExceptions); Reported Metrics Latency: {timerContextLatency.TotalMilliseconds}; Diagnostics Latency: {cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds};");
                 return;
             }
         }
