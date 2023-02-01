@@ -125,6 +125,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                     StatusCode = HttpStatusCode.OK,
                     Content = new StringContent(JsonConvert.SerializeObject(accountProperties))
                 }));
+
+            mockHttpHandler.Setup(x => x.SendAsync(
+                It.Is<HttpRequestMessage>(x => x.RequestUri == new Uri(endpointUri.ToString() + Paths.ClientConfigPathSegment)),
+                It.IsAny<CancellationToken>()))
+                .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) => Task.FromResult(new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent(JsonConvert.SerializeObject(new AccountClientConfiguration()))
+                }));
             return endpointUri;
         }
 

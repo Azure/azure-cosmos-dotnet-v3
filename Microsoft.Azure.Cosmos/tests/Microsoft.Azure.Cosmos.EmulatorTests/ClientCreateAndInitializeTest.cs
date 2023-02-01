@@ -1,5 +1,6 @@
 ﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
@@ -298,7 +299,7 @@
                 cosmosClientOptions: cosmosClientOptions);
 
             // Assert.
-            Assert.AreEqual(5, httpCallsMade);
+            Assert.AreEqual(6, httpCallsMade);
 
             IStoreClientFactory factory = (IStoreClientFactory)cosmosClient.DocumentClient.GetType()
                             .GetField("storeClientFactory", BindingFlags.NonPublic | BindingFlags.Instance)
@@ -359,6 +360,7 @@
             {
                 RequestCallBack = (request, cancellationToken) =>
                 {
+                    Console.WriteLine(request.RequestUri);
                     httpCallsMade++;
                     return null;
                 }
@@ -387,7 +389,7 @@
 
             // Assert.
             Assert.IsNotNull(cosmosClient);
-            Assert.AreEqual(1, httpCallsMade);
+            Assert.AreEqual(2, httpCallsMade); // Account Call and Client Config call
         }
 
         /// <summary>
