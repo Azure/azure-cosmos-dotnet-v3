@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
 #else
             this.diagnosticsHandler = null;
 #endif
-            if (telemetry != null)
+            if (telemetry != null && telemetry.IsRunningOrQueued())
             {
                 this.telemetryHandler = new TelemetryHandler(telemetry);
                 Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));

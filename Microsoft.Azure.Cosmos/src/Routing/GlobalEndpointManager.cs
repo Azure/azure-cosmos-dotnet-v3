@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -397,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public virtual void InitializeAccountPropertiesAndStartBackgroundRefresh(AccountProperties databaseAccount)
+        public virtual void InitializeAccountPropertiesAndStartBackgroundRefresh(AccountProperties databaseAccount, Action<ClientTelemetryConfiguration>? initializeOrRefreshClientTelemetryFunc = null)
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
@@ -423,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             try
             {
-                this.StartLocationBackgroundRefreshLoop();
+                this.StartLocationBackgroundRefreshLoop(initializeOrRefreshClientTelemetryFunc);
             }
             catch
             {
@@ -443,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
 #pragma warning disable VSTHRD100 // Avoid async void methods
-        private async void StartLocationBackgroundRefreshLoop()
+        private async void StartLocationBackgroundRefreshLoop(Action<ClientTelemetryConfiguration>? initializeOrRefreshClientTelemetryFunc)
 #pragma warning restore VSTHRD100 // Avoid async void methods
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
@@ -478,7 +480,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return;
                 }
 
-                await this.RefreshDatabaseAccountInternalAsync(forceRefresh: false);
+                await this.RefreshDatabaseAccountInternalAsync(forceRefresh: false, initializeOrRefreshClientTelemetryFunc);
             }
             catch (Exception ex)
             {
@@ -491,9 +493,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             // Call itself to create a loop to continuously do background refresh every 5 minutes
-            this.StartLocationBackgroundRefreshLoop();
+            this.StartLocationBackgroundRefreshLoop(initializeOrRefreshClientTelemetryFunc);
         }
-
+        
         private Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
         {
             return this.owner.GetDatabaseAccountInternalAsync(serviceEndpoint, this.cancellationTokenSource.Token);
@@ -508,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Thread safe refresh account and location info.
         /// </summary>
-        private async Task RefreshDatabaseAccountInternalAsync(bool forceRefresh)
+        private async Task RefreshDatabaseAccountInternalAsync(bool forceRefresh, Action<ClientTelemetryConfiguration>? initializeOrRefreshClientTelemetryFunc = null)
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
@@ -540,7 +542,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             try
             {
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
-                this.locationCache.OnDatabaseAccountRead(await this.GetDatabaseAccountAsync(true));
+
+                AccountProperties accountProperties = await this.GetDatabaseAccountAsync(true);
+                this.locationCache.OnDatabaseAccountRead(accountProperties);
+
+                initializeOrRefreshClientTelemetryFunc?.Invoke(accountProperties.ClientConfiguration.ClientTelemetryConfiguration);
 
             }
             finally

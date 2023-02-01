@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             {
                                 ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
 
-                                if (this.clientTelemetry != null)
+                                if (this.clientTelemetry != null && this.clientTelemetry.IsRunningOrQueued())
                                 {
                                     ClientCollectionCache.GetDatabaseAndCollectionName(collectionLink, out string databaseName, out string collectionName);
                                     this.clientTelemetry.CollectCacheInfo(

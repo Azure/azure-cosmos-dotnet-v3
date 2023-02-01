@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
 
         private int numberOfFailures = 0;
-
+        
         /// <summary>
         /// Only for Mocking in tests
         /// </summary>
@@ -131,6 +131,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             this.cancellationTokenSource = new CancellationTokenSource();
             this.globalEndpointManager = globalEndpointManager;
+        }
+
+        /// <summary>
+        /// Return true if client telemetry job is running
+        /// </summary>
+        /// <returns>true/false</returns>
+        public bool IsRunningOrQueued()
+        {
+            if (this.telemetryTask == null)
+            {
+                return false;
+            }
+            return this.telemetryTask.Status == TaskStatus.Running || 
+                this.telemetryTask.Status == TaskStatus.WaitingForActivation || 
+                this.telemetryTask.Status == TaskStatus.WaitingToRun;
         }
 
         /// <summary>

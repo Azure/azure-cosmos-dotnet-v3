@@ -1030,9 +1030,10 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        private void InitializeClientTelemetry(ClientTelemetryConfiguration clientTelemetryConfig)
+        private void InitializeOrRefreshClientTelemetry(ClientTelemetryConfiguration clientTelemetryConfig)
         {
-            if (clientTelemetryConfig.IsEnabled)
+            if ((this.clientTelemetry == null || !this.clientTelemetry.IsRunningOrQueued()) && 
+                    clientTelemetryConfig.IsEnabled)
             {
                 try
                 {
@@ -1054,7 +1055,7 @@ namespace Microsoft.Azure.Cosmos
                     DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
                 }
             }
-            else
+            else if (this.clientTelemetry != null && this.clientTelemetry.IsRunningOrQueued() && !clientTelemetryConfig.IsEnabled)
             {
                 // Stop the job if disabled.
                 this.clientTelemetry?.Dispose();
@@ -6450,15 +6451,7 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                AccountClientConfiguration clientConfiguration = await gatewayModel.GetDatabaseAccountClientConfigAsync(CreateRequestMessage);
-                
-                // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
-                // the system information so no need to track it.
-#if !INTERNAL
-                this.InitializeClientTelemetry(clientConfiguration.ClientTelemetryConfiguration);
-#endif
-                
-                return clientConfiguration;
+                return await gatewayModel.GetDatabaseAccountClientConfigAsync(CreateRequestMessage);
             }
             catch (Exception ex)
             {
@@ -6767,7 +6760,17 @@ namespace Microsoft.Azure.Cosmos
             await this.accountServiceConfiguration.InitializeAsync();
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
-            this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+            
+            // Trigger Client Telemetry Job if enabled
+            ClientTelemetryConfiguration clientTelemetryConfig = accountProperties.ClientConfiguration?.ClientTelemetryConfiguration;
+            if (clientTelemetryConfig != null && clientTelemetryConfig.IsEnabled)
+            {
+                this.InitializeOrRefreshClientTelemetry(clientTelemetryConfig);
+            }
+            
+            this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(
+                    databaseAccount: accountProperties,
+                    initializeOrRefreshClientTelemetryFunc: (telemetryConfig) => this.InitializeOrRefreshClientTelemetry(telemetryConfig));
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
