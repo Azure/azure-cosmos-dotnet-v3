@@ -29,9 +29,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
 
         public QueryPaginationOptions(
             int? pageSizeHint = null,
-            JsonSerializationFormat? jsonSerializationFormat = null,
             Dictionary<string, string> additionalHeaders = null)
-            : base(pageSizeHint, jsonSerializationFormat, additionalHeaders)
+            : base(pageSizeHint, additionalHeaders)
         {
         }
 
