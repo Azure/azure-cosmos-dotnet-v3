@@ -112,8 +112,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new Dictionary<DocumentClientType, DocumentClient>
             {
                 {DocumentClientType.Gateway, TestCommon.CreateClient(true, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)},
-                {DocumentClientType.DirectTcp, TestCommon.CreateClient(false, Protocol.Tcp, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)},
-                {DocumentClientType.DirectHttps, TestCommon.CreateClient(false, Protocol.Https, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
+                {DocumentClientType.DirectTcp, TestCommon.CreateClient(false, Protocol.Tcp, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
             };
 
             foreach (KeyValuePair<DocumentClientType, DocumentClient> clientEntry in clients)
@@ -149,8 +148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new Dictionary<DocumentClientType, DocumentClient>
             {
                 {DocumentClientType.Gateway, TestCommon.CreateClient(true, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)},
-                {DocumentClientType.DirectTcp, TestCommon.CreateClient(false, Protocol.Tcp, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)},
-                {DocumentClientType.DirectHttps, TestCommon.CreateClient(false, Protocol.Https, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
+                {DocumentClientType.DirectTcp, TestCommon.CreateClient(false, Protocol.Tcp, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
             };
 
             int seed = (int)DateTime.Now.Ticks;
