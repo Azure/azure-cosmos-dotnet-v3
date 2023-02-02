@@ -6,11 +6,11 @@
 
     public static class CosmosClientInit
     {
-
         public static Container singleRegionAccount;
         public static Container largeRegionAccount;
         public static Container multiRegionAccount;
-
+        public static Container singleRegionAccountWithbulk;
+            
         public static async Task<Container> CreateClientAndContainer(
          string connectionString,
          ConnectionMode mode,
@@ -30,7 +30,7 @@
                 ? cosmosClientBuilder.WithConnectionModeGateway().Build()
                 : cosmosClientBuilder.Build();
 
-            cosmosClient.ClientOptions.EnableDistributedTracing = isEnableOpenTelemetry;
+            cosmosClient.ClientOptions.IsDistributedTracingEnabled = isEnableOpenTelemetry;
 
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("OTelSampleDb" + dbAndContainerNameSuffix);
 

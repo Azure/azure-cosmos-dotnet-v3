@@ -27,7 +27,7 @@
         public BulkOperationController(ILogger<HomeController> logger)
         {
             this.logger = logger;
-            this.container = CosmosClientInit.singleRegionAccount;
+            this.container = CosmosClientInit.singleRegionAccountWithbulk;
         }
 
         public IActionResult Index()
@@ -35,7 +35,7 @@
             Task.Run(async () =>
             {
                 List<Task> concurrentTasks = new List<Task>();
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 100; i++)
                 {
                     ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
                     concurrentTasks.Add(this.container.CreateItemAsync<ToDoActivity>(testItem));

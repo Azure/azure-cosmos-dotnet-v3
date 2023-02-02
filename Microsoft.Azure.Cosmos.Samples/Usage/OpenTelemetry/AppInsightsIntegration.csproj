@@ -12,7 +12,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.22.0-beta1" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0-beta1" />
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.30.135" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.31.2001" />
   </ItemGroup>
 
   <ItemGroup>

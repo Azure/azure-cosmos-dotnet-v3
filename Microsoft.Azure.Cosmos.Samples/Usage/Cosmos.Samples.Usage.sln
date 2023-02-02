@@ -47,7 +47,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SystemTextJson", "SystemTex
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReEncryption", "ReEncryption\ReEncryption.csproj", "{AD6DEC94-EF8E-4C42-8A99-B98E101F933D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenTelemetry", "OpenTelemetry\OpenTelemetry.csproj", "{5FFFD6E0-8E86-4069-8746-7064C2814104}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AppInsightsIntegration", "OpenTelemetry\AppInsightsIntegration.csproj", "{5FFFD6E0-8E86-4069-8746-7064C2814104}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
