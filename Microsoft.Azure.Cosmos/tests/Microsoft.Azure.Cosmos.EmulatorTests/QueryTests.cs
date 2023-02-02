@@ -777,12 +777,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.TestQueryUnicodeDocument(useGateway: true, protocol: Protocol.Https);
         }
 
-        [TestMethod]
-        public void TestQueryUnicodeDocumentHttpsDirect()
-        {
-            this.TestQueryUnicodeDocument(useGateway: false, protocol: Protocol.Https);
-        }
-
         private void TestQueryUnicodeDocument(bool useGateway, Protocol protocol)
         {
             try

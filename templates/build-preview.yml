@@ -167,5 +167,5 @@ jobs:
       configuration: $(parameters.BuildConfiguration)
       nugetConfigPath: NuGet.config
       projects:  'Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/CosmosBenchmark.sln' 
-      arguments: -p:Optimize=true -p:IsPreview=true
+      arguments: -p:Optimize=true -p:IsPreview=true -p:OSSProjectRef=true
       versioningScheme: OFF

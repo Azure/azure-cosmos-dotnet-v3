@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly CosmosHttpClient httpClient;
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
+        private IOpenConnectionsHandler openConnectionsHandler;
 
         public GlobalAddressResolver(
             GlobalEndpointManager endpointManager,
@@ -108,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     databaseName: databaseName,
                     collection: collection,
                     partitionKeyRangeIdentities: ranges,
-                    openConnectionHandler: null,
+                    shouldOpenRntbdChannels: false,
                     cancellationToken: cancellationToken));
             }
 
@@ -116,16 +117,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Invokes the gateway address cache and passes the <see cref="Documents.Rntbd.TransportClient"/> deligate to be invoked from the same.
+        /// Invokes the gateway address cache to open the rntbd connections to the backend replicas.
         /// </summary>
         /// <param name="databaseName">A string containing the name of the database.</param>
         /// <param name="containerLinkUri">A string containing the container's link uri.</param>
-        /// <param name="openConnectionHandlerAsync">The transport client callback delegate to be invoked at a later point of time.</param>
         /// <param name="cancellationToken">An Instance of the <see cref="CancellationToken"/>.</param>
         public async Task OpenConnectionsToAllReplicasAsync(
             string databaseName,
             string containerLinkUri,
-            Func<Uri, Task> openConnectionHandlerAsync,
             CancellationToken cancellationToken = default)
         {
             try
@@ -180,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         databaseName: databaseName,
                         collection: collection,
                         partitionKeyRangeIdentities: partitionKeyRangeIdentities,
-                        openConnectionHandler: openConnectionHandlerAsync,
+                        shouldOpenRntbdChannels: true,
                         cancellationToken: cancellationToken);
 
             }
@@ -194,6 +193,20 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     _ => ex,
                 };
+            }
+        }
+
+        /// <inheritdoc/>
+        public void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler)
+        {
+            this.openConnectionsHandler = openConnectionsHandler;
+
+            // Sets the openConnectionsHandler for the existing address cache.
+            // For the new address caches added later, the openConnectionsHandler
+            // will be set through the constructor.
+            foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
+            {
+                endpointCache.AddressCache.SetOpenConnectionsHandler(openConnectionsHandler);
             }
         }
 
@@ -284,6 +297,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.tokenProvider,
                         this.serviceConfigReader,
                         this.httpClient,
+                        this.openConnectionsHandler,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery);
 
                     string location = this.endpointManager.GetLocation(endpoint);
