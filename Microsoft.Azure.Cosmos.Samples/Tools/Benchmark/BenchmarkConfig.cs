@@ -224,7 +224,7 @@ namespace CosmosBenchmark
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
 
-            clientOptions.EnableDistributedTracing = this.EnableDistributedTracing;
+            clientOptions.IsDistributedTracingEnabled = this.EnableDistributedTracing;
 
             return new Microsoft.Azure.Cosmos.CosmosClient(
                         this.EndPoint,
