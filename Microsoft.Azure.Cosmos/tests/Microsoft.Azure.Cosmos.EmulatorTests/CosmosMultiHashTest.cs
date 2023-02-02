@@ -44,23 +44,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             //Document create test
             ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
-            Document doc1 = new Document { Id = "document1" };
-            doc1.SetValue("ZipCode", "500026");
-            doc1.SetValue("Address", "Secunderabad");
-            doc1.SetValue("Type", "Residence");
-            documents[0] = await this.container.CreateItemAsync<Document>(doc1);
+            Document doc = new Document { Id = "document1" };
+            doc.SetValue("ZipCode", "500026");
+            doc.SetValue("Address", "Secunderabad");
+            doc.SetValue("Type", "Residence");
+            documents[0] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document2" };
-            doc1.SetValue("ZipCode", "15232");
-            doc1.SetValue("Address", "Pittsburgh");
-            doc1.SetValue("Type", "Business");
-            documents[1] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document2" };
+            doc.SetValue("ZipCode", "15232");
+            doc.SetValue("Address", "Pittsburgh");
+            doc.SetValue("Type", "Business");
+            documents[1] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document3" };
-            doc1.SetValue("ZipCode", "11790");
-            doc1.SetValue("Address", "Stonybrook");
-            doc1.SetValue("Type", "Goverment");
-            documents[2] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document3" };
+            doc.SetValue("ZipCode", "11790");
+            doc.SetValue("Address", "Stonybrook");
+            doc.SetValue("Type", "Goverment");
+            documents[2] = await this.container.CreateItemAsync<Document>(doc);
 
             Assert.AreEqual(3, documents.Select(document => ((Document)document).SelfLink).Distinct().Count());
 
@@ -70,14 +70,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             foreach (Document document in documents)
             {
                 badPKey = new PartitionKeyBuilder()
-                            .Add(document.GetPropertyValue<string>("Address"))
+                            .Add(document.GetPropertyValue<string>("ZipCode"))
                             .Build();
 
                 document.Id += "Bad";
 
-                ArgumentException createException = await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                CosmosException createException = await Assert.ThrowsExceptionAsync<CosmosException>(() =>
                         this.container.CreateItemAsync<Document>(document, badPKey)
                     );
+                
+                Assert.AreEqual(createException.StatusCode, HttpStatusCode.BadRequest);
             }
         }
 
@@ -89,36 +91,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Create Items for test
             ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
-            Document doc1 = new Document { Id = "document1" };
-            doc1.SetValue("ZipCode", "500026");
-            doc1.SetValue("Address", "Secunderabad");
-            doc1.SetValue("Type", "Residence");
-            documents[0] = await this.container.CreateItemAsync<Document>(doc1);
+            Document doc = new Document { Id = "document1" };
+            doc.SetValue("ZipCode", "500026");
+            doc.SetValue("Address", "Secunderabad");
+            doc.SetValue("Type", "Residence");
+            documents[0] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document2" };
-            doc1.SetValue("ZipCode", "15232");
-            doc1.SetValue("Address", "Pittsburgh");
-            doc1.SetValue("Type", "Business");
-            documents[1] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document2" };
+            doc.SetValue("ZipCode", "15232");
+            doc.SetValue("Address", "Pittsburgh");
+            doc.SetValue("Type", "Business");
+            documents[1] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document3" };
-            doc1.SetValue("ZipCode", "11790");
-            doc1.SetValue("Address", "Stonybrook");
-            doc1.SetValue("Type", "Goverment");
-            documents[2] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document3" };
+            doc.SetValue("ZipCode", "11790");
+            doc.SetValue("Address", "Stonybrook");
+            doc.SetValue("Type", "Goverment");
+            documents[2] = await this.container.CreateItemAsync<Document>(doc);
 
             //Document Delete Test
             foreach (Document document in documents)
             {
-                //Negative test - using incomplete partition key
+                //Negative test - using incomplete partition key (try one with more values too)
                 badPKey = new PartitionKeyBuilder()
-                        .Add(document.GetPropertyValue<string>("Address"))
+                        .Add(document.GetPropertyValue<string>("ZipCode"))
                         .Build();
 
                 CosmosException deleteException = await Assert.ThrowsExceptionAsync<CosmosException>(() =>
                     this.container.DeleteItemAsync<Document>(document.Id, badPKey)
                 );
-
+                Console.WriteLine(deleteException.Message);
                 Assert.AreEqual(deleteException.StatusCode, HttpStatusCode.BadRequest);
 
                 //Positive test
@@ -127,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .Add(document.GetPropertyValue<string>("Address"))
                     .Build();
 
-                Document readDocument = (await this.container.DeleteItemAsync<Document>(document.Id, pKey)).Resource;
+                Document deleteDocument = (await this.container.DeleteItemAsync<Document>(document.Id, pKey)).Resource;
 
                 CosmosException clientException = await Assert.ThrowsExceptionAsync<CosmosException>(() =>
                     this.container.ReadItemAsync<Document>(document.Id, pKey)
@@ -145,23 +147,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Create Items for test
             ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
-            Document doc1 = new Document { Id = "document1" };
-            doc1.SetValue("ZipCode", "500026");
-            doc1.SetValue("Address", "Secunderabad");
-            doc1.SetValue("Type", "Residence");
-            documents[0] = await this.container.CreateItemAsync<Document>(doc1);
+            Document doc = new Document { Id = "document1" };
+            doc.SetValue("ZipCode", "500026");
+            doc.SetValue("Address", "Secunderabad");
+            doc.SetValue("Type", "Residence");
+            documents[0] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document2" };
-            doc1.SetValue("ZipCode", "15232");
-            doc1.SetValue("Address", "Pittsburgh");
-            doc1.SetValue("Type", "Business");
-            documents[1] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document2" };
+            doc.SetValue("ZipCode", "15232");
+            doc.SetValue("Address", "Pittsburgh");
+            doc.SetValue("Type", "Business");
+            documents[1] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document3" };
-            doc1.SetValue("ZipCode", "11790");
-            doc1.SetValue("Address", "Stonybrook");
-            doc1.SetValue("Type", "Goverment");
-            documents[2] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document3" };
+            doc.SetValue("ZipCode", "11790");
+            doc.SetValue("Address", "Stonybrook");
+            doc.SetValue("Type", "Goverment");
+            documents[2] = await this.container.CreateItemAsync<Document>(doc);
 
             //Document Read Test
             foreach (Document document in documents)
@@ -176,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //Negative test - using incomplete partition key
                 badPKey = new PartitionKeyBuilder()
-                        .Add(document.GetPropertyValue<string>("Address"))
+                        .Add(document.GetPropertyValue<string>("ZipCode"))
                         .Build();
 
                 CosmosException clientException = await Assert.ThrowsExceptionAsync<CosmosException>(() =>
@@ -191,29 +193,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task MultiHashReadManyTest()
         {
             Cosmos.PartitionKey pKey;
+            Cosmos.PartitionKey badPKey;
 
             //Create Items for test
             ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
-            Document doc1 = new Document { Id = "document1" };
-            doc1.SetValue("ZipCode", "500026");
-            doc1.SetValue("Address", "Secunderabad");
-            doc1.SetValue("Type", "Residence");
-            documents[0] = await this.container.CreateItemAsync<Document>(doc1);
+            Document doc = new Document { Id = "document1" };
+            doc.SetValue("ZipCode", "500026");
+            doc.SetValue("Address", "Secunderabad");
+            doc.SetValue("Type", "Residence");
+            documents[0] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document2" };
-            doc1.SetValue("ZipCode", "15232");
-            doc1.SetValue("Address", "Pittsburgh");
-            doc1.SetValue("Type", "Business");
-            documents[1] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document2" };
+            doc.SetValue("ZipCode", "15232");
+            doc.SetValue("Address", "Pittsburgh");
+            doc.SetValue("Type", "Business");
+            documents[1] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document3" };
-            doc1.SetValue("ZipCode", "11790");
-            doc1.SetValue("Address", "Stonybrook");
-            doc1.SetValue("Type", "Goverment");
-            documents[2] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document3" };
+            doc.SetValue("ZipCode", "11790");
+            doc.SetValue("Address", "Stonybrook");
+            doc.SetValue("Type", "Goverment");
+            documents[2] = await this.container.CreateItemAsync<Document>(doc);
 
             //Read Many Test
             List<(string, Cosmos.PartitionKey)> itemList = new List<(string, Cosmos.PartitionKey)>();
+            List<(string, Cosmos.PartitionKey)> incompleteList = new List<(string, Cosmos.PartitionKey)>();
             foreach (Document document in documents)
             {
                 pKey = new PartitionKeyBuilder()
@@ -221,10 +225,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .Add(document.GetPropertyValue<string>("Address"))
                     .Build();
 
+                badPKey = new PartitionKeyBuilder()
+                    .Add(document.GetPropertyValue<string>("ZipCode"))
+                    .Build();
+
                 itemList.Add((document.Id, pKey));
+                incompleteList.Add((document.Id, badPKey));
             }
 
-            FeedResponse<ToDoActivity> feedResponse = await this.container.ReadManyItemsAsync<ToDoActivity>(itemList);
+            FeedResponse<Document> feedResponse = await this.container.ReadManyItemsAsync<Document>(itemList);
 
             Assert.IsNotNull(feedResponse);
             Assert.AreEqual(feedResponse.Count, 3);
@@ -232,17 +241,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(feedResponse.Diagnostics);
 
             int count = 0;
-            foreach (ToDoActivity item in feedResponse)
+            foreach (Document item in feedResponse)
             {
                 count++;
                 Assert.IsNotNull(item);
-                Assert.IsNotNull(item.pk);
             }
             Assert.AreEqual(count, 3);
+
+            //Negative test - using incomplete partition key
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                this.container.ReadManyItemsAsync<Document>(incompleteList));
         }
 
+        public record DatabaseItem(
+            string Id,
+            string Pk
+            );
+
         [TestMethod]
-        public async Task MultiHashUpsetItemTest()
+        public async Task MultiHashUpsertItemTest()
         {
             Cosmos.PartitionKey pKey;
             Cosmos.PartitionKey badPKey;
@@ -250,90 +267,92 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Create Items for test
             ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
-            Document doc1 = new Document { Id = "document1" };
-            doc1.SetValue("ZipCode", "500026");
-            doc1.SetValue("Address", "Secunderabad");
-            doc1.SetValue("Type", "Residence");
-            documents[0] = await this.container.CreateItemAsync<Document>(doc1);
+            Document doc = new Document { Id = "document1" };
+            doc.SetValue("ZipCode", "500026");
+            doc.SetValue("Address", "Secunderabad");
+            doc.SetValue("Type", "Residence");
+            documents[0] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document2" };
-            doc1.SetValue("ZipCode", "15232");
-            doc1.SetValue("Address", "Pittsburgh");
-            doc1.SetValue("Type", "Business");
-            documents[1] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document2" };
+            doc.SetValue("ZipCode", "15232");
+            doc.SetValue("Address", "Pittsburgh");
+            doc.SetValue("Type", "Business");
+            documents[1] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document3" };
-            doc1.SetValue("ZipCode", "11790");
-            doc1.SetValue("Address", "Stonybrook");
-            doc1.SetValue("Type", "Goverment");
-            documents[2] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document3" };
+            doc.SetValue("ZipCode", "11790");
+            doc.SetValue("Address", "Stonybrook");
+            doc.SetValue("Type", "Goverment");
+            documents[2] = await this.container.CreateItemAsync<Document>(doc);
 
             //Document Upsert Test
-            doc1 = new Document { Id = "document4" };
-            doc1.SetValue("ZipCode", "97756");
-            doc1.SetValue("Address", "Redmond");
-            doc1.SetValue("Type", "Residence");
+            doc = new Document { Id = "document4" };
+            doc.SetValue("ZipCode", "97756");
+            doc.SetValue("Address", "Redmond");
+            doc.SetValue("Type", "Residence");
 
             pKey = new PartitionKeyBuilder()
-                    .Add(doc1.GetPropertyValue<string>("ZipCode"))
-                    .Add(doc1.GetPropertyValue<string>("Address"))
+                    .Add(doc.GetPropertyValue<string>("ZipCode"))
+                    .Add(doc.GetPropertyValue<string>("Address"))
                 .Build();
 
             //insert check
-            await this.container.UpsertItemAsync<Document>(doc1, pKey);
+            await this.container.UpsertItemAsync<Document>(doc, pKey);
 
-            Document readCheck = (await this.container.ReadItemAsync<Document>(doc1.Id, pKey)).Resource;
+            Document readCheck = (await this.container.ReadItemAsync<Document>(doc.Id, pKey)).Resource;
 
-            Assert.AreEqual(doc1.GetPropertyValue<string>("ZipCode"), readCheck.GetPropertyValue<string>("ZipCode"));
-            Assert.AreEqual(doc1.GetPropertyValue<string>("Address"), readCheck.GetPropertyValue<string>("Address"));
-            Assert.AreEqual(doc1.GetPropertyValue<string>("Type"), readCheck.GetPropertyValue<string>("Type"));
+            Assert.AreEqual(doc.GetPropertyValue<string>("ZipCode"), readCheck.GetPropertyValue<string>("ZipCode"));
+            Assert.AreEqual(doc.GetPropertyValue<string>("Address"), readCheck.GetPropertyValue<string>("Address"));
+            Assert.AreEqual(doc.GetPropertyValue<string>("Type"), readCheck.GetPropertyValue<string>("Type"));
 
-            doc1 = new Document { Id = "document4" };
-            doc1.SetValue("ZipCode", "97756");
-            doc1.SetValue("Address", "Redmond");
-            doc1.SetValue("Type", "Business");
+            doc = new Document { Id = "document4" };
+            doc.SetValue("ZipCode", "97756");
+            doc.SetValue("Address", "Redmond");
+            doc.SetValue("Type", "Business");
 
             //update check
             pKey = new PartitionKeyBuilder()
-                    .Add(doc1.GetPropertyValue<string>("ZipCode"))
-                    .Add(doc1.GetPropertyValue<string>("Address"))
+                    .Add(doc.GetPropertyValue<string>("ZipCode"))
+                    .Add(doc.GetPropertyValue<string>("Address"))
                 .Build();
 
-            documents.Append<ItemResponse<Document>>(await this.container.UpsertItemAsync<Document>(doc1, pKey));
+            documents.Append<ItemResponse<Document>>(await this.container.UpsertItemAsync<Document>(doc, pKey));
 
-            readCheck = (await this.container.ReadItemAsync<Document>(doc1.Id, pKey)).Resource;
+            readCheck = (await this.container.ReadItemAsync<Document>(doc.Id, pKey)).Resource;
 
-            Assert.AreEqual(doc1.GetPropertyValue<string>("ZipCode"), readCheck.GetPropertyValue<string>("ZipCode"));
-            Assert.AreEqual(doc1.GetPropertyValue<string>("Address"), readCheck.GetPropertyValue<string>("Address"));
-            Assert.AreEqual(doc1.GetPropertyValue<string>("Type"), readCheck.GetPropertyValue<string>("Type"));
+            Assert.AreEqual(doc.GetPropertyValue<string>("ZipCode"), readCheck.GetPropertyValue<string>("ZipCode"));
+            Assert.AreEqual(doc.GetPropertyValue<string>("Address"), readCheck.GetPropertyValue<string>("Address"));
+            Assert.AreEqual(doc.GetPropertyValue<string>("Type"), readCheck.GetPropertyValue<string>("Type"));
 
             count = 0;
 
-            foreach (Document doc in this.container.GetItemLinqQueryable<Document>(true))
+            foreach (Document document in this.container.GetItemLinqQueryable<Document>(true))
             {
                 count++;
             }
             Assert.AreEqual(4, count);
 
             //Negative test - using incomplete partition key
-            doc1 = new Document { Id = "document4" };
-            doc1.SetValue("ZipCode", "97756");
-            doc1.SetValue("Address", "Redmond");
-            doc1.SetValue("Type", "Residence");
+            doc = new Document { Id = "document4" };
+            doc.SetValue("ZipCode", "97756");
+            doc.SetValue("Address", "Redmond");
+            doc.SetValue("Type", "Residence");
 
             badPKey = new PartitionKeyBuilder()
-                    .Add(doc1.GetPropertyValue<string>("ZipCode"))
+                    .Add(doc.GetPropertyValue<string>("ZipCode"))
                 .Build();
 
-            await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
-                this.container.UpsertItemAsync<Document>(doc1, badPKey)
+            CosmosException clientException = await Assert.ThrowsExceptionAsync<CosmosException>(() =>
+                this.container.UpsertItemAsync<Document>(doc, badPKey)
             );
 
-            readCheck = (await this.container.ReadItemAsync<Document>(doc1.Id, pKey)).Resource;
+            Assert.AreEqual(clientException.StatusCode, HttpStatusCode.BadRequest);
 
-            Assert.AreEqual(doc1.GetPropertyValue<string>("ZipCode"), readCheck.GetPropertyValue<string>("ZipCode"));
-            Assert.AreEqual(doc1.GetPropertyValue<string>("Address"), readCheck.GetPropertyValue<string>("Address"));
-            Assert.AreNotEqual(doc1.GetPropertyValue<string>("Type"), readCheck.GetPropertyValue<string>("Type"));
+            readCheck = (await this.container.ReadItemAsync<Document>(doc.Id, pKey)).Resource;
+
+            Assert.AreEqual(doc.GetPropertyValue<string>("ZipCode"), readCheck.GetPropertyValue<string>("ZipCode"));
+            Assert.AreEqual(doc.GetPropertyValue<string>("Address"), readCheck.GetPropertyValue<string>("Address"));
+            Assert.AreNotEqual(doc.GetPropertyValue<string>("Type"), readCheck.GetPropertyValue<string>("Type"));
         }
 
         [TestMethod]
@@ -344,23 +363,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Create items for test
             ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
-            Document doc1 = new Document { Id = "document1" };
-            doc1.SetValue("ZipCode", "500026");
-            doc1.SetValue("Address", "Secunderabad");
-            doc1.SetValue("Type", "Residence");
-            documents[0] = await this.container.CreateItemAsync<Document>(doc1);
+            Document doc = new Document { Id = "document1" };
+            doc.SetValue("ZipCode", "500026");
+            doc.SetValue("Address", "Secunderabad");
+            doc.SetValue("Type", "Residence");
+            documents[0] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document2" };
-            doc1.SetValue("ZipCode", "15232");
-            doc1.SetValue("Address", "Pittsburgh");
-            doc1.SetValue("Type", "Business");
-            documents[1] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document2" };
+            doc.SetValue("ZipCode", "15232");
+            doc.SetValue("Address", "Pittsburgh");
+            doc.SetValue("Type", "Business");
+            documents[1] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document3" };
-            doc1.SetValue("ZipCode", "11790");
-            doc1.SetValue("Address", "Stonybrook");
-            doc1.SetValue("Type", "Goverment");
-            documents[2] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document3" };
+            doc.SetValue("ZipCode", "11790");
+            doc.SetValue("Address", "Stonybrook");
+            doc.SetValue("Type", "Goverment");
+            documents[2] = await this.container.CreateItemAsync<Document>(doc);
 
             //Document Replace Test
             foreach (Document document in documents)
@@ -381,14 +400,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //Negative test - using incomplete partition key
                 badPKey = new PartitionKeyBuilder()
-                        .Add(document.GetPropertyValue<string>("Address"))
+                        .Add(document.GetPropertyValue<string>("ZipCode"))
                         .Build();
 
                 readDocument.SetValue("Type", "Goverment");
 
-                await Assert.ThrowsExceptionAsync<ArgumentException>(() =>
+                CosmosException clientException = await Assert.ThrowsExceptionAsync<CosmosException>(() =>
                     this.container.ReplaceItemAsync<Document>(document, document.Id, partitionKey: badPKey)
                 );
+
+                Assert.AreEqual(clientException.StatusCode, HttpStatusCode.BadRequest);
             }
         }
 
@@ -396,26 +417,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task MultiHashQueryItemTest()
         {
             Cosmos.PartitionKey pKey;
+            Cosmos.PartitionKey badPKey;
 
             //Create items for test
             ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
-            Document doc1 = new Document { Id = "document1" };
-            doc1.SetValue("ZipCode", "500026");
-            doc1.SetValue("Address", "Secunderabad");
-            doc1.SetValue("Type", "Residence");
-            documents[0] = await this.container.CreateItemAsync<Document>(doc1);
+            Document doc = new Document { Id = "document1" };
+            doc.SetValue("ZipCode", "500026");
+            doc.SetValue("Address", "Secunderabad");
+            doc.SetValue("Type", "Residence");
+            documents[0] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document2" };
-            doc1.SetValue("ZipCode", "15232");
-            doc1.SetValue("Address", "Pittsburgh");
-            doc1.SetValue("Type", "Business");
-            documents[1] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document2" };
+            doc.SetValue("ZipCode", "15232");
+            doc.SetValue("Address", "Pittsburgh");
+            doc.SetValue("Type", "Business");
+            documents[1] = await this.container.CreateItemAsync<Document>(doc);
 
-            doc1 = new Document { Id = "document3" };
-            doc1.SetValue("ZipCode", "11790");
-            doc1.SetValue("Address", "Stonybrook");
-            doc1.SetValue("Type", "Goverment");
-            documents[2] = await this.container.CreateItemAsync<Document>(doc1);
+            doc = new Document { Id = "document3" };
+            doc.SetValue("ZipCode", "11790");
+            doc.SetValue("Address", "Stonybrook");
+            doc.SetValue("Type", "Goverment");
+            documents[2] = await this.container.CreateItemAsync<Document>(doc);
 
             //Query
             foreach (Document document in documents)
@@ -425,7 +447,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .Add(document.GetPropertyValue<string>("Address"))
                 .Build();
 
-                String query = $"SELECT * from c where c.id = {document.GetPropertyValue<string>("Id")}";
+                badPKey = new PartitionKeyBuilder()
+                            .Add(document.GetPropertyValue<string>("ZipCode"))
+                            .Build();
+
+                String query = $"SELECT * from c where c.id = \"{document.GetPropertyValue<string>("id")}\"";
 
                 using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
                     query,
@@ -435,7 +461,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(feedIterator.HasMoreResults);
 
                     FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
+                    Assert.IsTrue(queryDoc.Count == 1);
+                    Console.WriteLine(queryDoc.First<Document>());
                 }
+
+                //Negative test - using incomplete partition key
+                //not supported in query pipeline yet
+                using (FeedIterator<Document> badFeedIterator = this.container.GetItemQueryIterator<Document>(
+                    query,
+                    null,
+                    new QueryRequestOptions() { PartitionKey = badPKey}))
+                {
+                    FeedResponse<Document> queryDocBad = await badFeedIterator.ReadNextAsync();
+                    Console.WriteLine(queryDocBad.First<Document>());
+                    await Assert.ThrowsExceptionAsync<CosmosException>(() =>
+                         badFeedIterator.ReadNextAsync()
+                    );
+                }
+
 
             }
         }

@@ -161,11 +161,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                     if (feedRange != null)
                     {
-                        feedRange = await RequestInvokerHandler.ResolveFeedRangeBasedOnPrefixContainerAsync(
-                            feedRange: feedRange,
-                            cosmosContainerCore: cosmosContainerCore,
-                            cancellationToken: cancellationToken);
-
+                        if (!request.OperationType.IsPointOperation()) 
+                        {
+                            feedRange = await RequestInvokerHandler.ResolveFeedRangeBasedOnPrefixContainerAsync(
+                                feedRange: feedRange,
+                                cosmosContainerCore: cosmosContainerCore,
+                                cancellationToken: cancellationToken);
+                        }
+                        
                         if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
                         {
                             if (cosmosContainerCore == null && object.ReferenceEquals(feedRangePartitionKey.PartitionKey, Cosmos.PartitionKey.None))
@@ -497,11 +500,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     .GetPartitionKeyDefinitionAsync(cancellationToken)
                     .ConfigureAwait(false);
 
-                if (partitionKeyDefinition.Kind == PartitionKind.MultiHash)
+                if (partitionKeyDefinition != null && partitionKeyDefinition.Kind == PartitionKind.MultiHash)
                 {
-                    return !(feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count >= partitionKeyDefinition.Paths?.Count)
-                        ? new FeedRangeEpk(feedRangePartitionKey.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition))
-                        : new FeedRangePartitionKey(feedRangePartitionKey.PartitionKey);
+                    return feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count >= partitionKeyDefinition.Paths?.Count
+                        ? new FeedRangePartitionKey(feedRangePartitionKey.PartitionKey)
+                        : new FeedRangeEpk(feedRangePartitionKey.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
                 }
             }
 
