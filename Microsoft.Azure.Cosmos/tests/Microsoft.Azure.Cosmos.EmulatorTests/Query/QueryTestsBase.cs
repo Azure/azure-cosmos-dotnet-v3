@@ -597,6 +597,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     Properties = queryRequestOptions.Properties,
                     IsEffectivePartitionKeyRouting = queryRequestOptions.IsEffectivePartitionKeyRouting,
                     CosmosElementContinuationToken = queryRequestOptions.CosmosElementContinuationToken,
+                    EnableOptimisticDirectExecution = queryRequestOptions.EnableOptimisticDirectExecution,
                     TestSettings = queryRequestOptions.TestSettings,
                 };
 

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Security;
     using System.Security;
     using System.Text;
     using System.Threading;
@@ -162,6 +163,9 @@ namespace Microsoft.Azure.Cosmos
         private static int idCounter;
         //Trace Id.
         private int traceId;
+
+        //RemoteCertificateValidationCallback
+        internal RemoteCertificateValidationCallback remoteCertificateValidationCallback;
 
         //SessionContainer.
         internal ISessionContainer sessionContainer;
@@ -421,6 +425,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
         /// <param name="isLocalQuorumConsistency">Flag to allow Quorum Read with Eventual Consistency Account</param>
         /// <param name="cosmosClientId"></param>
+        /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -446,7 +451,8 @@ namespace Microsoft.Azure.Cosmos
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
                               IStoreClientFactory storeClientFactory = null,
                               bool isLocalQuorumConsistency = false,
-                              string cosmosClientId = null)
+                              string cosmosClientId = null,
+                              RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -478,7 +484,8 @@ namespace Microsoft.Azure.Cosmos
                 sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
                 storeClientFactory: storeClientFactory,
-                cosmosClientId: cosmosClientId);
+                cosmosClientId: cosmosClientId,
+                remoteCertificateValidationCallback: remoteCertificateValidationCallback);
         }
 
         /// <summary>
@@ -660,7 +667,8 @@ namespace Microsoft.Azure.Cosmos
             bool? enableCpuMonitor = null,
             IStoreClientFactory storeClientFactory = null,
             TokenCredential tokenCredential = null,
-            string cosmosClientId = null)
+            string cosmosClientId = null,
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
         {
             if (serviceEndpoint == null)
             {
@@ -668,6 +676,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.clientId = cosmosClientId;
+            this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
@@ -1036,7 +1045,7 @@ namespace Microsoft.Azure.Cosmos
                     this.clientTelemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
                         clientId: this.clientId,
                         httpClient: this.httpClient,
-                        userAgent: this.ConnectionPolicy.UserAgentContainer.UserAgent,
+                        userAgent: this.ConnectionPolicy.UserAgentContainer.BaseUserAgent,
                         connectionMode: this.ConnectionPolicy.ConnectionMode,
                         authorizationTokenProvider: this.cosmosAuthorization,
                         diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
@@ -6648,7 +6657,8 @@ namespace Microsoft.Azure.Cosmos
                     retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration(),
                     enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
                     addressResolver: this.AddressResolver,
-                    rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount);
+                    rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
+                    remoteCertificateValidationCallback: this.remoteCertificateValidationCallback );
 
                 if (this.transportClientHandlerFactory != null)
                 {
