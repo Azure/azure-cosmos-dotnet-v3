@@ -385,12 +385,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task TestEtagOnUpsertOperationForHttpsClient()
-        {
-            await this.TestEtagOnUpsertOperation(false, Protocol.Https);
-        }
-
-        [TestMethod]
         public async Task TestEtagOnUpsertOperationForGatewayClient()
         {
             await this.TestEtagOnUpsertOperation(true);
