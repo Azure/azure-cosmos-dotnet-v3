@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = Headers.DefaultSupportedSerializationFormats;
+                requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = StoreRequestHeaders.DefaultSupportedSerializationFormats;
             }
 
             return requestHeaders;

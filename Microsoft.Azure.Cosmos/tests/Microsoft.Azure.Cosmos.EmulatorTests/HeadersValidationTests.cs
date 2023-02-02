@@ -404,9 +404,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, contentSerializationFormats);
             }
+
             headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, supportedSerializationFormats);
-            DocumentServiceResponse response = sqlQuerySpec != null ? this.QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers) :
-                                                                this.ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
+            DocumentServiceResponse response;                   
+            if(sqlQuerySpec!=null)
+            {
+                response = this.QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
+            }
+            else
+            {
+                Assert.IsFalse(expectedResultIsBinary);
+                response = this.ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
+            }
+
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
             
             if(!expectedResultIsBinary)
@@ -417,8 +427,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.IsTrue(response.ResponseBody.ReadByte() == BinarySerializationByteMarkValue);
             }
-
         }
+
         private void ValidateSupportedSerializationFormatsReadFeed(DocumentClient client, DocumentCollection collection)
         {
             // Value not supported
