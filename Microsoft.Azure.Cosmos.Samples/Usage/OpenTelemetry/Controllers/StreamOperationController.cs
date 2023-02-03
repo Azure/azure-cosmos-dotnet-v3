@@ -1,30 +1,25 @@
 ﻿namespace OpenTelemetry.Controllers
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
-    using System.Net.Http;
-    using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
     using Models;
-    using Newtonsoft.Json.Converters;
     using Newtonsoft.Json;
-    using WebApp.AspNetCore.Controllers;
     using WebApp.AspNetCore.Models;
     using System.Text;
     using OpenTelemetry.Util;
 
     public class StreamOperationController : Controller
     {
-        private readonly ILogger<HomeController> logger;
+        private readonly ILogger<StreamOperationController> logger;
         private readonly Container container;
         private readonly SuccessViewModel successModel = new SuccessViewModel();
 
-        public StreamOperationController(ILogger<HomeController> logger)
+        public StreamOperationController(ILogger<StreamOperationController> logger)
         {
             this.logger = logger;
             this.container = CosmosClientInit.singleRegionAccount;

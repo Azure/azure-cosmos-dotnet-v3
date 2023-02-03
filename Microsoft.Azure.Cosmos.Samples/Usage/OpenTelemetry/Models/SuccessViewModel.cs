@@ -8,6 +8,6 @@
         public string StreamOpsMessage { get; set; } = "Not Triggered Yet";
         public string BulkOpsMessage { get; set; } = "Not Triggered Yet";
         public string CrossQueryOpsMessage { get; set; } = "Not Triggered Yet";
-
+        public string BatchOpsMessage { get; set; } = "Not Triggered Yet";
     }
 }

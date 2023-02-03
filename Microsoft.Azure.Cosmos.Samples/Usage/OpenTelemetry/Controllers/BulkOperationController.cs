@@ -1,30 +1,25 @@
 ﻿namespace OpenTelemetry.Controllers
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
-    using System.Net.Http;
-    using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
     using Models;
-    using Newtonsoft.Json.Converters;
     using Newtonsoft.Json;
-    using WebApp.AspNetCore.Controllers;
     using WebApp.AspNetCore.Models;
     using System.Text;
     using OpenTelemetry.Util;
 
     public class BulkOperationController : Controller
     {
-        private readonly ILogger<HomeController> logger;
+        private readonly ILogger<BulkOperationController> logger;
         private readonly Container container;
         private readonly SuccessViewModel successModel = new SuccessViewModel();
 
-        public BulkOperationController(ILogger<HomeController> logger)
+        public BulkOperationController(ILogger<BulkOperationController> logger)
         {
             this.logger = logger;
             this.container = CosmosClientInit.singleRegionAccountWithbulk;
@@ -35,7 +30,7 @@
             Task.Run(async () =>
             {
                 List<Task> concurrentTasks = new List<Task>();
-                for (int i = 0; i < 100; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
                     concurrentTasks.Add(this.container.CreateItemAsync<ToDoActivity>(testItem));

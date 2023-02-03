@@ -1,13 +1,8 @@
 ﻿namespace WebApp.AspNetCore.Controllers
 {
     using System.Diagnostics;
-    using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Extensions.Logging;
-    using Microsoft.Extensions.Options;
-    using OpenTelemetry.Models;
     using WebApp.AspNetCore.Models;
 
     public class HomeController : Controller

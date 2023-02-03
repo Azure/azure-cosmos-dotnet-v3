@@ -1,25 +1,22 @@
 ﻿namespace OpenTelemetry.Controllers
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
     using Models;
     using OpenTelemetry.Util;
-    using WebApp.AspNetCore.Controllers;
     using WebApp.AspNetCore.Models;
 
     public class QueryCrossPartitionOperationController : Controller
     {
-        private readonly ILogger<HomeController> logger;
+        private readonly ILogger<QueryCrossPartitionOperationController> logger;
         private readonly Container container;
         private readonly SuccessViewModel successModel = new SuccessViewModel();
 
-        public QueryCrossPartitionOperationController(ILogger<HomeController> logger)
+        public QueryCrossPartitionOperationController(ILogger<QueryCrossPartitionOperationController> logger)
         {
             this.logger = logger;
             this.container = CosmosClientInit.largeRegionAccount;

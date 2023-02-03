@@ -8,16 +8,15 @@
     using Microsoft.Extensions.Logging;
     using Models;
     using OpenTelemetry.Util;
-    using WebApp.AspNetCore.Controllers;
     using WebApp.AspNetCore.Models;
 
     public class MultiRegionPointOperationController : Controller
     {
-        private readonly ILogger<HomeController> logger;
+        private readonly ILogger<MultiRegionPointOperationController> logger;
         private readonly Container container;
         private readonly SuccessViewModel successModel = new SuccessViewModel();
 
-        public MultiRegionPointOperationController(ILogger<HomeController> logger)
+        public MultiRegionPointOperationController(ILogger<MultiRegionPointOperationController> logger)
         {
             this.logger = logger;
             this.container = CosmosClientInit.multiRegionAccount;

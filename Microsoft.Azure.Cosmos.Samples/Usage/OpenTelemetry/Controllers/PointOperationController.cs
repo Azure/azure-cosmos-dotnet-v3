@@ -8,16 +8,15 @@
     using Microsoft.Extensions.Logging;
     using Models;
     using OpenTelemetry.Util;
-    using WebApp.AspNetCore.Controllers;
     using WebApp.AspNetCore.Models;
 
     public class PointOperationController : Controller
     {
-        private readonly ILogger<HomeController> logger;
+        private readonly ILogger<PointOperationController> logger;
         private readonly Container container;
         private readonly SuccessViewModel successModel = new SuccessViewModel();
 
-        public PointOperationController(ILogger<HomeController> logger)
+        public PointOperationController(ILogger<PointOperationController> logger)
         {
             this.logger = logger;
             this.container = CosmosClientInit.singleRegionAccount;

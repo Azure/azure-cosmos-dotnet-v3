@@ -1,11 +1,9 @@
 namespace AspNetCoreWebApp
 {
     using System;
-    using System.Threading.Tasks;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
@@ -25,12 +23,10 @@ namespace AspNetCoreWebApp
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddAuthorization();
-
             services.AddControllersWithViews();
+            
             // Add and initialize the Application Insights SDK.
             services.AddApplicationInsightsTelemetry();
-
-            string multiRegionAccountConnectionString = "";
 
             CosmosDbSettings cosmosDbSettings = this.Configuration.GetSection("CosmosDb").Get<CosmosDbSettings>();
 
@@ -39,8 +35,7 @@ namespace AspNetCoreWebApp
                 mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
                 isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
             CosmosClientInit.singleRegionAccount = container;
-
-
+            
             Container bulkcontainer = CosmosClientInit.CreateClientAndContainer(
                 connectionString: cosmosDbSettings.ConnectionString,
                 mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
@@ -56,14 +51,11 @@ namespace AspNetCoreWebApp
                 isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
             CosmosClientInit.largeRegionAccount = largeContainer;
 
-            if(!string.IsNullOrEmpty(multiRegionAccountConnectionString))
-            {
-                Container multiContainer = CosmosClientInit.CreateClientAndContainer(
-                 connectionString: multiRegionAccountConnectionString,
-                 mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
-                 isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
-                CosmosClientInit.multiRegionAccount = multiContainer;
-            }
+            Container multiContainer = CosmosClientInit.CreateClientAndContainer(
+                connectionString: cosmosDbSettings.MultiRegionConnectionString,
+                mode: Enum.Parse<ConnectionMode>(cosmosDbSettings.ConnectionMode),
+                isEnableOpenTelemetry: cosmosDbSettings.EnableOpenTelemetry).Result;
+            CosmosClientInit.multiRegionAccount = multiContainer;
 
             services.AddSingleton<CosmosDbSettings>(cosmosDbSettings);
         }

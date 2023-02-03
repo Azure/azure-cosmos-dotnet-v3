@@ -5,5 +5,6 @@
         public string ConnectionString { get; set; }
         public bool EnableOpenTelemetry { get; set; }
         public string ConnectionMode { get; set; }
+        public string MultiRegionConnectionString { get; set; }
     }
 }

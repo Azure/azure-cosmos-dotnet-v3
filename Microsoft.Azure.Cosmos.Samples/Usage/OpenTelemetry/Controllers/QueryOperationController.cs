@@ -1,6 +1,5 @@
 ﻿namespace OpenTelemetry.Controllers
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
@@ -10,16 +9,15 @@
     using Microsoft.Extensions.Logging;
     using Models;
     using OpenTelemetry.Util;
-    using WebApp.AspNetCore.Controllers;
     using WebApp.AspNetCore.Models;
 
     public class QueryOperationController : Controller
     {
-        private readonly ILogger<HomeController> logger;
+        private readonly ILogger<QueryOperationController> logger;
         private readonly Container container;
         private readonly SuccessViewModel successModel = new SuccessViewModel();
 
-        public QueryOperationController(ILogger<HomeController> logger)
+        public QueryOperationController(ILogger<QueryOperationController> logger)
         {
             this.logger = logger;
             this.container = CosmosClientInit.singleRegionAccount;

@@ -80,4 +80,15 @@
             }
         </div>
     </div>
+    <div class="row">
+        <div class="col-sm-12 p-3">
+            @using (Html.BeginForm("Index", "BatchOperation", FormMethod.Post))
+            {
+                <div class="item">
+                    <button type="submit" class="btn btn-primary">Batch Operations</button> <span color="blue">@Model?.BatchOpsMessage</span>
+                </div>
+
+            }
+        </div>
+    </div>
 </div>
