@@ -19,31 +19,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#3498](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3498) PartitionKey: Fixes NullRef in toString handling for None for PartitionKey.ToString()
 - [#3385](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3385) Query: Fixes LINQ ToString got absorbed during translation
 - [#3406](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3406) Query: Fixes LINQ to use custom serializer to serialize constant values in Query
-- [#3496](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3496) ReadThroughputAsync: Adds XML comment to Database.ReadThroughputAsync definition
-- [#3508](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3508) CosmosClient Initialization: Adds implementation for opening Rntbd connections to backend replica nodes in Direct mode
+- [#3496](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3496) Documentation: Adds XML comment to Database.ReadThroughputAsync definition
+- [#3508](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3508), [#3640](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3640) CosmosClient Initialization: Refactors implementation for opening Rntbd connections to backend replica nodes in Direct mode
 - [#3519](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3519) Diagnostics: Removes unused properties and reduces size 
 - [#3495](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3495) Query: Fixes partition range evaluation for spatial queries
-- [#3566](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3566) Change Feed Processor: Adds support for Resource Tokens
 - [#3399](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3399) Query: Fixes default to BadRequestException in case of internal errors in ServiceInterop
-- [#3555](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3555) Client Retry Policy: Adds HTTP timeouts with request-level cross-region retry
 - [#3574](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3574) Query: Fixes incorrect FeedResponse.Count when result contains undefined elements
 - [#3577](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3577) Trace: Fixes Tracing/diagnostics hour-times to 24Hours
-- [#3581](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3581) AI Integration: Removed EnableDiagnosticsTraceForAllRequests Config
-- [#3509](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3509) Query: Adds ALL Scalar Expression 
 - [#3632](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3632) Query: Fixes handling of CosmosUndefined, CosmosGuid and CosmosBinary in unordered DISTINCT
-- [#3640](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3640) Upgrade Resiliency: Refactors CosmosClient.CreateAndInitializeAsync() to use IOpenConnectionHandler for Opening Rntbd Connections to Backend Replicas in Direct Mode.
-- [#3640](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3640) Fix for service using Microsoft.Azure.Cosmos 3.30.1 getting token expiry errors
+- [#3640](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3640) Token expiration: Fixes token expired errors happening on some environments
 - [#3645](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3645) Change Feed Processor: Fixes behavior with StartTime on Local
+- [#3643](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3643) Documentation: Fixed CosmosClientBuilder.WithConnectionModeGateway documentation
+- [#3579](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3579) Documentation: Fixes EUAP in Comments
+
+#### Added
+- [#3566](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3566) Change Feed Processor: Adds support for Resource Tokens
+- [#3555](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3555) Availability: Adds HTTP timeouts with request-level cross-region retry
+- [#3509](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3509) Query: Adds ALL Scalar Expression 
 - [#3656](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3656) Region Availability: Adds Poland Central Region For Public Usage.
 - [#3636](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3636) CosmosClientOptions: Adds ServerCertificateCustomValidationCallback for Http and TCP
-- [#3680](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3680) LocalQuorum: Adds Quorum reads on Consistent Prefix Accounts
-- [#3643](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3643) Fixed CosmosClientBuilder.WithConnectionModeGateway documentation
-- [#3579](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3579) Documentation: Fixes EUAP in Comments
+
 ### <a name="3.32.0-preview"/> [3.32.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.0-preview) - 2023-02-03
 
 #### Added
 - [#3596](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3596) Full Fidelity Change Feed: Adds new LatestVersion and AllVersionsAndDeletes to ChangeFeedMode
-- [#3598](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3598) AI integration: Adds Distributed Tracing support. Enabled by default, which can be disabled through `CosmosClientOptions.IsDistributedTracingEnabled`
+- [#3598](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3598) AI integration: Adds Distributed Tracing support. Enabled by default, which can be disabled through 
+ `CosmosClientOptions.IsDistributedTracingEnabled`
+
 
 ### <a name="3.31.2"/> [3.31.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.2) - 2022-11-03
 ### <a name="3.31.2-preview"/> [3.31.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.2-preview) - 2022-11-03
