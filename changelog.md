@@ -31,12 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#3581](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3581) AI Integration: Removed EnableDiagnosticsTraceForAllRequests Config
 - [#3509](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3509) Query: Adds ALL Scalar Expression 
 - [#3632](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3632) Query: Fixes handling of CosmosUndefined, CosmosGuid and CosmosBinary in unordered DISTINCT
-- [#3640](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3640) Upgrade Resiliency: Refactors Implementation for Opening Rntbd Connections to Backend Replicas in Direct Mode.
+- [#3640](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3640) Upgrade Resiliency: Refactors CosmosClient.CreateAndInitializeAsync() to use IOpenConnectionHandler for Opening Rntbd Connections to Backend Replicas in Direct Mode.
 - [#3640](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3640) Fix for service using Microsoft.Azure.Cosmos 3.30.1 getting token expiry errors
 - [#3645](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3645) Change Feed Processor: Fixes behavior with StartTime on Local
 - [#3656](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3656) Region Availability: Adds Poland Central Region For Public Usage.
 - [#3636](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3636) CosmosClientOptions: Adds ServerCertificateCustomValidationCallback for Http and TCP
-- [#3664](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3664) Query: Adds EnableOptimisticDirectExecution flag to QueryRequestOptions
 - [#3680](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3680) LocalQuorum: Adds Quorum reads on Consistent Prefix Accounts
 - [#3643](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3643) Fixed CosmosClientBuilder.WithConnectionModeGateway documentation
 - [#3579](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3579) Documentation: Fixes EUAP in Comments
@@ -44,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 - [#3596](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3596) Full Fidelity Change Feed: Adds new LatestVersion and AllVersionsAndDeletes to ChangeFeedMode
-- [#3598](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3598) AI integration: Adds IsDistributedTracingEnabled flag as public API to enable/disable this feature
+- [#3598](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3598) AI integration: Adds Distributed Tracing support. Enabled by default, which can be disabled through `CosmosClientOptions.IsDistributedTracingEnabled`
 
 ### <a name="3.31.2"/> [3.31.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.2) - 2022-11-03
 ### <a name="3.31.2-preview"/> [3.31.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.31.2-preview) - 2022-11-03
