@@ -68,6 +68,8 @@
 
                     RequestCallBack = (request, cancellationToken) =>
                     {
+                        httpCallsMade++;
+                        
                         if (request.RequestUri.ToString().Contains(Paths.ClientConfigPathSegment))
                         {
                             HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
@@ -86,8 +88,6 @@
 
                             return Task.FromResult(result);
                         }
-
-                        httpCallsMade++;
                         return null;
                     }
                 };
@@ -96,9 +96,9 @@
             {
                 httpClientHandlerHelper = new HttpClientHandlerHelper
                 {
-
                     RequestCallBack = (request, cancellationToken) =>
                     {
+                        httpCallsMade++;
                         if (request.RequestUri.ToString().Contains(Paths.ClientConfigPathSegment))
                         {
                             HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
@@ -108,8 +108,7 @@
 
                             return Task.FromResult(result);
                         }
-
-                        httpCallsMade++;
+                        
                         return null;
                     }
                 };
@@ -360,7 +359,6 @@
             {
                 RequestCallBack = (request, cancellationToken) =>
                 {
-                    Console.WriteLine(request.RequestUri);
                     httpCallsMade++;
                     return null;
                 }
