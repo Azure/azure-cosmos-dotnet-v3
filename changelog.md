@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#3636](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3636) CosmosClientOptions: Adds ServerCertificateCustomValidationCallback for Http and TCP
 - [#3664](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3664) Query: Adds EnableOptimisticDirectExecution flag to QueryRequestOptions
 - [#3680](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3680) LocalQuorum: Adds Quorum reads on Consistent Prefix Accounts
+- [#3643](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3643) Fixed CosmosClientBuilder.WithConnectionModeGateway documentation
+- [#3579](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3579) Documentation: Fixes EUAP in Comments
 ### <a name="3.32.0-preview"/> [3.32.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.0-preview) - 2023-02-03
 
 #### Added
