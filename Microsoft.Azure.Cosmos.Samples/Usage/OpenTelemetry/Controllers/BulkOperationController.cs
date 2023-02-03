@@ -2,15 +2,12 @@
 {
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.IO;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
     using Models;
-    using Newtonsoft.Json;
     using WebApp.AspNetCore.Models;
-    using System.Text;
     using OpenTelemetry.Util;
 
     public class BulkOperationController : Controller
@@ -43,27 +40,6 @@
             this.successModel.BulkOpsMessage = "Bulk Operation Triggered Successfully";
 
             return this.View(this.successModel);
-        }
-
-
-        public Stream ToStream<T>(T input)
-        {
-            MemoryStream streamPayload = new MemoryStream();
-            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: new UTF8Encoding(
-            encoderShouldEmitUTF8Identifier: false,
-            throwOnInvalidBytes: true), bufferSize: 1024, leaveOpen: true))
-            {
-                using (JsonWriter writer = new JsonTextWriter(streamWriter))
-                {
-                    writer.Formatting = Newtonsoft.Json.Formatting.None;
-                    JsonSerializer jsonSerializer = new JsonSerializer();
-                    jsonSerializer.Serialize(writer, input);
-                    writer.Flush();
-                    streamWriter.Flush();
-                }
-            }
-            streamPayload.Position = 0;
-            return streamPayload;
         }
 
         public IActionResult Privacy()

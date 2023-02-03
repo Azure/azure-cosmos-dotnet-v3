@@ -19,7 +19,7 @@
             @using (Html.BeginForm("Index", "PointOperation", FormMethod.Post))
             {
                 <div class="item">
-                    <button type="submit" class="btn btn-primary">Fire Point Operations</button><span color="blue">@Model?.PointOpsMessage</span>
+                    <button type="submit" class="btn btn-primary">Trigger Point Operations</button><span color="blue">@Model?.PointOpsMessage</span>
                 </div>
             }
         </div>
@@ -30,7 +30,7 @@
             @using (Html.BeginForm("Index", "MultiRegionPointOperation", FormMethod.Post))
             {
                 <div class="item">
-                    <button type="submit" class="btn btn-primary">Fire Point Operations (Multi Region Account)</button><span color="blue">@Model?.MrPointOpsMessage</span>
+                    <button type="submit" class="btn btn-primary">Trigger Point Operations (Multi Region Account)</button><span color="blue">@Model?.MrPointOpsMessage</span>
                 </div>
             }
         </div>
@@ -41,7 +41,7 @@
             @using (Html.BeginForm("Index", "QueryOperation", FormMethod.Post))
             {
                 <div class="item">
-                    <button type="submit" class="btn btn-primary">Fire Single Partition Query Operations</button> <span color="blue">@Model?.QueryOpsMessage</span>
+                    <button type="submit" class="btn btn-primary">Trigger Single Partition Query Operations</button> <span color="blue">@Model?.QueryOpsMessage</span>
                 </div>
 
             }
@@ -52,7 +52,7 @@
             @using (Html.BeginForm("Index", "QueryCrossPartitionOperation", FormMethod.Post))
             {
                 <div class="item">
-                    <button type="submit" class="btn btn-primary">Fire Cross Partition Query Operations</button> <span color="blue">@Model?.CrossQueryOpsMessage</span>
+                    <button type="submit" class="btn btn-primary">Trigger Cross Partition Query Operations</button> <span color="blue">@Model?.CrossQueryOpsMessage</span>
                 </div>
 
             }
@@ -63,7 +63,7 @@
             @using (Html.BeginForm("Index", "StreamOperation", FormMethod.Post))
             {
                 <div class="item">
-                    <button type="submit" class="btn btn-primary">Fire Stream Operations</button> <span color="blue">@Model?.StreamOpsMessage</span>
+                    <button type="submit" class="btn btn-primary">Trigger Stream Operations</button> <span color="blue">@Model?.StreamOpsMessage</span>
                 </div>
 
             }
@@ -74,7 +74,7 @@
             @using (Html.BeginForm("Index", "BulkOperation", FormMethod.Post))
             {
                 <div class="item">
-                    <button type="submit" class="btn btn-primary">Bulk Operations</button> <span color="blue">@Model?.BulkOpsMessage</span>
+                    <button type="submit" class="btn btn-primary">Trigger Bulk Operations</button> <span color="blue">@Model?.BulkOpsMessage</span>
                 </div>
 
             }
@@ -85,7 +85,7 @@
             @using (Html.BeginForm("Index", "BatchOperation", FormMethod.Post))
             {
                 <div class="item">
-                    <button type="submit" class="btn btn-primary">Batch Operations</button> <span color="blue">@Model?.BatchOpsMessage</span>
+                    <button type="submit" class="btn btn-primary">Trigger Batch Operations</button> <span color="blue">@Model?.BatchOpsMessage</span>
                 </div>
 
             }
