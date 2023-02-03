@@ -6425,7 +6425,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationPrivateAsync(GatewayStoreModel gatewayModel, Uri serviceEndpoint, CancellationToken cancellationToken = default)
         {
-            serviceEndpoint = new Uri(serviceEndpoint.OriginalString + "clientconfigs");
+            serviceEndpoint = new Uri(serviceEndpoint.OriginalString + Paths.ClientConfigPathSegment);
          
             async ValueTask<HttpRequestMessage> CreateRequestMessage()
             {

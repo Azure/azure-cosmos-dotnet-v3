@@ -5,11 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Globalization;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using HdrHistogram.Encoding;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -41,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
         
         private async Task<T> GetDatabaseAccountAsync<T>(Uri serviceEndpoint)
         {
-            INameValueCollection headers = new RequestNameValueCollection();
+            INameValueCollection headers = new StoreResponseNameValueCollection();
             await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
                 headersCollection: headers,
                 serviceEndpoint,
@@ -93,7 +91,6 @@ namespace Microsoft.Azure.Cosmos
                 getDatabaseAccountFn: async (defaultEndpoint) => 
                 {
                     AccountProperties accountProperties = await this.GetDatabaseAccountAsync<AccountProperties>(defaultEndpoint);
-                    
                     accountProperties.ClientConfiguration = await this.GetDatabaseAccountAsync<AccountClientConfiguration>(new Uri(defaultEndpoint.ToString() + Paths.ClientConfigPathSegment));
                     
                     return accountProperties;

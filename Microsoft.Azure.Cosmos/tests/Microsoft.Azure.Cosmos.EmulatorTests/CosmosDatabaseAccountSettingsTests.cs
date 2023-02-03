@@ -4,21 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
-    using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Documents;
 
     [TestClass]
@@ -79,33 +71,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task GetCosmosDatabaseAccountSettings_WhenDisabledClientTelemetry()
         {
-            AccountClientConfiguration clientConfig = new AccountClientConfiguration
-            {
-                ClientTelemetryConfiguration = new ClientTelemetryConfiguration
-                {
-                    IsEnabled = false
-                }
-            };
-            
-            HttpClientHandlerHelper handlerHelper = new HttpClientHandlerHelper
-            {
-                RequestCallBack = (request, cancellation) =>
-                {
-                    if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
-                    {
-                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
-                        string payload = JsonConvert.SerializeObject(clientConfig);
-                        result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
-
-                        return Task.FromResult(result);
-                    }
-                    return null;
-                }
-            };
-
             CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
-                useGateway: true,
-                customizeClientBuilder: clientBuilder => clientBuilder.WithHttpClientFactory(() => new HttpClient(handlerHelper)));
+                useGateway: true);
 
             AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
             Assert.IsNotNull(accountProperties);
@@ -120,41 +87,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNull(accountProperties.ClientConfiguration.ClientTelemetryConfiguration.Endpoint);
             Assert.IsFalse(accountProperties.ClientConfiguration.ClientTelemetryConfiguration.IsEnabled);
 
-            cosmosClient.Dispose();
-        }
-
-        [TestMethod]
-        public async Task GetCosmosDatabaseAccountSettings_WhenClientConfigAPIFailed()
-        {
-            HttpClientHandlerHelper handlerHelper = new HttpClientHandlerHelper
-            {
-                RequestCallBack = (request, cancellation) =>
-                {
-                    if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
-                    {
-                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.Forbidden);
-
-                        return Task.FromResult(result);
-                    }
-                    return null;
-                }
-            };
-
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
-                useGateway: true,
-                customizeClientBuilder: clientBuilder => clientBuilder.WithHttpClientFactory(() => new HttpClient(handlerHelper)));
-
-            AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
-            Assert.IsNotNull(accountProperties);
-            Assert.IsNotNull(accountProperties.Id);
-            Assert.IsNotNull(accountProperties.ReadableRegions);
-            Assert.IsTrue(accountProperties.ReadableRegions.Count() > 0);
-            Assert.IsNotNull(accountProperties.WritableRegions);
-            Assert.IsTrue(accountProperties.WritableRegions.Count() > 0);
-
-            Assert.IsNotNull(accountProperties.ClientConfiguration);
-            Assert.IsNull(accountProperties.ClientConfiguration.ClientTelemetryConfiguration);
-            
             cosmosClient.Dispose();
         }
     }
