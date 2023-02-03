@@ -5,10 +5,15 @@
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
+    using System.Xml;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using Database = Database;
+    using PartitionKey = PartitionKey;
+    using PartitionKeyDefinitionVersion = PartitionKeyDefinitionVersion;
 
     /// <summary>
     /// Testing Prefix and Full Partition for <see cref="ChangeFeed"/>, <see cref="Query"/> against a <see cref="Container"/> with Hierarchical Partition Keys.
@@ -20,10 +25,13 @@
         private CosmosClient cosmosClient = null;
         private Database cosmosDatabase = null;
 
+        private readonly string currentVersion = HttpConstants.Versions.CurrentVersion;
+
         [TestInitialize]
         public async Task TestInit()
         {
-            this.cosmosClient = TestCommon.CreateCosmosClient();
+            HttpConstants.Versions.CurrentVersion = "2020-07-15";
+            this.cosmosClient = TestCommon.CreateCosmosClient(true);
 
             string databaseName = Guid.NewGuid().ToString();
             DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
@@ -41,6 +49,7 @@
             if (this.cosmosDatabase != null)
             {
                 await this.cosmosDatabase.DeleteStreamAsync();
+                HttpConstants.Versions.CurrentVersion = this.currentVersion;
             }
             this.cosmosClient.Dispose();
         }
