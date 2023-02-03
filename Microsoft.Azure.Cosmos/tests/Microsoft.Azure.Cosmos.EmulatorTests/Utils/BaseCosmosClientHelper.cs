@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests;
 
     public abstract class BaseCosmosClientHelper
     {
@@ -15,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         protected Database database = null;
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
+        
 
         public async Task TestInit(
             bool validateSinglePartitionKeyRangeCacheCall = false,
@@ -30,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 accountEndpointOverride: accountEndpointOverride);
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
                 cancellationToken: this.cancellationToken);
+            Logger.LogLine($"Created {this.cosmosClient.ClientId} clients");
         }
 
         public async Task TestCleanup()
