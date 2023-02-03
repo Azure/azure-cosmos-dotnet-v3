@@ -7,7 +7,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary> 
     /// Priority Level of Request
     /// </summary>
-    public enum PriorityLevel
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    enum PriorityLevel
     {
         /// <summary> 
         /// High Priority

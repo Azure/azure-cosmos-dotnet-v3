@@ -45,7 +45,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the priority level for a request.
         /// </summary>
-        public PriorityLevel? PriorityLevel { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        PriorityLevel? PriorityLevel { get; set; }
 
         /// <summary>
         /// Set Request Level Distributed Tracing Options.
