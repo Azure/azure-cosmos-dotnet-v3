@@ -162,7 +162,10 @@ namespace Microsoft.Azure.Cosmos
             return databaseAccount;
         }
         
-        internal virtual async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigAsync(Func<ValueTask<HttpRequestMessage>> requestMessage)
+        internal virtual async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigAsync(
+            Func<ValueTask<HttpRequestMessage>> requestMessage,
+            IClientSideRequestStatistics clientSideRequestStatistics,
+            CancellationToken cancellationToken = default)
         {
             AccountClientConfiguration clientConfiguration = null;
 
@@ -170,8 +173,8 @@ namespace Microsoft.Azure.Cosmos
             using (HttpResponseMessage responseMessage = await this.gatewayStoreClient.SendHttpAsync(
                 requestMessage: requestMessage,
                 resourceType: ResourceType.DatabaseAccount,
-                timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
-                clientSideRequestStatistics: null,
+                timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                clientSideRequestStatistics: clientSideRequestStatistics,
                 cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))

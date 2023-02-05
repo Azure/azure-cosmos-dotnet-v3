@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
+            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
                 customizeClientBuilder: clientBuilder => clientBuilder.WithHttpClientFactory(() => new HttpClient(handlerHelper)));
             
             AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
@@ -62,8 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(accountProperties.ClientConfiguration.ClientTelemetryConfiguration);
             Assert.AreEqual(telemetryEndpoint, accountProperties.ClientConfiguration.ClientTelemetryConfiguration.Endpoint);
             Assert.IsTrue(accountProperties.ClientConfiguration.ClientTelemetryConfiguration.IsEnabled);
-
-            cosmosClient.Dispose();
+            
         }
 
 

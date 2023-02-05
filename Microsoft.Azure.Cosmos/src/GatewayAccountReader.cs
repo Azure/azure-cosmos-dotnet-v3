@@ -39,17 +39,18 @@ namespace Microsoft.Azure.Cosmos
         
         private async Task<T> GetDatabaseAccountAsync<T>(Uri serviceEndpoint)
         {
+            Console.WriteLine("Request Uri: " + serviceEndpoint);
             INameValueCollection headers = new RequestNameValueCollection();
             await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
                 headersCollection: headers,
                 requestAddress: serviceEndpoint,
-                verb: "GET",
+                verb: HttpConstants.HttpMethods.Get,
                 tokenType: AuthorizationTokenType.PrimaryMasterKey);
             
             using (ITrace trace = Trace.GetRootTrace("Account Read", TraceComponent.Transport, TraceLevel.Info))
             {
                 IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
-
+                
                 try
                 {
                     using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
@@ -57,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
                         additionalHeaders: headers,
                         resourceType: ResourceType.DatabaseAccount,
                         timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
-                        clientSideRequestStatistics: null,
+                        clientSideRequestStatistics: stats,
                         cancellationToken: default))
                     using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                     {

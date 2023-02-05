@@ -6423,7 +6423,11 @@ namespace Microsoft.Azure.Cosmos
             return TaskHelper.InlineIfPossible(() => this.GetDatabaseAccountPrivateAsync(this.ReadEndpoint), this.ResetSessionTokenRetryPolicy.GetRequestPolicy());
         }
 
-        private async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationPrivateAsync(GatewayStoreModel gatewayModel, Uri serviceEndpoint, CancellationToken cancellationToken = default)
+        private async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigurationPrivateAsync(
+            GatewayStoreModel gatewayModel, 
+            Uri serviceEndpoint,
+            IClientSideRequestStatistics clientSideRequestStatistics,
+            CancellationToken cancellationToken = default)
         {
             serviceEndpoint = new Uri(serviceEndpoint.OriginalString + Paths.ClientConfigPathSegment);
          
@@ -6452,7 +6456,7 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                return await gatewayModel.GetDatabaseAccountClientConfigAsync(CreateRequestMessage);
+                return await gatewayModel.GetDatabaseAccountClientConfigAsync(CreateRequestMessage, clientSideRequestStatistics, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -6514,7 +6518,11 @@ namespace Microsoft.Azure.Cosmos
                     (await this.QueryPartitionProvider).Update(databaseAccount.QueryEngineConfiguration);
                 }
 
-                databaseAccount.ClientConfiguration = await this.GetDatabaseAccountClientConfigurationPrivateAsync(gatewayModel, serviceEndpoint, cancellationToken);
+                databaseAccount.ClientConfiguration = await this.GetDatabaseAccountClientConfigurationPrivateAsync(
+                    gatewayModel: gatewayModel,
+                    serviceEndpoint: serviceEndpoint,
+                    clientSideRequestStatistics: null,
+                    cancellationToken: cancellationToken);
 
                 return databaseAccount;
             }
