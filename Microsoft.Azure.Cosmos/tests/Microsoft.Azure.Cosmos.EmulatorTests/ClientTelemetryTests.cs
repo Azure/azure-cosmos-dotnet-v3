@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Common;
     using System.Diagnostics;
 
     [TestClass]
@@ -71,9 +69,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
-                        Console.WriteLine("1 ==> " + jsonObject);
-                        
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
@@ -103,8 +98,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                        Console.WriteLine("2 ==> " + jsonObject);
-                        
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
@@ -365,8 +358,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task BatchOperationsTest(ConnectionMode mode)
         {
-            Stopwatch watch = new Stopwatch();
-            watch.Start();
             Container container = await this.CreateClientAndContainer(mode, Microsoft.Azure.Cosmos.ConsistencyLevel.Eventual); // Client level consistency
             using (BatchAsyncContainerExecutor executor =
                 new BatchAsyncContainerExecutor(
@@ -389,11 +380,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 { Documents.OperationType.Batch.ToString(), 1}
             };
-
-            watch.Stop();
-
-            Console.WriteLine($"Time taken: {watch.ElapsedMilliseconds} ms");
-            
             await this.WaitAndAssert(expectedOperationCount: 2,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.Eventual,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation);

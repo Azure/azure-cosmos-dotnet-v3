@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
-    using System.Net.NetworkInformation;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
