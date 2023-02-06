@@ -24,7 +24,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using System.Diagnostics;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Common;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -69,6 +70,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
@@ -98,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
@@ -380,6 +383,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 { Documents.OperationType.Batch.ToString(), 1}
             };
+
             await this.WaitAndAssert(expectedOperationCount: 2,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.Eventual,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation);
@@ -781,12 +785,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // As this feature is thread based execution so wait for the results to avoid test flakiness
             List<ClientTelemetryProperties> localCopyOfActualInfo = null;
             ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+
             HashSet<CacheRefreshInfo> cacheRefreshInfoSet = new HashSet<CacheRefreshInfo>();
             do
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(1500)); // wait at least for 1 round of telemetry
 
                 HashSet<OperationInfo> actualOperationSet = new HashSet<OperationInfo>();
+                HashSet<RequestInfo> requestInfoSet = new HashSet<RequestInfo>();
+                
                 lock (this.actualInfo)
                 {
                     // Setting the number of unique OperationInfo irrespective of response size as response size is varying in case of queries.
@@ -826,7 +833,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<OperationInfo> actualOperationList = new List<OperationInfo>();
             List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
-
+            List<RequestInfo> actualRequestInformation = new List<RequestInfo>();
+            
             if (localCopyOfActualInfo[0].ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant())
             {
                 this.expectedMetricNameUnitMap.Add(ClientTelemetryOptions.NumberOfTcpConnectionName, ClientTelemetryOptions.NumberOfTcpConnectionUnit);
@@ -836,6 +844,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 localCopyOfActualInfo: localCopyOfActualInfo,
                 actualOperationList: actualOperationList,
                 actualSystemInformation: actualSystemInformation,
+                actualRequestInformation: actualRequestInformation,
                 isAzureInstance: isAzureInstance);
 
             ClientTelemetryTests.AssertOperationLevelInformation(
@@ -854,8 +863,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
            
             ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation, this.expectedMetricNameUnitMap);
+            ClientTelemetryTests.AssertNetworkLevelInformation(actualRequestInformation);
         }
 
+        private static void AssertNetworkLevelInformation(List<RequestInfo> actualRequestInformation)
+        {
+            foreach(RequestInfo requestInfo in actualRequestInformation)
+            {
+                Assert.IsNotNull(requestInfo.Uri);
+                Assert.IsNotNull(requestInfo.DatabaseName);
+                Assert.IsNotNull(requestInfo.ContainerName);
+                Assert.IsNotNull(requestInfo.Operation);
+                Assert.IsNotNull(requestInfo.Resource);
+                Assert.IsNotNull(requestInfo.StatusCode);
+                Assert.IsNotNull(requestInfo.SubStatusCode);
+
+                Assert.IsNotNull(requestInfo.Metrics, "MetricInfo is null");
+            }
+        }
+            
         private static void AssertSystemLevelInformation(List<SystemInfo> actualSystemInformation, IDictionary<string, string> expectedMetricNameUnitMap)
         {
             IDictionary<string, string> actualMetricNameUnitMap = new Dictionary<string, string>();
@@ -940,6 +966,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<ClientTelemetryProperties> localCopyOfActualInfo, 
             List<OperationInfo> actualOperationList, 
             List<SystemInfo> actualSystemInformation,
+            List<RequestInfo> actualRequestInformation,
             bool? isAzureInstance)
         {
             ISet<string> machineId = new HashSet<string>();
@@ -949,6 +976,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 actualOperationList.AddRange(telemetryInfo.OperationInfo);
                 actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
+                actualRequestInformation.AddRange(telemetryInfo.RequestInfo);
 
                 if (telemetryInfo.ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant())
                 {
