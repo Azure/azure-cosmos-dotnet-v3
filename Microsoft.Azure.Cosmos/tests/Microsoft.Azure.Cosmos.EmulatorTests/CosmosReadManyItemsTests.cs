@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
                 Assert.IsNotNull(responseMessage.Diagnostics);
 
-                ToDoActivity[] items = this.cosmosClient.ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
+                ToDoActivity[] items = this.GetClient().ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
                                         CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(responseMessage.Content));
                 Assert.AreEqual(items.Length, 5);
             }
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
                 Assert.IsNotNull(responseMessage.Diagnostics);
 
-                ToDoActivity[] items = this.cosmosClient.ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
+                ToDoActivity[] items = this.GetClient().ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
                                         CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(responseMessage.Content));
                 Assert.AreEqual(items.Length, 5);
             }
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
                 Assert.IsNotNull(responseMessage.Diagnostics);
 
-                ToDoActivity[] items = this.cosmosClient.ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
+                ToDoActivity[] items = this.GetClient().ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
                                         CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(responseMessage.Content));
                 Assert.AreEqual(items.Length, 2);
             }
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ReadMany404ExceptionTest()
         {
-            Database database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Database database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
             Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
             for (int i = 0; i < 5; i++)
             {

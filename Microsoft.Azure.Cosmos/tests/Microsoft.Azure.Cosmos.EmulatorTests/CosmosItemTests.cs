@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void ParentResourceTest()
         {
             Assert.AreEqual(this.database, this.Container.Database);
-            Assert.AreEqual(this.cosmosClient, this.Container.Database.Client);
+            Assert.AreEqual(this.GetClient(), this.Container.Database.Client);
         }
 
         [TestMethod]
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string[] selfLinkSegments = containerProperties.SelfLink.Split('/');
             string databaseRid = selfLinkSegments[1];
             string containerRid = selfLinkSegments[3];
-            Container containerByRid = this.cosmosClient.GetContainer(databaseRid, containerRid);
+            Container containerByRid = this.GetClient().GetContainer(databaseRid, containerRid);
 
             // List of invalid characters are listed here.
             //https://docs.microsoft.com/dotnet/api/microsoft.azure.documents.resource.id?view=azure-dotnet#remarks
@@ -416,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Item -> Container -> Database contract 
             string dbName = Guid.NewGuid().ToString();
-            testContainer = this.cosmosClient.GetDatabase(dbName).GetContainer(collectionName);
+            testContainer = this.GetClient().GetDatabase(dbName).GetContainer(collectionName);
             await CosmosItemTests.TestNonePKForNonExistingContainer(testContainer);
         }
 
@@ -1575,7 +1575,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = (ContainerInlineCore)containerResponse;
 
                 // Get all the partition key ranges to verify there is more than one partition
-                IRoutingMapProvider routingMapProvider = await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+                IRoutingMapProvider routingMapProvider = await this.GetClient().DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
                 IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
                     containerResponse.Resource.ResourceId,
                     new Documents.Routing.Range<string>("00", "FF", isMaxInclusive: true, isMinInclusive: true),

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
         public async Task ChangeFeedTestInit(string leaseContainerPk = "/id")
         {
-            await base.TestInit(customizeClientBuilder: (builder) => builder.WithContentResponseOnWrite(false));
+            await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false, customizeClientBuilder: (builder) => builder.WithContentResponseOnWrite(false));
 
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: "leases", partitionKeyPath: leaseContainerPk),

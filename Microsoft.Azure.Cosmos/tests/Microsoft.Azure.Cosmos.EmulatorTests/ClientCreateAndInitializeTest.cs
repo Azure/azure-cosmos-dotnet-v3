@@ -23,9 +23,8 @@
         [TestInitialize]
         public async Task TestInitialize()
         {
-            this.cosmosClient = TestCommon.CreateCosmosClient(useGateway: false);
-            this.database = await this.cosmosClient.CreateDatabaseAsync(
-                   id: "ClientCreateAndInitializeDatabase");
+            await this.TestInit();
+
             ContainerResponse response = await this.database.CreateContainerAsync(
                         new ContainerProperties(id: "ClientCreateAndInitializeContainer", partitionKeyPath: PartitionKey),
                         throughput: 20000,

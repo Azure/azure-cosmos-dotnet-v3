@@ -12,36 +12,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
     public abstract class BaseCosmosClientHelper
     {
-        protected CosmosClient cosmosClient = null;
+        static private CosmosClient defaultCosmosClient = null;
+
+        private CosmosClient cosmosClient = null;
         protected Database database = null;
         protected CancellationTokenSource cancellationTokenSource = null;
         protected CancellationToken cancellationToken;
-        
 
-        public async Task TestInit(
-            bool validateSinglePartitionKeyRangeCacheCall = false,
-            Action<CosmosClientBuilder> customizeClientBuilder = null,
-            string accountEndpointOverride = null)
+        private async Task BaseInit(CosmosClient client)
         {
             this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationToken = this.cancellationTokenSource.Token;
 
+            this.database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(),
+                cancellationToken: this.cancellationToken);
+            Logger.LogLine($"Created {client.ClientId} clients");
+        }
+
+        public async Task TestInit()
+        {
+            this.cancellationTokenSource = new CancellationTokenSource();
+            this.cancellationToken = this.cancellationTokenSource.Token;
+
+            BaseCosmosClientHelper.defaultCosmosClient ??= TestCommon.CreateCosmosClient();
+            
+            await this.BaseInit(BaseCosmosClientHelper.defaultCosmosClient);
+        }
+
+        public async Task TestInit(
+            bool validateSinglePartitionKeyRangeCacheCall,
+            Action<CosmosClientBuilder> customizeClientBuilder = null,
+            string accountEndpointOverride = null)
+        {
             this.cosmosClient = TestCommon.CreateCosmosClient(
                 validatePartitionKeyRangeCalls: validateSinglePartitionKeyRangeCacheCall,
                 customizeClientBuilder: customizeClientBuilder,
                 accountEndpointOverride: accountEndpointOverride);
-            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
-                cancellationToken: this.cancellationToken);
-            Logger.LogLine($"Created {this.cosmosClient.ClientId} clients");
+            await this.BaseInit(this.cosmosClient);
         }
 
         public async Task TestCleanup()
         {
-            if (this.cosmosClient == null)
-            {
-                return;
-            }
-
             if (this.database != null)
             {
                 await this.database.DeleteStreamAsync(
@@ -51,7 +62,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.cancellationTokenSource?.Cancel();
 
-            this.cosmosClient.Dispose();
+            this.cosmosClient?.Dispose();
+        }
+
+        public CosmosClient GetClient()
+        {
+            return this.cosmosClient ?? BaseCosmosClientHelper.defaultCosmosClient;
+        }
+
+        public void SetClient(CosmosClient client)
+        {
+            this.cosmosClient?.Dispose();
+            this.cosmosClient = client;
         }
     }
 }
