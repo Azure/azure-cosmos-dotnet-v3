@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="3.32.0-preview"/> [3.32.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.0-preview) - 2023-02-03
 
 #### Added
-- [#3596](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3596) Full Fidelity Change Feed: Adds new LatestVersion and AllVersionsAndDeletes to ChangeFeedMode
+- [#3596](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3596) Full Fidelity Change Feed: Adds new LatestVersion to ChangeFeedMode. `FullFidelity` is now renamed to `AllVersionsAndDeletes`.
 - [#3598](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3598) AI integration: Adds Distributed Tracing support. Enabled by default, which can be disabled through 
  `CosmosClientOptions.IsDistributedTracingEnabled`
 
