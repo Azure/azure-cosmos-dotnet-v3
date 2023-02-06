@@ -44,6 +44,8 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets or sets the priority level for a request.
+        /// When Priority Based Throttling is enabled, once the user has exhausted their provisioned throughput,
+        /// low priority requests are throttled before high priority requests start getting throttled.
         /// </summary>
 #if PREVIEW
         public
