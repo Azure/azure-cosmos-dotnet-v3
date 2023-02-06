@@ -52,7 +52,7 @@
 
             });
 
-            this.successModel.BulkOpsMessage = "Batch Operation Triggered Successfully";
+            this.successModel.BatchOpsMessage = "Batch Operation Triggered Successfully";
 
             return this.View(this.successModel);
         }

@@ -34,15 +34,6 @@
                 // Read an Item
                 await this.container.ReadItemAsync<ToDoActivity>(testItem.id, new Microsoft.Azure.Cosmos.PartitionKey(testItem.id));
 
-                try
-                {
-                    // Read failure scenario Item
-                    await this.container.ReadItemAsync<ToDoActivity>(new Guid().ToString(), new Microsoft.Azure.Cosmos.PartitionKey(testItem.id));
-                }
-                catch (Exception)
-                {
-                }
-
                 // Upsert an Item
                 await this.container.UpsertItemAsync<ToDoActivity>(testItem);
 
@@ -54,7 +45,7 @@
 
             });
 
-            this.successModel.PointOpsMessage = "Point Operation Triggered Successfully With one failure Scenario";
+            this.successModel.PointOpsMessage = "Point Operation Triggered Successfully.";
 
             return this.View(this.successModel);
         }
