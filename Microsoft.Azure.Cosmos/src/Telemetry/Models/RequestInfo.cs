@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
     using Newtonsoft.Json;
 
     [Serializable]
@@ -33,9 +32,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         [JsonProperty("subStatusCode")]
         public int SubStatusCode { get; set; }
 
-        [JsonProperty("cacheRefreshSource")]
-        public string CacheRefreshSource { get; set; }
-
         [JsonProperty("metricInfo")]
         public List<MetricInfo> Metrics { get; set; } = new List<MetricInfo>();
 
@@ -49,7 +45,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             hash = (hash * 7) ^ (this.Resource == null ? 0 : this.Resource.GetHashCode());
             hash = (hash * 7) ^ (this.StatusCode == null ? 0 : this.StatusCode.GetHashCode());
             hash = (hash * 7) ^ (this.SubStatusCode.GetHashCode());
-            hash = (hash * 7) ^ (this.CacheRefreshSource == null ? 0 : this.CacheRefreshSource.GetHashCode());
             return hash;
         }
         
@@ -62,8 +57,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
                    ((this.Operation == null && payload.Operation == null) || (this.Operation != null && payload.Operation != null && this.Operation.Equals(payload.Operation))) &&
                    ((this.Resource == null && payload.Resource == null) || (this.Resource != null && payload.Resource != null && this.Resource.Equals(payload.Resource))) &&
                    ((this.StatusCode == null && payload.StatusCode == null) || (this.StatusCode != null && payload.StatusCode != null && this.StatusCode.Equals(payload.StatusCode))) &&
-                   this.SubStatusCode.Equals(payload.SubStatusCode) &&
-                   String.CompareOrdinal(this.CacheRefreshSource, payload.CacheRefreshSource) == 0;
+                   this.SubStatusCode.Equals(payload.SubStatusCode);
 
             return isequal;
         }
