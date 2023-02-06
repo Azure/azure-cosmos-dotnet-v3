@@ -12,7 +12,7 @@ steps:
         lessmsi x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
         Write-Host "Starting Comsos DB Emulator" -ForegroundColor green 
         Add-MpPreference -ExclusionPath "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
-        Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /enableRio /EnablePreview /EnableAadAuthentication /EnableSqlComputeEndpoint" -Verb RunAs
+        Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=30 /Consistency=Strong /enableRio /EnablePreview /EnableAadAuthentication /EnableSqlComputeEndpoint" -Verb RunAs
         Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
         Get-Item env:* | Sort-Object -Property Name
         for ($i=0; $i -lt 10; $i++) {
