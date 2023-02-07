@@ -5,7 +5,6 @@
     using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
-    using System.Xml;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
