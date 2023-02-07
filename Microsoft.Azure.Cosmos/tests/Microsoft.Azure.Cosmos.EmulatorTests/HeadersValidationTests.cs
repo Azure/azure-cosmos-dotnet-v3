@@ -60,14 +60,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidatePageSizeRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            using var client = TestCommon.CreateClient(false, Protocol.Tcp);
             ValidatePageSize(client);
         }
 
         [TestMethod]
         public void ValidatePageSizeGatway()
         {
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             ValidatePageSize(client);
         }
 
@@ -576,17 +576,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
                     Assert.Fail("Should have faild because of version error");
                 }
-                catch (AggregateException exception)
+                catch (CosmosException dce)
                 {
-                    var dce = exception.InnerException as CosmosException;
-                    if (dce != null)
-                    {
-                        Assert.AreEqual(dce.StatusCode, HttpStatusCode.BadRequest);
-                    }
-                    else
-                    {
-                        Assert.Fail("Should have faild because of version error with DocumentClientException BadRequest");
-                    }
+                    Assert.AreEqual(dce.StatusCode, HttpStatusCode.BadRequest);
                 }
             }
             finally

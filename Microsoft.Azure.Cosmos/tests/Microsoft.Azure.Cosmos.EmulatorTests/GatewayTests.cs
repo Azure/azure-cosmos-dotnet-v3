@@ -2490,10 +2490,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 DocumentFeedResponse<dynamic> docCollection2 = await docQuery2BlackListed.ExecuteNextAsync();
             }
-            catch (Exception e)
+            catch (DocumentClientException de)
             {
-                Assert.IsNotNull(e);
-                DocumentClientException de = e.InnerException as DocumentClientException;
                 Assert.IsNotNull(de);
                 Assert.AreEqual(HttpStatusCode.Forbidden.ToString(), de.Error.Code);
                 Assert.IsTrue(de.Message.Contains("is blocked for execution because it has violated its allowed resources limit several times."));
