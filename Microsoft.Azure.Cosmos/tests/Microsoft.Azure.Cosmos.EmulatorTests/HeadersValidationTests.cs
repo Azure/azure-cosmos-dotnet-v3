@@ -349,6 +349,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient client = TestCommon.CreateClient(false, Protocol.Https);
             this.ValidateSupportedSerializationFormats(client);
         }
+
         private void ValidateSupportedSerializationFormats(DocumentClient client)
         {
             DocumentCollection collection = TestCommon.CreateOrGetDocumentCollection(client);
@@ -413,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                Assert.IsFalse(expectedResultIsBinary);
+                Assert.IsFalse(expectedResultIsBinary, "ReadFeed response should be in Text");
                 response = this.ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
             }
 
