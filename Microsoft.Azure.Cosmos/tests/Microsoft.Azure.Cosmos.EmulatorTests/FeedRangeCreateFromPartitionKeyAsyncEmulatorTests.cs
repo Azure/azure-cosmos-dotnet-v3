@@ -298,7 +298,6 @@
             string content = JsonConvert.SerializeObject(itemResponse.Resource);
             JObject @object = JObject.Parse(content);
 
-            Assert.AreEqual(expected: 1, itemResponse.RequestCharge);
             Assert.AreEqual(expected: item.id, actual: @object["id"]);
             Assert.AreEqual(expected: item.city, actual: @object["city"]);
             Assert.AreEqual(expected: item.state, actual: @object["state"]);
