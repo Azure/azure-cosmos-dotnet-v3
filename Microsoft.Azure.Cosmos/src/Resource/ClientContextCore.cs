@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -65,7 +67,8 @@ namespace Microsoft.Azure.Cosmos
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
                 clientOptions.GatewayModeMaxConnectionLimit,
-                clientOptions.WebProxy);
+                clientOptions.WebProxy,
+                clientOptions.ServerCertificateCustomValidationCallback);
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
@@ -79,12 +82,18 @@ namespace Microsoft.Azure.Cosmos
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
                handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer,
-               cosmosClientId: cosmosClient.Id);
+               cosmosClientId: cosmosClient.Id,
+               remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback));
 
             return ClientContextCore.Create(
                 cosmosClient,
                 documentClient,
                 clientOptions);
+        }
+
+        private static RemoteCertificateValidationCallback SslCustomValidationCallBack(Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        {
+            return serverCertificateCustomValidationCallback == null ? null : (_, cert, chain, policy) => serverCertificateCustomValidationCallback((X509Certificate2)cert, chain, policy);
         }
 
         internal static CosmosClientContext Create(

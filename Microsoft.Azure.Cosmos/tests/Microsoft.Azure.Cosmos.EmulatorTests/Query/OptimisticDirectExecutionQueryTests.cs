@@ -67,7 +67,8 @@
             QueryRequestOptions feedOptions = new QueryRequestOptions
             {
                 MaxItemCount = -1,
-                TestSettings = GetTestInjections(simulate429s:false, simulateEmptyPages:false, enableOptimisticDirectExecution:true)
+                EnableOptimisticDirectExecution = true,
+                TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
             };
 
             // check if pipeline returns empty continuation token
@@ -172,13 +173,11 @@
                     feedOptions = new QueryRequestOptions
                     {
                         MaxItemCount = pageSizeOptions[i],
-                        PartitionKey = queryAndResults[j].PartitionKey == null  
+                        PartitionKey = queryAndResults[j].PartitionKey == null
                            ? null
                            : new Cosmos.PartitionKey(queryAndResults[j].PartitionKey),
-                        TestSettings = GetTestInjections(
-                            simulate429s: false, 
-                            simulateEmptyPages: false, 
-                            enableOptimisticDirectExecution: queryAndResults[j].EnableOptimisticDirectExecution)
+                        EnableOptimisticDirectExecution = queryAndResults[j].EnableOptimisticDirectExecution,
+                        TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
                     };
 
                     List<CosmosElement> items = await RunQueryAsync(
@@ -208,7 +207,8 @@
             QueryRequestOptions feedOptions = new QueryRequestOptions
             {
                 PartitionKey = new Cosmos.PartitionKey("/value"),
-                TestSettings = GetTestInjections(simulate429s: false, simulateEmptyPages: false, enableOptimisticDirectExecution: true)
+                EnableOptimisticDirectExecution = true,
+                TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
             };
 
             // check if bad continuation queries and syntax error queries are handled by pipeline
@@ -239,15 +239,6 @@
                     Assert.Fail(aggrEx.ToString());
                 }
             }
-        }
-
-        private static TestInjections GetTestInjections(bool simulate429s, bool simulateEmptyPages, bool enableOptimisticDirectExecution)
-        {
-            return new TestInjections(
-                            simulate429s,
-                            simulateEmptyPages,
-                            enableOptimisticDirectExecution,
-                            new TestInjections.ResponseStats());
         }
 
         private struct SinglePartitionWithContinuationsArgs

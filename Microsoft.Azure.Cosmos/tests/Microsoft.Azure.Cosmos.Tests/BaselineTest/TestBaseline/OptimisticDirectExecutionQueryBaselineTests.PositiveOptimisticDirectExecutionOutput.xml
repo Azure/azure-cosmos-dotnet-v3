@@ -38,4 +38,30 @@
       <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description>Single Partition Key and Value Field</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Single Partition Key and Ode continuation token</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
+    </Output>
+  </Result>
 </Results>
