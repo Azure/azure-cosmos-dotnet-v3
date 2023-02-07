@@ -567,11 +567,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
                 var coll = (await client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Resource;
                 var doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
-                client.Dispose();
                 client = TestCommon.CreateClient(true);
                 doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
                 HttpConstants.Versions.CurrentVersion = "2015-01-01";
-                client.Dispose();
                 client = TestCommon.CreateClient(true);
                 try
                 {
@@ -590,10 +588,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.Fail("Should have faild because of version error with DocumentClientException BadRequest");
                     }
                 }
-
-                await client.DeleteDatabaseAsync(db);
-
-                client.Dispose();
             }
             finally
             {

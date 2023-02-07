@@ -769,11 +769,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string currentVersion = HttpConstants.Versions.CurrentVersion;
             HttpConstants.Versions.CurrentVersion = "2020-07-15";
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
             Cosmos.Database database = null;
             try
             {
-                using CosmosClient client = TestCommon.CreateCosmosClient(true);
-                
                 database = await client.CreateDatabaseIfNotExistsAsync("mydb");
                 
                 ContainerProperties containerProperties = new ContainerProperties("subpartitionedcontainer", new List<string> { "/Country", "/City" });

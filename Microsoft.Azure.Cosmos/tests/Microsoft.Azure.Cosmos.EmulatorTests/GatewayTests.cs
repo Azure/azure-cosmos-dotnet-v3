@@ -959,8 +959,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 Assert.IsNotNull(ex);
-                Assert.IsNotNull(ex.InnerException);
-                Assert.IsTrue(ex.InnerException.Message.Contains("The input content is invalid because the required properties - 'body; ' - are missing"));
+                Assert.IsTrue(ex.Message.Contains("The input content is invalid because the required properties - 'body; ' - are missing"));
             }
 
             // failure test - trigger without trigger type
@@ -977,8 +976,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 Assert.IsNotNull(ex);
-                Assert.IsNotNull(ex.InnerException);
-                Assert.IsTrue(ex.InnerException.Message.Contains("The input content is invalid because the required properties - 'triggerType; ' - are missing"));
+                Assert.IsTrue(ex.Message.Contains("The input content is invalid because the required properties - 'triggerType; ' - are missing"));
             }
 
             // failure test - trigger without trigger operation
@@ -995,8 +993,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 Assert.IsNotNull(ex);
-                Assert.IsNotNull(ex.InnerException);
-                Assert.IsTrue(ex.InnerException.Message.Contains("The input content is invalid because the required properties - 'triggerOperation; ' - are missing"));
+                Assert.IsTrue(ex.Message.Contains("The input content is invalid because the required properties - 'triggerOperation; ' - are missing"));
             }
 
             // TODO: uncomment when preserializedScripts is enabled.
@@ -1030,12 +1027,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 dbToCreate = await client.CreateDatabaseAsync(dbToCreate, new Documents.Client.RequestOptions { PreTriggerInclude = new List<string> { "t1" } });
             }
-            catch (Exception e)
+            catch (DocumentClientException de)
             {
-                Assert.IsNotNull(e);
-                Assert.IsNotNull(e.InnerException);
-
-                DocumentClientException de = e.InnerException as DocumentClientException;
+                Assert.IsNotNull(de);
                 Assert.AreEqual(HttpStatusCode.BadRequest.ToString(), de.Error.Code);
             }
 
@@ -1309,10 +1303,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Document doc5 = (await client.CreateDocumentAsync(collection4, new Document { Id = "Doc5" }, new Documents.Client.RequestOptions { PreTriggerInclude = new List<string> { "t1", "t3" } })).Resource;
             }
-            catch (Exception e)
+            catch (DocumentClientException de)
             {
-                Assert.IsNotNull(e);
-                DocumentClientException de = e.InnerException as DocumentClientException;
                 Assert.IsNotNull(de);
                 exceptionThrown = true;
             }
@@ -1323,10 +1315,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ResourceResponse<Document> docMultiple1 = await client.CreateDocumentAsync(collection4, new Document { Id = "multipleHeaders1" }, new Documents.Client.RequestOptions { PreTriggerInclude = new List<string> { "t1" }, PostTriggerInclude = new List<string> { "response2", "multiple1" } });
             }
-            catch (Exception e)
+            catch (DocumentClientException de)
             {
-                Assert.IsNotNull(e);
-                DocumentClientException de = e.InnerException as DocumentClientException;
                 Assert.IsNotNull(de);
                 exceptionThrown = true;
             }
@@ -1475,7 +1465,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (DocumentClientException exception)
             {
-                Assert.Fail("Exception should not have occurred. {0}", exception.InnerException.ToString());
+                Assert.Fail("Exception should not have occurred. {0}", exception.ToString());
             }
             await database.DeleteAsync();
         }
@@ -2376,8 +2366,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 Assert.IsNotNull(ex);
-                Assert.IsNotNull(ex.InnerException);
-                Assert.IsTrue(ex.InnerException.Message.Contains("The input content is invalid because the required properties - 'body; ' - are missing"));
+                Assert.IsTrue(ex.Message.Contains("The input content is invalid because the required properties - 'body; ' - are missing"));
             }
 
             // failure test - UDF that throws specific error number.
