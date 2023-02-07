@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests;
 
     public abstract class BaseCosmosClientHelper
     {
@@ -26,7 +25,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(),
                 cancellationToken: this.cancellationToken);
-            Logger.LogLine($"Created {client.ClientId} clients");
         }
 
         public async Task TestInit()

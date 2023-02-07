@@ -1327,8 +1327,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await client.DeleteDatabaseAsync(database);
             }
 
-            await client.DeleteDatabaseAsync(database);
-
             // re-enable these tests if we re-enable multiple triggers
             //            // pre-trigger request body
             //            Document doc5 = client.CreateDocumentAsync(collection1, new Document { Id =  "Doc5" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1", "t3" } }).Result.Resource;
