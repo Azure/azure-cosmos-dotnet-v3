@@ -12,11 +12,12 @@ steps:
         lessmsi x "$env:temp\azure-cosmosdb-emulator.msi" "$env:temp\Azure Cosmos DB Emulator\"
         Write-Host "Starting Cosmos DB Emulator" -ForegroundColor green 
         Add-MpPreference -ExclusionPath "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
-        Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /enableRio /EnablePreview /EnableAadAuthentication /EnableSqlComputeEndpoint" -Verb RunAs
+        Add-MpPreference -ExclusionPath "$env:localappdata\CosmosDBEmulator"
+        Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint" -Verb RunAs
         Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
         Get-Item env:* | Sort-Object -Property Name
         for ($i=0; $i -lt 10; $i++) {
-          $status=Get-CosmosDbEmulatorStatus 
+          $status=Get-CosmosDbEmulatorStatus
           if ($status -ne "Running") {
             sleep 30;
             Write-Host "Cosmos DB Emulator Status: $status" -ForegroundColor yellow
