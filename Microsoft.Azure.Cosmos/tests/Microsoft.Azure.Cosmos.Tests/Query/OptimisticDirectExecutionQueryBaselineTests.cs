@@ -78,6 +78,26 @@
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a",
                     continuationToken: cosmosElementOdeContinuationToken),
+                CreateInput(
+                    description: @"Null Partition Key Value",
+                    query: "SELECT * FROM c",
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: Cosmos.PartitionKey.Null),
+
+                CreateInput(
+                    description: @"None Partition Key Value",
+                    query: "SELECT * FROM c",
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: Cosmos.PartitionKey.None),
+
+                CreateInput(
+                    description: @"C# Null Partition Key Value",
+                    query: "SELECT * FROM c",
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: null),
             };
             this.ExecuteTestSuite(testVariations);
         }
@@ -105,27 +125,6 @@
 
             List<OptimisticDirectExecutionTestInput> testVariations = new List<OptimisticDirectExecutionTestInput>
             {
-                CreateInput(
-                    description: @"Null Partition Key Value",
-                    query: "SELECT * FROM c",
-                    expectedOptimisticDirectExecution: false,
-                    partitionKeyPath: @"/pk",
-                    partitionKeyValue: Cosmos.PartitionKey.Null),
-
-                CreateInput(
-                    description: @"None Partition Key Value",
-                    query: "SELECT * FROM c",
-                    expectedOptimisticDirectExecution: false,
-                    partitionKeyPath: @"/pk",
-                    partitionKeyValue: Cosmos.PartitionKey.None),
-
-                CreateInput(
-                    description: @"C# Null Partition Key Value",
-                    query: "SELECT * FROM c",
-                    expectedOptimisticDirectExecution: false,
-                    partitionKeyPath: @"/pk",
-                    partitionKeyValue: null),
-               
                 CreateInput(
                     description: @"Single Partition Key with Parallel continuation token",
                     query: "SELECT * FROM c",
@@ -798,7 +797,7 @@
         }
 
         public override async Task<TryCatch<PartitionedQueryExecutionInfo>> TryGetPartitionedQueryExecutionInfoAsync(SqlQuerySpec sqlQuerySpec, ResourceType resourceType, PartitionKeyDefinition partitionKeyDefinition, bool requireFormattableOrderByQuery, bool isContinuationExpected, bool allowNonValueAggregateQuery, bool hasLogicalPartitionKey, bool allowDCount, bool useSystemPrefix, Cosmos.GeospatialType geospatialType, CancellationToken cancellationToken)
-        { 
+        {
             CosmosSerializerCore serializerCore = new();
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
             string sqlQuerySpecJsonString = streamReader.ReadToEnd();

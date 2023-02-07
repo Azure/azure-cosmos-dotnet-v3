@@ -753,46 +753,43 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ContainerQueryProperties containerQueryProperties,
             ITrace trace)
         {
-            if (!inputParameters.EnableOptimisticDirectExecution) return null;
-
-            // case 1: Is query going to a single partition
-            bool hasPartitionKey = inputParameters.PartitionKey.HasValue
-                && inputParameters.PartitionKey != PartitionKey.Null
-                && inputParameters.PartitionKey != PartitionKey.None;
-
-            // case 2: does query execution plan have a single query range
-            bool hasQueryRanges = partitionedQueryExecutionInfo != null 
-                && partitionedQueryExecutionInfo.QueryRanges.Count == 1 
-                && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue;
-           
-            if (!hasPartitionKey && !hasQueryRanges) return null;
-
-            //TODO: does collection have only one physical partition
-
-            List<Documents.PartitionKeyRange> targetRanges = new List<Documents.PartitionKeyRange>();
-
+            if (!inputParameters.EnableOptimisticDirectExecution) return null; 
+            
+            List<Documents.PartitionKeyRange> targetRanges = new List<Documents.PartitionKeyRange>(); 
             if (partitionedQueryExecutionInfo != null)
             {
                 targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
-                    cosmosQueryContext.QueryClient,
-                    cosmosQueryContext.ResourceLink,
-                    partitionedQueryExecutionInfo,
-                    containerQueryProperties,
-                    inputParameters.Properties,
-                    inputParameters.InitialFeedRange,
-                    trace);
+                cosmosQueryContext.QueryClient,
+                cosmosQueryContext.ResourceLink,
+                partitionedQueryExecutionInfo,
+                containerQueryProperties,
+                inputParameters.Properties,
+                inputParameters.InitialFeedRange,
+                trace);
             }
             else
             {
                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                if (partitionKeyDefinition != null && containerQueryProperties.ResourceId != null && inputParameters.PartitionKey != null)
+                if (containerQueryProperties.ResourceId != null)
                 {
-                    targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                    if (inputParameters.PartitionKey != null)
+                    {
+                        targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                         cosmosQueryContext.ResourceLink,
                         containerQueryProperties.ResourceId,
                         inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
                         forceRefresh: false,
                         trace);
+                    }
+                    else
+                    {
+                        targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
+                        cosmosQueryContext.ResourceLink,
+                        containerQueryProperties.ResourceId,
+                        new List<Documents.Routing.Range<string>> { FeedRangeEpk.FullRange.Range },
+                        forceRefresh: false,
+                        trace);
+                    }
                 }
             }
 
@@ -800,7 +797,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             {
                 return targetRanges.Single();
             }
-
             return null;
         }
 

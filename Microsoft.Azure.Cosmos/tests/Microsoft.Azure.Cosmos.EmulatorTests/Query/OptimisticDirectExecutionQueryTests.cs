@@ -40,30 +40,35 @@
                 NullField = nullField,
             };
 
-            await this.CreateIngestQueryDeleteAsync<SinglePartitionWithContinuationsArgs>(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                documents,
-                RunTests,
-                args,
-                "/" + partitionKey);
+            CollectionTypes[] pipelineTypes = new CollectionTypes[] { CollectionTypes.SinglePartition, CollectionTypes.MultiPartition };
+            foreach (CollectionTypes type in pipelineTypes)
+            {
+                await this.CreateIngestQueryDeleteAsync<SinglePartitionWithContinuationsArgs>(
+                     ConnectionModes.Direct | ConnectionModes.Gateway,
+                     type,
+                     documents,
+                     (container, documents, args) => RunTests(container, documents, args, type),
+                     args,
+                     "/" + partitionKey);
+            }
         }
 
-        private static async Task RunTests(Container container, IReadOnlyList<CosmosObject> documents, SinglePartitionWithContinuationsArgs args)
+        private static async Task RunTests(Container container, IReadOnlyList<CosmosObject> documents, SinglePartitionWithContinuationsArgs args, CollectionTypes pipelineType)
         {
-            await TestPositiveOptimisticDirectExecutionOutput(container, args);
+            await TestPositiveOptimisticDirectExecutionOutput(container, args, pipelineType);
             await TestNegativeOptimisticDirectExecutionOutput(container);
         }
 
         private static async Task TestPositiveOptimisticDirectExecutionOutput(
             Container container,
-            SinglePartitionWithContinuationsArgs args)
+            SinglePartitionWithContinuationsArgs args,
+            CollectionTypes pipelineType)
         {
             int documentCount = args.NumberOfDocuments;
             string partitionKey = args.PartitionKey;
             string numberField = args.NumberField;
             string nullField = args.NullField;
-
+            
             QueryRequestOptions feedOptions = new QueryRequestOptions
             {
                 MaxItemCount = -1,
@@ -78,98 +83,54 @@
 
             Assert.AreEqual(null, responseWithEmptyContinuationExpected.ContinuationToken);
 
-            List<string> queries = new List<string>
+            List<QueryResultsAndPipelineType> queryAndResults = new List<QueryResultsAndPipelineType>()
             {
-                $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{partitionKey}",
-                $"SELECT VALUE r.numberField FROM r",
-                $"SELECT VALUE r.numberField FROM r",
-                $"SELECT TOP 4 VALUE r.numberField FROM r ORDER BY r.{numberField}",
-                $"SELECT TOP 3 VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} ORDER BY r.{numberField} DESC",
-                $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} OFFSET 1 LIMIT 1",
-                $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField}",
-                $"SELECT TOP 3 VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} ORDER BY r.{numberField} DESC",
-                $"SELECT TOP 4 VALUE r.numberField FROM r ORDER BY r.{numberField}",
-                $"SELECT VALUE r.numberField FROM r",
+                // Tests for bool enableOptimisticDirectExecution
+                new QueryResultsAndPipelineType { Query = $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{partitionKey}", Result = new List<long> { 0, 1, 2, 3, 4 }, PartitionKey = "/value", Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{partitionKey}", Result = new List<long> { 0, 1, 2, 3, 4 }, PartitionKey = "/value", Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = false, ExpectedPipelineType = TestInjections.PipelineType.Specialized},
+                
+                // Simple Query
+                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r", Result = new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 }, PartitionKey = "/value", Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r", Result = new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 }, PartitionKey = null, Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r", Result = new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 }, PartitionKey = "/value", Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r", Result = new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 }, PartitionKey = null, Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.Passthrough},
+
+                // DISTINCT with ORDER BY
+                new QueryResultsAndPipelineType { Query = $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField} DESC", Result = new List<long> { 7, 6, 5, 4, 3, 2, 1, 0 }, PartitionKey = "/value", Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField} DESC", Result = new List<long> { 7, 6, 5, 4, 3, 2, 1, 0 }, PartitionKey = null, Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField} DESC", Result = new List<long> { 7, 6, 5, 4, 3, 2, 1, 0 }, PartitionKey = "/value", Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField} DESC", Result = new List<long> { 7, 6, 5, 4, 3, 2, 1, 0 }, PartitionKey = null, Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.Specialized},
+                
+                // TOP with GROUP BY
+                new QueryResultsAndPipelineType { Query = $"SELECT TOP 5 VALUE r.{numberField} FROM r GROUP BY r.{numberField}", Result = new List<long> { 0, 1, 2, 3, 4 }, PartitionKey = "/value", Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT TOP 5 VALUE r.{numberField} FROM r GROUP BY r.{numberField}", Result = new List<long> { 0, 1, 2, 3, 4 }, PartitionKey = null, Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT TOP 5 VALUE r.{numberField} FROM r GROUP BY r.{numberField}", Result = new List<long> { 0, 1, 2, 3, 4 }, PartitionKey = "/value", Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT TOP 5 VALUE r.{numberField} FROM r GROUP BY r.{numberField}", Result = new List<long> { 0, 1, 2, 3, 4 }, PartitionKey = null, Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.Specialized},
+                
+                // OFFSET LIMIT with WHERE and BETWEEN
+                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = "/value", Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = null, Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = "/value", Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = null, Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.Specialized},
             };
-
-            List<List<long>> results = new List<List<long>>
-            {
-                new List<long> { 0, 1, 2, 3, 4 },
-                new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 },
-                new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 },
-                new List<long> { 0, 1, 2, 3},
-                new List<long> { 7, 6, 5},
-                new List<long> { 1},
-                new List<long> { 0, 1, 2, 3, 4, 5, 6, 7},
-                new List<long> { 7, 6, 5},
-                new List<long> { 0, 1, 2, 3},
-                new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 },
-            };
-
-            List<string> partitionKeys = new List<string>
-            {
-                "/value",
-                null,
-                "/value",
-                "/value",
-                "/value",
-                null,
-                null,
-                "/value",
-                "/value",
-                "/value",
-            };
-
-            List<TestInjections.PipelineType> expectedPipelineType = new List<TestInjections.PipelineType>
-            {
-                TestInjections.PipelineType.OptimisticDirectExecution,
-                TestInjections.PipelineType.Passthrough,
-                TestInjections.PipelineType.OptimisticDirectExecution,
-                TestInjections.PipelineType.OptimisticDirectExecution,
-                TestInjections.PipelineType.OptimisticDirectExecution,
-                TestInjections.PipelineType.Specialized,
-                TestInjections.PipelineType.Specialized,
-                TestInjections.PipelineType.Specialized,
-                TestInjections.PipelineType.Specialized,
-                TestInjections.PipelineType.Passthrough,
-            };
-
-            List<bool> enabledOptimisticDirectExecution = new List<bool>
-            {
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                true,
-                false,
-                false,
-                false,
-            };
-
-            List<QueryResultsAndPipelineType> queryAndResults = new List<QueryResultsAndPipelineType>();
-
-            for (int i = 0; i < queries.Count(); i++)
-            {
-                QueryResultsAndPipelineType queryAndResult = new QueryResultsAndPipelineType()
-                {
-                    Query = queries[i],
-                    Result = results[i],
-                    PartitionKey = partitionKeys[i],
-                    ExpectedPipelineType = expectedPipelineType[i],
-                    EnableOptimisticDirectExecution = enabledOptimisticDirectExecution[i],
-                };
-
-                queryAndResults.Add(queryAndResult);
-            }
 
             int[] pageSizeOptions = new[] { -1, 1, 2, 10, 100 };
-
             for (int i = 0; i < pageSizeOptions.Length; i++)
             {
                 for(int j = 0; j < queryAndResults.Count(); j++)
                 {
+                    if (pipelineType != queryAndResults[j].Partition)
+                    {
+                        continue;
+                    }
+
+                    // Added check because "Continuation token is not supported for queries with GROUP BY."
+                    if (queryAndResults[j].Query.Contains("GROUP BY"))
+                    {
+                        if (pipelineType == CollectionTypes.MultiPartition) continue;
+                        if (pageSizeOptions[i] != -1) continue;
+                    }
+
                     feedOptions = new QueryRequestOptions
                     {
                         MaxItemCount = pageSizeOptions[i],
@@ -186,7 +147,7 @@
                             feedOptions);
 
                     long[] actual = items.Cast<CosmosNumber>().Select(x => Number64.ToLong(x.Value)).ToArray();
-
+                    
                     Assert.IsTrue(queryAndResults[j].Result.SequenceEqual(actual));
 
                     if (queryAndResults[j].EnableOptimisticDirectExecution)
@@ -194,7 +155,8 @@
                         Assert.AreEqual(queryAndResults[j].ExpectedPipelineType, feedOptions.TestSettings.Stats.PipelineType.Value);
                     }
                     else
-                    {   // test if pipeline is called if TestInjection.EnableOptimisticDirectExecution is false
+                    {
+                        // test if Ode is called if TestInjection.EnableOptimisticDirectExecution is false
                         Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, feedOptions.TestSettings.Stats.PipelineType.Value);
                     } 
                 }
@@ -254,8 +216,9 @@
             public string Query { get; set; }
             public List<long> Result { get; set; }
             public string PartitionKey { get; set; }
-            public TestInjections.PipelineType ExpectedPipelineType { get; set; }
+            public CollectionTypes Partition { get; set; }
             public bool EnableOptimisticDirectExecution { get; set; }
+            public TestInjections.PipelineType ExpectedPipelineType { get; set; }
         }
     }
 }
