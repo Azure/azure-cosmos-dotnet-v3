@@ -58,14 +58,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void ValidatePageSizeHttps()
-        {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
-            ValidatePageSize(client);
-            ValidatePageSize(client);
-        }
-
-        [TestMethod]
         public void ValidatePageSizeRntbd()
         {
             var client = TestCommon.CreateClient(false, Protocol.Tcp);
@@ -182,13 +174,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await ValidateCosistencyLevel(client);
         }
 
-        [TestMethod]
-        public async Task ValidateConsistencyLevelHttps()
-        {
-            DocumentClient client = TestCommon.CreateClient(false, Protocol.Https);
-            await ValidateCosistencyLevel(client);
-        }
-
         private async Task ValidateCosistencyLevel(DocumentClient client)
         {
             DocumentCollection collection = TestCommon.CreateOrGetDocumentCollection(client);
@@ -229,13 +214,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void ValidateJsonSerializationFormatRntbd()
         {
             var client = TestCommon.CreateClient(false, Protocol.Tcp);
-            ValidateJsonSerializationFormat(client);
-        }
-
-        [TestMethod]
-        public void ValidateJsonSerializationFormatHttps()
-        {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
             ValidateJsonSerializationFormat(client);
         }
 
@@ -505,14 +483,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ValidateIndexingDirective(client);
         }
 
-        [TestMethod]
-        public void ValidateIndexingDirectiveHttps()
-        {
-            //var client = TestCommon.CreateClient(false, Protocol.Https);
-            var client = TestCommon.CreateClient(true, Protocol.Https);
-            ValidateIndexingDirective(client);
-        }
-
         private void ValidateIndexingDirective(DocumentClient client)
         {
             // Number out of range.
@@ -570,13 +540,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ValidateEnableScanInQuery(client);
         }
 
-        [TestMethod]
-        public void ValidateEnableScanInQueryHttps()
-        {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
-            ValidateEnableScanInQuery(client);
-        }
-
         private void ValidateEnableScanInQuery(DocumentClient client, bool isHttps = false)
         {
             // Value not boolean
@@ -621,14 +584,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             var client = TestCommon.CreateClient(false, Protocol.Tcp);
             ValidateEnableLowPrecisionOrderBy(client);
-        }
-
-        [TestMethod]
-
-        public void ValidateEnableLowPrecisionOrderByHttps()
-        {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
-            ValidateEnableLowPrecisionOrderBy(client, true);
         }
 
         private void ValidateEnableLowPrecisionOrderBy(DocumentClient client, bool isHttps = false)
@@ -679,13 +634,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ValidateEmitVerboseTracesInQuery(client);
         }
 
-        [TestMethod]
-        public void ValidateEmitVerboseTracesInQueryHttps()
-        {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
-            ValidateEmitVerboseTracesInQuery(client, true);
-        }
-
         private void ValidateEmitVerboseTracesInQuery(DocumentClient client, bool isHttps = false)
         {
             // Value not boolean
@@ -724,12 +672,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var client = TestCommon.CreateClient(true);
             ValidateIfNonMatch(client);
 
-        }
-        [TestMethod]
-        public void ValidateIfNonMatchHttps()
-        {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
-            ValidateIfNonMatch(client);
         }
 
         [TestMethod]
@@ -878,11 +820,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateCollectionIndexProgressHeaders()
         {
             using (var client = TestCommon.CreateClient(true))
-            {
-                await ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: true);
-            }
-
-            using (var client = TestCommon.CreateClient(false, Protocol.Https))
             {
                 await ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: true);
             }

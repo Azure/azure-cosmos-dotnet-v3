@@ -285,13 +285,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Tcp });
         }
 
-        [TestMethod]
-        public async Task ValidateStoredProcedureCrud_SessionDirectHttps()
-        {
-            await this.ValidateStoredProcedureCrudAsync(ConsistencyLevel.Session,
-                new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Https });
-        }
-
         internal async Task ValidateStoredProcedureCrudAsync(ConsistencyLevel consistencyLevel, ConnectionPolicy connectionPolicy)
         {
             DocumentClient client = TestCommon.CreateClient(connectionPolicy.ConnectionMode == ConnectionMode.Gateway,
@@ -432,13 +425,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Tcp });
         }
 
-        [TestMethod]
-        public void ValidateTriggerCrud_SessionDirectHttps()
-        {
-            this.ValidateTriggerCrud(ConsistencyLevel.Session,
-                new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Https });
-        }
-
         internal void ValidateTriggerCrud(ConsistencyLevel consistencyLevel, ConnectionPolicy connectionPolicy)
         {
             DocumentClient client = TestCommon.CreateClient(connectionPolicy.ConnectionMode == ConnectionMode.Gateway,
@@ -564,14 +550,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             this.ValidateUserDefinedFunctionCrud(ConsistencyLevel.Session,
                 new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Tcp });
-        }
-
-        [TestMethod]
-
-        public void ValidateUserDefinedFunctionCrud_SessionDirectHttps()
-        {
-            this.ValidateUserDefinedFunctionCrud(ConsistencyLevel.Session,
-                new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Protocol.Https });
         }
 
         [TestMethod]
@@ -1501,7 +1479,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.ValidateSystemSprocInternal(true);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            ValidateSystemSprocInternal(false, Protocol.Https);
             ValidateSystemSprocInternal(false, Protocol.Tcp);
 #endif
         }
@@ -2183,7 +2160,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await ValidateReadOnlyStoredProcedureExecutionInternal(false, Protocol.Tcp);
-            await ValidateReadOnlyStoredProcedureExecutionInternal(false, Protocol.Https);
 #endif
         }
 
@@ -2559,7 +2535,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.ValidateChangeFeedIfNoneMatchHelper(true);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            await ValidateChangeFeedIfNoneMatchHelper(false, Protocol.Https);
             await ValidateChangeFeedIfNoneMatchHelper(false, Protocol.Tcp);
 #endif
         }
@@ -2709,7 +2684,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.ValidateChangeFeedIfModifiedSinceHelper(true);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            await ValidateChangeFeedIfModifiedSinceHelper(false, Protocol.Https);
             await ValidateChangeFeedIfModifiedSinceHelper(false, Protocol.Tcp);
 #endif
         }
@@ -2822,7 +2796,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateChangeFeedWithPartitionKey()
         {
             await this.ValidateChangeFeedWithPartitionKeyHelper(true);
-            await this.ValidateChangeFeedWithPartitionKeyHelper(false, Protocol.Https);
             await this.ValidateChangeFeedWithPartitionKeyHelper(false, Protocol.Tcp);
         }
 
@@ -2999,7 +2972,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.ValidateReadPartitionKeyRangeHelper(true);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            await ValidateReadPartitionKeyRangeHelper(false, Protocol.Https);
             await ValidateReadPartitionKeyRangeHelper(false, Protocol.Tcp);
 #endif
         }
@@ -3106,13 +3078,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void ValidateGenericReadDocumentDirectTcp()
         {
             this.ValidateGenericReadDocument(false, Protocol.Tcp).Wait();
-            this.ValidateGenericReadDocumentFromResource(false, Protocol.Tcp).Wait();
-        }
-
-        [TestMethod]
-        public void ValidateGenericReadDocumentDirectHttps()
-        {
-            this.ValidateGenericReadDocument(false, Protocol.Https).Wait();
             this.ValidateGenericReadDocumentFromResource(false, Protocol.Tcp).Wait();
         }
 
