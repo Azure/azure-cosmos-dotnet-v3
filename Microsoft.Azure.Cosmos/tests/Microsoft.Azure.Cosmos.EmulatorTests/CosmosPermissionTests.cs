@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ConnectionMode = connectionMode
             };
 
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(cosmosClientOptions);
+            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(cosmosClientOptions);
 
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("PermissionTest");
 
@@ -297,6 +297,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.AreEqual(1, resultGateway.Count);
             }
+
+            await database.DeleteStreamAsync();
         }
 
         [TestMethod]

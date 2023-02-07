@@ -448,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
             int counter = 0;
             AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
-            CosmosClient cosmosClient = new CosmosClient(
+            using CosmosClient cosmosClient = new CosmosClient(
                     endpoint,
                     masterKeyCredential,
                     new CosmosClientOptions()
@@ -458,19 +458,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ServerCertificateCustomValidationCallback = (X509Certificate2 cerf, X509Chain chain, SslPolicyErrors error) => { counter ++; return true; }
                     });
 
-            string databaseName = Guid.NewGuid().ToString();
-            string databaseId = Guid.NewGuid().ToString();
             Cosmos.Database database = null;
-            //HTTP callback
-            database = await cosmosClient.CreateDatabaseAsync(databaseId);
-            
-            Cosmos.Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+            try
+            {
+                string databaseName = Guid.NewGuid().ToString();
+                string databaseId = Guid.NewGuid().ToString();
+                
+                //HTTP callback
+                database = await cosmosClient.CreateDatabaseAsync(databaseId);
 
-            //TCP callback
-            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-            ResponseMessage responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
+                Cosmos.Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
 
-            Assert.IsTrue(counter >= 2);
+                //TCP callback
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+                ResponseMessage responseMessage = await container.CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(item), new Cosmos.PartitionKey(item.id));
+
+                Assert.IsTrue(counter >= 2);
+            }
+            finally
+            {
+                await database?.DeleteStreamAsync();
+            }
 
         }
 
@@ -809,7 +817,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HttpClient client = new HttpClient();
             Mock<Func<HttpClient>> factory = new Mock<Func<HttpClient>>();
             factory.Setup(f => f()).Returns(client);
-            CosmosClient cosmosClient = new CosmosClient(
+            using CosmosClient cosmosClient = new CosmosClient(
                 ConfigurationManager.AppSettings["GatewayEndpoint"],
                 ConfigurationManager.AppSettings["MasterKey"],
                 new CosmosClientOptions

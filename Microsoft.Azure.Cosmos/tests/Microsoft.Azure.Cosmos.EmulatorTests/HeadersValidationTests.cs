@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.currentVersionUTF8 = HttpConstants.Versions.CurrentVersionUTF8;
 
             //var client = TestCommon.CreateClient(false, Protocol.Tcp);
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             await TestCommon.DeleteAllDatabasesAsync();
         }
 
@@ -506,7 +506,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateIfNonMatchGateway()
         {
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             ValidateIfNonMatch(client);
 
         }
@@ -514,7 +514,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateIfNonMatchRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            using var client = TestCommon.CreateClient(false, Protocol.Tcp);
             ValidateIfNonMatch(client);
         }
 
@@ -557,23 +557,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void ValidateVersionHeader()
+        public async Task ValidateVersionHeader()
         {
             string correctVersion = HttpConstants.Versions.CurrentVersion;
             try
             {
                 DocumentClient client = TestCommon.CreateClient(true);
-                var db = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                var db = (await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
-                var coll = client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result.Resource;
-                var doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
+                var coll = (await client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Resource;
+                var doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
+                client.Dispose();
                 client = TestCommon.CreateClient(true);
-                doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
+                doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
                 HttpConstants.Versions.CurrentVersion = "2015-01-01";
+                client.Dispose();
                 client = TestCommon.CreateClient(true);
                 try
                 {
-                    doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
+                    doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
                     Assert.Fail("Should have faild because of version error");
                 }
                 catch (AggregateException exception)
@@ -588,6 +590,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.Fail("Should have faild because of version error with DocumentClientException BadRequest");
                     }
                 }
+
+                await client.DeleteDatabaseAsync(db);
+
+                client.Dispose();
             }
             finally
             {
@@ -598,7 +604,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateCurrentWriteQuorumAndReplicaSetHeader()
         {
-            CosmosClient client = TestCommon.CreateCosmosClient(false);
+            using CosmosClient client = TestCommon.CreateCosmosClient(false);
             Cosmos.Database db = null;
             try
             {
@@ -626,7 +632,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("Ignore") /* Used to filter out ignored tests in lab runs */]
         public void ValidateGlobalCompltedLSNAndNumberOfReadRegionsHeader()
         {
-            DocumentClient client = TestCommon.CreateClient(false);
+            using DocumentClient client = TestCommon.CreateClient(false);
             Database db = null;
             try
             {

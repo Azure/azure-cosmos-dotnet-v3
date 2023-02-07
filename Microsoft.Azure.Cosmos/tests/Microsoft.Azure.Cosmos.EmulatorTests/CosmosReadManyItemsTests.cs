@@ -483,7 +483,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosClientBuilder builder = TestCommon.GetDefaultConfiguration();
             builder.AddCustomHandlers(requestHandlers);
-            CosmosClient client = builder.Build();
+            using CosmosClient client = builder.Build();
             Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
             for (int i = 0; i < 5; i++)

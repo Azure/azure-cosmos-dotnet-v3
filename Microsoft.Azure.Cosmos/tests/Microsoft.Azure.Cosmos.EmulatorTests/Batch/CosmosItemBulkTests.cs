@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private Container container;
         private Database database;
+        private CosmosClient client;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -26,9 +27,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 AllowBulkExecution = true
             };
-            CosmosClient client = TestCommon.CreateCosmosClient(clientOptions);
+            this.client = TestCommon.CreateCosmosClient(clientOptions);
 
-            DatabaseResponse response = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
+            DatabaseResponse response = await this.client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
             this.database = response.Database;
 
             ContainerResponse containerResponse = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk", 10000);
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task Cleanup()
         {
             await this.database.DeleteAsync();
+            this.client?.Dispose();
         }
 
         [TestMethod]

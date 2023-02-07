@@ -424,7 +424,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task NonPartitionKeyLookupCacheTest()
         {
             int count = 0;
-            CosmosClient client = TestCommon.CreateCosmosClient(builder =>
+            using CosmosClient client = TestCommon.CreateCosmosClient(builder =>
             {
                 builder.WithConnectionModeDirect();
                 builder.WithSendingRequestEventArgs((sender, e) =>
@@ -509,6 +509,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // OkRagnes should be fetched only once. 
             // Possible to make multiple calls for ranges
             Assert.AreEqual(expected, count);
+
+            await db.DeleteStreamAsync();
         }
 
         [TestMethod]
@@ -770,7 +772,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Cosmos.Database database = null;
             try
             {
-                CosmosClient client = TestCommon.CreateCosmosClient(true);
+                using CosmosClient client = TestCommon.CreateCosmosClient(true);
                 
                 database = await client.CreateDatabaseIfNotExistsAsync("mydb");
                 
@@ -2692,7 +2694,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("Quarantine") /* Gated runs emulator as rate limiting disabled */]
         public async Task VerifyToManyRequestTest(bool isQuery)
         {
-            CosmosClient client = TestCommon.CreateCosmosClient();
+            using CosmosClient client = TestCommon.CreateCosmosClient();
             Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync("LoadTest");
             Container container = await db.CreateContainerIfNotExistsAsync("LoadContainer", "/pk");
 
@@ -2755,7 +2757,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task VerifySessionNotFoundStatistics()
         {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { ConsistencyLevel = Cosmos.ConsistencyLevel.Session });
+            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { ConsistencyLevel = Cosmos.ConsistencyLevel.Session });
             DatabaseResponse database = await cosmosClient.CreateDatabaseIfNotExistsAsync("NoSession");
             Container container = await database.Database.CreateContainerIfNotExistsAsync("NoSession", "/pk");
 
@@ -2815,8 +2817,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 operation = ExecuteReadFeedAsync;
             }
 
-            CosmosClient cc1 = TestCommon.CreateCosmosClient();
-            CosmosClient cc2 = TestCommon.CreateCosmosClient();
+            using CosmosClient cc1 = TestCommon.CreateCosmosClient();
+            using CosmosClient cc2 = TestCommon.CreateCosmosClient();
             Cosmos.Database db1 = null;
             try
             {

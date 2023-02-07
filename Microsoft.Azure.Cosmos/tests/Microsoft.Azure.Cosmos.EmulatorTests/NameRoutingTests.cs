@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task NameRoutingSmokeGatewayTest()
         {
-            CosmosClient client = TestCommon.CreateCosmosClient(true);
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
 
             await SmokeTestForNameAPI(client);
         }

@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (x) => toStreamCount++);
 
             //Create a new cosmos client with the mocked cosmos json serializer
-            CosmosClient client = TestCommon.CreateCosmosClient(
+            using CosmosClient client = TestCommon.CreateCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer));
 
             string databaseId = Guid.NewGuid().ToString();
