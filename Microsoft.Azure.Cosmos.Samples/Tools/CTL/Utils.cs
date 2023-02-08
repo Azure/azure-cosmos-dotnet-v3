@@ -183,9 +183,7 @@ namespace CosmosCTL
 
             if ((bool)config.EnableConsoleLogging)
             {
-                File.AppendAllText(
-                    path: $"{config.OutputFileName}_console.log",
-                    contents: $"{operationName}, {DateTime.UtcNow}, {cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds} {Environment.NewLine}");
+                logger.LogInformation($"{operationName}, {DateTime.UtcNow}, {cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds}, ");
             }
 
             if (traceDiagnostics.IsGoneExceptionHit() &&
