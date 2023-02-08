@@ -3,10 +3,6 @@
 parameters:
   EnableCompute: false
 
-variables:
-- name: emulatorExecution
-  value: 'Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview" -Verb RunAs'
-
 steps:
   - pwsh:  |
         Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL" -ForegroundColor green 
@@ -24,10 +20,14 @@ steps:
     failOnStderr:  true
     errorActionPreference:  stop
   - ${{ if eq(parameters.EnableCompute, true) }}:
-    - bash: echo "##vso[task.setvariable variable=emulatorExecution]Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint" -Verb RunAs"
+    - pwsh: |
+        Set-Variable -Name "EmulatorParameters" -Value "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint"
       displayName: Enable Compute Endpoint
+  - ${{ if eq(parameters.EnableCompute, false) }}:
+    - pwsh: |
+        Set-Variable -Name "EmulatorParameters" -Value "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview"
   - pwsh:  |
-         ${{ variables.emulatorExecution }}
+         Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "$EmulatorParameters" -Verb RunAs
     displayName:  Starting Cosmos DB Emulator
     failOnStderr:  true
     errorActionPreference:  stop
@@ -51,7 +51,7 @@ steps:
           sleep 30;
           ${{ variables.emulatorExecution }}
           for ($i=0; $i -lt 10; $i++) {
-            $status=Get-CosmosDbEmulatorStatus
+            Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "$EmulatorParameters" -Verb RunAs
             Write-Host "Cosmos DB Emulator Status: $status"
             if ($status -ne "Running") {
               sleep 30;
