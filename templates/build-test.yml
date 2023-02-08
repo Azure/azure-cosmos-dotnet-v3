@@ -101,8 +101,6 @@ jobs:
       version: '6.x'
 
   - template:  emulator-setup.yml
-    parameters:
-        EnableCompute: true
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
@@ -134,6 +132,8 @@ jobs:
       version: '6.x'
 
   - template:  emulator-setup.yml
+    parameters:
+      EnableCompute: true
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
