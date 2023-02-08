@@ -44,6 +44,6 @@ steps:
           }
         }
       
-    displayName:  Starting Cosmos DB Emulator
+    displayName:  Waiting for Cosmos DB Emulator status
     failOnStderr:  true
     errorActionPreference:  stop
