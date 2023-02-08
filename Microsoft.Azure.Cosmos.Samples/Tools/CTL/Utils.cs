@@ -186,8 +186,6 @@ namespace CosmosCTL
                 logger.LogInformation($"{operationName}, {DateTime.UtcNow}, {cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds}, ");
             }
 
-            logger.LogError($"diagnostics:{cosmosDiagnostics}, ");
-
             if (traceDiagnostics.IsGoneExceptionHit() &&
                 (bool)config.EnableDiagnosticsLogging &&
                 cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds > config.DiagnosticsLoggingThresholdInMillis)
