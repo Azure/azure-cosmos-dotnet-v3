@@ -22,20 +22,17 @@ steps:
   - ${{ if eq(parameters.EnableCompute, true) }}:
     - pwsh: |
         Set-Variable -Name "EmulatorParameters" -Value "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint"
-      displayName: Enable Compute Endpoint
+      displayName: Set Emulator parameters with Compute Endpoint
   - ${{ if eq(parameters.EnableCompute, false) }}:
     - pwsh: |
         Set-Variable -Name "EmulatorParameters" -Value "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview"
-  - pwsh:  |
-         Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "$EmulatorParameters" -Verb RunAs
-    displayName:  Starting Cosmos DB Emulator
-    failOnStderr:  true
-    errorActionPreference:  stop
+      displayName: Set Emulator parameters
   - pwsh:  |
         Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
         Get-Item env:* | Sort-Object -Property Name
 
         for ($j=0; $j -lt 3; $j++) {
+          Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "$EmulatorParameters" -Verb RunAs
           for ($i=0; $i -lt 10; $i++) {
             $status=Get-CosmosDbEmulatorStatus
             Write-Host "Cosmos DB Emulator Status: $status"
@@ -50,7 +47,6 @@ steps:
             Write-Host "Shutting down and restarting"
             Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/Shutdown" -Verb RunAs
             sleep 30;
-            Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "$EmulatorParameters" -Verb RunAs
           }
           else {
             break;
