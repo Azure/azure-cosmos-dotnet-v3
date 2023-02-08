@@ -865,9 +865,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation, this.expectedMetricNameUnitMap);
             ClientTelemetryTests.AssertNetworkLevelInformation(actualRequestInformation);
         }
-
+        
         private static void AssertNetworkLevelInformation(List<RequestInfo> actualRequestInformation)
         {
+            Assert.IsNotNull(actualRequestInformation);
+            Assert.IsTrue(actualRequestInformation.Count > 0);
+            
             foreach(RequestInfo requestInfo in actualRequestInformation)
             {
                 Assert.IsNotNull(requestInfo.Uri);
@@ -876,6 +879,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(requestInfo.Operation);
                 Assert.IsNotNull(requestInfo.Resource);
                 Assert.IsNotNull(requestInfo.StatusCode);
+                Assert.AreNotEqual(0, requestInfo.StatusCode);
                 Assert.IsNotNull(requestInfo.SubStatusCode);
 
                 Assert.IsNotNull(requestInfo.Metrics, "MetricInfo is null");

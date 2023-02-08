@@ -305,41 +305,48 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 List<HttpResponseStatistics> httpResponseStatisticsList = summaryDiagnostics.HttpResponseStatistics.Value;
                 foreach (HttpResponseStatistics httpstatistics in httpResponseStatisticsList)
                 {
-                    RequestInfo requestInfo = new RequestInfo()
+                    if (ClientTelemetryOptions.IsEligible((int)httpstatistics.HttpResponseMessage.StatusCode, httpstatistics.Duration))
                     {
-                        DatabaseName = databaseId,
-                        ContainerName = containerId,
-                        Uri = httpstatistics.RequestUri.ToString(),
-                        StatusCode = (int)httpstatistics.HttpResponseMessage.StatusCode,
-                        SubStatusCode = (int)subStatusCode,
-                        Resource = httpstatistics.ResourceType.ToResourceTypeString(),
-                        Operation = httpstatistics.HttpMethod.ToString(),
-                    };
+                        RequestInfo requestInfo = new RequestInfo()
+                        {
+                            DatabaseName = databaseId,
+                            ContainerName = containerId,
+                            Uri = httpstatistics.RequestUri.ToString(),
+                            StatusCode = (int)httpstatistics.HttpResponseMessage.StatusCode,
+                            SubStatusCode = 0,
+                            Resource = httpstatistics.ResourceType.ToResourceTypeString(),
+                            Operation = httpstatistics.HttpMethod.ToString(),
+                        };
 
-                    LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                            ClientTelemetryOptions.RequestLatencyMax,
-                                                            ClientTelemetryOptions.RequestLatencyPrecision));
-                    latencyHist.RecordValue(httpstatistics.Duration.Ticks);
+                        LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                                ClientTelemetryOptions.RequestLatencyMax,
+                                                                ClientTelemetryOptions.RequestLatencyPrecision));
+                        latencyHist.RecordValue(httpstatistics.Duration.Ticks);
+                    }
+                    
                 }
                 
                 List<StoreResponseStatistics> storeResponseStatistics = summaryDiagnostics.StoreResponseStatistics.Value;
                 foreach (StoreResponseStatistics storetatistics in storeResponseStatistics)
                 {
-                    RequestInfo requestInfo = new RequestInfo()
+                    if (ClientTelemetryOptions.IsEligible((int)storetatistics.StoreResult.StatusCode, storetatistics.RequestLatency))
                     {
-                        DatabaseName = databaseId,
-                        ContainerName = containerId,
-                        Uri = storetatistics.StoreResult.StorePhysicalAddress.ToString(),
-                        StatusCode = (int)storetatistics.StoreResult.StatusCode,
-                        SubStatusCode = (int)subStatusCode,
-                        Resource = storetatistics.RequestResourceType.ToString(),
-                        Operation = storetatistics.RequestOperationType.ToString(),
-                    };
-                    
-                    LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                           ClientTelemetryOptions.RequestLatencyMax,
-                                                           ClientTelemetryOptions.RequestLatencyPrecision));
-                    latencyHist.RecordValue(storetatistics.RequestLatency.Ticks);
+                        RequestInfo requestInfo = new RequestInfo()
+                        {
+                            DatabaseName = databaseId,
+                            ContainerName = containerId,
+                            Uri = storetatistics.StoreResult.StorePhysicalAddress.ToString(),
+                            StatusCode = (int)storetatistics.StoreResult.StatusCode,
+                            SubStatusCode = (int)storetatistics.StoreResult.SubStatusCode,
+                            Resource = storetatistics.RequestResourceType.ToString(),
+                            Operation = storetatistics.RequestOperationType.ToString(),
+                        };
+
+                        LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                               ClientTelemetryOptions.RequestLatencyMax,
+                                                               ClientTelemetryOptions.RequestLatencyPrecision));
+                        latencyHist.RecordValue(storetatistics.RequestLatency.Ticks);
+                    }
                 }
                 
                 // Recording Request Latency and Request Charge
@@ -380,7 +387,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
             });
         }
-
+        
         /// <summary>
         /// Record CPU and memory usage which will be sent as part of telemetry information
         /// </summary>

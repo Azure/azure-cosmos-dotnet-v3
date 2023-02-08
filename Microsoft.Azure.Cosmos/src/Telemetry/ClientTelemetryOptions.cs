@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
-    using Util;
 
     internal static class ClientTelemetryOptions
     {
@@ -79,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const double Percentile99 = 99.0;
         internal const double Percentile999 = 99.9;
         internal const string DateFormat = "yyyy-MM-ddTHH:mm:ssZ";
-
+        
         internal const string EnvPropsClientTelemetrySchedulingInSeconds = "COSMOS.CLIENT_TELEMETRY_SCHEDULING_IN_SECONDS";
         internal const string EnvPropsClientTelemetryEnabled = "COSMOS.CLIENT_TELEMETRY_ENABLED";
         internal const string EnvPropsClientTelemetryVmMetadataUrl = "COSMOS.VM_METADATA_URL";
@@ -87,7 +86,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string EnvPropsClientTelemetryEnvironmentName = "COSMOS.ENVIRONMENT_NAME";
 
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
-
+        // Why 5 sec? As of now, if any network request is taking more than 5 millisecond sec, we will consider it slow request this value can be revisited in future
+        private static readonly TimeSpan NetworkLatencyThreshold = TimeSpan.FromMilliseconds(5);
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings 
         { 
             NullValueHandling = NullValueHandling.Ignore,
@@ -175,5 +175,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             return environmentName;
         }
+
+        internal static bool IsEligible(int statusCode, TimeSpan latencyInMs)
+        {
+            if ((statusCode >= 400 && statusCode <= 599) || latencyInMs >= ClientTelemetryOptions.NetworkLatencyThreshold)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
     }
 }
