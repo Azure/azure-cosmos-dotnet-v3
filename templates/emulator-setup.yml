@@ -1,5 +1,8 @@
 # File: templates/emulator-setup.yml
 
+parameters:
+  EnableCompute: false
+
 steps:
   - pwsh:  |
         Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL" -ForegroundColor green 
@@ -13,7 +16,22 @@ steps:
         Write-Host "Starting Cosmos DB Emulator" -ForegroundColor green 
         Add-MpPreference -ExclusionPath "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator"
         Add-MpPreference -ExclusionPath "$env:localappdata\CosmosDBEmulator"
-        Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint" -Verb RunAs
+    displayName:  Downloading and Installing Cosmos DB Emulator
+    failOnStderr:  true
+    errorActionPreference:  stop
+  - ${{ if eq(parameters.EnableCompute, true) }}:
+    - pwsh:  |
+          Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint" -Verb RunAs
+      displayName:  Starting Cosmos DB Emulator with Compute GW
+      failOnStderr:  true
+      errorActionPreference:  stop
+  - ${{ if eq(parameters.EnableCompute, false) }}:
+    - pwsh:  |
+          Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview" -Verb RunAs
+      displayName:  Starting Cosmos DB Emulator
+      failOnStderr:  true
+      errorActionPreference:  stop
+  - pwsh:  |
         Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
         Get-Item env:* | Sort-Object -Property Name
         for ($i=0; $i -lt 10; $i++) {
@@ -26,6 +44,6 @@ steps:
           }
         }
       
-    displayName:  Install Public Cosmos DB Emulator
+    displayName:  Starting Cosmos DB Emulator
     failOnStderr:  true
     errorActionPreference:  stop
