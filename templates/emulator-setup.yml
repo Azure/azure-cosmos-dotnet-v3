@@ -21,13 +21,13 @@ steps:
     errorActionPreference:  stop
   - ${{ if eq(parameters.EnableCompute, true) }}:
     - pwsh:  |
-          Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint /Overrides=localStoreDatabaseDefragmentationTimerIntervalInSeconds:3000" -Verb RunAs
+          Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint" -Verb RunAs
       displayName:  Starting Cosmos DB Emulator with Compute GW
       failOnStderr:  true
       errorActionPreference:  stop
   - ${{ if eq(parameters.EnableCompute, false) }}:
     - pwsh:  |
-          Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /Overrides=localStoreDatabaseDefragmentationTimerIntervalInSeconds:3000" -Verb RunAs
+          Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview" -Verb RunAs
       displayName:  Starting Cosmos DB Emulator
       failOnStderr:  true
       errorActionPreference:  stop
@@ -40,18 +40,24 @@ steps:
           if ($status -ne "Running") {
             sleep 30;
           }
+          else {
+            break;
+          }
         }
 
         if ($status -ne "Running") {
           Write-Host "Shutdown"
           Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/Shutdown" -Verb RunAs
           sleep 30;
-          Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /Overrides=localStoreDatabaseDefragmentationTimerIntervalInSeconds:3000" -Verb RunAs
+          Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview" -Verb RunAs
           for ($i=0; $i -lt 10; $i++) {
             $status=Get-CosmosDbEmulatorStatus
             Write-Host "Cosmos DB Emulator Status: $status"
             if ($status -ne "Running") {
               sleep 30;
+            }
+            else {
+              break;
             }
           }
         }
