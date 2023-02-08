@@ -60,6 +60,8 @@ namespace CosmosCTL
                         logger.LogInformation("Telemetry is disabled for CTL.");
                     }
 
+                    logger.LogInformation($"Replica validation enabled: {Environment.GetEnvironmentVariable("AZURE_COSMOS_REPLICA_VALIDATION_ENABLED")}");
+
                     List<Task> tasks = new List<Task>
                     {
                         scenario.RunAsync(

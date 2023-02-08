@@ -7,6 +7,7 @@ namespace CosmosCTL
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading;
@@ -179,9 +180,22 @@ namespace CosmosCTL
             }
 
             CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)cosmosDiagnostics;
-            if (traceDiagnostics.IsGoneExceptionHit())
+
+            if ((bool)config.EnableConsoleLogging)
             {
-                logger.LogInformation($"{operationName} contains 410(GoneExceptions); Reported Metrics Latency: {timerContextLatency.TotalMilliseconds}; Diagnostics Latency: {cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds};");
+                File.AppendAllText(
+                    path: $"{config.OutputFileName}_console.log",
+                    contents: $"{operationName}, {DateTime.UtcNow}, {cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds} {Environment.NewLine}");
+            }
+
+            if (traceDiagnostics.IsGoneExceptionHit() &&
+                (bool)config.EnableDiagnosticsLogging &&
+                cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds > config.DiagnosticsLoggingThresholdInMillis)
+            {
+                File.AppendAllText(
+                    path: $"{config.OutputFileName}_diagnostics.log",
+                    contents: $"{operationName} contains 410(GoneExceptions); Reported Metrics Latency: {timerContextLatency.TotalMilliseconds}; diagnostics:{cosmosDiagnostics} {Environment.NewLine}");
+
                 return;
             }
         }

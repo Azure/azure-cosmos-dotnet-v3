@@ -20,7 +20,9 @@ namespace CosmosCTL
         private readonly Random random = new Random();
 
         private ReadWriteQueryPercentage readWriteQueryPercentage;
+
         private IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> createdDocuments;
+
         private InitializationResult initializationResult;
 
         public async Task InitializeAsync(
@@ -112,7 +114,14 @@ namespace CosmosCTL
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
                 Context = loggingContextIdentifier,
-                Reservoir = () => new App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir()
+                Reservoir = () =>
+                {
+                    if(!(bool)config.UseSlidingWindowReservoir)
+                    {
+                        return new App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir(sampleSize: config.ReservoirSampleSize, alpha: 0.015);
+                    }
+                    return new App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir(sampleSize: config.ReservoirSampleSize);
+                }
             };
 
             TimerOptions writeLatencyTimer = new TimerOptions
@@ -122,7 +131,14 @@ namespace CosmosCTL
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
                 Context = loggingContextIdentifier,
-                Reservoir = () => new App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir()
+                Reservoir = () =>
+                {
+                    if (!(bool)config.UseSlidingWindowReservoir)
+                    {
+                        return new App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir(sampleSize: config.ReservoirSampleSize, alpha: 0.015);
+                    }
+                    return new App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir(sampleSize: config.ReservoirSampleSize);
+                }
             };
 
             TimerOptions queryLatencyTimer = new TimerOptions
@@ -132,7 +148,14 @@ namespace CosmosCTL
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
                 Context = loggingContextIdentifier,
-                Reservoir = () => new App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir()
+                Reservoir = () =>
+                {
+                    if (!(bool)config.UseSlidingWindowReservoir)
+                    {
+                        return new App.Metrics.ReservoirSampling.ExponentialDecay.DefaultForwardDecayingReservoir(sampleSize: config.ReservoirSampleSize, alpha: 0.015);
+                    }
+                    return new App.Metrics.ReservoirSampling.SlidingWindow.DefaultSlidingWindowReservoir(sampleSize: config.ReservoirSampleSize);
+                }
             };
 
             SemaphoreSlim concurrencyControlSemaphore = new SemaphoreSlim(config.Concurrency);
@@ -178,7 +201,7 @@ namespace CosmosCTL
                             operation: i,
                             partitionKeyAttributeName: config.CollectionPartitionKey,
                             containers: initializationResult.Containers,
-                            isContentResponseOnWriteEnabled: config.IsContentResponseOnWriteEnabled)),
+                            isContentResponseOnWriteEnabled: (bool)config.IsContentResponseOnWriteEnabled)),
                         onSuccess: () =>
                         {
                             concurrencyControlSemaphore.Release();

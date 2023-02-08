@@ -76,7 +76,7 @@ namespace CosmosCTL
         }
 
         [Option("ctl_content_response_on_write", Required = false, HelpText = "Should return content response on writes")]
-        public bool IsContentResponseOnWriteEnabled { get; set; } = true;
+        public bool? IsContentResponseOnWriteEnabled { get; set; } = true;
 
         [Option("ctl_output_event_traces", Required = false, HelpText = "Outputs TraceSource to console")]
         public bool OutputEventTraces { get; set; } = false;
@@ -102,7 +102,29 @@ namespace CosmosCTL
         [Option("ctl_telemetry_schedule_in_sec", Required = false, HelpText = "telemetry task schedule time in sec")]
         public string TelemetryScheduleInSeconds { get; set; }
 
+        [Option("ctl_diagnostics_output_filename", Required = false, HelpText = "File name for capturing diagnostics metrics.")]
+        public string OutputFileName { get; set; } = "output";
+
+        [Option("ctl_enable_diagnostics_logging", Required = false, HelpText = "Enables diagnostics logging.")]
+        public bool? EnableDiagnosticsLogging { get; set; } = false;
+
+        [Option("ctl_diagnostics_logging_threshold_in_mills", Required = false, HelpText = "Diagnostics logging threshold.")]
+        public int DiagnosticsLoggingThresholdInMillis { get; set; } = 5000;
+
+        [Option("ctl_enable_console_logging", Required = false, HelpText = "Enables console logging.")]
+        public bool? EnableConsoleLogging { get; set; } = false;
+
+        [Option("ctl_use_slidingwindow_reservoir", Required = false, HelpText = "Uses sliding window reservoir.")]
+        public bool? UseSlidingWindowReservoir { get; set; } = true;
+
+        [Option("ctl_reservoir_sample_size", Required = false, HelpText = "The reservoir sample size.")]
+        public int ReservoirSampleSize { get; set; } = 1028;
+
+        [Option("ctl_replica_validation_Enabled", Required = false, HelpText = "Replica Validation Enabled Flag.")]
+        public bool? ReplicaValidationEnabled { get; set; } = false;
+
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
+
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
 
         internal static CTLConfig From(string[] args)
