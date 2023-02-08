@@ -34,7 +34,7 @@ steps:
   - pwsh:  |
         Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
         Get-Item env:* | Sort-Object -Property Name
-        for ($i=0; $i -lt 30; $i++) {
+        for ($i=0; $i -lt 60; $i++) {
           $status=Get-CosmosDbEmulatorStatus
           if ($status -ne "Running") {
             sleep 30;
