@@ -40,12 +40,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         internal CosmosClient Client;
         internal Cosmos.Database database;
 
-        public QueryTestsBase()
-        {
-            this.GatewayClient = TestCommon.CreateCosmosClient(true, builder => builder.AddCustomHandlers(this.GatewayRequestChargeHandler));
-            this.Client = TestCommon.CreateCosmosClient(false, builder => builder.AddCustomHandlers(this.DirectRequestChargeHandler));
-        }
-
         [FlagsAttribute]
         internal enum ConnectionModes
         {
@@ -64,11 +58,18 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [ClassInitialize]
-        [ClassCleanup]
-        public static void ClassSetup(TestContext testContext = null)
+        public void ClassInitialize(TestContext testContext = null)
         {
-            using CosmosClient client = TestCommon.CreateCosmosClient(false);
-            QueryTestsBase.CleanUp(client).Wait();
+            this.GatewayClient = TestCommon.CreateCosmosClient(true, builder => builder.AddCustomHandlers(this.GatewayRequestChargeHandler));
+            this.Client = TestCommon.CreateCosmosClient(false, builder => builder.AddCustomHandlers(this.DirectRequestChargeHandler));
+        }
+
+        [ClassCleanup]
+        public async Task ClassCleanup(TestContext testContext = null)
+        {
+            await QueryTestsBase.CleanUp(this.Client);
+            this.Client.Dispose();
+            this.GatewayClient.Dispose();
         }
 
         [TestInitialize]
