@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         [ClassCleanup]
         public static void ClassSetup(TestContext testContext = null)
         {
-            CosmosClient client = TestCommon.CreateCosmosClient(false);
+            using CosmosClient client = TestCommon.CreateCosmosClient(false);
             QueryTestsBase.CleanUp(client).Wait();
         }
 

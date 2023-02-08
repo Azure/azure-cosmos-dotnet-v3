@@ -560,16 +560,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateVersionHeader()
         {
             string correctVersion = HttpConstants.Versions.CurrentVersion;
+            Database db = null;
             try
             {
                 DocumentClient client = TestCommon.CreateClient(true);
-                var db = (await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
+                db = (await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
                 var coll = (await client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Resource;
                 var doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
+                client.Dispose();
                 client = TestCommon.CreateClient(true);
                 doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
                 HttpConstants.Versions.CurrentVersion = "2015-01-01";
+                client.Dispose();
                 client = TestCommon.CreateClient(true);
                 try
                 {
@@ -584,6 +587,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             finally
             {
                 HttpConstants.Versions.CurrentVersion = correctVersion;
+                using DocumentClient client = TestCommon.CreateClient(true);
+                await client.DeleteDatabaseAsync(db);
             }
         }
 
@@ -662,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateExcludeSystemProperties()
         {
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             await ValidateExcludeSystemProperties(client);
         }
 
@@ -777,6 +782,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //read document with default settings (system properties should be included)
             Document readDoc3Default = await client.ReadDocumentAsync(coll.AltLink + "/docs/doc3", new RequestOptions() { PartitionKey = new PartitionKey("doc3") });
             Assert.AreEqual(readDoc3WithProps.ToString(), readDoc3Default.ToString());
+
+            await client.DeleteDatabaseAsync(db);
         }
 
         private async Task ValidateCollectionIndexProgressHeadersAsync(DocumentClient client, bool isElasticCollection)
@@ -871,7 +878,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                client.DeleteDatabaseAsync(db).Wait();
+                await client.DeleteDatabaseAsync(db);
             }
         }
 

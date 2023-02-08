@@ -401,42 +401,49 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp))
             {
                 Database db = (await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
-                DocumentCollection coll = await TestCommon.CreateCollectionAsync(client, db, new DocumentCollection()
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    PartitionKey = new PartitionKeyDefinition()
-                    {
-                        Paths = new System.Collections.ObjectModel.Collection<string>() { "/id" }
-                    }
-                });
-
-                LinqGeneralBaselineTests.Book myBook = new LinqGeneralBaselineTests.Book();
-                myBook.Id = Guid.NewGuid().ToString();
-                myBook.Title = "Azure DocumentDB 101";
-
-                Document doc = (await client.CreateDocumentAsync(coll.SelfLink, myBook)).Resource;
-
-                myBook.Title = "Azure DocumentDB 201";
-                await client.ReplaceDocumentAsync(doc.SelfLink, myBook);
-
-                AccessCondition condition = new AccessCondition();
-                condition.Type = AccessConditionType.IfMatch;
-                condition.Condition = doc.ETag;
-
-                RequestOptions requestOptions = new RequestOptions();
-                requestOptions.AccessCondition = condition;
-
-                myBook.Title = "Azure DocumentDB 301";
-
                 try
                 {
-                    await client.UpsertDocumentAsync(coll.SelfLink, myBook, requestOptions);
-                    Assert.Fail("Upsert Document should fail since the Etag is not matching.");
+                    DocumentCollection coll = await TestCommon.CreateCollectionAsync(client, db, new DocumentCollection()
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        PartitionKey = new PartitionKeyDefinition()
+                        {
+                            Paths = new System.Collections.ObjectModel.Collection<string>() { "/id" }
+                        }
+                    });
+
+                    LinqGeneralBaselineTests.Book myBook = new LinqGeneralBaselineTests.Book();
+                    myBook.Id = Guid.NewGuid().ToString();
+                    myBook.Title = "Azure DocumentDB 101";
+
+                    Document doc = (await client.CreateDocumentAsync(coll.SelfLink, myBook)).Resource;
+
+                    myBook.Title = "Azure DocumentDB 201";
+                    await client.ReplaceDocumentAsync(doc.SelfLink, myBook);
+
+                    AccessCondition condition = new AccessCondition();
+                    condition.Type = AccessConditionType.IfMatch;
+                    condition.Condition = doc.ETag;
+
+                    RequestOptions requestOptions = new RequestOptions();
+                    requestOptions.AccessCondition = condition;
+
+                    myBook.Title = "Azure DocumentDB 301";
+
+                    try
+                    {
+                        await client.UpsertDocumentAsync(coll.SelfLink, myBook, requestOptions);
+                        Assert.Fail("Upsert Document should fail since the Etag is not matching.");
+                    }
+                    catch (Exception ex)
+                    {
+                        DocumentClientException innerException = ex as DocumentClientException;
+                        Assert.AreEqual(HttpStatusCode.PreconditionFailed, innerException.StatusCode, "Invalid status code");
+                    }
                 }
-                catch (Exception ex)
+                finally
                 {
-                    DocumentClientException innerException = ex as DocumentClientException;
-                    Assert.AreEqual(HttpStatusCode.PreconditionFailed, innerException.StatusCode, "Invalid status code");
+                    await client.DeleteDatabaseAsync(db);
                 }
             }
         }
@@ -794,6 +801,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             proxy = new TestWebProxy { Credentials = new NetworkCredential("test", "test") };
 
+            cosmosClient.Dispose();
             cosmosClient = new CosmosClient(
                 endpoint,
                 ConfigurationManager.AppSettings["MasterKey"],
@@ -809,6 +817,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             });
+            cosmosClient.Dispose();
         }
 
         [TestMethod]

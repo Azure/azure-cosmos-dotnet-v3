@@ -13,45 +13,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class CosmosPermissionTests
+    public class CosmosPermissionTests : BaseCosmosClientHelper
     {
-        private CosmosClient cosmosClient = null;
-        private Database cosmosDatabase = null;
-
         [TestInitialize]
-        public async Task TestInit()
+        public async Task TestInitialize()
         {
-            this.cosmosClient = TestCommon.CreateCosmosClient();
-
-            string databaseName = Guid.NewGuid().ToString();
-            DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
-            this.cosmosDatabase = cosmosDatabaseResponse;
+            await base.TestInit();
         }
 
         [TestCleanup]
-        public async Task TestCleanup()
+        public async Task Cleanup()
         {
-            if (this.cosmosClient == null)
-            {
-                return;
-            }
-
-            if (this.cosmosDatabase != null)
-            {
-                await this.cosmosDatabase.DeleteStreamAsync();
-            }
-            this.cosmosClient.Dispose();
+            await base.TestCleanup();
         }
 
         [TestMethod]
         public async Task CRUDTest()
         {
             string containerId = Guid.NewGuid().ToString();
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(containerId, "/id");
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
 
             string userId = Guid.NewGuid().ToString();
-            UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
+            UserResponse userResponse = await this.database.CreateUserAsync(userId);
             User user = userResponse.User;
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
             Assert.AreEqual(userId, user.Id);
@@ -118,14 +102,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //create user
             string userId = Guid.NewGuid().ToString();
-            UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
+            UserResponse userResponse = await this.database.CreateUserAsync(userId);
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
             Assert.AreEqual(userId, userResponse.Resource.Id);
             User user = userResponse.User;
 
             //create resource
             string containerId = Guid.NewGuid().ToString();
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(containerId, "/id");
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Container container = containerResponse.Container;
 
@@ -140,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(cosmosClientOptions, resourceToken: permission.Token))
             {
-                Container readContainerRef = tokenCosmosClient.GetContainer(this.cosmosDatabase.Id, containerId);
+                Container readContainerRef = tokenCosmosClient.GetContainer(this.database.Id, containerId);
 
                 //read resource with PermissionMode.Read
                 using FeedIterator<dynamic> feedIterator = readContainerRef.GetItemQueryIterator<dynamic>("SELECT * FROM c");
@@ -153,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 try
                 {
                     ContainerResponse response = await tokenCosmosClient
-                    .GetDatabase(this.cosmosDatabase.Id)
+                    .GetDatabase(this.database.Id)
                     .GetContainer(containerId)
                     .DeleteContainerAsync();
                     Assert.Fail();
@@ -173,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(cosmosClientOptions, resourceToken: permission.Token))
             {
                 ContainerResponse response = await tokenCosmosClient
-                    .GetDatabase(this.cosmosDatabase.Id)
+                    .GetDatabase(this.database.Id)
                     .GetContainer(containerId)
                     .DeleteContainerAsync();
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
@@ -313,14 +297,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //create user
             string userId = Guid.NewGuid().ToString();
-            UserResponse userResponse = await this.cosmosDatabase.CreateUserAsync(userId);
+            UserResponse userResponse = await this.database.CreateUserAsync(userId);
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
             Assert.AreEqual(userId, userResponse.Resource.Id);
             User user = userResponse.User;
 
             //create resource
             string containerId = Guid.NewGuid().ToString();
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerAsync(containerId, "/id");
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(containerId, "/id");
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Container container = containerResponse.Container;
             string itemId = Guid.NewGuid().ToString();
@@ -340,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: cosmosClientOptions, resourceToken: permission.Token))
             {
-                Container tokenContainer = tokenCosmosClient.GetContainer(this.cosmosDatabase.Id, containerId);
+                Container tokenContainer = tokenCosmosClient.GetContainer(this.database.Id, containerId);
 
                 //read resource with PermissionMode.Read
                 ItemResponse<dynamic> readPermissionItem = await tokenContainer.ReadItemAsync<dynamic>(itemId, partitionKey);
@@ -370,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (CosmosClient tokenCosmosClient = TestCommon.CreateCosmosClient(clientOptions: cosmosClientOptions, resourceToken: permission.Token))
             {
                 using (FeedIterator<dynamic> feed = tokenCosmosClient
-                    .GetDatabase(this.cosmosDatabase.Id)
+                    .GetDatabase(this.database.Id)
                     .GetContainer(containerId)
                     .GetItemQueryIterator<dynamic>(new QueryDefinition("select * from t")))
                 {
