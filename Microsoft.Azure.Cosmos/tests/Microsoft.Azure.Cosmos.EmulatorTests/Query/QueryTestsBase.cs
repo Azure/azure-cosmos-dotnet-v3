@@ -36,8 +36,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         internal static readonly string[] NoDocuments = new string[] { };
         internal RequestChargeTrackingHandler GatewayRequestChargeHandler = new RequestChargeTrackingHandler();
         internal RequestChargeTrackingHandler DirectRequestChargeHandler = new RequestChargeTrackingHandler();
-        internal static CosmosClient GatewayClient;
-        internal static CosmosClient Client;
+        internal CosmosClient GatewayClient;
+        internal CosmosClient Client;
         internal Cosmos.Database database;
 
         [FlagsAttribute]
@@ -57,24 +57,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             MultiPartition = 0x4,
         }
 
-        [ClassInitialize]
-        public static void ClassInitialize(TestContext testContext = null)
-        {
-            QueryTestsBase.GatewayClient = TestCommon.CreateCosmosClient(true, builder => builder.AddCustomHandlers(this.GatewayRequestChargeHandler));
-            QueryTestsBase.Client = TestCommon.CreateCosmosClient(false, builder => builder.AddCustomHandlers(this.DirectRequestChargeHandler));
-        }
-
-        [ClassCleanup]
-        public static async Task ClassCleanup(TestContext testContext = null)
-        {
-            await QueryTestsBase.CleanUp(QueryTestsBase.Client);
-            QueryTestsBase.Client.Dispose();
-            QueryTestsBase.GatewayClient.Dispose();
-        }
-
         [TestInitialize]
         public async Task Initialize()
         {
+            this.GatewayClient = TestCommon.CreateCosmosClient(true, builder => builder.AddCustomHandlers(this.GatewayRequestChargeHandler));
+            this.Client = TestCommon.CreateCosmosClient(false, builder => builder.AddCustomHandlers(this.DirectRequestChargeHandler));
             this.database = await this.Client.CreateDatabaseAsync(Guid.NewGuid().ToString() + "db");
         }
 
@@ -82,6 +69,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         public async Task Cleanup()
         {
             await this.database.DeleteStreamAsync();
+            this.Client.Dispose();
+            this.GatewayClient.Dispose();
         }
 
         private static string GetApiVersion()
@@ -360,6 +349,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
             finally
             {
+                this.Client.Dispose();
+                this.GatewayClient.Dispose();
                 this.Client = originalCosmosClient;
                 this.GatewayClient = originalGatewayClient;
                 this.database = originalDatabase;
