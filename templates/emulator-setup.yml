@@ -34,24 +34,10 @@ steps:
   - pwsh:  |
         Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
         Get-Item env:* | Sort-Object -Property Name
-        for ($i=0; $i -lt 10; $i++) {
-          $status=Get-CosmosDbEmulatorStatus
-          Write-Host "Cosmos DB Emulator Status: $status"
-          if ($status -ne "Running") {
-            sleep 30;
-          }
-          else {
-            break;
-          }
-        }
 
-        if ($status -ne "Running") {
-          Write-Host "Shutdown"
-          Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/Shutdown" -Verb RunAs
-          sleep 30;
-          ${{ variables.emulatorExecution }}
-          for ($i=0; $i -lt 10; $i++) {
-            Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "$EmulatorParameters" -Verb RunAs
+        for ($j=0; $j -lt 10; $j++) {
+          for ($i=0; $i -lt 6; $i++) {
+            $status=Get-CosmosDbEmulatorStatus
             Write-Host "Cosmos DB Emulator Status: $status"
             if ($status -ne "Running") {
               sleep 30;
@@ -59,6 +45,15 @@ steps:
             else {
               break;
             }
+          }
+          if ($status -ne "Running") {
+            Write-Host "Shutting down and restarting"
+            Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/Shutdown" -Verb RunAs
+            sleep 30;
+            Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "$EmulatorParameters" -Verb RunAs
+          }
+          else {
+            break;
           }
         }
       
