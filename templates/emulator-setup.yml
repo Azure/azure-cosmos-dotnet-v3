@@ -40,6 +40,7 @@ steps:
             sleep 30;
             Write-Host "Cosmos DB Emulator Status: $status" -ForegroundColor yellow
           } else {
+            Write-Host "Cosmos DB Emulator Status: $status" -ForegroundColor green
             break;
           }
         }
