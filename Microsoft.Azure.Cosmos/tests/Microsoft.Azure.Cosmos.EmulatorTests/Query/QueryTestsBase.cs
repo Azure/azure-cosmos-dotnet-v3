@@ -36,8 +36,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         internal static readonly string[] NoDocuments = new string[] { };
         internal RequestChargeTrackingHandler GatewayRequestChargeHandler = new RequestChargeTrackingHandler();
         internal RequestChargeTrackingHandler DirectRequestChargeHandler = new RequestChargeTrackingHandler();
-        internal CosmosClient GatewayClient;
-        internal CosmosClient Client;
+        internal static CosmosClient GatewayClient;
+        internal static CosmosClient Client;
         internal Cosmos.Database database;
 
         [FlagsAttribute]
@@ -58,18 +58,18 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [ClassInitialize]
-        public void ClassInitialize(TestContext testContext = null)
+        public static void ClassInitialize(TestContext testContext = null)
         {
-            this.GatewayClient = TestCommon.CreateCosmosClient(true, builder => builder.AddCustomHandlers(this.GatewayRequestChargeHandler));
-            this.Client = TestCommon.CreateCosmosClient(false, builder => builder.AddCustomHandlers(this.DirectRequestChargeHandler));
+            QueryTestsBase.GatewayClient = TestCommon.CreateCosmosClient(true, builder => builder.AddCustomHandlers(this.GatewayRequestChargeHandler));
+            QueryTestsBase.Client = TestCommon.CreateCosmosClient(false, builder => builder.AddCustomHandlers(this.DirectRequestChargeHandler));
         }
 
         [ClassCleanup]
-        public async Task ClassCleanup(TestContext testContext = null)
+        public static async Task ClassCleanup(TestContext testContext = null)
         {
-            await QueryTestsBase.CleanUp(this.Client);
-            this.Client.Dispose();
-            this.GatewayClient.Dispose();
+            await QueryTestsBase.CleanUp(QueryTestsBase.Client);
+            QueryTestsBase.Client.Dispose();
+            QueryTestsBase.GatewayClient.Dispose();
         }
 
         [TestInitialize]

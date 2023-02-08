@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
     public abstract class BaseCosmosClientHelper
     {
-        static private CosmosClient defaultCosmosClient = null;
+        private static readonly CosmosClient defaultCosmosClient = TestCommon.CreateCosmosClient();
 
         private CosmosClient cosmosClient = null;
         protected Database database = null;
@@ -32,8 +32,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationToken = this.cancellationTokenSource.Token;
 
-            BaseCosmosClientHelper.defaultCosmosClient ??= TestCommon.CreateCosmosClient();
-            
             await this.BaseInit(BaseCosmosClientHelper.defaultCosmosClient);
         }
 
@@ -60,6 +58,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.cancellationTokenSource?.Cancel();
 
+            // Only dispose if the caller set a custom client
             this.cosmosClient?.Dispose();
         }
 
