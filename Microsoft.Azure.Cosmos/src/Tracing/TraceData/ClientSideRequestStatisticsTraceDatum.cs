@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private SystemUsageHistory systemUsageHistory = null;
         public TraceSummary TraceSummary = null;
 
-        public ClientSideRequestStatisticsTraceDatum(DateTime startTime, TraceSummary summary)
+        public ClientSideRequestStatisticsTraceDatum(DateTime startTime, TraceSummary summary, string traceId = null)
         {
             this.RequestStartTimeUtc = startTime;
             this.RequestEndTimeUtc = null;
@@ -46,9 +46,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatistics = new List<HttpResponseStatistics>();
             this.TraceSummary = summary;
+            this.TraceId = traceId;
         }
 
         public DateTime RequestStartTimeUtc { get; }
+        public string TraceId { get; }
 
         public DateTime? RequestEndTimeUtc { get; private set; }
 

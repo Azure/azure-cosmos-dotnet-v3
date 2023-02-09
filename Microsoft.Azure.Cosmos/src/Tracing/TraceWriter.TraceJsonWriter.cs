@@ -194,6 +194,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("Id");
                 this.jsonWriter.WriteStringValue("AggregatedClientSideRequestStatistics");
 
+                if (!String.IsNullOrEmpty(clientSideRequestStatisticsTraceDatum.TraceId))
+                {
+                    this.jsonWriter.WriteFieldName("TraceId");
+                    this.jsonWriter.WriteStringValue(clientSideRequestStatisticsTraceDatum.TraceId);
+                }
                 this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", clientSideRequestStatisticsTraceDatum.ContactedReplicas);
 
                 this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
