@@ -22,7 +22,7 @@ steps:
 
       for ($j=0; $j -lt 5; $j++) {
         Write-Host "Attempt $j"
-        Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint" -Verb RunAs
+        Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=100 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint" -Verb RunAs
         for ($i=0; $i -lt 5; $i++) {
           $status = Get-CosmosDbEmulatorStatus
           Write-Host "Cosmos DB Emulator Status: $status"
