@@ -61,7 +61,7 @@ namespace CFPullModelAllVersionsAndDeletesMode
 
             // <InitializeFeedIterator>
             using (FeedIterator<AllVersionsAndDeletesCFResponse> allVersionsIterator = container
-                .GetChangeFeedIterator<AllVersionsAndDeletesCFResponse>(ChangeFeedStartFrom.Now(), ChangeFeedMode.FullFidelity))
+                .GetChangeFeedIterator<AllVersionsAndDeletesCFResponse>(ChangeFeedStartFrom.Now(), ChangeFeedMode.AllVersionsAndDeletes))
             {
                 while (allVersionsIterator.HasMoreResults)
                 {
@@ -134,7 +134,7 @@ namespace CFPullModelAllVersionsAndDeletesMode
             Console.WriteLine("Press any key to stop.");
 
             // <ReadAllVersionsAndDeletesChanges>
-            using (FeedIterator<AllVersionsAndDeletesCFResponse> allVersionsIterator = container.GetChangeFeedIterator<AllVersionsAndDeletesCFResponse>(ChangeFeedStartFrom.ContinuationToken(allVersionsContinuationToken), ChangeFeedMode.FullFidelity, new ChangeFeedRequestOptions { PageSizeHint = 10 }))
+            using (FeedIterator<AllVersionsAndDeletesCFResponse> allVersionsIterator = container.GetChangeFeedIterator<AllVersionsAndDeletesCFResponse>(ChangeFeedStartFrom.ContinuationToken(allVersionsContinuationToken), ChangeFeedMode.AllVersionsAndDeletes, new ChangeFeedRequestOptions { PageSizeHint = 10 }))
             {
                 while (allVersionsIterator.HasMoreResults)
                 {

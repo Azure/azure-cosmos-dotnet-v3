@@ -60,7 +60,7 @@
             Console.WriteLine("Creating ChangeFeedIterator to read the change feed in Latest Version mode.");
 
             // <InitializeFeedIterator>
-            using (FeedIterator<Item> latestVersionIterator = container.GetChangeFeedIterator<Item>(ChangeFeedStartFrom.Now(), ChangeFeedMode.Incremental))
+            using (FeedIterator<Item> latestVersionIterator = container.GetChangeFeedIterator<Item>(ChangeFeedStartFrom.Now(), ChangeFeedMode.LatestVersion))
             {
                 while (latestVersionIterator.HasMoreResults)
                 {
@@ -88,7 +88,7 @@
             Console.WriteLine("Press any key to stop.");
 
             // <ReadLatestVersionChanges>
-            using (FeedIterator<Item> latestVersionIterator = container.GetChangeFeedIterator<Item>(ChangeFeedStartFrom.ContinuationToken(latestVersionContinuationToken), ChangeFeedMode.Incremental, new ChangeFeedRequestOptions { PageSizeHint = 10 }))
+            using (FeedIterator<Item> latestVersionIterator = container.GetChangeFeedIterator<Item>(ChangeFeedStartFrom.ContinuationToken(latestVersionContinuationToken), ChangeFeedMode.LatestVersion, new ChangeFeedRequestOptions { PageSizeHint = 10 }))
             {
                 while (latestVersionIterator.HasMoreResults)
                 {
