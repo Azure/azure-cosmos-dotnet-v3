@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestCleanup]
-        public async void TestCleanUp()
+        public async Task TestCleanUp()
         {
             await base.TestCleanup();
         }

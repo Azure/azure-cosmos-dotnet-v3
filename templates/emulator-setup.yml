@@ -1,8 +1,5 @@
 # File: templates/emulator-setup.yml
 
-parameters:
-  EnableCompute: false
-
 steps:
   - pwsh: |
       Write-Host "Downloading Cosmos Emulator - $env:EMULATORMSIURL" -ForegroundColor green 
@@ -18,23 +15,15 @@ steps:
     displayName: Downloading and Installing Cosmos DB Emulator
     failOnStderr: true
     errorActionPreference: stop
-  - ${{ if eq(parameters.EnableCompute, true) }}:
-      - pwsh: |
-          Set-Variable -Name "EmulatorParameters" -Value "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint /Overrides=localStoreDatabaseDefragmentationTimerIntervalInSeconds:3000"
-        displayName: Set Emulator parameters with Compute Endpoint
-  - ${{ if eq(parameters.EnableCompute, false) }}:
-      - pwsh: |
-          Set-Variable -Name "EmulatorParameters" -Value "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /Overrides=localStoreDatabaseDefragmentationTimerIntervalInSeconds:3000"
-        displayName: Set Emulator parameters
   - pwsh: |
       Write-Host "Starting Cosmos DB Emulator" -ForegroundColor green 
       Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
       Get-Item env:* | Sort-Object -Property Name
 
-      for ($j=0; $j -lt 3; $j++) {
+      for ($j=0; $j -lt 5; $j++) {
         Write-Host "Attempt $j"
         Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint" -Verb RunAs
-        for ($i=0; $i -lt 10; $i++) {
+        for ($i=0; $i -lt 5; $i++) {
           $status = Get-CosmosDbEmulatorStatus
           Write-Host "Cosmos DB Emulator Status: $status"
           if ($status -ne "Running") {
