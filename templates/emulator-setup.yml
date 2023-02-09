@@ -20,7 +20,7 @@ steps:
       Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
       Get-Item env:* | Sort-Object -Property Name
 
-      for ($j=0; $j -lt 5; $j++) {
+      for ($j=0; $j -lt 3; $j++) {
         Write-Host "Attempt $j"
         Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=50 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint" -Verb RunAs
         for ($i=0; $i -lt 5; $i++) {
