@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -598,7 +600,7 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnablePartitionLevelFailover { get; set; } = false;
 
         /// <summary>
-        /// Quorum Read allowed with eventual consistency account
+        /// Quorum Read allowed with eventual consistency account or consistent prefix account.
         /// </summary>
         internal bool EnableUpgradeConsistencyToLocalQuorum { get; set; } = false;
         
@@ -633,6 +635,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal Func<TransportClient, TransportClient> TransportClientHandlerFactory { get; set; }
 
+        /// <summary>
+        /// A callback delegate to do custom certificate validation for both HTTP and TCP.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Customizing SSL verification is not recommended in production environments.
+        /// </para>
+        /// </remarks>
+        public Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
+       
         /// <summary>
         /// API type for the account
         /// </summary>
@@ -746,7 +758,8 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                HttpClientFactory = this.httpClientFactory
+                HttpClientFactory = this.httpClientFactory,
+                ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };
 
             if (this.EnableClientTelemetry.HasValue)

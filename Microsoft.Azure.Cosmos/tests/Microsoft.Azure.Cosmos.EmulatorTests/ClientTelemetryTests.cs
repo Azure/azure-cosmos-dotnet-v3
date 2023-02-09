@@ -974,6 +974,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(telemetryInfo.ProcessId);
                 Assert.AreEqual(HashingExtension.ComputeHash(System.Diagnostics.Process.GetCurrentProcess().ProcessName), telemetryInfo.ProcessId);
                 Assert.IsNotNull(telemetryInfo.UserAgent);
+                Assert.IsFalse(telemetryInfo.UserAgent.Contains("userAgentSuffix"), "Useragent should not have suffix appended"); // Useragent should not contain useragentsuffix as it can have PII
                 Assert.IsNotNull(telemetryInfo.ConnectionMode);
 
                 if(!string.IsNullOrEmpty(telemetryInfo.MachineId))
@@ -1090,7 +1091,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             this.cosmosClientBuilder = this.cosmosClientBuilder
-                .WithHttpClientFactory(() => new HttpClient(handlerHelper));
+                .WithHttpClientFactory(() => new HttpClient(handlerHelper))
+                .WithApplicationName("userAgentSuffix");
 
             this.cosmosClient = mode == ConnectionMode.Gateway
                 ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()
