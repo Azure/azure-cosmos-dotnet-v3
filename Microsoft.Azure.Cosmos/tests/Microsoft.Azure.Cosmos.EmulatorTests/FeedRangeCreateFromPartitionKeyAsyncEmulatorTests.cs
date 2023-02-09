@@ -22,8 +22,8 @@
     [TestClass]
     public class FeedRangeCreateFromPartitionKeyAsyncEmulatorTests
     {
-        private CosmosClient cosmosClient = null;
-        private Database cosmosDatabase = null;
+        private CosmosClient client = null;
+        private Database database = null;
 
         private readonly string currentVersion = HttpConstants.Versions.CurrentVersion;
 
@@ -31,27 +31,20 @@
         public async Task TestInit()
         {
             HttpConstants.Versions.CurrentVersion = "2020-07-15";
-            this.cosmosClient = TestCommon.CreateCosmosClient(true);
+            this.client = TestCommon.CreateCosmosClient(true);
 
             string databaseName = Guid.NewGuid().ToString();
-            DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
-            this.cosmosDatabase = cosmosDatabaseResponse;
+            DatabaseResponse databaseResponse = await this.client.CreateDatabaseIfNotExistsAsync(databaseName);
+            this.database = databaseResponse;
         }
 
         [TestCleanup]
         public async Task TestCleanup()
         {
-            if (this.cosmosClient == null)
-            {
-                return;
-            }
+            await this.database.DeleteAsync();
+            this.client.Dispose();
 
-            if (this.cosmosDatabase != null)
-            {
-                await this.cosmosDatabase.DeleteStreamAsync();
-                HttpConstants.Versions.CurrentVersion = this.currentVersion;
-            }
-            this.cosmosClient.Dispose();
+            HttpConstants.Versions.CurrentVersion = this.currentVersion;
         }
 
         /// <summary>
@@ -63,7 +56,7 @@
         [TestMethod]
         public async Task GetChangeFeedIteratorWithPrefixPartitionKeyReturnsFeedIterator()
         {
-            Container container = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(new(id: @"TestMultiHashedContainer", partitionKeyPaths: new List<string>() { "/city", "/state", "/zipCode" }));
+            Container container = await this.database.CreateContainerIfNotExistsAsync(new(id: @"TestMultiHashedContainer", partitionKeyPaths: new List<string>() { "/city", "/state", "/zipCode" }));
             ContainerProperties containerProperties = await container.ReadContainerAsync();
 
             Assert.AreEqual(expected: PartitionKeyDefinitionVersion.V2, actual: containerProperties.PartitionKeyDefinitionVersion);
@@ -109,7 +102,7 @@
         [TestMethod]
         public async Task GetChangeFeedStreamIteratorWithPrefixPartitionKeyReturnsFeedIterator()
         {
-            Container container = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(new(id: @"TestMultiHashedContainer", partitionKeyPaths: new List<string>() { "/city", "/state", "/zipCode" }));
+            Container container = await this.database.CreateContainerIfNotExistsAsync(new(id: @"TestMultiHashedContainer", partitionKeyPaths: new List<string>() { "/city", "/state", "/zipCode" }));
             ContainerProperties containerProperties = await container.ReadContainerAsync();
 
             Assert.AreEqual(expected: PartitionKeyDefinitionVersion.V2, actual: containerProperties.PartitionKeyDefinitionVersion);
@@ -164,7 +157,7 @@
         [Owner("naga.naravamakula")]
         public async Task GetItemQueryIteratorWithPrefixPartitionKeyReturnsFeedIterator()
         {
-            Container container = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(new(id: @"TestMultiHashedContainer", partitionKeyPaths: new List<string>() { "/city", "/state", "/zipCode" }));
+            Container container = await this.database.CreateContainerIfNotExistsAsync(new(id: @"TestMultiHashedContainer", partitionKeyPaths: new List<string>() { "/city", "/state", "/zipCode" }));
             ContainerProperties containerProperties = await container.ReadContainerAsync();
 
             Assert.AreEqual(expected: PartitionKeyDefinitionVersion.V2, actual: containerProperties.PartitionKeyDefinitionVersion);
@@ -217,7 +210,7 @@
         [TestMethod]
         public async Task GetItemQueryStreamIteratorWithPrefixPartitionKeyReturnsFeedIterator()
         {
-            Container container = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(new(id: @"TestMultiHashedContainer", partitionKeyPaths: new List<string>() { "/city", "/state", "/zipCode" }));
+            Container container = await this.database.CreateContainerIfNotExistsAsync(new(id: @"TestMultiHashedContainer", partitionKeyPaths: new List<string>() { "/city", "/state", "/zipCode" }));
             ContainerProperties containerProperties = await container.ReadContainerAsync();
 
             Assert.AreEqual(expected: PartitionKeyDefinitionVersion.V2, actual: containerProperties.PartitionKeyDefinitionVersion);
@@ -275,7 +268,7 @@
                 Paths = new System.Collections.ObjectModel.Collection<string>(new List<string>() { "/city", "/state", "/zipCode" })
             });
 
-            Container container = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties: containerProperties);
+            Container container = await this.database.CreateContainerIfNotExistsAsync(containerProperties: containerProperties);
 
             Assert.AreEqual(expected: PartitionKeyDefinitionVersion.V2, actual: containerProperties.PartitionKeyDefinitionVersion);
             Assert.AreEqual(expected: 3, actual: containerProperties.PartitionKey.Paths.Count);
@@ -314,7 +307,7 @@
         [TestMethod]
         public async Task ReadItemStreamWithFullPartitionKeyReturnsFeedIterator()
         {
-            Container container = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(new(id: @"TestMultiHashedContainer", partitionKeyPaths: new List<string>() { "/city", "/state", "/zipCode" }));
+            Container container = await this.database.CreateContainerIfNotExistsAsync(new(id: @"TestMultiHashedContainer", partitionKeyPaths: new List<string>() { "/city", "/state", "/zipCode" }));
             ContainerProperties containerProperties = await container.ReadContainerAsync();
 
             Assert.AreEqual(expected: PartitionKeyDefinitionVersion.V2, actual: containerProperties.PartitionKeyDefinitionVersion);
