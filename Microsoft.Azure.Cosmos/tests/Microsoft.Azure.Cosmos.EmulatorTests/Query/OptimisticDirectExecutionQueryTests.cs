@@ -15,23 +15,15 @@
     public sealed class OptimisticDirectExecutionQueryTests : QueryTestsBase
     {
         [TestMethod]
-        public async Task TestOptimisticDirectExecutionQueries()
+        public async Task TestPassingOptimisticDirectExecutionQueries()
         {
             int numberOfDocuments = 8;
             string partitionKey = "key";
             string numberField = "numberField";
             string nullField = "nullField";
 
-            List<string> documents = new List<string>(numberOfDocuments);
-            for (int i = 0; i < numberOfDocuments; ++i)
-            {
-                Document doc = new Document();
-                doc.SetPropertyValue(partitionKey, "/value");
-                doc.SetPropertyValue(numberField, i % 8);
-                doc.SetPropertyValue(nullField, null);
-                documents.Add(doc.ToString());
-            }
-
+            List<string> documents = CreateDocuments(numberOfDocuments, partitionKey, numberField, nullField);
+            
             SinglePartitionWithContinuationsArgs args = new SinglePartitionWithContinuationsArgs
             {
                 NumberOfDocuments = numberOfDocuments,
@@ -39,49 +31,6 @@
                 NumberField = numberField,
                 NullField = nullField,
             };
-
-            CollectionTypes[] pipelineTypes = new CollectionTypes[] { CollectionTypes.SinglePartition, CollectionTypes.MultiPartition };
-            foreach (CollectionTypes type in pipelineTypes)
-            {
-                await this.CreateIngestQueryDeleteAsync<SinglePartitionWithContinuationsArgs>(
-                     ConnectionModes.Direct | ConnectionModes.Gateway,
-                     type,
-                     documents,
-                     (container, documents, args) => RunTests(container, documents, args, type),
-                     args,
-                     "/" + partitionKey);
-            }
-        }
-
-        private static async Task RunTests(Container container, IReadOnlyList<CosmosObject> documents, SinglePartitionWithContinuationsArgs args, CollectionTypes pipelineType)
-        {
-            await TestPositiveOptimisticDirectExecutionOutput(container, args, pipelineType);
-            await TestNegativeOptimisticDirectExecutionOutput(container);
-        }
-
-        private static async Task TestPositiveOptimisticDirectExecutionOutput(
-            Container container,
-            SinglePartitionWithContinuationsArgs args,
-            CollectionTypes pipelineType)
-        {
-            int documentCount = args.NumberOfDocuments;
-            string partitionKey = args.PartitionKey;
-            string numberField = args.NumberField;
-            string nullField = args.NullField;
-            
-            QueryRequestOptions feedOptions = new QueryRequestOptions
-            {
-                MaxItemCount = -1,
-                EnableOptimisticDirectExecution = true,
-                TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
-            };
-
-            // check if pipeline returns empty continuation token
-            FeedResponse<Document> responseWithEmptyContinuationExpected = await container.GetItemQueryIterator<Document>(
-                $"SELECT TOP 0 * FROM r",
-                requestOptions: feedOptions).ReadNextAsync();
-
-            Assert.AreEqual(null, responseWithEmptyContinuationExpected.ContinuationToken);
 
             List<QueryResultsAndPipelineType> queryAndResults = new List<QueryResultsAndPipelineType>()
             {
@@ -108,69 +57,51 @@
                 new QueryResultsAndPipelineType { Query = $"SELECT TOP 5 VALUE r.{numberField} FROM r GROUP BY r.{numberField}", Result = new List<long> { 0, 1, 2, 3, 4 }, PartitionKey = null, Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.Specialized},
                 
                 // OFFSET LIMIT with WHERE and BETWEEN
-                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = "/value", Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
-                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = null, Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
-                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = "/value", Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
-                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {documentCount} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = null, Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.Specialized},
+                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = "/value", Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = null, Partition = CollectionTypes.SinglePartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = "/value", Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.OptimisticDirectExecution},
+                new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = null, Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.Specialized},
             };
 
-            int[] pageSizeOptions = new[] { -1, 1, 2, 10, 100 };
-            for (int i = 0; i < pageSizeOptions.Length; i++)
+            Container singlePartitionContainer = await CreateContainer(this, CollectionTypes.SinglePartition, documents, partitionKey, args);
+            Container multiPartitionContainer = await CreateContainer(this, CollectionTypes.MultiPartition, documents, partitionKey, args);
+
+            foreach (QueryResultsAndPipelineType queryAndResult in queryAndResults)
             {
-                for(int j = 0; j < queryAndResults.Count(); j++)
-                {
-                    if (pipelineType != queryAndResults[j].Partition)
-                    {
-                        continue;
-                    }
+                bool isSinglePartition = queryAndResult.Partition == CollectionTypes.SinglePartition;
+                Container container = isSinglePartition ? singlePartitionContainer : multiPartitionContainer;
 
-                    // Added check because "Continuation token is not supported for queries with GROUP BY."
-                    if (queryAndResults[j].Query.Contains("GROUP BY"))
-                    {
-                        if (pipelineType == CollectionTypes.MultiPartition) continue;
-                        if (pageSizeOptions[i] != -1) continue;
-                    }
-
-                    feedOptions = new QueryRequestOptions
-                    {
-                        MaxItemCount = pageSizeOptions[i],
-                        PartitionKey = queryAndResults[j].PartitionKey == null
-                           ? null
-                           : new Cosmos.PartitionKey(queryAndResults[j].PartitionKey),
-                        EnableOptimisticDirectExecution = queryAndResults[j].EnableOptimisticDirectExecution,
-                        TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
-                    };
-
-                    List<CosmosElement> items = await RunQueryAsync(
-                            container,
-                            queryAndResults[j].Query,
-                            feedOptions);
-
-                    long[] actual = items.Cast<CosmosNumber>().Select(x => Number64.ToLong(x.Value)).ToArray();
-                    
-                    Assert.IsTrue(queryAndResults[j].Result.SequenceEqual(actual));
-
-                    if (queryAndResults[j].EnableOptimisticDirectExecution)
-                    {
-                        Assert.AreEqual(queryAndResults[j].ExpectedPipelineType, feedOptions.TestSettings.Stats.PipelineType.Value);
-                    }
-                    else
-                    {
-                        // test if Ode is called if TestInjection.EnableOptimisticDirectExecution is false
-                        Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, feedOptions.TestSettings.Stats.PipelineType.Value);
-                    } 
-                }
+                await this.CreateIngestQueryDeleteAsync<SinglePartitionWithContinuationsArgs>(
+                    ConnectionModes.Direct | ConnectionModes.Gateway,
+                    isSinglePartition ? CollectionTypes.SinglePartition : CollectionTypes.MultiPartition,
+                    documents,
+                    (container, documents, args) => RunPassingTests(container, documents, queryAndResult, isSinglePartition),
+                    args,
+                    "/" + partitionKey);
             }
         }
 
-        private static async Task TestNegativeOptimisticDirectExecutionOutput(
-            Container container)
+        private static async Task RunPassingTests(Container container, IReadOnlyList<CosmosObject> documents, QueryResultsAndPipelineType queryAndResult, bool isSinglePartition)
         {
-            QueryRequestOptions feedOptions = new QueryRequestOptions
+            await HelperFunctionForPassingTests(queryAndResult, container, isSinglePartition);
+        }
+
+        [TestMethod]
+        public async Task TestFailingOptimisticDirectExecutionOutput()
+        {
+            int numberOfDocuments = 8;
+            string partitionKey = "key";
+            string numberField = "numberField";
+            string nullField = "nullField";
+
+            List<string> documents = CreateDocuments(numberOfDocuments, partitionKey, numberField, nullField);
+
+            SinglePartitionWithContinuationsArgs args = new SinglePartitionWithContinuationsArgs
             {
-                PartitionKey = new Cosmos.PartitionKey("/value"),
-                EnableOptimisticDirectExecution = true,
-                TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
+                NumberOfDocuments = numberOfDocuments,
+                PartitionKey = partitionKey,
+                NumberField = numberField,
+                NullField = nullField,
             };
 
             // check if bad continuation queries and syntax error queries are handled by pipeline
@@ -183,23 +114,129 @@
 
             foreach (KeyValuePair<string, string> entry in invalidQueries)
             {
-                try
-                {
-                    await container.GetItemQueryIterator<Document>(
-                        queryDefinition: new QueryDefinition(entry.Key),
-                        continuationToken: entry.Value,
-                        requestOptions: feedOptions).ReadNextAsync();
+                await this.CreateIngestQueryDeleteAsync<SinglePartitionWithContinuationsArgs>(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                documents,
+                (container, documents, args) => RunFailingTests(container, entry),
+                args,
+                "/" + partitionKey);
+            }
+        }
 
-                    Assert.Fail("Expect exception");
-                }
-                catch (CosmosException dce)
+        private static async Task RunFailingTests(Container container, KeyValuePair<string, string> queryAndResult)
+        {
+            await HelperFunctionForFailingTests(container, queryAndResult);
+        }
+
+        private static List<string> CreateDocuments(int documentCount, string partitionKey, string numberField, string nullField)
+        {
+            List<string> documents = new List<string>(documentCount);
+            for (int i = 0; i < documentCount; ++i)
+            {
+                Document doc = new Document();
+                doc.SetPropertyValue(partitionKey, "/value");
+                doc.SetPropertyValue(numberField, i % documentCount);
+                doc.SetPropertyValue(nullField, null);
+                documents.Add(doc.ToString());
+            }
+
+            return documents;
+        }
+
+        private static async Task<Container> CreateContainer(QueryTestsBase queryTestsBase, CollectionTypes collectionType, List<string> documents, string partitionKey, SinglePartitionWithContinuationsArgs args)
+        {
+            await queryTestsBase.CreateIngestQueryDeleteAsync<SinglePartitionWithContinuationsArgs>(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                collectionType,
+                documents,
+                (container, documents, args) => SinglePartitionImplementationAsync(container, documents, args, collectionType),
+                args,
+                "/" + partitionKey);
+
+            static async Task<Container> SinglePartitionImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents, SinglePartitionWithContinuationsArgs args, CollectionTypes pipelineType)
+            {
+                return await Task.FromResult(container);
+            }
+
+            return null;
+        }
+
+        private static async Task HelperFunctionForPassingTests(QueryResultsAndPipelineType queryAndResults, Container container, bool isSinglePartition)
+        {
+            QueryRequestOptions feedOptions = new QueryRequestOptions
+            {
+                MaxItemCount = -1,
+                EnableOptimisticDirectExecution = true,
+                TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
+            };
+
+            int[] pageSizeOptions = new[] { -1, 1, 2, 10, 100 };
+            for (int i = 0; i < pageSizeOptions.Length; i++)
+            {
+                // Added check because "Continuation token is not supported for queries with GROUP BY."
+                if (queryAndResults.Query.Contains("GROUP BY"))
                 {
-                    Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
+                    if (!isSinglePartition) continue;
+                    if (pageSizeOptions[i] != -1) continue;
                 }
-                catch (AggregateException aggrEx)
+
+                feedOptions = new QueryRequestOptions
                 {
-                    Assert.Fail(aggrEx.ToString());
+                    MaxItemCount = pageSizeOptions[i],
+                    PartitionKey = queryAndResults.PartitionKey == null
+                        ? null
+                        : new Cosmos.PartitionKey(queryAndResults.PartitionKey),
+                    EnableOptimisticDirectExecution = queryAndResults.EnableOptimisticDirectExecution,
+                    TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
+                };
+
+                List<CosmosElement> items = await RunQueryAsync(
+                        container,
+                        queryAndResults.Query,
+                        feedOptions);
+
+                long[] actual = items.Cast<CosmosNumber>().Select(x => Number64.ToLong(x.Value)).ToArray();
+
+                Assert.IsTrue(queryAndResults.Result.SequenceEqual(actual));
+
+                if (queryAndResults.EnableOptimisticDirectExecution)
+                {
+                    Assert.AreEqual(queryAndResults.ExpectedPipelineType, feedOptions.TestSettings.Stats.PipelineType.Value);
                 }
+                else
+                {
+                    // test if Ode is called if TestInjection.EnableOptimisticDirectExecution is false
+                    Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, feedOptions.TestSettings.Stats.PipelineType.Value);
+                }
+            }
+        }
+
+        private static async Task HelperFunctionForFailingTests(Container container, KeyValuePair<string, string> queryAndResult)
+        {
+            QueryRequestOptions feedOptions = new QueryRequestOptions
+            {
+                PartitionKey = new Cosmos.PartitionKey("/value"),
+                EnableOptimisticDirectExecution = true,
+                TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
+            };
+
+            try
+            {
+                await container.GetItemQueryIterator<Document>(
+                    queryDefinition: new QueryDefinition(queryAndResult.Key),
+                    continuationToken: queryAndResult.Value,
+                    requestOptions: feedOptions).ReadNextAsync();
+
+                Assert.Fail("Expect exception");
+            }
+            catch (CosmosException dce)
+            {
+                Assert.IsTrue(dce.StatusCode == HttpStatusCode.BadRequest);
+            }
+            catch (AggregateException aggrEx)
+            {
+                Assert.Fail(aggrEx.ToString());
             }
         }
 

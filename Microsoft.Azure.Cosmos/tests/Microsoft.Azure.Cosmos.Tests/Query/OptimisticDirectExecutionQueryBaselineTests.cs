@@ -36,10 +36,6 @@
         [Owner("akotalwar")]
         public void PositiveOptimisticDirectExecutionOutput()
         {
-            CosmosElement cosmosElementOdeContinuationToken = CosmosElement.Parse(
-                "{\"OptimisticDirectExecutionToken\":{\"token\":\"{\\\"resourceId\\\":\\\"AQAAAMmFOw8LAAAAAAAAAA==\\\",\\\"skipCount\\\":1}\"," +
-                "\"range\":{\"min\":\"\",\"max\":\"FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF\"}}}");
-
             List<OptimisticDirectExecutionTestInput> testVariations = new List<OptimisticDirectExecutionTestInput>
             {
                 CreateInput(
@@ -77,7 +73,10 @@
                     expectedOptimisticDirectExecution: true,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a",
-                    continuationToken: cosmosElementOdeContinuationToken),
+                    continuationToken: CosmosElement.Parse(
+                        "{\"OptimisticDirectExecutionToken\":{\"token\":\"{\\\"resourceId\\\":\\\"AQAAAMmFOw8LAAAAAAAAAA==\\\"," +
+                        "\\\"skipCount\\\":1}\", \"range\":{\"min\":\"\",\"max\":\"FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF\"}}}")),
+
                 CreateInput(
                     description: @"Null Partition Key Value",
                     query: "SELECT * FROM c",

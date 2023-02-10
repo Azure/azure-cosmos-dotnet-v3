@@ -755,42 +755,43 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         {
             if (!inputParameters.EnableOptimisticDirectExecution) return null; 
             
-            List<Documents.PartitionKeyRange> targetRanges = new List<Documents.PartitionKeyRange>(); 
+            List<Documents.PartitionKeyRange> targetRanges;
             if (partitionedQueryExecutionInfo != null)
             {
                 targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
-                cosmosQueryContext.QueryClient,
-                cosmosQueryContext.ResourceLink,
-                partitionedQueryExecutionInfo,
-                containerQueryProperties,
-                inputParameters.Properties,
-                inputParameters.InitialFeedRange,
-                trace);
+                    cosmosQueryContext.QueryClient,
+                    cosmosQueryContext.ResourceLink,
+                    partitionedQueryExecutionInfo,
+                    containerQueryProperties,
+                    inputParameters.Properties,
+                    inputParameters.InitialFeedRange,
+                    trace);
             }
-            else
+            else if (containerQueryProperties.ResourceId != null)
             {
                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                if (containerQueryProperties.ResourceId != null)
+                if (inputParameters.PartitionKey != null && partitionKeyDefinition != null)
                 {
-                    if (inputParameters.PartitionKey != null)
-                    {
-                        targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                    targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                         cosmosQueryContext.ResourceLink,
                         containerQueryProperties.ResourceId,
                         inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
                         forceRefresh: false,
                         trace);
-                    }
-                    else
-                    {
-                        targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
+                }
+                else
+                {
+                    targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
                         cosmosQueryContext.ResourceLink,
                         containerQueryProperties.ResourceId,
                         new List<Documents.Routing.Range<string>> { FeedRangeEpk.FullRange.Range },
                         forceRefresh: false,
                         trace);
-                    }
                 }
+            } 
+            else
+            {
+                targetRanges = null;
             }
 
             if (targetRanges.Count == 1)
