@@ -238,6 +238,8 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.CosmosSerializationFormatOptions.ContentSerializationFormat;
             }
 
+            request.Headers.CosmosMessageHeaders.ContentSerializationFormat = "cosmosbinary";
+
             if (this.StartId != null)
             {
                 request.Headers.Set(HttpConstants.HttpHeaders.StartId, Convert.ToBase64String(Encoding.UTF8.GetBytes(this.StartId)));
