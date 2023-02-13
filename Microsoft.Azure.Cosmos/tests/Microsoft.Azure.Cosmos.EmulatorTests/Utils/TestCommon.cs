@@ -75,10 +75,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static CosmosClientBuilder GetDefaultConfiguration(
             bool useCustomSeralizer = true,
-            bool validatePartitionKeyRangeCalls = false)
+            bool validatePartitionKeyRangeCalls = false,
+            string accountEndpointOverride = null)
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: authKey);
+            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
+                accountEndpoint: accountEndpointOverride ?? endpoint,
+                authKeyOrResourceToken: authKey);
             if (useCustomSeralizer)
             {
                 clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer());
@@ -95,9 +98,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static CosmosClient CreateCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
             bool useCustomSeralizer = true,
-            bool validatePartitionKeyRangeCalls = false)
+            bool validatePartitionKeyRangeCalls = false,
+            string accountEndpointOverride = null)
         {
-            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer, validatePartitionKeyRangeCalls);
+            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer, validatePartitionKeyRangeCalls, accountEndpointOverride);
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             CosmosClient client = cosmosClientBuilder.Build();
@@ -126,7 +130,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static CosmosClient CreateCosmosClient(
             bool useGateway,
-            Action<CosmosClientBuilder> customizeClientBuilder = null)
+            Action<CosmosClientBuilder> customizeClientBuilder = null,
+            bool enableDistributingTracing = false)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
 
@@ -135,6 +140,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (useGateway)
             {
                 cosmosClientBuilder.WithConnectionModeGateway();
+            }
+
+            if(enableDistributingTracing)
+            {
+                cosmosClientBuilder.WithDistributedTracingOptions(new DistributedTracingOptions()
+                {
+                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                });
             }
             
             return cosmosClientBuilder.Build();

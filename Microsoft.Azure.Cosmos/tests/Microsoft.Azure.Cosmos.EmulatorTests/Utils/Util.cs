@@ -5,15 +5,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
+    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using OpenTelemetry;
+    using OpenTelemetry.Trace;
 
     internal enum DocumentClientType
     {
@@ -104,8 +112,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new Dictionary<DocumentClientType, DocumentClient>
             {
                 {DocumentClientType.Gateway, TestCommon.CreateClient(true, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)},
-                {DocumentClientType.DirectTcp, TestCommon.CreateClient(false, Protocol.Tcp, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)},
-                {DocumentClientType.DirectHttps, TestCommon.CreateClient(false, Protocol.Https, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
+                {DocumentClientType.DirectTcp, TestCommon.CreateClient(false, Protocol.Tcp, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
             };
 
             foreach (KeyValuePair<DocumentClientType, DocumentClient> clientEntry in clients)
@@ -141,8 +148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new Dictionary<DocumentClientType, DocumentClient>
             {
                 {DocumentClientType.Gateway, TestCommon.CreateClient(true, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)},
-                {DocumentClientType.DirectTcp, TestCommon.CreateClient(false, Protocol.Tcp, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)},
-                {DocumentClientType.DirectHttps, TestCommon.CreateClient(false, Protocol.Https, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
+                {DocumentClientType.DirectTcp, TestCommon.CreateClient(false, Protocol.Tcp, tokenType: authTokenType, defaultConsistencyLevel: consistencyLevel)}
             };
 
             int seed = (int)DateTime.Now.Ticks;
@@ -513,6 +519,92 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.SessionToken,
                 options.OfferType,
                 options.OfferThroughput);
+        }
+
+        internal static void EnableClientTelemetryEnvironmentVariables()
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
+        }
+
+        internal static void DisableClientTelemetryEnvironmentVariables()
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
+        }
+
+        private static TracerProvider OTelTracerProvider;
+        private static CustomListener TestListener;
+        
+        internal static CustomListener ConfigureOpenTelemetryAndCustomListeners()
+        {
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+
+            // Open Telemetry Listener
+            Util.OTelTracerProvider = Sdk.CreateTracerProviderBuilder()
+                .AddCustomOtelExporter() // use any exporter here
+                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*") // Right now, it will capture only "Azure.Cosmos.Operation"
+                .Build();
+
+            // Custom Listener
+            Util.TestListener = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*", "Azure-Cosmos-Operation-Request-Diagnostics");
+
+            return Util.TestListener;
+
+        }
+
+        internal static void DisposeOpenTelemetryAndCustomListeners()
+        {
+            // Open Telemetry Listener
+            Util.OTelTracerProvider?.Dispose();
+
+            // Custom Listener
+            Util.TestListener?.Dispose();
+
+            Util.OTelTracerProvider = null;
+            Util.TestListener = null;
+
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
+        }
+
+        /// <summary>
+        /// Enables traces for local debugging
+        /// </summary>
+        internal static void EnableTracesForDebugging()
+        {
+            Type defaultTrace = Type.GetType("Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace,Microsoft.Azure.Cosmos.Direct");
+            TraceSource traceSource = (TraceSource)defaultTrace.GetProperty("TraceSource").GetValue(null);
+            traceSource.Switch.Level = SourceLevels.All;
+            traceSource.Listeners.Clear();
+            traceSource.Listeners.Add(new DirectToConsoleTraceListener());
+        }
+
+        public class DirectToConsoleTraceListener : TextWriterTraceListener
+        {
+            public DirectToConsoleTraceListener() : base(new DirectToConsoleTextWriter())
+            {
+            }
+
+            public override void Close()
+            {
+            }
+        }
+
+        public class DirectToConsoleTextWriter : TextWriter
+        {
+            public override Encoding Encoding => Console.Out.Encoding;
+
+            public override void Write(string value)
+            {
+                Logger.LogLine(value);
+            }
+
+            public override void WriteLine(string value)
+            {
+                Logger.LogLine(value);
+            }
         }
     }
 }

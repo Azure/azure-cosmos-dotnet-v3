@@ -36,6 +36,21 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return true;
         }
 
+        public override bool Visit(SqlAllScalarExpression first, SqlObject secondAsObject)
+        {
+            if (!(secondAsObject is SqlAllScalarExpression second))
+            {
+                return false;
+            }
+
+            if (!Equals(first.Subquery, second.Subquery))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public override bool Visit(SqlArrayCreateScalarExpression first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlArrayCreateScalarExpression second))

@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             QueryFeatures supportedQueryFeatures,
             bool hasLogicalPartitionKey,
             bool useSystemPrefix,
+            GeospatialType geospatialType,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -49,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 partitionKeyDefinition,
                 hasLogicalPartitionKey,
                 useSystemPrefix,
+                geospatialType,
                 cancellationToken);
             if (!tryGetQueryInfo.Succeeded)
             {
@@ -76,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
             bool useSystemPrefix,
+            GeospatialType geospatialType,
             CancellationToken cancellationToken = default)
         {
             if (sqlQuerySpec == null)
@@ -96,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 partitionKeyDefinition,
                 hasLogicalPartitionKey,
                 useSystemPrefix,
+                geospatialType,
                 cancellationToken);
             if (tryGetQueryInfo.Failed)
             {
@@ -114,6 +118,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             PartitionKeyDefinition partitionKeyDefinition,
             bool hasLogicalPartitionKey,
             bool useSystemPrefix,
+            Cosmos.GeospatialType geospatialType,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -128,6 +133,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: true,
                 useSystemPrefix: useSystemPrefix,
+                geospatialType: geospatialType,
                 cancellationToken: cancellationToken);
         }
 

@@ -455,9 +455,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return getQuery;
         }
 
-        public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(
-         Cosmos.Database cosmosDatabase
-         )
+        public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(Cosmos.Database cosmosDatabase)
         {
             const int DocumentCount = 10;
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };

@@ -2,11 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
     using System.Collections.Generic;
     using HdrHistogram;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Util;
     using Newtonsoft.Json;
 
@@ -19,12 +20,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.UnitName = unitName;
         }
 
-        public MetricInfo(string metricsName, 
-            string unitName, 
-            double mean = 0, 
-            long count = 0, 
-            long min = 0, 
-            long max = 0, 
+        public MetricInfo(string metricsName,
+            string unitName,
+            double mean = 0,
+            long count = 0,
+            long min = 0,
+            long max = 0,
             IReadOnlyDictionary<double, double> percentiles = null)
             : this(metricsName, unitName)
         {
@@ -36,10 +37,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         [JsonProperty(PropertyName = "metricsName")]
-        internal String MetricsName { get; }
+        internal string MetricsName { get; }
 
         [JsonProperty(PropertyName = "unitName")]
-        internal String UnitName { get; }
+        internal string UnitName { get; }
 
         [JsonProperty(PropertyName = "mean")]
         internal double Mean { get; set; }

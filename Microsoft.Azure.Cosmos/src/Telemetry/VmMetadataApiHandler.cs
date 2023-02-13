@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
     using Util;
@@ -22,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal static class VmMetadataApiHandler
     {
         internal const string HashedMachineNamePrefix = "hashedMachineName:";
-        internal const string HashedVmIdPrefix = "hashedVmId:";
+        internal const string VmIdPrefix = "vmId:";
         internal const string UuidPrefix = "uuid:";
 
         internal static readonly Uri vmMetadataEndpointUrl = new ("http://169.254.169.254/metadata/instance?api-version=2020-06-01");
