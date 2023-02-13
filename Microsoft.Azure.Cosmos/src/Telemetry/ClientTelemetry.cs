@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -290,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             ITrace trace)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
-
+            
             if (cosmosDiagnostics == null)
             {
                 throw new ArgumentNullException(nameof(cosmosDiagnostics));
@@ -298,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             // Record Network/Replica Information
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
-            this.RecordHttpResponses(containerId, databaseId, summaryDiagnostics.HttpResponseStatistics.Value);
+            this.RecordHttpResponses(containerId, databaseId, operationType, summaryDiagnostics.HttpResponseStatistics.Value);
             this.RecordRntbdResponses(containerId, databaseId, summaryDiagnostics.StoreResponseStatistics.Value);
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
@@ -366,21 +367,29 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
-        private void RecordHttpResponses(string containerId, string databaseId, List<HttpResponseStatistics> httpResponseStatisticsList)
+        private void RecordHttpResponses(string containerId, string databaseId, OperationType operationType, List<HttpResponseStatistics> httpResponseStatisticsList)
         {
             foreach (HttpResponseStatistics httpstatistics in httpResponseStatisticsList)
             {
                 if (ClientTelemetryOptions.IsEligible((int)httpstatistics.HttpResponseMessage.StatusCode, httpstatistics.Duration))
                 {
+                    string subStatusCode = httpstatistics.HttpResponseMessage.Headers?.GetValues(WFConstants.BackendHeaders.SubStatus)?.First();
+
+                    string operationTypeValue = string.Empty;
+                    if (httpstatistics.ResourceType == ResourceType.Document)
+                    {
+                        operationTypeValue = operationType.ToOperationTypeString();
+                    }
+                    
                     RequestInfo requestInfo = new RequestInfo()
                     {
                         DatabaseName = databaseId,
                         ContainerName = containerId,
                         Uri = httpstatistics.RequestUri.ToString(),
                         StatusCode = (int)httpstatistics.HttpResponseMessage.StatusCode,
-                        SubStatusCode = 0,
+                        SubStatusCode = Convert.ToInt32(subStatusCode),
                         Resource = httpstatistics.ResourceType.ToResourceTypeString(),
-                        Operation = httpstatistics.HttpMethod.ToString(),
+                        Operation = operationTypeValue,
                     };
 
                     LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
