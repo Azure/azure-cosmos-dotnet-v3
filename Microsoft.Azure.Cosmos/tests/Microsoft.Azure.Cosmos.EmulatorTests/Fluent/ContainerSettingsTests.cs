@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestConflictResolutionPolicy()
         {
-            Database databaseForConflicts = await this.cosmosClient.CreateDatabaseAsync("conflictResolutionContainerTest",
+            Database databaseForConflicts = await this.GetClient().CreateDatabaseAsync("conflictResolutionContainerTest",
                 cancellationToken: this.cancellationToken);
 
             try
@@ -368,7 +368,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestChangeFeedPolicy()
         {
-            Database databaseForChangeFeed = await this.cosmosClient.CreateDatabaseAsync("changeFeedRetentionContainerTest",
+            Database databaseForChangeFeed = await this.GetClient().CreateDatabaseAsync("changeFeedRetentionContainerTest",
                 cancellationToken: this.cancellationToken);
 
             try

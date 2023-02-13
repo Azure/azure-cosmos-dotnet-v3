@@ -707,8 +707,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             await this.CreateRandomItems(itemsCore, 100, randomPartitionKey: true);
 
             // Inject validating handler
-            RequestHandler currentInnerHandler = this.cosmosClient.RequestHandler.InnerHandler;
-            this.cosmosClient.RequestHandler.InnerHandler = cancellationTokenHandler;
+            RequestHandler currentInnerHandler = this.GetClient().RequestHandler.InnerHandler;
+            this.GetClient().RequestHandler.InnerHandler = cancellationTokenHandler;
             cancellationTokenHandler.InnerHandler = currentInnerHandler;
 
             {
@@ -808,17 +808,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         private async Task ValidateChangeFeedIteratorCore_WithQuery(
             bool useGateway)
         {
-            await this.Cleanup();
-
             this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationToken = this.cancellationTokenSource.Token;
-            this.cosmosClient = TestCommon.CreateCosmosClient(useGateway: useGateway);
-            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
-                cancellationToken: this.cancellationToken);
+            CosmosClient cosmosClient = useGateway ? TestCommon.CreateCosmosClient(useGateway: useGateway) : this.GetClient();
 
             ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pkey");
             properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-            ContainerResponse response = await this.database.CreateContainerAsync(
+            ContainerResponse response = await cosmosClient.GetDatabase(this.database.Id).CreateContainerAsync(
                 properties,
                 cancellationToken: this.cancellationToken);
 
