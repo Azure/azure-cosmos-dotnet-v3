@@ -525,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "https://tools.cosmos.azure.com/api/clienttelemetry/trace");
         }
 
         internal static void DisableClientTelemetryEnvironmentVariables()
