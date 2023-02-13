@@ -753,7 +753,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ContainerQueryProperties containerQueryProperties,
             ITrace trace)
         {
-            if (!inputParameters.EnableOptimisticDirectExecution) return null; 
+            if (!inputParameters.EnableOptimisticDirectExecution) return null;
+
+            Debug.Assert(containerQueryProperties.ResourceId != null);
             
             List<Documents.PartitionKeyRange> targetRanges;
             if (partitionedQueryExecutionInfo != null)
@@ -767,7 +769,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters.InitialFeedRange,
                     trace);
             }
-            else if (containerQueryProperties.ResourceId != null)
+            else
             {
                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
                 if (inputParameters.PartitionKey != null && partitionKeyDefinition != null)
@@ -788,16 +790,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         forceRefresh: false,
                         trace);
                 }
-            } 
-            else
-            {
-                targetRanges = null;
             }
 
-            if (targetRanges.Count == 1)
+            if (targetRanges?.Count == 1)
             {
                 return targetRanges.Single();
             }
+
             return null;
         }
 

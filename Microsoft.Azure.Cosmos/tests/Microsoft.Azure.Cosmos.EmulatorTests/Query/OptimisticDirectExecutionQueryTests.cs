@@ -24,14 +24,6 @@
 
             List<string> documents = CreateDocuments(numberOfDocuments, partitionKey, numberField, nullField);
             
-            SinglePartitionWithContinuationsArgs args = new SinglePartitionWithContinuationsArgs
-            {
-                NumberOfDocuments = numberOfDocuments,
-                PartitionKey = partitionKey,
-                NumberField = numberField,
-                NullField = nullField,
-            };
-
             List<QueryResultsAndPipelineType> queryAndResults = new List<QueryResultsAndPipelineType>()
             {
                 // Tests for bool enableOptimisticDirectExecution
@@ -63,25 +55,23 @@
                 new QueryResultsAndPipelineType { Query = $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", Result = new List<long> { 1 }, PartitionKey = null, Partition = CollectionTypes.MultiPartition, EnableOptimisticDirectExecution = true, ExpectedPipelineType = TestInjections.PipelineType.Specialized},
             };
 
-            Container singlePartitionContainer = await CreateContainer(this, CollectionTypes.SinglePartition, documents, partitionKey, args);
-            Container multiPartitionContainer = await CreateContainer(this, CollectionTypes.MultiPartition, documents, partitionKey, args);
-
+            Container singlePartitionContainer = await CreateContainer(this, CollectionTypes.SinglePartition, documents, partitionKey);
+            Container multiPartitionContainer = await CreateContainer(this, CollectionTypes.MultiPartition, documents, partitionKey);
             foreach (QueryResultsAndPipelineType queryAndResult in queryAndResults)
             {
                 bool isSinglePartition = queryAndResult.Partition == CollectionTypes.SinglePartition;
                 Container container = isSinglePartition ? singlePartitionContainer : multiPartitionContainer;
 
-                await this.CreateIngestQueryDeleteAsync<SinglePartitionWithContinuationsArgs>(
+                await this.CreateIngestQueryDeleteAsync(
                     ConnectionModes.Direct | ConnectionModes.Gateway,
                     isSinglePartition ? CollectionTypes.SinglePartition : CollectionTypes.MultiPartition,
                     documents,
-                    (container, documents, args) => RunPassingTests(container, documents, queryAndResult, isSinglePartition),
-                    args,
+                    (container, documents) => RunPassingTests(container, queryAndResult, isSinglePartition),
                     "/" + partitionKey);
             }
         }
 
-        private static async Task RunPassingTests(Container container, IReadOnlyList<CosmosObject> documents, QueryResultsAndPipelineType queryAndResult, bool isSinglePartition)
+        private static async Task RunPassingTests(Container container, QueryResultsAndPipelineType queryAndResult, bool isSinglePartition)
         {
             await HelperFunctionForPassingTests(queryAndResult, container, isSinglePartition);
         }
@@ -96,14 +86,6 @@
 
             List<string> documents = CreateDocuments(numberOfDocuments, partitionKey, numberField, nullField);
 
-            SinglePartitionWithContinuationsArgs args = new SinglePartitionWithContinuationsArgs
-            {
-                NumberOfDocuments = numberOfDocuments,
-                PartitionKey = partitionKey,
-                NumberField = numberField,
-                NullField = nullField,
-            };
-
             // check if bad continuation queries and syntax error queries are handled by pipeline
             IDictionary<string, string> invalidQueries = new Dictionary<string, string>
             {
@@ -114,13 +96,12 @@
 
             foreach (KeyValuePair<string, string> entry in invalidQueries)
             {
-                await this.CreateIngestQueryDeleteAsync<SinglePartitionWithContinuationsArgs>(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                documents,
-                (container, documents, args) => RunFailingTests(container, entry),
-                args,
-                "/" + partitionKey);
+                await this.CreateIngestQueryDeleteAsync(
+                    ConnectionModes.Direct | ConnectionModes.Gateway,
+                    CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                    documents,
+                    (container, documents, args) => RunFailingTests(container, entry),
+                    "/" + partitionKey);
             }
         }
 
@@ -144,20 +125,14 @@
             return documents;
         }
 
-        private static async Task<Container> CreateContainer(QueryTestsBase queryTestsBase, CollectionTypes collectionType, List<string> documents, string partitionKey, SinglePartitionWithContinuationsArgs args)
+        private static async Task<Container> CreateContainer(QueryTestsBase queryTestsBase, CollectionTypes collectionType, List<string> documents, string partitionKey)
         {
-            await queryTestsBase.CreateIngestQueryDeleteAsync<SinglePartitionWithContinuationsArgs>(
+            await queryTestsBase.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 collectionType,
                 documents,
-                (container, documents, args) => SinglePartitionImplementationAsync(container, documents, args, collectionType),
-                args,
+                (container, documents) => Task.FromResult(container),
                 "/" + partitionKey);
-
-            static async Task<Container> SinglePartitionImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents, SinglePartitionWithContinuationsArgs args, CollectionTypes pipelineType)
-            {
-                return await Task.FromResult(container);
-            }
 
             return null;
         }
@@ -238,14 +213,6 @@
             {
                 Assert.Fail(aggrEx.ToString());
             }
-        }
-
-        private struct SinglePartitionWithContinuationsArgs
-        {
-            public int NumberOfDocuments;
-            public string PartitionKey;
-            public string NumberField;
-            public string NullField;
         }
 
         private struct QueryResultsAndPipelineType

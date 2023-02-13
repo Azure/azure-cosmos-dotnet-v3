@@ -77,6 +77,8 @@
                         "{\"OptimisticDirectExecutionToken\":{\"token\":\"{\\\"resourceId\\\":\\\"AQAAAMmFOw8LAAAAAAAAAA==\\\"," +
                         "\\\"skipCount\\\":1}\", \"range\":{\"min\":\"\",\"max\":\"FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF\"}}}")),
 
+                // Below cases are Ode because they have a collection with a single physical partition.
+                // Added emulator tests (TestPassingOptimisticDirectExecutionQueries()) to verify the negation of the below cases.
                 CreateInput(
                     description: @"Null Partition Key Value",
                     query: "SELECT * FROM c",
