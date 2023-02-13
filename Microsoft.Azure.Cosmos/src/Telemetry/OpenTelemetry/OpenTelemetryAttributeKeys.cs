@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string ConnectionMode = "db.cosmosdb.connection_mode";
         public const string OperationType = "db.cosmosdb.operation_type";
 
-        // Request Specifics
+        // Request/Response Specifics
         public const string ContainerName = "db.cosmosdb.container";
         public const string RequestContentLength = "db.cosmosdb.request_content_length_bytes";
         public const string ResponseContentLength = "db.cosmosdb.response_content_length_bytes";
@@ -35,6 +35,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string RetryCount = "db.cosmosdb.retry_count";
         public const string ItemCount = "db.cosmosdb.item_count";
         public const string RequestDiagnostics = "db.cosmosdb.request_diagnostics";
+        public const string ActivityId = "db.cosmosdb.activity_id";
+        public const string CorrelatedActivityId = "db.cosmosdb.correlated_activity_id";
 
         // Exceptions
         public const string ExceptionType = "exception.type";

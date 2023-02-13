@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
     using global::Azure.Core.Pipeline;
 
     /// <summary>
@@ -15,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Singleton to make sure we only have one instance of the DiagnosticScopeFactory and pattern matching of listener happens only once
         /// </summary>
         private static DiagnosticScopeFactory ScopeFactory { get; set; } 
-
+        
         public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
             string containerName,
             string databaseName,
@@ -23,11 +24,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             RequestOptions requestOptions, 
             CosmosClientContext clientContext)
         {
-            if (clientContext is { ClientOptions.EnableDistributedTracing: true })
+            if (clientContext is { ClientOptions.IsDistributedTracingEnabled: true })
             {
-                ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
-                    resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                    isActivityEnabled: true);
+                OpenTelemetryRecorderFactory.ScopeFactory ??= new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
+                        resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
+                        isActivityEnabled: true);
                 
                 // If there is no source then it will return default otherwise a valid diagnostic scope
                 DiagnosticScope scope = OpenTelemetryRecorderFactory

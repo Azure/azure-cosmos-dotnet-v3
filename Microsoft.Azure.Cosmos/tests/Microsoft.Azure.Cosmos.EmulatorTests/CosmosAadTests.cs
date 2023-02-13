@@ -29,98 +29,102 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int requestCount = 0;
             string databaseId = Guid.NewGuid().ToString();
             string containerId = Guid.NewGuid().ToString();
-            using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient())
-            {
-                Database database = await cosmosClient.CreateDatabaseAsync(databaseId);
-                Container container = await database.CreateContainerAsync(
-                    containerId,
-                    "/id");
-            }
+            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient();
+            Database database = await cosmosClient.CreateDatabaseAsync(databaseId);
+        Container container = await database.CreateContainerAsync(
+            containerId,
+            "/id");
 
-           
-            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-            LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(authKey);
-            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            try
             {
-                ConnectionMode = connectionMode,
-                ConnectionProtocol = connectionMode == ConnectionMode.Direct ? Protocol.Tcp : Protocol.Https,
-            };
+                (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+                LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(authKey);
+                CosmosClientOptions clientOptions = new CosmosClientOptions()
+                {
+                    ConnectionMode = connectionMode,
+                    ConnectionProtocol = connectionMode == ConnectionMode.Direct ? Protocol.Tcp : Protocol.Https,
+                };
 
-            if (connectionMode == ConnectionMode.Direct)
-            {
-                long lsn = 2;
-                clientOptions.TransportClientHandlerFactory = (transport) => new TransportClientWrapper(transport,
-                 interceptorAfterResult: (request, storeResponse) =>
-                 {
-                     // Force a barrier request on create item.
-                     // There needs to be 2 regions and the GlobalCommittedLSN must be behind the LSN.
-                     if (storeResponse.StatusCode == HttpStatusCode.Created)
+                if (connectionMode == ConnectionMode.Direct)
+                {
+                    long lsn = 2;
+                    clientOptions.TransportClientHandlerFactory = (transport) => new TransportClientWrapper(transport,
+                     interceptorAfterResult: (request, storeResponse) =>
                      {
-                         if (requestCount == 0)
+                         // Force a barrier request on create item.
+                         // There needs to be 2 regions and the GlobalCommittedLSN must be behind the LSN.
+                         if (storeResponse.StatusCode == HttpStatusCode.Created)
                          {
-                             requestCount++;
-                             lsn = storeResponse.LSN;
-                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "2");
-                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, "0");
+                             if (requestCount == 0)
+                             {
+                                 requestCount++;
+                                 lsn = storeResponse.LSN;
+                                 storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+                                 storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, "0");
+                             }
                          }
-                     }
 
-                     // Head request is the barrier request
-                     // The GlobalCommittedLSN is set to -1 because the local emulator doesn't have geo-dr so it has to be
-                     // overridden for the validation to succeed.
-                     if (request.OperationType == Documents.OperationType.Head)
-                     {
-                         if (requestCount == 1)
+                         // Head request is the barrier request
+                         // The GlobalCommittedLSN is set to -1 because the local emulator doesn't have geo-dr so it has to be
+                         // overridden for the validation to succeed.
+                         if (request.OperationType == Documents.OperationType.Head)
                          {
-                             requestCount++;
-                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "2");
-                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, lsn.ToString(CultureInfo.InvariantCulture));
+                             if (requestCount == 1)
+                             {
+                                 requestCount++;
+                                 storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+                                 storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, lsn.ToString(CultureInfo.InvariantCulture));
+                             }
                          }
-                     }
 
-                     return storeResponse;
-                 });
+                         return storeResponse;
+                     });
+                }
+
+                using CosmosClient aadClient = new CosmosClient(
+                    endpoint,
+                    simpleEmulatorTokenCredential,
+                    clientOptions);
+
+                TokenCredentialCache tokenCredentialCache = ((AuthorizationTokenProviderTokenCredential)aadClient.AuthorizationTokenProvider).tokenCredentialCache;
+
+                // The refresh interval changes slightly based on how fast machine calculate the interval based on the expire time.
+                Assert.IsTrue(15 <= tokenCredentialCache.BackgroundTokenCredentialRefreshInterval.Value.TotalMinutes, "Default background refresh should be 25% of the token life which is defaulted to 1hr");
+                Assert.IsTrue(tokenCredentialCache.BackgroundTokenCredentialRefreshInterval.Value.TotalMinutes > 14.7, "Default background refresh should be 25% of the token life which is defaulted to 1hr");
+
+                Database aadDatabase = await aadClient.GetDatabase(databaseId).ReadAsync();
+                Container aadContainer = await aadDatabase.GetContainer(containerId).ReadContainerAsync();
+                ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
+                ItemResponse<ToDoActivity> itemResponse = await aadContainer.CreateItemAsync(
+                    toDoActivity,
+                    new PartitionKey(toDoActivity.id));
+
+                // Gateway does the barrier requests so only direct mode needs to be validated.
+                if (connectionMode == ConnectionMode.Direct)
+                {
+                    Assert.AreEqual(2, requestCount, "The barrier request was never called.");
+                }
+
+                toDoActivity.cost = 42.42;
+                await aadContainer.ReplaceItemAsync(
+                    toDoActivity,
+                    toDoActivity.id,
+                    new PartitionKey(toDoActivity.id));
+
+                await aadContainer.ReadItemAsync<ToDoActivity>(
+                    toDoActivity.id,
+                    new PartitionKey(toDoActivity.id));
+
+                await aadContainer.UpsertItemAsync(toDoActivity);
+
+                await aadContainer.DeleteItemAsync<ToDoActivity>(
+                    toDoActivity.id,
+                    new PartitionKey(toDoActivity.id));
             }
-
-            using CosmosClient aadClient = new CosmosClient(
-                endpoint,
-                simpleEmulatorTokenCredential,
-                clientOptions);
-
-            TokenCredentialCache tokenCredentialCache = ((AuthorizationTokenProviderTokenCredential)aadClient.AuthorizationTokenProvider).tokenCredentialCache;
-
-            // The refresh interval changes slightly based on how fast machine calculate the interval based on the expire time.
-            Assert.IsTrue(15 <= tokenCredentialCache.BackgroundTokenCredentialRefreshInterval.Value.TotalMinutes, "Default background refresh should be 25% of the token life which is defaulted to 1hr");
-            Assert.IsTrue(tokenCredentialCache.BackgroundTokenCredentialRefreshInterval.Value.TotalMinutes > 14.7 , "Default background refresh should be 25% of the token life which is defaulted to 1hr");
-
-            Database aadDatabase = await aadClient.GetDatabase(databaseId).ReadAsync();
-            Container aadContainer = await aadDatabase.GetContainer(containerId).ReadContainerAsync();
-            ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
-            ItemResponse<ToDoActivity> itemResponse = await aadContainer.CreateItemAsync(
-                toDoActivity,
-                new PartitionKey(toDoActivity.id));
-
-            // Gateway does the barrier requests so only direct mode needs to be validated.
-            if (connectionMode == ConnectionMode.Direct)
+            finally
             {
-                Assert.AreEqual(2, requestCount, "The barrier request was never called.");
+                await database?.DeleteStreamAsync();
             }
-
-            toDoActivity.cost = 42.42;
-            await aadContainer.ReplaceItemAsync(
-                toDoActivity,
-                toDoActivity.id,
-                new PartitionKey(toDoActivity.id));
-
-            await aadContainer.ReadItemAsync<ToDoActivity>(
-                toDoActivity.id,
-                new PartitionKey(toDoActivity.id));
-
-            await aadContainer.UpsertItemAsync(toDoActivity);
-
-            await aadContainer.DeleteItemAsync<ToDoActivity>(
-                toDoActivity.id,
-                new PartitionKey(toDoActivity.id));
         }
 
         [TestMethod]

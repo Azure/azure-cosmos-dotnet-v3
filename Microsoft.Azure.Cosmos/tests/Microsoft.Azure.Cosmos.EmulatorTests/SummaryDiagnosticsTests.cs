@@ -32,6 +32,7 @@
         public async Task Cleanup()
         {
             await this.Database.DeleteAsync();
+            this.Client.Dispose();
         }
 
         [TestMethod]

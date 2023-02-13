@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     operationType: operationType,
                     response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
-                CosmosDbEventSource.Singleton.WriteWarningEvent(response.Diagnostics.ToString());
+                CosmosDbEventSource.Singleton.LatencyOverThreshold(response.Diagnostics.ToString());
             }
         }
 
@@ -49,26 +49,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (CosmosDbEventSource.IsEnabled(EventLevel.Error))
             {
-                CosmosDbEventSource.Singleton.WriteErrorEvent(diagnostics.ToString());
+                CosmosDbEventSource.Singleton.Exception(diagnostics.ToString());
             }
         }
 
         [Event(1, Level = EventLevel.Error)]
-        private void WriteErrorEvent(string message)
+        private void Exception(string message)
         {
             this.WriteEvent(1, message);
         }
 
         [Event(2, Level = EventLevel.Warning)]
-        private void WriteWarningEvent(string message)
+        private void LatencyOverThreshold(string message)
         {
             this.WriteEvent(2, message);
-        }
-
-        [Event(3, Level = EventLevel.Informational)]
-        private void WriteInfoEvent(string message)
-        {
-            this.WriteEvent(3, message);
         }
     }
 }
