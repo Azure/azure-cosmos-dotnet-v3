@@ -41,6 +41,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "CreateItemStreamAsync",
+  "start date": "0001-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -130,6 +131,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "ReadItemStreamAsync",
+  "start date": "0001-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -227,6 +229,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "ReplaceItemStreamAsync",
+  "start date": "0001-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -319,6 +322,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "DeleteItemStreamAsync",
+  "start date": "0001-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {

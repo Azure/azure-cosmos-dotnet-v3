@@ -43,6 +43,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "CreateItemAsync",
+  "start date": "0001-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -151,6 +152,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "ReadItemAsync",
+  "start date": "0001-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -254,6 +256,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "ReplaceItemAsync",
+  "start date": "0001-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -354,6 +357,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "DeleteItemAsync",
+  "start date": "0001-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {

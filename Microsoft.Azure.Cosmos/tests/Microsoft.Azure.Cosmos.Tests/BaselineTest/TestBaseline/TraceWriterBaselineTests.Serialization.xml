@@ -16,6 +16,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
+  "start date": "0544-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0
 }]]></Json>
@@ -71,6 +72,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
+  "start date": "0544-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -100,6 +102,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
+  "start date": "0544-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "children": [
@@ -165,6 +168,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
+  "start date": "0544-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "children": [
@@ -205,6 +209,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
+  "start date": "0544-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "children": [
@@ -312,6 +317,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
+  "start date": "0544-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "children": [
@@ -404,6 +410,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
+  "start date": "0544-01-01",
   "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "children": [
