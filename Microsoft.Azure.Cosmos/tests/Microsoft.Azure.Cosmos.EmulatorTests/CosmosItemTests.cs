@@ -771,9 +771,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 CosmosClient client = TestCommon.CreateCosmosClient(true);
-
+                
                 database = await client.CreateDatabaseIfNotExistsAsync("mydb");
-
+                
                 ContainerProperties containerProperties = new ContainerProperties("subpartitionedcontainer", new List<string> { "/Country", "/City" });
                 Container container = await database.CreateContainerAsync(containerProperties);
                 ContainerInternal containerInternal = (ContainerInternal)container;
@@ -804,7 +804,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 doc1.SetValue("Country", "USA");
                 doc1.SetValue("City", "Stonybrook");
                 documents[4] = await container.CreateItemAsync<Document>(doc1);
-
+               
                 Cosmos.PartitionKey partitionKey1 = new PartitionKeyBuilder().Add("USA").Add("Stonybrook").Build();
 
                 using (ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey1))
@@ -1187,7 +1187,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.AreEqual(3, pageCount);
                 }
-
+                
 
 
                 IReadOnlyList<(string Name, object Value)> parameters1 = queryDefinition.GetQueryParameters();
@@ -1364,8 +1364,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(
-                this.Container,
-                300,
+                this.Container, 
+                300, 
                 randomPartitionKey: true,
                 randomTaskNumber: true);
 
@@ -1622,8 +1622,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ItemQueryStreamSerializationSetting()
         {
             IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(
-                container: this.Container,
-                pkCount: 101,
+                container: this.Container, 
+                pkCount: 101, 
                 randomTaskNumber: true);
 
             QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
@@ -2905,16 +2905,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                builder => builder.WithTransportClientHandlerFactory(transportClient => new TransportClientHelper.TransportClientWrapper(
                 transportClient,
                 (uri, resourceOperation, request) =>
-                {
-                    if (resourceOperation.resourceType == ResourceType.Document &&
-                         resourceOperation.operationType == OperationType.Create)
                     {
-                        bool customHeaderExists = request.Properties.TryGetValue(customHeaderName, out object value);
+                        if (resourceOperation.resourceType == ResourceType.Document &&
+                             resourceOperation.operationType == OperationType.Create)
+                        {
+                            bool customHeaderExists = request.Properties.TryGetValue(customHeaderName, out object value);
 
-                        Assert.IsTrue(customHeaderExists);
-                        Assert.AreEqual(customHeaderValue, value);
-                    }
-                })));
+                            Assert.IsTrue(customHeaderExists);
+                            Assert.AreEqual(customHeaderValue, value);
+                        }
+                    })));
 
             Container container = clientWithIntercepter.GetContainer(this.database.Id, this.Container.Id);
 

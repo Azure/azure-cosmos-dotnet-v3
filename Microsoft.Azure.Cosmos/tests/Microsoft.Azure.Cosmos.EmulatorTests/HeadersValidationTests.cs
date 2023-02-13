@@ -333,12 +333,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection collection = TestCommon.CreateOrGetDocumentCollection(client);
             this.ValidateSupportedSerializationFormatsReadFeed(client, collection);
 
-            SqlQuerySpec sqlQuerySelectStar = new SqlQuerySpec("SELECT * FROM c");
-            SqlQuerySpec sqlQueryOrderBy = new SqlQuerySpec("SELECT c.id FROM c ORDER BY c.partitionKey");
-            SqlQuerySpec sqlQueryGroupBy = new SqlQuerySpec("SELECT c.name FROM c GROUP BY c.name");
-            this.ValidateSupportedSerializationFormatsQuery(client, collection, sqlQuerySelectStar);
-            this.ValidateSupportedSerializationFormatsQuery(client, collection, sqlQueryOrderBy);
-            this.ValidateSupportedSerializationFormatsQuery(client, collection, sqlQueryGroupBy);
+            List<SqlQuerySpec> sqlQueryList = new List<SqlQuerySpec>()
+            {
+                new SqlQuerySpec("SELECT * FROM c"),
+                new SqlQuerySpec("SELECT c.id FROM c ORDER BY c.partitionKey"),
+                new SqlQuerySpec("SELECT c.name FROM c GROUP BY c.name")
+            };
+
+            foreach(SqlQuerySpec sqlQuery in sqlQueryList)
+            {
+                this.ValidateSupportedSerializationFormatsQuery(client, collection, sqlQuery);
+            }
         }
 
         private void SupportedSerializationFormatsNegativeCases(

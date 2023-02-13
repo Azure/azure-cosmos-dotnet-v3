@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal abstract class DocumentQueryExecutionContextBase : IDocumentQueryExecutionContext
     {
+        internal static readonly string DefaultSupportedSerializationFormats = string.Join(",", SupportedSerializationFormats.JsonText, SupportedSerializationFormats.CosmosBinary);
         public readonly struct InitParams
         {
             public IDocumentQueryClient Client { get; }
@@ -341,7 +342,7 @@ namespace Microsoft.Azure.Cosmos.Query
             }
             else
             {
-                requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = StoreRequestHeaders.DefaultSupportedSerializationFormats;
+                requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = DefaultSupportedSerializationFormats;
             }
 
             return requestHeaders;

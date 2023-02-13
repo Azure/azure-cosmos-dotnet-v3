@@ -53,23 +53,23 @@ namespace Microsoft.Azure.Cosmos.Query
         [TestMethod]
         public async Task TestSupportedSerializationFormatsAsync()
         {
-            FeedOptions fo = new FeedOptions();
-            Mock<IDocumentQueryClient> dcClient = new Mock<IDocumentQueryClient>();
+            FeedOptions feedOptions = new FeedOptions();
+            Mock<IDocumentQueryClient> client = new Mock<IDocumentQueryClient>(MockBehavior.Strict);
             Expression<Func<int, int>> randomFunc = x => x * 2;
 
             TestQueryExecutionContext cxt = new TestQueryExecutionContext(
-                dcClient.Object,
+                client.Object,
                 ResourceType.Document,
                 typeof(TestQueryExecutionContext),
                 randomFunc,
-                fo,
+                feedOptions,
                 string.Empty,
                 true, Guid.NewGuid());
-            INameValueCollection headers = await cxt.CreateCommonHeadersAsync(fo);
+            INameValueCollection headers = await cxt.CreateCommonHeadersAsync(feedOptions);
             Assert.AreEqual("JsonText, CosmosBinary", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
 
-            fo.SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow;
-            headers = await cxt.CreateCommonHeadersAsync(fo);
+            feedOptions.SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow;
+            headers = await cxt.CreateCommonHeadersAsync(feedOptions);
             Assert.AreEqual("CosmosBinary, HybridRow", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
         }
 

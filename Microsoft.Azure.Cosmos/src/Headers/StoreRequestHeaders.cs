@@ -14,8 +14,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class StoreRequestHeaders : CosmosMessageHeadersInternal
     {
-        internal const string DefaultSupportedSerializationFormats = "JsonText, CosmosBinary";
-
         private readonly RequestNameValueCollection requestNameValueCollection;
 
         public override string Continuation
