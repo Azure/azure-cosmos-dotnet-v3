@@ -500,6 +500,50 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[String constant StartsWith]]></Description>
+      <Expression><![CDATA[query.Select(doc => "str".StartsWith(doc.StringField.ToString()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE STARTSWITH("str", root["StringField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ToString]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.ToString())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["StringField"] 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ToString]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NumericField.ToString())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ToString(root["NumericField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ToString]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.GuidField.ToString())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["GuidField"] 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[ToUpper]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.StringField.ToUpper())]]></Expression>
     </Input>

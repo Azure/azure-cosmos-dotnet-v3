@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public static readonly SqlObjectHasher Singleton = new SqlObjectHasher(true);
 
         private const int SqlAliasedCollectionExpressionHashCode = 1202039781;
+        private const int SqlAllScalarExpressionHashCode = 1369048120;
         private const int SqlArrayCreateScalarExpressionHashCode = 1760950661;
         private const int SqlArrayIteratorCollectionExpressionHashCode = -468874086;
         private const int SqlArrayScalarExpressionHashCode = -1093553293;
@@ -117,6 +118,13 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 hashCode = CombineHashes(hashCode, sqlAliasedCollectionExpression.Alias.Accept(this));
             }
 
+            return hashCode;
+        }
+
+        public override int Visit(SqlAllScalarExpression sqlAllScalarExpression)
+        {
+            int hashCode = SqlAllScalarExpressionHashCode;
+            hashCode = CombineHashes(hashCode, sqlAllScalarExpression.Subquery.Accept(this));
             return hashCode;
         }
 

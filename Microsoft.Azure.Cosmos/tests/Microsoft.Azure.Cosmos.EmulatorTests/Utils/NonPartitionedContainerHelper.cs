@@ -18,7 +18,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static async Task<ContainerInternal> CreateNonPartitionedContainer(
             Cosmos.Database database,
             string containerId,
-            string indexingPolicy = null)
+            string indexingPolicy = null,
+            Cosmos.GeospatialType geospatialType = Cosmos.GeospatialType.Geography)
         {
             DocumentCollection documentCollection = new DocumentCollection()
             {
@@ -29,6 +30,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 documentCollection.IndexingPolicy = JsonConvert.DeserializeObject<IndexingPolicy>(indexingPolicy);
             }
+
+            documentCollection.GeospatialConfig = geospatialType switch
+                {
+                    Cosmos.GeospatialType.Geography => new GeospatialConfig(GeospatialType.Geography),
+                    Cosmos.GeospatialType.Geometry => new GeospatialConfig(GeospatialType.Geometry),
+                    _ => throw new InvalidOperationException($"Unsupported geospatialType {geospatialType}")
+                };
 
             await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
                 database,

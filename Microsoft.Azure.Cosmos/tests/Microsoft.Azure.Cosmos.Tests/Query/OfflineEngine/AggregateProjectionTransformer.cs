@@ -79,6 +79,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     this.dataSource = dataSource;
                 }
 
+                public override SqlScalarExpression Visit(SqlAllScalarExpression sqlAllScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return sqlAllScalarExpression;
+                }
+
                 public override SqlScalarExpression Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
                 {
                     List<SqlScalarExpression> items = new List<SqlScalarExpression>();

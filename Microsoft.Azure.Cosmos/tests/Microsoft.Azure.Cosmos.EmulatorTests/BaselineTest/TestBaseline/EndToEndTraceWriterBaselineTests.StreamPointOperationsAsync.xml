@@ -18,21 +18,21 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── CreateItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+└── CreateItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
             │   (
             │       [System Info]
             │       Redacted To Not Change The Baselines From Run To Run
             │   )
-            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                        └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                        └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
                                 (
                                     [Client Side Request Stats]
                                     Redacted To Not Change The Baselines From Run To Run
@@ -41,8 +41,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "CreateItemStreamAsync",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {
     "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -50,14 +49,10 @@
   "children": [
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {
             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -65,26 +60,18 @@
           "children": [
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -102,8 +89,8 @@
     }
   ]
 }]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Cosmos.CreateItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
-<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
+      <OTelActivities><ACTIVITY><OPERATION>Operation.CreateItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>CreateItemStreamAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Create</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 </OTelActivities>
     </Output>
   </Result>
@@ -120,21 +107,21 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── ReadItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+└── ReadItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
             │   (
             │       [System Info]
             │       Redacted To Not Change The Baselines From Run To Run
             │   )
-            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                        └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                        └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
                                 (
                                     [Client Side Request Stats]
                                     Redacted To Not Change The Baselines From Run To Run
@@ -143,8 +130,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "ReadItemStreamAsync",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {
     "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -152,14 +138,10 @@
   "children": [
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {
             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -167,26 +149,18 @@
           "children": [
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -204,8 +178,8 @@
     }
   ]
 }]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Cosmos.ReadItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
-<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
+      <OTelActivities><ACTIVITY><OPERATION>Operation.ReadItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadItemStreamAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Read</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 </OTelActivities>
     </Output>
   </Result>
@@ -230,21 +204,21 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── ReplaceItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+└── ReplaceItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
             │   (
             │       [System Info]
             │       Redacted To Not Change The Baselines From Run To Run
             │   )
-            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                        └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                        └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
                                 (
                                     [Client Side Request Stats]
                                     Redacted To Not Change The Baselines From Run To Run
@@ -253,8 +227,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "ReplaceItemStreamAsync",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {
     "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -262,14 +235,10 @@
   "children": [
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {
             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -277,26 +246,18 @@
           "children": [
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -314,8 +275,8 @@
     }
   ]
 }]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Cosmos.ReplaceItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
-<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
+      <OTelActivities><ACTIVITY><OPERATION>Operation.ReplaceItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReplaceItemStreamAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Replace</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 </OTelActivities>
     </Output>
   </Result>
@@ -335,21 +296,21 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── DeleteItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+└── DeleteItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
             │   (
             │       [System Info]
             │       Redacted To Not Change The Baselines From Run To Run
             │   )
-            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                        └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                        └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
                                 (
                                     [Client Side Request Stats]
                                     Redacted To Not Change The Baselines From Run To Run
@@ -358,8 +319,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "DeleteItemStreamAsync",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start time": "00:00:00:000",
   "duration in milliseconds": 0,
   "data": {
     "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
@@ -367,14 +327,10 @@
   "children": [
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {
             "System Info": "Redacted To Not Change The Baselines From Run To Run"
@@ -382,26 +338,18 @@
           "children": [
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
@@ -419,8 +367,8 @@
     }
   ]
 }]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Cosmos.DeleteItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.hashed_machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY></ACTIVITY>
-<EVENT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT>
+      <OTelActivities><ACTIVITY><OPERATION>Operation.DeleteItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>DeleteItemStreamAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Delete</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
+<EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 </OTelActivities>
     </Output>
   </Result>

@@ -1,25 +1,18 @@
 ﻿namespace Microsoft.Azure.Cosmos.Client.Tests
 {
     using System;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Routing;
-    using Moq;
     using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Documents.Routing;
-    using System.Net.WebSockets;
-    using System.Net.Http.Headers;
-    using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
-    using System.Collections.Specialized;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Cosmos.Common;
 
@@ -36,6 +29,60 @@
         private AccountProperties databaseAccount;
         private GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private Mock<IDocumentClientInternal> mockedClient;
+
+        /// <summary>
+        /// Tests behavior of Multimaster Accounts on metadata writes where the default location is not the hub region
+        /// </summary>
+        [TestMethod]
+        public void MultimasterMetadataWriteRetryTest()
+        {
+            const bool enableEndpointDiscovery = false;
+
+            //Creates GlobalEndpointManager where enableEndpointDiscovery is False and
+            //Default location is false
+            using GlobalEndpointManager endpointManager = this.Initialize(
+                useMultipleWriteLocations: true,
+                enableEndpointDiscovery: enableEndpointDiscovery,
+                isPreferredLocationsListEmpty: true,
+                multimasterMetadataWriteRetryTest: true);
+
+
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, enableEndpointDiscovery, new RetryOptions());
+
+            //Creates a metadata write request
+            DocumentServiceRequest request = this.CreateRequest(false, true);
+
+            Assert.IsTrue(endpointManager.IsMultimasterMetadataWriteRequest(request));
+
+            //On first attempt should get incorrect (default/non hub) location
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(request.RequestContext.LocationEndpointToRoute, ClientRetryPolicyTests.Location2Endpoint);
+
+            //Creation of 403.3 Error
+            HttpStatusCode forbidden = HttpStatusCode.Forbidden;
+            SubStatusCodes writeForbidden = SubStatusCodes.WriteForbidden;
+            Exception forbiddenWriteFail = new Exception();
+            Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
+
+            DocumentClientException documentClientException = new DocumentClientException(
+                message: "Multimaster Metadata Write Fail",
+                innerException: forbiddenWriteFail,
+                statusCode: forbidden,
+                substatusCode: writeForbidden,
+                requestUri: request.RequestContext.LocationEndpointToRoute,
+                responseHeaders: nameValueCollection.Object);
+
+            CancellationToken cancellationToken = new CancellationToken();
+
+            //Tests behavior of should retry
+            Task<ShouldRetryResult> shouldRetry = retryPolicy.ShouldRetryAsync(documentClientException, cancellationToken);
+
+            Assert.IsTrue(shouldRetry.Result.ShouldRetry);
+
+            //Now since the retry context is not null, should route to the hub region
+            retryPolicy.OnBeforeSendRequest(request);
+            Assert.AreEqual(request.RequestContext.LocationEndpointToRoute, ClientRetryPolicyTests.Location1Endpoint);
+        }
 
         /// <summary>
         /// Tests to see if different 503 substatus codes are handeled correctly
@@ -338,6 +385,18 @@
             return endpointManager;
         }
 
+        private DocumentServiceRequest CreateRequest(bool isReadRequest, bool isMasterResourceType)
+        {
+            if (isReadRequest)
+            {
+                return DocumentServiceRequest.Create(OperationType.Read, isMasterResourceType ? ResourceType.Database : ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            }
+            else
+            {
+                return DocumentServiceRequest.Create(OperationType.Create, isMasterResourceType ? ResourceType.Database : ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            }
+        }
+
         private MockDocumentClientContext InitializeMockedDocumentClient(
             bool useMultipleWriteLocations,
             bool isPreferredLocationsListEmpty)
@@ -462,13 +521,18 @@
             public Task OpenConnectionsToAllReplicasAsync(
                 string databaseName,
                 string containerLinkUri,
-                Func<Uri, Task> openConnectionHandlerAsync,
                 CancellationToken cancellationToken = default)
             {
                 throw new NotImplementedException();
             }
 
             public Task UpdateAsync(Documents.Rntbd.ServerKey serverKey, CancellationToken cancellationToken = default)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void SetOpenConnectionsHandler(
+                IOpenConnectionsHandler openConnectionHandler)
             {
                 throw new NotImplementedException();
             }
