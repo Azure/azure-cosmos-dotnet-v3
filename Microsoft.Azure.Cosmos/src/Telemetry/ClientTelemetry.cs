@@ -373,23 +373,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 if (ClientTelemetryOptions.IsEligible((int)httpstatistics.HttpResponseMessage.StatusCode, httpstatistics.Duration))
                 {
-                    string subStatusCode = httpstatistics.HttpResponseMessage.Headers?.GetValues(WFConstants.BackendHeaders.SubStatus)?.First();
+                    IEnumerable<string> substatuscodes = null;
+                    httpstatistics.HttpResponseMessage.Headers?.TryGetValues(WFConstants.BackendHeaders.SubStatus, out substatuscodes);
 
                     string operationTypeValue = string.Empty;
                     if (httpstatistics.ResourceType == ResourceType.Document)
                     {
                         operationTypeValue = operationType.ToOperationTypeString();
                     }
-                    
+
                     RequestInfo requestInfo = new RequestInfo()
                     {
                         DatabaseName = databaseId,
                         ContainerName = containerId,
                         Uri = httpstatistics.RequestUri.ToString(),
                         StatusCode = (int)httpstatistics.HttpResponseMessage.StatusCode,
-                        SubStatusCode = Convert.ToInt32(subStatusCode),
+                        SubStatusCode = Convert.ToInt32(substatuscodes?.First()),
                         Resource = httpstatistics.ResourceType.ToResourceTypeString(),
-                        Operation = operationTypeValue,
+                        Operation = operationTypeValue
                     };
 
                     LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
