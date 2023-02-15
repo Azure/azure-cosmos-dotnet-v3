@@ -755,8 +755,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         {
             if (!inputParameters.EnableOptimisticDirectExecution) return null;
 
-            Debug.Assert(containerQueryProperties.ResourceId != null);
-            
+            Debug.Assert(containerQueryProperties.ResourceId != null, "CosmosQueryExecutionContextFactory Assert!", "Container ResourceId cannot be null!");
+
             List<Documents.PartitionKeyRange> targetRanges;
             if (partitionedQueryExecutionInfo != null)
             {
@@ -772,8 +772,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             else
             {
                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                if (inputParameters.PartitionKey != null && partitionKeyDefinition != null)
+                if (inputParameters.PartitionKey != null)
                 {
+                    Debug.Assert(partitionKeyDefinition != null, "CosmosQueryExecutionContextFactory Assert!", "PartitionKeyDefinition cannot be null if partitionKey is defined");
+
                     targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                         cosmosQueryContext.ResourceLink,
                         containerQueryProperties.ResourceId,

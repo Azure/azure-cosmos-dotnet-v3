@@ -114,13 +114,6 @@
 
         private static async Task RunPassingTests(List<DirectExecutionTestCase> queryAndResults, Container container)
         {
-            QueryRequestOptions feedOptions = new QueryRequestOptions
-            {
-                MaxItemCount = -1,
-                EnableOptimisticDirectExecution = true,
-                TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
-            };
-
             int[] pageSizeOptions = new[] { -1, 1, 2, 10, 100 };
             for (int i = 0; i < pageSizeOptions.Length; i++)
             {
@@ -133,7 +126,7 @@
                         if (pageSizeOptions[i] != -1) continue;
                     }
 
-                    feedOptions = new QueryRequestOptions
+                    QueryRequestOptions feedOptions = new QueryRequestOptions
                     {
                         MaxItemCount = pageSizeOptions[i],
                         PartitionKey = queryAndResults[j].PartitionKey == null
@@ -227,7 +220,7 @@
             public string Query { get; }
             public List<long> ExpectedResult { get; }
             public string PartitionKey { get; }
-            public Microsoft.Azure.Cosmos.EmulatorTests.Query.QueryTestsBase.CollectionTypes Partition { get; }
+            public CollectionTypes Partition { get; }
             public bool EnableOptimisticDirectExecution { get; }
             public TestInjections.PipelineType ExpectedPipelineType { get; }
 
