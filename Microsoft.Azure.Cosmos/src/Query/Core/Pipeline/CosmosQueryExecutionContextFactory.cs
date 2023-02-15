@@ -792,7 +792,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 }
             }
 
-            if (targetRanges?.Count == 1)
+            if (targetRanges.Count == 1)
             {
                 return targetRanges.Single();
             }
