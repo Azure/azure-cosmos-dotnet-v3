@@ -43,11 +43,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
         public static TryCatch<OptimisticDirectExecutionContinuationToken> TryCreateFromCosmosElement(CosmosElement cosmosElement)
         {
             CosmosObject cosmosObjectContinuationToken = cosmosElement as CosmosObject;
-            if (cosmosObjectContinuationToken == null)
+            if (cosmosObjectContinuationToken == null || !cosmosObjectContinuationToken.ContainsKey(OptimisticDirectExecutionToken))
             {
                 return TryCatch<OptimisticDirectExecutionContinuationToken>.FromException(
-                                    new MalformedChangeFeedContinuationTokenException(
-                                        message: $"Malformed Continuation Token"));
+                                    new MalformedContinuationTokenException(
+                                        message: $"Malformed Continuation Token: Expected OptimisticDirectExecutionToken\r\n"));
             }
 
             TryCatch<ParallelContinuationToken> inner = ParallelContinuationToken.TryCreateFromCosmosElement(cosmosObjectContinuationToken[OptimisticDirectExecutionToken]);

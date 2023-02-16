@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary>
-    /// The typed response that contains the current, previous, and metadata change feed resource when <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.FullFidelity"/>.
+    /// The typed response that contains the current, previous, and metadata change feed resource when <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.AllVersionsAndDeletes"/>.
     /// </summary>
     /// <example>
     /// <code>
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     ///     public string status { get; set; }
     /// }
     /// 
-    /// ChangeFeedMode changeFeedMode = ChangeFeedMode.FullFidelity;
+    /// ChangeFeedMode changeFeedMode = ChangeFeedMode.AllVersionsAndDeletes;
     /// PartitionKey partitionKey = new PartitionKey(@"learning");
     /// ChangeFeedStartFrom changeFeedStartFrom = ChangeFeedStartFrom.Now(FeedRange.FromPartitionKey(partitionKey));
     /// 

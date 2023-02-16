@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         [TestMethod]
         public async Task NotExistentLeaseContainer()
         {
-            Container notFoundContainer = this.cosmosClient.GetContainer(this.database.Id, "NonExistent");
+            Container notFoundContainer = this.GetClient().GetContainer(this.database.Id, "NonExistent");
             ChangeFeedProcessor processor = this.Container
                 .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) => Task.CompletedTask)
                 .WithInstanceName("random")
