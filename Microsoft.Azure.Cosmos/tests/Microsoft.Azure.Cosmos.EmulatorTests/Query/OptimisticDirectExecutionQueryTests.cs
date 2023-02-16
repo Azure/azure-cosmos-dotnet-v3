@@ -14,10 +14,10 @@
     [TestCategory("Query")]
     public sealed class OptimisticDirectExecutionQueryTests : QueryTestsBase
     {
-        internal static class PageSizeOptions
+        private static class PageSizeOptions
         {
-            internal static readonly int[] NonGroupByPageSizeOptions = { -1, 1, 2, 10, 100 };
-            internal static readonly int[] GroupByPageSizeOptions = { -1 };
+            public static readonly int[] NonGroupByPageSizeOptions = { -1, 1, 2, 10, 100 };
+            public static readonly int[] GroupByPageSizeOptions = { -1 };
         }
 
         [TestMethod]
