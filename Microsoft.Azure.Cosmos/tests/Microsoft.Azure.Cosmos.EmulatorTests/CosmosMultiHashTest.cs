@@ -136,7 +136,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosException deleteException = await Assert.ThrowsExceptionAsync<CosmosException>(() =>
                     this.container.DeleteItemAsync<Document>(document.Id, badPKey)
                 );
-                Console.WriteLine(deleteException.Message);
                 Assert.AreEqual(deleteException.StatusCode, HttpStatusCode.BadRequest);
 
                 //Positive test
@@ -478,7 +477,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
                     Assert.IsTrue(queryDoc.Count == 1);
-                    Console.WriteLine(queryDoc.First<Document>());
                 }
 
                 //Negative test - using incomplete partition key
@@ -489,7 +487,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new QueryRequestOptions() { PartitionKey = badPKey}))
                 {
                     FeedResponse<Document> queryDocBad = await badFeedIterator.ReadNextAsync();
-                    Console.WriteLine(queryDocBad.First<Document>());
                     await Assert.ThrowsExceptionAsync<CosmosException>(() =>
                          badFeedIterator.ReadNextAsync()
                     );
