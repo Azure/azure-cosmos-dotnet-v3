@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -226,6 +227,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             ResourceType resourceType,
                             SubStatusCodes subStatusCode,
                             string databaseId,
+                            ITrace trace,
                             long responseSizeInBytes = 0,
                             string consistencyLevel = null )
         {
@@ -235,6 +237,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {cacheRefreshSource} data for Telemetry.");
+
+            // Record Network/Replica Information
+            SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
+            this.RecordHttpResponses(containerId, databaseId, operationType, resourceType, summaryDiagnostics.HttpResponseStatistics.Value);
+            this.RecordRntbdResponses(containerId, databaseId, summaryDiagnostics.StoreResponseStatistics.Value);
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(regionsContactedList);
 
@@ -299,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             // Record Network/Replica Information
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
-            this.RecordHttpResponses(containerId, databaseId, operationType, summaryDiagnostics.HttpResponseStatistics.Value);
+            this.RecordHttpResponses(containerId, databaseId, operationType, resourceType, summaryDiagnostics.HttpResponseStatistics.Value);
             this.RecordRntbdResponses(containerId, databaseId, summaryDiagnostics.StoreResponseStatistics.Value);
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
@@ -367,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
-        private void RecordHttpResponses(string containerId, string databaseId, OperationType operationType, List<HttpResponseStatistics> httpResponseStatisticsList)
+        private void RecordHttpResponses(string containerId, string databaseId, OperationType operationType, ResourceType resourceType, List<HttpResponseStatistics> httpResponseStatisticsList)
         {
             foreach (HttpResponseStatistics httpstatistics in httpResponseStatisticsList)
             {
@@ -376,12 +383,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     IEnumerable<string> substatuscodes = null;
                     httpstatistics.HttpResponseMessage.Headers?.TryGetValues(WFConstants.BackendHeaders.SubStatus, out substatuscodes);
 
-                    string operationTypeValue = string.Empty;
-                    if (httpstatistics.ResourceType == ResourceType.Document)
-                    {
-                        operationTypeValue = operationType.ToOperationTypeString();
-                    }
-
                     RequestInfo requestInfo = new RequestInfo()
                     {
                         DatabaseName = databaseId,
@@ -389,8 +390,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         Uri = httpstatistics.RequestUri.ToString(),
                         StatusCode = (int)httpstatistics.HttpResponseMessage.StatusCode,
                         SubStatusCode = Convert.ToInt32(substatuscodes?.First()),
-                        Resource = httpstatistics.ResourceType.ToResourceTypeString(),
-                        Operation = operationTypeValue
+                        Resource = resourceType.ToResourceTypeString(),
+                        Operation = operationType.ToOperationTypeString()
                     };
 
                     LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
