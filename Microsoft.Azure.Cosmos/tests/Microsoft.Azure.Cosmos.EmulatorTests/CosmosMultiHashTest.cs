@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private CosmosClient client = null;
         private Cosmos.Database database = null;
 
-        private CosmosClient client = null;
         private Container container = null;
         private ContainerProperties containerProperties = null;
 
@@ -465,7 +464,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .Build();
 
                 badPKey = new PartitionKeyBuilder()
-                            .Add(document.GetPropertyValue<string>("ZipCode"))
+                            .Add(document.GetPropertyValue<string>("City"))
                             .Build();
 
                 String query = $"SELECT * from c where c.id = \"{document.GetPropertyValue<string>("id")}\"";
@@ -478,23 +477,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(feedIterator.HasMoreResults);
 
                     FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
+                    queryDoc.First<Document>();
                     Assert.IsTrue(queryDoc.Count == 1);
+                    feedIterator.Dispose();
+                }
+
+                //Using an incomplete partition key with prefix of PK path definition
+                pKey = new PartitionKeyBuilder()
+                    .Add(document.GetPropertyValue<string>("ZipCode"))
+                .Build();
+                using (FeedIterator<Document> feedIterator = this.container.GetItemQueryIterator<Document>(
+                    query,
+                    null,
+                    new QueryRequestOptions() { PartitionKey = pKey }))
+                {
+                    Assert.IsTrue(feedIterator.HasMoreResults);
+
+                    FeedResponse<Document> queryDoc = await feedIterator.ReadNextAsync();
+                    queryDoc.First<Document>();
+                    Assert.IsTrue(queryDoc.Count == 1);
+                    feedIterator.Dispose();
                 }
 
                 //Negative test - using incomplete partition key
-                //not supported in query pipeline yet
                 using (FeedIterator<Document> badFeedIterator = this.container.GetItemQueryIterator<Document>(
                     query,
                     null,
                     new QueryRequestOptions() { PartitionKey = badPKey}))
                 {
                     FeedResponse<Document> queryDocBad = await badFeedIterator.ReadNextAsync();
-                    await Assert.ThrowsExceptionAsync<CosmosException>(() =>
-                         badFeedIterator.ReadNextAsync()
+                    Assert.ThrowsException<InvalidOperationException>(() =>
+                         queryDocBad.First<Document>()
                     );
+                    badFeedIterator.Dispose();
                 }
-
-
             }
         }
 
