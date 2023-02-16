@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 SendingRequestEventArgs = this.SendingRequestEventHandlerUdfVerifier,
             };
 
-            this.cosmosClient = TestCommon.CreateCosmosClient(clientOptions);
-            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
+            this.SetClient(TestCommon.CreateCosmosClient(clientOptions));
+            this.database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString(),
                 cancellationToken: this.cancellationToken);
             string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(

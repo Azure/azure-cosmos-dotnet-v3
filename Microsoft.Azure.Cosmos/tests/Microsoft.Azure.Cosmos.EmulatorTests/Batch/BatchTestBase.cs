@@ -63,41 +63,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         protected TestDoc TestDocPk1ExistingD { get; set; }
         protected TestDoc TestDocPk1ExistingE { get; set; }
 
-        public static void ClassInit(TestContext context)
+        public static async Task ClassInitAsync(TestContext context)
         {
-            InitializeDirectContainers();
+            await InitializeDirectContainers();
             InitializeGatewayContainers();
-            InitializeSharedThroughputContainer();
+            await InitializeSharedThroughputContainer();
         }
 
-        private static void InitializeDirectContainers()
+        private static async Task InitializeDirectContainers()
         {
-
+            
             BatchTestBase.Client = TestCommon.CreateCosmosClient(builder => builder.WithConsistencyLevel(Cosmos.ConsistencyLevel.Session));
-            BatchTestBase.Database = BatchTestBase.Client.CreateDatabaseAsync(Guid.NewGuid().ToString())
-                .GetAwaiter().GetResult().Database;
+            BatchTestBase.Database = await BatchTestBase.Client.CreateDatabaseAsync(Guid.NewGuid().ToString());
 
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
             partitionKeyDefinition.Paths.Add("/Status");
 
-            BatchTestBase.LowThroughputJsonContainer = BatchTestBase.Database.CreateContainerAsync(
+            BatchTestBase.LowThroughputJsonContainer = (await BatchTestBase.Database.CreateContainerAsync(
                 new ContainerProperties()
                 {
                     Id = Guid.NewGuid().ToString(),
                     PartitionKey = partitionKeyDefinition
                 },
-                throughput: 400).GetAwaiter().GetResult().Container;
+                throughput: 400)).Container;
 
-            BatchTestBase.PartitionKeyDefinition = ((ContainerInternal)(ContainerInlineCore)BatchTestBase.LowThroughputJsonContainer).GetPartitionKeyDefinitionAsync(CancellationToken.None).GetAwaiter().GetResult();
+            BatchTestBase.PartitionKeyDefinition = await ((ContainerInternal)(ContainerInlineCore)BatchTestBase.LowThroughputJsonContainer).GetPartitionKeyDefinitionAsync(CancellationToken.None);
 
             // Create a container with at least 2 physical partitions for effective cross-partition testing
-            BatchTestBase.JsonContainer = BatchTestBase.Database.CreateContainerAsync(
+            BatchTestBase.JsonContainer = (await BatchTestBase.Database.CreateContainerAsync(
                 new ContainerProperties()
                 {
                     Id = Guid.NewGuid().ToString(),
                     PartitionKey = BatchTestBase.PartitionKeyDefinition
                 },
-                throughput: 12000).GetAwaiter().GetResult().Container;
+                throughput: 12000)).Container;
 
             Serialization.HybridRow.Schemas.Schema testSchema = TestDoc.GetSchema();
             Namespace testNamespace = new Namespace()
@@ -127,9 +126,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             schematizedContainerProperties.SchemaPolicy = schemaPolicy;
 
-            BatchTestBase.SchematizedContainer = BatchTestBase.Database.CreateContainerAsync(
+            BatchTestBase.SchematizedContainer = (await BatchTestBase.Database.CreateContainerAsync(
                 schematizedContainerProperties,
-                throughput: 12000).GetAwaiter().GetResult().Container;
+                throughput: 12000)).Container;
         }
 
         private static void InitializeGatewayContainers()
@@ -142,20 +141,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             BatchTestBase.GatewaySchematizedContainer = BatchTestBase.GatewayDatabase.GetContainer(BatchTestBase.SchematizedContainer.Id);
         }
 
-        private static void InitializeSharedThroughputContainer()
+        private static async Task InitializeSharedThroughputContainer()
         {
-            CosmosClient client = TestCommon.CreateCosmosClient();
-            Cosmos.Database db = client.CreateDatabaseAsync(string.Format("Shared_{0}", Guid.NewGuid().ToString("N")), throughput: 20000).GetAwaiter().GetResult().Database;
+            Cosmos.Database db = (await BatchTestBase.Client.CreateDatabaseAsync(string.Format("Shared_{0}", Guid.NewGuid().ToString("N")), throughput: 20000)).Database;
 
             for (int index = 0; index < 5; index++)
             {
-                ContainerResponse containerResponse = db.CreateContainerAsync(
+                ContainerResponse containerResponse = await db.CreateContainerAsync(
                     new ContainerProperties
                     {
                         Id = Guid.NewGuid().ToString(),
                         PartitionKey = BatchTestBase.PartitionKeyDefinition
-                    })
-                    .GetAwaiter().GetResult();
+                    });
 
                 Assert.AreEqual(true, bool.Parse(containerResponse.Headers.Get(WFConstants.BackendHeaders.ShareThroughput)));
 
@@ -168,24 +165,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             BatchTestBase.SharedThroughputDatabase = db;
         }
 
-        public static void ClassClean()
+        public static async Task ClassCleanAsync()
         {
-            if (BatchTestBase.Client == null)
-            {
-                return;
-            }
-
             if (BatchTestBase.Database != null)
             {
-                BatchTestBase.Database.DeleteStreamAsync().GetAwaiter().GetResult();
+                await BatchTestBase.Database.DeleteStreamAsync();
+            }
+
+            if (BatchTestBase.GatewayDatabase != null)
+            {
+                await BatchTestBase.GatewayDatabase.DeleteStreamAsync();
             }
 
             if (BatchTestBase.SharedThroughputDatabase != null)
             {
-                BatchTestBase.SharedThroughputDatabase.DeleteStreamAsync().GetAwaiter().GetResult();
+                await BatchTestBase.SharedThroughputDatabase.DeleteStreamAsync();
             }
 
-            BatchTestBase.Client.Dispose();
+            BatchTestBase.Client?.Dispose();
+            BatchTestBase.GatewayClient?.Dispose();
         }
 
         protected virtual async Task CreateJsonTestDocsAsync(Container container)

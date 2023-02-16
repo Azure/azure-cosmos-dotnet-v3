@@ -1167,62 +1167,68 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (x) => toStreamCount++);
 
             //Create a new cosmos client with the mocked cosmos json serializer
-            CosmosClient client = TestCommon.CreateCosmosClient(
+            using CosmosClient client = TestCommon.CreateCosmosClient(
                 (cosmosClientBuilder) => cosmosClientBuilder.WithCustomSerializer(mockJsonSerializer));
 
             int databaseThroughput = 10000;
             Cosmos.Database databaseNoThroughput = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(), throughput: null);
             Cosmos.Database databaseWithThroughput = await client.CreateDatabaseAsync(Guid.NewGuid().ToString(), databaseThroughput, null);
 
-
-            string containerId = Guid.NewGuid().ToString();
-            string partitionPath = "/users";
-            Container containerNoThroughput = await databaseWithThroughput.CreateContainerAsync(containerId, partitionPath, throughput: null);
             try
             {
-                await containerNoThroughput.ReadThroughputAsync(new RequestOptions());
-                Assert.Fail("Should through not found exception as throughput is not configured");
+                string containerId = Guid.NewGuid().ToString();
+                string partitionPath = "/users";
+                Container containerNoThroughput = await databaseWithThroughput.CreateContainerAsync(containerId, partitionPath, throughput: null);
+                try
+                {
+                    await containerNoThroughput.ReadThroughputAsync(new RequestOptions());
+                    Assert.Fail("Should through not found exception as throughput is not configured");
+                }
+                catch (CosmosException exception)
+                {
+                    Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
+                }
+
+                try
+                {
+                    await containerNoThroughput.ReplaceThroughputAsync(2000, new RequestOptions());
+                    Assert.Fail("Should through not found exception as throughput is not configured");
+                }
+                catch (CosmosException exception)
+                {
+                    Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
+                }
+
+                int containerThroughput = 1000;
+                Container container = await databaseNoThroughput.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", throughput: containerThroughput);
+
+                int? containerResponseThroughput = await container.ReadThroughputAsync();
+                Assert.AreEqual(containerThroughput, containerResponseThroughput);
+
+                ThroughputResponse containerThroughputResponse = await container.ReadThroughputAsync(new RequestOptions());
+                Assert.IsNotNull(containerThroughputResponse);
+                Assert.IsNotNull(containerThroughputResponse.Resource);
+                Assert.IsNotNull(containerThroughputResponse.MinThroughput);
+                Assert.IsNotNull(containerThroughputResponse.Resource.Throughput);
+                Assert.AreEqual(containerThroughput, containerThroughputResponse.Resource.Throughput.Value);
+                SelflinkValidator.ValidateTroughputSelfLink(containerThroughputResponse.Resource.SelfLink);
+
+                containerThroughput += 500;
+                containerThroughputResponse = await container.ReplaceThroughputAsync(containerThroughput, new RequestOptions());
+                Assert.IsNotNull(containerThroughputResponse);
+                Assert.IsNotNull(containerThroughputResponse.Resource);
+                Assert.IsNotNull(containerThroughputResponse.Resource.Throughput);
+                Assert.AreEqual(containerThroughput, containerThroughputResponse.Resource.Throughput.Value);
+                SelflinkValidator.ValidateTroughputSelfLink(containerThroughputResponse.Resource.SelfLink);
+
+                Assert.AreEqual(0, toStreamCount, "Custom serializer to stream should not be used for offer operations");
+                Assert.AreEqual(0, fromStreamCount, "Custom serializer from stream should not be used for offer operations");
             }
-            catch (CosmosException exception)
+            finally
             {
-                Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
+                await databaseNoThroughput.DeleteAsync();
+                await databaseWithThroughput.DeleteAsync();
             }
-
-            try
-            {
-                await containerNoThroughput.ReplaceThroughputAsync(2000, new RequestOptions());
-                Assert.Fail("Should through not found exception as throughput is not configured");
-            }
-            catch (CosmosException exception)
-            {
-                Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
-            }
-
-            int containerThroughput = 1000;
-            Container container = await databaseNoThroughput.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", throughput: containerThroughput);
-
-            int? containerResponseThroughput = await container.ReadThroughputAsync();
-            Assert.AreEqual(containerThroughput, containerResponseThroughput);
-
-            ThroughputResponse containerThroughputResponse = await container.ReadThroughputAsync(new RequestOptions());
-            Assert.IsNotNull(containerThroughputResponse);
-            Assert.IsNotNull(containerThroughputResponse.Resource);
-            Assert.IsNotNull(containerThroughputResponse.MinThroughput);
-            Assert.IsNotNull(containerThroughputResponse.Resource.Throughput);
-            Assert.AreEqual(containerThroughput, containerThroughputResponse.Resource.Throughput.Value);
-            SelflinkValidator.ValidateTroughputSelfLink(containerThroughputResponse.Resource.SelfLink);
-
-            containerThroughput += 500;
-            containerThroughputResponse = await container.ReplaceThroughputAsync(containerThroughput, new RequestOptions());
-            Assert.IsNotNull(containerThroughputResponse);
-            Assert.IsNotNull(containerThroughputResponse.Resource);
-            Assert.IsNotNull(containerThroughputResponse.Resource.Throughput);
-            Assert.AreEqual(containerThroughput, containerThroughputResponse.Resource.Throughput.Value);
-            SelflinkValidator.ValidateTroughputSelfLink(containerThroughputResponse.Resource.SelfLink);
-
-            Assert.AreEqual(0, toStreamCount, "Custom serializer to stream should not be used for offer operations");
-            Assert.AreEqual(0, fromStreamCount, "Custom serializer from stream should not be used for offer operations");
-            await databaseNoThroughput.DeleteAsync();
         }
 
         [TestMethod]

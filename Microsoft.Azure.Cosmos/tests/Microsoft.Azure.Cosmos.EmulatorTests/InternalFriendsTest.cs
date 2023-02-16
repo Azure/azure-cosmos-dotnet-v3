@@ -18,10 +18,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class InternalFriendsTest
     {
         private CosmosClient cosmosClient;
+        private Database database;
 
         [TestCleanup]
-        public void Cleanup()
+        public async Task Cleanup()
         {
+            await this.database?.DeleteAsync();
             this.cosmosClient?.Dispose();
         }
 
@@ -99,10 +101,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             });
 
-            Database database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
+            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
                 cancellationToken: new CancellationTokenSource().Token);
 
-            return await database.CreateContainerAsync(id: Guid.NewGuid().ToString(),
+            return await this.database.CreateContainerAsync(id: Guid.NewGuid().ToString(),
                 partitionKeyPath: "/pk");
         }
     }

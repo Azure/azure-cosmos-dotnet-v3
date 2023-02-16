@@ -15,7 +15,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosClient client = null;
         private Cosmos.Database database = null;
-        
+
+        private CosmosClient client = null;
         private Container container = null;
         private ContainerProperties containerProperties = null;
 
@@ -40,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.client.Dispose();
 
             HttpConstants.Versions.CurrentVersion = this.currentVersion;
+            this.client.Dispose();
         }
 
         [TestMethod]

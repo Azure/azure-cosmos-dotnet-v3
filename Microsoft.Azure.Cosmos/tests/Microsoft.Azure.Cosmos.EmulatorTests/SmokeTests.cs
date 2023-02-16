@@ -33,6 +33,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
         }
 
+        [TestCleanup]
+        public async Task Cleanup()
+        {
+            await this.client.GetDatabase(DatabaseName).DeleteStreamAsync();
+            this.client?.Dispose();
+        }
+
         /// <summary>
         /// Test for the existence of native assembly dependencies
         /// </summary>
