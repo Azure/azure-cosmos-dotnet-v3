@@ -506,7 +506,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 this.numberOfFailures++;
 
-                DefaultTrace.TraceError("Exception while sending telemetry data : {0}", ex.Message);
+                DefaultTrace.TraceError("Exception while sending telemetry data : {0}", ex.StackTrace);
             }
             finally
             {
