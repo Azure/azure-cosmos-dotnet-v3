@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TransportInterceptorContractTest()
         {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
+            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
                 builder =>
                 {
                     builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(transportClient, TransportWrapperTests.Interceptor));
@@ -31,12 +31,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string id1 = Guid.NewGuid().ToString();
             TestPayload payload1 = await container.CreateItemAsync<TestPayload>(new TestPayload { id = id1 });
             payload1 = await container.ReadItemAsync<TestPayload>(id1, new Cosmos.PartitionKey(id1));
+            await database.DeleteStreamAsync();
         }
 
         [TestMethod]
         public async Task TransportExceptionValidationTest()
         {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
+            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(
                 builder =>
                 {
                     builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
@@ -79,7 +80,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (ResponseMessage responseMessage = await streamIterator.ReadNextAsync())
             {
                 this.ValidateTransportException(responseMessage);
-            }   
+            }
+
+            await database.DeleteStreamAsync();
         }
 
         private void ValidateTransportException(CosmosException cosmosException)

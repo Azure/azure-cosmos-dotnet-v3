@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     this.database,
                     "fixedLeases");
 
-            Container fixedLeasesContainer = this.cosmosClient.GetContainer(this.database.Id, "fixedLeases");
+            Container fixedLeasesContainer = this.GetClient().GetContainer(this.database.Id, "fixedLeases");
 
             try
             {
