@@ -178,7 +178,7 @@ namespace CosmosCTL
                             operation: i,
                             partitionKeyAttributeName: config.CollectionPartitionKey,
                             containers: initializationResult.Containers,
-                            isContentResponseOnWriteEnabled: (bool)config.IsContentResponseOnWriteEnabled)),
+                            isContentResponseOnWriteEnabled: config.IsContentResponseOnWriteEnabled.Value)),
                         onSuccess: () =>
                         {
                             concurrencyControlSemaphore.Release();
