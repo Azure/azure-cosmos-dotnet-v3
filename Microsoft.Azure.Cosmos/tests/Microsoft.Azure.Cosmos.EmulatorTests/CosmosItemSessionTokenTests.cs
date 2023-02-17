@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     return throttledResponse;
                 },
-                this.cosmosClient.DocumentClient.sessionContainer);
+                this.GetClient().DocumentClient.sessionContainer);
 
             try
             {

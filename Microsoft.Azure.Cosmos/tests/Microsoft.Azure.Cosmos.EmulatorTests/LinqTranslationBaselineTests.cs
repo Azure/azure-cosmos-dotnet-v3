@@ -60,6 +60,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 await testDb.DeleteStreamAsync();
             }
+
+            cosmosClient?.Dispose();
         }
 
         [TestInitialize]
