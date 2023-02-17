@@ -53,7 +53,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             Assert.IsTrue(OpenTelemetryCoreRecorder.IsExceptionRegistered(
                 new CosmosNullReferenceException(
-                    "",
                     new NullReferenceException(), 
                     NoOpTrace.Singleton), 
                 default));

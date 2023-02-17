@@ -531,7 +531,6 @@ namespace Microsoft.Azure.Cosmos
                 catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
                 {
                     CosmosNullReferenceException nullException = new CosmosNullReferenceException(
-                        nullRefException.Message,
                         nullRefException,
                         trace);
                     recorder.MarkFailed(nullException);

@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (trace.StartChild("startChild")) { }
 
             CosmosNullReferenceException cosmosNullReferenceException = new CosmosNullReferenceException(
-                nullReferenceException.Message,
                 nullReferenceException,
                 trace);
 
@@ -53,11 +52,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
-        [DataRow(null, null)]
-        [DataRow("", null)]
-        public void ExpectArgumentNullExceptionTest(String message, NullReferenceException nullReferenceException)
+        public void ExpectArgumentNullExceptionTest()
         {
-            _ = new CosmosNullReferenceException(message, nullReferenceException, NoOpTrace.Singleton);
+            _ = new CosmosNullReferenceException(null, NoOpTrace.Singleton);
         }
     }
 }

@@ -24,10 +24,9 @@ namespace Microsoft.Azure.Cosmos
         /// Create an instance of CosmosNullReferenceException
         /// </summary>
         internal CosmosNullReferenceException(
-            String message,
             NullReferenceException originalException,
             ITrace trace) 
-            : base(message ?? throw new ArgumentNullException(nameof(message)), originalException ?? throw new ArgumentNullException(nameof(originalException)))
+            : base(originalException?.Message ?? throw new ArgumentNullException(nameof(originalException)), originalException ?? throw new ArgumentNullException(nameof(originalException)))
         {
             this.originalException = originalException;
 
