@@ -19,15 +19,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class BatchSinglePartitionKeyTests : BatchTestBase
     {
         [ClassInitialize]
-        public static void ClassInitialize(TestContext context)
+        public static async Task ClassInitialize(TestContext context)
         {
-            BatchTestBase.ClassInit(context);
+            await BatchTestBase.ClassInitAsync(context);
         }
 
         [ClassCleanup]
-        public static void ClassCleanup()
+        public static async Task ClassCleanup()
         {
-            BatchTestBase.ClassClean();
+            await BatchTestBase.ClassCleanAsync();
         }
 
         [TestMethod]

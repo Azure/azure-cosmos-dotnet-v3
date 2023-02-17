@@ -698,7 +698,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// To enable LocalQuorum Consistency, i.e. Allow Quorum read with Eventual Consistency Account
+        /// To enable LocalQuorum Consistency, i.e. Allows Quorum read with Eventual Consistency Account or with Consistent Prefix Account.
         /// Use By Compute Only
         /// </summary>
         internal CosmosClientBuilder AllowUpgradeConsistencyToLocalQuorum()
