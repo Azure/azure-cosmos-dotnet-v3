@@ -103,7 +103,7 @@ namespace CosmosCTL
         [Option("ctl_telemetry_schedule_in_sec", Required = false, HelpText = "telemetry task schedule time in sec")]
         public string TelemetryScheduleInSeconds { get; set; }
 
-        [Option("ctl_reservoir_type", Required = false, HelpText = "Defines the reservoir type.")]
+        [Option("ctl_reservoir_type", Required = false, HelpText = "Defines the reservoir type. Valid values are: Uniform, SlidingWindow and ExponentialDecay. The default value is SlidingWindow.")]
         public ReservoirTypes ReservoirType { get; set; } = ReservoirTypes.SlidingWindow;
 
         [Option("ctl_reservoir_sample_size", Required = false, HelpText = "The reservoir sample size.")]
