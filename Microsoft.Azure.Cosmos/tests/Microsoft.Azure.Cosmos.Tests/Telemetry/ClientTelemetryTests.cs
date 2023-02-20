@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 {
     using System;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -11,6 +11,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Telemetry;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using System.Text;
+    using System.IO;
+    using Microsoft.Azure.Cosmos.Telemetry.Resolver;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
@@ -30,13 +33,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             MetricInfo metrics = new MetricInfo("metricsName", "unitName");
 
             LongConcurrentHistogram histogram = new LongConcurrentHistogram(1,
-                   Int64.MaxValue,
+                   long.MaxValue,
                    5);
 
-            histogram.RecordValue((long)10);
-            histogram.RecordValue((long)20);
-            histogram.RecordValue((long)30);
-            histogram.RecordValue((long)40);
+            histogram.RecordValue(10);
+            histogram.RecordValue(20);
+            histogram.RecordValue(30);
+            histogram.RecordValue(40);
 
             metrics.SetAggregators(histogram);
 
@@ -58,14 +61,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             MetricInfo metrics = new MetricInfo("metricsName", "unitName");
             long adjustmentFactor = 1000;
 
-           LongConcurrentHistogram histogram = new LongConcurrentHistogram(1,
-                         Int64.MaxValue,
-                         5);
+            LongConcurrentHistogram histogram = new LongConcurrentHistogram(1,
+                          long.MaxValue,
+                          5);
 
-            histogram.RecordValue((long)(10 * adjustmentFactor));
-            histogram.RecordValue((long)(20 * adjustmentFactor));
-            histogram.RecordValue((long)(30 * adjustmentFactor));
-            histogram.RecordValue((long)(40 * adjustmentFactor));
+            histogram.RecordValue(10 * adjustmentFactor);
+            histogram.RecordValue(20 * adjustmentFactor);
+            histogram.RecordValue(30 * adjustmentFactor);
+            histogram.RecordValue(40 * adjustmentFactor);
 
             metrics.SetAggregators(histogram, adjustmentFactor);
 
@@ -85,11 +88,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void CheckJsonSerializerContract()
         {
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties(clientId: "clientId", 
-                processId: "", 
-                userAgent: null, 
-                connectionMode: ConnectionMode.Direct, 
-                preferredRegions: null, 
+            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties(clientId: "clientId",
+                processId: "",
+                userAgent: null,
+                connectionMode: ConnectionMode.Direct,
+                preferredRegions: null,
                 aggregationIntervalInSec: 10), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"aggregationIntervalInSec\":10,\"systemInfo\":[]}", json);
         }
@@ -101,17 +104,45 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 "region1"
             };
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties(clientId: "clientId", 
-                processId: "", 
-                userAgent: null, 
-                connectionMode: ConnectionMode.Direct, 
+            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties(clientId: "clientId",
+                processId: "",
+                userAgent: null,
+                connectionMode: ConnectionMode.Direct,
                 preferredRegions: preferredRegion,
                 aggregationIntervalInSec: 1), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[]}", json);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(System.FormatException))]
+        public void CheckJsonSerializerWithContractResolver()
+        {
+            string data = File.ReadAllText("Telemetry/ClientTelemetryPayload.json", Encoding.UTF8);
+
+            ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
+            
+            JsonSerializerSettings settings = ClientTelemetryOptions.JsonSerializerSettings;
+            foreach (string property in ClientTelemetryOptions.PropertiesContainMetrics)
+            {
+                settings.ContractResolver = new IncludePropertyContractResolver(property);
+                string json = JsonConvert.SerializeObject(clientTelemetryProperties, settings);
+
+                ClientTelemetryProperties newClientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(json);
+
+                if (property == "operationInfo")
+                {
+                    Assert.IsNull(newClientTelemetryProperties.CacheRefreshInfo);
+                    Assert.IsTrue(newClientTelemetryProperties.OperationInfo.Count > 0);
+                }
+                else if (property == "cacheRefreshInfo")
+                {
+                    Assert.IsNull(newClientTelemetryProperties.OperationInfo);
+                    Assert.IsTrue(newClientTelemetryProperties.CacheRefreshInfo.Count > 0);
+                }
+            }
+        }
+        
+        [TestMethod]
+        [ExpectedException(typeof(FormatException))]
         public void CheckMisconfiguredTelemetry_should_fail()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "non-boolean");

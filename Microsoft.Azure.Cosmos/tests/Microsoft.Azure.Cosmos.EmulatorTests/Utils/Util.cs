@@ -521,10 +521,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 options.OfferThroughput);
         }
 
-        internal static void EnableClientTelemetryEnvironmentVariables()
+        internal static void EnableClientTelemetryEnvironmentVariables(string timeInSeconds = "1")
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, timeInSeconds);
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
         }
 

@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const int KbToMbFactor = 1024;
 
         internal const int OneKbToBytes = 1024;
-
+            
         // Expecting histogram to have Minimum Latency of 1 and Maximum Latency of 1 hour (which is never going to happen)
         internal const long RequestLatencyMax = TimeSpan.TicksPerHour;
         internal const long RequestLatencyMin = 1;
@@ -85,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string EnvPropsClientTelemetryVmMetadataUrl = "COSMOS.VM_METADATA_URL";
         internal const string EnvPropsClientTelemetryEndpoint = "COSMOS.CLIENT_TELEMETRY_ENDPOINT";
         internal const string EnvPropsClientTelemetryEnvironmentName = "COSMOS.ENVIRONMENT_NAME";
-
+        
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
 
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings 
@@ -94,6 +95,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
         };
 
+        internal static readonly HashSet<string> PropertiesContainMetrics = new HashSet<string> { "operationInfo", "cacheRefreshInfo" };
+
+        internal static int PayloadSizeThreshold = 1024 * 1024 * 2; // 2MB
+        
         private static Uri clientTelemetryEndpoint;
         private static string environmentName;
         private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;

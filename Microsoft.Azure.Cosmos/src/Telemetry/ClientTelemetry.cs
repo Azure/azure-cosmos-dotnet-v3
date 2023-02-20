@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Cosmos.Telemetry.Resolver;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
@@ -142,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         ///  2. Load VM metedata information (one time at the time of initialization)
         ///  3. Calculate and Send telemetry Information to juno service (never ending task)/// </summary>
         /// <returns>Async Task</returns>
-        private async Task EnrichAndSendAsync()
+        private async ValueTask EnrichAndSendAsync()
         {
             DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : {0}", observingWindow);
 
@@ -164,35 +165,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
-                    this.clientTelemetryInfo.MachineId = VmMetadataApiHandler.GetMachineId();
-
-                    // Load host information from cache
-                    Compute vmInformation = VmMetadataApiHandler.GetMachineInfo();
-                    this.clientTelemetryInfo.ApplicationRegion = vmInformation?.Location;
-                    this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
-
-                    // If cancellation is requested after the delay then return from here.
-                    if (this.cancellationTokenSource.IsCancellationRequested)
-                    {
-                        DefaultTrace.TraceInformation("Observer Task Cancelled.");
-
-                        break;
-                    }
-
-                    this.RecordSystemUtilization();
-
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
 
-                    ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
+                    this.RecordSystemUtilization();
+                    
+                    ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
 
                     ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
-                       = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
-
-                    this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
-                    this.clientTelemetryInfo.CacheRefreshInfo = ClientTelemetryHelper.ToListWithMetricsInfo(cacheRefreshInfoSnapshot);
-
-                    await this.SendAsync();
+                        = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
+                    
+                    this.ProcessAndSend(
+                        operationInfoSnapshot, cacheRefreshInfoSnapshot);
                 }
             }
             catch (Exception ex)
@@ -202,7 +186,44 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             DefaultTrace.TraceInformation("Telemetry Job Stopped.");
         }
+        
+        private void ProcessAndSend(ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
+            ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot)
+        {
+            _ = Task.Run(async () =>
+            {
+                this.clientTelemetryInfo.MachineId = VmMetadataApiHandler.GetMachineId();
 
+                // Load host information from cache
+                Compute vmInformation = VmMetadataApiHandler.GetMachineInfo();
+                this.clientTelemetryInfo.ApplicationRegion = vmInformation?.Location;
+                this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
+                
+                this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
+                this.clientTelemetryInfo.CacheRefreshInfo = ClientTelemetryHelper.ToListWithMetricsInfo(cacheRefreshInfoSnapshot);
+
+                JsonSerializerSettings settings = ClientTelemetryOptions.JsonSerializerSettings;
+
+                string json = JsonConvert.SerializeObject(this.clientTelemetryInfo, settings);
+
+                // if JSON is greater than 2 MB
+                if (json.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+                {
+                    foreach (string property in ClientTelemetryOptions.PropertiesContainMetrics)
+                    {
+                        settings.ContractResolver = new IncludePropertyContractResolver(property);
+                        json = JsonConvert.SerializeObject(this.clientTelemetryInfo, settings);
+
+                        await this.SendAsync(json);
+                    }
+                }
+                else
+                {
+                    await this.SendAsync(json);
+                }
+            });
+        }
+        
         /// <summary>
         /// Collects Cache Telemetry Information.
         /// </summary>
@@ -359,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// In any case it resets the telemetry information to collect the latest one.
         /// </summary>
         /// <returns>Async Task</returns>
-        private async Task SendAsync()
+        private async Task SendAsync(string jsonPayload)
         {
             if (endpointUrl == null)
             {
@@ -370,14 +391,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             try
             {
                 DefaultTrace.TraceInformation("Sending Telemetry Data to {0}", endpointUrl.AbsoluteUri);
-
-                string json = JsonConvert.SerializeObject(this.clientTelemetryInfo, ClientTelemetryOptions.JsonSerializerSettings);
-
+                
                 using HttpRequestMessage request = new HttpRequestMessage
                 {
                     Method = HttpMethod.Post,
                     RequestUri = endpointUrl,
-                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                    Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
                 };
 
                 async ValueTask<HttpRequestMessage> CreateRequestMessage()
