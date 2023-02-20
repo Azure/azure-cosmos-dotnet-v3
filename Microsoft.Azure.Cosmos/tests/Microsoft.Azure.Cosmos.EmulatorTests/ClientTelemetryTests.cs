@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Common;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -863,7 +861,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
            
             ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation, this.expectedMetricNameUnitMap);
-            ClientTelemetryTests.AssertNetworkLevelInformation(actualRequestInformation);
+            if (localCopyOfActualInfo.First().ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant() && expectedSubstatuscode != 999999)
+            {
+                ClientTelemetryTests.AssertNetworkLevelInformation(actualRequestInformation);
+            }
+            else
+            {
+                Assert.IsTrue(actualRequestInformation.Count == 0, "Request Information is not expected in Gateway mode");
+            }
         }
         
         private static void AssertNetworkLevelInformation(List<RequestInfo> actualRequestInformation)
@@ -929,12 +934,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int expectedSubstatuscode = 0)
         {
             IDictionary<string, long> actualOperationRecordCountMap = new Dictionary<string, long>();
-
             // Asserting If operation list is as expected
             foreach (OperationInfo operation in actualOperationList)
             {
                 Assert.IsNotNull(operation.Operation, "Operation Type is null");
                 Assert.IsNotNull(operation.Resource, "Resource Type is null");
+                
                 Assert.AreEqual(expectedSubstatuscode, operation.SubStatusCode);
                 Assert.AreEqual(expectedConsistencyLevel?.ToString(), operation.Consistency, $"Consistency is not {expectedConsistencyLevel}");
 

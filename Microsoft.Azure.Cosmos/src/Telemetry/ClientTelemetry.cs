@@ -237,11 +237,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {cacheRefreshSource} data for Telemetry.");
-
-            // Record Network Information
-            SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
-            this.RecordHttpResponses(containerId, databaseId, operationType, resourceType, summaryDiagnostics.HttpResponseStatistics.Value);
-           
+            
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(regionsContactedList);
 
             // Recording Request Latency
@@ -305,7 +301,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             // Record Network/Replica Information
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
-            this.RecordHttpResponses(containerId, databaseId, operationType, resourceType, summaryDiagnostics.HttpResponseStatistics.Value);
             this.RecordRntbdResponses(containerId, databaseId, summaryDiagnostics.StoreResponseStatistics.Value);
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
