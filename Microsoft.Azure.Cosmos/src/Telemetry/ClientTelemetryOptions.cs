@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const int KbToMbFactor = 1024;
 
         internal const int OneKbToBytes = 1024;
-
+            
         // Expecting histogram to have Minimum Latency of 1 and Maximum Latency of 1 hour (which is never going to happen)
         internal const long RequestLatencyMax = TimeSpan.TicksPerHour;
         internal const long RequestLatencyMin = 1;
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string EnvPropsClientTelemetryVmMetadataUrl = "COSMOS.VM_METADATA_URL";
         internal const string EnvPropsClientTelemetryEndpoint = "COSMOS.CLIENT_TELEMETRY_ENDPOINT";
         internal const string EnvPropsClientTelemetryEnvironmentName = "COSMOS.ENVIRONMENT_NAME";
-
+        
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
         // Why 5 sec? As of now, if any network request is taking more than 5 millisecond sec, we will consider it slow request this value can be revisited in future
         private static readonly TimeSpan NetworkLatencyThreshold = TimeSpan.FromMilliseconds(5);
@@ -95,7 +95,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
         };
 
+<<<<<<< HEAD
         private static readonly List<int> ExcludedStatusCodes = new List<int> { 404, 409 };
+=======
+        internal static readonly HashSet<string> PropertiesContainMetrics = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "OperationInfo", "CacheRefreshInfo" };
+
+        internal static int PayloadSizeThreshold = 1024 * 1024 * 2; // 2MB
+        internal static Dictionary<string, int> PropertiesWithPageSize = new Dictionary<string, int>
+        {
+            { "OperationInfo", 1000 },
+            { "CacheRefreshInfo", 2000 }
+        };
+>>>>>>> a90849a15 (first draft)
         
         private static Uri clientTelemetryEndpoint;
         private static string environmentName;
