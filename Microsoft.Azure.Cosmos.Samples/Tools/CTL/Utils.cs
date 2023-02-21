@@ -178,11 +178,15 @@ namespace CosmosCTL
                 logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request took more than latency threshold {config.DiagnosticsThresholdDuration}, diagnostics: {cosmosDiagnostics}");
             }
 
-            CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)cosmosDiagnostics;
-            if (traceDiagnostics.IsGoneExceptionHit())
+            CosmosDiagnostics diagnostics = null;
+            if (Utils.ShouldPrintDiagnostics(config, cosmosDiagnostics))
             {
-                logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request contains 410(GoneExceptions), diagnostics:{cosmosDiagnostics}");
-                return;
+                diagnostics = cosmosDiagnostics;
+            }
+
+            if ((bool)config.EnableConsoleLogging)
+            {
+                logger.LogInformation($"{operationName};{DateTime.UtcNow.ToString("MM/dd/yyyy HH:mm:ss.fff", CultureInfo.InvariantCulture)};{cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds};{diagnostics}");
             }
         }
 
@@ -221,6 +225,13 @@ namespace CosmosCTL
             public bool CreatedDatabase;
             public bool CreatedContainer;
             public long InsertedDocuments;
+        }
+
+        private static bool ShouldPrintDiagnostics(
+            CTLConfig config,
+            CosmosDiagnostics cosmosDiagnostics)
+        {
+            return cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds > config.DiagnosticsLoggingThresholdInMillis;
         }
     }
 }
