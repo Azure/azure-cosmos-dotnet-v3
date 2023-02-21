@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -227,7 +225,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             ResourceType resourceType,
                             SubStatusCodes subStatusCode,
                             string databaseId,
-                            ITrace trace,
                             long responseSizeInBytes = 0,
                             string consistencyLevel = null )
         {
@@ -343,11 +340,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
+        /// <summary>
+        /// Records RNTBD calls statistics
+        /// </summary>
+        /// <param name="containerId"></param>
+        /// <param name="databaseId"></param>
+        /// <param name="storeResponseStatistics"></param>
         private void RecordRntbdResponses(string containerId, string databaseId, List<StoreResponseStatistics> storeResponseStatistics)
         {
             foreach (StoreResponseStatistics storetatistics in storeResponseStatistics)
             {
-                if (ClientTelemetryOptions.IsEligible((int)storetatistics.StoreResult.StatusCode, storetatistics.RequestLatency))
+                if (ClientTelemetryOptions.IsEligible((int)storetatistics.StoreResult.StatusCode, (int)storetatistics.StoreResult.SubStatusCode, storetatistics.RequestLatency))
                 {
                     RequestInfo requestInfo = new RequestInfo()
                     {
@@ -367,36 +370,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
             }
         }
-
-        private void RecordHttpResponses(string containerId, string databaseId, OperationType operationType, ResourceType resourceType, List<HttpResponseStatistics> httpResponseStatisticsList)
-        {
-            foreach (HttpResponseStatistics httpstatistics in httpResponseStatisticsList)
-            {
-                if (ClientTelemetryOptions.IsEligible((int)httpstatistics.HttpResponseMessage.StatusCode, httpstatistics.Duration))
-                {
-                    IEnumerable<string> substatuscodes = null;
-                    httpstatistics.HttpResponseMessage.Headers?.TryGetValues(WFConstants.BackendHeaders.SubStatus, out substatuscodes);
-
-                    RequestInfo requestInfo = new RequestInfo()
-                    {
-                        DatabaseName = databaseId,
-                        ContainerName = containerId,
-                        Uri = httpstatistics.RequestUri.ToString(),
-                        StatusCode = (int)httpstatistics.HttpResponseMessage.StatusCode,
-                        SubStatusCode = Convert.ToInt32(substatuscodes?.First()),
-                        Resource = resourceType.ToResourceTypeString(),
-                        Operation = operationType.ToOperationTypeString()
-                    };
-
-                    LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                            ClientTelemetryOptions.RequestLatencyMax,
-                                                            ClientTelemetryOptions.RequestLatencyPrecision));
-                    latencyHist.RecordValue(httpstatistics.Duration.Ticks);
-                }
-
-            }
-        }
-
+        
         /// <summary>
         /// Record CPU and memory usage which will be sent as part of telemetry information
         /// </summary>

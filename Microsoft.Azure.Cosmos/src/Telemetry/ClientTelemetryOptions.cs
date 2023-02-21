@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
@@ -94,10 +95,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
         };
 
+        private static readonly List<int> ExcludedStatusCodes = new List<int> { 404, 409 };
+        
         private static Uri clientTelemetryEndpoint;
         private static string environmentName;
         private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;
-
+        
         internal static bool IsClientTelemetryEnabled()
         {
             bool isTelemetryEnabled = ConfigurationManager
@@ -176,13 +179,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return environmentName;
         }
 
-        internal static bool IsEligible(int statusCode, TimeSpan latencyInMs)
+        internal static bool IsEligible(int statusCode, int subStatusCode, TimeSpan latencyInMs)
         {
-            if ((statusCode >= 400 && statusCode <= 599) || latencyInMs >= ClientTelemetryOptions.NetworkLatencyThreshold)
+            if ((statusCode >= 400 && statusCode <= 599 &&
+                !(ClientTelemetryOptions.ExcludedStatusCodes.Contains(statusCode) && subStatusCode == 0)) ||
+                    latencyInMs >= ClientTelemetryOptions.NetworkLatencyThreshold)
             {
                 return true;
             }
-
             return false;
         }
 

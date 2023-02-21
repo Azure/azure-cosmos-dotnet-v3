@@ -227,8 +227,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                                                     operationType: request.OperationType,
                                                     resourceType: request.ResourceType,
                                                     subStatusCode: response.SubStatusCode,
-                                                    databaseId: databaseName,
-                                                    trace: childTrace);
+                                                    databaseId: databaseName);
                                 }
 
                                 return containerProperties;
