@@ -7,6 +7,7 @@ namespace CosmosCTL
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Net;
     using System.Threading;
@@ -173,7 +174,21 @@ namespace CosmosCTL
             CosmosDiagnostics cosmosDiagnostics)
         {
 
-            logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; diagnostics: {cosmosDiagnostics}");
+            if (timerContextLatency > config.DiagnosticsThresholdDurationAsTimespan)
+            {
+                logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request took more than latency threshold {config.DiagnosticsThresholdDuration}, diagnostics: {cosmosDiagnostics}");
+            }
+
+            CosmosDiagnostics diagnostics = null;
+            if (Utils.ShouldPrintDiagnostics(config, cosmosDiagnostics))
+            {
+                diagnostics = cosmosDiagnostics;
+            }
+
+            if ((bool)config.EnableConsoleLogging)
+            {
+                logger.LogInformation($"{operationName};{DateTime.UtcNow.ToString("MM/dd/yyyy HH:mm:ss.fff", CultureInfo.InvariantCulture)};{cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds};{diagnostics};");
+            }
         }
 
         public static void LogError(
@@ -211,6 +226,13 @@ namespace CosmosCTL
             public bool CreatedDatabase;
             public bool CreatedContainer;
             public long InsertedDocuments;
+        }
+
+        private static bool ShouldPrintDiagnostics(
+            CTLConfig config,
+            CosmosDiagnostics cosmosDiagnostics)
+        {
+            return cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds > config.DiagnosticsLoggingThresholdInMillis;
         }
     }
 }

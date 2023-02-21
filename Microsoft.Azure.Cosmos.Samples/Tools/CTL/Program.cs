@@ -21,7 +21,11 @@ namespace CosmosCTL
         public static async Task Main(string[] args)
         {
             using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder
-                        .AddConsole());
+                        .AddCustomFormatter(options =>
+                        {
+                            options.CustomPrefix = string.Empty;
+                            options.IncludeScopes = false;
+                        }));
             
             ILogger logger = loggerFactory.CreateLogger<Program>();
 
@@ -53,7 +57,12 @@ namespace CosmosCTL
                         logger: logger);
 
                     logger.LogInformation("Initialization completed.");
-                    logger.LogInformation("Telemetry is disabled for CTL.");
+
+                    /*if(client.ClientOptions.EnableClientTelemetry.GetValueOrDefault()) {
+                        logger.LogInformation("Telemetry is enabled for CTL.");
+                    } else {
+                        logger.LogInformation("Telemetry is disabled for CTL.");
+                    }*/
 
                     List<Task> tasks = new List<Task>
                     {
@@ -145,7 +154,8 @@ namespace CosmosCTL
 
         private static void SetEnvironmentVariables(CTLConfig config)
         {
-            Environment.SetEnvironmentVariable("AZURE_COSMOS_REPLICA_VALIDATION_ENABLED", "True");
+            // Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, config.TelemetryEndpoint);
+            // Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, config.TelemetryScheduleInSeconds);
         }
 
         private static IMetricsRoot ConfigureReporting(
