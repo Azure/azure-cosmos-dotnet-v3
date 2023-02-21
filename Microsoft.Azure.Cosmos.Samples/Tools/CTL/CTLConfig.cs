@@ -109,6 +109,12 @@ namespace CosmosCTL
         [Option("ctl_reservoir_sample_size", Required = false, HelpText = "The reservoir sample size.")]
         public int ReservoirSampleSize { get; set; } = 1028;
 
+        [Option("ctl_diagnostics_logging_threshold_in_mills", Required = false, HelpText = "Diagnostics logging threshold.")]
+        public int DiagnosticsLoggingThresholdInMillis { get; set; } = 5000;
+
+        [Option("ctl_enable_console_logging", Required = false, HelpText = "Enables console logging.")]
+        public bool? EnableConsoleLogging { get; set; } = false;
+
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
 
