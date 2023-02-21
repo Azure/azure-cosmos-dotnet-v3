@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.currentVersionUTF8 = HttpConstants.Versions.CurrentVersionUTF8;
 
             //var client = TestCommon.CreateClient(false, Protocol.Tcp);
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             await TestCommon.DeleteAllDatabasesAsync();
         }
 
@@ -60,14 +60,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidatePageSizeRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            using var client = TestCommon.CreateClient(false, Protocol.Tcp);
             ValidatePageSize(client);
         }
 
         [TestMethod]
         public void ValidatePageSizeGatway()
         {
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             ValidatePageSize(client);
         }
 
@@ -506,7 +506,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateIfNonMatchGateway()
         {
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             ValidateIfNonMatch(client);
 
         }
@@ -514,7 +514,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateIfNonMatchRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            using var client = TestCommon.CreateClient(false, Protocol.Tcp);
             ValidateIfNonMatch(client);
         }
 
@@ -557,48 +557,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void ValidateVersionHeader()
+        public async Task ValidateVersionHeader()
         {
             string correctVersion = HttpConstants.Versions.CurrentVersion;
+            Database db = null;
             try
             {
                 DocumentClient client = TestCommon.CreateClient(true);
-                var db = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                db = (await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
-                var coll = client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result.Resource;
-                var doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
+                var coll = (await client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Resource;
+                var doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
+                client.Dispose();
                 client = TestCommon.CreateClient(true);
-                doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
+                doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
                 HttpConstants.Versions.CurrentVersion = "2015-01-01";
+                client.Dispose();
                 client = TestCommon.CreateClient(true);
                 try
                 {
-                    doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
+                    doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
                     Assert.Fail("Should have faild because of version error");
                 }
-                catch (AggregateException exception)
+                catch (CosmosException dce)
                 {
-                    var dce = exception.InnerException as CosmosException;
-                    if (dce != null)
-                    {
-                        Assert.AreEqual(dce.StatusCode, HttpStatusCode.BadRequest);
-                    }
-                    else
-                    {
-                        Assert.Fail("Should have faild because of version error with DocumentClientException BadRequest");
-                    }
+                    Assert.AreEqual(dce.StatusCode, HttpStatusCode.BadRequest);
                 }
             }
             finally
             {
                 HttpConstants.Versions.CurrentVersion = correctVersion;
+                using DocumentClient client = TestCommon.CreateClient(true);
+                await client.DeleteDatabaseAsync(db);
             }
         }
 
         [TestMethod]
         public async Task ValidateCurrentWriteQuorumAndReplicaSetHeader()
         {
-            CosmosClient client = TestCommon.CreateCosmosClient(false);
+            using CosmosClient client = TestCommon.CreateCosmosClient(false);
             Cosmos.Database db = null;
             try
             {
@@ -626,7 +623,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("Ignore") /* Used to filter out ignored tests in lab runs */]
         public void ValidateGlobalCompltedLSNAndNumberOfReadRegionsHeader()
         {
-            DocumentClient client = TestCommon.CreateClient(false);
+            using DocumentClient client = TestCommon.CreateClient(false);
             Database db = null;
             try
             {
@@ -670,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateExcludeSystemProperties()
         {
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             await ValidateExcludeSystemProperties(client);
         }
 
@@ -785,6 +782,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //read document with default settings (system properties should be included)
             Document readDoc3Default = await client.ReadDocumentAsync(coll.AltLink + "/docs/doc3", new RequestOptions() { PartitionKey = new PartitionKey("doc3") });
             Assert.AreEqual(readDoc3WithProps.ToString(), readDoc3Default.ToString());
+
+            await client.DeleteDatabaseAsync(db);
         }
 
         private async Task ValidateCollectionIndexProgressHeadersAsync(DocumentClient client, bool isElasticCollection)
@@ -879,7 +878,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                client.DeleteDatabaseAsync(db).Wait();
+                await client.DeleteDatabaseAsync(db);
             }
         }
 

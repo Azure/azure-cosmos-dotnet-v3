@@ -11,6 +11,7 @@ namespace CosmosCTL
     using CommandLine.Text;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
+    using static CosmosCTL.ReservoirProvider;
 
     public class CTLConfig
     {
@@ -76,7 +77,7 @@ namespace CosmosCTL
         }
 
         [Option("ctl_content_response_on_write", Required = false, HelpText = "Should return content response on writes")]
-        public bool IsContentResponseOnWriteEnabled { get; set; } = true;
+        public bool? IsContentResponseOnWriteEnabled { get; set; } = true;
 
         [Option("ctl_output_event_traces", Required = false, HelpText = "Outputs TraceSource to console")]
         public bool OutputEventTraces { get; set; } = false;
@@ -101,6 +102,12 @@ namespace CosmosCTL
 
         [Option("ctl_telemetry_schedule_in_sec", Required = false, HelpText = "telemetry task schedule time in sec")]
         public string TelemetryScheduleInSeconds { get; set; }
+
+        [Option("ctl_reservoir_type", Required = false, HelpText = "Defines the reservoir type. Valid values are: Uniform, SlidingWindow and ExponentialDecay. The default value is SlidingWindow.")]
+        public ReservoirTypes ReservoirType { get; set; } = ReservoirTypes.SlidingWindow;
+
+        [Option("ctl_reservoir_sample_size", Required = false, HelpText = "The reservoir sample size.")]
+        public int ReservoirSampleSize { get; set; } = 1028;
 
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);

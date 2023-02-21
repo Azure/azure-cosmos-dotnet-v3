@@ -14,7 +14,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class CosmosMultiHashTest
     {
         private Cosmos.Database database = null;
-        
+
+        private CosmosClient client = null;
         private Container container = null;
         private ContainerProperties containerProperties = null;
 
@@ -25,8 +26,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             HttpConstants.Versions.CurrentVersion = "2020-07-15";
-            CosmosClient client = TestCommon.CreateCosmosClient(true);
-            this.database = await client.CreateDatabaseIfNotExistsAsync("mydb");
+            this.client = TestCommon.CreateCosmosClient(true);
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync("mydb");
 
             this.containerProperties = new ContainerProperties("mycoll", new List<string> { "/ZipCode", "/Address" });
             this.container = await this.database.CreateContainerAsync(this.containerProperties);
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.database.DeleteAsync();
             HttpConstants.Versions.CurrentVersion = this.currentVersion;
+            this.client.Dispose();
         }
 
         [TestMethod]

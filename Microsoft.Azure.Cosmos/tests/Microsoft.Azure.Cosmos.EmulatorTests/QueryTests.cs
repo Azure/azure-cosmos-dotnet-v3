@@ -68,6 +68,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.CleanUp();
         }
 
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            this.CleanUp();
+
+            this.client.Dispose();
+            this.primaryReadonlyClient.Dispose();
+            this.secondaryReadonlyClient.Dispose();
+        }
+
         [ClassInitialize]
         public static void Initialize(TestContext textContext)
         {
