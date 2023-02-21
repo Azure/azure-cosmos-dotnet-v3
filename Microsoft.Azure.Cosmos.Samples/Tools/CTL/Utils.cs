@@ -180,22 +180,15 @@ namespace CosmosCTL
                 logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request took more than latency threshold {config.DiagnosticsThresholdDuration}, diagnostics: {cosmosDiagnostics}");
             }
 
-            CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)cosmosDiagnostics;
+            CosmosDiagnostics diagnostics = null;
+            if (Utils.ShouldPrintDiagnostics(config, cosmosDiagnostics))
+            {
+                diagnostics = cosmosDiagnostics;
+            }
 
             if ((bool)config.EnableConsoleLogging)
             {
-                logger.LogInformation($"{operationName}, {DateTime.UtcNow.ToString("MM/dd/yyyy HH:mm:ss.fff",CultureInfo.InvariantCulture)}, {cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds}, ");
-            }
-
-            if (traceDiagnostics.IsGoneExceptionHit() &&
-                (bool)config.EnableDiagnosticsLogging &&
-                cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds > config.DiagnosticsLoggingThresholdInMillis)
-            {
-                File.AppendAllText(
-                    path: $"{config.OutputFileName}_diagnostics.log",
-                    contents: $"{operationName} contains 410(GoneExceptions); Reported Metrics Latency: {timerContextLatency.TotalMilliseconds}; diagnostics:{cosmosDiagnostics} {Environment.NewLine}");
-
-                return;
+                logger.LogInformation($"{operationName};{DateTime.UtcNow.ToString("MM/dd/yyyy HH:mm:ss.fff", CultureInfo.InvariantCulture)};{cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds};{diagnostics}");
             }
         }
 
@@ -234,6 +227,13 @@ namespace CosmosCTL
             public bool CreatedDatabase;
             public bool CreatedContainer;
             public long InsertedDocuments;
+        }
+
+        private static bool ShouldPrintDiagnostics(
+            CTLConfig config,
+            CosmosDiagnostics cosmosDiagnostics)
+        {
+            return cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds > config.DiagnosticsLoggingThresholdInMillis;
         }
     }
 }
