@@ -217,17 +217,17 @@ namespace Microsoft.Azure.Documents
             Exception cancellationException = null;
             Exception exceptionToThrow = null;
             SubStatusCodes subStatusCodeForException = SubStatusCodes.Unknown;
-            IEnumerable<TransportAddressUri> transportAddresses = this.addressEnumerator
+            IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator
                                                             .GetTransportAddresses(transportAddressUris: resolveApiResults,
                                                                                    failedEndpoints: entity.RequestContext.FailedEndpoints,
-                                                                                   replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled);
+                                                                                   replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled)
+                                                            .GetEnumerator();
 
             // The replica health status of the transport address uri will change eventually with the motonically increasing time.
             // However, the purpose of this list is to capture the health status snapshot at this moment.
-            IEnumerable<string> replicaHealthStatuses = transportAddresses
-                .Select(x => x.GetCurrentHealthState().GetHealthStatusDiagnosticString());
-
-            IEnumerator<TransportAddressUri> uriEnumerator = transportAddresses.GetEnumerator();
+            IReadOnlyList<string> replicaHealthStatuses = resolveApiResults
+                .Select(x => x.GetCurrentHealthState().GetHealthStatusDiagnosticString())
+                .ToList();
 
             // Loop until we have the read quorum number of valid responses or if we have read all the replicas
             while (replicasToRead > 0 && uriEnumerator.MoveNext())
