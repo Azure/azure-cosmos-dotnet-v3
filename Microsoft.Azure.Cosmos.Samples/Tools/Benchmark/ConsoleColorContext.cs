@@ -19,6 +19,7 @@ namespace CosmosBenchmark
         public void Dispose()
         {
             Console.ForegroundColor = this.beforeContextColor;
+            //dummmy commit
         }
     }
 }
