@@ -64,4 +64,43 @@
       <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description>Null Partition Key Value</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>None Partition Key Value</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>C# Null Partition Key Value</Description>
+      <Query>SELECT * FROM c</Query>
+      <PartitionKeys>
+        <Key>/pk</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
+    </Output>
+  </Result>
 </Results>
