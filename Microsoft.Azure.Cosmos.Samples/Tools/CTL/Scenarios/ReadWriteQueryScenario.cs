@@ -7,6 +7,7 @@ namespace CosmosCTL
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
     using App.Metrics;
@@ -161,6 +162,7 @@ namespace CosmosCTL
                         {
                             concurrencyControlSemaphore.Release();
                             metrics.Measure.Counter.Increment(readFailureMeter);
+                            logger.LogInformation($"Read;{DateTime.UtcNow.ToString("MM/dd/yyyy HH:mm:ss.fff", CultureInfo.InvariantCulture)};{ex.Message};{ex}");
                             Utils.LogError(logger, loggingContextIdentifier, ex, "Failure during read operation");
                         },
                         logDiagnostics: (ItemResponse<Dictionary<string, string>> response, TimeSpan latency) => Utils.LogDiagnostics(
