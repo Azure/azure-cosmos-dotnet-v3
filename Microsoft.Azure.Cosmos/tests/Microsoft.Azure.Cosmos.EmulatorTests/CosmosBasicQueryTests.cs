@@ -930,25 +930,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseName, Throughput);
             Database database = databaseResponse.Database;
 
-            Container container = await database.DefineContainer(TestCollection, $"/{DefaultKey}")
-                .WithUniqueKey().Path($"/{DefaultKey}").Attach().CreateIfNotExistsAsync();
-
-            List<string> queryKeys = new List<string>();
-
-            List<TestCollectionObject> testCollectionObjects = JsonConvert.DeserializeObject<List<TestCollectionObject>>(
-                "[{\"id\":\"70627503-7cb2-4a79-bcec-5e55765aa080\",\"objectKey\":\"message~phone~u058da564bfaa66cb031606db664dbfda~phone~ud75ce020af5f8bfb75a9097a66d452f2~Chat~20190927000042Z\",\"text\":null,\"text2\":null},{\"id\":\"507079b7-a5be-4da4-9158-16fc961cd474\",\"objectKey\":\"message~phone~u058da564bfaa66cb031606db664dbfda~phone~ud75ce020af5f8bfb75a9097a66d452f2~Chat~20190927125742Z\",\"text\":null,\"text2\":null}]");
-            foreach (TestCollectionObject testCollectionObject in testCollectionObjects)
+            try
             {
-                await WriteDocument(container, testCollectionObject);
-                queryKeys.Add(testCollectionObject.ObjectKey);
+                Container container = await database.DefineContainer(TestCollection, $"/{DefaultKey}")
+                    .WithUniqueKey().Path($"/{DefaultKey}").Attach().CreateIfNotExistsAsync();
+
+                List<string> queryKeys = new List<string>();
+
+                List<TestCollectionObject> testCollectionObjects = JsonConvert.DeserializeObject<List<TestCollectionObject>>(
+                    "[{\"id\":\"70627503-7cb2-4a79-bcec-5e55765aa080\",\"objectKey\":\"message~phone~u058da564bfaa66cb031606db664dbfda~phone~ud75ce020af5f8bfb75a9097a66d452f2~Chat~20190927000042Z\",\"text\":null,\"text2\":null},{\"id\":\"507079b7-a5be-4da4-9158-16fc961cd474\",\"objectKey\":\"message~phone~u058da564bfaa66cb031606db664dbfda~phone~ud75ce020af5f8bfb75a9097a66d452f2~Chat~20190927125742Z\",\"text\":null,\"text2\":null}]");
+                foreach (TestCollectionObject testCollectionObject in testCollectionObjects)
+                {
+                    await WriteDocument(container, testCollectionObject);
+                    queryKeys.Add(testCollectionObject.ObjectKey);
+                }
+
+                List<TestCollectionObject> results = container
+                    .GetItemLinqQueryable<TestCollectionObject>(true, requestOptions: RunInParallelOptions())
+                    .Where(r => queryKeys.Contains(r.ObjectKey))
+                    .ToList(); // ERROR OCCURS WHEN QUERY IS EXECUTED
+
+                Console.WriteLine($"[\"{string.Join("\", \n\"", results.Select(r => r.ObjectKey))}\"]");
             }
-
-            List<TestCollectionObject> results = container
-                .GetItemLinqQueryable<TestCollectionObject>(true, requestOptions: RunInParallelOptions())
-                .Where(r => queryKeys.Contains(r.ObjectKey))
-                .ToList(); // ERROR OCCURS WHEN QUERY IS EXECUTED
-
-            Console.WriteLine($"[\"{string.Join("\", \n\"", results.Select(r => r.ObjectKey))}\"]");
+            finally
+            {
+                await database.DeleteAsync();
+            }
         }
 
         private static async Task WriteDocument(Container container, TestCollectionObject testData)

@@ -143,7 +143,9 @@ namespace CosmosBenchmark
                 Utility.TeeTraceInformation($"{nameof(BenchmarkConfig)} arguments");
                 Utility.TeeTraceInformation($"IsServerGC: {GCSettings.IsServerGC}");
                 Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
-                Utility.TeeTraceInformation(JsonHelper.ToString(this));
+                Utility.TeeTraceInformation(JsonHelper.ToString(
+                    input: this, 
+                    capacity: 2048));
                 Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
                 Utility.TeeTraceInformation(string.Empty);
             }
@@ -222,7 +224,7 @@ namespace CosmosBenchmark
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
 
-            clientOptions.EnableDistributedTracing = this.EnableDistributedTracing;
+            clientOptions.IsDistributedTracingEnabled = this.EnableDistributedTracing;
 
             return new Microsoft.Azure.Cosmos.CosmosClient(
                         this.EndPoint,

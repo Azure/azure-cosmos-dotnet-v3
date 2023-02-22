@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos
     internal static class ValidationHelpers
     {
         /// <summary>
-        /// If isLocalQuorumConsistency flag is true, it allows only "Quorum Read with Eventual Consistency Account". 
+        /// If isLocalQuorumConsistency flag is true, it allows only "Quorum Read with either an Eventual Consistency Account or a Consistent Prefix Account". 
         /// It goes through a validation where it doesn't allow strong consistency over weaker consistency.
         /// </summary>
         /// <param name="backendConsistency"> Account Level Consistency </param>
         /// <param name="desiredConsistency"> Request/Client Level Consistency</param>
-        /// <param name="isLocalQuorumConsistency"> Allows Quorum Read with Eventual Account</param>
+        /// <param name="isLocalQuorumConsistency"> Allows Quorum Read with Eventual or Consistent Prefix Account</param>
         /// <param name="operationType"> <see cref="OperationType"/> </param>
         /// <param name="resourceType"> <see cref="ResourceType"/> </param>
         /// <returns>true/false</returns>
@@ -36,12 +36,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// If isLocalQuorumConsistency flag is true, it allows only "Quorum Read with Eventual Consistency Account". 
+        /// If isLocalQuorumConsistency flag is true, it allows only "Quorum Read with either an Eventual Consistency Account or a Consistent Prefix Account". 
         /// It goes through a validation where it doesn't allow strong consistency over weaker consistency.
         /// </summary>
         /// <param name="backendConsistency"> Account Level Consistency </param>
         /// <param name="desiredConsistency"> Request/Client Level Consistency</param>
-        /// <param name="isLocalQuorumConsistency"> Allows Quorum Read with Eventual Account</param>
+        /// <param name="isLocalQuorumConsistency"> Allows Quorum Read with Eventual or Consistent Prefix Account</param>
         /// <param name="operationType">  <see cref="OperationType"/> </param>
         /// <param name="resourceType"> <see cref="ResourceType"/> </param>
         /// <returns>true/false</returns>
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Condition to check Quorum(i.e. Strong) read with eventual account
+        /// Condition to check Quorum(i.e. Strong) read with either an eventual consistency account or a consistent prefix account.
         /// </summary>
         /// <param name="backendConsistency"></param>
         /// <param name="desiredConsistency"></param>
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
                                 OperationType? operationType,
                                 ResourceType? resourceType)
         {
-            if (backendConsistency != Documents.ConsistencyLevel.Eventual)
+            if (backendConsistency != Documents.ConsistencyLevel.Eventual && backendConsistency != Documents.ConsistencyLevel.ConsistentPrefix)
             {
                 return false;
             }
@@ -136,7 +136,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (!operationType.HasValue || 
-                    (operationType.HasValue && !(operationType == OperationType.Read || operationType == OperationType.ReadFeed)))
+                    (operationType.HasValue && 
+                    !(operationType == OperationType.Read || operationType == OperationType.ReadFeed || operationType == OperationType.SqlQuery || operationType == OperationType.Query)))
             {
                 return false;
             }

@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.Net.Http;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -46,8 +48,8 @@ namespace Microsoft.Azure.Cosmos
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
-
             this.EnableClientTelemetry = ClientTelemetryOptions.IsClientTelemetryEnabled();
+            this.ServerCertificateCustomValidationCallback = null;
         }
 
         /// <summary>
@@ -290,6 +292,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public bool EnablePartitionLevelFailover
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the certificate validation callback.
+        /// </summary>
+        internal Func<X509Certificate2, X509Chain, SslPolicyErrors, Boolean> ServerCertificateCustomValidationCallback
         {
             get;
             set;
