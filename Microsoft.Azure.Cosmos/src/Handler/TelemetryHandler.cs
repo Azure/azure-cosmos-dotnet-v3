@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceError($"Error while collecting telemetry information : {ex}");
+                    DefaultTrace.TraceError("Error while collecting telemetry information : {0}", ex);
                 }
             }
             return response;

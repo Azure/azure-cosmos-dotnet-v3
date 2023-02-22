@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError($"Exception in EnrichAndSendAsync() : {ex}");
+                DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : {0}", ex);
             }
 
             DefaultTrace.TraceInformation("Telemetry Job Stopped.");
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError($"Latency Recording Failed by Telemetry. Exception : {ex}");
+                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex);
             }
         }
 
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError($"Latency Recording Failed by Telemetry. Exception : {ex}");
+                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex);
             }
 
             long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError($"Request Charge Recording Failed by Telemetry. Request Charge Value : {requestChargeToRecord}  Exception : {ex} ");
+                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex);
             }
         }
 
@@ -396,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError($"System Usage Recording Error : {ex}");
+                DefaultTrace.TraceError("System Usage Recording Error : {0} ", ex);
             }
         }
 
@@ -474,7 +474,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 this.numberOfFailures++;
 
-                DefaultTrace.TraceError($"Exception while sending telemetry data : {ex}");
+                DefaultTrace.TraceError("Exception while sending telemetry data : {0}", ex);
             }
             finally
             {

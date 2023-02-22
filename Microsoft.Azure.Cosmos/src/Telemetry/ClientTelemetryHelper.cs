@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 payloadWithMetricInformation.Add(payloadForRequestCharge);
             }
 
-            DefaultTrace.TraceInformation("Aggregating operation information to list done");
+            DefaultTrace.TraceVerbose("Aggregating operation information to list done");
 
             return payloadWithMetricInformation;
         }
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 payloadWithMetricInformation.Add(payloadForLatency);
             }
 
-            DefaultTrace.TraceInformation("Aggregating RequestInfo information to list done");
+            DefaultTrace.TraceVerbose("Aggregating RequestInfo information to list done");
 
             return payloadWithMetricInformation;
         }
