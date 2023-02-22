@@ -588,9 +588,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task ExecuteTestCase(TestScenario scenario)
         {
             TestScenarioExpectations expected =
-                this.cosmosClient.ClientOptions.ConnectionMode == ConnectionMode.Direct ?
+                this.GetClient().ClientOptions.ConnectionMode == ConnectionMode.Direct ?
                     scenario.Direct :
-                    this.cosmosClient.Endpoint.Port == computeGatewayPort ? 
+                    this.GetClient().Endpoint.Port == computeGatewayPort ? 
                         scenario.ComputeGateway ?? scenario.Gateway : scenario.Gateway;
 
             Console.WriteLine($"Scenario: {scenario.Name}, Id: \"{scenario.Id}\"");
@@ -638,7 +638,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(expected.ExpectedDeleteStatusCode, response.StatusCode);
             if (response.IsSuccessStatusCode)
             {
-                if (this.cosmosClient.ClientOptions.ConnectionMode == ConnectionMode.Gateway)
+                if (this.GetClient().ClientOptions.ConnectionMode == ConnectionMode.Gateway)
                 {
                     await ValidateEmptyPayload(response.Content);
                 }
