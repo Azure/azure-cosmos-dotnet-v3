@@ -179,15 +179,31 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return environmentName;
         }
 
+        /// <summary>
+        /// This method will return true if the request is failed with User or Server Exception and not excluded from telemetry.
+        /// This method will return true if the request latency is more than the threshold.
+        /// otherwise return false
+        /// </summary>
+        /// <param name="statusCode"></param>
+        /// <param name="subStatusCode"></param>
+        /// <param name="latencyInMs"></param>
+        /// <returns>true/false</returns>
         internal static bool IsEligible(int statusCode, int subStatusCode, TimeSpan latencyInMs)
         {
-            if ((statusCode >= 400 && statusCode <= 599 &&
-                !(ClientTelemetryOptions.ExcludedStatusCodes.Contains(statusCode) && subStatusCode == 0)) ||
-                    latencyInMs >= ClientTelemetryOptions.NetworkLatencyThreshold)
-            {
-                return true;
-            }
-            return false;
+            return 
+                (ClientTelemetryOptions.IsUserOrServerError(statusCode) && 
+                    ClientTelemetryOptions.IsStatusCodeNotExcluded(statusCode, subStatusCode)) ||
+                        latencyInMs >= ClientTelemetryOptions.NetworkLatencyThreshold;
+        }
+
+        private static bool IsUserOrServerError(int statusCode)
+        {
+            return statusCode >= 400 && statusCode <= 599;
+        }
+
+        private static bool IsStatusCodeNotExcluded(int statusCode, int subStatusCode)
+        {
+            return !(ClientTelemetryOptions.ExcludedStatusCodes.Contains(statusCode) && subStatusCode == 0);
         }
 
     }
