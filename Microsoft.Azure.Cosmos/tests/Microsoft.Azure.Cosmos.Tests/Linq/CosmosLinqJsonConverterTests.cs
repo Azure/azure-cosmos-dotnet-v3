@@ -33,9 +33,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             Assert.AreEqual("(a[\"StartDate\"] <= \"2022-05-26\")", sql);
         }
 
-
         [TestMethod]
-        public void EnumIsPreservedAsStringTest()
+        public void EnumIsPreservedAsINTest()
         {
             // Arrange
             CosmosLinqSerializerOptions options = new()
@@ -51,6 +50,25 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             // Assert
             Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql);
+        }
+
+        [TestMethod]
+        public void EnumIsPreservedAsEQUALSTest()
+        {
+            // Arrange
+            CosmosLinqSerializerOptions options = new()
+            {
+                CustomCosmosSerializer = new CustomJsonSerializer()
+            };
+
+            // Act
+            TestEnum statusValue = TestEnum.One;
+            Expression<Func<EnumContainerDocument, bool>> expr = a => a.Value == statusValue;
+
+            string sql = SqlTranslator.TranslateExpression(expr.Body, options);
+
+            // Assert
+            Assert.AreEqual("(a[\"Value\"] = \"One\")", sql);
         }
 
         enum TestEnum
