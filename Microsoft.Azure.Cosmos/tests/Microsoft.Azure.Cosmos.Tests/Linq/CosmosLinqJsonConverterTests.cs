@@ -6,7 +6,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Globalization;
+    using System.IO;
+    using System.Linq;
     using System.Linq.Expressions;
+    using global::Azure.Core.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -30,6 +33,38 @@ namespace Microsoft.Azure.Cosmos.Linq
             Assert.AreEqual("(a[\"StartDate\"] <= \"2022-05-26\")", sql);
         }
 
+
+        [TestMethod]
+        public void EnumIsPreservedAsStringTest()
+        {
+            // Arrange
+            CosmosLinqSerializerOptions options = new()
+            {
+                CustomCosmosSerializer = new CustomJsonSerializer()
+            };
+
+            // Act
+            TestEnum[] values = new[] { TestEnum.One, TestEnum.Two };
+            Expression<Func<EnumContainerDocument, bool>> expr = a => values.Contains(a.Value);
+            
+            string sql = SqlTranslator.TranslateExpression(expr.Body, options);
+
+            // Assert
+            Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql);
+        }
+
+        enum TestEnum
+        {
+            One,
+            Two,
+            Three,
+        }
+
+        class EnumContainerDocument
+        {
+            public TestEnum Value { get; set; }
+        }
+
         class TestDocument
         {
             [JsonConverter(typeof(DateJsonConverter))]
@@ -48,6 +83,54 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     base.WriteJson(writer, value, serializer);
                 }
+            }
+        }
+
+        /// <remarks>
+        // See: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/SystemTextJson/CosmosSystemTextJsonSerializer.cs
+        /// </remarks>
+        public class CustomJsonSerializer : CosmosSerializer
+        {
+            private readonly JsonObjectSerializer systemTextJsonSerializer;
+
+            public static readonly System.Text.Json.JsonSerializerOptions JsonOptions = new()
+            {
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                PropertyNameCaseInsensitive = true,
+                Converters = {
+                    new System.Text.Json.Serialization.JsonStringEnumConverter(),
+                }
+            };
+
+            public CustomJsonSerializer()
+            {
+                this.systemTextJsonSerializer = new JsonObjectSerializer(JsonOptions);
+            }
+
+            public override T FromStream<T>(Stream stream)
+            {
+                if (stream.CanSeek && stream.Length == 0)
+                {
+                    stream.Dispose();
+                    return default!;
+                }
+
+                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                    return (T)(object)stream;
+
+                using (stream)
+                {
+                    return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default)!;
+                }
+            }
+
+            public override Stream ToStream<T>(T input)
+            {
+                MemoryStream stream = new ();
+
+                this.systemTextJsonSerializer.Serialize(stream, input, typeof(T), default);
+                stream.Position = 0;
+                return stream;
             }
         }
     }
