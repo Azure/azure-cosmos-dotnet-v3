@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using global::Azure.Core.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -71,6 +72,45 @@ namespace Microsoft.Azure.Cosmos.Linq
             Assert.AreEqual("(a[\"Value\"] = \"One\")", sql);
         }
 
+        [TestMethod]
+        public void EnumIsPreservedAsEXPRESSIONTest()
+        {
+            // Arrange
+            CosmosLinqSerializerOptions options = new()
+            {
+                CustomCosmosSerializer = new CustomJsonSerializer()
+            };
+
+            // Act
+
+            // Get status constant
+            ConstantExpression status = Expression.Constant(TestEnum.One);
+
+            // Get member access expression
+            ParameterExpression arg = Expression.Parameter(typeof(EnumContainerNewtonsoftAttributeDocument), "a");
+
+            // Access the value property
+            MemberExpression docValueExpression = Expression.MakeMemberAccess(
+                arg,
+                typeof(EnumContainerNewtonsoftAttributeDocument).GetProperty(nameof(EnumContainerNewtonsoftAttributeDocument.Value))!
+            );
+
+            // Create comparison expression
+            BinaryExpression expression = Expression.Equal(
+                docValueExpression,
+                status
+            );
+
+            // Create lambda expression
+            Expression<Func<EnumContainerNewtonsoftAttributeDocument, bool>> lambda = 
+                Expression.Lambda<Func<EnumContainerNewtonsoftAttributeDocument, bool>>(expression, arg);
+
+            string sql = SqlTranslator.TranslateExpression(lambda.Body, options);
+
+            // Assert
+            Assert.AreEqual("(a[\"Value\"] = \"One\")", sql);
+        }
+
         enum TestEnum
         {
             One,
@@ -80,6 +120,12 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         class EnumContainerDocument
         {
+            public TestEnum Value { get; set; }
+        }
+
+        class EnumContainerNewtonsoftAttributeDocument
+        {
+            [JsonConverter(typeof(StringEnumConverter))]
             public TestEnum Value { get; set; }
         }
 
