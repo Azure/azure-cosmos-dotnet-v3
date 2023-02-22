@@ -258,18 +258,18 @@
                 CreateInput(
                     description: "multiple nested",
                     scalarExpression:
-                "FIRST( "                         +
-                "   SELECT * "                    +
-                "   WHERE FIRST( "                +
-                "       SELECT *"                 +
-                "       WHERE FIRST("             +
-                "           SELECT *"             +
-                "           WHERE FIRST("         +
-                "               SELECT VALUE 1"   +
-                "           )"                    +
-                "       )"                        +
-                "   )"                            +
-                ")"),
+                        "FIRST( "                         +
+                        "   SELECT * "                    +
+                        "   WHERE FIRST( "                +
+                        "       SELECT *"                 +
+                        "       WHERE FIRST("             +
+                        "           SELECT *"             +
+                        "           WHERE FIRST("         +
+                        "               SELECT VALUE 1"   +
+                        "           )"                    +
+                        "       )"                        +
+                        "   )"                            +
+                        ")"),
 
                 // Negative
                 CreateInput(description: "No closing parens", scalarExpression: "FIRST(SELECT *")
@@ -335,18 +335,18 @@
                 CreateInput(
                     description: "multiple nested",
                     scalarExpression:
-                "LAST( "                         +
-                "   SELECT * "                   +
-                "   WHERE LAST( "                +
-                "       SELECT *"                +
-                "       WHERE LAST("             +
-                "           SELECT *"            +
-                "           WHERE LAST("         +
-                "               SELECT VALUE 1"  +
-                "           )"                   +
-                "       )"                       +
-                "   )"                           +
-                ")"),
+                        "LAST( "                         +
+                        "   SELECT * "                   +
+                        "   WHERE LAST( "                +
+                        "       SELECT *"                +
+                        "       WHERE LAST("             +
+                        "           SELECT *"            +
+                        "           WHERE LAST("         +
+                        "               SELECT VALUE 1"  +
+                        "           )"                   +
+                        "       )"                       +
+                        "   )"                           +
+                        ")"),
 
                 // Negative
                 CreateInput(description: "No closing parens", scalarExpression: "LAST(SELECT *")

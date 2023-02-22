@@ -157,7 +157,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
             this.ExecuteTestSuite(inputs);
         }
 
-
         public static SqlParserBaselineTestInput CreateInput(string description, string query)
         {
             return new SqlParserBaselineTestInput(description, query);
