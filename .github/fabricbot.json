@@ -6,7 +6,6 @@
       "capabilityId": "ScheduledSearch",
       "subCapability": "ScheduledSearch",
       "version": "1.1",
-      "id": "a-PNOJWK3Jbr7QY7vkc2O",
       "config": {
         "frequency": [
           {
@@ -50,6 +49,59 @@
         ]
       },
       "disabled": true
+    },
+    {
+      "taskType": "trigger",
+      "capabilityId": "IssueResponder",
+      "subCapability": "IssuesOnlyResponder",
+      "version": "1.0",
+      "config": {
+        "conditions": {
+          "operator": "and",
+          "operands": [
+            {
+              "operator": "not",
+              "operands": [
+                {
+                  "name": "isAssignedToSomeone",
+                  "parameters": {}
+                }
+              ]
+            },
+            {
+              "name": "isAction",
+              "parameters": {
+                "action": "opened"
+              }
+            },
+            {
+              "operator": "not",
+              "operands": [
+                {
+                  "name": "hasLabel",
+                  "parameters": {
+                    "label": "needs-investigation"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "eventType": "issue",
+        "eventNames": [
+          "issues",
+          "project_card"
+        ],
+        "taskName": "Add needs-investigation",
+        "actions": [
+          {
+            "name": "addLabel",
+            "parameters": {
+              "label": "needs-investigation"
+            }
+          }
+        ]
+      }
     }
   ],
   "userGroups": []
