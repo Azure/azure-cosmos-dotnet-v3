@@ -81,6 +81,25 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
+        /// Determines if a certain string property matches a pattern.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// </summary>
+        /// <param name="obj">The string property to be matched against.</param>
+        /// <param name="pattern">The pattern to be matched against.</param>
+        /// <returns>Returns true if the string property matches the pattern, otherwise returns false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var likeQuery = documents.Where(document => document.Email.Like("oscar%@test.com"));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool Like(this string obj, string pattern)
+        {
+            throw new NotImplementedException(ClientResources.StringCompareToInvalidOperator);
+        }
+
+        /// <summary>
         /// This method generate query definition from LINQ query.
         /// </summary>
         /// <typeparam name="T">the type of object to query.</typeparam>
