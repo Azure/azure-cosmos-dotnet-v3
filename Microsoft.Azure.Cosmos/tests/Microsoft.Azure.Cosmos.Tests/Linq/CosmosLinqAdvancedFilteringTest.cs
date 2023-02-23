@@ -42,7 +42,7 @@
             expr = a => ((string)((Dictionary<string, object>)a.Metadata["Item"])["Key"]) == "Other Value";
             sql = SqlTranslator.TranslateExpression(expr.Body);
 
-            Assert.AreEqual("\"(a[\\\"Metadata\\\"][\\\"Item\\\"][\\\"Key\\\"] = \\\"Other Value\\\")\"", sql);
+            Assert.AreEqual("(a[\"Metadata\"][\"Item\"][\"Key\"] = \"Other Value\")", sql);
         }
 
         [TestMethod]
@@ -83,29 +83,38 @@
         public void TestLike()
         {
             // Should translate to LIKE
-            Expression<Func<TestDocument, bool>> expr = a => a.Name.Like("Test%");
+            Expression<Func<TestDocument, bool>> expr = a => a.Name.Like("Test%", "!");
             string sql = SqlTranslator.TranslateExpression(expr.Body);
-            Assert.AreEqual("(a[\"Name\"] LIKE \"Test%\")", sql);
+            Assert.AreEqual("(a[\"Name\"] LIKE \"Test%\" ESCAPE \"!\")", sql);
 
-            // Should translate to LIKE
-            expr = a => !a.Name.Like("Test%");
+            // Should translate to NOT LIKE
+            expr = a => a.Name.NotLike("Test%");
             sql = SqlTranslator.TranslateExpression(expr.Body);
-            Assert.AreEqual("(a[\"Name\"] NOT LIKE \"Test%\")", sql);
+            Assert.AreEqual("(a[\"Name\"] NOT  LIKE \"Test%\")", sql);
         }
 
         [TestMethod]
         public void TestTypeCasting()
         {
+            Expression<Func<BaseDocument, bool>> expr = a => ((TestDocument)a).Statuses.Contains("Active");
+            string sql = SqlTranslator.TranslateExpression(expr.Body);
 
+            Assert.AreEqual("ARRAY_CONTAINS(a[\"Statuses\"], \"Active\")", sql);
         }
 
-        class TestDocument
+        abstract class BaseDocument
+        {
+            public abstract string Kind { get; }
+            public virtual string Name { get; set; } = "Test";
+        }
+
+        class TestDocument : BaseDocument
         {
             public List<string> Statuses = new List<string>() { "Active" };
 
-            public string Name { get; set; } = "Test";
-
             public Dictionary<string, object> Metadata = new Dictionary<string, object>();
+
+            public override string Kind => "TestDocument";
         }
     }
 }
