@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Documents
 
     internal sealed class DocumentServiceRequestContext
     {
-        private StoreResult quorumSelectedStoreResponse;
+        private ReferenceCountedDisposable<StoreResult> quorumSelectedStoreResponse;
 
         public TimeoutHelper TimeoutHelper { get; set; }
 
@@ -29,14 +29,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Non thread safe.
         /// </summary>
-        public StoreResult QuorumSelectedStoreResponse => this.quorumSelectedStoreResponse;
-
-        /// <summary>
-        /// Cache the string representation of last returned store responses when exercising QuorumReader logic
-        /// At the time of introducing this, this is purely for logging purposes and
-        /// has not effect on correctness.
-        /// </summary>
-        public List<string> StoreResponses { get; set; }
+        public ReferenceCountedDisposable<StoreResult> QuorumSelectedStoreResponse => this.quorumSelectedStoreResponse;
 
         public ConsistencyLevel? OriginalRequestConsistencyLevel { get; set; }
 
@@ -48,7 +41,7 @@ namespace Microsoft.Azure.Documents
         /// Cache the write storeResult in context during global strong
         /// where we want to lock on a single initial write response and perform barrier calls until globalCommittedLsn is caught up
         /// </summary>
-        public StoreResult GlobalStrongWriteStoreResult { get; set; }
+        public ReferenceCountedDisposable<StoreResult> GlobalStrongWriteStoreResult { get; set; }
 
         /// <summary>
         /// Unique Identity that represents the target partition where the request should reach.
@@ -129,9 +122,9 @@ namespace Microsoft.Azure.Documents
         /// <remarks>
         /// Non thread safe.
         /// </remarks>
-        public void UpdateQuorumSelectedStoreResponse(StoreResult storeResult)
+        public void UpdateQuorumSelectedStoreResponse(ReferenceCountedDisposable<StoreResult> storeResult)
         {
-            StoreResult currentStoreResult = this.quorumSelectedStoreResponse;
+            ReferenceCountedDisposable<StoreResult> currentStoreResult = this.quorumSelectedStoreResponse;
             if (currentStoreResult == storeResult)
             {
                 // noop to avoid disposal if we try to assign same stream multiple times
@@ -139,10 +132,7 @@ namespace Microsoft.Azure.Documents
             }
 
             // Dispose old StoreResult referenced on context if any when it is dereferenced on request context
-            if (currentStoreResult != null)
-            {
-                currentStoreResult.Dispose();
-            }
+            currentStoreResult?.Dispose();
 
             this.quorumSelectedStoreResponse = storeResult;
         }

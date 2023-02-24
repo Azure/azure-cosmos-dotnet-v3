@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -1090,6 +1090,9 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="FreeTierNotSupportedForInternalSubscription" xml:space="preserve">
     <value>Free tier is not supported for Internal subscriptions.</value>
   </data>
+  <data name="DataTransferStateStoreNotResolved" xml:space="preserve">
+    <value>DataTransfer service is not available in region [{0}].</value>
+  </data>
   <data name="FreeTierUpdateNotSupported" xml:space="preserve">
     <value>Cannot update FreeTier property for existing account.</value>
   </data>
@@ -1199,6 +1202,33 @@ If you would like to serve this query through continuation tokens, then please r
     <value>System database account {0} cannot be created with Continuous backup mode</value>
     <comment>{0} = GlobalDatabaseAccountId</comment>
   </data>
+  <data name="UnexpectedExceptionCaughtonKeyVaultAccessClient" xml:space="preserve">
+    <value>The server encountered an unexpected condition that prevented it from fulfilling the Azure Key Vault resource request.</value>
+  </data>
+  <data name="InvalidKeyVaultKeyAndCertURI" xml:space="preserve">
+    <value>The provided Azure Key Vault resource key or cert URI does not follow the expected format.</value>
+  </data>
+  <data name="InvalidKeyVaulSecretURI" xml:space="preserve">
+    <value>The provided Azure Key Vault resource secret URI does not follow the expected format.</value>
+  </data>
+  <data name="KeyVaultServiceUnavailable" xml:space="preserve">
+    <value>Error contacting the Azure Key Vault resource. Please try again.</value>
+  </data>
+  <data name="KeyVaultDNSNotResolved" xml:space="preserve">
+    <value>The remote name could not be resolved for the Azure Key Vault resource. Please provide a valid URI for an existing Key vault.</value>
+  </data>
+  <data name="KeyVaultCertificateException" xml:space="preserve">
+    <value>Could not find any secret with the .pem extension related to the provided certificate.</value>
+  </data>
+  <data name="KeyVaultInvalidInputBytes" xml:space="preserve">
+    <value>The Input provided is not a valid base 64 string.</value>
+  </data>
+  <data name="KeyVaultAadClientCredentialsGrantFailure" xml:space="preserve">
+    <value>Failed to acquire the access token needed to access the Azure Key Vault resource. Please verify that the tenant has all corresponding permissions assigned.</value>
+  </data>
+  <data name="FirstKeyVaultAccessAttemptShouldBeUnauthorized" xml:space="preserve">
+    <value>Unexpected status code for first Azure Key Vault Access. First request to get Azure Key Vault metadata should always return Unauthorized.</value>
+  </data>
   <data name="FailoverDisabled" xml:space="preserve">
     <value>Cannot perform failover as it is disabled for the account.</value>
   </data>
@@ -1261,5 +1291,20 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="TransportGenerated503" xml:space="preserve">
     <value>Service is currently unavailable. More info: https://aka.ms/cosmosdb-tsg-service-unavailable. Continuous connectivity failures. Client cannot connect after multiple retries. Please check your networking configuration</value>
+  </data>
+  <data name="UnsupportedCapabilityForServerVersion" xml:space="preserve">
+    <value>"{0} capability is not compatible with mongo ServerVersion={1} accounts."</value>
+  </data>
+  <data name="RbacCannotResolveResourceRid" xml:space="preserve">
+    <value>Request is blocked because ResourceId [{0}] cannot be resolved. Principal = [{1}], Action = [{2}], ResourceType = [{3}].</value>
+  </data>
+  <data name="UnsupportedOfferOperationForProvisionedThroughput" xml:space="preserve">
+    <value>The operation is only supported for Serverless accounts, per-partition throughput cannot be updated directly for provisioned accounts.</value>
+  </data>
+  <data name="CrossTenantCMKNotSupportedWithFirstPartyIdentity" xml:space="preserve">
+    <value>Cross-tenant CMK is not supported with First Party identities as Default identities. Please use an User Assigned identity instead.</value>
+  </data>
+  <data name="CrossTenantCMKNotSupportedWithSystemAssignedIdentity" xml:space="preserve">
+    <value>Cross-tenant CMK is not supported with System Assigned identities as Default identities. Please use an User Assigned Identity instead.</value>
   </data>
 </root>

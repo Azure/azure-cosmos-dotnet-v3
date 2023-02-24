@@ -848,6 +848,7 @@ namespace Microsoft.Azure.Documents
                 ResourceType.RoleDefinition => Paths.RoleDefinitionsPathSegment + "/" + resourceName,
                 ResourceType.InteropUser    => Paths.InteropUsersPathSegment    + "/" + resourceName,
                 ResourceType.AuthPolicyElement => Paths.AuthPolicyElementsPathSegment + "/" + resourceName,
+                ResourceType.EncryptionScope => Paths.EncryptionScopesPathSegment + "/" + resourceName,
                 _ => null
             };
         }

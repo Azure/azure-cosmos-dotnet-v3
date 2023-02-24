@@ -703,6 +703,10 @@ namespace Microsoft.Azure.Documents
                     Collection<TSerializable> objectCollection = new Collection<TSerializable>();
                     foreach (JObject childObject in jobjectCollection)
                     {
+                        if (childObject == null)
+                        {
+                            continue;
+                        }
                         TSerializable result = typeResolver != null ? typeResolver.Resolve(childObject) : new TSerializable();
                         result.propertyBag = childObject;
 
@@ -732,6 +736,10 @@ namespace Microsoft.Azure.Documents
                     Collection<TSerializable> objectCollection = new Collection<TSerializable>();
                     foreach (JObject childObject in jobjectCollection)
                     {
+                        if (childObject == null)
+                        {
+                            continue;
+                        }
                         TSerializable result = typeResolver.Resolve(childObject);
                         result.propertyBag = childObject;
 
@@ -762,7 +770,10 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        internal Dictionary<string, TSerializable> GetObjectDictionary<TSerializable>(string propertyName, ITypeResolver<TSerializable> typeResolver = null) where TSerializable : JsonSerializable, new()
+        internal Dictionary<string, TSerializable> GetObjectDictionary<TSerializable>(
+            string propertyName,
+            ITypeResolver<TSerializable> typeResolver = null,
+            IEqualityComparer<string> comparer = null) where TSerializable : JsonSerializable, new()
         {
             if (this.propertyBag != null)
             {
@@ -775,8 +786,17 @@ namespace Microsoft.Azure.Documents
 
                 if (token != null)
                 {
+                    Dictionary<string, TSerializable> objectDictionary;
+                    if(comparer != null)
+                    {
+                        objectDictionary = new Dictionary<string, TSerializable>(comparer);
+                    }
+                    else
+                    {
+                        objectDictionary = new Dictionary<string, TSerializable>();
+                    }
+
                     Dictionary<string, JObject> jobjectDictionary = token.ToObject<Dictionary<string, JObject>>();
-                    Dictionary<string, TSerializable> objectDictionary = new Dictionary<string, TSerializable>();
                     foreach (KeyValuePair<string, JObject> kvp in jobjectDictionary)
                     {
                         TSerializable result = typeResolver != null ? typeResolver.Resolve(kvp.Value) : new TSerializable();
@@ -788,6 +808,7 @@ namespace Microsoft.Azure.Documents
                     return objectDictionary;
                 }
             }
+
             return null;
         }
 

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Diagnostics;
+    using System.Net.Security;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Client;
 
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.Documents
         private readonly RetryWithConfiguration retryWithConfiguration;
         private readonly bool disableRetryWithRetryPolicy;
         private TransportClient transportClient;
-        private TransportClient fallbackClient = null;
+        private TransportClient fallbackTransportClient;
         private ConnectionStateListener connectionStateListener = null;
 
         public StoreClientFactory(
@@ -45,7 +46,8 @@ namespace Microsoft.Azure.Documents
             TimeSpan localRegionOpenTimeout = default,
             bool enableChannelMultiplexing = false,
             int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue, // Optional for Rntbd
-            MemoryStreamPool memoryStreamPool = null) 
+            MemoryStreamPool memoryStreamPool = null,
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null) 
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -58,7 +60,7 @@ namespace Microsoft.Azure.Documents
             {
                 if (eventSource == null)
                 {
-                    throw new ArgumentOutOfRangeException("eventSource");
+                    throw new ArgumentOutOfRangeException(nameof(eventSource));
                 }
 
                 this.transportClient = new HttpTransportClient(requestTimeoutInSeconds, eventSource, userAgent, idleTimeoutInSeconds);
@@ -193,15 +195,6 @@ namespace Microsoft.Azure.Documents
 
                 StoreClientFactory.ValidateRntbdMaxConcurrentOpeningConnectionCount(ref rntbdMaxConcurrentOpeningConnectionCount);
 
-                this.fallbackClient = new RntbdTransportClient(
-                    requestTimeoutInSeconds,
-                    maxConcurrentConnectionOpenRequests,
-                    userAgent,
-                    overrideHostNameInCertificate,
-                    openTimeoutInSeconds,
-                    idleTimeoutInSeconds,
-                    timerPoolGranularityInSeconds);
-
                 this.transportClient = new Rntbd.TransportClient(
                     new Rntbd.TransportClient.Options(TimeSpan.FromSeconds(requestTimeoutInSeconds))
                     {
@@ -224,11 +217,37 @@ namespace Microsoft.Azure.Documents
                         EnableChannelMultiplexing = enableChannelMultiplexing,
                         MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
                         MemoryStreamPool = memoryStreamPool,
+                        RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
+                    });
+
+                this.fallbackTransportClient = new Rntbd.TransportClient(
+                    new Rntbd.TransportClient.Options(TimeSpan.FromSeconds(requestTimeoutInSeconds))
+                    {
+                        MaxChannels = maxRntbdChannels,
+                        PartitionCount = rntbdPartitionCount,
+                        MaxRequestsPerChannel = 1, // Legacy RNTBD is 1 request per channel.
+                        PortReuseMode = rntbdPortReuseMode,
+                        PortPoolReuseThreshold = rntbdPortPoolReuseThreshold,
+                        PortPoolBindAttempts = rntbdPortPoolBindAttempts,
+                        ReceiveHangDetectionTime = TimeSpan.FromSeconds(receiveHangDetectionTimeSeconds),
+                        SendHangDetectionTime = TimeSpan.FromSeconds(sendHangDetectionTimeSeconds),
+                        UserAgent = userAgent,
+                        CertificateHostNameOverride = overrideHostNameInCertificate,
+                        OpenTimeout = TimeSpan.FromSeconds(openTimeoutInSeconds),
+                        LocalRegionOpenTimeout = localRegionOpenTimeout,
+                        TimerPoolResolution = TimeSpan.FromSeconds(timerPoolGranularityInSeconds),
+                        IdleTimeout = TimeSpan.FromSeconds(idleTimeoutInSeconds),
+                        CallerId = callerId,
+                        ConnectionStateListener = this.connectionStateListener,
+                        EnableChannelMultiplexing = enableChannelMultiplexing,
+                        MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
+                        MemoryStreamPool = memoryStreamPool,
+                        RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
                     });
             }
             else
             {
-                throw new ArgumentOutOfRangeException("protocol", protocol, "Invalid protocol value");
+                throw new ArgumentOutOfRangeException(nameof(protocol), protocol, "Invalid protocol value");
             }
 
             this.protocol = protocol;
@@ -240,13 +259,13 @@ namespace Microsoft.Azure.Documents
             Protocol protocol,
             RetryWithConfiguration retryWithConfiguration,
             TransportClient transportClient,
-            TransportClient fallbackClient,
+            TransportClient fallbackTransportClient,
             ConnectionStateListener connectionStateListener)
         {
             this.protocol = protocol;
             this.retryWithConfiguration = retryWithConfiguration;
             this.transportClient = transportClient;
-            this.fallbackClient = fallbackClient;
+            this.fallbackTransportClient = fallbackTransportClient;
             this.connectionStateListener = connectionStateListener;
         }
 
@@ -256,7 +275,7 @@ namespace Microsoft.Azure.Documents
                 this.protocol,
                 this.retryWithConfiguration,
                 this.transportClient,
-                this.fallbackClient,
+                this.fallbackTransportClient,
                 this.connectionStateListener);
         }
 
@@ -269,7 +288,7 @@ namespace Microsoft.Azure.Documents
             }
 
             this.transportClient = transportClientHandlerFactory(this.transportClient);
-            this.fallbackClient = transportClientHandlerFactory(this.fallbackClient);
+            this.fallbackTransportClient = transportClientHandlerFactory(this.fallbackTransportClient);
         }
 
         public StoreClient CreateStoreClient(
@@ -284,22 +303,22 @@ namespace Microsoft.Azure.Documents
             bool detectClientConnectivityIssues = false)
         {
             this.ThrowIfDisposed();
-            if (useFallbackClient && this.fallbackClient != null)
+            if (useFallbackClient && this.fallbackTransportClient != null)
             {
+                DefaultTrace.TraceInformation("Using fallback TransportClient");
                 return new StoreClient(
-                    addressResolver: addressResolver,
-                    sessionContainer: sessionContainer,
-                    serviceConfigurationReader: serviceConfigurationReader,
-                    userTokenProvider: authorizationTokenProvider,
-                    protocol: this.protocol,
-                    // Use the fallback client instead of the default one.
-                    transportClient: this.fallbackClient,
-                    enableRequestDiagnostics: enableRequestDiagnostics,
-                    enableReadRequestsFallback: enableReadRequestsFallback,
-                    useMultipleWriteLocations: useMultipleWriteLocations,
-                    detectClientConnectivityIssues: detectClientConnectivityIssues,
-                    disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
-                    retryWithConfiguration: this.retryWithConfiguration);
+                addressResolver: addressResolver,
+                sessionContainer: sessionContainer,
+                serviceConfigurationReader: serviceConfigurationReader,
+                userTokenProvider: authorizationTokenProvider,
+                protocol: this.protocol,
+                transportClient: this.fallbackTransportClient,
+                enableRequestDiagnostics: enableRequestDiagnostics,
+                enableReadRequestsFallback: enableReadRequestsFallback,
+                useMultipleWriteLocations: useMultipleWriteLocations,
+                detectClientConnectivityIssues: detectClientConnectivityIssues,
+                disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
+                retryWithConfiguration: this.retryWithConfiguration);
             }
 
             return new StoreClient(
@@ -331,10 +350,10 @@ namespace Microsoft.Azure.Documents
                 this.transportClient = null;
             }
 
-            if (this.fallbackClient != null)
+            if (this.fallbackTransportClient != null)
             {
-                this.fallbackClient.Dispose();
-                this.fallbackClient = null;
+                this.fallbackTransportClient.Dispose();
+                this.fallbackTransportClient = null;
             }
 
             this.isDisposed = true;

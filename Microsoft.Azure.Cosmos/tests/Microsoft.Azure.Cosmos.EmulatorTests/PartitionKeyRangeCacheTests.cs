@@ -19,11 +19,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private bool loopBackgroundOperaitons = false;
 
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            this.loopBackgroundOperaitons = false;
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            this.loopBackgroundOperaitons = false;
+        }
+
         [TestMethod]
         public async Task VerifyPkRangeCacheRefreshOnSplitWithErrorsAsync()
         {
-            this.loopBackgroundOperaitons = false;
-
             int throwOnPkRefreshCount = 3;
             int pkRangeCalls = 0;
             bool causeSplitExceptionInRntbdCall = false;
@@ -69,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     })
             };
 
-            CosmosClient resourceClient = TestCommon.CreateCosmosClient(clientOptions);
+            using CosmosClient resourceClient = TestCommon.CreateCosmosClient(clientOptions);
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = nameof(PartitionKeyRangeCacheTests);
@@ -133,6 +143,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.AreEqual(0, exceptions.Count, $"Unexpected exceptions: {string.Join(';', exceptions)}");
+
+            await db.DeleteStreamAsync();
         }
 
         private async Task CreateAndReadItemBackgroundLoop(Container container, List<Exception> exceptions)
@@ -203,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     })
             };
 
-            CosmosClient resourceClient = TestCommon.CreateCosmosClient(clientOptions);
+            using CosmosClient resourceClient = TestCommon.CreateCosmosClient(clientOptions);
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = nameof(PartitionKeyRangeCacheTests);
@@ -229,6 +241,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(4, pkRangeCalls);
 
             Assert.AreEqual(0, ifNoneMatchValues.Count(x => string.IsNullOrEmpty(x)), "The cache is already init. It should never re-initialize the cache.");
+
+            await db.DeleteStreamAsync();
         }
 
         [TestMethod]
@@ -262,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HttpClientFactory = () => new HttpClient(httpHandlerHelper),
             };
 
-            CosmosClient resourceClient = TestCommon.CreateCosmosClient(clientOptions);
+            using CosmosClient resourceClient = TestCommon.CreateCosmosClient(clientOptions);
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = nameof(PartitionKeyRangeCacheTests);
@@ -278,12 +292,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(3, pkRangeCalls);
 
             Assert.AreEqual(2, ifNoneMatchValues.Count(x => string.IsNullOrEmpty(x)), "First call is a 408");
+
+            await db.DeleteStreamAsync();
         }
 
         [TestMethod]
         public async Task TestRidRefreshOnNotFoundAsync()
         {
-            CosmosClient resourceClient = TestCommon.CreateCosmosClient();
+            using CosmosClient resourceClient = TestCommon.CreateCosmosClient();
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
@@ -291,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database db = await resourceClient.CreateDatabaseAsync(dbName);
             Container container = await db.CreateContainerAsync(containerName, "/_id");
 
-            CosmosClient testClient = TestCommon.CreateCosmosClient();
+            using CosmosClient testClient = TestCommon.CreateCosmosClient();
             ContainerInternal testContainer = (ContainerInlineCore)testClient.GetContainer(dbName, containerName);
 
             // Populate the RID cache.
@@ -316,6 +332,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CollectionRoutingMap collectionRoutingMapFromCache = await testContainer.GetRoutingMapAsync(cancellationToken: default);
             Assert.AreEqual(collectionRoutingMap, collectionRoutingMapFromCache);
+
+            await db.DeleteStreamAsync();
         }
     }
 }

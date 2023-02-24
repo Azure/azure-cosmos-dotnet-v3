@@ -1035,10 +1035,21 @@ namespace Microsoft.Azure.Documents
                 case StatusCodes.ServiceUnavailable:
                     errorMessage = TransportClient.GetErrorResponse(storeResponse, RMResources.ServiceUnavailable, out responseHeaders);
                     uint substatus = TransportClient.GetExceptionSubStatus(responseHeaders, errorMessage, physicalAddress);
-                    exception = ServiceUnavailableException.Create(
-                        responseHeaders,
-                        (substatus == 0) ? SubStatusCodes.ServerGenerated503 : null, // if substatus is not zero we pass null because the headers will have the correct value 
-                        physicalAddress);
+                    if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        exception = new ServiceUnavailableException(
+                            message: string.Format(CultureInfo.CurrentUICulture, RMResources.ExceptionMessage, errorMessage),
+                            headers: responseHeaders,
+                            subStatusCode: (substatus == 0) ? SubStatusCodes.ServerGenerated503 : null, // if substatus is not zero we pass null because the headers will have the correct value
+                            requestUri: physicalAddress);
+                    }
+                    else
+                    {
+                        exception = ServiceUnavailableException.Create(
+                            headers: responseHeaders,
+                            subStatusCode: (substatus == 0) ? SubStatusCodes.ServerGenerated503 : null, // if substatus is not zero we pass null because the headers will have the correct value
+                            requestUri: physicalAddress);
+                    }
                     break;
 
                 case StatusCodes.RequestTimeout:

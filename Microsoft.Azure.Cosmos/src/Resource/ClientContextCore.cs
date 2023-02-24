@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -65,7 +67,8 @@ namespace Microsoft.Azure.Cosmos
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
                 clientOptions.GatewayModeMaxConnectionLimit,
-                clientOptions.WebProxy);
+                clientOptions.WebProxy,
+                clientOptions.ServerCertificateCustomValidationCallback);
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
@@ -79,12 +82,18 @@ namespace Microsoft.Azure.Cosmos
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
                handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer,
-               cosmosClientId: cosmosClient.Id);
+               cosmosClientId: cosmosClient.Id,
+               remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback));
 
             return ClientContextCore.Create(
                 cosmosClient,
                 documentClient,
                 clientOptions);
+        }
+
+        private static RemoteCertificateValidationCallback SslCustomValidationCallBack(Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        {
+            return serverCertificateCustomValidationCallback == null ? null : (_, cert, chain, policy) => serverCertificateCustomValidationCallback((X509Certificate2)cert, chain, policy);
         }
 
         internal static CosmosClientContext Create(
@@ -194,6 +203,9 @@ namespace Microsoft.Azure.Cosmos
         internal override Task<TResult> 
             OperationHelperAsync<TResult>(
             string operationName,
+            string containerName,
+            string databaseName,
+            OperationType operationType,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
@@ -201,13 +213,20 @@ namespace Microsoft.Azure.Cosmos
             Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
         {
             return SynchronizationContext.Current == null ?
-                this.OperationHelperWithRootTraceAsync(operationName, 
+                this.OperationHelperWithRootTraceAsync(operationName,
+                                                       containerName,
+                                                       databaseName,
+                                                       operationType,
                                                        requestOptions, 
                                                        task,
                                                        openTelemetry,
                                                        traceComponent,
                                                        traceLevel) :
-                this.OperationHelperWithRootTraceWithSynchronizationContextAsync(operationName, 
+                this.OperationHelperWithRootTraceWithSynchronizationContextAsync(
+                                                                  operationName,
+                                                                  containerName,
+                                                                  databaseName,
+                                                                  operationType,
                                                                   requestOptions, 
                                                                   task,
                                                                   openTelemetry,
@@ -217,6 +236,9 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<TResult> OperationHelperWithRootTraceAsync<TResult>(
             string operationName,
+            string containerName,
+            string databaseName,
+            OperationType operationType,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
@@ -230,6 +252,9 @@ namespace Microsoft.Azure.Cosmos
                 trace.AddDatum("Client Configuration", this.client.ClientConfigurationTraceDatum);
 
                 return await this.RunWithDiagnosticsHelperAsync(
+                    containerName,
+                    databaseName,
+                    operationType,
                     trace,
                     task,
                     openTelemetry,
@@ -240,6 +265,9 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<TResult> OperationHelperWithRootTraceWithSynchronizationContextAsync<TResult>(
             string operationName,
+            string containerName,
+            string databaseName,
+            OperationType operationType,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
@@ -260,6 +288,9 @@ namespace Microsoft.Azure.Cosmos
                     trace.AddDatum("Synchronization Context", syncContextVirtualAddress);
 
                     return await this.RunWithDiagnosticsHelperAsync(
+                        containerName,
+                        databaseName,
+                        operationType,
                         trace,
                         task,
                         openTelemetry,
@@ -449,6 +480,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(
+            string containerName,
+            string databaseName,
+            OperationType operationType,
             ITrace trace,
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry,
@@ -458,15 +492,15 @@ namespace Microsoft.Azure.Cosmos
             using (OpenTelemetryCoreRecorder recorder = 
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     operationName: operationName,
+                                    containerName: containerName,
+                                    databaseName: databaseName,
+                                    operationType: operationType,
                                     requestOptions: requestOptions,
                                     clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
                 {
-                    // Record Operation Name
-                    recorder.Record(OpenTelemetryAttributeKeys.DbOperation, operationName);
-
                     TResult result = await task(trace).ConfigureAwait(false);
                     if (openTelemetry != null && recorder.IsEnabled)
                     {

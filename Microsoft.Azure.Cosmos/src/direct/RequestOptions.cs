@@ -618,6 +618,16 @@ namespace Microsoft.Azure.Documents.Client
         [Obsolete("Deprecated")]
         public int? SharedOfferThroughput { get; set; }
 
+        /// <summary>
+        /// Gets or sets the priority level for the request in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The priority level to use with a request.
+        /// </value>
+        /// <seealso cref="Microsoft.Azure.Documents.PriorityLevel"/>
+        /// <seealso cref="PriorityLevel"/>
+        public PriorityLevel? PriorityLevel { get; set; }
+
 #if !COSMOSCLIENT
         /// <summary>
         /// Gets or sets <see cref="OfferAutopilotTier"/> for a collection/database in the Azure Cosmos DB service

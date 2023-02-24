@@ -421,10 +421,7 @@ namespace Microsoft.Azure.Documents
                 stringBuilder.Append(this.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture));
 
                 stringBuilder.Append("; StoreResult: ");
-                if (this.StoreResult != null)
-                {
-                    this.StoreResult.AppendToBuilder(stringBuilder);
-                }
+                this.StoreResult?.AppendToBuilder(stringBuilder);
 
                 stringBuilder.AppendLine();
                 stringBuilder.AppendFormat(

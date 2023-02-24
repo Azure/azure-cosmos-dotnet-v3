@@ -34,7 +34,35 @@ namespace Microsoft.Azure.Documents
         public const string Operations_MetadataCheckAccess = "metadatacheckaccess";
 
         //databases namespace off of root-------------------
+        
+        // /subscriptions
+        public const string SubscriptionsSegment = "subscriptions";
+        public const string SubscriptionsSegment_Root = Root + SubscriptionsSegment;
 
+        // /subscriptions/{subscriptionId}
+        public const string SubscriptionIdSegment = "subscriptionId";
+        public const string SubscriptionIdSegment_Root = SubscriptionsSegment_Root + "/{" + SubscriptionIdSegment + "}";
+
+        // /subscriptions/{subscriptionId}/resourceGroups
+        public const string ResourceGroupsSegment = "resourceGroups";
+        public const string ResourceGroupsSegment_Root = SubscriptionIdSegment_Root + "/" + ResourceGroupsSegment;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}
+        public const string ResourceGroupSegment = "resourceGroup";
+        public const string ResourceGroupSegment_Root = ResourceGroupsSegment_Root + "/{" + ResourceGroupSegment + "}";
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers
+        public const string ProvidersSegment = "providers";
+        public const string ProvidersSegment_Root = ResourceGroupSegment_Root + "/" + ProvidersSegment;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB
+        public const string CosmosProvider = "Microsoft.DocumentDB";
+        public const string CosmosProvider_Root = ProvidersSegment_Root + "/" + CosmosProvider;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts
+        public const string DatabaseAccountResourceType = "databaseAccounts";
+        public const string DatabaseAccountType_Root = CosmosProvider_Root + "/" + DatabaseAccountResourceType;
+        
         // /dbs
         public const string DatabasesPathSegment = "dbs";
         public const string Databases_Root = Root + "/" + DatabasesPathSegment + "/";
@@ -331,8 +359,50 @@ namespace Microsoft.Azure.Documents
         public const string EncryptionScopesPathSegment = "encryptionscopes";
         public const string EncryptionScopes_Root = Root + "/" + EncryptionScopesPathSegment + "/";
 
+        // /clientconfigs
+        public const string ClientConfigPathSegment = "clientconfigs";
+        public const string ClientConfig_Root = Root + ClientConfigPathSegment;
+
         // /encryptionscopes/{id}
         public const string EncryptionScopeId = "encryptionscopeid";
         public const string EncryptionScope_Root = EncryptionScopes_Root + "{" + EncryptionScopeId + "}";
+
+        public const string OperationResultsSegment = "operationResults";
+        public const string OperationIdSegment = "operationId";
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}
+        public const string DatabaseAccountResourceSegment = "databaseAccountResource";
+        public const string DatabaseAccountResourceSegment_Root = DatabaseAccountType_Root + "/{" + DatabaseAccountResourceSegment + "}";
+
+        // ----------------- Native Control Plane RBAC for Mongo -----------------
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongodbRoleDefinitions
+        public const string MongoDbRoleDefinitionResourceType = "mongodbRoleDefinitions";
+        public const string MongoDbRoleDefinitionResourceType_Root = DatabaseAccountResourceSegment_Root + "/" + MongoDbRoleDefinitionResourceType;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongodbRoleDefinitions/{mongodbRoleDefinitionResource}
+        public const string MongoDbRoleDefinitionResourceSegment = "mongodbRoleDefinitionResource";
+        public const string MongoDbRoleDefinitionResourceSegment_Root = MongoDbRoleDefinitionResourceType_Root + "/{" + MongoDbRoleDefinitionResourceSegment + "}";
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongodbRoleDefinitions/{mongodbRoleDefinitionResource}/operationResults
+        public const string MongoDbRoleDefinitionOperationResultsSegment_Root = MongoDbRoleDefinitionResourceSegment_Root + "/" + OperationResultsSegment;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongodbRoleDefinitions/{mongoRoleDefinitionResource}/operationResults/{operationId}
+        public const string MongoDbRoleDefinitionOperationResultSegment_Root = MongoDbRoleDefinitionOperationResultsSegment_Root + "/{" + OperationIdSegment + "}";
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongodbUserDefinitions
+        public const string MongoDbUserDefinitionResourceType = "mongodbUserDefinitions";
+        public const string MongoDbUserDefinitionResourceType_Root = DatabaseAccountResourceSegment_Root + "/" + MongoDbUserDefinitionResourceType;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongodbUserDefinitions/{mongodbUserDefinitionResource}
+        public const string MongoDbUserDefinitionResourceSegment = "mongodbUserDefinitionResource";
+        public const string MongoDbUserDefinitionResourceSegment_Root = MongoDbUserDefinitionResourceType_Root + "/{" + MongoDbUserDefinitionResourceSegment + "}";
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongodbUserDefinitions/{mongodbUserDefinitionResource}/operationResults
+        public const string MongoDbUserDefinitionOperationResultsSegment_Root = MongoDbUserDefinitionResourceSegment_Root + "/" + OperationResultsSegment;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongodbUserDefinitions/{mongodbUserDefinitionResource}/operationResults/{operationId}
+        public const string MongoDbUserDefinitionOperationResultSegment_Root = MongoDbUserDefinitionOperationResultsSegment_Root + "/{" + OperationIdSegment + "}";
+
     }
 }

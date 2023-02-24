@@ -12,6 +12,30 @@ namespace Microsoft.Azure.Documents.Rntbd
 
     internal static class TransportExceptions
     {
+        internal static string LocalIpv4Address;
+        private static bool AddSourceIpAddressInNetworkExceptionMessagePrivate = false;
+
+        // This will default to false, to avoid privacy concerns in general. We can explicitly enable it
+        // inside processes running in our datacenter, to get useful detail in our traces (paired source 
+        // and target IP address have been needed in the past for CloudNet investigations, for example)
+        public static bool AddSourceIpAddressInNetworkExceptionMessage
+        {
+            get
+            {
+                return TransportExceptions.AddSourceIpAddressInNetworkExceptionMessagePrivate;
+            }
+            set
+            {
+                if (value && !TransportExceptions.AddSourceIpAddressInNetworkExceptionMessagePrivate)
+                {
+                    // From false to true, reset the IP address for logging
+                    TransportExceptions.LocalIpv4Address = NetUtil.GetNonLoopbackIpV4Address() ?? string.Empty;
+                }
+
+                TransportExceptions.AddSourceIpAddressInNetworkExceptionMessagePrivate = value;
+            }
+        }
+
         internal static GoneException GetGoneException(
             Uri targetAddress, Guid activityId, Exception inner = null, TransportRequestStats transportRequestStats = null)
         {
@@ -20,7 +44,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             GoneException ex;
             if (inner == null)
             {
-                if (RntbdConnection.AddSourceIpAddressInNetworkExceptionMessage)
+                if (TransportExceptions.AddSourceIpAddressInNetworkExceptionMessage)
                 {
                     ex = new GoneException(
                         string.Format(CultureInfo.CurrentUICulture,
@@ -29,7 +53,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         inner,
                         SubStatusCodes.TransportGenerated410,
                             targetAddress,
-                        RntbdConnection.LocalIpv4Address);
+                        TransportExceptions.LocalIpv4Address);
                 }
                 else
                 {
@@ -44,7 +68,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             else
             {
-                if (RntbdConnection.AddSourceIpAddressInNetworkExceptionMessage)
+                if (TransportExceptions.AddSourceIpAddressInNetworkExceptionMessage)
                 {
                     ex = new GoneException(
                         string.Format(CultureInfo.CurrentUICulture,
@@ -53,7 +77,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         inner,
                         SubStatusCodes.TransportGenerated410,
                         targetAddress,
-                        RntbdConnection.LocalIpv4Address);
+                        TransportExceptions.LocalIpv4Address);
                 }
                 else
                 {
@@ -80,7 +104,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             if (inner == null)
             {
-                if (RntbdConnection.AddSourceIpAddressInNetworkExceptionMessage)
+                if (TransportExceptions.AddSourceIpAddressInNetworkExceptionMessage)
                 {
                     timeoutException = new RequestTimeoutException(
                         string.Format(CultureInfo.CurrentUICulture,
@@ -88,7 +112,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             RMResources.RequestTimeout),
                         inner,
                             targetAddress,
-                        RntbdConnection.LocalIpv4Address);
+                        TransportExceptions.LocalIpv4Address);
                 }
                 else
                 {
@@ -102,7 +126,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             else
             {
-                if (RntbdConnection.AddSourceIpAddressInNetworkExceptionMessage)
+                if (TransportExceptions.AddSourceIpAddressInNetworkExceptionMessage)
                 {
                     timeoutException = new RequestTimeoutException(
                         string.Format(CultureInfo.CurrentUICulture,
@@ -110,7 +134,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             RMResources.RequestTimeout),
                         inner,
                             targetAddress,
-                        RntbdConnection.LocalIpv4Address);
+                        TransportExceptions.LocalIpv4Address);
                 }
                 else
                 {

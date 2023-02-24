@@ -707,8 +707,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             await this.CreateRandomItems(itemsCore, 100, randomPartitionKey: true);
 
             // Inject validating handler
-            RequestHandler currentInnerHandler = this.cosmosClient.RequestHandler.InnerHandler;
-            this.cosmosClient.RequestHandler.InnerHandler = cancellationTokenHandler;
+            RequestHandler currentInnerHandler = this.GetClient().RequestHandler.InnerHandler;
+            this.GetClient().RequestHandler.InnerHandler = cancellationTokenHandler;
             cancellationTokenHandler.InnerHandler = currentInnerHandler;
 
             {
@@ -788,7 +788,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             // FF does not work with StartFromBeginning currently, capture error
             FeedIterator<ToDoActivityWithMetadata> fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
                 ChangeFeedStartFrom.Beginning(),
-                ChangeFeedMode.FullFidelity);
+                ChangeFeedMode.AllVersionsAndDeletes);
 
             CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => fullFidelityIterator.ReadNextAsync());
             Assert.AreEqual(HttpStatusCode.BadRequest, cosmosException.StatusCode, "Full Fidelity Change Feed does not work with StartFromBeginning currently.");
@@ -808,17 +808,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         private async Task ValidateChangeFeedIteratorCore_WithQuery(
             bool useGateway)
         {
-            await this.Cleanup();
-
             this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationToken = this.cancellationTokenSource.Token;
-            this.cosmosClient = TestCommon.CreateCosmosClient(useGateway: useGateway);
-            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
-                cancellationToken: this.cancellationToken);
+            CosmosClient cosmosClient = useGateway ? TestCommon.CreateCosmosClient(useGateway: useGateway) : this.GetClient();
 
             ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pkey");
             properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
-            ContainerResponse response = await this.database.CreateContainerAsync(
+            ContainerResponse response = await cosmosClient.GetDatabase(this.database.Id).CreateContainerAsync(
                 properties,
                 cancellationToken: this.cancellationToken);
 
@@ -829,7 +825,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             // FF does not work with StartFromBeginning currently, so we capture an initial continuation.
             FeedIterator<ChangeFeedItemChange<Document>> fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItemChange<Document>>(
                 ChangeFeedStartFrom.Now(),
-                ChangeFeedMode.FullFidelity,
+                ChangeFeedMode.AllVersionsAndDeletes,
                 querySpec,
                 null);
 
@@ -862,7 +858,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             // Resume Change Feed and verify we pickup the events where documents matches the query
             fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItemChange<Document>>(
                 ChangeFeedStartFrom.ContinuationToken(initialContinuation),
-                ChangeFeedMode.FullFidelity,
+                ChangeFeedMode.AllVersionsAndDeletes,
                 querySpec,
                 null);
             int detectedEvents = 0;
@@ -891,7 +887,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItemChange<Document>>(
                 ChangeFeedStartFrom.ContinuationToken(initialContinuation),
-                ChangeFeedMode.FullFidelity,
+                ChangeFeedMode.AllVersionsAndDeletes,
                 querySpec,
                 null);
             detectedEvents = 0;
@@ -927,7 +923,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             string otherId = Guid.NewGuid().ToString();
 
             PartitionKey partitionKey = new PartitionKey(id);
-            ChangeFeedMode changeFeedMode = ChangeFeedMode.FullFidelity;
+            ChangeFeedMode changeFeedMode = ChangeFeedMode.AllVersionsAndDeletes;
             ChangeFeedStartFrom changeFeedStartFrom = ChangeFeedStartFrom.Now(FeedRange.FromPartitionKey(partitionKey));
 
             using (FeedIterator<ChangeFeedItemChange<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChange<Item>>(
@@ -1017,7 +1013,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             using (FeedIterator<ChangeFeedItemChange<Item>> feedIterator = container.GetChangeFeedIterator<ChangeFeedItemChange<Item>>(
                 changeFeedStartFrom: ChangeFeedStartFrom.Now(),
-                changeFeedMode: ChangeFeedMode.FullFidelity))
+                changeFeedMode: ChangeFeedMode.AllVersionsAndDeletes))
             {
                 string continuation = null;
                 while (feedIterator.HasMoreResults)
@@ -1124,7 +1120,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             string otherId = Guid.NewGuid().ToString();
             using (FeedIterator<dynamic> feedIterator = container.GetChangeFeedIterator<dynamic>(
                 changeFeedStartFrom: ChangeFeedStartFrom.Now(FeedRange.FromPartitionKey(new PartitionKey(id))),
-                changeFeedMode: ChangeFeedMode.FullFidelity))
+                changeFeedMode: ChangeFeedMode.AllVersionsAndDeletes))
             {
                 string continuation = null;
                 while (feedIterator.HasMoreResults)

@@ -8,20 +8,42 @@ namespace Microsoft.Azure.Documents
     using System.Threading;
     using System.Threading.Tasks;
 
-    internal sealed class CloneableStream : Stream
+    internal sealed class CloneableStream : Stream, ICloneable
     {
         private readonly MemoryStream internalStream;
+        private readonly bool allowUnsafeDataAccess;
 
         public CloneableStream Clone()
         {
-            MemoryStream stream = new MemoryStream(
-                this.internalStream.GetBuffer(), 0, (int)this.internalStream.Length, false, true);
-            return new CloneableStream(stream);
+            return new CloneableStream(this.CloneStream(), this.allowUnsafeDataAccess);
         }
 
-        public CloneableStream(MemoryStream internalStream)
+        object ICloneable.Clone()
+        {
+            return new CloneableStream(this.CloneStream(), this.allowUnsafeDataAccess);
+        }
+
+        private MemoryStream CloneStream()
+        {
+            if (this.internalStream is ICloneable cloneableStream)
+            {
+                MemoryStream memoryStream = (MemoryStream)cloneableStream.Clone();
+                memoryStream.Position = 0;
+                return memoryStream;
+            }
+
+            if (!this.allowUnsafeDataAccess)
+            {
+                throw new NotSupportedException($"Cloning the stream is not a supported method when {nameof(this.allowUnsafeDataAccess)} is set to false and stream does not implement ICloneable");
+            }
+            
+            return new MemoryStream(buffer: this.internalStream.GetBuffer(), index: 0, count: (int)this.internalStream.Length, writable: false, publiclyVisible: true);
+        }
+
+        public CloneableStream(MemoryStream internalStream, bool allowUnsafeDataAccess = true)
         {
             this.internalStream = internalStream;
+            this.allowUnsafeDataAccess = allowUnsafeDataAccess;
         }
 
         public override bool CanRead
@@ -102,6 +124,11 @@ namespace Microsoft.Azure.Documents
 
         public ArraySegment<byte> GetBuffer()
         {
+            if (!this.allowUnsafeDataAccess)
+            {
+                throw new NotSupportedException($"{nameof(GetBuffer)} is not a supported method when {nameof(this.allowUnsafeDataAccess)} is set to false");
+            }
+
             return new ArraySegment<byte>(this.internalStream.GetBuffer(), 0, (int)this.internalStream.Length);
         }
 
@@ -190,6 +217,29 @@ namespace Microsoft.Azure.Documents
         public void WriteTo(Stream target)
         {
             this.internalStream.WriteTo(target);
+        }
+
+        public void CopyBufferTo(byte[] buffer, int offset)
+        {
+            if (!this.allowUnsafeDataAccess)
+            {
+                this.internalStream.Write(buffer, offset, (int)this.internalStream.Length);
+            }
+            else
+            {
+                ArraySegment<byte> internalStreamBuffer = this.GetBuffer();
+                Array.Copy(
+                    internalStreamBuffer.Array,
+                    internalStreamBuffer.Offset,
+                    buffer,
+                    offset,
+                    internalStreamBuffer.Count);
+            }
+        }
+
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+        {
+            return this.internalStream.CopyToAsync(destination, bufferSize, cancellationToken);
         }
     }
 }

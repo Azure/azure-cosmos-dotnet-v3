@@ -249,19 +249,20 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest entity,
             bool useSessionToken)
         {
-            
-            StoreResult response = await this.storeReader.ReadPrimaryAsync(
+            // Note: We don't put `repsonse` in a using statement becasue we the underlying resources
+            // will be copied in `ToResponse()` below.
+            ReferenceCountedDisposable<StoreResult> response = await this.storeReader.ReadPrimaryAsync(
                     entity,
                     requiresValidLsn: false,
                     useSessionToken: useSessionToken);
-            return response.ToResponse();
+            return response.Target.ToResponse();
         }
 
         async private Task<StoreResponse> ReadAnyAsync(
             DocumentServiceRequest entity,
             ReadMode readMode)
         {
-            IList<StoreResult> responses = await this.storeReader.ReadMultipleReplicaAsync(
+            IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
                     entity,
                     includePrimary: true,
                     replicaCountToRead: 1,
@@ -274,7 +275,7 @@ namespace Microsoft.Azure.Documents
                 throw new GoneException(RMResources.Gone, SubStatusCodes.Server_NoValidStoreResponse);
             }
 
-            return responses[0].ToResponse();
+            return responses[0].Target.ToResponse();
         }
 
         private async Task<StoreResponse> ReadSessionAsync(
@@ -283,7 +284,7 @@ namespace Microsoft.Azure.Documents
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
-            IList<StoreResult> responses = await this.storeReader.ReadMultipleReplicaAsync(
+            IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
                     entity:entity,
                     includePrimary:true, 
                     replicaCountToRead:1,
@@ -296,12 +297,12 @@ namespace Microsoft.Azure.Documents
             {
                 try
                 {
-                    StoreResponse storeResponse = responses[0].ToResponse(entity.RequestContext.RequestChargeTracker);
+                    StoreResponse storeResponse = responses[0].Target.ToResponse(entity.RequestContext.RequestChargeTracker);
                     if (storeResponse.Status == (int)HttpStatusCode.NotFound && entity.IsValidStatusCodeForExceptionlessRetry(storeResponse.Status))
                     {
-                        if (entity.RequestContext.SessionToken != null && responses[0].SessionToken != null && !entity.RequestContext.SessionToken.IsValid(responses[0].SessionToken))
+                        if (entity.RequestContext.SessionToken != null && responses[0].Target.SessionToken != null && !entity.RequestContext.SessionToken.IsValid(responses[0].Target.SessionToken))
                         {
-                            DefaultTrace.TraceInformation("Convert to session read exception, request {0} Session Lsn {1}, responseLSN {2}", entity.ResourceAddress, entity.RequestContext.SessionToken.ConvertToString(), responses[0].LSN);
+                            DefaultTrace.TraceInformation("Convert to session read exception, request {0} Session Lsn {1}, responseLSN {2}", entity.ResourceAddress, entity.RequestContext.SessionToken.ConvertToString(), responses[0].Target.LSN);
 
                             INameValueCollection headers = new DictionaryNameValueCollection();
                             headers.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString());
@@ -312,9 +313,9 @@ namespace Microsoft.Azure.Documents
                 }
                 catch (NotFoundException notFoundException)
                 {
-                    if (entity.RequestContext.SessionToken != null && responses[0].SessionToken != null && !entity.RequestContext.SessionToken.IsValid(responses[0].SessionToken))
+                    if (entity.RequestContext.SessionToken != null && responses[0].Target.SessionToken != null && !entity.RequestContext.SessionToken.IsValid(responses[0].Target.SessionToken))
                     {
-                        DefaultTrace.TraceInformation("Convert to session read exception, request {0} Session Lsn {1}, responseLSN {2}", entity.ResourceAddress, entity.RequestContext.SessionToken.ConvertToString(), responses[0].LSN);
+                        DefaultTrace.TraceInformation("Convert to session read exception, request {0} Session Lsn {1}, responseLSN {2}", entity.ResourceAddress, entity.RequestContext.SessionToken.ConvertToString(), responses[0].Target.LSN);
                         notFoundException.Headers.Set(WFConstants.BackendHeaders.SubStatus, ((int)SubStatusCodes.ReadSessionNotAvailable).ToString());
                     }
                     throw notFoundException;

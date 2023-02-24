@@ -50,5 +50,18 @@
                 base.SetValue(Constants.Properties.KeyWrapMetadataValue, value);
             }
         }
+
+        [JsonProperty(PropertyName = Constants.Properties.KeyWrapMetadataAlgorithm, NullValueHandling = NullValueHandling.Ignore)]
+        internal string Algorithm
+        {
+            get
+            {
+                return base.GetValue<string>(Constants.Properties.KeyWrapMetadataAlgorithm);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.KeyWrapMetadataAlgorithm, value);
+            }
+        }
     }
 }

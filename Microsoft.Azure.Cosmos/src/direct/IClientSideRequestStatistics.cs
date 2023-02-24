@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Documents
 
         void RecordRequest(DocumentServiceRequest request);
 
+        // Note - storeResult may be disposed before use here
         void RecordResponse(
             DocumentServiceRequest request,
             StoreResult storeResult,

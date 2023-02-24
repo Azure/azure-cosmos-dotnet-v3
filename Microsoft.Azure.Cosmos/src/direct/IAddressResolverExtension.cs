@@ -4,11 +4,8 @@
 
 namespace Microsoft.Azure.Documents
 {
-    using System;
-    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
     /// Contain the method to open connection to the backend replicas, using Rntbd context negotiation.
@@ -26,7 +23,14 @@ namespace Microsoft.Azure.Documents
         Task OpenConnectionsToAllReplicasAsync(
             string databaseName,
             string containerLinkUri,
-            Func<Uri, Task> openConnectionHandlerAsync,
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Sets the <see cref="IOpenConnectionsHandler"/> instance to a class level readonly
+        /// field for invoking the open connection request at a later point of time.
+        /// </summary>
+        /// <param name="openConnectionHandler">An instance of <see cref="IOpenConnectionsHandler"/></param>
+        void SetOpenConnectionsHandler(
+            IOpenConnectionsHandler openConnectionHandler);
     }
 }

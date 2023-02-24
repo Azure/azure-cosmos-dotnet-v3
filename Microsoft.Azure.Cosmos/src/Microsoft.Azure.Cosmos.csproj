@@ -117,6 +117,8 @@
 
 		<!--Direct Dependencies-->
 		<PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" />
+		<PackageReference Include="System.ServiceModel.Primitives" />
 
 		<!--HybridRow Dependencies-->
 		<PackageReference Include="System.Memory" Version="4.5.4" />

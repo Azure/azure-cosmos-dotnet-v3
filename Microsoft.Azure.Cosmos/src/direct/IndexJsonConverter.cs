@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Documents
             }
 
             IndexKind indexKind = IndexKind.Hash;
-            if(Enum.TryParse(indexKindToken.Value<string>(), out indexKind))
+            if(Enum.TryParse(indexKindToken.Value<string>(), true /*ignoreCase*/, out indexKind))
             {
                 object index = null;
                 switch (indexKind)

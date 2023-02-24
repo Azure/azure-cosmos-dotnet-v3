@@ -44,5 +44,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return false;
         }
+
+        public override bool ShouldThrow503OnTimeout => true;
     }
 }

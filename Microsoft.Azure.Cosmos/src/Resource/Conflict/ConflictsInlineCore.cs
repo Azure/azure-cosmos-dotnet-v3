@@ -26,6 +26,9 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(DeleteAsync),
+                containerName: null,
+                databaseName: null,
+                operationType: Documents.OperationType.Delete,
                 requestOptions: null,
                 task: (trace) => base.DeleteAsync(conflict, partitionKey, trace, cancellationToken),
                 openTelemetry: (response) => new OpenTelemetryResponse(response));
@@ -86,6 +89,9 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(ReadCurrentAsync),
+                containerName: null,
+                databaseName: null,
+                operationType: Documents.OperationType.Read,
                 requestOptions: null,
                 task: (trace) => base.ReadCurrentAsync<T>(cosmosConflict, partitionKey, trace, cancellationToken),
                 openTelemetry: (response) => new OpenTelemetryResponse<T>(response));

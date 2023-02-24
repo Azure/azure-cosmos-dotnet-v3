@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
     abstract class SqlObjectVisitor<TArg, TOutput>
     {
         public abstract TOutput Visit(SqlAliasedCollectionExpression sqlObject, TArg input);
+        public abstract TOutput Visit(SqlAllScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlArrayCreateScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlArrayIteratorCollectionExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlArrayScalarExpression sqlObject, TArg input);

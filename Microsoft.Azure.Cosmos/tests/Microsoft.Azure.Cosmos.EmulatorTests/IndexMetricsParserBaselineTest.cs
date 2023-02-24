@@ -40,6 +40,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             {
                 await testDb.DeleteStreamAsync();
             }
+
+            cosmosClient.Dispose();
         }
 
         [TestInitialize]
