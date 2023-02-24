@@ -190,10 +190,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>true/false</returns>
         internal static bool IsEligible(int statusCode, int subStatusCode, TimeSpan latencyInMs)
         {
-            return 
-                (ClientTelemetryOptions.IsUserOrServerError(statusCode) && 
-                    ClientTelemetryOptions.IsStatusCodeNotExcluded(statusCode, subStatusCode)) ||
-                        latencyInMs >= ClientTelemetryOptions.NetworkLatencyThreshold;
+            return
+                ClientTelemetryOptions.IsStatusCodeNotExcluded(statusCode, subStatusCode) && 
+                    (ClientTelemetryOptions.IsUserOrServerError(statusCode) || latencyInMs >= ClientTelemetryOptions.NetworkLatencyThreshold);
         }
 
         private static bool IsUserOrServerError(int statusCode)

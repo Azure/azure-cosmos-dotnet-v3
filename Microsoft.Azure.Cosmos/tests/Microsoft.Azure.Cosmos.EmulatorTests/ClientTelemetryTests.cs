@@ -266,7 +266,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.WaitAndAssert(expectedOperationCount: 2,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.Eventual,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation, 
-                expectedCacheSource: null);
+                expectedCacheSource: null,
+                isExpectedNetworkTelemetry: false);
         }
 
         [TestMethod]
@@ -301,7 +302,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.WaitAndAssert(expectedOperationCount: 2,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation,
-                expectedCacheSource: null);
+                expectedCacheSource: null,
+                isExpectedNetworkTelemetry: false);
         }
 
         [TestMethod]
@@ -756,10 +758,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 { Documents.OperationType.Create.ToString(), 1}
             };
-
+            
             await this.WaitAndAssert(expectedOperationCount: 2,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation,
-                expectedSubstatuscode: 999999);
+                expectedSubstatuscode: 999999,
+                isExpectedNetworkTelemetry: false);
 
         }
 
@@ -776,7 +779,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IDictionary<string, long> expectedOperationRecordCountMap = null,
             int expectedSubstatuscode = 0,
             bool? isAzureInstance = null,
-            string expectedCacheSource = "ClientCollectionCache")
+            string expectedCacheSource = "ClientCollectionCache",
+            bool isExpectedNetworkTelemetry = true)
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
 
@@ -861,13 +865,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
            
             ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation, this.expectedMetricNameUnitMap);
-            if (localCopyOfActualInfo.First().ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant() && expectedSubstatuscode != 999999)
+            if (localCopyOfActualInfo.First().ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant() 
+                && isExpectedNetworkTelemetry)
             {
                 ClientTelemetryTests.AssertNetworkLevelInformation(actualRequestInformation);
             }
             else
             {
-                Assert.IsTrue(actualRequestInformation.Count == 0, "Request Information is not expected in Gateway mode");
+                Assert.IsTrue(actualRequestInformation == null || actualRequestInformation.Count == 0, "Request Information is not expected in Gateway mode");
             }
         }
         
