@@ -21,7 +21,11 @@ namespace CosmosCTL
         public static async Task Main(string[] args)
         {
             using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder
-                        .AddConsole());
+                        .AddCustomFormatter(options =>
+                        {
+                            options.CustomPrefix = string.Empty;
+                            options.IncludeScopes = false;
+                        }));
             
             ILogger logger = loggerFactory.CreateLogger<Program>();
 
