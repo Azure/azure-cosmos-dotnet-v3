@@ -88,11 +88,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestInitialize]
-        public void TestInitialize()
+        public async Task TestInitialize()
         {
             using (DocumentClient client = TestCommon.CreateClient(true))
             {
-                TestCommon.DeleteAllDatabasesAsync().Wait();
+                await TestCommon.DeleteAllDatabasesAsync();
             }
         }
 
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Ignore] //Not a valid scenerio for V3 SDK onwards
         public async Task ValidateOfferCreateNegative_1()
         {
-            DocumentClient client = TestCommon.CreateClient(false);
+            using DocumentClient client = TestCommon.CreateClient(false);
 
             Database database = (await client.CreateDatabaseAsync(new Database { Id = Guid.NewGuid().ToString("N") })).Resource;
 
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateOfferDefaults()
         {
-            DocumentClient client = TestCommon.CreateClient(false);
+            using DocumentClient client = TestCommon.CreateClient(false);
 
             Database database = (await client.CreateDatabaseAsync(new Database { Id = Guid.NewGuid().ToString("N") })).Resource;
             string collectionId = Guid.NewGuid().ToString("N");

@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.currentVersionUTF8 = HttpConstants.Versions.CurrentVersionUTF8;
 
             //var client = TestCommon.CreateClient(false, Protocol.Tcp);
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             await TestCommon.DeleteAllDatabasesAsync();
         }
 
@@ -58,24 +58,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void ValidatePageSizeHttps()
-        {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
-            ValidatePageSize(client);
-            ValidatePageSize(client);
-        }
-
-        [TestMethod]
         public void ValidatePageSizeRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            using var client = TestCommon.CreateClient(false, Protocol.Tcp);
             ValidatePageSize(client);
         }
 
         [TestMethod]
         public void ValidatePageSizeGatway()
         {
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             ValidatePageSize(client);
         }
 
@@ -182,13 +174,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await ValidateCosistencyLevel(client);
         }
 
-        [TestMethod]
-        public async Task ValidateConsistencyLevelHttps()
-        {
-            DocumentClient client = TestCommon.CreateClient(false, Protocol.Https);
-            await ValidateCosistencyLevel(client);
-        }
-
         private async Task ValidateCosistencyLevel(DocumentClient client)
         {
             DocumentCollection collection = TestCommon.CreateOrGetDocumentCollection(client);
@@ -229,13 +214,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void ValidateJsonSerializationFormatRntbd()
         {
             var client = TestCommon.CreateClient(false, Protocol.Tcp);
-            ValidateJsonSerializationFormat(client);
-        }
-
-        [TestMethod]
-        public void ValidateJsonSerializationFormatHttps()
-        {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
             ValidateJsonSerializationFormat(client);
         }
 
@@ -342,14 +320,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ValidateIndexingDirective(client);
         }
 
-        [TestMethod]
-        public void ValidateIndexingDirectiveHttps()
-        {
-            //var client = TestCommon.CreateClient(false, Protocol.Https);
-            var client = TestCommon.CreateClient(true, Protocol.Https);
-            ValidateIndexingDirective(client);
-        }
-
         private void ValidateIndexingDirective(DocumentClient client)
         {
             // Number out of range.
@@ -407,13 +377,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ValidateEnableScanInQuery(client);
         }
 
-        [TestMethod]
-        public void ValidateEnableScanInQueryHttps()
-        {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
-            ValidateEnableScanInQuery(client);
-        }
-
         private void ValidateEnableScanInQuery(DocumentClient client, bool isHttps = false)
         {
             // Value not boolean
@@ -458,14 +421,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             var client = TestCommon.CreateClient(false, Protocol.Tcp);
             ValidateEnableLowPrecisionOrderBy(client);
-        }
-
-        [TestMethod]
-
-        public void ValidateEnableLowPrecisionOrderByHttps()
-        {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
-            ValidateEnableLowPrecisionOrderBy(client, true);
         }
 
         private void ValidateEnableLowPrecisionOrderBy(DocumentClient client, bool isHttps = false)
@@ -516,13 +471,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ValidateEmitVerboseTracesInQuery(client);
         }
 
-        [TestMethod]
-        public void ValidateEmitVerboseTracesInQueryHttps()
-        {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
-            ValidateEmitVerboseTracesInQuery(client, true);
-        }
-
         private void ValidateEmitVerboseTracesInQuery(DocumentClient client, bool isHttps = false)
         {
             // Value not boolean
@@ -558,21 +506,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateIfNonMatchGateway()
         {
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             ValidateIfNonMatch(client);
 
-        }
-        [TestMethod]
-        public void ValidateIfNonMatchHttps()
-        {
-            var client = TestCommon.CreateClient(false, Protocol.Https);
-            ValidateIfNonMatch(client);
         }
 
         [TestMethod]
         public void ValidateIfNonMatchRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            using var client = TestCommon.CreateClient(false, Protocol.Tcp);
             ValidateIfNonMatch(client);
         }
 
@@ -615,48 +557,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void ValidateVersionHeader()
+        public async Task ValidateVersionHeader()
         {
             string correctVersion = HttpConstants.Versions.CurrentVersion;
+            Database db = null;
             try
             {
                 DocumentClient client = TestCommon.CreateClient(true);
-                var db = client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() }).Result.Resource;
+                db = (await client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() })).Resource;
                 PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
-                var coll = client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result.Resource;
-                var doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
+                var coll = (await client.CreateDocumentCollectionAsync(db.SelfLink, new DocumentCollection() { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition })).Resource;
+                var doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
+                client.Dispose();
                 client = TestCommon.CreateClient(true);
-                doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
+                doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
                 HttpConstants.Versions.CurrentVersion = "2015-01-01";
+                client.Dispose();
                 client = TestCommon.CreateClient(true);
                 try
                 {
-                    doc = client.CreateDocumentAsync(coll.SelfLink, new Document()).Result.Resource;
+                    doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
                     Assert.Fail("Should have faild because of version error");
                 }
-                catch (AggregateException exception)
+                catch (CosmosException dce)
                 {
-                    var dce = exception.InnerException as CosmosException;
-                    if (dce != null)
-                    {
-                        Assert.AreEqual(dce.StatusCode, HttpStatusCode.BadRequest);
-                    }
-                    else
-                    {
-                        Assert.Fail("Should have faild because of version error with DocumentClientException BadRequest");
-                    }
+                    Assert.AreEqual(dce.StatusCode, HttpStatusCode.BadRequest);
                 }
             }
             finally
             {
                 HttpConstants.Versions.CurrentVersion = correctVersion;
+                using DocumentClient client = TestCommon.CreateClient(true);
+                await client.DeleteDatabaseAsync(db);
             }
         }
 
         [TestMethod]
         public async Task ValidateCurrentWriteQuorumAndReplicaSetHeader()
         {
-            CosmosClient client = TestCommon.CreateCosmosClient(false);
+            using CosmosClient client = TestCommon.CreateCosmosClient(false);
             Cosmos.Database db = null;
             try
             {
@@ -684,7 +623,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("Ignore") /* Used to filter out ignored tests in lab runs */]
         public void ValidateGlobalCompltedLSNAndNumberOfReadRegionsHeader()
         {
-            DocumentClient client = TestCommon.CreateClient(false);
+            using DocumentClient client = TestCommon.CreateClient(false);
             Database db = null;
             try
             {
@@ -719,11 +658,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: true);
             }
 
-            using (var client = TestCommon.CreateClient(false, Protocol.Https))
-            {
-                await ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: true);
-            }
-
             using (var client = TestCommon.CreateClient(false, Protocol.Tcp))
             {
                 await ValidateCollectionIndexProgressHeadersAsync(client, isElasticCollection: true);
@@ -733,7 +667,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ValidateExcludeSystemProperties()
         {
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             await ValidateExcludeSystemProperties(client);
         }
 
@@ -848,6 +782,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //read document with default settings (system properties should be included)
             Document readDoc3Default = await client.ReadDocumentAsync(coll.AltLink + "/docs/doc3", new RequestOptions() { PartitionKey = new PartitionKey("doc3") });
             Assert.AreEqual(readDoc3WithProps.ToString(), readDoc3Default.ToString());
+
+            await client.DeleteDatabaseAsync(db);
         }
 
         private async Task ValidateCollectionIndexProgressHeadersAsync(DocumentClient client, bool isElasticCollection)
@@ -942,7 +878,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             finally
             {
-                client.DeleteDatabaseAsync(db).Wait();
+                await client.DeleteDatabaseAsync(db);
             }
         }
 

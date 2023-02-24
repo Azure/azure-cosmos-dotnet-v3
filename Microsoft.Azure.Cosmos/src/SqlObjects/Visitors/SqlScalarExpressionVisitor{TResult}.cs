@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 #endif
     abstract class SqlScalarExpressionVisitor<TResult>
     {
+        public abstract TResult Visit(SqlAllScalarExpression scalarExpression);
         public abstract TResult Visit(SqlArrayCreateScalarExpression scalarExpression);
         public abstract TResult Visit(SqlArrayScalarExpression scalarExpression);
         public abstract TResult Visit(SqlBetweenScalarExpression scalarExpression);

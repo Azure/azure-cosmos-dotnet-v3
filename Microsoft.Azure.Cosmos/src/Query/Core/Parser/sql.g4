@@ -1,8 +1,8 @@
 ﻿grammar sql;
 
 program
-	: sql_query EOF
-	;
+    : sql_query EOF
+    ;
 
 sql_query : select_clause from_clause? where_clause? group_by_clause? order_by_clause? offset_limit_clause? ;
 
@@ -12,14 +12,14 @@ sql_query : select_clause from_clause? where_clause? group_by_clause? order_by_c
 select_clause : K_SELECT K_DISTINCT? top_spec? selection ;
 top_spec : K_TOP (NUMERIC_LITERAL | PARAMETER);
 selection
-	: select_star_spec
-	| select_value_spec 
-	| select_list_spec
-	;
+    : select_star_spec
+    | select_value_spec 
+    | select_list_spec
+    ;
 select_star_spec : '*' ;
 select_value_spec : K_VALUE scalar_expression ;
 select_list_spec : select_item ( ',' select_item )* ;
-select_item : scalar_expression (K_AS IDENTIFIER)? ;
+select_item : scalar_expression (K_AS identifier)? ;
 /*--------------------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------------------*/
@@ -27,20 +27,20 @@ select_item : scalar_expression (K_AS IDENTIFIER)? ;
 /*--------------------------------------------------------------------------------*/
 from_clause : K_FROM collection_expression ;
 collection_expression
-	: collection (K_AS? IDENTIFIER)? #AliasedCollectionExpression
-	| IDENTIFIER K_IN collection #ArrayIteratorCollectionExpression 
-	| collection_expression K_JOIN collection_expression #JoinCollectionExpression
-	;
+    : collection (K_AS? identifier)? #AliasedCollectionExpression
+    | identifier K_IN collection #ArrayIteratorCollectionExpression 
+    | collection_expression K_JOIN collection_expression #JoinCollectionExpression
+    ;
 collection
-	: IDENTIFIER path_expression?  #InputPathCollection
-	| '(' sql_query ')' #SubqueryCollection
-	;
+    : identifier path_expression?  #InputPathCollection
+    | '(' sql_query ')' #SubqueryCollection
+    ;
 path_expression
-	: path_expression'.'IDENTIFIER #IdentifierPathExpression
-	| path_expression'[' NUMERIC_LITERAL ']' #NumberPathExpression
-	| path_expression'[' STRING_LITERAL ']' #StringPathExpression
-	| /*epsilon*/ #EpsilonPathExpression
-	;
+    : path_expression'.'identifier #IdentifierPathExpression
+    | path_expression'[' NUMERIC_LITERAL ']' #NumberPathExpression
+    | path_expression'[' STRING_LITERAL ']' #StringPathExpression
+    | /*epsilon*/ #EpsilonPathExpression
+    ;
 /*--------------------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------------------*/
@@ -62,9 +62,9 @@ order_by_clause : K_ORDER K_BY order_by_items ;
 order_by_items : order_by_item (',' order_by_item)* ;
 order_by_item : scalar_expression sort_order? ;
 sort_order
-	: K_ASC
-	| K_DESC
-	;
+    : K_ASC
+    | K_DESC
+    ;
 /*--------------------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------------------*/
@@ -79,66 +79,66 @@ limit_count : NUMERIC_LITERAL | PARAMETER;
 /* SCALAR EXPRESSIONs */
 /*--------------------------------------------------------------------------------*/
 scalar_expression
-	: scalar_expression '?' scalar_expression ':' scalar_expression #ConditionalScalarExpression
-	| scalar_expression '??' scalar_expression #CoalesceScalarExpression
-	| logical_scalar_expression #LogicalScalarExpression
-	| binary_scalar_expression K_NOT? K_BETWEEN binary_scalar_expression K_AND binary_scalar_expression #BetweenScalarExpression
-	;
+    : scalar_expression '?' scalar_expression ':' scalar_expression #ConditionalScalarExpression
+    | scalar_expression '??' scalar_expression #CoalesceScalarExpression
+    | logical_scalar_expression #LogicalScalarExpression
+    | binary_scalar_expression K_NOT? K_BETWEEN binary_scalar_expression K_AND binary_scalar_expression #BetweenScalarExpression
+    ;
 
 logical_scalar_expression
-	: binary_scalar_expression
-	| in_scalar_expression
-	| like_scalar_expression
-	| logical_scalar_expression K_AND logical_scalar_expression
-	| logical_scalar_expression K_OR logical_scalar_expression
-	;
+    : binary_scalar_expression
+    | in_scalar_expression
+    | like_scalar_expression
+    | logical_scalar_expression K_AND logical_scalar_expression
+    | logical_scalar_expression K_OR logical_scalar_expression
+    ;
 
 in_scalar_expression
-	: binary_scalar_expression K_NOT? K_IN '(' scalar_expression_list ')'
-	;
+    : binary_scalar_expression K_NOT? K_IN '(' scalar_expression_list ')'
+    ;
 
 like_scalar_expression
-	: binary_scalar_expression K_NOT? K_LIKE binary_scalar_expression escape_expression?
-	;
+    : binary_scalar_expression K_NOT? K_LIKE binary_scalar_expression escape_expression?
+    ;
 
 escape_expression
-	: K_ESCAPE STRING_LITERAL
-	;
+    : K_ESCAPE STRING_LITERAL
+    ;
 
 binary_scalar_expression
-	: unary_scalar_expression
-	| binary_scalar_expression multiplicative_operator binary_scalar_expression
-	| binary_scalar_expression additive_operator binary_scalar_expression
-	| binary_scalar_expression relational_operator binary_scalar_expression
-	| binary_scalar_expression equality_operator binary_scalar_expression
-	| binary_scalar_expression bitwise_and_operator binary_scalar_expression
-	| binary_scalar_expression bitwise_exclusive_or_operator binary_scalar_expression
-	| binary_scalar_expression bitwise_inclusive_or_operator binary_scalar_expression
-	| binary_scalar_expression string_concat_operator binary_scalar_expression
-	;
+    : unary_scalar_expression
+    | binary_scalar_expression multiplicative_operator binary_scalar_expression
+    | binary_scalar_expression additive_operator binary_scalar_expression
+    | binary_scalar_expression relational_operator binary_scalar_expression
+    | binary_scalar_expression equality_operator binary_scalar_expression
+    | binary_scalar_expression bitwise_and_operator binary_scalar_expression
+    | binary_scalar_expression bitwise_exclusive_or_operator binary_scalar_expression
+    | binary_scalar_expression bitwise_inclusive_or_operator binary_scalar_expression
+    | binary_scalar_expression string_concat_operator binary_scalar_expression
+    ;
 
 multiplicative_operator
-	: '*' 
-	| '/' 
-	| '%' 
-	;
+    : '*' 
+    | '/' 
+    | '%' 
+    ;
 
 additive_operator
-	: '+' 
-	| '-'
-	;
+    : '+' 
+    | '-'
+    ;
 
 relational_operator
-	: '<'
-	| '>' 
-	| '>=' 
-	| '<='
-	;
+    : '<'
+    | '>' 
+    | '>=' 
+    | '<='
+    ;
 
 equality_operator
-	: '=' 
-	| '!=' 
-	;
+    : '=' 
+    | '!=' 
+    ;
 
 bitwise_and_operator : '&' ;
 
@@ -149,42 +149,55 @@ bitwise_inclusive_or_operator : '|';
 string_concat_operator : '||';
 
 unary_scalar_expression
-	: primary_expression
-	| unary_operator unary_scalar_expression
-	;
+    : primary_expression
+    | unary_operator unary_scalar_expression
+    ;
 
 unary_operator
-	: '-' 
-	| '+' 
-	| '~' 
-	| K_NOT
-	;
+    : '-' 
+    | '+' 
+    | '~' 
+    | K_NOT
+    ;
 
 primary_expression
-	: IDENTIFIER #PropertyRefScalarExpressionBase
-	| PARAMETER #ParameterRefScalarExpression
-	| literal #LiteralScalarExpression
-	| '[' scalar_expression_list? ']' #ArrayCreateScalarExpression
-	| '{' object_property_list? '}' #ObjectCreateScalarExpression
-	| (K_UDF '.')? IDENTIFIER '(' scalar_expression_list? ')' #FunctionCallScalarExpression
-	| '(' scalar_expression ')' #ParenthesizedScalarExperession
-	| '(' sql_query ')' #SubqueryScalarExpression
-	| primary_expression '.' IDENTIFIER #PropertyRefScalarExpressionRecursive
-	| primary_expression '[' scalar_expression  ']' #MemberIndexerScalarExpression
-	| K_EXISTS '(' sql_query ')' #ExistsScalarExpression
-	| K_ARRAY '(' sql_query ')' #ArrayScalarExpression
-	;
+    : identifier #PropertyRefScalarExpressionBase
+    | PARAMETER #ParameterRefScalarExpression
+    | literal #LiteralScalarExpression
+    | '[' scalar_expression_list? ']' #ArrayCreateScalarExpression
+    | '{' object_property_list? '}' #ObjectCreateScalarExpression
+    | '(' scalar_expression ')' #ParenthesizedScalarExperession
+    | '(' sql_query ')' #SubqueryScalarExpression
+    | primary_expression '.' identifier #PropertyRefScalarExpressionRecursive
+    | primary_expression '[' scalar_expression  ']' #MemberIndexerScalarExpression
+    | K_EXISTS '(' sql_query ')' #ExistsScalarExpression
+    | K_ARRAY '(' sql_query ')' #ArrayScalarExpression
+    | K_ALL '(' sql_query ')' #AllScalarExpression
+    | function_call_scalar_expression #FunctionCallScalarExpression
+    ;
+
+function_call_scalar_expression
+    : (K_UDF '.')? identifier '(' scalar_expression_list? ')'
+    | K_LEFT '(' scalar_expression_list? ')'
+    | K_RIGHT '(' scalar_expression_list? ')' 
+    ;
 
 scalar_expression_list : scalar_expression (',' scalar_expression)*;
 
 object_property_list : object_property (',' object_property)* ;
 
 object_property : STRING_LITERAL ':' scalar_expression ;
+
+identifier
+    : LEX_IDENTIFIER
+    | K_ALL
+    ;
 /*--------------------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------------------*/
 /* KEYWORDS */
 /*--------------------------------------------------------------------------------*/
+K_ALL : A L L;
 K_AND : A N D;
 K_ARRAY : A R R A Y;
 K_AS : A S;
@@ -200,6 +213,7 @@ K_FROM : F R O M;
 K_GROUP : G R O U P;
 K_IN : I N ;
 K_JOIN : J O I N;
+K_LEFT : L E F T;
 K_LIKE : L I K E;
 K_LIMIT : L I M I T;
 K_NOT : N O T;
@@ -207,6 +221,7 @@ K_NULL : 'null';
 K_OFFSET : O F F S E T;
 K_OR : O R;
 K_ORDER : O R D E R;
+K_RIGHT : R I G H T;
 K_SELECT : S E L E C T;
 K_TOP : T O P;
 K_TRUE : 'true';
@@ -224,27 +239,27 @@ WS
 /* LITERALS */
 /*--------------------------------------------------------------------------------*/
 literal
-	: STRING_LITERAL
-	| NUMERIC_LITERAL
-	| K_TRUE
-	| K_FALSE
-	| K_NULL
-	| K_UNDEFINED
-	;
+    : STRING_LITERAL
+    | NUMERIC_LITERAL
+    | K_TRUE
+    | K_FALSE
+    | K_NULL
+    | K_UNDEFINED
+    ;
 
 NUMERIC_LITERAL
-	: ( '+' | '-' )? DIGIT+ ( '.' DIGIT* )? ( E [-+]? DIGIT+ )?
-	| ( '+' | '-' )? '.' DIGIT+ ( E [-+]? DIGIT+ )?
-	;
+    : ( '+' | '-' )? DIGIT+ ( '.' DIGIT* )? ( E [-+]? DIGIT+ )?
+    | ( '+' | '-' )? '.' DIGIT+ ( E [-+]? DIGIT+ )?
+    ;
 
 STRING_LITERAL
-	: '"' (ESC | SAFECODEPOINTWITHDOUBLEQUOTATION)* '"'
-	| '\'' (ESC | SAFECODEPOINTWITHSINGLEQUOTATION)* '\''
-	;
+    : '"' (ESC | SAFECODEPOINTWITHDOUBLEQUOTATION)* '"'
+    | '\'' (ESC | SAFECODEPOINTWITHSINGLEQUOTATION)* '\''
+    ;
 
 fragment ESC
-	: '\\' (["\\/bfnrt] | UNICODE)
-	;
+    : '\\' (["\\/bfnrt] | UNICODE)
+    ;
 
 fragment UNICODE
    : 'u' HEX HEX HEX HEX
@@ -255,21 +270,21 @@ fragment HEX
    ;
 
 fragment SAFECODEPOINTWITHSINGLEQUOTATION
-	: ~ ['\\\u0000-\u001F]
-	;
+    : ~ ['\\\u0000-\u001F]
+    ;
 
 fragment SAFECODEPOINTWITHDOUBLEQUOTATION
-	: ~ ["\\\u0000-\u001F]
-	;
+    : ~ ["\\\u0000-\u001F]
+    ;
 
-IDENTIFIER
-	: 
-	| [a-zA-Z_]([a-zA-Z_]|DIGIT)*
-	;
+LEX_IDENTIFIER
+    :
+    | [a-zA-Z_]([a-zA-Z_]|DIGIT)*
+    ;
 
 PARAMETER
-	: '@'IDENTIFIER
-	;
+    : '@'LEX_IDENTIFIER
+    ;
 /*--------------------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------------------*/

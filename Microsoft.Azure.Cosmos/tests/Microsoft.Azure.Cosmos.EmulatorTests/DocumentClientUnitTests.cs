@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void RetryExceedingMaxTimeLimit()
+        public async Task RetryExceedingMaxTimeLimit()
         {
             Mock<IStoreModelExtension> mockStoreModel = new Mock<IStoreModelExtension>();
             mockStoreModel.Setup(model => model.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), default(CancellationToken)))
@@ -52,13 +52,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 RetryOptions = new RetryOptions { MaxRetryAttemptsOnThrottledRequests = 100, MaxRetryWaitTimeInSeconds = 1 }
             };
 
-            DocumentClient client = new DocumentClient(
+            using DocumentClient client = new DocumentClient(
                 new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                 ConfigurationManager.AppSettings["MasterKey"],
                 (HttpMessageHandler)null,
                 connectionPolicy);
 
-            client.GetDatabaseAccountAsync().Wait();
+            await client.GetDatabaseAccountAsync();
 
             int expectedExecutionTimes = 11;
 
@@ -68,11 +68,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 Database db = new Database { Id = "test db 1" };
-                client.CreateDatabaseAsync(db).Wait();
+                await client.CreateDatabaseAsync(db);
             }
-            catch (Exception exp)
+            catch (DocumentClientException docExp)
             {
-                DocumentClientException docExp = exp.InnerException as DocumentClientException;
                 Assert.AreEqual((HttpStatusCode)429, docExp.StatusCode);
                 throttled = true;
             }
@@ -97,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 RetryOptions = new RetryOptions { MaxRetryAttemptsOnThrottledRequests = 100, MaxRetryWaitTimeInSeconds = 1 }
             };
 
-            DocumentClient client = new (
+            using DocumentClient client = new (
                 new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                 ConfigurationManager.AppSettings["MasterKey"],
                 (HttpMessageHandler)null,
@@ -139,13 +138,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 RetryOptions = new RetryOptions { MaxRetryAttemptsOnThrottledRequests = 100, MaxRetryWaitTimeInSeconds = 1 }
             };
 
-            DocumentClient client = new (
+            using DocumentClient client = new (
                 new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                 ConfigurationManager.AppSettings["MasterKey"],
                 (HttpMessageHandler)null,
                 connectionPolicy);
 
-            client.GetDatabaseAccountAsync().Wait();
+            await client.GetDatabaseAccountAsync();
             client.StoreModel = mockStoreModel.Object;
             client.GatewayStoreModel = mockStoreModel.Object;
 
@@ -167,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task QueryPartitionProviderSingletonTestAsync()
         {
-            DocumentClient client = new DocumentClient(
+            using DocumentClient client = new DocumentClient(
                 new Uri(ConfigurationManager.AppSettings["GatewayEndpoint"]),
                 ConfigurationManager.AppSettings["MasterKey"],
                 (HttpMessageHandler)null,

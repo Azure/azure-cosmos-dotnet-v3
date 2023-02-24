@@ -541,7 +541,7 @@ namespace Microsoft.Azure.Cosmos
             // reads always go to read quorum (2) replicas
             int replicaCountToRead = 2;
 
-            IList<StoreResult> result = storeReader.ReadMultipleReplicaAsync(
+            IList<ReferenceCountedDisposable<StoreResult>> result = storeReader.ReadMultipleReplicaAsync(
                     entity,
                     false /*includePrimary*/,
                     replicaCountToRead,

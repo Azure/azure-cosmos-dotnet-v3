@@ -1,7 +1,7 @@
 ﻿<Results>
   <Result>
     <Input>
-      <Description>Null Partition Key Value</Description>
+      <Description>Single Partition Key with Parallel continuation token</Description>
       <Query>SELECT * FROM c</Query>
       <PartitionKeys>
         <Key>/pk</Key>
@@ -14,21 +14,8 @@
   </Result>
   <Result>
     <Input>
-      <Description>None Partition Key Value</Description>
-      <Query>SELECT * FROM c</Query>
-      <PartitionKeys>
-        <Key>/pk</Key>
-      </PartitionKeys>
-      <PartitionKeyType>Hash</PartitionKeyType>
-    </Input>
-    <Output>
-      <ExecuteAsOptimisticDirectExecution>false</ExecuteAsOptimisticDirectExecution>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>C# Null Partition Key Value</Description>
-      <Query>SELECT * FROM c</Query>
+      <Description>Single Partition Key with OrderBy continuation token</Description>
+      <Query>SELECT * FROM c ORDER BY c._ts</Query>
       <PartitionKeys>
         <Key>/pk</Key>
       </PartitionKeys>

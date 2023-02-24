@@ -39,12 +39,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [ClassCleanup]
-        public static void CleanUp()
+        public static async Task CleanUp()
         {
             if (testDb != null)
             {
-                testDb.DeleteStreamAsync().Wait();
+                await testDb.DeleteStreamAsync();
             }
+
+            client?.Dispose();
         }
 
         [TestInitialize]

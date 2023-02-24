@@ -160,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
             bool allowDCount,
+            Cosmos.GeospatialType geospatialType,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -174,6 +175,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount,
+                geospatialType: geospatialType,
                 useSystemPrefix: false);
             if (!tryGetPartitionedQueryExecutionInfo.Succeeded)
             {
