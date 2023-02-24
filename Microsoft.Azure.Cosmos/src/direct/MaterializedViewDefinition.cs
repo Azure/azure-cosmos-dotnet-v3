@@ -26,6 +26,19 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        [JsonProperty(PropertyName = Constants.Properties.SourceCollectionId, NullValueHandling = NullValueHandling.Ignore)]
+        public string SourceCollectionId
+        {
+            get
+            {
+                return base.GetValue<string>(Constants.Properties.SourceCollectionId);
+            }
+            set
+            {
+                this.SetValue(Constants.Properties.SourceCollectionId, value);
+            }
+        }
+
         [JsonProperty(PropertyName = Constants.Properties.Definition)]
         public string Definition
         {

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Documents
 
     internal sealed class AddressInformation : IEquatable<AddressInformation>, IComparable<AddressInformation>
     {
-        private readonly Lazy<int> lazyHashCode;
+        private int? lazyHashCode;
 
         public AddressInformation(
             string physicalUri,
@@ -21,18 +21,6 @@ namespace Microsoft.Azure.Documents
             this.IsPrimary = isPrimary;
             this.Protocol = protocol;
             this.PhysicalUri = physicalUri;
-            this.lazyHashCode = new(() =>
-            {
-                int hashCode = 17;
-                hashCode = (hashCode * 397) ^ Protocol.GetHashCode();
-                hashCode = (hashCode * 397) ^ IsPublic.GetHashCode();
-                hashCode = (hashCode * 397) ^ IsPrimary.GetHashCode();
-                if (this.PhysicalUri != null)
-                {
-                    hashCode = (hashCode * 397) ^ PhysicalUri.GetHashCode();
-                }
-                return hashCode;
-            });
         }
 
         public bool IsPublic { get; }
@@ -79,7 +67,21 @@ namespace Microsoft.Azure.Documents
 
         public override int GetHashCode()
         {
-            return this.lazyHashCode.Value;
+            return this.lazyHashCode ??= Calculate(this);
+
+            static int Calculate(AddressInformation self)
+            {
+                int hashCode = 17;
+                hashCode = (hashCode * 397) ^ self.Protocol.GetHashCode();
+                hashCode = (hashCode * 397) ^ self.IsPublic.GetHashCode();
+                hashCode = (hashCode * 397) ^ self.IsPrimary.GetHashCode();
+                if (self.PhysicalUri != null)
+                {
+                    hashCode = (hashCode * 397) ^ self.PhysicalUri.GetHashCode();
+                }
+
+                return hashCode;
+            }
         }
     }
 }

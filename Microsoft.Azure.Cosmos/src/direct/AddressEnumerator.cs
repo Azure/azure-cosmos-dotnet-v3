@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using static Microsoft.Azure.Documents.HttpConstants;
 
     /// <summary>
     /// AddressEnumerator randomly iterates a list of TransportAddressUris.
@@ -31,7 +32,8 @@ namespace Microsoft.Azure.Documents
         /// This return a random order of the addresses if there are no addresses that failed. Else it moves the failes addresses to the end.
         /// </summary>
         public IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris,
-                                                                      Lazy<HashSet<TransportAddressUri>> failedEndpoints)
+                                                                      Lazy<HashSet<TransportAddressUri>> failedEndpoints,
+                                                                      bool replicaAddressValidationEnabled)
         {
             if (failedEndpoints == null)
             {
@@ -41,10 +43,15 @@ namespace Microsoft.Azure.Documents
             // Get a random Permutation.
             IEnumerable<TransportAddressUri> randomPermutation = this.GetTransportAddresses(transportAddressUris);
 
-            // We move the failed replicas to the end of the list.
-            // This is done to avoid in some cases(like eventual consistency) a retry to the same replica
-            // that had a problem before. With RandomPermuation there is a 25% chance that the retry lands on the same replica.
-            return this.MoveFailedReplicasToTheEnd(randomPermutation, failedEndpoints);
+            // We reorder the replica set with the following rule, to avoid landing on to any unhealthy replica/s:
+            // Scenario 1: When replica validation is enabled, the replicas will be reordered by the preference of
+            // Connected/Unknown > UnhealthyPending > Unhealthy.
+            // Scenario 2: When replica validation is disabled, the replicas will be reordered by the preference of
+            // Connected/Unknown/UnhealthyPending > Unhealthy.
+            return AddressEnumerator.ReorderReplicasByHealthStatus(
+                randomPermutation: randomPermutation,
+                lazyFailedReplicasPerRequest: failedEndpoints,
+                replicaAddressValidationEnabled: replicaAddressValidationEnabled);
         }
 
         /// <summary>
@@ -185,11 +192,22 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        private IEnumerable<TransportAddressUri> MoveFailedReplicasToTheEnd(
+        /// <summary>
+        /// Reorders the replica set to prefer the healthy replicas over the unhealthy ones. When replica address validation
+        /// is enabled, the address enumerator will pick the replicas in the order of their health statuses: Connected/
+        /// Unknown > UnhealthyPending > Unhealthy. When replica address validation is disabled, the address enumerator will
+        /// transition away Unknown/UnhealthyPending replicas and pick the replicas by preferring any of the  Connected/ Unknown
+        /// / UnhealthyPending over the Unhealthy ones.
+        /// </summary>
+        /// <param name="randomPermutation">A list containing the permutation of the replicas.</param>
+        /// <param name="lazyFailedReplicasPerRequest">A lazy set containing the unhealthy replicas.</param>
+        /// <param name="replicaAddressValidationEnabled">A boolean flag indicating if the replica validation is enabled.</param>
+        /// <returns>A list of <see cref="TransportAddressUri"/> ordered by the replica health statuses.</returns>
+        private static IEnumerable<TransportAddressUri> ReorderReplicasByHealthStatus(
             IEnumerable<TransportAddressUri> randomPermutation,
-            Lazy<HashSet<TransportAddressUri>> lazyFailedReplicasPerRequest)
+            Lazy<HashSet<TransportAddressUri>> lazyFailedReplicasPerRequest,
+            bool replicaAddressValidationEnabled)
         {
-            List<TransportAddressUri> failedAddressUris = null;
             HashSet<TransportAddressUri> failedReplicasPerRequest = null;
             if (lazyFailedReplicasPerRequest != null &&
                 lazyFailedReplicasPerRequest.IsValueCreated &&
@@ -198,32 +216,131 @@ namespace Microsoft.Azure.Documents
                 failedReplicasPerRequest = lazyFailedReplicasPerRequest.Value;
             }
 
-            foreach (TransportAddressUri addressUri in randomPermutation)
+            if (!replicaAddressValidationEnabled)
             {
-                if (addressUri.IsUnhealthy()
-                    || (failedReplicasPerRequest != null &&
-                        failedReplicasPerRequest.Contains(addressUri)))
-                {
-                    if(failedAddressUris == null)
-                    {
-                        failedAddressUris = new List<TransportAddressUri>();
-                    }
+                return AddressEnumerator.MoveFailedReplicasToTheEnd(
+                    addresses: randomPermutation,
+                    failedReplicasPerRequest: failedReplicasPerRequest);
+            }
+            else
+            {
+                return AddressEnumerator.ReorderAddressesWhenReplicaValidationEnabled(
+                    addresses: randomPermutation,
+                    failedReplicasPerRequest: failedReplicasPerRequest);
+            }
+        }
 
-                    failedAddressUris.Add(addressUri);
+        /// <summary>
+        /// When replica address validation is enabled, the address enumerator will pick the replicas in the order of their health statuses:
+        /// Connected/Unknown > UnhealthyPending > Unhealthy. The open connection handler will be used to transit away unknown/unhealthy pending status.
+        /// But in case open connection request can not happen/ finish due to any reason, then after some extended time (for example 1 minute),
+        /// the address enumerator will mark Unknown/ Unhealthy pending into Healthy category (please check details of TransportAddressUri.GetEffectiveHealthStatus())
+        /// </summary>
+        /// <param name="addresses">A random list containing all of the replica <see cref="TransportAddressUri"/> addresses.</param>
+        /// <param name="failedReplicasPerRequest">A hash set containing the failed replica addresses.</param>
+        /// <returns>The reordered list of <see cref="TransportAddressUri"/>.</returns>
+        private static IEnumerable<TransportAddressUri> ReorderAddressesWhenReplicaValidationEnabled(
+            IEnumerable<TransportAddressUri> addresses,
+            HashSet<TransportAddressUri> failedReplicasPerRequest)
+        {
+            List<TransportAddressUri> failedReplicas = null, pendingReplicas = null;
+            foreach(TransportAddressUri transportAddressUri in addresses)
+            {
+                TransportAddressHealthState.HealthStatus status = AddressEnumerator.GetEffectiveStatus(
+                    addressUri: transportAddressUri,
+                    failedEndpoints: failedReplicasPerRequest);
+
+                if (status == TransportAddressHealthState.HealthStatus.Connected ||
+                    status == TransportAddressHealthState.HealthStatus.Unknown)
+                {
+                    yield return transportAddressUri;
+                }
+                else if (status == TransportAddressHealthState.HealthStatus.UnhealthyPending)
+                {
+                    pendingReplicas ??= new ();
+                    pendingReplicas.Add(transportAddressUri);
                 }
                 else
                 {
-                    yield return addressUri;
+                    failedReplicas ??= new ();
+                    failedReplicas.Add(transportAddressUri);
                 }
             }
 
-            if (failedAddressUris != null)
+            if (pendingReplicas != null)
             {
-                foreach (TransportAddressUri addressUri in failedAddressUris)
+                foreach (TransportAddressUri transportAddressUri in pendingReplicas)
                 {
-                    yield return addressUri;
+                    yield return transportAddressUri;
                 }
             }
+
+            if(failedReplicas != null)
+            {
+                foreach (TransportAddressUri transportAddressUri in failedReplicas)
+                {
+                    yield return transportAddressUri;
+                }
+            }
+        }
+
+        /// <summary>
+        /// When replica address validation is disabled, the address enumerator will transition away Unknown/UnhealthyPending
+        /// replicas and pick the replicas by preferring any of the Connected/Unknown/UnhealthyPending over Unhealthy. Therefore
+        /// it moves the unhealthy replicas to the end of the replica list.
+        /// </summary>
+        /// <param name="addresses">A random list containing all of the replica <see cref="TransportAddressUri"/> addresses.</param>
+        /// <param name="failedReplicasPerRequest">A hash set containing the failed replica addresses.</param>
+        /// <returns>The reordered list of <see cref="TransportAddressUri"/>.</returns>
+        private static IEnumerable<TransportAddressUri> MoveFailedReplicasToTheEnd(
+            IEnumerable<TransportAddressUri> addresses,
+            HashSet<TransportAddressUri> failedReplicasPerRequest)
+        {
+            List<TransportAddressUri> failedReplicas = null;
+            foreach (TransportAddressUri transportAddressUri in addresses)
+            {
+                TransportAddressHealthState.HealthStatus status = AddressEnumerator.GetEffectiveStatus(
+                    addressUri: transportAddressUri,
+                    failedEndpoints: failedReplicasPerRequest);
+
+                if (status == TransportAddressHealthState.HealthStatus.Connected ||
+                    status == TransportAddressHealthState.HealthStatus.Unknown ||
+                    status == TransportAddressHealthState.HealthStatus.UnhealthyPending)
+                {
+                    yield return transportAddressUri;
+                }
+                else
+                {
+                    failedReplicas ??= new ();
+                    failedReplicas.Add(transportAddressUri);
+                }
+            }
+
+            if (failedReplicas != null)
+            {
+                foreach (TransportAddressUri transportAddressUri in failedReplicas)
+                {
+                    yield return transportAddressUri;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the effective health status of the transport address uri.
+        /// </summary>
+        /// <param name="addressUri">An instance of the <see cref="TransportAddressUri"/> containing the replica address.</param>
+        /// <param name="failedEndpoints">A set containing the failed endpoints.</param>
+        /// <returns>An instance of <see cref="TransportAddressUri.HealthStatus"/> indicating the effective health status of the address.</returns>
+        private static TransportAddressHealthState.HealthStatus GetEffectiveStatus(
+            TransportAddressUri addressUri,
+            HashSet<TransportAddressUri> failedEndpoints)
+        {
+            if (failedEndpoints != null && failedEndpoints.Contains(addressUri))
+            {
+                return TransportAddressHealthState.HealthStatus.Unhealthy;
+            }
+
+            return addressUri.GetEffectiveHealthStatus();
         }
     }
 }

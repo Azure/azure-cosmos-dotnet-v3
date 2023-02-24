@@ -226,6 +226,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
             }
 
+            physicalAddress.SetConnected();
             StoreResponse storeResponse = dispatcherCall.Result;
             TransportClient.GetTransportPerformanceCounters().LogRntbdBytesReceivedCount(resourceOperation.resourceType, resourceOperation.operationType, storeResponse?.ResponseBody?.Length);
             return storeResponse;

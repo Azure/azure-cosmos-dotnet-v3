@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Documents
                 return ResourceManager.GetString("SasTokenAuthDisabled", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to Local Authorization is disabled. Use an AAD token to authorize all requests..
         /// </summary>
@@ -525,6 +525,28 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Cross-tenant CMK is not supported with First Party identities as Default identities. Please use an User Assigned identity instead..
+        /// </summary>
+        internal static string CrossTenantCMKNotSupportedWithFirstPartyIdentity
+        {
+            get
+            {
+                return ResourceManager.GetString("CrossTenantCMKNotSupportedWithFirstPartyIdentity", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Cross-tenant CMK is not supported with System Assigned identities as Default identities. Please use an User Assigned Identity instead..
+        /// </summary>
+        internal static string CrossTenantCMKNotSupportedWithSystemAssignedIdentity
+        {
+            get
+            {
+                return ResourceManager.GetString("CrossTenantCMKNotSupportedWithSystemAssignedIdentity", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Database Account {0} does not exist.
         /// </summary>
         internal static string DatabaseAccountNotFound
@@ -743,7 +765,7 @@ namespace Microsoft.Azure.Documents
                 return ResourceManager.GetString("EnableMultiRegionAndEnableServerlessNotSupported", resourceCulture);
             }
         }
-                
+
         /// <summary>
         ///   Looks up a localized string similar to Restore is not Supported on this account type.
         /// </summary>
@@ -2427,7 +2449,7 @@ namespace Microsoft.Azure.Documents
                 return ResourceManager.GetString("NotFound", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to GraphAPICompute Service cannot be deleted.
         /// </summary>
@@ -3287,6 +3309,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Continuous backup, synapse link, full fidelity change feed and materialized views are currently not supported with cross tenant customer-managed keys features.
+        /// </summary>
+        internal static string CrossTenantCMKDatabaseAccountLogstoreFeaturesNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("CrossTenantCMKDatabaseAccountLogstoreFeaturesNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Network timeout or connectivity failure.
         /// </summary>
         internal static string TimeoutGenerated410
@@ -3583,13 +3616,13 @@ namespace Microsoft.Azure.Documents
                 return ResourceManager.GetString("UnorderedDistinctQueryContinuationToken", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to The requested region &apos;{0}&apos; does not support AZ provisioning yet. Please try other regions or disable zone redundancy for this region..
         /// </summary>
-        internal static string UnsupportedAzRegion 
+        internal static string UnsupportedAzRegion
         {
-            get 
+            get
             {
                 return ResourceManager.GetString("UnsupportedAzRegion", resourceCulture);
             }
@@ -3614,6 +3647,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("UnsupportedCapabilityUpdate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to &quot;{0} capability is not compatible with mongo ServerVersion={1} accounts.&quot;.
+        /// </summary>
+        internal static string UnsupportedCapabilityForServerVersion
+        {
+            get
+            {
+                return ResourceManager.GetString("UnsupportedCapabilityForServerVersion", resourceCulture);
             }
         }
 
@@ -3680,6 +3724,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("UnsupportedKeyType", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The operation is only supported for Serverless accounts, per-partition throughput cannot be updated directly for provisioned accounts.
+        /// </summary>
+        internal static string UnsupportedOfferOperationForProvisionedThroughput
+        {
+            get
+            {
+                return ResourceManager.GetString("UnsupportedOfferOperationForProvisionedThroughput", resourceCulture);
             }
         }
 
@@ -4004,6 +4059,16 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        ///   Looks up a localized string similar to Could not resolve DataTransfer state store account for region [{0}]..
+        /// </summary>
+        internal static string DataTransferStateStoreNotResolved
+        {
+            get
+            {
+                return ResourceManager.GetString("DataTransferStateStoreNotResolved", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Cannot update FreeTier property for existing account..
         /// </summary>
@@ -4223,7 +4288,7 @@ namespace Microsoft.Azure.Documents
                 return ResourceManager.GetString("UnsupportedPartitionDefinitionKindForPartialKeyOperations", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to There cannot be duplicate physical partition ids in x-ms-cosmos-target-partition-throughput-info header..
         /// </summary>
@@ -4234,7 +4299,7 @@ namespace Microsoft.Azure.Documents
                 return ResourceManager.GetString("DuplicatePhysicalPartitionIdInTargetPartitionThroughputInfo", resourceCulture);
             }
         }
-        
+
         /// <summary>
         ///   Looks up a localized string similar to There cannot be duplicate physical partition ids in x-ms-cosmos-source-partition-throughput-info header..
         /// </summary>

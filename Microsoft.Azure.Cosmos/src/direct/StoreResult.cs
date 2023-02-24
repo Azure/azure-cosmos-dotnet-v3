@@ -4,8 +4,10 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
+    using System.Linq;
     using System.Net;
     using System.Runtime.ExceptionServices;
     using System.Text;
@@ -18,7 +20,13 @@ namespace Microsoft.Azure.Documents
 
         private static bool UseSessionTokenHeader = VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.VersionDates.v2018_06_18);
 
-        public static StoreResult CreateStoreResult(StoreResponse storeResponse, Exception responseException, bool requiresValidLsn, bool useLocalLSNBasedHeaders, Uri storePhysicalAddress = null)
+        public static ReferenceCountedDisposable<StoreResult> CreateStoreResult(
+            StoreResponse storeResponse,
+            Exception responseException,
+            bool requiresValidLsn,
+            bool useLocalLSNBasedHeaders,
+            IEnumerable<string> replicaHealthStatuses,
+            Uri storePhysicalAddress = null)
         {
             if (storeResponse == null && responseException == null)
             {
@@ -106,7 +114,7 @@ namespace Microsoft.Azure.Documents
                 storeResponse.TryGetHeaderValue(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, out string backendRequestDurationMilliseconds);
                 storeResponse.TryGetHeaderValue(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfterInMs);
 
-                return new StoreResult(
+                return new ReferenceCountedDisposable<StoreResult>(new StoreResult(
                     storeResponse: storeResponse,
                     exception: null,
                     partitionKeyRangeId: storeResponse.PartitionKeyRangeId,
@@ -125,7 +133,8 @@ namespace Microsoft.Azure.Documents
                     activityId: activityId,
                     backendRequestDurationInMs: backendRequestDurationMilliseconds,
                     retryAfterInMs: retryAfterInMs,
-                    transportRequestStats: storeResponse.TransportRequestStats);
+                    transportRequestStats: storeResponse.TransportRequestStats,
+                    replicaHealthStatuses: replicaHealthStatuses));
             }
             else
             {
@@ -204,7 +213,7 @@ namespace Microsoft.Azure.Documents
                         sessionToken = new SimpleSessionToken(documentClientException.LSN);
                     }
 
-                    return new StoreResult(
+                    return new ReferenceCountedDisposable<StoreResult>(new StoreResult(
                         storeResponse: null,
                         exception: documentClientException,
                         partitionKeyRangeId: documentClientException.PartitionKeyRangeId,
@@ -225,12 +234,13 @@ namespace Microsoft.Azure.Documents
                         activityId: documentClientException.ActivityId,
                         backendRequestDurationInMs: documentClientException.Headers[HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds],
                         retryAfterInMs: documentClientException.Headers[HttpConstants.HttpHeaders.RetryAfterInMilliseconds],
-                        transportRequestStats: documentClientException.TransportRequestStats);
+                        transportRequestStats: documentClientException.TransportRequestStats,
+                        replicaHealthStatuses: replicaHealthStatuses));
                 }
                 else
                 {
                     DefaultTrace.TraceCritical("Unexpected exception {0} received while reading from store.", responseException);
-                    return new StoreResult(
+                    return new ReferenceCountedDisposable<StoreResult>(new StoreResult(
                         storeResponse: null,
                         exception: new InternalServerErrorException(RMResources.InternalServerError, responseException),
                         partitionKeyRangeId: null,
@@ -249,12 +259,77 @@ namespace Microsoft.Azure.Documents
                         activityId: null,
                         backendRequestDurationInMs: null,
                         retryAfterInMs: null,
-                        transportRequestStats: null);
+                        transportRequestStats: null,
+                        replicaHealthStatuses: replicaHealthStatuses));
                 }
             }
         }
 
-        public StoreResult(
+        public static ReferenceCountedDisposable<StoreResult> CreateForTesting(StoreResponse storeResponse)
+        {
+            return new ReferenceCountedDisposable<StoreResult>(
+                new StoreResult(
+                    storeResponse, exception: null, null, default, default, default, default, default, default,
+                    default, default, default, default, default, default, default, default, default, default, default));
+        }
+
+        public static ReferenceCountedDisposable<StoreResult> CreateForTesting(TransportRequestStats transportRequestStats)
+        {
+            return new ReferenceCountedDisposable<StoreResult>(new Documents.StoreResult(
+            storeResponse: new StoreResponse(),
+            exception: null,
+            partitionKeyRangeId: 42.ToString(),
+            lsn: 1337,
+            quorumAckedLsn: 23,
+            requestCharge: 3.14,
+            currentReplicaSetSize: 4,
+            currentWriteQuorum: 3,
+            isValid: true,
+            storePhysicalAddress: new Uri("http://storephysicaladdress.com"),
+            globalCommittedLSN: 1234,
+            numberOfReadRegions: 13,
+            itemLSN: 15,
+            sessionToken: new SimpleSessionToken(42),
+            usingLocalLSN: true,
+            activityId: Guid.Empty.ToString(),
+            backendRequestDurationInMs: "4.2",
+            retryAfterInMs: "9000",
+            transportRequestStats: transportRequestStats,
+            replicaHealthStatuses: new List<string>()
+            {
+                "http://storephysicaladdress-1p.com:Connected",
+                "http://storephysicaladdress-2s.com:Unknown",
+                "http://storephysicaladdress-3s.com:Unhealthy",
+                "http://storephysicaladdress-4s.com:Unknown"
+            }));
+        }
+
+        public static ReferenceCountedDisposable<StoreResult> CreateForTesting(string partitionKeyRangeId)
+        {
+            return new ReferenceCountedDisposable<StoreResult>(new StoreResult(
+                storeResponse: new StoreResponse(),
+                exception: null,
+                partitionKeyRangeId: partitionKeyRangeId,
+                lsn: 0,
+                quorumAckedLsn: 0,
+                requestCharge: 0,
+                currentReplicaSetSize: 0,
+                currentWriteQuorum: 0,
+                isValid: true,
+                storePhysicalAddress: null,
+                globalCommittedLSN: 0,
+                numberOfReadRegions: 0,
+                itemLSN: 0,
+                sessionToken: null,
+                usingLocalLSN: true,
+                activityId: Guid.NewGuid().ToString(),
+                backendRequestDurationInMs: "10",
+                retryAfterInMs: "20",
+                transportRequestStats: new TransportRequestStats(),
+                replicaHealthStatuses: null));
+        }
+
+        private StoreResult(
             StoreResponse storeResponse,
             DocumentClientException exception,
             string partitionKeyRangeId,
@@ -273,7 +348,8 @@ namespace Microsoft.Azure.Documents
             string activityId,
             string backendRequestDurationInMs,
             string retryAfterInMs,
-            TransportRequestStats transportRequestStats)
+            TransportRequestStats transportRequestStats,
+            IEnumerable<string> replicaHealthStatuses)
         {
             if (storeResponse == null && exception == null)
             {
@@ -300,6 +376,7 @@ namespace Microsoft.Azure.Documents
             this.BackendRequestDurationInMs = backendRequestDurationInMs;
             this.RetryAfterInMs = retryAfterInMs;
             this.TransportRequestStats = transportRequestStats;
+            this.ReplicaHealthStatuses = replicaHealthStatuses;
 
             this.StatusCode = (StatusCodes) (this.storeResponse != null ? this.storeResponse.StatusCode :
                 ((this.Exception != null && this.Exception.StatusCode.HasValue) ? this.Exception.StatusCode : 0));
@@ -347,6 +424,8 @@ namespace Microsoft.Azure.Documents
         public string RetryAfterInMs { get; private set; }
 
         public TransportRequestStats TransportRequestStats { get; private set; }
+
+        public IEnumerable<string> ReplicaHealthStatuses { get; private set; }
 
         public DocumentClientException GetException()
         {
@@ -420,6 +499,23 @@ namespace Microsoft.Azure.Documents
                 this.BackendRequestDurationInMs,
                 this.ActivityId,
                 this.RetryAfterInMs);
+
+            if (this.ReplicaHealthStatuses != null && this.ReplicaHealthStatuses.Any())
+            {
+                stringBuilder
+                    .Append(", ReplicaHealthStatuses: [");
+
+                int low = 0, high = this.ReplicaHealthStatuses.Count();
+                foreach(string replicaHealthStatus in this.ReplicaHealthStatuses)
+                {
+                    stringBuilder.Append(replicaHealthStatus);
+                    if(low++ < high-1)
+                    {
+                        stringBuilder.Append(",");
+                    }
+                }
+                stringBuilder.Append("]");
+            }
 
             if (this.TransportRequestStats != null)
             {

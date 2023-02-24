@@ -65,19 +65,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 ChannelOpenTimeline.InvariantString(now));
         }
 
-        // TODO(ovplaton): Delete this function when retiring the old RNTBD stack.
-        public static void LegacyWriteTrace(RntbdConnectionOpenTimers timers)
-        {
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-            ChannelOpenTimeline.TraceFunc?.Invoke(
-                Trace.CorrelationManager.ActivityId,
-                ChannelOpenTimeline.InvariantString(timers.CreationTimestamp),
-                ChannelOpenTimeline.InvariantString(timers.TcpConnectCompleteTimestamp),
-                ChannelOpenTimeline.InvariantString(timers.SslHandshakeCompleteTimestamp),
-                ChannelOpenTimeline.InvariantString(timers.RntbdHandshakeCompleteTimestamp),
-                ChannelOpenTimeline.InvariantString(now));
-        }
-
         public static ConnectionTimerDelegate TraceFunc { get; set; }
 
         private static string InvariantString(DateTimeOffset t)

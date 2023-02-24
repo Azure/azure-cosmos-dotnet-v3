@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
@@ -17,6 +19,7 @@ namespace Microsoft.Azure.Documents
         private readonly IAddressEnumerator addressEnumerator;
         private readonly ISessionContainer sessionContainer;
         private readonly bool canUseLocalLSNBasedHeaders;
+        private readonly bool isReplicaAddressValidationEnabled;
 
         public StoreReader(
             TransportClient transportClient,
@@ -29,6 +32,9 @@ namespace Microsoft.Azure.Documents
             this.addressEnumerator = addressEnumerator ?? throw new ArgumentNullException(nameof(addressEnumerator));
             this.sessionContainer = sessionContainer;
             this.canUseLocalLSNBasedHeaders = VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.Versions.v2018_06_18);
+            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariableAsBool(
+                name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
+                defaultValue: false);
         }
 
         // Test hook
@@ -50,7 +56,7 @@ namespace Microsoft.Azure.Documents
         /// <param name="checkMinLSN"> set minimum required session lsn </param>
         /// <param name="forceReadAll"> reads from all available replicas to gather result from readsToRead number of replicas </param>
         /// <returns> ReadReplicaResult which indicates the LSN and whether Quorum was Met / Not Met etc </returns>
-        public async Task<IList<StoreResult>> ReadMultipleReplicaAsync(
+        public async Task<IList<ReferenceCountedDisposable<StoreResult>>> ReadMultipleReplicaAsync(
             DocumentServiceRequest entity,
             bool includePrimary,
             int replicaCountToRead,
@@ -95,7 +101,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        public async Task<StoreResult> ReadPrimaryAsync(
+        public async Task<ReferenceCountedDisposable<StoreResult>> ReadPrimaryAsync(
             DocumentServiceRequest entity,
             bool requiresValidLsn,
             bool useSessionToken)
@@ -132,7 +138,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        private static StoreResult GetStoreResultOrThrowGoneException(ReadReplicaResult readReplicaResult)
+        private static ReferenceCountedDisposable<StoreResult> GetStoreResultOrThrowGoneException(ReadReplicaResult readReplicaResult)
         {
             StoreResultList storeResultList = readReplicaResult.StoreResultList;
             if (storeResultList.Count == 0)
@@ -166,7 +172,7 @@ namespace Microsoft.Azure.Documents
         {
             entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
-            using StoreResultList storeResultList = new(new List<StoreResult>(replicaCountToRead));
+            using StoreResultList storeResultList = new(new List<ReferenceCountedDisposable<StoreResult>>(replicaCountToRead));
 
             string requestedCollectionRid = entity.RequestContext.ResolvedCollectionRid;
 
@@ -219,10 +225,17 @@ namespace Microsoft.Azure.Documents
             Exception cancellationException = null;
             Exception exceptionToThrow = null;
             SubStatusCodes subStatusCodeForException = SubStatusCodes.Unknown;
-            IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator
-                                                            .GetTransportAddresses(resolveApiResults, 
-                                                                                   entity.RequestContext.FailedEndpoints)
-                                                            .GetEnumerator();
+            IEnumerable<TransportAddressUri> transportAddresses = this.addressEnumerator
+                                                            .GetTransportAddresses(transportAddressUris: resolveApiResults,
+                                                                                   failedEndpoints: entity.RequestContext.FailedEndpoints,
+                                                                                   replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled);
+
+            // The replica health status of the transport address uri will change eventually with the motonically increasing time.
+            // However, the purpose of this list is to capture the health status snapshot at this moment.
+            IEnumerable<string> replicaHealthStatuses = transportAddresses
+                .Select(x => x.GetCurrentHealthState().GetHealthStatusDiagnosticString());
+
+            IEnumerator<TransportAddressUri> uriEnumerator = transportAddresses.GetEnumerator();
 
             // Loop until we have the read quorum number of valid responses or if we have read all the replicas
             while (replicasToRead > 0 && uriEnumerator.MoveNext())
@@ -297,14 +310,15 @@ namespace Microsoft.Azure.Documents
                         continue;
                     }
 
-                    using (DisposableObject<StoreResult> disposableStoreResult = new(StoreResult.CreateStoreResult(
+                    using (ReferenceCountedDisposable<StoreResult> disposableStoreResult = StoreResult.CreateStoreResult(
                         storeResponse,
                         storeException, 
                         requiresValidLsn,
                         this.canUseLocalLSNBasedHeaders && readMode != ReadMode.Strong,
-                        targetUri.Uri)))
+                        replicaHealthStatuses,
+                        targetUri.Uri))
                     {
-                        StoreResult storeResult = disposableStoreResult.Value;
+                        StoreResult storeResult = disposableStoreResult.Target;
                         entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.RequestCharge);
 
                         if (storeResponse != null)
@@ -334,7 +348,7 @@ namespace Microsoft.Azure.Documents
                                 || (storeResult.SessionToken != null && requestSessionToken.IsValid(storeResult.SessionToken))
                                 || (!enforceSessionCheck && storeResult.StatusCode != StatusCodes.NotFound))
                             {
-                                storeResultList.Add(disposableStoreResult.GetValueAndDereference());
+                                storeResultList.Add(disposableStoreResult.TryAddReference());
                             }
                         }
 
@@ -415,8 +429,47 @@ namespace Microsoft.Azure.Documents
             }
 
             DateTime startTimeUtc = DateTime.UtcNow;
-            DateTime? endTimeUtc = null;
-            StoreResult storeResult;
+            StrongBox<DateTime?> endTimeUtc = new ();
+            using ReferenceCountedDisposable<StoreResult> storeResult = await this.GetResult(entity, requiresValidLsn, primaryUri, endTimeUtc);
+            entity.RequestContext.ClientRequestStatistics.RecordResponse(
+                entity,
+                storeResult.Target,
+                startTimeUtc,
+                endTimeUtc.Value ?? DateTime.UtcNow);
+
+            entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.Target.RequestCharge);
+
+            if (storeResult.Target.Exception != null)
+            {
+                StoreResult.VerifyCanContinueOnException(storeResult.Target.Exception);
+            }
+
+            if (storeResult.Target.StatusCode == StatusCodes.Gone && storeResult.Target.SubStatusCode != SubStatusCodes.NameCacheIsStale)
+            {
+                if (isRetryAfterRefresh ||
+                    !entity.RequestContext.PerformLocalRefreshOnGoneException ||
+                    entity.RequestContext.ForceRefreshAddressCache)
+                {
+                    // We can throw the exception if we have already performed an address refresh or if PerformLocalRefreshOnGoneException is false
+                    throw new GoneException(RMResources.Gone, storeResult.Target.SubStatusCode);
+                }
+
+                return new ReadReplicaResult(true, new List<ReferenceCountedDisposable<StoreResult>>());
+            }
+
+            return new ReadReplicaResult(false, new ReferenceCountedDisposable<StoreResult>[] { storeResult.TryAddReference() });
+        }
+
+        private async Task<ReferenceCountedDisposable<StoreResult>> GetResult(DocumentServiceRequest entity, bool requiresValidLsn, TransportAddressUri primaryUri, StrongBox<DateTime?> endTimeUtc)
+        {
+            ReferenceCountedDisposable<StoreResult> storeResult;
+            List<string> primaryReplicaHealthStatus = new ()
+            {
+                primaryUri
+                .GetCurrentHealthState()
+                .GetHealthStatusDiagnosticString(),
+            };
+
             try
             {
                 this.UpdateContinuationTokenIfReadFeedOrQuery(entity);
@@ -424,12 +477,14 @@ namespace Microsoft.Azure.Documents
                     primaryUri,
                     entity);
 
-                endTimeUtc = storeResponseEndTimeUtc;
+                endTimeUtc.Value = DateTime.UtcNow;
+
                 storeResult = StoreResult.CreateStoreResult(
                     storeResponse,
                     null,
                     requiresValidLsn,
                     this.canUseLocalLSNBasedHeaders,
+                    replicaHealthStatuses: primaryReplicaHealthStatus,
                     primaryUri.Uri);
             }
             catch (Exception exception)
@@ -440,37 +495,11 @@ namespace Microsoft.Azure.Documents
                     exception,
                     requiresValidLsn,
                     this.canUseLocalLSNBasedHeaders,
+                    replicaHealthStatuses: primaryReplicaHealthStatus,
                     primaryUri.Uri);
             }
 
-            using DisposableObject<StoreResult> disposableStoreResult = new(storeResult);
-            entity.RequestContext.ClientRequestStatistics.RecordResponse(
-                entity,
-                storeResult,
-                startTimeUtc,
-                endTimeUtc ?? DateTime.UtcNow);
-
-            entity.RequestContext.RequestChargeTracker.AddCharge(storeResult.RequestCharge);
-
-            if (storeResult.Exception != null)
-            {
-                StoreResult.VerifyCanContinueOnException(storeResult.Exception);
-            }
-
-            if (storeResult.StatusCode == StatusCodes.Gone && storeResult.SubStatusCode != SubStatusCodes.NameCacheIsStale)
-            {
-                if (isRetryAfterRefresh ||
-                    !entity.RequestContext.PerformLocalRefreshOnGoneException ||
-                    entity.RequestContext.ForceRefreshAddressCache)
-                {
-                    // We can throw the exception if we have already performed an address refresh or if PerformLocalRefreshOnGoneException is false
-                    throw new GoneException(RMResources.Gone, storeResult.SubStatusCode);
-                }
-
-                return new ReadReplicaResult(true, new List<StoreResult>());
-            }
-
-            return new ReadReplicaResult(false, new StoreResult[] { disposableStoreResult.GetValueAndDereference() });
+            return storeResult;
         }
 
         private async Task<(StoreResponse, DateTime endTime)> ReadFromStoreAsync(
@@ -584,7 +613,7 @@ namespace Microsoft.Azure.Documents
         #region PrivateResultClasses
         private sealed class ReadReplicaResult : IDisposable
         {
-            public ReadReplicaResult(bool retryWithForceRefresh, IList<StoreResult> responses)
+            public ReadReplicaResult(bool retryWithForceRefresh, IList<ReferenceCountedDisposable<StoreResult>> responses)
             {
                 this.RetryWithForceRefresh = retryWithForceRefresh;
                 this.StoreResultList = new(responses);
@@ -605,26 +634,26 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         private class StoreResultList : IDisposable
         {
-            private IList<StoreResult> value;
+            private IList<ReferenceCountedDisposable<StoreResult>> value;
 
-            public StoreResultList(IList<StoreResult> collection)
+            public StoreResultList(IList<ReferenceCountedDisposable<StoreResult>> collection)
             {
                 this.value = collection ?? throw new ArgumentNullException();
             }
 
-            public void Add(StoreResult storeResult)
+            public void Add(ReferenceCountedDisposable<StoreResult> storeResult)
             {
                 this.GetValueOrThrow().Add(storeResult);
             }
 
             public int Count => this.GetValueOrThrow().Count;
 
-            public StoreResult GetFirstStoreResultAndDereference()
+            public ReferenceCountedDisposable<StoreResult> GetFirstStoreResultAndDereference()
             {
-                IList<StoreResult> value = this.GetValueOrThrow();
+                IList<ReferenceCountedDisposable<StoreResult>> value = this.GetValueOrThrow();
                 if (value.Count > 0)
                 {
-                    StoreResult result = this.value[0];
+                    ReferenceCountedDisposable<StoreResult> result = value[0];
                     this.value[0] = null;
                     return result;
                 }
@@ -632,11 +661,11 @@ namespace Microsoft.Azure.Documents
                 return null;
             }
 
-            public IList<StoreResult> GetValue() => this.GetValueOrThrow();
+            public IList<ReferenceCountedDisposable<StoreResult>> GetValue() => this.GetValueOrThrow();
 
-            public IList<StoreResult> GetValueAndDereference()
+            public IList<ReferenceCountedDisposable<StoreResult>> GetValueAndDereference()
             {
-                IList<StoreResult> response = this.GetValueOrThrow();
+                IList<ReferenceCountedDisposable<StoreResult>> response = this.GetValueOrThrow();
                 this.value = null;
                 return response;
             }
@@ -652,7 +681,7 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            private IList<StoreResult> GetValueOrThrow()
+            private IList<ReferenceCountedDisposable<StoreResult>> GetValueOrThrow()
             {
                 if (this.value == null || (this.value.Count > 0 && this.value[0] == null))
                 {
@@ -660,34 +689,6 @@ namespace Microsoft.Azure.Documents
                 }
 
                 return this.value;
-            }
-        }
-
-        /// <summary>
-        /// Wrapper for an object to provide disposal capabilities.
-        /// Best to use within a complex method where object must remain non disposed only in a few outcomes.
-        /// </summary>
-        private struct DisposableObject<T> : IDisposable where T : IDisposable
-        {
-            private T value;
-
-            public DisposableObject(T value)
-            {
-                this.value = value ?? throw new ArgumentNullException();
-            }
-
-            public T Value => this.value ?? throw new InvalidOperationException("Call on the DisposableObject with deferenced object");
-
-            public T GetValueAndDereference()
-            {
-                T response = this.Value;
-                this.value = default;
-                return response;
-            }
-
-            public void Dispose()
-            {
-                this.value?.Dispose();
             }
         }
         #endregion

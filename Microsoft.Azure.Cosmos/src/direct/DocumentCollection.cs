@@ -114,6 +114,8 @@ namespace Microsoft.Azure.Documents
         private ByokConfig byokConfig;
         private ClientEncryptionPolicy clientEncryptionPolicy;
         private Collection<MaterializedViews> materializedViews;
+        private EncryptionScopeMetadata encryptionScopeMetadata;
+        private InAccountRestoreParameters restoreParameters;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentCollection"/> class for the Azure Cosmos DB service.
@@ -176,6 +178,53 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Gets or sets the encryption scope id of the collection.
+        /// </summary>
+        /// <value>
+        /// It is an optional property. This property should be only present when 
+        /// collection level encryption is enabled on the collection.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.EncryptionScopeProperties.EncryptionScopeId)]
+        internal string EncryptionScopeId
+        {
+            get
+            {
+                return base.GetValue<string>(Constants.EncryptionScopeProperties.EncryptionScopeId);
+            }
+            set
+            {
+                this.SetValue(Constants.EncryptionScopeProperties.EncryptionScopeId, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets the <see cref="EncryptionScopeMetadata"/> associated with the collection.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.EncryptionScopeProperties.EncryptionScope)]
+        internal EncryptionScopeMetadata EncryptionScopeMetadata
+        {
+            get
+            {
+                if (this.encryptionScopeMetadata == null)
+                {
+                    this.encryptionScopeMetadata =
+                        base.GetObject<EncryptionScopeMetadata>(
+                            Constants.EncryptionScopeProperties.EncryptionScope) ?? new EncryptionScopeMetadata();
+                }
+
+                return this.encryptionScopeMetadata;
+            }
+            set
+            {
+                this.encryptionScopeMetadata = value;
+                base.SetObject<EncryptionScopeMetadata>(Constants.EncryptionScopeProperties.EncryptionScope, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets the <see cref="MaterializedViewDefinition"/> associated with the collection. 
+        /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.MaterializedViewDefinition)]
         internal MaterializedViewDefinition MaterializedViewDefinition
         {
@@ -822,7 +871,8 @@ namespace Microsoft.Azure.Documents
 
         internal bool IsMaterializedView()
         {
-            return this.MaterializedViewDefinition.SourceCollectionRid != null;
+            return this.MaterializedViewDefinition != null
+                && (!string.IsNullOrEmpty(this.MaterializedViewDefinition.SourceCollectionRid) || !string.IsNullOrEmpty(this.MaterializedViewDefinition.SourceCollectionId));
         }
 
         /// <summary>
@@ -881,6 +931,52 @@ namespace Microsoft.Azure.Documents
             {
                 this.materializedViews = value;
                 base.SetValueCollection<MaterializedViews>(Constants.Properties.MaterializedViews, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="CreateMode"/> for triggering the InAccountRestore of the collection
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// A valid value should be Default or Restore
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.CreateMode, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal DatabaseOrCollectionCreateMode? CreateMode
+        {
+            get
+            {
+                return base.GetValue<DatabaseOrCollectionCreateMode?>(Constants.Properties.CreateMode, null);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.CreateMode, value.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="RestoreParameters"/> for triggering the InAccountRestore of the collection
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// A valid value should have both RestoreSource and RestoreTimestampInUtc
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.RestoreParams, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal InAccountRestoreParameters RestoreParameters
+        {
+            get
+            {
+                if (this.restoreParameters == null)
+                {
+                    this.restoreParameters = base.GetObject<InAccountRestoreParameters>(Constants.Properties.RestoreParams);
+                }
+
+                return this.restoreParameters;
+            }
+            set
+            {
+                this.restoreParameters = value;
+                base.SetObject<InAccountRestoreParameters>(Constants.Properties.RestoreParams, value);
             }
         }
 
@@ -960,6 +1056,18 @@ namespace Microsoft.Azure.Documents
             if (this.materializedViews != null)
             {
                 base.SetValueCollection<MaterializedViews>(Constants.Properties.MaterializedViews, this.materializedViews);
+            }
+
+            if (this.restoreParameters != null)
+            {
+                base.SetObject(Constants.Properties.RestoreParams, this.restoreParameters);
+            }
+
+            // todo(Mukum): remove the encryptionscopeId check once backend contract is checked in.
+            if (this.encryptionScopeMetadata != null && !string.IsNullOrWhiteSpace(this.encryptionScopeMetadata.Id))
+            {
+                this.encryptionScopeMetadata.OnSave();
+                base.SetObject<EncryptionScopeMetadata>(Constants.EncryptionScopeProperties.EncryptionScope, this.encryptionScopeMetadata);
             }
         }
     }

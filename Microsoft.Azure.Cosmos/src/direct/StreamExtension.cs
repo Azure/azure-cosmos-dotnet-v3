@@ -60,17 +60,24 @@ namespace Microsoft.Azure.Documents
         }
 
 #if NETFX45 || NETSTANDARD15 || NETSTANDARD16
-        public static Task<CloneableStream> AsClonableStreamAsync(Stream mediaStream)
+        public static Task<CloneableStream> AsClonableStreamAsync(Stream mediaStream, bool allowUnsafeDataAccess = true)
         {
             return StreamExtension.CopyStreamAndReturnAsync(mediaStream);
         }
 #else
-        public static Task<CloneableStream> AsClonableStreamAsync(Stream mediaStream)
+        public static Task<CloneableStream> AsClonableStreamAsync(Stream mediaStream, bool allowUnsafeDataAccess = true)
         {
             MemoryStream memoryStream = mediaStream as MemoryStream;
-            if (memoryStream != null && memoryStream.TryGetBuffer(out ArraySegment<byte> buffer))
+            if (memoryStream != null)
             {
-                return Task.FromResult(new CloneableStream(memoryStream));
+                if (memoryStream is ICloneable cloneableStream)
+                {
+                    return Task.FromResult(new CloneableStream((MemoryStream)cloneableStream.Clone(), allowUnsafeDataAccess));
+                }
+                else if (allowUnsafeDataAccess && memoryStream.TryGetBuffer(out ArraySegment<byte> buffer))
+                {
+                    return Task.FromResult(new CloneableStream(memoryStream, allowUnsafeDataAccess));
+                }
             }
 
             return StreamExtension.CopyStreamAndReturnAsync(mediaStream);

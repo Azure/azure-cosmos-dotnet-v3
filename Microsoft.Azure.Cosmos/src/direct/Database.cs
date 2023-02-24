@@ -61,13 +61,15 @@ namespace Microsoft.Azure.Documents
 #endif
     class Database : Resource
     {
+        private InAccountRestoreParameters restoreParameters;
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="Database"/> class for the Azure Cosmos DB service.
         /// </summary>
         public Database()
         {
 
-        }   
+        }
 
         /// <summary>
         /// Gets the self-link for collections from the Azure Cosmos DB service.
@@ -131,9 +133,64 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Gets or sets the <see cref="CreateMode"/> for triggering the InAccountRestore of the database
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// A valid value should be Default or Restore
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.CreateMode, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal DatabaseOrCollectionCreateMode? CreateMode
+        {
+            get
+            {
+                return base.GetValue<DatabaseOrCollectionCreateMode?>(Constants.Properties.CreateMode, null);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.CreateMode, value.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="RestoreParameters"/> for triggering the InAccountRestore of the database
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// A valid value should have both RestoreSource and RestoreTimestampInUtc
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.RestoreParams, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal InAccountRestoreParameters RestoreParameters
+        {
+            get
+            {
+                if (this.restoreParameters == null)
+                {
+                    this.restoreParameters = base.GetObject<InAccountRestoreParameters>(Constants.Properties.RestoreParams);
+                }
+
+                return this.restoreParameters;
+            }
+            set
+            {
+                this.restoreParameters = value;
+                base.SetObject<InAccountRestoreParameters>(Constants.Properties.RestoreParams, value);
+            }
+        }
+
         internal override void Validate()
         {
             base.Validate();
+        }
+
+        internal override void OnSave()
+        {
+            if (this.restoreParameters != null)
+            {
+                this.restoreParameters.OnSave();
+                base.SetObject(Constants.Properties.RestoreParams, this.restoreParameters);
+            }
         }
     }
 }

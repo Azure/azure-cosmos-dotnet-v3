@@ -24,6 +24,12 @@ namespace Microsoft.Azure.Documents
 
         }
 
+        public InternalServerErrorException(string message, SubStatusCodes subStatusCode)
+            : base(message, statusCode: HttpStatusCode.InternalServerError, subStatusCode: subStatusCode)
+        {
+
+        }
+
         public InternalServerErrorException(string message, Uri requestUri = null)
             : this(message, null, null, requestUri)
         {
