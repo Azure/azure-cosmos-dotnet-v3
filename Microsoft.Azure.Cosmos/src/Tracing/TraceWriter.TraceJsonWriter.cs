@@ -46,10 +46,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 if (isRootTrace)
                 {
-                    writer.WriteFieldName("start date");
-                    writer.WriteStringValue(trace.StartTime.ToString(TraceWriter.DateFormatString));
-                    writer.WriteFieldName("start time");
-                    writer.WriteStringValue(trace.StartTime.ToString(TraceWriter.HourTimeFormatString));
+                    writer.WriteFieldName("start datetime");
+                    writer.WriteStringValue(trace.StartTime.ToString(TraceWriter.DateTimeFormatString));
                 }
                 writer.WriteFieldName("duration in milliseconds");
                 writer.WriteNumber64Value(trace.Duration.TotalMilliseconds);
