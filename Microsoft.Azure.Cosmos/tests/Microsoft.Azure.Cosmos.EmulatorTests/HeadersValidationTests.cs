@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -378,7 +379,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private void SupportedSerializationFormatsPositiveCases(
             DocumentClient client,
             DocumentCollection collection,
-            bool expectedResultIsBinary,
+            SupportedSerializationFormats expectedFormat,
             string supportedSerializationFormats,
             string contentSerializationFormats,
             SqlQuerySpec sqlQuerySpec = null)
@@ -397,19 +398,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                Assert.IsFalse(expectedResultIsBinary, "ReadFeed response should be in Text");
+                Assert.IsTrue(expectedFormat == SupportedSerializationFormats.JsonText, "ReadFeed response should be in Text");
                 response = this.ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
             }
 
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
             
-            if(!expectedResultIsBinary)
+            if(expectedFormat == SupportedSerializationFormats.JsonText)
             {
-                Assert.IsTrue(response.ResponseBody.ReadByte() < BinarySerializationByteMarkValue);
+                Assert.IsTrue(this.CheckSerializationFormat(response) == JsonSerializationFormat.Text);
             }
             else
             {
-                Assert.IsTrue(response.ResponseBody.ReadByte() == BinarySerializationByteMarkValue);
+                Assert.IsTrue(this.CheckSerializationFormat(response) == JsonSerializationFormat.Binary);
             }
         }
 
@@ -419,9 +420,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.SupportedSerializationFormatsNegativeCases(client, collection, "Invalid value");
 
             // Supported values
-            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedResultIsBinary: false, supportedSerializationFormats: "JSONText", contentSerializationFormats: null);
-            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedResultIsBinary: false, supportedSerializationFormats: "COSMOSbinary", contentSerializationFormats: null);
-            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedResultIsBinary: false, supportedSerializationFormats: "JsonText, CosmosBinary", contentSerializationFormats: null);
+            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedFormat: SupportedSerializationFormats.JsonText, supportedSerializationFormats: "JSONText", contentSerializationFormats: null);
+            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedFormat: SupportedSerializationFormats.JsonText, supportedSerializationFormats: "COSMOSbinary", contentSerializationFormats: null);
+            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedFormat: SupportedSerializationFormats.JsonText, supportedSerializationFormats: "JsonText, CosmosBinary", contentSerializationFormats: null);
         }
 
         private void ValidateSupportedSerializationFormatsQuery(DocumentClient client, DocumentCollection collection, SqlQuerySpec sqlQuerySpec)
@@ -438,40 +439,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Supported values
             this.SupportedSerializationFormatsPositiveCases(client, collection,
-                expectedResultIsBinary: false,
+                expectedFormat: SupportedSerializationFormats.JsonText,
                 supportedSerializationFormats: "jsontext",
                 contentSerializationFormats: null,
                 sqlQuerySpec: sqlQuerySpec);
             this.SupportedSerializationFormatsPositiveCases(client, collection,
-                expectedResultIsBinary: true,
+                expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "COSMOSBINARY",
                 contentSerializationFormats: null,
                 sqlQuerySpec: sqlQuerySpec);
             this.SupportedSerializationFormatsPositiveCases(client, collection,
-                expectedResultIsBinary: false,
+                expectedFormat: SupportedSerializationFormats.JsonText,
                 supportedSerializationFormats: "JsonText, CosmosBinary",
                 contentSerializationFormats: null,
                 sqlQuerySpec: sqlQuerySpec);
             this.SupportedSerializationFormatsPositiveCases(client, collection,
-                expectedResultIsBinary: true,
+                expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "CosmosBinary, HybridRow",
                 contentSerializationFormats: null,
                 sqlQuerySpec: sqlQuerySpec);
             this.SupportedSerializationFormatsPositiveCases(client, collection,
-                expectedResultIsBinary: false,
+                expectedFormat: SupportedSerializationFormats.JsonText,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
                 contentSerializationFormats: null,
                 sqlQuerySpec: sqlQuerySpec);
             this.SupportedSerializationFormatsPositiveCases(client, collection,
-                expectedResultIsBinary: true,
+                expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
                 contentSerializationFormats: "CosmosBinary",
                 sqlQuerySpec: sqlQuerySpec);
             this.SupportedSerializationFormatsPositiveCases(client, collection,
-                expectedResultIsBinary: false,
+                expectedFormat: SupportedSerializationFormats.JsonText,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
                 contentSerializationFormats: "JsonText",
                 sqlQuerySpec: sqlQuerySpec);
+        }
+
+        private JsonSerializationFormat CheckSerializationFormat(DocumentServiceResponse response)
+        {
+            if(response.ResponseBody.ReadByte() < BinarySerializationByteMarkValue)
+            {
+                return JsonSerializationFormat.Text;
+            }
+            else
+            {
+                return JsonSerializationFormat.Binary;
+            }
         }
 
         [TestMethod]

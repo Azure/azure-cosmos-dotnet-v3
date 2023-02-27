@@ -358,6 +358,14 @@ namespace Microsoft.Azure.Cosmos
         public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
+        /// Gets or sets the SupportedSerializationFormats for the feed (query/read feed) operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// Default value of 'JsonText, CosmosBinary' will be passed if null. The backend will choose the best suited format for the response.
+        /// </remarks>
+        public SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
+
+        /// <summary>
         /// Gets or sets the flag that tells the backend to forces the query to perform a scan (at a request level).
         /// </summary>
         internal bool ForceQueryScan { get; set; }
@@ -405,14 +413,6 @@ namespace Microsoft.Azure.Cosmos
         /// If the document is stored in a different serialization format then the one requested, then there will be a rewrite over the wire, but the source document will be untouched.
         /// </remarks>
         internal ContentSerializationFormat? ContentSerializationFormat { get; set; }
-
-        /// <summary>
-        /// Gets or sets the SupportedSerializationFormats for the feed (query/read feed) operation in the Azure Cosmos DB service.
-        /// </summary>
-        /// <remarks>
-        /// Serialization format for the response is selected based on the values requested and the serialization format the document is stored in.
-        /// </remarks>
-        internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
 
         internal bool EnableGroupBy { get; set; }
 

@@ -47,27 +47,27 @@
             {
                 new QueryRequestOptions()
                 {
-                SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow
+                    SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow
                 },
                 new QueryRequestOptions()
                 {
-                SupportedSerializationFormats = SupportedSerializationFormats.JsonText | SupportedSerializationFormats.CosmosBinary
+                    SupportedSerializationFormats = SupportedSerializationFormats.JsonText | SupportedSerializationFormats.CosmosBinary
                 },
                 new QueryRequestOptions()
                 {
-                SupportedSerializationFormats = SupportedSerializationFormats.JsonText | SupportedSerializationFormats.HybridRow
+                    SupportedSerializationFormats = SupportedSerializationFormats.JsonText | SupportedSerializationFormats.HybridRow
                 },
                 new QueryRequestOptions()
                 {
-                SupportedSerializationFormats = SupportedSerializationFormats.JsonText | SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow
+                    SupportedSerializationFormats = SupportedSerializationFormats.JsonText | SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow
                 },
                 new QueryRequestOptions()
                 {
-                SupportedSerializationFormats = SupportedSerializationFormats.JsonText
+                    SupportedSerializationFormats = SupportedSerializationFormats.JsonText
                 },
                 new QueryRequestOptions()
                 {
-                SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary
+                    SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary
                 }
             };
 
