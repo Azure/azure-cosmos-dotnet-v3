@@ -6,15 +6,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net.Http;
     using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
     internal static class ClientTelemetryHelper
@@ -93,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 OperationInfo payloadForLatency = entry.Key;
                 payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
                 payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
-
+                
                 payloadWithMetricInformation.Add(payloadForLatency);
 
                 OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
@@ -103,7 +100,35 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 payloadWithMetricInformation.Add(payloadForRequestCharge);
             }
 
-            DefaultTrace.TraceInformation("Aggregating operation information to list done");
+            DefaultTrace.TraceVerbose("Aggregating operation information to list done");
+
+            return payloadWithMetricInformation;
+        }
+
+        /// <summary>
+        /// Convert map with request information to list of operations along with request latency and request charge metrics
+        /// </summary>
+        /// <param name="metrics"></param>
+        /// <returns>Collection of ReportPayload</returns>
+        internal static List<RequestInfo> ToListWithMetricsInfo(
+                IDictionary<RequestInfo,
+                LongConcurrentHistogram> metrics)
+        {
+            DefaultTrace.TraceVerbose("Aggregating RequestInfo information to list started");
+
+            List<RequestInfo> payloadWithMetricInformation = new List<RequestInfo>();
+            foreach (KeyValuePair<RequestInfo, LongConcurrentHistogram> entry in metrics)
+            {
+                MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
+                metricInfo.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
+                
+                RequestInfo payloadForLatency = entry.Key;
+                payloadForLatency.Metrics.Add(metricInfo);
+              
+                payloadWithMetricInformation.Add(payloadForLatency);
+            }
+
+            DefaultTrace.TraceVerbose("Aggregating RequestInfo information to list done");
 
             return payloadWithMetricInformation;
         }
