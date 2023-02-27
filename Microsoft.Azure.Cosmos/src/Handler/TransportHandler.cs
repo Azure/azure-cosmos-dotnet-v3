@@ -9,7 +9,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -24,15 +26,23 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
+        private readonly DiagnosticScopeFactory factory = new DiagnosticScopeFactory(OpenTelemetryAttributeKeys.DiagnosticNamespace,
+                         OpenTelemetryAttributeKeys.ResourceProviderNamespace,
+                         true);
+
         public override async Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
             try
             {
+                using DiagnosticScope scope = this.factory
+                   .CreateScope(name: $"Request.Test");
+
+                scope.Start();
                 ResponseMessage response = await this.ProcessMessageAsync(request, cancellationToken);
                 Debug.Assert(System.Diagnostics.Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
-
+                
                 return response;
             }
             //catch DocumentClientException and exceptions that inherit it. Other exception types happen before a backend request

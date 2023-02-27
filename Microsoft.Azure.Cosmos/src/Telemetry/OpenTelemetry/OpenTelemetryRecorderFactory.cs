@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
+    using System.Diagnostics;
     using global::Azure.Core.Pipeline;
 
     /// <summary>
@@ -47,6 +48,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         operationType: operationType,
                         clientContext: clientContext,
                         config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
+                }
+                else
+                {
+                    DiagnosticScope scope1 = OpenTelemetryRecorderFactory
+                   .ScopeFactory
+                   .CreateScope(name: $"Request.{operationName}");
+
+                    if (scope1.IsEnabled)
+                    {
+                        return new OpenTelemetryCoreRecorder(
+                                       scope: scope);
+
+                    }
+                    else
+                    {
+                        return new OpenTelemetryCoreRecorder(operationName);
+                    }
                 }
             }
 

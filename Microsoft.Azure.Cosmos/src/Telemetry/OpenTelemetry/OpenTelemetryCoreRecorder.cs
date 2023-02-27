@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using global::Azure.Core.Pipeline;
 
     /// <summary>
@@ -15,10 +16,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private const string CosmosDb = "cosmosdb";
         
-        private readonly DiagnosticScope scope;
-        private readonly DistributedTracingOptions config;
+        private readonly DiagnosticScope scope = default;
+        private readonly DistributedTracingOptions config = null;
+        private readonly Activity activity = null;
 
-        private readonly Documents.OperationType operationType;
+        private readonly Documents.OperationType operationType = Documents.OperationType.Invalid;
         private OpenTelemetryAttributes response = null;
 
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> OTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
@@ -29,6 +31,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             { typeof(CosmosException), (exception, scope) => CosmosException.RecordOtelAttributes((CosmosException)exception, scope)},
             { typeof(ChangeFeedProcessorUserException), (exception, scope) => ChangeFeedProcessorUserException.RecordOtelAttributes((ChangeFeedProcessorUserException)exception, scope)}
         };
+
+        public OpenTelemetryCoreRecorder(DiagnosticScope scope)
+        {
+            this.scope = scope;
+            this.scope.Start();
+        }
+
+        public OpenTelemetryCoreRecorder(string operationName)
+        {
+            this.activity = new Activity(operationName);
+
+            this.activity.Start();
+        }
 
         public OpenTelemetryCoreRecorder(
             DiagnosticScope scope,
@@ -154,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.scope.IsEnabled)
             {
-                Documents.OperationType operationType 
+                /*Documents.OperationType operationType 
                     = (this.response == null || this.response?.OperationType == Documents.OperationType.Invalid) ? this.operationType : this.response.OperationType;
 
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationType);
@@ -175,9 +190,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(this.response.Diagnostics.GetContactedRegions()));
                         CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, operationType, this.response);
                     }
-                }
+                }*/
 
                 this.scope.Dispose();
+            }
+            else
+            {
+                this.activity.Stop();
             }
         }
     }
