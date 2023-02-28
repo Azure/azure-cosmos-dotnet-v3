@@ -202,7 +202,7 @@
                     expectedPipelineType: TestInjections.PipelineType.Specialized)
             };
 
-            List<string> documents = CreateDocuments(NumberOfDocuments, PartitionKeyField, NumberField, NullField);
+            IReadOnlyList<string> documents = CreateDocuments(NumberOfDocuments, PartitionKeyField, NumberField, NullField);
 
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
@@ -286,7 +286,7 @@
                     expectedPipelineType: TestInjections.PipelineType.Specialized),
             };
 
-            List<string> documents = CreateDocuments(documentCount, PartitionKeyField, NumberField, NullField);
+            IReadOnlyList<string> documents = CreateDocuments(documentCount, PartitionKeyField, NumberField, NullField);
 
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
@@ -299,7 +299,7 @@
         [TestMethod]
         public async Task TestFailingOptimisticDirectExecutionOutput()
         {
-            List<string> documents = CreateDocuments(NumberOfDocuments, PartitionKeyField, NumberField, NullField);
+            IReadOnlyList<string> documents = CreateDocuments(NumberOfDocuments, PartitionKeyField, NumberField, NullField);
 
             // check if bad continuation queries and syntax error queries are handled by pipeline
             IDictionary<string, string> invalidQueries = new Dictionary<string, string>
@@ -375,7 +375,7 @@
             }
         }
 
-        private static List<string> CreateDocuments(int documentCount, string partitionKey, string numberField, string nullField)
+        private static IReadOnlyList<string> CreateDocuments(int documentCount, string partitionKey, string numberField, string nullField)
         {
             List<string> documents = new List<string>(documentCount);
             for (int i = 0; i < documentCount; ++i)
