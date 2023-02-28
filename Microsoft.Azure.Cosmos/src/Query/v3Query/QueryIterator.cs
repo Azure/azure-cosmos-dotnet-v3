@@ -131,6 +131,12 @@ namespace Microsoft.Azure.Cosmos.Query
                     throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {queryRequestOptions.ExecutionEnvironment.Value}.");
             }
 
+            // Documents.PartitionKeyInternal has a broken contract for GetEffectivePartitionKeyString. It should return an optional instead of string
+            // Until this is fixed, we need to explicitly handle PartitionKey.None
+            PartitionKey? partitionKey = (queryRequestOptions.PartitionKey.HasValue && !queryRequestOptions.PartitionKey.Value.IsNone) ?
+                queryRequestOptions.PartitionKey.Value :
+                null;
+
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: sqlQuerySpec,
                 initialUserContinuationToken: requestContinuationToken,
@@ -138,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 maxConcurrency: queryRequestOptions.MaxConcurrency,
                 maxItemCount: queryRequestOptions.MaxItemCount,
                 maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
-                partitionKey: queryRequestOptions.PartitionKey,
+                partitionKey: partitionKey,
                 properties: queryRequestOptions.Properties,
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 executionEnvironment: queryRequestOptions.ExecutionEnvironment,
