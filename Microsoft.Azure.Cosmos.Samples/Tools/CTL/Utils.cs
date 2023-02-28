@@ -187,7 +187,7 @@ namespace CosmosCTL
 
             if ((bool)config.EnableConsoleLogging)
             {
-                logger.LogInformation($"{operationName};{DateTime.UtcNow.ToString("MM/dd/yyyy HH:mm:ss.fff", CultureInfo.InvariantCulture)};{cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds};{diagnostics}");
+                logger.LogInformation($"{operationName};{DateTime.UtcNow.ToString("MM/dd/yyyy HH:mm:ss.fff", CultureInfo.InvariantCulture)};{cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds};{diagnostics};");
             }
         }
 
