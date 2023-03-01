@@ -43,9 +43,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.NonPartitioned,
+                CollectionTypes.NonPartitioned | CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
-                ImplementationAsync);
+                ImplementationAsync,
+                "/undefinedPartitionKey");
         }
 
         private static IReadOnlyList<string> CreateDocuments(int documentCount)
