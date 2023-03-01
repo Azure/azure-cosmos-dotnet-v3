@@ -20,8 +20,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System.Threading;
     using System.Net;
     using System.Collections.Concurrent;
-    using System.Security.AccessControl;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
@@ -258,6 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 clientTelemetryProperties,
                 operationInfoSnapshot,
                 cacheRefreshInfoSnapshot, 
+                null,
                 new CancellationToken());
         }
         

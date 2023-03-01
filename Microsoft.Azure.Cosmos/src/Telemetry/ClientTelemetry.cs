@@ -186,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                 clientTelemetryInfo: this.clientTelemetryInfo,
                                 operationInfoSnapshot: operationInfoSnapshot,
                                 cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
+                                requestInfoSnapshot: requestInfoSnapshot,
                                 cancellationToken: this.cancellationTokenSource.Token)
                         .ContinueWith((t) =>
                         {

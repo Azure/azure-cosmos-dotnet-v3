@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using Microsoft.Azure.Cosmos.Telemetry.Resolver;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
@@ -37,9 +36,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ClientTelemetryProperties clientTelemetryInfo, 
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
+            ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
             CancellationToken cancellationToken)
         {
-            return Task.Run(async () => await this.GenerateOptimalSizeOfPayloadAndSendAsync(clientTelemetryInfo, operationInfoSnapshot, cacheRefreshInfoSnapshot, cancellationToken), cancellationToken);
+            return Task.Run(async () => 
+            await this.GenerateOptimalSizeOfPayloadAndSendAsync(
+                clientTelemetryInfo, 
+                operationInfoSnapshot, 
+                cacheRefreshInfoSnapshot,
+                requestInfoSnapshot,
+                cancellationToken), cancellationToken);
         }
 
         /// <summary>
@@ -51,16 +57,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="clientTelemetryInfo"></param>
         /// <param name="operationInfoSnapshot"></param>
         /// <param name="cacheRefreshInfoSnapshot"></param>
+        /// <param name="requestInfoSnapshot"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>void</returns>
         internal async Task GenerateOptimalSizeOfPayloadAndSendAsync(ClientTelemetryProperties clientTelemetryInfo,
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
+            ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
             CancellationToken cancellationToken)
         {
             clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
             clientTelemetryInfo.CacheRefreshInfo = ClientTelemetryHelper.ToListWithMetricsInfo(cacheRefreshInfoSnapshot);
-
+            clientTelemetryInfo.RequestInfo = ClientTelemetryHelper.ToListWithMetricsInfo(requestInfoSnapshot);
+            
             JsonSerializerSettings settings = ClientTelemetryOptions.JsonSerializerSettings;
             string json = JsonConvert.SerializeObject(clientTelemetryInfo, settings);
 

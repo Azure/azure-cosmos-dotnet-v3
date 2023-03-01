@@ -94,10 +94,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             NullValueHandling = NullValueHandling.Ignore,
             MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
         };
-
-<<<<<<< HEAD
+        
         private static readonly List<int> ExcludedStatusCodes = new List<int> { 404, 409 };
-=======
         internal static readonly HashSet<string> PropertiesContainMetrics = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "OperationInfo", "CacheRefreshInfo" };
 
         internal static int PayloadSizeThreshold = 1024 * 1024 * 2; // 2MB
@@ -106,7 +104,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             { "OperationInfo", 1000 },
             { "CacheRefreshInfo", 2000 }
         };
->>>>>>> a90849a15 (first draft)
         
         private static Uri clientTelemetryEndpoint;
         private static string environmentName;
