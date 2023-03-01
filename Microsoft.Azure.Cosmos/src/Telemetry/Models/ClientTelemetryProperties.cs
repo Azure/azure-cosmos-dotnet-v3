@@ -60,6 +60,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         [JsonProperty(PropertyName = "operationInfo")]
         internal List<OperationInfo> OperationInfo { get; set; }
 
+        [JsonProperty(PropertyName = "requestInfo")]
+        internal List<RequestInfo> RequestInfo { get; set; }
+
         [JsonIgnore]
         internal bool IsDirectConnectionMode { get; }
 
@@ -97,6 +100,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             List<SystemInfo> systemInfo,
             List<CacheRefreshInfo> cacheRefreshInfo,
             List<OperationInfo> operationInfo,
+            List<RequestInfo> requestInfo,
             string machineId)
         {
             this.DateTimeUtc = dateTimeUtc;
@@ -111,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             this.SystemInfo = systemInfo;
             this.CacheRefreshInfo = cacheRefreshInfo;
             this.OperationInfo = operationInfo;
+            this.RequestInfo = requestInfo;
             this.PreferredRegions = preferredRegions;
             this.MachineId = machineId;
         }
