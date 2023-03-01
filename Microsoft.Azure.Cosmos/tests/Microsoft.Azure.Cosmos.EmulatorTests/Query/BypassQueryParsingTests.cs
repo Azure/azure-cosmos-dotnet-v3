@@ -10,8 +10,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     [TestCategory("Query")]
     public sealed class BypassQueryParsingTests : QueryTestsBase
     {
-        private const string PartitionKeyField = "key";
-
         [TestMethod]
         public async Task TestBypassQueryParsingWithNonePartitionKey()
         {
@@ -41,22 +39,21 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 Assert.IsTrue(expected.SequenceEqual(actual));
             }
 
-            IReadOnlyList<string> documents = CreateSinglePartitionDocuments(documentCount);
+            IReadOnlyList<string> documents = CreateDocuments(documentCount);
 
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                CollectionTypes.NonPartitioned,
                 documents,
-                ImplementationAsync,
-                "/" + PartitionKeyField);
+                ImplementationAsync);
         }
 
-        private static IReadOnlyList<string> CreateSinglePartitionDocuments(int documentCount)
+        private static IReadOnlyList<string> CreateDocuments(int documentCount)
         {
             List<string> documents = new List<string>(documentCount);
             for (int i = 0; i < documentCount; ++i)
             {
-                string document = $@"{{ {PartitionKeyField}: ""/value"", ""numberField"": {i}, ""nullField"": null }}";
+                string document = $@"{{ ""numberField"": {i}, ""nullField"": null }}";
                 documents.Add(document);
             }
 

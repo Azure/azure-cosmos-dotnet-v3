@@ -28,6 +28,7 @@
         [TestMethod]
         public async Task TestPassingOptimisticDirectExecutionQueries()
         {
+            IReadOnlyList<int> empty = new List<int>(0);
             IReadOnlyList<int> first5Integers = Enumerable.Range(0, 5).ToList();
             IReadOnlyList<int> first7Integers = Enumerable.Range(0, NumberOfDocuments).ToList();
             IReadOnlyList<int> first7IntegersReversed = Enumerable.Range(0, NumberOfDocuments).Reverse().ToList();
@@ -45,7 +46,7 @@
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
-                    expectedResult: first5Integers,
+                    expectedResult: empty,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
@@ -68,7 +69,7 @@
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
-                    expectedResult: first7Integers,
+                    expectedResult: empty,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
@@ -91,7 +92,7 @@
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
-                    expectedResult: first7IntegersReversed,
+                    expectedResult: empty,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
@@ -114,7 +115,7 @@
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r GROUP BY r.{NumberField}",
-                    expectedResult: first5Integers,
+                    expectedResult: empty,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.GroupByPageSizeOptions,
@@ -137,7 +138,7 @@
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
-                    expectedResult: new List<int> { 1 },
+                    expectedResult: empty,
                     partitionKey: PartitionKey.None,
                     pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
                     enableOptimisticDirectExecution: true,
@@ -220,7 +221,7 @@
         }
 
         [TestMethod]
-        public async Task TestMultiPartitionQueriesWithNonePartitionKey()
+        public async Task TestNonPartitionedQueriesWithPartitionKeyNone()
         {
             int documentCount = 400;
             IReadOnlyList<int> first400Integers = Enumerable.Range(0, documentCount).ToList();
@@ -241,59 +242,58 @@
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
                     expectedResult: first400IntegersReversed,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
                     expectedResult: new List<int> { 1 },
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
                     expectedResult: first400Integers,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} ASC",
                     expectedResult: first400Integers,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
                     expectedResult: first400IntegersReversed,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
                     expectedResult: new List<int> { 1 },
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
             };
 
             IReadOnlyList<string> documents = CreateDocuments(documentCount, PartitionKeyField, NumberField, NullField);
 
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
-                CollectionTypes.MultiPartition,
+                CollectionTypes.NonPartitioned,
                 documents,
-                (container, documents) => RunTests(testCases, container),
-                "/" + PartitionKeyField);
+                (container, documents) => RunTests(testCases, container));
         }
 
         [TestMethod]
