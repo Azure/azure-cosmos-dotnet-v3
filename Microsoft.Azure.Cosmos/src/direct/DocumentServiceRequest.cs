@@ -128,52 +128,15 @@ namespace Microsoft.Azure.Documents
                 out string documentName,
                 parseDatabaseAndCollectionNames: true))
             {
-                this.IsNameBased = isNameBased;
-                this.IsResourceNameParsedFromUri = true;
-                this.IsFeed = isFeed;
-
-                if (this.ResourceType == ResourceType.Unknown)
-                {
-                    this.ResourceType = PathsHelper.GetResourcePathSegment(resourceTypeString);
-                }
-
-                if (isNameBased)
-                {
-                    this.ResourceAddress = resourceIdOrFullName;
-                    this.DatabaseName = databaseName;
-                    this.CollectionName = collectionName;
-                    this.DocumentName = documentName;
-                }
-                else
-                {
-                    this.ResourceId = resourceIdOrFullName;
-                    this.ResourceAddress = resourceIdOrFullName;
-                    ResourceId rid = null;
-
-                    // throw exception when the address parsing fail
-                    // do not parse address for offer/snapshot resource
-                    if (!string.IsNullOrEmpty(this.ResourceId) &&
-                        !Documents.ResourceId.TryParse(this.ResourceId, out rid) &&
-                        !(this.ResourceType == ResourceType.Offer) &&
-                        !(this.ResourceType == ResourceType.Media) &&
-                        !(this.ResourceType == ResourceType.DatabaseAccount) &&
-                        !(this.ResourceType == ResourceType.Snapshot) &&
-                        !(this.ResourceType == ResourceType.EncryptionScope) &&
-                        !(this.ResourceType == ResourceType.RoleDefinition) &&
-                        !(this.ResourceType == ResourceType.RoleAssignment) &&
-                        !(this.ResourceType == ResourceType.InteropUser) &&
-                        !(this.ResourceType == ResourceType.AuthPolicyElement)
-#if !COSMOSCLIENT
-                        && !(this.ResourceType == ResourceType.MasterPartition) &&
-                        !(this.ResourceType == ResourceType.ServerPartition) &&
-                        !(this.ResourceType == ResourceType.RidRange) &&
-                        !(this.ResourceType == ResourceType.VectorClock)
-#endif
-                        )
-                    {
-                        throw new NotFoundException(string.Format(CultureInfo.CurrentUICulture, RMResources.InvalidResourceUrlQuery, path, HttpConstants.QueryStrings.Url));
-                    }
-                }
+                InitializeWithDataParsedFromUri(
+                    path: path,
+                    isNameBased: isNameBased,
+                    isFeed: isFeed,
+                    resourceIdOrFullName: resourceIdOrFullName,
+                    databaseName: databaseName,
+                    collectionName: collectionName,
+                    documentName: documentName,
+                    resourceTypeString: resourceTypeString);
             }
             else
             {
@@ -183,6 +146,62 @@ namespace Microsoft.Azure.Documents
             if (!string.IsNullOrEmpty(this.Headers[WFConstants.BackendHeaders.PartitionKeyRangeId]))
             {
                 this.PartitionKeyRangeIdentity = PartitionKeyRangeIdentity.FromHeader(this.Headers[WFConstants.BackendHeaders.PartitionKeyRangeId]);
+            }
+        }
+
+        /// <summary>
+        ///  The path is the incoming Uri.PathAndQuery, it can be:  (the name is url encoded).
+        ///  1. 	dbs/dbName/colls/collectionName/docs/documentName/attachments/
+        ///  2.     dbs/wo1ZAA==/colls/wo1ZAP7zFQA=/
+        /// </summary>
+        /// <remarks>
+        /// Use if request URI has been parsed.
+        /// </remarks>
+        internal DocumentServiceRequest(
+            OperationType operationType,
+            ResourceType resourceType,
+            string path,
+            Stream body,
+            AuthorizationTokenType authorizationTokenType,
+            INameValueCollection headers,
+            bool isNameBased,
+            bool isFeed,
+            string resourceIdOrFullName,
+            string databaseName,
+            string collectionName,
+            string documentName,
+            string resourceTypeString)
+        {
+            this.OperationType = operationType;
+            this.ForceNameCacheRefresh = false;
+            this.ResourceType = resourceType;
+            this.Body = body;
+            this.Headers = headers ?? new DictionaryNameValueCollection();
+            this.RequestAuthorizationTokenType = authorizationTokenType;
+            this.RequestContext = new DocumentServiceRequestContext();
+
+            // for address, no parsing is needed.
+            if (resourceType == ResourceType.Address
+#if !COSMOSCLIENT
+                || resourceType == ResourceType.XPReplicatorAddress
+#endif
+               )
+                return;
+
+            InitializeWithDataParsedFromUri(
+                path: path,
+                isNameBased: isNameBased,
+                isFeed: isFeed,
+                resourceIdOrFullName: resourceIdOrFullName,
+                databaseName: databaseName,
+                collectionName: collectionName,
+                documentName: documentName,
+                resourceTypeString: resourceTypeString);
+
+            string partitionKeyRangeId = this.Headers[WFConstants.BackendHeaders.PartitionKeyRangeId];
+            if (!string.IsNullOrEmpty(partitionKeyRangeId))
+            {
+                this.PartitionKeyRangeIdentity = PartitionKeyRangeIdentity.FromHeader(partitionKeyRangeId);
             }
         }
 
@@ -536,7 +555,7 @@ namespace Microsoft.Azure.Documents
                 case OperationType.GetStorageAuthToken:
                 case OperationType.GetCustomerManagedKeyStatus:
                 case OperationType.GetGraphDatabaseAccountConfiguration:
-                    return HttpConstants.HttpMethods.Get;
+                        return HttpConstants.HttpMethods.Get;
 #endif
 
                     default:
@@ -654,6 +673,10 @@ namespace Microsoft.Azure.Documents
                         return true;
                     }
                     else if (this.ResourceType == ResourceType.AuthPolicyElement)
+                    {
+                        return true;
+                    }
+                    else if (this.ResourceType == ResourceType.EncryptionScope)
                     {
                         return true;
                     }
@@ -951,6 +974,37 @@ namespace Microsoft.Azure.Documents
                 headers);
         }
 
+        internal static DocumentServiceRequest Create(
+            OperationType operationType,
+            ResourceType resourceType,
+            string relativePath,
+            Stream resourceStream,
+            AuthorizationTokenType authorizationTokenType,
+            INameValueCollection headers,
+            bool isNameBased,
+            bool isFeed,
+            string resourceIdOrFullName,
+            string databaseName,
+            string collectionName,
+            string documentName,
+            string resourceTypeString)
+        {
+            return new DocumentServiceRequest(
+                operationType,
+                resourceType,
+                relativePath,
+                resourceStream,
+                authorizationTokenType,
+                headers,
+                isNameBased,
+                isFeed,
+                resourceIdOrFullName,
+                databaseName,
+                collectionName,
+                documentName,
+                resourceTypeString);
+        }
+
         public static DocumentServiceRequest Create(OperationType operationType,
             ResourceType resourceType,
             Uri requestUri,
@@ -967,14 +1021,14 @@ namespace Microsoft.Azure.Documents
                 headers);
         }
 
-        public async Task EnsureBufferedBodyAsync()
+        public async Task EnsureBufferedBodyAsync(bool allowUnsafeDataAccess = true)
         {
             if (this.Body == null)
                 return;
             else if (this.CloneableBody != null)
                 return;
 
-            this.CloneableBody = await StreamExtension.AsClonableStreamAsync(this.Body);
+            this.CloneableBody = await StreamExtension.AsClonableStreamAsync(this.Body, allowUnsafeDataAccess);
         }
 
         public void ClearRoutingHints()
@@ -1022,6 +1076,63 @@ namespace Microsoft.Azure.Documents
                DatabaseName = this.DatabaseName,
                CollectionName = this.CollectionName
             };
+        }
+
+        private void InitializeWithDataParsedFromUri(
+            string path,
+            bool isNameBased,
+            bool isFeed,
+            string resourceIdOrFullName,
+            string databaseName,
+            string collectionName,
+            string documentName,
+            string resourceTypeString)
+        {
+            this.IsNameBased = isNameBased;
+            this.IsResourceNameParsedFromUri = true;
+            this.IsFeed = isFeed;
+
+            if (this.ResourceType == ResourceType.Unknown)
+            {
+                this.ResourceType = PathsHelper.GetResourcePathSegment(resourceTypeString);
+            }
+
+            if (isNameBased)
+            {
+                this.ResourceAddress = resourceIdOrFullName;
+                this.DatabaseName = databaseName;
+                this.CollectionName = collectionName;
+                this.DocumentName = documentName;
+            }
+            else
+            {
+                this.ResourceId = resourceIdOrFullName;
+                this.ResourceAddress = resourceIdOrFullName;
+                    
+                // throw exception when the address parsing fail
+                // do not parse address for offer/snapshot resource
+                if (!string.IsNullOrEmpty(this.ResourceId) &&
+                    !Documents.ResourceId.TryParse(this.ResourceId, out ResourceId _) &&
+                    !(this.ResourceType == ResourceType.Offer) &&
+                    !(this.ResourceType == ResourceType.Media) &&
+                    !(this.ResourceType == ResourceType.DatabaseAccount) &&
+                    !(this.ResourceType == ResourceType.Snapshot) &&
+                    !(this.ResourceType == ResourceType.EncryptionScope) &&
+                    !(this.ResourceType == ResourceType.RoleDefinition) &&
+                    !(this.ResourceType == ResourceType.RoleAssignment) &&
+                    !(this.ResourceType == ResourceType.InteropUser) &&
+                    !(this.ResourceType == ResourceType.AuthPolicyElement)
+    #if !COSMOSCLIENT
+                    && !(this.ResourceType == ResourceType.MasterPartition) &&
+                    !(this.ResourceType == ResourceType.ServerPartition) &&
+                    !(this.ResourceType == ResourceType.RidRange) &&
+                    !(this.ResourceType == ResourceType.VectorClock)
+    #endif
+                    )
+                {
+                    throw new NotFoundException(string.Format(CultureInfo.CurrentUICulture, RMResources.InvalidResourceUrlQuery, path, HttpConstants.QueryStrings.Url));
+                }
+            }
         }
     }
 }

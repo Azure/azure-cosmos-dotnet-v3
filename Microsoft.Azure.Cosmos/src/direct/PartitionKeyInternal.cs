@@ -41,19 +41,21 @@ namespace Microsoft.Azure.Documents.Routing
 
         private static readonly Int32 HashV2EPKLength = 32; // UInt128.Length * 2 (UInt128 gives 16 bytes as output, each byte takes 2 chars after hex-encoding)
 
-        private static readonly JsonSerializer FromJsonStringSerializer = 
+        private static readonly JsonSerializer FromJsonStringSerializer =
             JsonSerializer.CreateDefault(
-                new JsonSerializerSettings 
-                { 
-                    DateParseHandling = DateParseHandling.None 
+                new JsonSerializerSettings
+                {
+                    DateParseHandling = DateParseHandling.None,
+                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                 });
 
-        private static readonly JsonSerializer ToJsonStringSerializer = 
+        private static readonly JsonSerializer ToJsonStringSerializer =
             JsonSerializer.CreateDefault(
                 new JsonSerializerSettings
                 {
                     StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
-                    Formatting = Formatting.None
+                    Formatting = Formatting.None,
+                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                 });
 
         public static PartitionKeyInternal InclusiveMinimum
@@ -268,7 +270,6 @@ namespace Microsoft.Azure.Documents.Routing
                         default:
                             throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion");
                     }
-                    break;
 
                 case PartitionKind.MultiHash:
                     Int128 max_val = MaxHashV2Value / partitionCount * partitionIndex;
@@ -325,7 +326,6 @@ namespace Microsoft.Azure.Documents.Routing
                         default:
                             throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion");
                     }
-                    break;
 
                 case PartitionKind.MultiHash:
 
@@ -534,10 +534,10 @@ namespace Microsoft.Azure.Documents.Routing
 
         /// <summary>
         /// Produces effective value. Azure Cosmos DB has global index on effective partition key values.
-        /// 
+        ///
         /// Effective value is produced by applying is range or hash encoding to all the component values, based
         /// on partition key definition.
-        /// 
+        ///
         /// String components are hashed and converted to number components.
         /// Number components are hashed and remain number component.
         /// bool, null, undefined remain unhashed, because indexing policy doesn't specify index type for these types.
@@ -997,7 +997,7 @@ namespace Microsoft.Azure.Documents.Routing
             PartitionKind.MultiHash => GetWidthForMultiHashPartitioningScheme(minInclusive, maxExclusive, partitionKeyDefinition),
             _ => throw new InternalServerErrorException("Unknown PartitionKind values, cannot determine range width.")
         };
-        
+
         public Range<string> GetEPKRangeForPrefixPartitionKey(PartitionKeyDefinition partitionKeyDefinition)
         {
             if(partitionKeyDefinition.Kind != PartitionKind.MultiHash)
@@ -1015,5 +1015,5 @@ namespace Microsoft.Azure.Documents.Routing
             return new Range<string>(minEPK, maxEPK, true, false);
         }
     }
-    
+
 }

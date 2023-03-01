@@ -266,7 +266,6 @@ namespace Microsoft.Azure.Documents
             await addressResolverExtension.OpenConnectionsToAllReplicasAsync(
                 databaseName,
                 containerLinkUri,
-                this.transportClient.OpenConnectionAsync,
                 cancellationToken);
         }
 
@@ -365,6 +364,7 @@ namespace Microsoft.Azure.Documents
                 resourceType == ResourceType.Snapshot ||
                 resourceType == ResourceType.RoleAssignment ||
                 resourceType == ResourceType.RoleDefinition ||
+                resourceType == ResourceType.EncryptionScope ||
                 resourceType == ResourceType.AuthPolicyElement ||
                 resourceType == ResourceType.InteropUser ||
 #if !COSMOSCLIENT
@@ -419,6 +419,7 @@ namespace Microsoft.Azure.Documents
                 resourceType == ResourceType.Snapshot ||
                 resourceType == ResourceType.RoleAssignment ||
                 resourceType == ResourceType.RoleDefinition ||
+                resourceType == ResourceType.EncryptionScope ||
                 resourceType == ResourceType.Trigger ||
                 resourceType == ResourceType.UserDefinedFunction)
             {

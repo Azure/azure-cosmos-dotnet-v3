@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Documents
             foreach (NetworkInterface adapter in adapters)
             {
                 // We skip loopback, tunnel adapters etc ...
-                if ((adapter.NetworkInterfaceType == NetworkInterfaceType.Ethernet) &&
+                if (((adapter.NetworkInterfaceType == NetworkInterfaceType.Ethernet) || (adapter.NetworkInterfaceType == NetworkInterfaceType.Wireless80211)) &&
                     (adapter.OperationalStatus == OperationalStatus.Up))
                 {
                     IPInterfaceProperties properties = adapter.GetIPProperties();

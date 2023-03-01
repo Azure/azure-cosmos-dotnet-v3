@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
@@ -28,12 +29,25 @@ namespace Microsoft.Azure.Documents.Rntbd
     // mechanisms (SSL stream, connection state).
     internal sealed class Connection : IDisposable
     {
+        private const string socketOptionTcpKeepAliveIntervalName = "AZURE_COSMOS_TCP_KEEPALIVE_INTERVAL_SECONDS";
+        private const string socketOptionTcpKeepAliveTimeName = "AZURE_COSMOS_TCP_KEEPALIVE_TIME_SECONDS";
         private const int ResponseLengthByteLimit = int.MaxValue;
         private const SslProtocols TlsProtocols = SslProtocols.Tls12;
         private const uint TcpKeepAliveIntervalSocketOptionEnumValue = 17;
         private const uint TcpKeepAliveTimeSocketOptionEnumValue = 3;
-        private const uint SocketOptionTcpKeepAliveInterval = 1;
-        private const uint SocketOptionTcpKeepAliveTime = 30;
+        private const uint DefaultSocketOptionTcpKeepAliveInterval = 1;
+        private const uint DefaultSocketOptionTcpKeepAliveTime = 30;
+        private const int MinNumberOfSendsSinceLastReceiveForUnhealthyConnection = 3;
+        private static readonly uint SocketOptionTcpKeepAliveInterval = GetUInt32FromEnvironmentVariableOrDefault(
+            socketOptionTcpKeepAliveIntervalName,
+            minValue: 1,
+            maxValue: 100,
+            defaultValue: DefaultSocketOptionTcpKeepAliveInterval);
+        private static readonly uint SocketOptionTcpKeepAliveTime = GetUInt32FromEnvironmentVariableOrDefault(
+            socketOptionTcpKeepAliveTimeName,
+            minValue: 1,
+            maxValue: 100,
+            defaultValue: DefaultSocketOptionTcpKeepAliveTime);
 
         private static readonly Lazy<ConcurrentPrng> rng =
             new Lazy<ConcurrentPrng>(LazyThreadSafetyMode.ExecutionAndPublication);
@@ -112,6 +126,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         private DateTime lastSendAttemptTime;  // Guarded by timestampLock.
         private DateTime lastSendTime;  // Guarded by timestampLock.
         private DateTime lastReceiveTime;  // Guarded by timestampLock.
+        private long numberOfSendsSinceLastReceive = 0;  // Guarded by timestampLock.
+        private DateTime firstSendSinceLastReceive;  // Guarded by timestampLock.
 
         private readonly object nameLock = new object();  // Acquired after timestampLock.
         private string name;  // Guarded by nameLock.
@@ -196,10 +212,15 @@ namespace Microsoft.Azure.Documents.Rntbd
                 {
                     return false;
                 }
-                DateTime lastSendAttempt, lastSend, lastReceive, now;
+
+                DateTime now = DateTime.UtcNow;
                 this.SnapshotConnectionTimestamps(
-                    out lastSendAttempt, out lastSend, out lastReceive);
-                now = DateTime.UtcNow;
+                    out DateTime lastSendAttempt,
+                    out DateTime lastSend,
+                    out DateTime lastReceive,
+                    out DateTime? firstSendSinceLastReceive,
+                    out long numberOfSendsSinceLastReceive);
+
                 // Assume that the connection is healthy if data was received
                 // recently.
                 if (now - lastReceive < Connection.recentReceiveWindow)
@@ -224,14 +245,24 @@ namespace Microsoft.Azure.Documents.Rntbd
                 // Black hole detection, part 2:
                 // Treat the connection as unhealthy if the gap between the last
                 // successful send and the last successful receive grew beyond
-                // acceptable limits, unless a send succeeded very recently.
+                // acceptable limits, unless a send succeeded very recently and the number of
+                // outstanding receives is within reasonable limits.
                 if ((lastSend - lastReceive > this.receiveDelayLimit) &&
-                    (now - lastSend > Connection.receiveHangGracePeriod))
+                    (
+                        now - lastSend > Connection.receiveHangGracePeriod ||
+                        (
+                            numberOfSendsSinceLastReceive >= Connection.MinNumberOfSendsSinceLastReceiveForUnhealthyConnection &&
+                            firstSendSinceLastReceive != null &&
+                            now - firstSendSinceLastReceive > Connection.receiveHangGracePeriod
+                        )
+                    ))
                 {
                     DefaultTrace.TraceWarning(
                         "Unhealthy RNTBD connection: Replies not getting back: {0}. " +
-                        "Last send: {1:o}. Last receive: {2:o}. Tolerance: {3:c}",
-                        this, lastSend, lastReceive, this.receiveDelayLimit);
+                        "Last send: {1:o}. Last receive: {2:o}. Tolerance: {3:c}. " + 
+                        "First send since last receieve: {4:o}. # of sends since last receive: {5}",
+                        this, lastSend, lastReceive, this.receiveDelayLimit, 
+                        firstSendSinceLastReceive, numberOfSendsSinceLastReceive);
                     return false;
                 }
 
@@ -322,7 +353,12 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             if (transportRequestStats != null)
             {
-                this.SnapshotConnectionTimestamps(out DateTime lastSendAttempt, out DateTime lastSend, out DateTime lastReceive);
+                this.SnapshotConnectionTimestamps(
+                    out DateTime lastSendAttempt,
+                    out DateTime lastSend,
+                    out DateTime lastReceive,
+                    out DateTime? firstSendSinceLastReceive,
+                    out long numberOfSendsSinceLastReceive);
                 transportRequestStats.ConnectionLastSendAttemptTime = lastSendAttempt;
                 transportRequestStats.ConnectionLastSendTime = lastSend;
                 transportRequestStats.ConnectionLastReceiveTime = lastReceive;
@@ -500,8 +536,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             // IsActive should not be called if idle timeout is disabled
             Debug.Assert(this.idleConnectionTimeout > TimeSpan.Zero);
 
-            DateTime lastSendAttempt, lastSend, lastReceive;
-            this.SnapshotConnectionTimestamps(out lastSendAttempt, out lastSend, out lastReceive);
+            this.SnapshotConnectionTimestamps(
+                out DateTime lastSendAttempt,
+                out DateTime lastSend,
+                out DateTime lastReceive,
+                out DateTime? firstSendSinceLastReceive,
+                out long numberOfSendsSinceLastReceive);
             DateTime now = DateTime.UtcNow;
 
             if (now - lastReceive > this.idleConnectionTimeout)
@@ -536,6 +576,34 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         #endregion
+
+        private static uint GetUInt32FromEnvironmentVariableOrDefault(
+            string name,
+            uint minValue,
+            uint maxValue,
+            uint defaultValue)
+        {
+            string envVariableValueText = Environment.GetEnvironmentVariable(name);
+
+            if (String.IsNullOrEmpty(envVariableValueText)  ||
+                !UInt32.TryParse(
+                    envVariableValueText,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out uint envVariableValue))
+            {
+                return defaultValue;
+            }
+
+            if (envVariableValue > maxValue || envVariableValue < minValue)
+            {
+                throw new ArgumentOutOfRangeException(
+                    name,
+                    $"Value for environment variable '{name}' is outside expected range of {minValue} - {maxValue}.");
+            }
+
+            return envVariableValue;
+        }
 
         private void ThrowIfDisposed()
         {
@@ -793,8 +861,11 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         private void SnapshotConnectionTimestamps(
-            out DateTime lastSendAttempt, out DateTime lastSend,
-            out DateTime lastReceive)
+            out DateTime lastSendAttempt,
+            out DateTime lastSend,
+            out DateTime lastReceive,
+            out DateTime? firstSendSinceLastReceive,
+            out long numberOfSendsSinceLastReceive)
         {
             Debug.Assert(!Monitor.IsEntered(this.timestampLock));
             lock (this.timestampLock)
@@ -802,19 +873,26 @@ namespace Microsoft.Azure.Documents.Rntbd
                 lastSendAttempt = this.lastSendAttemptTime;
                 lastSend = this.lastSendTime;
                 lastReceive = this.lastReceiveTime;
+                firstSendSinceLastReceive = 
+                    this.lastReceiveTime < this.firstSendSinceLastReceive ? this.firstSendSinceLastReceive : null;
+                numberOfSendsSinceLastReceive = this.numberOfSendsSinceLastReceive;
             }
         }
 
         private string GetConnectionTimestampsText()
         {
-            DateTime lastSendAttempt, lastSend, lastReceive;
             this.SnapshotConnectionTimestamps(
-                out lastSendAttempt, out lastSend, out lastReceive);
+                out DateTime lastSendAttempt,
+                out DateTime lastSend,
+                out DateTime lastReceive,
+                out DateTime? firstSendSinceLastReceive,
+                out long numberOfSendsSinceLastReceive);
             return string.Format(
                 CultureInfo.InvariantCulture,
                 "Last send attempt time: {0:o}. Last send time: {1:o}. " +
-                "Last receive time: {2:o}",
-                lastSendAttempt, lastSend, lastReceive);
+                "Last receive time: {2:o}. First sends since last receieve: {3:o}. " +
+                "# of sends since last receive: {4}",
+                lastSendAttempt, lastSend, lastReceive, firstSendSinceLastReceive, numberOfSendsSinceLastReceive);
         }
 
         private void UpdateLastSendAttemptTime()
@@ -832,6 +910,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             lock (this.timestampLock)
             {
                 this.lastSendTime = DateTime.UtcNow;
+
+                if (this.numberOfSendsSinceLastReceive++ == 0)
+                {
+                    this.firstSendSinceLastReceive = this.lastSendTime;
+                }
             }
         }
 
@@ -840,6 +923,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             Debug.Assert(!Monitor.IsEntered(this.timestampLock));
             lock (this.timestampLock)
             {
+                this.numberOfSendsSinceLastReceive = 0;
                 this.lastReceiveTime = DateTime.UtcNow;
             }
         }

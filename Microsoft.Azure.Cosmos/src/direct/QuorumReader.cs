@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.Linq;
     using System.Runtime.ExceptionServices;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
@@ -119,12 +120,11 @@ namespace Microsoft.Azure.Documents
                                 "QuorumSelected: Could not converge on the LSN {0} GlobalCommittedLSN {3} ReadMode {4} after primary read barrier with read quorum {1} for strong read, Responses: {2}",
                                 secondaryQuorumReadResult.SelectedLsn, 
                                 readQuorumValue,
-                                String.Join(";", secondaryQuorumReadResult.StoreResponses),
+                                secondaryQuorumReadResult,
                                 secondaryQuorumReadResult.GlobalCommittedSelectedLsn,
                                 readMode);
 
                             entity.RequestContext.UpdateQuorumSelectedStoreResponse(secondaryQuorumReadResult.GetSelectedResponseAndSkipStoreResultDispose());
-                            entity.RequestContext.StoreResponses = secondaryQuorumReadResult.StoreResponses;
                             entity.RequestContext.QuorumSelectedLSN = secondaryQuorumReadResult.SelectedLsn;
                             entity.RequestContext.GlobalCommittedSelectedLSN = secondaryQuorumReadResult.GlobalCommittedSelectedLsn;
                         }
@@ -210,10 +210,9 @@ namespace Microsoft.Azure.Documents
                         DefaultTrace.TraceWarning(
                             "QuorumSelected: Could not converge on LSN {0} after barrier with QuorumValue {1} " +
                             "Will not perform barrier call on Primary for BoundedStaleness, Responses: {2}",
-                            secondaryQuorumReadResult.SelectedLsn, readQuorumValue, String.Join(";", secondaryQuorumReadResult.StoreResponses));
+                            secondaryQuorumReadResult.SelectedLsn, readQuorumValue, secondaryQuorumReadResult);
 
                         entity.RequestContext.UpdateQuorumSelectedStoreResponse(secondaryQuorumReadResult.GetSelectedResponseAndSkipStoreResultDispose());
-                        entity.RequestContext.StoreResponses = secondaryQuorumReadResult.StoreResponses;
                         entity.RequestContext.QuorumSelectedLSN = secondaryQuorumReadResult.SelectedLsn;
                         break;
 
@@ -280,9 +279,8 @@ namespace Microsoft.Azure.Documents
 
             long readLsn = -1;
             long globalCommittedLSN = -1;
-            StoreResult storeResult = null;
-            List<string> storeResponses = null;
-            bool skipStoreResultDisposeOnResult = false;
+            ReferenceCountedDisposable<StoreResult> storeResult = null;
+            StoreResult[] responsesForLogging = null;
             if (entity.RequestContext.QuorumSelectedStoreResponse == null)
             {
                 using StoreResultList disposableResponseResult = new(await this.storeReader.ReadMultipleReplicaAsync(
@@ -292,15 +290,19 @@ namespace Microsoft.Azure.Documents
                     requiresValidLsn: true,
                     useSessionToken: false, 
                     readMode: readMode));
-                IList<StoreResult> responseResult = disposableResponseResult.Value;
+                IList<ReferenceCountedDisposable<StoreResult>> responseResult = disposableResponseResult.Value;
 
-                storeResponses = responseResult.Select(response => response.ToString()).ToList();
+                responsesForLogging = new StoreResult[responseResult.Count];
+                for (int i = 0; i < responseResult.Count; i++)
+                {
+                    responsesForLogging[i] = responseResult[i].Target;
+                }
 
-                int responseCount = responseResult.Count(response => response.IsValid);
+                int responseCount = responseResult.Count(response => response.Target.IsValid);
                 if (responseCount < readQuorum)
                 {
                     return new ReadQuorumResult(entity.RequestContext.RequestChargeTracker,
-                        ReadQuorumResultKind.QuorumNotSelected, -1, -1, null, storeResponses);
+                        ReadQuorumResultKind.QuorumNotSelected, -1, -1, null, responsesForLogging);
                 }
 
                 //either request overrides consistency level with strong, or request does not override and account default consistency level is strong
@@ -323,32 +325,24 @@ namespace Microsoft.Azure.Documents
                     out globalCommittedLSN,
                     out storeResult))
                 {
-                    // All StoreResults but one selected will be disposed at the end of the method
-                    disposableResponseResult.Dereference(storeResult);
-
                     return new ReadQuorumResult(
                         entity.RequestContext.RequestChargeTracker,
                         ReadQuorumResultKind.QuorumMet,
                         readLsn,
                         globalCommittedLSN,
                         storeResult,
-                        storeResponses);
+                        responsesForLogging);
                 }
 
                 // at this point, if refresh were necessary, we would have refreshed it in ReadMultipleReplicaAsync
                 // so set to false here to avoid further refrehses for this request.
                 entity.RequestContext.ForceRefreshAddressCache = false;
-
-                // All StoreResults but one selected will be disposed at the end of the method
-                disposableResponseResult.Dereference(storeResult);
             }
             else
             {
                 readLsn = entity.RequestContext.QuorumSelectedLSN;
                 globalCommittedLSN = entity.RequestContext.GlobalCommittedSelectedLSN;
-                storeResult = entity.RequestContext.QuorumSelectedStoreResponse;
-                storeResponses = entity.RequestContext.StoreResponses;
-                skipStoreResultDisposeOnResult = true;
+                storeResult = entity.RequestContext.QuorumSelectedStoreResponse.TryAddReference();
             }
 
             // ReadBarrier required
@@ -361,8 +355,7 @@ namespace Microsoft.Azure.Documents
                     readLsn,
                     globalCommittedLSN,
                     storeResult,
-                    storeResponses,
-                    skipStoreResultDispose: skipStoreResultDisposeOnResult);
+                    responsesForLogging);
             }
 
             return new ReadQuorumResult(
@@ -371,8 +364,7 @@ namespace Microsoft.Azure.Documents
                 readLsn,
                 globalCommittedLSN,
                 storeResult,
-                storeResponses,
-                skipStoreResultDispose: skipStoreResultDisposeOnResult);
+                responsesForLogging);
         }
 
         /// <summary>
@@ -391,11 +383,11 @@ namespace Microsoft.Azure.Documents
 
             // We would have already refreshed address before reaching here. Avoid performing here.
             entity.RequestContext.ForceRefreshAddressCache = false;
-            using DisposableObject<StoreResult> disposableStoreResult = new(await this.storeReader.ReadPrimaryAsync(
+            using ReferenceCountedDisposable<StoreResult> disposableStoreResult = await this.storeReader.ReadPrimaryAsync(
                 entity, 
                 requiresValidLsn: true, 
-                useSessionToken: useSessionToken));
-            StoreResult storeResult = disposableStoreResult.Value;
+                useSessionToken: useSessionToken);
+            StoreResult storeResult = disposableStoreResult.Target;
             if (!storeResult.IsValid)
             {
                 ExceptionDispatchInfo.Capture(storeResult.GetException()).Throw();
@@ -452,11 +444,11 @@ namespace Microsoft.Azure.Documents
                 }
 
                 return new ReadPrimaryResult(
-                    requestChargeTracker: entity.RequestContext.RequestChargeTracker, isSuccessful: true, shouldRetryOnSecondary: false, response: disposableStoreResult.GetValueAndSkipDispose());
+                    requestChargeTracker: entity.RequestContext.RequestChargeTracker, isSuccessful: true, shouldRetryOnSecondary: false, response: disposableStoreResult.TryAddReference());
             }
 
             return new ReadPrimaryResult(
-                requestChargeTracker: entity.RequestContext.RequestChargeTracker, isSuccessful: true, shouldRetryOnSecondary: false, response: disposableStoreResult.GetValueAndSkipDispose());
+                requestChargeTracker: entity.RequestContext.RequestChargeTracker, isSuccessful: true, shouldRetryOnSecondary: false, response: disposableStoreResult.TryAddReference());
         }
 
         private async Task<PrimaryReadOutcome> WaitForPrimaryLsnAsync(
@@ -472,26 +464,26 @@ namespace Microsoft.Azure.Documents
 
                 // We would have already refreshed address before reaching here. Avoid performing here.
                 barrierRequest.RequestContext.ForceRefreshAddressCache = false;
-                using StoreResult storeResult = await this.storeReader.ReadPrimaryAsync(
+                using ReferenceCountedDisposable<StoreResult> storeResult = await this.storeReader.ReadPrimaryAsync(
                     barrierRequest, 
                     requiresValidLsn: true, 
                     useSessionToken: false);
-                if (!storeResult.IsValid)
+                if (!storeResult.Target.IsValid)
                 {
-                    ExceptionDispatchInfo.Capture(storeResult.GetException()).Throw();
+                    ExceptionDispatchInfo.Capture(storeResult.Target.GetException()).Throw();
                 }
 
-                if (storeResult.CurrentReplicaSetSize > readQuorum)
+                if (storeResult.Target.CurrentReplicaSetSize > readQuorum)
                 {
                     DefaultTrace.TraceWarning(
-                        "Unexpected response. Replica Set size is {0} which is greater than min value {1}", storeResult.CurrentReplicaSetSize, readQuorum);
+                        "Unexpected response. Replica Set size is {0} which is greater than min value {1}", storeResult.Target.CurrentReplicaSetSize, readQuorum);
                     return PrimaryReadOutcome.QuorumInconclusive;
                 }
 
-                if (storeResult.LSN < lsnToWaitFor || storeResult.QuorumAckedLSN < lsnToWaitFor)
+                if (storeResult.Target.LSN < lsnToWaitFor || storeResult.Target.QuorumAckedLSN < lsnToWaitFor)
                 {
                     DefaultTrace.TraceWarning(
-                        "Store LSN {0} or quorum acked LSN {1} are lower than expected LSN {2}", storeResult.LSN, storeResult.QuorumAckedLSN, lsnToWaitFor);
+                        "Store LSN {0} or quorum acked LSN {1} are lower than expected LSN {2}", storeResult.Target.LSN, storeResult.Target.QuorumAckedLSN, lsnToWaitFor);
                     await Task.Delay(QuorumReader.delayBetweenReadBarrierCallsInMs);
 
                     continue;
@@ -529,10 +521,10 @@ namespace Microsoft.Azure.Documents
                     readMode: readMode, 
                     checkMinLSN: false, 
                     forceReadAll: true));
-                IList<StoreResult> responses = disposableResponses.Value;
+                IList<ReferenceCountedDisposable<StoreResult>> responses = disposableResponses.Value;
 
-                long maxGlobalCommittedLsnInResponses = responses.Count > 0 ? responses.Max(response => response.GlobalCommittedLSN) : 0;
-                if ((responses.Count(response => response.LSN >= readBarrierLsn) >= readQuorum) &&
+                long maxGlobalCommittedLsnInResponses = responses.Count > 0 ? responses.Max(response => response.Target.GlobalCommittedLSN) : 0;
+                if ((responses.Count(response => response.Target.LSN >= readBarrierLsn) >= readQuorum) &&
                     (!(targetGlobalCommittedLSN > 0) || maxGlobalCommittedLsnInResponses >= targetGlobalCommittedLSN))
                 {
                     return true;
@@ -570,10 +562,10 @@ namespace Microsoft.Azure.Documents
                         readMode: readMode, 
                         checkMinLSN: false, 
                         forceReadAll: true));
-                    IList<StoreResult> responses = disposableResponses.Value;
+                    IList<ReferenceCountedDisposable<StoreResult>> responses = disposableResponses.Value;
 
-                    long maxGlobalCommittedLsnInResponses = responses.Count > 0 ? responses.Max(response => response.GlobalCommittedLSN) : 0;
-                    if ((responses.Count(response => response.LSN >= readBarrierLsn) >= readQuorum) &&
+                    long maxGlobalCommittedLsnInResponses = responses.Count > 0 ? responses.Max(response => response.Target.GlobalCommittedLSN) : 0;
+                    if ((responses.Count(response => response.Target.LSN >= readBarrierLsn) >= readQuorum) &&
                         maxGlobalCommittedLsnInResponses >= targetGlobalCommittedLSN)
                     {
                         return true;
@@ -608,18 +600,18 @@ namespace Microsoft.Azure.Documents
         }
 
         private bool IsQuorumMet(
-            IList<StoreResult> readResponses,
+            IList<ReferenceCountedDisposable<StoreResult>> readResponses,
             int readQuorum,
             bool isPrimaryIncluded,
             bool isGlobalStrongRead,
             out long readLsn,
             out long globalCommittedLSN,
-            out StoreResult selectedResponse)
+            out ReferenceCountedDisposable<StoreResult> selectedResponse)
         {
             long maxLsn = 0;
             long minLsn = long.MaxValue;
             int replicaCountMaxLsn = 0;
-            IEnumerable<StoreResult> validReadResponses = readResponses.Where(response => response.IsValid);
+            IEnumerable<ReferenceCountedDisposable<StoreResult>> validReadResponses = readResponses.Where(response => response.Target.IsValid);
             int validResponsesCount = validReadResponses.Count();
 
             if (validResponsesCount == 0)
@@ -631,39 +623,39 @@ namespace Microsoft.Azure.Documents
                 return false;
             }
 
-            long numberOfReadRegions = validReadResponses.Max(res => res.NumberOfReadRegions);
+            long numberOfReadRegions = validReadResponses.Max(res => res.Target.NumberOfReadRegions);
             bool checkForGlobalStrong = isGlobalStrongRead && numberOfReadRegions > 0;
 
             // Pick any R replicas in the response and check if they are at the same LSN
-            foreach (StoreResult response in validReadResponses)
+            foreach (ReferenceCountedDisposable<StoreResult> response in validReadResponses)
             {
-                if (response.LSN == maxLsn)
+                if (response.Target.LSN == maxLsn)
                 {
                     replicaCountMaxLsn++;
                 }
-                else if (response.LSN > maxLsn)
+                else if (response.Target.LSN > maxLsn)
                 {
                     replicaCountMaxLsn = 1;
-                    maxLsn = response.LSN;
+                    maxLsn = response.Target.LSN;
                 }
 
-                if (response.LSN < minLsn)
+                if (response.Target.LSN < minLsn)
                 {
-                    minLsn = response.LSN;
+                    minLsn = response.Target.LSN;
                 }
             }
 
-            selectedResponse = validReadResponses.Where(s => (s.LSN == maxLsn) && (s.StatusCode < StatusCodes.StartingErrorCode)).FirstOrDefault();
+            selectedResponse = validReadResponses.Where(s => (s.Target.LSN == maxLsn) && (s.Target.StatusCode < StatusCodes.StartingErrorCode)).FirstOrDefault();
             if (selectedResponse == null)
             {
-                selectedResponse = validReadResponses.First(s => s.LSN == maxLsn);
+                selectedResponse = validReadResponses.First(s => s.Target.LSN == maxLsn);
             }
 
-            readLsn = selectedResponse.ItemLSN == -1 ? 
-                maxLsn : Math.Min(selectedResponse.ItemLSN, maxLsn);
+            readLsn = selectedResponse.Target.ItemLSN == -1 ? 
+                maxLsn : Math.Min(selectedResponse.Target.ItemLSN, maxLsn);
             globalCommittedLSN = checkForGlobalStrong ? readLsn: -1;
 
-            long maxGlobalCommittedLSN = validReadResponses.Max(res => res.GlobalCommittedLSN);
+            long maxGlobalCommittedLSN = validReadResponses.Max(res => res.Target.GlobalCommittedLSN);
             
             // quorum is met if one of the following conditions are satisfied:
             // 1. readLsn is greater than zero 
@@ -684,19 +676,21 @@ namespace Microsoft.Azure.Documents
                 isQuorumMet = true;
             }
 
-            if(!isQuorumMet && validResponsesCount >= readQuorum && selectedResponse.ItemLSN != -1 &&
-                (minLsn != long.MaxValue && selectedResponse.ItemLSN <= minLsn) &&
-                (!checkForGlobalStrong || (selectedResponse.ItemLSN <= maxGlobalCommittedLSN)))
+            if(!isQuorumMet && validResponsesCount >= readQuorum && selectedResponse.Target.ItemLSN != -1 &&
+                (minLsn != long.MaxValue && selectedResponse.Target.ItemLSN <= minLsn) &&
+                (!checkForGlobalStrong || (selectedResponse.Target.ItemLSN <= maxGlobalCommittedLSN)))
             {
-                isQuorumMet = true;    
+                isQuorumMet = true;
             }
-            
+
             if (!isQuorumMet)
             {
                 DefaultTrace.TraceInformation("QuorumReader: MaxLSN {0} ReplicaCountMaxLSN {1} bCheckGlobalStrong {2} MaxGlobalCommittedLSN {3} NumberOfReadRegions {4} SelectedResponseItemLSN {5}",
-                    maxLsn, replicaCountMaxLsn, checkForGlobalStrong, maxGlobalCommittedLSN, numberOfReadRegions, selectedResponse.ItemLSN);
+                    maxLsn, replicaCountMaxLsn, checkForGlobalStrong, maxGlobalCommittedLSN, numberOfReadRegions, selectedResponse.Target.ItemLSN);
             }
 
+            // `selectedResponse` is an out parameter, so ensure it stays alive.
+            selectedResponse = selectedResponse.TryAddReference();
             return isQuorumMet;
         }
 
@@ -710,11 +704,11 @@ namespace Microsoft.Azure.Documents
 
         private abstract class ReadResult : IDisposable
         {
-            private readonly StoreResult response;
+            private readonly ReferenceCountedDisposable<StoreResult> response;
             private readonly RequestChargeTracker requestChargeTracker;
             private protected bool skipStoreResultDispose;
 
-            protected ReadResult(RequestChargeTracker requestChargeTracker, StoreResult response)
+            protected ReadResult(RequestChargeTracker requestChargeTracker, ReferenceCountedDisposable<StoreResult> response)
             {
                 this.requestChargeTracker = requestChargeTracker;
                 this.response = response;
@@ -739,7 +733,7 @@ namespace Microsoft.Azure.Documents
                 }
 
                 this.skipStoreResultDispose = true;
-                return this.response.ToResponse(requestChargeTracker);
+                return this.response.Target.ToResponse(requestChargeTracker);
             }
 
             protected abstract bool IsValidResult();
@@ -747,32 +741,32 @@ namespace Microsoft.Azure.Documents
 
         private sealed class ReadQuorumResult : ReadResult, IDisposable
         {
-            private StoreResult selectedResponse;
+            private ReferenceCountedDisposable<StoreResult> selectedResponse;
+
+            /// <summary>
+            /// Only for reporting purposes.
+            /// Responses in that list will be disposed by the time when they used for reporting.
+            /// ToString is expected to work on the disposed StoreResult.
+            /// </summary>
+            private StoreResult[] storeResponses;
 
             public ReadQuorumResult(
                 RequestChargeTracker requestChargeTracker,
                 ReadQuorumResultKind QuorumResult,
                 long selectedLsn,
                 long globalCommittedSelectedLsn,
-                StoreResult selectedResponse,
-                List<string> storeResponses,
-                bool skipStoreResultDispose = false)
+                ReferenceCountedDisposable<StoreResult> selectedResponse,
+                StoreResult[] storeResponses)
                 : base(requestChargeTracker, selectedResponse)
             {
                 this.QuorumResult = QuorumResult;
                 this.SelectedLsn = selectedLsn;
                 this.GlobalCommittedSelectedLsn = globalCommittedSelectedLsn;
                 this.selectedResponse = selectedResponse;
-                this.StoreResponses = storeResponses;
-                this.skipStoreResultDispose = skipStoreResultDispose;
+                this.storeResponses = storeResponses;
             }
 
             public ReadQuorumResultKind QuorumResult { get; private set; }
-
-            /// <summary>
-            /// All store responses from Quorum Read.
-            /// </summary>
-            public List<string> StoreResponses { get; private set; }
 
             public long SelectedLsn { get; private set; }
 
@@ -782,10 +776,26 @@ namespace Microsoft.Azure.Documents
             /// Response selected to lock on the LSN. This is the response with the highest
             /// LSN
             /// </summary>
-            public StoreResult GetSelectedResponseAndSkipStoreResultDispose()
+            public ReferenceCountedDisposable<StoreResult> GetSelectedResponseAndSkipStoreResultDispose()
             {
                 this.skipStoreResultDispose = true;
-                return this.selectedResponse;
+                return this.selectedResponse.TryAddReference();
+            }
+
+            /// <summary>
+            /// Reports performed calls information.
+            /// </summary>
+            public override string ToString()
+            {
+                if (this.storeResponses == null) return String.Empty;
+
+                // 1 record uses ~1600 chars on average. 2048 will be the eventual capacity builder will come to with extra array re-size operations.
+                StringBuilder stringBuilder = new(capacity: 2048 * this.storeResponses.Length);
+                foreach (StoreResult storeResult in this.storeResponses)
+                {
+                    storeResult.AppendToBuilder(stringBuilder);
+                }
+                return stringBuilder.ToString();
             }
 
             protected override bool IsValidResult()
@@ -796,7 +806,7 @@ namespace Microsoft.Azure.Documents
 
         private sealed class ReadPrimaryResult : ReadResult
         {
-            public ReadPrimaryResult(RequestChargeTracker requestChargeTracker, bool isSuccessful, bool shouldRetryOnSecondary, StoreResult response)
+            public ReadPrimaryResult(RequestChargeTracker requestChargeTracker, bool isSuccessful, bool shouldRetryOnSecondary, ReferenceCountedDisposable<StoreResult> response)
                 : base(requestChargeTracker, response)
             {
                 this.IsSuccessful = isSuccessful;
@@ -821,69 +831,22 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// Wrapper for an object to provide disposal capabilities.
-        /// Best to use within a complex method where object must remain non disposed only in a few outcomes.
-        /// </summary>
-        private struct DisposableObject<T> : IDisposable where T : IDisposable
-        {
-            private bool skipDispose;
-
-            public DisposableObject(T value)
-            {
-                this.Value = value;
-                this.skipDispose = false;
-            }
-
-            public T Value { get; private set; }
-
-            public T GetValueAndSkipDispose()
-            {
-                this.skipDispose = true;
-                return this.Value;
-            }
-
-            public void Dispose()
-            {
-                if (this.skipDispose)
-                {
-                    return;
-                }
-
-                this.Value.Dispose();
-            }
-        }
-
-        /// <summary>
         /// Wrapper for a collection of StoreResult list with ability to call dispose on all the items but one selected to be the response.
         /// </summary>
         private struct StoreResultList : IDisposable
         {
-            public StoreResultList(IList<StoreResult> collection)
+            public StoreResultList(IList<ReferenceCountedDisposable<StoreResult>> collection)
             {
                 this.Value = collection;
             }
 
-            public IList<StoreResult> Value { get; set; }
-
-            public void Dereference(StoreResult storeResultToDereference)
-            {
-                for (int i = 0; i < this.Value.Count; i++)
-                {
-                    if (this.Value[i] == storeResultToDereference)
-                    {
-                        this.Value[i] = null;
-                        return;
-                    }
-                }
-
-                throw new InvalidOperationException($"{nameof(Dereference)} attempted to dereference an object not present on the collection");
-            }
+            public IList<ReferenceCountedDisposable<StoreResult>> Value { get; set; }
 
             public void Dispose()
             {
                 if (this.Value.Count > 0)
                 {
-                    foreach (StoreResult storeResult in this.Value)
+                    foreach (ReferenceCountedDisposable<StoreResult> storeResult in this.Value)
                     {
                         storeResult?.Dispose();
                     }

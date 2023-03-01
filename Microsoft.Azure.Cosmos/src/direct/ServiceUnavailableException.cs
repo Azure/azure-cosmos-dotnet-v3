@@ -4,6 +4,9 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.Linq;
     using System.Net;
     using System.Net.Http.Headers;
     using System.Runtime.Serialization;
@@ -14,11 +17,13 @@ namespace Microsoft.Azure.Documents
     {         
         public static ServiceUnavailableException Create(SubStatusCodes? subStatusCode, Exception innerException = null, HttpResponseHeaders headers = null, Uri requestUri = null)
         {
+            subStatusCode ??= GetSubStatus(headers);
             return new ServiceUnavailableException(GetExceptionMessage(subStatusCode), innerException, headers, subStatusCode);
         }
 
         public static ServiceUnavailableException Create(INameValueCollection headers, SubStatusCodes? subStatusCode, Uri requestUri = null)
         {
+            subStatusCode ??= GetSubStatus(headers);
             return new ServiceUnavailableException(GetExceptionMessage(subStatusCode), headers, subStatusCode, requestUri);
         }
 
@@ -116,6 +121,41 @@ namespace Microsoft.Azure.Documents
                 default:
                     return RMResources.ServiceUnavailable;
             }
+        }
+
+        static internal SubStatusCodes GetSubStatus(INameValueCollection responseHeaders)
+        {
+            SubStatusCodes? substatus = SubStatusCodes.Unknown;
+
+            string valueSubStatus = responseHeaders.Get(WFConstants.BackendHeaders.SubStatus);
+            if (!string.IsNullOrEmpty(valueSubStatus))
+            {
+                uint nSubStatus;
+                if (uint.TryParse(valueSubStatus, NumberStyles.Integer, CultureInfo.InvariantCulture, out nSubStatus))
+                {
+                    substatus = (SubStatusCodes)nSubStatus;
+                }
+            }
+
+            return substatus.Value;
+        }
+
+        static internal SubStatusCodes GetSubStatus(HttpResponseHeaders responseHeaders)
+        {
+            if (responseHeaders != null)
+            {
+                IEnumerable<string> substatusCodes;
+                if (responseHeaders.TryGetValues(WFConstants.BackendHeaders.SubStatus, out substatusCodes))
+                {
+                    uint nSubStatus;
+                    if (uint.TryParse(substatusCodes.FirstOrDefault(), NumberStyles.Integer, CultureInfo.InvariantCulture, out nSubStatus))
+                    {
+                       return (SubStatusCodes)nSubStatus;
+                    }
+                }
+            }
+
+            return SubStatusCodes.Unknown;
         }
     }
 }

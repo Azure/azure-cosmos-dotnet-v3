@@ -263,33 +263,24 @@ namespace Microsoft.Azure.Documents.Rntbd
                                              TransportRequestStats transportRequestStats)
         {
             uint requestId = unchecked((uint) Interlocked.Increment(ref this.nextRequestId));
+            string requestIdString = requestId.ToString(CultureInfo.InvariantCulture);
 
-            // Hack: When timeouts occur, "request" can end up referenced by
-            // multiple threads. Lock it while setting the transport request ID
-            // header and serializing, to prevent racing against other threads
-            // that mutate the same state and serialize it.
-            lock (request)
-            {
-                request.Headers.Set(
-                    HttpConstants.HttpHeaders.TransportRequestID,
-                    requestId.ToString(CultureInfo.InvariantCulture));
+            int headerSize;
+            int? bodySize;
+            TransportSerialization.SerializedRequest serializedRequest = TransportSerialization.BuildRequest(
+                request,
+                physicalAddress.PathAndQuery,
+                resourceOperation,
+                activityId,
+                this.connection.BufferProvider,
+                requestIdString,
+                out headerSize, 
+                out bodySize);
 
-                int headerSize;
-                int? bodySize;
-                TransportSerialization.SerializedRequest serializedRequest = TransportSerialization.BuildRequest(
-                    request,
-                    physicalAddress.PathAndQuery,
-                    resourceOperation,
-                    activityId,
-                    this.connection.BufferProvider,
-                    out headerSize, 
-                    out bodySize);
+            transportRequestStats.RequestBodySizeInBytes = bodySize;
+            transportRequestStats.RequestSizeInBytes = serializedRequest.RequestSize;
 
-                transportRequestStats.RequestBodySizeInBytes = bodySize;
-                transportRequestStats.RequestSizeInBytes = serializedRequest.RequestSize;
-
-                return new PrepareCallResult(requestId, physicalAddress.Uri, serializedRequest);
-            }
+            return new PrepareCallResult(requestId, physicalAddress.Uri, serializedRequest);
         }
 
         public async Task<StoreResponse> CallAsync(ChannelCallArguments args, TransportRequestStats transportRequestStats)

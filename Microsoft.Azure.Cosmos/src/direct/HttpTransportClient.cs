@@ -402,6 +402,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQueryMetrics, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateIndexMetrics, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateIndexMetricsText, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.CorrelatedActivityId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ForceQueryScan, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, request);
@@ -456,8 +457,12 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateByokEncryptionProgress, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IncludePhysicalPartitionThroughputInfo, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateOfferStateToPending, request);
-            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateOldestActiveSchema, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateOldestActiveSchemaId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.OfferReplaceRURedistribution, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ForceDatabaseAccountUpdate, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PriorityLevel, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowRestoreParamsUpdate, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsRecreate, request);
 
             Stream clonedStream = null;
             if (request.Body != null)
@@ -684,6 +689,8 @@ namespace Microsoft.Azure.Documents
                     return HttpTransportClient.GetRoleDefinitionFeedUri(physicalAddress, request);
                 case ResourceType.RoleAssignment:
                     return HttpTransportClient.GetRoleAssignmentFeedUri(physicalAddress, request);
+                case ResourceType.EncryptionScope:
+                    return HttpTransportClient.GetEncryptionScopeFeedUri(physicalAddress, request);
                 case ResourceType.AuthPolicyElement:
                     return HttpTransportClient.GetAuthPolicyElementFeedUri(physicalAddress, request);
                 case ResourceType.SystemDocument:
@@ -748,6 +755,8 @@ namespace Microsoft.Azure.Documents
                     return HttpTransportClient.GetRoleDefinitionEntryUri(physicalAddress, request);
                 case ResourceType.RoleAssignment:
                     return HttpTransportClient.GetRoleAssignmentEntryUri(physicalAddress, request);
+                case ResourceType.EncryptionScope:
+                    return HttpTransportClient.GetEncryptionScopeEntryUri(physicalAddress, request);
                 case ResourceType.AuthPolicyElement:
                     return HttpTransportClient.GetAuthPolicyElementEntryUri(physicalAddress, request);
                 case ResourceType.InteropUser:
@@ -958,6 +967,16 @@ namespace Microsoft.Azure.Documents
         private static Uri GetRoleAssignmentEntryUri(Uri baseAddress, DocumentServiceRequest request)
         {
             return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.RoleAssignment, request, isFeed: false));
+        }
+
+        private static Uri GetEncryptionScopeFeedUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.EncryptionScope, request, isFeed: true));
+        }
+
+        private static Uri GetEncryptionScopeEntryUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.EncryptionScope, request, isFeed: false));
         }
 
         private static Uri GetAuthPolicyElementFeedUri(Uri baseAddress, DocumentServiceRequest request)
@@ -1277,10 +1296,21 @@ namespace Microsoft.Azure.Documents
 
                     case HttpStatusCode.ServiceUnavailable:
                         uint subStatus = HttpTransportClient.GetSubsStatusFromHeader(response);
-                        exception = ServiceUnavailableException.Create(
-                            (subStatus == 0) ? SubStatusCodes.ServerGenerated503 : null,
-                            headers: response.Headers,
-                            requestUri: response.RequestMessage.RequestUri);
+                        if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            exception = new ServiceUnavailableException(
+                                message: string.Format(CultureInfo.CurrentUICulture, RMResources.ExceptionMessage, errorMessage),
+                                headers: response.Headers,
+                                subStatusCode: (subStatus == 0) ? SubStatusCodes.ServerGenerated503 : null, // if substatus is not zero we pass null because the headers will have the correct value
+                                requestUri: response.RequestMessage.RequestUri);
+                        }
+                        else
+                        {
+                            exception = ServiceUnavailableException.Create(
+                                (subStatus == 0) ? SubStatusCodes.ServerGenerated503 : null, // if substatus is not zero we pass null because the headers will have the correct value
+                                headers: response.Headers,
+                                requestUri: response.RequestMessage.RequestUri);
+                        }
                         break;
 
                     case HttpStatusCode.RequestTimeout:

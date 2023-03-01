@@ -62,8 +62,20 @@ namespace Microsoft.Azure.Documents
         CompletingPartitionMigration = 1008,
         LeaseNotFound = 1022,
 
+        // 404: LSN in session token is higher
+        ReadSessionNotAvailable = 1002,
+        OwnerResourceNotFound = 1003,
+        ConfigurationNameNotFound = 1004,
+        ConfigurationPropertyNotFound = 1005,
+        CollectionCreateInProgress = 1013,
+        StoreNotReady = 1023,
+        AuthTokenNotFoundInCache = 1030,
+
         // 404: StatusCodeType_NotFound: substatus
         PartitionMigratingCollectionDeleted = 1031,
+        PartitionMigrationSourcePartitionDeletedInMaster = 1034,
+        PartitionMigrationSharedThroughputDatabasePartitionResourceNotFoundInMaster = 1035,
+        PartitionMigrationPartitionResourceNotFoundInMaster = 1036,
 
         // 403: Forbidden Substatus.
         WriteForbidden = 3,
@@ -79,15 +91,6 @@ namespace Microsoft.Azure.Documents
         ThroughputCapQuotaExceeded = 1028,
         InvalidThroughputCapValue = 1029,
 
-        // 404: LSN in session token is higher
-        ReadSessionNotAvailable = 1002,
-        OwnerResourceNotFound = 1003,
-        ConfigurationNameNotFound = 1004,
-        ConfigurationPropertyNotFound = 1005,
-        CollectionCreateInProgress = 1013,
-        StoreNotReady = 1023,
-        AuthTokenNotFoundInCache = 1030,
-
         // 409: Conflict exception
         ConflictWithControlPlane = 1006,
         DatabaseNameAlreadyExists = 3206,
@@ -98,6 +101,7 @@ namespace Microsoft.Azure.Documents
         InsufficientBindablePartitions = 1007,
         ComputeFederationNotFound = 1012,
         OperationPaused = 9001,
+        ServiceIsOffline = 9002,
 
         //412: PreCondition Failed
         SplitIsDisabled = 2001,
@@ -105,11 +109,8 @@ namespace Microsoft.Azure.Documents
         CanNotAcquirePKRangesLock = 2003,
         ResourceNotFound = 2004,
         CanNotAcquireOfferOwnerLock = 2005,
-        MigrationIsDisabled = 2006,
         CanNotAcquirePKRangeLock = 2007,
         CanNotAcquirePartitionLock = 2008,
-        CanNotAcquireGlobalPartitionMigrationLock = 2009,
-        CanNotAcquireFederationPartitionMigrationLock = 2010,
         CanNotAcquireSnapshotOwnerLock = 2005,
         StorageSplitConflictingWithNWayThroughputSplit = 2011,
         MergeIsDisabled = 2012,
@@ -117,16 +118,37 @@ namespace Microsoft.Azure.Documents
         InvalidAccountStatus = 2016,
         OfferValidationFailed = 2017,
         CanNotAquireMasterPartitionAccessLock = 2018,
+        CanNotAcquireInAccountRestoreInProgressLock = 2019,
+
+        //412: PreConditionFailed migration substatus codes
+        PartitionMigrationCancelledForPendingUserOperation = 2006,
+        PartitionMigrationCanNotAcquireGlobalPartitionMigrationLock = 2009,
+        PartitionMigrationCanNotAcquireFederationPartitionMigrationLock = 2010,
+        PartitionMigrationServiceTypeAndOperationTypeDoesnotMatch = 2020,
+        PartitionMigrationGlobalDatabaseAccountResourceNotFound = 2021,
+        PartitionMigrationMasterFederationForWriteRegionNotFound = 2022,
+        PartitionMigrationMasterFederationForCurrentRegionNotFound = 2023,
+        PartitionMigrationSourceAndTargetFederationSubregionIsNotSame = 2024,
+        PartitionMigrationFailedToCreatePartitionMigrationLocks = 2025,
+        PartitionMigrationFailedToResolvePartitionInformation = 2026,
+        PartitionMigrationTopologyHasWriteRegionEmpty = 2027,
+        PartitionMigrationIsDisableOnTheGlobalDatabaseAccount = 2028,
+
+        // 500: InternalServerError migration sub status codes
+        PartitionMigrationDocumentCountMismatchBetweenSourceAndTargetPartition = 3050,
+        PartitionMigrationDocumentCountMismatchBetweenTargetPartitionReplicas = 3051,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
         ConfigurationOperationCancelled = 3002,
+        InvalidAccountConfiguration = 3003,
 
         // 429: Request Rate Too Large
         PrepareTimeLimitExceeded = 3207,
         ClientTcpChannelFull = 3208,
         BWTermCountLimitExceeded = 3209,
         RUBudgetExceeded = 3200,
+        GatewayThrottled = 3201,
         StoredProcedureConcurrency = 3084,
 
         // Key Vault Access Client Error Code
@@ -179,6 +201,16 @@ namespace Microsoft.Azure.Documents
 
         // 403 Forbidden. (CosmosDB-side errors start with 54)
         RbacRequestWasNotAuthorized = 5400,
+
+        // 403 Forbidden. (NSP related errors)
+        NspInboundDenied = 5307,
+        NspAuthorizationFailed = 5308,
+        NspNoResult = 5309,
+        NspInvalidParam = 5310,
+        NspInvalidEvalResult = 5311,
+        NspNotInitiated = 5312,
+        NspOperationNotSupported = 5313,
+
 
         // 200 OK. List feed throttled response.
         ListResourceFeedThrottled = 5500,

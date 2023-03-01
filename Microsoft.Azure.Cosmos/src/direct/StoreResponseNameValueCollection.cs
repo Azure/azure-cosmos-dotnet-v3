@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Documents.Collections
     /// This allows the TransportSerialization to directly set the property and avoid the dictionary overhead.
     /// If the property does not exists please update the StoreResponseNameValueCollection.tt list to add the new field
     /// </summary>
-    internal class StoreResponseNameValueCollection : INameValueCollection
+    internal class StoreResponseNameValueCollection : INameValueCollection, IEnumerable<KeyValuePair<string, string>> 
     {
         private static readonly StringComparer DefaultStringComparer = StringComparer.OrdinalIgnoreCase;
         private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
@@ -71,19 +71,24 @@ namespace Microsoft.Azure.Documents.Collections
         public string LocalLSN { get; set; }
         public string LogResults { get; set; }
         public string LSN { get; set; }
+        public string MaxContentLength { get; set; }
         public string MaxResourceQuota { get; set; }
         public string MergeProgressBlocked { get; set; }
         public string MinimumRUsForOffer { get; set; }
         public string NumberOfReadRegions { get; set; }
         public string OfferReplacePending { get; set; }
+        public string OfferReplacePendingForMerge { get; set; }
+        public string OldestActiveSchemaId { get; set; }
         public string OwnerFullName { get; set; }
         public string OwnerId { get; set; }
         public string PartitionKeyRangeId { get; set; }
         public string PendingPKDelete { get; set; }
+        public string PhysicalPartitionId { get; set; }
         public string QueryExecutionInfo { get; set; }
         public string QueryMetrics { get; set; }
         public string QuorumAckedLocalLSN { get; set; }
         public string QuorumAckedLSN { get; set; }
+        public string ReIndexerProgress { get; set; }
         public string ReplicaStatusRevoked { get; set; }
         public string ReplicatorLSNToGLSNDelta { get; set; }
         public string ReplicatorLSNToLLSNDelta { get; set; }
@@ -184,19 +189,24 @@ namespace Microsoft.Azure.Documents.Collections
             this.LocalLSN = null;
             this.LogResults = null;
             this.LSN = null;
+            this.MaxContentLength = null;
             this.MaxResourceQuota = null;
             this.MergeProgressBlocked = null;
             this.MinimumRUsForOffer = null;
             this.NumberOfReadRegions = null;
             this.OfferReplacePending = null;
+            this.OfferReplacePendingForMerge = null;
+            this.OldestActiveSchemaId = null;
             this.OwnerFullName = null;
             this.OwnerId = null;
             this.PartitionKeyRangeId = null;
             this.PendingPKDelete = null;
+            this.PhysicalPartitionId = null;
             this.QueryExecutionInfo = null;
             this.QueryMetrics = null;
             this.QuorumAckedLocalLSN = null;
             this.QuorumAckedLSN = null;
+            this.ReIndexerProgress = null;
             this.ReplicaStatusRevoked = null;
             this.ReplicatorLSNToGLSNDelta = null;
             this.ReplicatorLSNToLLSNDelta = null;
@@ -271,19 +281,24 @@ namespace Microsoft.Azure.Documents.Collections
                 LocalLSN = this.LocalLSN,
                 LogResults = this.LogResults,
                 LSN = this.LSN,
+                MaxContentLength = this.MaxContentLength,
                 MaxResourceQuota = this.MaxResourceQuota,
                 MergeProgressBlocked = this.MergeProgressBlocked,
                 MinimumRUsForOffer = this.MinimumRUsForOffer,
                 NumberOfReadRegions = this.NumberOfReadRegions,
                 OfferReplacePending = this.OfferReplacePending,
+                OfferReplacePendingForMerge = this.OfferReplacePendingForMerge,
+                OldestActiveSchemaId = this.OldestActiveSchemaId,
                 OwnerFullName = this.OwnerFullName,
                 OwnerId = this.OwnerId,
                 PartitionKeyRangeId = this.PartitionKeyRangeId,
                 PendingPKDelete = this.PendingPKDelete,
+                PhysicalPartitionId = this.PhysicalPartitionId,
                 QueryExecutionInfo = this.QueryExecutionInfo,
                 QueryMetrics = this.QueryMetrics,
                 QuorumAckedLocalLSN = this.QuorumAckedLocalLSN,
                 QuorumAckedLSN = this.QuorumAckedLSN,
+                ReIndexerProgress = this.ReIndexerProgress,
                 ReplicaStatusRevoked = this.ReplicaStatusRevoked,
                 ReplicatorLSNToGLSNDelta = this.ReplicatorLSNToGLSNDelta,
                 ReplicatorLSNToLLSNDelta = this.ReplicatorLSNToLLSNDelta,
@@ -320,6 +335,322 @@ namespace Microsoft.Azure.Documents.Collections
         public IEnumerator GetEnumerator()
         {
             return this.Keys().GetEnumerator();
+        }
+
+        IEnumerator<KeyValuePair<string, string>> IEnumerable<KeyValuePair<string, string>>.GetEnumerator()
+        {
+            if (this.ActivityId != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.ActivityId, this.ActivityId);
+            }
+            if (this.LastStateChangeUtc != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.LastStateChangeUtc, this.LastStateChangeUtc);
+            }
+            if (this.Continuation != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.Continuation, this.Continuation);
+            }
+            if (this.ETag != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.ETag, this.ETag);
+            }
+            if (this.RetryAfterInMilliseconds != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, this.RetryAfterInMilliseconds);
+            }
+            if (this.IndexingDirective != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.IndexingDirective, this.IndexingDirective);
+            }
+            if (this.MaxResourceQuota != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.MaxResourceQuota, this.MaxResourceQuota);
+            }
+            if (this.CurrentResourceQuotaUsage != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.CurrentResourceQuotaUsage, this.CurrentResourceQuotaUsage);
+            }
+            if (this.SchemaVersion != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.SchemaVersion, this.SchemaVersion);
+            }
+            if (this.CollectionPartitionIndex != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.CollectionPartitionIndex, this.CollectionPartitionIndex);
+            }
+            if (this.CollectionServiceIndex != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.CollectionServiceIndex, this.CollectionServiceIndex);
+            }
+            if (this.LSN != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.LSN, this.LSN);
+            }
+            if (this.ItemCount != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.ItemCount, this.ItemCount);
+            }
+            if (this.RequestCharge != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.RequestCharge, this.RequestCharge);
+            }
+            if (this.OwnerFullName != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.OwnerFullName, this.OwnerFullName);
+            }
+            if (this.OwnerId != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.OwnerId, this.OwnerId);
+            }
+            if (this.DatabaseAccountId != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.DatabaseAccountId, this.DatabaseAccountId);
+            }
+            if (this.QuorumAckedLSN != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.QuorumAckedLSN, this.QuorumAckedLSN);
+            }
+            if (this.RequestValidationFailure != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.RequestValidationFailure, this.RequestValidationFailure);
+            }
+            if (this.SubStatus != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.SubStatus, this.SubStatus);
+            }
+            if (this.CollectionIndexTransformationProgress != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.CollectionIndexTransformationProgress, this.CollectionIndexTransformationProgress);
+            }
+            if (this.CurrentWriteQuorum != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.CurrentWriteQuorum, this.CurrentWriteQuorum);
+            }
+            if (this.CurrentReplicaSetSize != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.CurrentReplicaSetSize, this.CurrentReplicaSetSize);
+            }
+            if (this.CollectionLazyIndexingProgress != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.CollectionLazyIndexingProgress, this.CollectionLazyIndexingProgress);
+            }
+            if (this.PartitionKeyRangeId != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.PartitionKeyRangeId, this.PartitionKeyRangeId);
+            }
+            if (this.LogResults != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.LogResults, this.LogResults);
+            }
+            if (this.XPRole != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.XPRole, this.XPRole);
+            }
+            if (this.IsRUPerMinuteUsed != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.IsRUPerMinuteUsed, this.IsRUPerMinuteUsed);
+            }
+            if (this.QueryMetrics != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.QueryMetrics, this.QueryMetrics);
+            }
+            if (this.QueryExecutionInfo != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.QueryExecutionInfo, this.QueryExecutionInfo);
+            }
+            if (this.IndexUtilization != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.IndexUtilization, this.IndexUtilization);
+            }
+            if (this.GlobalCommittedLSN != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.GlobalCommittedLSN, this.GlobalCommittedLSN);
+            }
+            if (this.NumberOfReadRegions != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.NumberOfReadRegions, this.NumberOfReadRegions);
+            }
+            if (this.OfferReplacePending != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.OfferReplacePending, this.OfferReplacePending);
+            }
+            if (this.ItemLSN != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.ItemLSN, this.ItemLSN);
+            }
+            if (this.RestoreState != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.RestoreState, this.RestoreState);
+            }
+            if (this.CollectionSecurityIdentifier != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.CollectionSecurityIdentifier, this.CollectionSecurityIdentifier);
+            }
+            if (this.TransportRequestID != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.TransportRequestID, this.TransportRequestID);
+            }
+            if (this.ShareThroughput != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.ShareThroughput, this.ShareThroughput);
+            }
+            if (this.DisableRntbdChannel != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.DisableRntbdChannel, this.DisableRntbdChannel);
+            }
+            if (this.XDate != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.XDate, this.XDate);
+            }
+            if (this.LocalLSN != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.LocalLSN, this.LocalLSN);
+            }
+            if (this.QuorumAckedLocalLSN != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.QuorumAckedLocalLSN, this.QuorumAckedLocalLSN);
+            }
+            if (this.ItemLocalLSN != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.ItemLocalLSN, this.ItemLocalLSN);
+            }
+            if (this.HasTentativeWrites != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.HasTentativeWrites, this.HasTentativeWrites);
+            }
+            if (this.SessionToken != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.SessionToken, this.SessionToken);
+            }
+            if (this.ReplicatorLSNToGLSNDelta != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.ReplicatorLSNToGLSNDelta, this.ReplicatorLSNToGLSNDelta);
+            }
+            if (this.ReplicatorLSNToLLSNDelta != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.ReplicatorLSNToLLSNDelta, this.ReplicatorLSNToLLSNDelta);
+            }
+            if (this.VectorClockLocalProgress != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.VectorClockLocalProgress, this.VectorClockLocalProgress);
+            }
+            if (this.MinimumRUsForOffer != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.MinimumRUsForOffer, this.MinimumRUsForOffer);
+            }
+            if (this.XPConfigurationSessionsCount != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.XPConfigurationSessionsCount, this.XPConfigurationSessionsCount);
+            }
+            if (this.UnflushedMergLogEntryCount != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.UnflushedMergLogEntryCount, this.UnflushedMergLogEntryCount);
+            }
+            if (this.ResourceId != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.ResourceId, this.ResourceId);
+            }
+            if (this.TimeToLiveInSeconds != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.TimeToLiveInSeconds, this.TimeToLiveInSeconds);
+            }
+            if (this.ReplicaStatusRevoked != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.ReplicaStatusRevoked, this.ReplicaStatusRevoked);
+            }
+            if (this.SoftMaxAllowedThroughput != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.SoftMaxAllowedThroughput, this.SoftMaxAllowedThroughput);
+            }
+            if (this.BackendRequestDurationMilliseconds != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, this.BackendRequestDurationMilliseconds);
+            }
+            if (this.ServerVersion != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.ServerVersion, this.ServerVersion);
+            }
+            if (this.ConfirmedStoreChecksum != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.ConfirmedStoreChecksum, this.ConfirmedStoreChecksum);
+            }
+            if (this.TentativeStoreChecksum != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.TentativeStoreChecksum, this.TentativeStoreChecksum);
+            }
+            if (this.CorrelatedActivityId != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.CorrelatedActivityId, this.CorrelatedActivityId);
+            }
+            if (this.PendingPKDelete != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.PendingPKDelete, this.PendingPKDelete);
+            }
+            if (this.AadAppliedRoleAssignmentId != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.AadAppliedRoleAssignmentId, this.AadAppliedRoleAssignmentId);
+            }
+            if (this.CollectionUniqueIndexReIndexProgress != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.CollectionUniqueIndexReIndexProgress, this.CollectionUniqueIndexReIndexProgress);
+            }
+            if (this.CollectionUniqueKeysUnderReIndex != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.CollectionUniqueKeysUnderReIndex, this.CollectionUniqueKeysUnderReIndex);
+            }
+            if (this.AnalyticalMigrationProgress != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.AnalyticalMigrationProgress, this.AnalyticalMigrationProgress);
+            }
+            if (this.TotalAccountThroughput != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.TotalAccountThroughput, this.TotalAccountThroughput);
+            }
+            if (this.ByokEncryptionProgress != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.ByokEncryptionProgress, this.ByokEncryptionProgress);
+            }
+            if (this.AppliedPolicyElementId != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.AppliedPolicyElementId, this.AppliedPolicyElementId);
+            }
+            if (this.MergeProgressBlocked != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.MergeProgressBlocked, this.MergeProgressBlocked);
+            }
+            if (this.ChangeFeedInfo != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.ChangeFeedInfo, this.ChangeFeedInfo);
+            }
+            if (this.ReIndexerProgress != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.ReIndexerProgress, this.ReIndexerProgress);
+            }
+            if (this.OfferReplacePendingForMerge != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.OfferReplacePendingForMerge, this.OfferReplacePendingForMerge);
+            }
+            if (this.OldestActiveSchemaId != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.OldestActiveSchemaId, this.OldestActiveSchemaId);
+            }
+            if (this.PhysicalPartitionId != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.PhysicalPartitionId, this.PhysicalPartitionId);
+            }
+            if (this.MaxContentLength != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.MaxContentLength, this.MaxContentLength);
+            }
+
+            if (this.lazyNotCommonHeaders.IsValueCreated)
+            {
+                foreach (KeyValuePair<string, string> kvp in this.lazyNotCommonHeaders.Value)
+                {
+                    yield return kvp;
+                }
+            }
         }
 
         public string[] GetValues(string key)
@@ -618,6 +949,26 @@ namespace Microsoft.Azure.Documents.Collections
             if (this.ChangeFeedInfo != null)
             {
                 yield return HttpConstants.HttpHeaders.ChangeFeedInfo;
+            }
+            if (this.ReIndexerProgress != null)
+            {
+                yield return WFConstants.BackendHeaders.ReIndexerProgress;
+            }
+            if (this.OfferReplacePendingForMerge != null)
+            {
+                yield return WFConstants.BackendHeaders.OfferReplacePendingForMerge;
+            }
+            if (this.OldestActiveSchemaId != null)
+            {
+                yield return WFConstants.BackendHeaders.OldestActiveSchemaId;
+            }
+            if (this.PhysicalPartitionId != null)
+            {
+                yield return HttpConstants.HttpHeaders.PhysicalPartitionId;
+            }
+            if (this.MaxContentLength != null)
+            {
+                yield return HttpConstants.HttpHeaders.MaxContentLength;
             }
 
             if(this.lazyNotCommonHeaders.IsValueCreated)
@@ -924,6 +1275,26 @@ namespace Microsoft.Azure.Documents.Collections
                         if (this.ChangeFeedInfo != null)
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.ChangeFeedInfo, this.ChangeFeedInfo);
+                        }
+                        if (this.ReIndexerProgress != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.ReIndexerProgress, this.ReIndexerProgress);
+                        }
+                        if (this.OfferReplacePendingForMerge != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.OfferReplacePendingForMerge, this.OfferReplacePendingForMerge);
+                        }
+                        if (this.OldestActiveSchemaId != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.OldestActiveSchemaId, this.OldestActiveSchemaId);
+                        }
+                        if (this.PhysicalPartitionId != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.PhysicalPartitionId, this.PhysicalPartitionId);
+                        }
+                        if (this.MaxContentLength != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.MaxContentLength, this.MaxContentLength);
                         }
                         if(this.lazyNotCommonHeaders.IsValueCreated)
                         {
@@ -1359,6 +1730,26 @@ namespace Microsoft.Azure.Documents.Collections
                     }
 
                     break;
+                case 30:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ReIndexerProgress, key))
+                    {
+                        return this.ReIndexerProgress;
+                    }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MaxContentLength, key))
+                    {
+                        return this.MaxContentLength;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.ReIndexerProgress, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.ReIndexerProgress;
+                    }
+
+                    if (string.Equals(HttpConstants.HttpHeaders.MaxContentLength, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.MaxContentLength;
+                    }
+
+                    break;
                 case 31:
                     if (string.Equals(WFConstants.BackendHeaders.RequestValidationFailure, key, StringComparison.OrdinalIgnoreCase))
                     {
@@ -1399,6 +1790,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.CorrelatedActivityId;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PhysicalPartitionId, key))
+                    {
+                        return this.PhysicalPartitionId;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.ReplicatorLSNToGLSNDelta, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ReplicatorLSNToGLSNDelta;
@@ -1412,6 +1807,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.CorrelatedActivityId, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.CorrelatedActivityId;
+                    }
+
+                    if (string.Equals(HttpConstants.HttpHeaders.PhysicalPartitionId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.PhysicalPartitionId;
                     }
 
                     break;
@@ -1444,6 +1844,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.CollectionSecurityIdentifier;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.OldestActiveSchemaId, key))
+                    {
+                        return this.OldestActiveSchemaId;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.PartitionKeyRangeId;
@@ -1452,6 +1856,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.CollectionSecurityIdentifier, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.CollectionSecurityIdentifier;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.OldestActiveSchemaId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.OldestActiveSchemaId;
                     }
 
                     break;
@@ -1464,6 +1873,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.ByokEncryptionProgress;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.OfferReplacePendingForMerge, key))
+                    {
+                        return this.OfferReplacePendingForMerge;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.TotalAccountThroughput, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.TotalAccountThroughput;
@@ -1472,6 +1885,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.ByokEncryptionProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ByokEncryptionProgress;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.OfferReplacePendingForMerge, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.OfferReplacePendingForMerge;
                     }
 
                     break;
@@ -2491,6 +2909,48 @@ namespace Microsoft.Azure.Documents.Collections
                         return;
                     }
                     break;
+                case 30:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.ReIndexerProgress, key))
+                    {
+                        if (throwIfAlreadyExists && this.ReIndexerProgress != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.ReIndexerProgress = value;
+                        return;
+                    }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.MaxContentLength, key))
+                    {
+                        if (throwIfAlreadyExists && this.MaxContentLength != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MaxContentLength = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.ReIndexerProgress, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.ReIndexerProgress != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.ReIndexerProgress = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.MaxContentLength, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.MaxContentLength != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MaxContentLength = value;
+                        return;
+                    }
+                    break;
                 case 31:
                     if (string.Equals(WFConstants.BackendHeaders.RequestValidationFailure, key, StringComparison.OrdinalIgnoreCase))
                     {
@@ -2576,6 +3036,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.CorrelatedActivityId = value;
                         return;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.PhysicalPartitionId, key))
+                    {
+                        if (throwIfAlreadyExists && this.PhysicalPartitionId != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PhysicalPartitionId = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.ReplicatorLSNToGLSNDelta, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.ReplicatorLSNToGLSNDelta != null)
@@ -2604,6 +3074,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.CorrelatedActivityId = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.PhysicalPartitionId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.PhysicalPartitionId != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.PhysicalPartitionId = value;
                         return;
                     }
                     break;
@@ -2670,6 +3150,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.CollectionSecurityIdentifier = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.OldestActiveSchemaId, key))
+                    {
+                        if (throwIfAlreadyExists && this.OldestActiveSchemaId != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.OldestActiveSchemaId = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.PartitionKeyRangeId, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.PartitionKeyRangeId != null)
@@ -2688,6 +3178,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.CollectionSecurityIdentifier = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.OldestActiveSchemaId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.OldestActiveSchemaId != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.OldestActiveSchemaId = value;
                         return;
                     }
                     break;
@@ -2712,6 +3212,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.ByokEncryptionProgress = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.OfferReplacePendingForMerge, key))
+                    {
+                        if (throwIfAlreadyExists && this.OfferReplacePendingForMerge != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.OfferReplacePendingForMerge = value;
+                        return;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.TotalAccountThroughput, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.TotalAccountThroughput != null)
@@ -2730,6 +3240,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.ByokEncryptionProgress = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.OfferReplacePendingForMerge, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.OfferReplacePendingForMerge != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.OfferReplacePendingForMerge = value;
                         return;
                     }
                     break;

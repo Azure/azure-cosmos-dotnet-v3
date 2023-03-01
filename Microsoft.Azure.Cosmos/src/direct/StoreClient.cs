@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Documents
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Rntbd;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
@@ -46,6 +47,15 @@ namespace Microsoft.Azure.Documents
             this.serviceConfigurationReader = serviceConfigurationReader;
             this.sessionContainer = sessionContainer;
             this.enableRequestDiagnostics = enableRequestDiagnostics;
+
+            // Note that, in future, the SetOpenConnectionsHandler() will be moved into IAddressResolver interface
+            // thus the if-else condition would not be necessary once the methods are moved.
+            if (addressResolver is IAddressResolverExtension addressResolverExtension)
+            {
+                addressResolverExtension.SetOpenConnectionsHandler(
+                    openConnectionHandler: new RntbdOpenConnectionHandler(
+                        transportClient: transportClient));
+            }
 
             this.replicatedResourceClient = new ReplicatedResourceClient(
                 addressResolver: addressResolver,

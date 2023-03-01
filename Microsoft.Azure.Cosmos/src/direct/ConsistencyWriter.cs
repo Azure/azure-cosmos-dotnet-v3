@@ -162,7 +162,7 @@ For globally strong write:
                 }
 
                 DateTime startTimeUtc = DateTime.UtcNow;
-                StoreResult storeResult = null;
+                ReferenceCountedDisposable<StoreResult> storeResult = null;
                 try
                 {
                     response = await this.transportClient.InvokeResourceOperationAsync(primaryUri, request);
@@ -172,11 +172,12 @@ For globally strong write:
                         responseException: null,
                         requiresValidLsn: true,
                         useLocalLSNBasedHeaders: false,
+                        replicaHealthStatuses: primaryUri.GetCurrentHealthState().GetHealthStatusDiagnosticsAsReadOnlyEnumerable(),
                         storePhysicalAddress: primaryUri.Uri);
 
                     request.RequestContext.ClientRequestStatistics.RecordResponse(
                         request: request,
-                        storeResult: storeResult,
+                        storeResult: storeResult.Target,
                         startTimeUtc: startTimeUtc,
                         endTimeUtc: DateTime.UtcNow);
                 }
@@ -187,11 +188,12 @@ For globally strong write:
                         responseException: ex,
                         requiresValidLsn: true,
                         useLocalLSNBasedHeaders: false,
+                        replicaHealthStatuses: primaryUri.GetCurrentHealthState().GetHealthStatusDiagnosticsAsReadOnlyEnumerable(),
                         storePhysicalAddress: primaryUri.Uri);
 
                     request.RequestContext.ClientRequestStatistics.RecordResponse(
                         request: request,
-                        storeResult: storeResult,
+                        storeResult: storeResult.Target,
                         startTimeUtc: startTimeUtc,
                         endTimeUtc: DateTime.UtcNow);
 
@@ -214,17 +216,17 @@ For globally strong write:
                     }
                 }
 
-                if (storeResult == null)
+                if (storeResult?.Target is null)
                 {
                     Debug.Assert(false, "StoreResult cannot be null at this point.");
                     DefaultTrace.TraceCritical("ConsistencyWriter did not get storeResult!");
                     throw new InternalServerErrorException();
                 }
 
-                if (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult))
+                if (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult.Target))
                 {
-                    long lsn = storeResult.LSN;
-                    long globalCommittedLsn = storeResult.GlobalCommittedLSN;
+                    long lsn = storeResult.Target.LSN;
+                    long globalCommittedLsn = storeResult.Target.GlobalCommittedLSN;
 
                     if (lsn == -1 || globalCommittedLsn == -1)
                     {
@@ -256,7 +258,7 @@ For globally strong write:
                 }
                 else
                 {
-                    return storeResult.ToResponse();
+                    return storeResult.Target.ToResponse();
                 }
             }
             else
@@ -271,7 +273,7 @@ For globally strong write:
                 }
             }
 
-            return request.RequestContext.GlobalStrongWriteStoreResult.ToResponse();
+            return request.RequestContext.GlobalStrongWriteStoreResult.Target.ToResponse();
         }
 
         private bool ShouldPerformWriteBarrierForGlobalStrong(StoreResult storeResult)
@@ -298,7 +300,7 @@ For globally strong write:
             while (writeBarrierRetryCount-- > 0)
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
-                IList<StoreResult> responses = await this.storeReader.ReadMultipleReplicaAsync(
+                IList<ReferenceCountedDisposable<StoreResult>> responses = await this.storeReader.ReadMultipleReplicaAsync(
                     barrierRequest,
                     includePrimary: true,
                     replicaCountToRead: 1, // any replica with correct globalCommittedLsn is good enough
@@ -308,13 +310,13 @@ For globally strong write:
                     checkMinLSN: false,
                     forceReadAll: false);
 
-                if (responses != null && responses.Any(response => response.GlobalCommittedLSN >= selectedGlobalCommittedLsn))
+                if (responses != null && responses.Any(response => response.Target.GlobalCommittedLSN >= selectedGlobalCommittedLsn))
                 {
                     return true;
                 }
 
                 //get max global committed lsn from current batch of responses, then update if greater than max of all batches.
-                long maxGlobalCommittedLsn = responses != null ? responses.Select(s => s.GlobalCommittedLSN).DefaultIfEmpty(0).Max() : 0;
+                long maxGlobalCommittedLsn = responses != null ? responses.Select(s => s.Target.GlobalCommittedLSN).DefaultIfEmpty(0).Max() : 0;
                 maxGlobalCommittedLsnReceived = maxGlobalCommittedLsnReceived > maxGlobalCommittedLsn ? maxGlobalCommittedLsnReceived : maxGlobalCommittedLsn;
 
                 //only refresh on first barrier call, set to false for subsequent attempts.

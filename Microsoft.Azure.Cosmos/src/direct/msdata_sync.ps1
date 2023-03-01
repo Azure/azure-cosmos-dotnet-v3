@@ -1,4 +1,4 @@
-$baseDir    = "e:\src\m1"
+$baseDir    = "C:\stash\CosmosDB"
 $sourceDir = 
     @(
         "\Product\SDK\.net\Microsoft.Azure.Cosmos.Direct\src\",
@@ -62,6 +62,7 @@ foreach ($file in Get-ChildItem . -Name )
         continue;
     }
 
+    Write-Host "Copying Files: $file"
     foreach($source in $sourceDir)
     {
         $targetFile = $baseDir + $source + $file 
