@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
                     key: key,
                     initialValue: initialLazyValue,
                     callbackDelegate: singleValueInitFunc,
-                    operationName: "GetAsync");
+                    operationName: nameof(GetAsync));
             }
 
             // The AsyncLazyWithRefreshTask is lazy and won't create the task until GetValue is called.
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos
                     key: key,
                     initialValue: initialLazyValue,
                     callbackDelegate: singleValueInitFunc,
-                    operationName: "RefreshAsync");
+                    operationName: nameof(RefreshAsync));
             }
         }
 
