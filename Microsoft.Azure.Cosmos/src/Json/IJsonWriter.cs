@@ -103,7 +103,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Writes an signed 4-byte integer to the internal buffer.
         /// </summary>
         /// <param name="value">The value of the integer to write.</param>
-        void WriteInt32Value(int value);
+        /// <param name="withPrefix">If prefix should be there.</param>
+        void WriteInt32Value(int value, bool withPrefix = true);
 
         /// <summary>
         /// Writes an signed 8-byte integer to the internal buffer.

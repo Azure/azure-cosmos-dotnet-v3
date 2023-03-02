@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract void WriteInt16Value(short value);
 
         /// <inheritdoc />
-        public abstract void WriteInt32Value(int value);
+        public abstract void WriteInt32Value(int value, bool withPrefix = true);
 
         /// <inheritdoc />
         public abstract void WriteInt64Value(long value);

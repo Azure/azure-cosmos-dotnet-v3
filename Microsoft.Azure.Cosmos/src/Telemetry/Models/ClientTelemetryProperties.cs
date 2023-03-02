@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
     using System.Collections.Generic;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Json;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
 
@@ -118,6 +120,68 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             this.RequestInfo = requestInfo;
             this.PreferredRegions = preferredRegions;
             this.MachineId = machineId;
+        }
+
+        public void Write(IJsonTextWriterExtensions jsonWriter)
+        {
+            jsonWriter.WriteFieldName("timeStamp");
+            jsonWriter.WriteStringValue(this.DateTimeUtc);
+
+            jsonWriter.WriteFieldName("clientId");
+            jsonWriter.WriteStringValue(this.ClientId);
+
+            jsonWriter.WriteFieldName("machineId");
+            jsonWriter.WriteStringValue(this.MachineId);
+
+            jsonWriter.WriteFieldName("processId");
+            jsonWriter.WriteStringValue(this.ProcessId);
+
+            jsonWriter.WriteFieldName("userAgent");
+            jsonWriter.WriteStringValue(this.UserAgent);
+
+            jsonWriter.WriteFieldName("connectionMode");
+            jsonWriter.WriteStringValue(this.ConnectionMode);
+
+            jsonWriter.WriteFieldName("globalDatabaseAccountName");
+            jsonWriter.WriteStringValue(this.GlobalDatabaseAccountName);
+
+            jsonWriter.WriteFieldName("applicationRegion");
+            jsonWriter.WriteStringValue(this.ApplicationRegion);
+
+            jsonWriter.WriteFieldName("hostEnvInfo");
+            jsonWriter.WriteStringValue(this.HostEnvInfo);
+
+            jsonWriter.WriteFieldName("acceleratedNetworking");
+            if (this.AcceleratedNetworking.HasValue)
+            {
+                jsonWriter.WriteBoolValue(this.AcceleratedNetworking.Value);
+            }
+            else
+            {
+                jsonWriter.WriteNullValue();
+            }
+
+            jsonWriter.WriteFieldName("preferredRegions");
+
+            if (this.PreferredRegions != null)
+            {
+                jsonWriter.WriteArrayStart();
+                foreach (string region in this.PreferredRegions)
+                {
+                    jsonWriter.WriteStringValue(region);
+                }
+                jsonWriter.WriteArrayEnd();
+            }
+            else
+            {
+                jsonWriter.WriteNullValue();
+            }
+
+            jsonWriter.WriteFieldName("aggregationIntervalInSec");
+            jsonWriter.WriteInt32Value(this.AggregationIntervalInSec, false);
+
+            jsonWriter.WriteFieldName("systemInfo");
+            jsonWriter.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(this.SystemInfo))), false);
         }
     }
 }

@@ -367,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override void WriteInt32Value(int value)
+            public override void WriteInt32Value(int value, bool withPrefix = true)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Int32);
                 this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.Int32);

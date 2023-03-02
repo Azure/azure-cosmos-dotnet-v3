@@ -193,9 +193,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             if (t.Status == TaskStatus.Faulted)
                             {
                                 this.numberOfFailures++;
+
+                                DefaultTrace.TraceError("Telemetry Job Processor failed with error : ", t.Exception.StackTrace);
                             }
                             else if (t.Status == TaskStatus.RanToCompletion)
                             {
+                                DefaultTrace.TraceInformation("Processing and Sending telemetry done.");
                                 this.Reset();
                                 this.numberOfFailures = 0;
                             }

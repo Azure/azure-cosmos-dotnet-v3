@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using System.Text;
     using System.IO;
-    using Microsoft.Azure.Cosmos.Telemetry.Resolver;
     using System.Net.Http;
     using Moq;
     using System.Threading.Tasks;
@@ -118,63 +117,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 aggregationIntervalInSec: 1), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[]}", json);
         }
-
-        [TestMethod]
-        public void CheckJsonSerializerWithContractResolver()
-        {
-            string data = File.ReadAllText("Telemetry/ClientTelemetryPayload.json", Encoding.UTF8);
-
-            ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
-            
-            JsonSerializerSettings settings = ClientTelemetryOptions.JsonSerializerSettings;
-            foreach (string property in ClientTelemetryOptions.PropertiesContainMetrics)
-            {
-                settings.ContractResolver = new IncludePropertyContractResolver(property);
-                string json = JsonConvert.SerializeObject(clientTelemetryProperties, settings);
-
-                ClientTelemetryProperties newClientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(json);
-
-                if (property == "OperationInfo")
-                {
-                    Assert.IsNull(newClientTelemetryProperties.CacheRefreshInfo);
-                    Assert.IsTrue(newClientTelemetryProperties.OperationInfo.Count > 0);
-                }
-                else if (property == "CacheRefreshInfo")
-                {
-                    Assert.IsNull(newClientTelemetryProperties.OperationInfo);
-                    Assert.IsTrue(newClientTelemetryProperties.CacheRefreshInfo.Count > 0);
-                }
-                else
-                {
-                    Assert.Fail("Invalid property name");
-                }
-            }
-        }
-
+        
         [TestMethod]
         public async Task CheckIfPayloadIsDividedCorrectlyAsync()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
-            ClientTelemetryOptions.PayloadSizeThreshold = 1024 * 5; //5 Kb
-            ClientTelemetryOptions.PropertiesWithPageSize = new Dictionary<string, int>
-            {
-                { "OperationInfo", 50 },
-                { "CacheRefreshInfo", 10 }
-            };
+            ClientTelemetryOptions.PayloadSizeThreshold = 1024 * 15; //15 Kb
 
-            string data = File.ReadAllText("Telemetry/ClientTelemetryPayload-large.json", Encoding.UTF8);
+            string data = File.ReadAllText("Telemetry/ClientTelemetryPayloadWithoutMetrics.json", Encoding.UTF8);
             ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
- 
-            int operationInfoSize = clientTelemetryProperties.OperationInfo.Count; //120
-            int cacheRefreshInfoSize = clientTelemetryProperties.CacheRefreshInfo.Count; //4
-
-            int totalPayloadSizeInBytes = data.Length; //90224
-
-            Console.WriteLine("Acceptable Length ==> " + ClientTelemetryOptions.PayloadSizeThreshold);
             
-            Console.WriteLine("Original Payload Length ==> " + totalPayloadSizeInBytes);
-            Console.WriteLine("     Non Metrics Length Length ==> 2130");
+            int totalPayloadSizeInBytes = data.Length;
 
+            int actualOperationInfoSize = 0;
+            int actualCacheRefreshInfoSize = 0;
+            int actualRequestInfoSize = 0;
+            
             Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
             _ = mockHttpHandler.Setup(x => x.SendAsync(
                 It.IsAny<HttpRequestMessage>(),
@@ -183,17 +141,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 (request, cancellationToken) =>
                 {
                     string payloadJson = request.Content.ReadAsStringAsync().Result;
+                    Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.PayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
 
-                    Console.WriteLine(payloadJson);
-                    Console.WriteLine("Size => " + payloadJson.Length);
-                    
                     ClientTelemetryProperties propertiesToSend = JsonConvert.DeserializeObject<ClientTelemetryProperties>(payloadJson);
 
-                    Console.WriteLine("SystemInfo Count => " + propertiesToSend.SystemInfo.Count ?? "null");
-                    Console.WriteLine("OperationInfo Count => " + propertiesToSend.OperationInfo?.Count ?? "null");
-                    Console.WriteLine("CacheRefreshInfo Count => " + propertiesToSend.CacheRefreshInfo?.Count ?? "null");
-                    
-                    Console.WriteLine();
+                    Assert.AreEqual(7, propertiesToSend.SystemInfo.Count, "System Info is not correct");
+
+                    actualOperationInfoSize += propertiesToSend.OperationInfo?.Count ?? 0;
+                    actualCacheRefreshInfoSize += propertiesToSend.CacheRefreshInfo?.Count ?? 0;
+                    actualRequestInfoSize += propertiesToSend.RequestInfo?.Count ?? 0;
                 })
                 .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
             
@@ -201,10 +157,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object))),
                 Mock.Of<AuthorizationTokenProvider>());
 
+            int expectedOperationInfoSize = 100;
+            int expectedCacheRefreshInfoSize = 50;
+            int expectedRequestInfoSize = 200;
+            
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
                 = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
-            for (int i = 0; i < 101; i++)
+            for (int i = 0; i < (expectedOperationInfoSize/2); i++)
             {
                 OperationInfo opeInfo = new OperationInfo(Regions.WestUS,
                                                         0,
@@ -231,9 +191,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot 
                 = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
-            for (int i = 0; i < 105; i++)
+            for (int i = 0; i < expectedCacheRefreshInfoSize; i++)
             {
-                CacheRefreshInfo opeInfo = new CacheRefreshInfo(Regions.WestUS,
+                CacheRefreshInfo crInfo = new CacheRefreshInfo(Regions.WestUS,
                                                         10,
                                                         Documents.ConsistencyLevel.Session.ToString(),
                                                         "databaseName" + i,
@@ -249,15 +209,42 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                             ClientTelemetryOptions.RequestLatencyPrecision);
                 latency.RecordValue(10l);
 
-                cacheRefreshInfoSnapshot.TryAdd(opeInfo, latency);
+                cacheRefreshInfoSnapshot.TryAdd(crInfo, latency);
+            }
+
+            ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoInfoSnapshot
+               = new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>();
+            for (int i = 0; i < expectedRequestInfoSize; i++)
+            {
+                RequestInfo reqInfo = new RequestInfo
+                {
+                    Uri = "https://dummyuri.com",
+                    DatabaseName = "databaseName" + i,
+                    ContainerName = "containerName" + i,
+                    Operation = Documents.OperationType.Read.ToString(),
+                    Resource = Documents.ResourceType.Document.ToString(),
+                    StatusCode = 200,
+                    SubStatusCode = 0
+                };
+
+                LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                            ClientTelemetryOptions.RequestLatencyMax,
+                                                            ClientTelemetryOptions.RequestLatencyPrecision);
+                latency.RecordValue(10l);
+
+                requestInfoInfoSnapshot.TryAdd(reqInfo, latency);
             }
 
             await processor.GenerateOptimalSizeOfPayloadAndSendAsync(
                 clientTelemetryProperties,
                 operationInfoSnapshot,
-                cacheRefreshInfoSnapshot, 
-                null,
+                cacheRefreshInfoSnapshot,
+                requestInfoInfoSnapshot,
                 new CancellationToken());
+
+            Assert.AreEqual(expectedOperationInfoSize, actualOperationInfoSize, "Operation Info is not correct");
+            Assert.AreEqual(expectedCacheRefreshInfoSize, actualCacheRefreshInfoSize, "Cache Refresh Info is not correct");
+            Assert.AreEqual(expectedRequestInfoSize, actualRequestInfoSize, "Request Info is not correct");
         }
         
         [TestMethod]

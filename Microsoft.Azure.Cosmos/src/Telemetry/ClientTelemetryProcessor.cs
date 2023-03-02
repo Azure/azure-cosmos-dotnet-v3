@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net.Http;
     using System.Text;
     using System.Threading;
@@ -17,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Newtonsoft.Json;
 
     internal class ClientTelemetryProcessor
     {
@@ -32,6 +30,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
         }
 
+        /// <summary>
+        /// It will create Task to process and send client telemetry payload to Client Telemetry Service.
+        /// </summary>
+        /// <param name="clientTelemetryInfo"></param>
+        /// <param name="operationInfoSnapshot"></param>
+        /// <param name="cacheRefreshInfoSnapshot"></param>
+        /// <param name="requestInfoSnapshot"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>Task</returns>
         internal Task ProcessAndSendAsync(
             ClientTelemetryProperties clientTelemetryInfo, 
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
@@ -40,12 +47,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             CancellationToken cancellationToken)
         {
             return Task.Run(async () => 
-            await this.GenerateOptimalSizeOfPayloadAndSendAsync(
-                clientTelemetryInfo, 
-                operationInfoSnapshot, 
-                cacheRefreshInfoSnapshot,
-                requestInfoSnapshot,
-                cancellationToken), cancellationToken);
+                await this.GenerateOptimalSizeOfPayloadAndSendAsync(
+                    clientTelemetryInfo, 
+                    operationInfoSnapshot, 
+                    cacheRefreshInfoSnapshot,
+                    requestInfoSnapshot,
+                    cancellationToken), cancellationToken);
         }
 
         /// <summary>
@@ -59,91 +66,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="cacheRefreshInfoSnapshot"></param>
         /// <param name="requestInfoSnapshot"></param>
         /// <param name="cancellationToken"></param>
-        /// <returns>void</returns>
         internal async Task GenerateOptimalSizeOfPayloadAndSendAsync(ClientTelemetryProperties clientTelemetryInfo,
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
             ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
             CancellationToken cancellationToken)
         {
-            clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
-            clientTelemetryInfo.CacheRefreshInfo = ClientTelemetryHelper.ToListWithMetricsInfo(cacheRefreshInfoSnapshot);
-            clientTelemetryInfo.RequestInfo = ClientTelemetryHelper.ToListWithMetricsInfo(requestInfoSnapshot);
-            
-            JsonSerializerSettings settings = ClientTelemetryOptions.JsonSerializerSettings;
-            string json = JsonConvert.SerializeObject(clientTelemetryInfo, settings);
+            List<string> payloads = ClientTelemetryPayloadWriter.SerializedPayloadChunks(clientTelemetryInfo, operationInfoSnapshot, cacheRefreshInfoSnapshot, requestInfoSnapshot);
 
-            // If JSON is greater than 2 MB
-            if (json.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+            foreach (string payload in payloads)
             {
-                foreach (string property in ClientTelemetryOptions.PropertiesContainMetrics)
-                {
-                    clientTelemetryInfo.OperationInfo = null; //clearing everything
-                    clientTelemetryInfo.CacheRefreshInfo = null;
-
-                    if (property == "OperationInfo")
-                    {
-                        List<Dictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>> pages 
-                            = this.GetPages<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>(operationInfoSnapshot, property);
-
-                        foreach (var page in pages)
-                        {
-                            List<OperationInfo> oplist = ClientTelemetryHelper.ToListWithMetricsInfo(page);
-                            clientTelemetryInfo.OperationInfo = oplist;
-
-                            await this.SendAsync(clientTelemetryInfo, cancellationToken);
-                        }
-                    }
-                    else if (property == "CacheRefreshInfo")
-                    {
-                        List<Dictionary<CacheRefreshInfo, LongConcurrentHistogram>> pages = this.GetPages<CacheRefreshInfo, LongConcurrentHistogram>(cacheRefreshInfoSnapshot, property);
-                        foreach (var page in pages)
-                        {
-                            List<CacheRefreshInfo> crList = ClientTelemetryHelper.ToListWithMetricsInfo(page);
-                            clientTelemetryInfo.CacheRefreshInfo = crList;
-
-                            await this.SendAsync(clientTelemetryInfo, cancellationToken);
-                        }
-                    }
-                }
+                await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken);
             }
-            else
-            {
-                await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, json, cancellationToken);
-            }
-        }
-
-        private List<Dictionary<T, V>> GetPages<T, V>(ConcurrentDictionary<T, V> operationInfoSnapshot, string property)
-        {
-            var list = operationInfoSnapshot.ToList();
-            int totalItems = list.Count();
-
-            int pageSize = ClientTelemetryOptions.PropertiesWithPageSize[property];
-            int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
-
-            List<Dictionary<T, V>> pages = new List<Dictionary<T, V>>();
-            for (int i = 1; i <= totalPages; i++)
-            {
-                pages.Add(list.GetRange((i - 1) * pageSize, Math.Min(pageSize, totalItems)) // get current page items
-                                         .ToDictionary(k => k.Key, v => v.Value)); // convert to dictionary
-
-                totalItems -= pageSize; // update remaining items
-            }
-
-            return pages;
-        }
-
-        /// <summary>
-        /// Task to send telemetry information to configured Juno endpoint. 
-        /// If endpoint is not configured then it won't even try to send information. It will just trace an error message.
-        /// In any case it resets the telemetry information to collect the latest one.
-        /// </summary>
-        /// <returns>Async Task</returns>
-        private async Task SendAsync(ClientTelemetryProperties clientTelemetryInfo, CancellationToken cancellationToken)
-        {
-            string jsonPayload = JsonConvert.SerializeObject(clientTelemetryInfo);
-
-            await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, jsonPayload, cancellationToken);
         }
         
         /// <summary>
@@ -203,8 +137,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    DefaultTrace.TraceError("Juno API response not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase);
-                    throw new Exception(string.Format("Juno API response not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase));
+                    DefaultTrace.TraceError("Telemetry Service API response not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase);
+                    throw new Exception(string.Format("Telemetry Service API response not successful. Status Code : {0},  Message : {1}", response.StatusCode, response.ReasonPhrase));
                 }
                 else
                 {

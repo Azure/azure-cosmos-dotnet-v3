@@ -85,6 +85,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string EnvPropsClientTelemetryVmMetadataUrl = "COSMOS.VM_METADATA_URL";
         internal const string EnvPropsClientTelemetryEndpoint = "COSMOS.CLIENT_TELEMETRY_ENDPOINT";
         internal const string EnvPropsClientTelemetryEnvironmentName = "COSMOS.ENVIRONMENT_NAME";
+
+        internal const string OperationInfo = "OperationInfo";
+        internal const string CacheRefreshInfo = "CacheRefreshInfo";
+        internal const string RequestInfo = "RequestInfo";
         
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
         // Why 5 sec? As of now, if any network request is taking more than 5 millisecond sec, we will consider it slow request this value can be revisited in future
@@ -96,13 +100,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         };
         
         private static readonly List<int> ExcludedStatusCodes = new List<int> { 404, 409 };
-        internal static readonly HashSet<string> PropertiesContainMetrics = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "OperationInfo", "CacheRefreshInfo" };
+        
+        internal static readonly HashSet<string> PropertiesContainMetrics
+            = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ClientTelemetryOptions.OperationInfo,
+                ClientTelemetryOptions.CacheRefreshInfo,
+                ClientTelemetryOptions.RequestInfo
+            };
 
         internal static int PayloadSizeThreshold = 1024 * 1024 * 2; // 2MB
-        internal static Dictionary<string, int> PropertiesWithPageSize = new Dictionary<string, int>
+      
+        internal static Dictionary<string, int> PropertiesWithMemoryInBytes = new Dictionary<string, int>
         {
-            { "OperationInfo", 1000 },
-            { "CacheRefreshInfo", 2000 }
+            { ClientTelemetryOptions.OperationInfo, 1000 },
+            { ClientTelemetryOptions.CacheRefreshInfo, 2000 },
+            { ClientTelemetryOptions.RequestInfo, 2000 }
         };
         
         private static Uri clientTelemetryEndpoint;

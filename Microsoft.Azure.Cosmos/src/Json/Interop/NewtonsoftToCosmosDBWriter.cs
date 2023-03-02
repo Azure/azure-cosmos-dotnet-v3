@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             this.writer.WriteValue(value);
         }
 
-        public override void WriteInt32Value(int value)
+        public override void WriteInt32Value(int value, bool withPrefix = true)
         {
             this.writer.WriteValue(value);
         }

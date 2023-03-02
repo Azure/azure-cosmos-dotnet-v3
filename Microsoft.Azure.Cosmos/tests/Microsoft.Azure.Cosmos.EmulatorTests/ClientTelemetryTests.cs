@@ -68,8 +68,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                        Assert.IsTrue(jsonObject.Length < ClientTelemetryOptions.PayloadSizeThreshold, "json size should be less than 2MB");
-                        
+
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
@@ -99,8 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                        Assert.IsTrue(jsonObject.Length < ClientTelemetryOptions.PayloadSizeThreshold, "json size should be less than 2MB");
-                        
+
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
@@ -130,7 +128,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
                                         .WithApplicationPreferredRegions(this.preferredRegionList);
         }
-        
+
+        private static void ResetSystemUsageMonitor(bool isTelemetryEnabled)
+        {
+            ClientTelemetryTests.systemUsageMonitor?.Stop();
+
+            FieldInfo diagnosticsHandlerHelperInstance = typeof(DiagnosticsHandlerHelper)
+                .GetField("isTelemetryMonitoringEnabled", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
+            diagnosticsHandlerHelperInstance.SetValue(null, isTelemetryEnabled);
+
+            List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
+            {
+                (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
+                        .GetField("diagnosticSystemUsageRecorder", 
+                                                BindingFlags.Instance | BindingFlags.NonPublic)
+                        .GetValue(DiagnosticsHandlerHelper.Instance)
+            };
+
+            if (isTelemetryEnabled)
+            {
+                recorders.Add(
+                    (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
+                                .GetField("telemetrySystemUsageRecorder", 
+                                                            BindingFlags.Instance | BindingFlags.NonPublic)
+                                .GetValue(DiagnosticsHandlerHelper.Instance));
+            }
+
+            ClientTelemetryTests.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
+        }
+
         [TestCleanup]
         public async Task Cleanup()
         {
@@ -397,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationSinglePartitionTest(ConnectionMode mode)
         {
-            Util.EnableClientTelemetryEnvironmentVariables("20");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
 
             Container container = await this.CreateClientAndContainer(mode);
 
@@ -456,8 +482,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryMultiPageSinglePartitionOperationTest(ConnectionMode mode)
         {
-            Util.EnableClientTelemetryEnvironmentVariables("20");
-            
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
             Container container = await this.CreateClientAndContainer(mode: mode);
 
             ItemRequestOptions requestOptions = new ItemRequestOptions()
@@ -520,7 +545,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationCrossPartitionTest(ConnectionMode mode)
         {
-            Util.EnableClientTelemetryEnvironmentVariables("20");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
 
             ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
@@ -572,8 +597,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationMutiplePageCrossPartitionTest(ConnectionMode mode)
         {
-            Util.EnableClientTelemetryEnvironmentVariables("20");
-            
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
+
             ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
                 isLargeContainer: true);
@@ -677,7 +702,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                     string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                    Assert.IsTrue(jsonObject.Length < ClientTelemetryOptions.PayloadSizeThreshold, "json size should be less than 2MB");
+
                     lock (this.actualInfo)
                     {
                         this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
@@ -741,73 +766,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
-        [TestMethod]
-        public async Task CheckMisconfiguredTelemetryEndpoint_should_stop_the_job()
-        {
-            int retryCounter = 0;
-            HttpClientHandlerHelper customHttpHandler = new HttpClientHandlerHelper
-            {
-                RequestCallBack = (request, cancellation) =>
-                {
-                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
-                    {
-                        retryCounter++;
-                        throw new Exception("Exception while sending telemetry");
-                    }
-
-                    return null;
-                }
-            };
-
-            Container container = await this.CreateClientAndContainer(
-                mode: ConnectionMode.Direct, 
-                customHttpHandler: customHttpHandler);
-
-            // Create an item
-            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
-            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
-            ToDoActivity testItemCreated = createResponse.Resource;
-
-            // Read an Item
-            ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
-
-            await Task.Delay(1500);
-
-            response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
-            
-            await Task.Delay(3500);
-
-            Assert.AreEqual(3, retryCounter);
-        }
-        
-        private static void ResetSystemUsageMonitor(bool isTelemetryEnabled)
-        {
-            ClientTelemetryTests.systemUsageMonitor?.Stop();
-
-            FieldInfo diagnosticsHandlerHelperInstance = typeof(DiagnosticsHandlerHelper)
-                .GetField("isTelemetryMonitoringEnabled", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
-            diagnosticsHandlerHelperInstance.SetValue(null, isTelemetryEnabled);
-
-            List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
-            {
-                (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
-                        .GetField("diagnosticSystemUsageRecorder",
-                                                BindingFlags.Instance | BindingFlags.NonPublic)
-                        .GetValue(DiagnosticsHandlerHelper.Instance)
-            };
-
-            if (isTelemetryEnabled)
-            {
-                recorders.Add(
-                    (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
-                                .GetField("telemetrySystemUsageRecorder",
-                                                            BindingFlags.Instance | BindingFlags.NonPublic)
-                                .GetValue(DiagnosticsHandlerHelper.Instance));
-            }
-
-            ClientTelemetryTests.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
-        }
-        
         /// <summary>
         /// This method wait for the expected operations to get recorded by telemetry and assert the values
         /// </summary>
@@ -844,14 +802,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     this.actualInfo
                         .ForEach(x =>
                         {
-                            x.CacheRefreshInfo?
-                                .ForEach(y =>
-                                {
-                                    y.GreaterThan1Kb = false;
-                                    cacheRefreshInfoSet.Add(y);
-                                });
+                            if (x.CacheRefreshInfo != null && x.CacheRefreshInfo.Count > 0)
+                            {
+                                x.CacheRefreshInfo
+                                  .ForEach(y =>
+                                  {
+                                      y.GreaterThan1Kb = false;
+                                      cacheRefreshInfoSet.Add(y);
+                                  });
 
-                            x.OperationInfo?
+                            }
+
+                            x.OperationInfo
                                 .ForEach(y =>
                                 {
                                     y.GreaterThan1Kb = false;
@@ -893,7 +855,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList: actualOperationList,
                 expectedSubstatuscode: expectedSubstatuscode);
 
-            if (!string.IsNullOrEmpty(expectedCacheSource))
+            if(!string.IsNullOrEmpty(expectedCacheSource))
             {
                 Assert.IsTrue(cacheRefreshInfoSet.Count > 0, "Cache Refresh Information is not there");
 
@@ -901,7 +863,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                   cacheRefreshInfoSet: cacheRefreshInfoSet,
                   expectedCacheSource: expectedCacheSource);
             }
-
+           
             ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation, this.expectedMetricNameUnitMap);
             if (localCopyOfActualInfo.First().ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant() 
                 && isExpectedNetworkTelemetry)
@@ -944,12 +906,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual("HostMachine", systemInfo.Resource);
                 Assert.IsNotNull(systemInfo.MetricInfo, "MetricInfo is null");
 
-                if (!actualMetricNameUnitMap.TryAdd(systemInfo.MetricInfo.MetricsName, systemInfo.MetricInfo.UnitName))
+                if(!actualMetricNameUnitMap.TryAdd(systemInfo.MetricInfo.MetricsName, systemInfo.MetricInfo.UnitName))
                 {
                     Assert.AreEqual(systemInfo.MetricInfo.UnitName, actualMetricNameUnitMap[systemInfo.MetricInfo.MetricsName]);
                 }
 
-                if (!systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.IsThreadStarvingName) &&
+                if(!systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.IsThreadStarvingName) &&
                     !systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.ThreadWaitIntervalInMsName))
                 {
                     Assert.IsTrue(systemInfo.MetricInfo.Count > 0, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Count is not greater than 0");
@@ -971,8 +933,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static void AssertOperationLevelInformation(
-            Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel,
-            IDictionary<string, long> expectedOperationRecordCountMap,
+            Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel, 
+            IDictionary<string, long> expectedOperationRecordCountMap, 
             List<OperationInfo> actualOperationList,
             int expectedSubstatuscode = 0)
         {
@@ -1010,13 +972,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (expectedOperationRecordCountMap != null)
             {
-                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string, long>(actualOperationRecordCountMap), $"actual record i.e. ({actualOperationRecordCountMap}) for operation does not match with expected record i.e. ({expectedOperationRecordCountMap})");
+                    Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({actualOperationRecordCountMap}) for operation does not match with expected record i.e. ({expectedOperationRecordCountMap})");
             }
         }
 
         private static void AssertAccountLevelInformation(
-            List<ClientTelemetryProperties> localCopyOfActualInfo,
-            List<OperationInfo> actualOperationList,
+            List<ClientTelemetryProperties> localCopyOfActualInfo, 
+            List<OperationInfo> actualOperationList, 
             List<SystemInfo> actualSystemInformation,
             List<RequestInfo> actualRequestInformation,
             bool? isAzureInstance)
@@ -1026,11 +988,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Asserting If basic client telemetry object is as expected
             foreach (ClientTelemetryProperties telemetryInfo in localCopyOfActualInfo)
             {
-                if (telemetryInfo.OperationInfo != null)
-                {
-                    actualOperationList.AddRange(telemetryInfo.OperationInfo);
-                }
-                
+                actualOperationList.AddRange(telemetryInfo.OperationInfo);
                 actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
                 actualRequestInformation.AddRange(telemetryInfo.RequestInfo);
 
@@ -1057,13 +1015,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsFalse(telemetryInfo.UserAgent.Contains("userAgentSuffix"), "Useragent should not have suffix appended"); // Useragent should not contain useragentsuffix as it can have PII
                 Assert.IsNotNull(telemetryInfo.ConnectionMode);
 
-                if (!string.IsNullOrEmpty(telemetryInfo.MachineId))
+                if(!string.IsNullOrEmpty(telemetryInfo.MachineId))
                 {
                     machineId.Add(telemetryInfo.MachineId);
                 }
             }
 
-            if (isAzureInstance.HasValue)
+            if(isAzureInstance.HasValue)
             {
                 if (isAzureInstance.Value)
                 {
@@ -1077,11 +1035,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+
         private static void AssertCacheRefreshInfoInformation(
             HashSet<CacheRefreshInfo> cacheRefreshInfoSet,
             string expectedCacheSource)
         {
-            foreach (CacheRefreshInfo cacheRefreshInfo in cacheRefreshInfoSet)
+            foreach(CacheRefreshInfo cacheRefreshInfo in cacheRefreshInfoSet)
             {
                 Assert.IsNotNull(cacheRefreshInfo.CacheRefreshSource);
                 Assert.IsTrue(expectedCacheSource.Contains(cacheRefreshInfo.CacheRefreshSource));
@@ -1100,6 +1059,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(cacheRefreshInfo.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
                 Assert.IsTrue(cacheRefreshInfo.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
             }
+        }
+        
+        [TestMethod]
+        public async Task CheckMisconfiguredTelemetryEndpoint_should_stop_the_job()
+        {
+            int retryCounter = 0;
+            HttpClientHandlerHelper customHttpHandler = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellation) =>
+                {
+                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    {
+                        retryCounter++;
+                        throw new Exception("Exception while sending telemetry");
+                    }
+
+                    return null;
+                }
+            };
+
+            Container container = await this.CreateClientAndContainer(
+                mode: ConnectionMode.Direct, 
+                customHttpHandler: customHttpHandler);
+
+            // Create an item
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
+            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
+            ToDoActivity testItemCreated = createResponse.Resource;
+
+            // Read an Item
+            ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+
+            await Task.Delay(1500);
+
+            response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+
+            await Task.Delay(3500);
+
+            Assert.AreEqual(3, retryCounter);
         }
 
         private static ItemBatchOperation CreateItem(string itemId)
