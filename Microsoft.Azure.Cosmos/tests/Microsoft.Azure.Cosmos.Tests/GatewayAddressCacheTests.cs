@@ -6,16 +6,15 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Collections.Specialized;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Reflection;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -870,6 +869,436 @@ namespace Microsoft.Azure.Cosmos
                 expectedMethodInvocationCount: 1,
                 expectedReceivedAddressesCount: addresses.Count,
                 expectedSuccessCount: addresses.Count);
+        }
+
+        /// <summary>
+        /// Test to validate that when replica validation is enabled and force address refresh happens to fetch the latest address from gateway,
+        /// if in case the gateway returns the same address which was previously unhealthy, the gateway address cache resets the returned status
+        /// to unhealthy and validates that replica using the open connection handler and finally marks it to connected.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task TryGetAddressesAsync_WhenReplicaVlidationEnabled_ShouldValidateUnhealthyReplicasHealth()
+        {
+            // Arrange.
+            ManualResetEvent manualResetEvent = new(initialState: false);
+            Mock<IHttpHandler> mockHttpHandler = new (MockBehavior.Strict);
+            string oldAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/4s";
+            string newAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/5s";
+            string addressTobeMarkedUnhealthy = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/2s";
+            mockHttpHandler.SetupSequence(x => x.SendAsync(
+                It.IsAny<HttpRequestMessage>(),
+                It.IsAny<CancellationToken>()))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
+                 {
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
+                     addressTobeMarkedUnhealthy,
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
+                     oldAddress,
+                 }))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
+                 {
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
+                     addressTobeMarkedUnhealthy,
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
+                     newAddress,
+                 }));
+
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (
+                failingIndexes: new HashSet<int>(),
+                manualResetEvent: manualResetEvent);
+
+            HttpClient httpClient = new (new HttpHandlerHelper(mockHttpHandler.Object));
+            GatewayAddressCache cache = new (
+                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
+                Documents.Client.Protocol.Tcp,
+                this.mockTokenProvider.Object,
+                this.mockServiceConfigReader.Object,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                openConnectionsHandler: fakeOpenConnectionHandler,
+                suboptimalPartitionForceRefreshIntervalInSeconds: 2,
+                enableTcpConnectionEndpointRediscovery: true);
+
+            // By default, the replica validation feature is disabled in GatewayAddressCache. Reflection is used to enable the feature
+            // for the purpose of this test.
+            FieldInfo fieldInfo = cache
+                .GetType()
+                .GetField(
+                    name: "isReplicaAddressValidationEnabled",
+                    bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
+
+            fieldInfo.SetValue(
+                    obj: cache,
+                    value: true);
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid);
+
+            // Act and Assert.
+            PartitionAddressInformation addressInfo = await cache.TryGetAddressesAsync(
+                request: request,
+                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                serviceIdentity: this.serviceIdentity,
+                forceRefreshPartitionAddresses: false,
+                cancellationToken: CancellationToken.None);
+
+            TransportAddressUri refreshedUri = addressInfo
+                .Get(Documents.Client.Protocol.Tcp)?
+                .ReplicaTransportAddressUris
+                .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
+
+            Assert.IsNotNull(refreshedUri);
+            Assert.AreEqual(
+                expected: TransportAddressHealthState.HealthStatus.Unknown,
+                actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
+
+            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
+            Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
+
+            // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's status could be validted.
+            request.RequestContext.FailedEndpoints.Value.Add(
+                new TransportAddressUri(
+                    addressUri: new Uri(
+                        uriString: addressTobeMarkedUnhealthy)));
+
+            addressInfo = await cache.TryGetAddressesAsync(
+                request: request,
+                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                serviceIdentity: this.serviceIdentity,
+                forceRefreshPartitionAddresses: true,
+                cancellationToken: CancellationToken.None);
+
+            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
+            Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
+
+            // Waits until a completion signal from the background task is received.
+            GatewayAddressCacheTests.WaitForManualResetEventSignal(
+                manualResetEvent: manualResetEvent,
+                shouldReset: false);
+
+            refreshedUri = addressInfo
+                .Get(Documents.Client.Protocol.Tcp)?
+                .ReplicaTransportAddressUris
+                .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
+
+            Assert.IsNotNull(refreshedUri);
+            Assert.AreEqual(
+                expected: TransportAddressHealthState.HealthStatus.Connected,
+                actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
+
+            mockHttpHandler.VerifyAll();
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 0,
+                expectedMethodInvocationCount: 1,
+                expectedReceivedAddressesCount: 1,
+                expectedSuccessCount: 1);
+        }
+
+        /// <summary>
+        /// Test to validate that when replica validation is enabled and there exists a replica such that it remained unhealthy for a period of one minute or
+        /// more, then even though a force refresh is not requested, the unhealthy replicas at least get a chance to re-validate it's status by the
+        /// on-demand async non-blocking cache refresh flow and eventually marks itself as healthy once the open connection attempt is successful.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task TryGetAddressesAsync_WhenReplicaVlidationEnabledAndUnhealthyUriExistsForOneMinute_ShouldForceRefreshUnhealthyReplicas()
+        {
+            // Arrange.
+            ManualResetEvent manualResetEvent = new (initialState: false);
+            Mock<IHttpHandler> mockHttpHandler = new(MockBehavior.Strict);
+            string oldAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/4s";
+            string newAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/5s";
+            string addressTobeMarkedUnhealthy = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/2s";
+            mockHttpHandler.SetupSequence(x => x.SendAsync(
+                It.IsAny<HttpRequestMessage>(),
+                It.IsAny<CancellationToken>()))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
+                 {
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
+                     addressTobeMarkedUnhealthy,
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
+                     oldAddress,
+                 }))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
+                 {
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
+                     addressTobeMarkedUnhealthy,
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
+                     newAddress,
+                 }))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
+                 {
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
+                     addressTobeMarkedUnhealthy,
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
+                     newAddress,
+                 }));
+
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (
+                failIndexesByAttempts: new Dictionary<int, HashSet<int>>()
+                {
+                    { 0, new HashSet<int>() { 0 } }
+                },
+                manualResetEvent: manualResetEvent);
+
+            HttpClient httpClient = new (new HttpHandlerHelper(mockHttpHandler.Object));
+            GatewayAddressCache cache = new (
+                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
+                Documents.Client.Protocol.Tcp,
+                this.mockTokenProvider.Object,
+                this.mockServiceConfigReader.Object,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                openConnectionsHandler: fakeOpenConnectionHandler,
+                suboptimalPartitionForceRefreshIntervalInSeconds: 2,
+                enableTcpConnectionEndpointRediscovery: true);
+
+            // By default, the replica validation feature is disabled in GatewayAddressCache. Reflection is used to enable the feature
+            // for the purpose of this test.
+            FieldInfo fieldInfo = cache
+                .GetType()
+                .GetField(
+                    name: "isReplicaAddressValidationEnabled",
+                    bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
+
+            fieldInfo.SetValue(
+                    obj: cache,
+                    value: true);
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid);
+
+            // Act and Assert.
+            PartitionAddressInformation addressInfo = await cache.TryGetAddressesAsync(
+                request: request,
+                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                serviceIdentity: this.serviceIdentity,
+                forceRefreshPartitionAddresses: false,
+                cancellationToken: CancellationToken.None);
+
+            TransportAddressUri refreshedUri = addressInfo
+                .Get(Documents.Client.Protocol.Tcp)?
+                .ReplicaTransportAddressUris
+                .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
+
+            Assert.IsNotNull(refreshedUri);
+            Assert.AreEqual(
+                expected: TransportAddressHealthState.HealthStatus.Unknown,
+                actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
+
+            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
+            Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
+
+            // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's health status could be validted.
+            request.RequestContext.FailedEndpoints.Value.Add(
+                new TransportAddressUri(
+                    addressUri: new Uri(
+                        uriString: addressTobeMarkedUnhealthy)));
+
+            addressInfo = await cache.TryGetAddressesAsync(
+                request: request,
+                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                serviceIdentity: this.serviceIdentity,
+                forceRefreshPartitionAddresses: true,
+                cancellationToken: CancellationToken.None);
+
+            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
+            Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
+
+            // Waits until a completion signal from the background task is received.
+            GatewayAddressCacheTests.WaitForManualResetEventSignal(
+                manualResetEvent: manualResetEvent,
+                shouldReset: true);
+
+            // During the replica validation flow, the connection attempt was not successful thus the replica
+            // was marked unhealthy.
+            refreshedUri = addressInfo
+                .Get(Documents.Client.Protocol.Tcp)?
+                .ReplicaTransportAddressUris
+                .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
+
+            Assert.IsNotNull(refreshedUri);
+            Assert.AreEqual(
+                expected: TransportAddressHealthState.HealthStatus.Unhealthy,
+                actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
+
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 1,
+                expectedMethodInvocationCount: 1,
+                expectedReceivedAddressesCount: 1,
+                expectedSuccessCount: 0);
+
+            // A delay of 2 minute was added to make the replica unhealthy for more than one minute. This
+            // will make sure the unhealthy replica gets a chance to re-validate it's health status.
+            ReflectionUtils.AddMinuteToDateTimeFieldUsingReflection(
+                            objectName: refreshedUri.GetCurrentHealthState(),
+                            fieldName: "lastUnhealthyTimestamp",
+                            delayInMinutes: -2);
+
+            addressInfo = await cache.TryGetAddressesAsync(
+                request: request,
+                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                serviceIdentity: this.serviceIdentity,
+                forceRefreshPartitionAddresses: false,
+                cancellationToken: CancellationToken.None);
+
+            // Waits until a completion signal from the background task is received.
+            GatewayAddressCacheTests.WaitForManualResetEventSignal(
+                manualResetEvent: manualResetEvent,
+                shouldReset: false);
+
+            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 1,
+                expectedMethodInvocationCount: 2,
+                expectedReceivedAddressesCount: 1,
+                expectedSuccessCount: 1);
+
+            addressInfo = await cache.TryGetAddressesAsync(
+                request: request,
+                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                serviceIdentity: this.serviceIdentity,
+                forceRefreshPartitionAddresses: false,
+                cancellationToken: CancellationToken.None);
+
+            refreshedUri = addressInfo
+                .Get(Documents.Client.Protocol.Tcp)?
+                .ReplicaTransportAddressUris
+                .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
+
+            // Because the open connection attempt to the unhealthy replica was successful, the replica was
+            // marked as healthy.
+            mockHttpHandler.VerifyAll();
+            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.IsNotNull(refreshedUri);
+            Assert.AreEqual(
+                expected: TransportAddressHealthState.HealthStatus.Connected,
+                actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
+
+            // This assertion makes sure that no additional calls were made to the open connection handler after
+            // since the last address refresh, because all the replicas are now either Unknown or Connected.
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 1,
+                expectedMethodInvocationCount: 2,
+                expectedReceivedAddressesCount: 1,
+                expectedSuccessCount: 1);
+        }
+
+        /// <summary>
+        /// Test to validate that when replica validation is disabled and there exists some unhealthy replicas, the gateway address
+        /// cache doesn't validate the health state of the unhealthy replicas.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task TryGetAddressesAsync_WhenReplicaVlidationDisabled_ShouldNotValidateUnhealthyReplicas()
+        {
+            // Arrange.
+            Mock<IHttpHandler> mockHttpHandler = new(MockBehavior.Strict);
+            string oldAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/4s";
+            string newAddress = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/5s";
+            string addressTobeMarkedUnhealthy = "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/2s";
+            mockHttpHandler.SetupSequence(x => x.SendAsync(
+                It.IsAny<HttpRequestMessage>(),
+                It.IsAny<CancellationToken>()))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
+                 {
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
+                     addressTobeMarkedUnhealthy,
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
+                     oldAddress,
+                 }))
+                 .Returns(MockCosmosUtil.CreateHttpResponseOfAddresses(new List<string>()
+                 {
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/1p",
+                     addressTobeMarkedUnhealthy,
+                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/3s",
+                     newAddress,
+                 }));
+
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>());
+            HttpClient httpClient = new(new HttpHandlerHelper(mockHttpHandler.Object));
+            GatewayAddressCache cache = new(
+                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
+                Documents.Client.Protocol.Tcp,
+                this.mockTokenProvider.Object,
+                this.mockServiceConfigReader.Object,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                openConnectionsHandler: fakeOpenConnectionHandler,
+                suboptimalPartitionForceRefreshIntervalInSeconds: 2,
+                enableTcpConnectionEndpointRediscovery: true);
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid);
+
+            // Act and Assert.
+            PartitionAddressInformation addressInfo = await cache.TryGetAddressesAsync(
+                request: request,
+                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                serviceIdentity: this.serviceIdentity,
+                forceRefreshPartitionAddresses: false,
+                cancellationToken: CancellationToken.None);
+
+            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
+            Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
+
+            // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's status could be validted.
+            request.RequestContext.FailedEndpoints.Value.Add(
+                new TransportAddressUri(
+                    addressUri: new Uri(
+                        uriString: addressTobeMarkedUnhealthy)));
+
+            addressInfo = await cache.TryGetAddressesAsync(
+                request: request,
+                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                serviceIdentity: this.serviceIdentity,
+                forceRefreshPartitionAddresses: true,
+                cancellationToken: CancellationToken.None);
+
+            Assert.AreEqual(4, addressInfo.AllAddresses.Count);
+            Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
+            Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
+
+            TransportAddressUri refreshedUri = addressInfo
+                .Get(Documents.Client.Protocol.Tcp)?
+                .ReplicaTransportAddressUris
+                .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
+
+            Assert.IsNotNull(refreshedUri);
+            Assert.AreEqual(
+                expected: TransportAddressHealthState.HealthStatus.Unknown,
+                actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
+
+            mockHttpHandler.VerifyAll();
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 0,
+                expectedMethodInvocationCount: 0,
+                expectedReceivedAddressesCount: 0,
+                expectedSuccessCount: 0);
+        }
+
+        /// <summary>
+        /// Blocks the current thread until a completion signal on the ManualResetEvent
+        /// is received. A timeout of 5 seconds is added to avoid any thread starvation.
+        /// </summary>
+        /// <param name="manualResetEvent">An instance of <see cref="ManualResetEvent"/>.</param>
+        /// <param name="shouldReset">A boolean flag indicating if a Reset on the manualResetEvent is required.</param>
+        private static void WaitForManualResetEventSignal(
+            ManualResetEvent manualResetEvent,
+            bool shouldReset)
+        {
+            manualResetEvent.WaitOne(
+                millisecondsTimeout: 5000);
+
+            if (shouldReset)
+            {
+                manualResetEvent.Reset();
+            }
         }
 
         /// <summary>

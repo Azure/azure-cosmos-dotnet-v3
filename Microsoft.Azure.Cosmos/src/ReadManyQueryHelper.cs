@@ -249,10 +249,13 @@ namespace Microsoft.Azure.Cosmos
         {
             int totalItemCount = Math.Min(items.Count, startIndex + this.maxItemsPerQuery);
             StringBuilder queryStringBuilder = new StringBuilder();
+            SqlParameterCollection sqlParameters = new SqlParameterCollection();
             queryStringBuilder.Append("SELECT * FROM c WHERE c.id IN ( ");
             for (int i = startIndex; i < totalItemCount; i++)
             {
-                queryStringBuilder.Append($"'{items[i].Item1}'");
+                string idParamName = "@param_id" + i;
+                sqlParameters.Add(new SqlParameter(idParamName, items[i].Item1));
+                queryStringBuilder.Append(idParamName);
                 if (i < totalItemCount - 1)
                 {
                     queryStringBuilder.Append(",");
@@ -260,7 +263,8 @@ namespace Microsoft.Azure.Cosmos
             }
             queryStringBuilder.Append(" )");
 
-            return new QueryDefinition(queryStringBuilder.ToString());
+            return QueryDefinition.CreateFromQuerySpec(new SqlQuerySpec(queryStringBuilder.ToString(),
+                                                        sqlParameters));
         }
 
         private QueryDefinition CreateReadManyQueryDefinitionForOther(List<(string, PartitionKey)> items,
