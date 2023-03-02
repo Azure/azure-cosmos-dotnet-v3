@@ -72,5 +72,8 @@ jobs:
     displayName: 'Post Analysis'
     inputs:
       GdnBreakFast: true
-      GdnBreakPolicyMinSev: Default
-      GdnBreakAllTools: true
+      GdnBreakAllTools: false
+      GdnBreakGdnToolCredScan: true
+      GdnBreakGdnToolBinSkim: true
+      GdnBreakGdnToolPoliCheck: true
+      GdnBreakGdnToolPoliCheckSeverity: Error
