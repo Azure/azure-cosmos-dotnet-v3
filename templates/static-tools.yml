@@ -23,7 +23,7 @@ jobs:
       arguments: '-p:Optimize=true -p:IsPreview=true --configuration Release'
       versioningScheme: OFF
 
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
     displayName: 'BinSkim'
     inputs:
         toolVersion:        Latest
@@ -38,7 +38,7 @@ jobs:
         AnalyzeEnvironment: false
 
   # Analyze source and build output text files for credentials
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@4
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
     displayName: 'CredScan'
     inputs:
       toolMajorVersion: V2
