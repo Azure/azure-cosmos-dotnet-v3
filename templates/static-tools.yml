@@ -48,21 +48,17 @@ jobs:
       verboseOutput: false
 
   # Scan text elements including code, code comments, and content/web pages, for sensitive terms based on legal, cultural, or geopolitical reasons
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@1
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@2
     displayName: 'PoliCheck'
     inputs:
       targetType: F
 
   # AntiMalware scan
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@3
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@4
     displayName: 'AntiMalware'
     continueOnError: true # signature refresh failing resulting in tasks failures
     inputs:
       EnableServices: true
-
-  # Run checks for recently discovered vulnerabilities which are not yet incorporated to another tool
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-vulnerabilityassessment.VulnerabilityAssessment@0
-    displayName: 'Vulnerability Assessment'
 
   - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
     displayName: 'Component Governance Detection' #https://docs.opensource.microsoft.com/tools/cg.html
@@ -71,11 +67,11 @@ jobs:
       failOnAlert: true
 
   # Publish Analysis Results (position after all tools ran)
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@2
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@3
     displayName: 'Publish Security Analysis Logs'
 
   # The Post-Analysis build task will analyze the log files produced by the tools, and introduce a build break
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@1
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@2
     displayName: 'Post Analysis'
     inputs:
       AllTools: true
