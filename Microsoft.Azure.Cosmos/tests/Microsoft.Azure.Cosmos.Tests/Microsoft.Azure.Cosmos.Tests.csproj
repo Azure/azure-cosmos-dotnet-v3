@@ -34,7 +34,6 @@
     <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.ScenariosAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.Serialization.xml" />
     <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.TraceData.xml" />
-    <None Remove="Telemetry\ClientTelemetryPayload.json" />
     <None Remove="Telemetry\ClientTelemetryPayloadWithoutMetrics.json" />
   </ItemGroup>
 
@@ -378,9 +377,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Telemetry\ClientTelemetryPayloadWithoutMetrics.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Telemetry\ClientTelemetryPayload.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

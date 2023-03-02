@@ -72,12 +72,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
             CancellationToken cancellationToken)
         {
-            List<string> payloads = ClientTelemetryPayloadWriter.SerializedPayloadChunks(clientTelemetryInfo, operationInfoSnapshot, cacheRefreshInfoSnapshot, requestInfoSnapshot);
-
-            foreach (string payload in payloads)
-            {
-                await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken);
-            }
+            await ClientTelemetryPayloadWriter.SerializedPayloadChunksAsync(
+                properties: clientTelemetryInfo,
+                operationInfoSnapshot: operationInfoSnapshot,
+                cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
+                requestInfoSnapshot: requestInfoSnapshot,
+                callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken));
         }
         
         /// <summary>

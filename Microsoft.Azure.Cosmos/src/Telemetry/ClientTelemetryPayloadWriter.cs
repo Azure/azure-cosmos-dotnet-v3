@@ -8,25 +8,27 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Text;
+    using System.Threading.Tasks;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Newtonsoft.Json;
-
+    
     internal static class ClientTelemetryPayloadWriter
     {
-        public static List<string> SerializedPayloadChunks(
+        public static async Task SerializedPayloadChunksAsync(
             ClientTelemetryProperties properties,
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
-            ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot)
+            ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
+            Func<string, Task> callback)
         {
             if (properties == null)
             {
                 throw new ArgumentNullException(nameof(properties));
             }
-
-            List<string> chunks = new List<string>();
+            
             IJsonTextWriterExtensions writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "operationInfo");
             
             var opsEnumerator = operationInfoSnapshot.GetEnumerator();
@@ -51,9 +53,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     writer.WriteArrayEnd();
                     writer.WriteObjectEnd();
 
-                    string payload = Encoding.UTF8.GetString(writer.GetResult().Span);
-
-                    chunks.Add(payload);
+                    await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
 
                     writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "operationInfo"); 
                 }
@@ -83,9 +83,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     writer.WriteArrayEnd();
                     writer.WriteObjectEnd();
 
-                    string payload = Encoding.UTF8.GetString(writer.GetResult().Span);
-
-                    chunks.Add(payload);
+                    await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
 
                     writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "cacheRefreshInfo");
                 }
@@ -114,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     writer.WriteArrayEnd();
                     writer.WriteObjectEnd();
 
-                    chunks.Add(Encoding.UTF8.GetString(writer.GetResult().Span));
+                    await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
 
                     writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "requestInfo");
                 }
@@ -124,9 +122,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             writer.WriteArrayEnd();
             writer.WriteObjectEnd();
 
-            chunks.Add(Encoding.UTF8.GetString(writer.GetResult().Span));
-
-            return chunks;
+            await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
         }
 
         private static IJsonTextWriterExtensions ResetWriter(ClientTelemetryProperties properties, string sectionName)
