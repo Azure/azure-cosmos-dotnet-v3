@@ -48,6 +48,7 @@ jobs:
     displayName: 'PoliCheck'
     inputs:
       targetType: F
+      optionsFC: 0
 
   # AntiMalware scan
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@4
