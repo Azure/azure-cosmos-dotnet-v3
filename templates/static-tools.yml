@@ -71,4 +71,6 @@ jobs:
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@2
     displayName: 'Post Analysis'
     inputs:
-      AllTools: true
+      GdnBreakFast: true
+      GdnBreakPolicyMinSev: Default
+      GdnBreakAllTools: true
