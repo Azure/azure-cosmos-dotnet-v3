@@ -505,11 +505,11 @@ namespace Microsoft.Azure.Cosmos
                 {
                     if (recorder.IsEnabled == false && this.clientOptions.IsDistributedTracingEnabled)
                     {
-                        Activity activity = new ($"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}");
-                        activity.Start();
+                        DiagnosticListener activitySource = new DiagnosticListener("Azure.Cosmos.Request");
+                        
+                        Activity activity = activitySource.StartActivity("Test", null);
                         TResult result = await task(trace).ConfigureAwait(false);
-                        activity.Stop();
-                        return result;
+                        return null;
                     }
                     else
                     {
