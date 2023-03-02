@@ -56,21 +56,23 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
         /// <returns>An instance of <see cref="Task"/> indicating the channel has opened successfully.</returns>
         public Task OpenChannelAsync(
-            Uri physicalAddress,
+            TransportAddressUri physicalAddress,
             bool localRegionRequest,
             Guid activityId)
         {
             // Do not open a new channel, if the channel is
             // already a part of the concurrent dictionary.
             if (!this.channels.ContainsKey(
-                new ServerKey(physicalAddress)))
+                new ServerKey(physicalAddress.Uri)))
             {
                 this.ThrowIfDisposed();
                 IChannel channel = this.GetChannel(
-                    physicalAddress,
+                    physicalAddress.Uri,
                     localRegionRequest);
 
-                return channel.OpenChannelAsync(activityId);
+                return channel.OpenChannelAsync(
+                    activityId,
+                    physicalAddress);
             }
 
             return Task.FromResult(0);

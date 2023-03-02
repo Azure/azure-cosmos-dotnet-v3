@@ -20,9 +20,11 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// the backend replica node.
         /// </summary>
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
+        /// <param name="transportAddressUri">The transport address uri.</param>
         /// <returns>A completed task indicating oncw the channel is opened.</returns>
         public Task OpenChannelAsync(
-            Guid activityId);
+            Guid activityId,
+            TransportAddressUri transportAddressUri);
 
         bool Healthy { get; }
 

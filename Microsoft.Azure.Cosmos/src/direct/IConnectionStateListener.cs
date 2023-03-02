@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Documents
         /// blabla.
         /// </summary>
         /// <param name="serverUri"></param>
-        void OnPrepareCallEvent(TransportAddressUri serverUri);
+        void OnChannelInitializationEvent(TransportAddressUri serverUri);
 
         /// <summary>
         /// blabla.

@@ -235,8 +235,12 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <summary>
         /// Returns the background channel initialization task.
         /// </summary>
+        /// <param name="activityId">activityId.</param>
+        /// <param name="transportAddressUri">transportAddressUri.</param>
         /// <returns>The initialization task.</returns>
-        public Task OpenChannelAsync(Guid activityId)
+        public Task OpenChannelAsync(
+            Guid activityId,
+            TransportAddressUri transportAddressUri)
         {
             if(this.initializationTask == null)
             {

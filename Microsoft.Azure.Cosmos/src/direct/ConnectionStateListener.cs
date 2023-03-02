@@ -5,7 +5,8 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -18,7 +19,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// transportAddressUris
         /// </summary>
-        private readonly ConcurrentQueue<TransportAddressUri> transportAddressUris;
+        private readonly HashSet<TransportAddressUri> transportAddressUris;
 
         /// <summary>
         /// blabla.
@@ -29,9 +30,10 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <inheritdoc/>
-        public void OnPrepareCallEvent(TransportAddressUri serverUri)
+        public void OnChannelInitializationEvent(
+            TransportAddressUri serverUri)
         {
-            this.transportAddressUris.Enqueue(serverUri);
+            this.transportAddressUris.Add(serverUri);
         }
 
         /// <inheritdoc/>
@@ -44,10 +46,21 @@ namespace Microsoft.Azure.Documents
 
             if (connectionEvent == ConnectionEvent.ReadEof || connectionEvent == ConnectionEvent.ReadFailure)
             {
-                foreach (TransportAddressUri addressUri in this.transportAddressUris)
-                {
-                    addressUri.SetUnhealthy();
-                }
+                Task updateTransportHealthStateTask = Task.Run(
+                    () =>
+                    {
+                        foreach (TransportAddressUri addressUri in this.transportAddressUris)
+                        {
+                            addressUri.SetUnhealthy();
+                        }
+                    });
+
+                updateTransportHealthStateTask.ContinueWith(
+                    task =>
+                        DefaultTrace.TraceWarning(
+                            "Failed to mark a transport address uri to unhealthy: {0}",
+                            task.Exception?.InnerException),
+                    TaskContinuationOptions.OnlyOnFaulted);
             }
         }
     }

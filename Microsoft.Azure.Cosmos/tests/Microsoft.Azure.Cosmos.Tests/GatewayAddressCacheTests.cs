@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos
                         connectionPolicy: connectionPolicy,
                         httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
-                    ConnectionStateListener connectionStateListener = new ConnectionStateListener(globalAddressResolver);
+                    ConnectionStateListener connectionStateListener = new ConnectionStateListener();
                     connectionStateListener.OnConnectionEvent(ConnectionEvent.ReadEof, DateTime.Now, new Documents.Rntbd.ServerKey(new Uri("https://endpoint.azure.com:4040/")));
 
                 }, state: null);
@@ -1458,23 +1458,23 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Task IOpenConnectionsHandler.TryOpenRntbdChannelsAsync(
-                IReadOnlyList<TransportAddressUri> addresses)
+                IEnumerable<TransportAddressUri> addresses)
             {
-                this.totalReceivedAddressesCounter = addresses.Count;
-                for (int i = 0; i < addresses.Count; i++)
+                this.totalReceivedAddressesCounter = addresses.Count();
+                for (int i = 0; i < addresses.Count(); i++)
                 {
                     if (this.useAttemptBasedFailingIndexs)
                     {
                         if (this.failIndexesByAttempts.ContainsKey(i) && this.failIndexesByAttempts[i].Contains(this.methodInvocationCounter))
                         {
                             this.ExecuteFailureCondition(
-                                addresses: addresses,
+                                addresses: addresses.ToList(),
                                 index: i);
                         }
                         else
                         {
                             this.ExecuteSuccessCondition(
-                                addresses: addresses,
+                                addresses: addresses.ToList(),
                                 index: i);
                         }
                     }
@@ -1483,13 +1483,13 @@ namespace Microsoft.Azure.Cosmos
                         if (this.failingIndexes.Contains(i))
                         {
                             this.ExecuteFailureCondition(
-                                addresses: addresses,
+                                addresses: addresses.ToList(),
                                 index: i);
                         }
                         else
                         {
                             this.ExecuteSuccessCondition(
-                                addresses: addresses,
+                                addresses: addresses.ToList(),
                                 index: i);
                         }
                     }

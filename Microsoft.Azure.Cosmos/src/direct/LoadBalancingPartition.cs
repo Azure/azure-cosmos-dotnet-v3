@@ -173,6 +173,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             {
                                 await this.OpenChannelAndIncrementCapacity(
                                     activityId: activityId,
+                                    transportAddressUri: physicalAddress,
                                     waitForBackgroundInitializationComplete: false);
                             }
                             Debug.Assert(
@@ -205,13 +206,17 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// Open and initializes the <see cref="Channel"/>.
         /// </summary>
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
-        internal Task OpenChannelAsync(Guid activityId)
+        /// <param name="transportAddressUri">The transport address uri.</param>
+        internal Task OpenChannelAsync(
+            Guid activityId,
+            TransportAddressUri transportAddressUri)
         {
             this.capacityLock.EnterWriteLock();
             try
             {
                 return this.OpenChannelAndIncrementCapacity(
                     activityId: activityId,
+                    transportAddressUri: transportAddressUri,
                     waitForBackgroundInitializationComplete: true);
             }
             finally
@@ -243,14 +248,16 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// and increment the currrent channel capacity.
         /// </summary>
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
+        /// <param name="transportAddressUri">transport address uri.</param>
         /// <param name="waitForBackgroundInitializationComplete">A boolean flag to indicate if the caller thread should
         /// wait until all the background tasks have finished.</param>
         private async Task OpenChannelAndIncrementCapacity(
             Guid activityId,
+            TransportAddressUri transportAddressUri,
             bool waitForBackgroundInitializationComplete)
         {
             Debug.Assert(this.capacityLock.IsWriteLockHeld);
-            Channel newChannel = new(
+            Channel newChannel = new (
                 activityId,
                 this.serverUri,
                 this.channelProperties,
@@ -259,8 +266,14 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             if (waitForBackgroundInitializationComplete)
             {
-                await newChannel.OpenChannelAsync(activityId);
+                await newChannel.OpenChannelAsync(activityId, transportAddressUri);
             }
+
+            // Invoke the connection state listner to record the transport address uris.
+            this.channelProperties
+                .ConnectionStateListener
+                .OnChannelInitializationEvent(
+                    serverUri: transportAddressUri);
 
             this.openChannels.Add(
                 new LbChannelState(

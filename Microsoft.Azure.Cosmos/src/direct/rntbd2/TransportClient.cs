@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         /// <inheritdoc/>
         internal override Task OpenConnectionAsync(
-            Uri physicalAddress)
+            TransportAddressUri physicalAddress)
         {
             Guid activityId = Trace.CorrelationManager.ActivityId;
             return this.channelDictionary.OpenChannelAsync(

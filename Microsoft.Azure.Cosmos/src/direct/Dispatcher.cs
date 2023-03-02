@@ -265,9 +265,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             uint requestId = unchecked((uint) Interlocked.Increment(ref this.nextRequestId));
             string requestIdString = requestId.ToString(CultureInfo.InvariantCulture);
 
-            // Call Connection State Listner to Record The transport address uris.
-            this.connectionStateListener.OnPrepareCallEvent(physicalAddress);
-
             int headerSize;
             int? bodySize;
             TransportSerialization.SerializedRequest serializedRequest = TransportSerialization.BuildRequest(

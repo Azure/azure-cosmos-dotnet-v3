@@ -115,22 +115,27 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// Attempts to open the Rntbd channel to the backend replica nodes.
         /// </summary>
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
+        /// <param name="transportAddressUri"></param>
         /// <returns>A completed task once the channel is opened.</returns>
         public Task OpenChannelAsync(
-            Guid activityId)
+            Guid activityId,
+            TransportAddressUri transportAddressUri)
         {
             this.ThrowIfDisposed();
             if (this.singlePartition != null)
             {
                 Debug.Assert(this.partitions == null);
-                return this.singlePartition.OpenChannelAsync(activityId);
+                return this.singlePartition.OpenChannelAsync(
+                    activityId,
+                    transportAddressUri);
             }
             else
             {
                 Debug.Assert(this.partitions != null);
                 LoadBalancingPartition partition = this.GetLoadBalancedPartition(activityId);
                 return partition.OpenChannelAsync(
-                    activityId);
+                    activityId,
+                    transportAddressUri);
             }
         }
 

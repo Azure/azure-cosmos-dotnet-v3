@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Rntbd
                     if (slimAcquired)
                     {
                         await this.transportClient.OpenConnectionAsync(
-                            physicalAddress: address.Uri);
+                            physicalAddress: address);
                         address.SetConnected();
                     }
                     else

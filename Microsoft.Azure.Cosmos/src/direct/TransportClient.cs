@@ -1143,10 +1143,10 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Uses the rntbd context negotiation and opens the connection to the backend replica nodes.
         /// </summary>
-        /// <param name="physicalAddress">An instance of <see cref="Uri"/> containing the
+        /// <param name="physicalAddress">An instance of <see cref="TransportAddressUri"/> containing the
         /// uri of the backend server's physical address.</param>
         internal virtual Task OpenConnectionAsync(
-           Uri physicalAddress)
+           TransportAddressUri physicalAddress)
         {
             throw new NotImplementedException();
         }
