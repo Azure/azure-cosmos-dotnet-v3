@@ -188,9 +188,9 @@ namespace Microsoft.Azure.Documents
                     sendHangDetectionTimeSeconds = maxSendHangDetectionTimeSeconds;
                 }
 
-                if (enableTcpConnectionEndpointRediscovery && addressResolver != null)
+                if (enableTcpConnectionEndpointRediscovery)
                 {
-                    this.connectionStateListener = new ConnectionStateListener(addressResolver);
+                    this.connectionStateListener = new ConnectionStateListener();
                 }
 
                 StoreClientFactory.ValidateRntbdMaxConcurrentOpeningConnectionCount(ref rntbdMaxConcurrentOpeningConnectionCount);

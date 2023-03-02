@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using System.Threading.Tasks;
+    using System.Collections.Concurrent;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -15,13 +15,26 @@ namespace Microsoft.Azure.Documents
     /// </summary>
     internal sealed class ConnectionStateListener : IConnectionStateListener
     {
-        private readonly IAddressResolver addressResolver;
+        /// <summary>
+        /// transportAddressUris
+        /// </summary>
+        private readonly ConcurrentQueue<TransportAddressUri> transportAddressUris;
 
-        public ConnectionStateListener(IAddressResolver addressResolver)
+        /// <summary>
+        /// blabla.
+        /// </summary>
+        public ConnectionStateListener()
         {
-            this.addressResolver = addressResolver;
+            this.transportAddressUris = new ();
         }
 
+        /// <inheritdoc/>
+        public void OnPrepareCallEvent(TransportAddressUri serverUri)
+        {
+            this.transportAddressUris.Enqueue(serverUri);
+        }
+
+        /// <inheritdoc/>
         public void OnConnectionEvent(ConnectionEvent connectionEvent, DateTime eventTime, ServerKey serverKey)
         {
             DefaultTrace.TraceInformation("OnConnectionEvent fired, connectionEvent :{0}, eventTime: {1}, serverKey: {2}",
@@ -31,13 +44,10 @@ namespace Microsoft.Azure.Documents
 
             if (connectionEvent == ConnectionEvent.ReadEof || connectionEvent == ConnectionEvent.ReadFailure)
             {
-                Task updateCacheTask = Task.Run(
-                    async () => await this.addressResolver.UpdateAsync(serverKey));
-
-                updateCacheTask.ContinueWith(task =>
+                foreach (TransportAddressUri addressUri in this.transportAddressUris)
                 {
-                    DefaultTrace.TraceWarning("AddressCache update failed: {0}", task.Exception?.InnerException);
-                }, TaskContinuationOptions.OnlyOnFaulted);
+                    addressUri.SetUnhealthy();
+                }
             }
         }
     }
