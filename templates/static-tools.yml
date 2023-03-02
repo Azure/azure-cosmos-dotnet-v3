@@ -37,18 +37,8 @@ jobs:
         AnalyzeStatistics:  false
         AnalyzeEnvironment: false
 
-  #Analyze source code for type of content and target types to help determine which tools to run
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-autoapplicability.AutoApplicability@1
-    displayName: 'AutoApplicability'
-    inputs:
-      VerboseWriter: true
-      ExternalRelease: true
-      InternalRelease: true
-      IsService: true
-      IsSoftware: true
-
   # Analyze source and build output text files for credentials
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@4
     displayName: 'CredScan'
     inputs:
       toolMajorVersion: V2
