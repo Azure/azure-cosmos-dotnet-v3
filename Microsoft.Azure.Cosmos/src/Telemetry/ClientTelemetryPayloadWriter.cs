@@ -31,95 +31,107 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             
             IJsonTextWriterExtensions writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "operationInfo");
             
-            var opsEnumerator = operationInfoSnapshot.GetEnumerator();
-            while (opsEnumerator.MoveNext())
+            if (operationInfoSnapshot != null && operationInfoSnapshot.Count > 0)
             {
-                long lengthNow = writer.CurrentLength;
-                KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry = opsEnumerator.Current;
-
-                OperationInfo payloadForLatency = entry.Key;
-                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
-
-                OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
-                payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
-
-                string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
-                string requestChargeMetrics = JsonConvert.SerializeObject(payloadForRequestCharge);
-
-                if (lengthNow + latencyMetrics.Length + requestChargeMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+                var opsEnumerator = operationInfoSnapshot.GetEnumerator();
+                while (opsEnumerator.MoveNext())
                 {
-                    writer.WriteArrayEnd();
-                    writer.WriteObjectEnd();
+                    long lengthNow = writer.CurrentLength;
+                    KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry = opsEnumerator.Current;
 
-                    await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
+                    OperationInfo payloadForLatency = entry.Key;
+                    payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
+                    payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
 
-                    writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "operationInfo"); 
+                    OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
+                    payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
+                    payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
+
+                    string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
+                    string requestChargeMetrics = JsonConvert.SerializeObject(payloadForRequestCharge);
+
+                    if (lengthNow + latencyMetrics.Length + requestChargeMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+                    {
+                        writer.WriteArrayEnd();
+                        writer.WriteObjectEnd();
+
+                        await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
+
+                        writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "operationInfo");
+                    }
+
+                    writer.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(latencyMetrics)), false);
+                    writer.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(requestChargeMetrics)), false);
                 }
-                
-                writer.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(latencyMetrics)), false);
-                writer.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(requestChargeMetrics)), false);
+
             }
             writer.WriteArrayEnd();
 
-            writer.WriteFieldName("cacheRefreshInfo");
-            writer.WriteArrayStart();
-            var crEnumerator = cacheRefreshInfoSnapshot.GetEnumerator();
-            while (crEnumerator.MoveNext())
+            if (cacheRefreshInfoSnapshot != null && cacheRefreshInfoSnapshot.Count > 0)
             {
-                long lengthNow = writer.CurrentLength;
-
-                KeyValuePair<CacheRefreshInfo, LongConcurrentHistogram> entry = crEnumerator.Current;
-
-                CacheRefreshInfo payloadForLatency = entry.Key;
-                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
-
-                string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
-
-                if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+                writer.WriteFieldName("cacheRefreshInfo");
+                writer.WriteArrayStart();
+                var crEnumerator = cacheRefreshInfoSnapshot.GetEnumerator();
+                while (crEnumerator.MoveNext())
                 {
-                    writer.WriteArrayEnd();
-                    writer.WriteObjectEnd();
+                    long lengthNow = writer.CurrentLength;
 
-                    await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
+                    KeyValuePair<CacheRefreshInfo, LongConcurrentHistogram> entry = crEnumerator.Current;
 
-                    writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "cacheRefreshInfo");
+                    CacheRefreshInfo payloadForLatency = entry.Key;
+                    payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
+                    payloadForLatency.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
+
+                    string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
+
+                    if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+                    {
+                        writer.WriteArrayEnd();
+                        writer.WriteObjectEnd();
+
+                        await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
+
+                        writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "cacheRefreshInfo");
+                    }
+
+                    writer.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(latencyMetrics)), false);
                 }
-                
-                writer.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(latencyMetrics)), false);
+                writer.WriteArrayEnd();
+
             }
-            writer.WriteArrayEnd();
-            
-            writer.WriteFieldName("requestInfo");
-            writer.WriteArrayStart();
-            var riEnumerator = requestInfoSnapshot.GetEnumerator();
-            while (riEnumerator.MoveNext())
+
+            if (requestInfoSnapshot != null && requestInfoSnapshot.Count > 0)
             {
-                long lengthNow = writer.CurrentLength;
-                KeyValuePair<RequestInfo, LongConcurrentHistogram> entry = riEnumerator.Current;
-
-                MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                metricInfo.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
-
-                RequestInfo payloadForLatency = entry.Key;
-                payloadForLatency.Metrics.Add(metricInfo);
-                string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
-
-                if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+                writer.WriteFieldName("requestInfo");
+                writer.WriteArrayStart();
+                var riEnumerator = requestInfoSnapshot.GetEnumerator();
+                while (riEnumerator.MoveNext())
                 {
-                    writer.WriteArrayEnd();
-                    writer.WriteObjectEnd();
+                    long lengthNow = writer.CurrentLength;
+                    KeyValuePair<RequestInfo, LongConcurrentHistogram> entry = riEnumerator.Current;
 
-                    await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
+                    MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
+                    metricInfo.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
 
-                    writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "requestInfo");
+                    RequestInfo payloadForLatency = entry.Key;
+                    payloadForLatency.Metrics.Add(metricInfo);
+                    string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
+
+                    if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+                    {
+                        writer.WriteArrayEnd();
+                        writer.WriteObjectEnd();
+
+                        await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
+
+                        writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "requestInfo");
+                    }
+
+                    writer.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(latencyMetrics)), false);
                 }
-                
-                writer.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(latencyMetrics)), false);
+                writer.WriteArrayEnd();
             }
-            writer.WriteArrayEnd();
+           
             writer.WriteObjectEnd();
 
             await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));

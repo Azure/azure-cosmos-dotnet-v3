@@ -146,7 +146,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             jsonWriter.WriteStringValue(this.GlobalDatabaseAccountName);
 
             jsonWriter.WriteFieldName("applicationRegion");
-            jsonWriter.WriteStringValue(this.ApplicationRegion);
+            if (this.ApplicationRegion != null)
+            {
+                jsonWriter.WriteStringValue(this.ApplicationRegion);
+            }
+            else
+            {
+                jsonWriter.WriteNullValue();
+            }
 
             jsonWriter.WriteFieldName("hostEnvInfo");
             jsonWriter.WriteStringValue(this.HostEnvInfo);
@@ -180,8 +187,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             jsonWriter.WriteFieldName("aggregationIntervalInSec");
             jsonWriter.WriteInt32Value(this.AggregationIntervalInSec, false);
 
-            jsonWriter.WriteFieldName("systemInfo");
-            jsonWriter.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(this.SystemInfo))), false);
+            if (this.SystemInfo != null && this.SystemInfo.Count > 0)
+            {
+                jsonWriter.WriteFieldName("systemInfo");
+                jsonWriter.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(this.SystemInfo))), false);
+            }
         }
     }
 }

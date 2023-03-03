@@ -56,9 +56,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// If JSON is greater than 2 MB, then 
-        ///     1. It sends all the properties containing metrics information in different payloads
-        ///     2. If still payload size is greater than 2 MB, it breaks the list of objects into multiple chunks and send it one by one.
+        /// If  payload size is greater than 2 MB, it breaks the list of objects into multiple chunks and send it one by one.
         /// else send as it is.
         /// </summary>
         /// <param name="clientTelemetryInfo"></param>
@@ -72,12 +70,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
             CancellationToken cancellationToken)
         {
-            await ClientTelemetryPayloadWriter.SerializedPayloadChunksAsync(
-                properties: clientTelemetryInfo,
-                operationInfoSnapshot: operationInfoSnapshot,
-                cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
-                requestInfoSnapshot: requestInfoSnapshot,
-                callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken));
+            try
+            {
+                await ClientTelemetryPayloadWriter.SerializedPayloadChunksAsync(
+                    properties: clientTelemetryInfo,
+                    operationInfoSnapshot: operationInfoSnapshot,
+                    cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
+                    requestInfoSnapshot: requestInfoSnapshot,
+                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken));
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError($"Exception while serializing telemetry payload: {ex}");
+                throw;
+            }
+           
         }
         
         /// <summary>
@@ -93,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 DefaultTrace.TraceError("Telemetry is enabled but endpoint is not configured");
                 return;
             }
-
+            
             try
             {
                 DefaultTrace.TraceInformation("Sending Telemetry Data to {0}", endpointUrl.AbsoluteUri);
