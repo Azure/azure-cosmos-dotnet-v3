@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                 List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                                     cosmosQueryContext.ResourceLink,
                                     containerQueryProperties.ResourceId,
-                                    inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
+                                    containerQueryProperties.EffectivePartitionKeyString,
                                     forceRefresh: false,
                                     createQueryPipelineTrace);
 
@@ -779,7 +779,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                         cosmosQueryContext.ResourceLink,
                         containerQueryProperties.ResourceId,
-                        inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
+                        containerQueryProperties.EffectivePartitionKeyString,
                         forceRefresh: false,
                         trace);
                 }
