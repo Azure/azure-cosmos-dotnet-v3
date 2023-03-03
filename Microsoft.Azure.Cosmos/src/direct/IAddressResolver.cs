@@ -4,10 +4,8 @@
 
 namespace Microsoft.Azure.Documents
 {
-    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents.Rntbd;
 
     internal interface IAddressResolver
     {
@@ -15,13 +13,5 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest request,
             bool forceRefreshPartitionAddresses,
             CancellationToken cancellationToken);
-
-        Task UpdateAsync(
-           IReadOnlyList<AddressCacheToken> addressCacheTokens,
-           CancellationToken cancellationToken = default(CancellationToken));
-
-        Task UpdateAsync(
-           ServerKey serverKey,
-           CancellationToken cancellationToken = default(CancellationToken));
     }
 }

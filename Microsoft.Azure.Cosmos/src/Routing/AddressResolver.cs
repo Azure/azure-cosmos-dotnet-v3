@@ -721,16 +721,6 @@ namespace Microsoft.Azure.Cosmos
             return null;
         }
 
-        public Task UpdateAsync(ServerKey serverKey, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task UpdateAsync(IReadOnlyList<AddressCacheToken> addressCacheTokens, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
         private class ResolutionResult
         {
             public PartitionKeyRange TargetPartitionKeyRange { get; private set; }

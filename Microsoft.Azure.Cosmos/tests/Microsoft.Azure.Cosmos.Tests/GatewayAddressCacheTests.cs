@@ -105,45 +105,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public async Task TestGatewayAddressCacheUpdateOnConnectionResetAsync()
-        {
-            FakeMessageHandler messageHandler = new FakeMessageHandler();
-            HttpClient httpClient = new HttpClient(messageHandler);
-            httpClient.Timeout = TimeSpan.FromSeconds(120);
-            GatewayAddressCache cache = new GatewayAddressCache(
-                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
-                Documents.Client.Protocol.Tcp,
-                this.mockTokenProvider.Object,
-                this.mockServiceConfigReader.Object,
-                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
-                openConnectionsHandler: null,
-                suboptimalPartitionForceRefreshIntervalInSeconds: 2,
-                enableTcpConnectionEndpointRediscovery: true);
-
-            PartitionAddressInformation addresses = await cache.TryGetAddressesAsync(
-             DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
-             this.testPartitionKeyRangeIdentity,
-             this.serviceIdentity,
-             false,
-             CancellationToken.None);
-
-            Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla.com"));
-
-            // call updateAddress
-            cache.TryRemoveAddresses(new Documents.Rntbd.ServerKey(new Uri("https://blabla.com")));
-
-            // check if the addresss is updated
-            addresses = await cache.TryGetAddressesAsync(
-             DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
-             this.testPartitionKeyRangeIdentity,
-             this.serviceIdentity,
-             false,
-             CancellationToken.None);
-
-            Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla5.com"));
-        }
-
-        [TestMethod]
         public async Task TestGatewayAddressCacheAvoidCacheRefresWhenAlreadyUpdatedAsync()
         {
             Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);

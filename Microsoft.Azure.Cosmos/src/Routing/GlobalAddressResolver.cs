@@ -227,36 +227,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             return await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
         }
 
-        public async Task UpdateAsync(
-            IReadOnlyList<AddressCacheToken> addressCacheTokens,
-            CancellationToken cancellationToken)
-        {
-            List<Task> tasks = new List<Task>();
-
-            foreach (AddressCacheToken cacheToken in addressCacheTokens)
-            {
-                if (this.addressCacheByEndpoint.TryGetValue(cacheToken.ServiceEndpoint, out EndpointCache endpointCache))
-                {
-                    tasks.Add(endpointCache.AddressCache.UpdateAsync(cacheToken.PartitionKeyRangeIdentity, cancellationToken));
-                }
-            }
-
-            await Task.WhenAll(tasks);
-        }
-
-        public Task UpdateAsync(
-           ServerKey serverKey,
-           CancellationToken cancellationToken)
-        {
-            foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
-            {
-                // since we don't know which address cache contains the pkRanges mapped to this node, we do a tryRemove on all AddressCaches of all regions
-                addressCache.Value.AddressCache.TryRemoveAddresses(serverKey);
-            }
-
-            return Task.CompletedTask;
-        }
-
         /// <summary>
         /// ReplicatedResourceClient will use this API to get the direct connectivity AddressCache for given request.
         /// </summary>

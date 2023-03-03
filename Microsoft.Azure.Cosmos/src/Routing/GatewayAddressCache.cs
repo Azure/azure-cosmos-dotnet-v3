@@ -387,56 +387,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public void TryRemoveAddresses(
-            ServerKey serverKey)
-        {
-            if (serverKey == null)
-            {
-                throw new ArgumentNullException(nameof(serverKey));
-            }
-
-            if (this.serverPartitionAddressToPkRangeIdMap.TryRemove(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
-            {
-                PartitionKeyRangeIdentity[] pkRangeIdsCopy;
-                lock (pkRangeIds)
-                {
-                    pkRangeIdsCopy = pkRangeIds.ToArray();
-                }
-
-                foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIdsCopy)
-                {
-                    DefaultTrace.TraceInformation("Remove addresses for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}",
-                       pkRangeId.CollectionRid,
-                       pkRangeId.PartitionKeyRangeId,
-                       this.serviceEndpoint);
-
-                    this.serverPartitionAddressCache.TryRemove(pkRangeId);
-                }
-            }
-        }
-
-        public async Task<PartitionAddressInformation> UpdateAsync(
-            PartitionKeyRangeIdentity partitionKeyRangeIdentity,
-            CancellationToken cancellationToken)
-        {
-            if (partitionKeyRangeIdentity == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKeyRangeIdentity));
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return await this.serverPartitionAddressCache.GetAsync(
-                       key: partitionKeyRangeIdentity,
-                       singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
-                           null,
-                           cachedAddresses: null,
-                           partitionKeyRangeIdentity.CollectionRid,
-                           partitionKeyRangeIdentity.PartitionKeyRangeId,
-                           forceRefresh: true),
-                       forceRefresh: (_) => true);
-        }
-
         private async Task<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> ResolveMasterAsync(DocumentServiceRequest request, bool forceRefresh)
         {
             Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterAddressAndRange = this.masterPartitionAddressCache;
