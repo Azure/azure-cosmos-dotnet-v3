@@ -183,27 +183,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot
                       = Interlocked.Exchange(ref this.requestInfoMap, new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>());
 
-                    _ = this.processor
+                    try
+                    {
+                        await this.processor
                         .ProcessAndSendAsync(
                                 clientTelemetryInfo: this.clientTelemetryInfo,
                                 operationInfoSnapshot: operationInfoSnapshot,
                                 cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                                 requestInfoSnapshot: requestInfoSnapshot,
-                                cancellationToken: this.cancellationTokenSource.Token)
-                        .ContinueWith((t) =>
-                        {
-                            if (t.Status == TaskStatus.Faulted)
-                            {
-                                this.numberOfFailures++;
+                                cancellationToken: this.cancellationTokenSource.Token);
 
-                                DefaultTrace.TraceError("Telemetry Job Processor failed with error : ", t.Exception.StackTrace);
-                            }
-                            else if (t.Status == TaskStatus.RanToCompletion)
-                            {
-                                DefaultTrace.TraceInformation("Processing and Sending telemetry done.");
-                                this.numberOfFailures = 0;
-                            }
-                        });
+                        this.numberOfFailures = 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        this.numberOfFailures++;
+
+                        DefaultTrace.TraceError("Telemetry Job Processor failed with error : ", ex);
+                    }
                 }
             }
             catch (Exception ex)

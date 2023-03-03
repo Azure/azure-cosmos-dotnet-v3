@@ -7,16 +7,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.IO;
     using System.Text;
     using System.Threading.Tasks;
     using HdrHistogram;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Newtonsoft.Json;
-    
+
     internal static class ClientTelemetryPayloadWriter
     {
+        private static readonly StringBuilder stringBuilder = new StringBuilder(ClientTelemetryOptions.PayloadSizeThreshold);
+        private static readonly StringWriter stringWriter = new StringWriter(stringBuilder);
+        
         public static async Task SerializedPayloadChunksAsync(
             ClientTelemetryProperties properties,
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
@@ -28,15 +30,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 throw new ArgumentNullException(nameof(properties));
             }
-            
-            IJsonTextWriterExtensions writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "operationInfo");
+
+            JsonWriter writer = ClientTelemetryPayloadWriter.GetWriter(properties, "operationInfo");
             
             if (operationInfoSnapshot != null && operationInfoSnapshot.Count > 0)
             {
                 var opsEnumerator = operationInfoSnapshot.GetEnumerator();
                 while (opsEnumerator.MoveNext())
                 {
-                    long lengthNow = writer.CurrentLength;
+                    long lengthNow = stringBuilder.Length;
                     KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry = opsEnumerator.Current;
 
                     OperationInfo payloadForLatency = entry.Key;
@@ -49,32 +51,32 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
                     string requestChargeMetrics = JsonConvert.SerializeObject(payloadForRequestCharge);
-
+                    
                     if (lengthNow + latencyMetrics.Length + requestChargeMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
                     {
-                        writer.WriteArrayEnd();
-                        writer.WriteObjectEnd();
+                        writer.WriteEndArray();
+                        writer.WriteEndObject();
 
-                        await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
+                        await callback.Invoke(stringBuilder.ToString());
 
-                        writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "operationInfo");
+                        writer = ClientTelemetryPayloadWriter.GetWriter(properties, "operationInfo");
                     }
 
-                    writer.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(latencyMetrics)), false);
-                    writer.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(requestChargeMetrics)), false);
+                    writer.WriteRawValue(latencyMetrics);
+                    writer.WriteRawValue(requestChargeMetrics);
                 }
 
             }
-            writer.WriteArrayEnd();
+            writer.WriteEndArray();
 
             if (cacheRefreshInfoSnapshot != null && cacheRefreshInfoSnapshot.Count > 0)
             {
-                writer.WriteFieldName("cacheRefreshInfo");
-                writer.WriteArrayStart();
+                writer.WritePropertyName("cacheRefreshInfo");
+                writer.WriteStartArray();
                 var crEnumerator = cacheRefreshInfoSnapshot.GetEnumerator();
                 while (crEnumerator.MoveNext())
                 {
-                    long lengthNow = writer.CurrentLength;
+                    long lengthNow = stringBuilder.Length;
 
                     KeyValuePair<CacheRefreshInfo, LongConcurrentHistogram> entry = crEnumerator.Current;
 
@@ -86,28 +88,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
                     {
-                        writer.WriteArrayEnd();
-                        writer.WriteObjectEnd();
+                        writer.WriteEndArray();
+                        writer.WriteEndObject();
 
-                        await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
+                        await callback.Invoke(stringBuilder.ToString());
 
-                        writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "cacheRefreshInfo");
+                        writer = ClientTelemetryPayloadWriter.GetWriter(properties, "cacheRefreshInfo");
                     }
 
-                    writer.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(latencyMetrics)), false);
+                    writer.WriteRawValue(latencyMetrics);
                 }
-                writer.WriteArrayEnd();
+                writer.WriteEndArray();
 
             }
 
             if (requestInfoSnapshot != null && requestInfoSnapshot.Count > 0)
             {
-                writer.WriteFieldName("requestInfo");
-                writer.WriteArrayStart();
+                writer.WritePropertyName("requestInfo");
+                writer.WriteStartArray();
                 var riEnumerator = requestInfoSnapshot.GetEnumerator();
                 while (riEnumerator.MoveNext())
                 {
-                    long lengthNow = writer.CurrentLength;
+                    long lengthNow = stringBuilder.Length;
                     KeyValuePair<RequestInfo, LongConcurrentHistogram> entry = riEnumerator.Current;
 
                     MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
@@ -119,35 +121,40 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
                     {
-                        writer.WriteArrayEnd();
-                        writer.WriteObjectEnd();
+                        writer.WriteEndArray();
+                        writer.WriteEndObject();
+                        
+                        await callback.Invoke(stringBuilder.ToString());
 
-                        await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
-
-                        writer = ClientTelemetryPayloadWriter.ResetWriter(properties, "requestInfo");
+                        writer = ClientTelemetryPayloadWriter.GetWriter(properties, "requestInfo");
                     }
 
-                    writer.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(latencyMetrics)), false);
+                    writer.WriteRawValue(latencyMetrics);
                 }
-                writer.WriteArrayEnd();
+                writer.WriteEndArray();
             }
            
-            writer.WriteObjectEnd();
+            writer.WriteEndObject();
 
-            await callback.Invoke(Encoding.UTF8.GetString(writer.GetResult().Span));
+            await callback.Invoke(stringBuilder.ToString());
         }
 
-        private static IJsonTextWriterExtensions ResetWriter(ClientTelemetryProperties properties, string sectionName)
+        private static JsonWriter GetWriter(ClientTelemetryProperties properties, string sectionName)
         {
-            IJsonTextWriterExtensions writer = (IJsonTextWriterExtensions)Json.JsonWriter.Create(JsonSerializationFormat.Text);
+            stringBuilder.Clear();
+            
+            JsonWriter writer = new JsonTextWriter(stringWriter)
+            {
+                AutoCompleteOnClose = false
+            };
 
-            writer.WriteObjectStart();
+            writer.WriteStartObject();
 
             properties.Write(writer);
 
-            writer.WriteFieldName(sectionName);
+            writer.WritePropertyName(sectionName);
 
-            writer.WriteArrayStart();
+            writer.WriteStartArray();
             return writer;
         }
     }

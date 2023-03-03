@@ -38,20 +38,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="requestInfoSnapshot"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>Task</returns>
-        internal Task ProcessAndSendAsync(
+        internal async Task ProcessAndSendAsync(
             ClientTelemetryProperties clientTelemetryInfo, 
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
             ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
             CancellationToken cancellationToken)
         {
-            return Task.Run(async () => 
                 await this.GenerateOptimalSizeOfPayloadAndSendAsync(
                     clientTelemetryInfo, 
                     operationInfoSnapshot, 
                     cacheRefreshInfoSnapshot,
                     requestInfoSnapshot,
-                    cancellationToken), cancellationToken);
+                    cancellationToken);
         }
 
         /// <summary>

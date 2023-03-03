@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
-    using Microsoft.Azure.Cosmos.Json;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
 
@@ -122,75 +120,75 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             this.MachineId = machineId;
         }
 
-        public void Write(IJsonTextWriterExtensions jsonWriter)
+        public void Write(JsonWriter writer)
         {
-            jsonWriter.WriteFieldName("timeStamp");
-            jsonWriter.WriteStringValue(this.DateTimeUtc);
+            writer.WritePropertyName("timeStamp");
+            writer.WriteValue(this.DateTimeUtc);
 
-            jsonWriter.WriteFieldName("clientId");
-            jsonWriter.WriteStringValue(this.ClientId);
+            writer.WritePropertyName("clientId");
+            writer.WriteValue(this.ClientId);
 
-            jsonWriter.WriteFieldName("machineId");
-            jsonWriter.WriteStringValue(this.MachineId);
+            writer.WritePropertyName("machineId");
+            writer.WriteValue(this.MachineId);
 
-            jsonWriter.WriteFieldName("processId");
-            jsonWriter.WriteStringValue(this.ProcessId);
+            writer.WritePropertyName("processId");
+            writer.WriteValue(this.ProcessId);
 
-            jsonWriter.WriteFieldName("userAgent");
-            jsonWriter.WriteStringValue(this.UserAgent);
+            writer.WritePropertyName("userAgent");
+            writer.WriteValue(this.UserAgent);
 
-            jsonWriter.WriteFieldName("connectionMode");
-            jsonWriter.WriteStringValue(this.ConnectionMode);
+            writer.WritePropertyName("connectionMode");
+            writer.WriteValue(this.ConnectionMode);
 
-            jsonWriter.WriteFieldName("globalDatabaseAccountName");
-            jsonWriter.WriteStringValue(this.GlobalDatabaseAccountName);
+            writer.WritePropertyName("globalDatabaseAccountName");
+            writer.WriteValue(this.GlobalDatabaseAccountName);
 
-            jsonWriter.WriteFieldName("applicationRegion");
+            writer.WritePropertyName("applicationRegion");
             if (this.ApplicationRegion != null)
             {
-                jsonWriter.WriteStringValue(this.ApplicationRegion);
+                writer.WriteValue(this.ApplicationRegion);
             }
             else
             {
-                jsonWriter.WriteNullValue();
+                writer.WriteNull();
             }
 
-            jsonWriter.WriteFieldName("hostEnvInfo");
-            jsonWriter.WriteStringValue(this.HostEnvInfo);
+            writer.WritePropertyName("hostEnvInfo");
+            writer.WriteValue(this.HostEnvInfo);
 
-            jsonWriter.WriteFieldName("acceleratedNetworking");
+            writer.WritePropertyName("acceleratedNetworking");
             if (this.AcceleratedNetworking.HasValue)
             {
-                jsonWriter.WriteBoolValue(this.AcceleratedNetworking.Value);
+                writer.WriteValue(this.AcceleratedNetworking.Value);
             }
             else
             {
-                jsonWriter.WriteNullValue();
+                writer.WriteNull();
             }
 
-            jsonWriter.WriteFieldName("preferredRegions");
+            writer.WritePropertyName("preferredRegions");
 
             if (this.PreferredRegions != null)
             {
-                jsonWriter.WriteArrayStart();
+                writer.WriteStartArray();
                 foreach (string region in this.PreferredRegions)
                 {
-                    jsonWriter.WriteStringValue(region);
+                    writer.WriteValue(region);
                 }
-                jsonWriter.WriteArrayEnd();
+                writer.WriteEndArray();
             }
             else
             {
-                jsonWriter.WriteNullValue();
+                writer.WriteNull();
             }
 
-            jsonWriter.WriteFieldName("aggregationIntervalInSec");
-            jsonWriter.WriteInt32Value(this.AggregationIntervalInSec, false);
+            writer.WritePropertyName("aggregationIntervalInSec");
+            writer.WriteValue(this.AggregationIntervalInSec);
 
             if (this.SystemInfo != null && this.SystemInfo.Count > 0)
             {
-                jsonWriter.WriteFieldName("systemInfo");
-                jsonWriter.WriteRawJsonValue(new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(this.SystemInfo))), false);
+                writer.WritePropertyName("systemInfo");
+                writer.WriteRawValue(JsonConvert.SerializeObject(this.SystemInfo));
             }
         }
     }
