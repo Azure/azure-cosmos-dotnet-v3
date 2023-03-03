@@ -245,7 +245,7 @@
                     .Build();
 
                 itemList.Add((document.Id, pKey));
-                incompleteList.Add((document.Id, badPKey));
+                incompleteList.Add((document.Id, badPKey));              
             }
 
             FeedResponse<Document> feedResponse = await this.container.ReadManyItemsAsync<Document>(itemList);

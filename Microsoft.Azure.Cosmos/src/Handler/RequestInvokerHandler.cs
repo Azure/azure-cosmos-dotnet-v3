@@ -503,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 if (partitionKeyDefinition != null && partitionKeyDefinition.Kind == PartitionKind.MultiHash)
                 {
                     return feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count >= partitionKeyDefinition.Paths?.Count
-                        ? new FeedRangePartitionKey(feedRangePartitionKey.PartitionKey)
+                        ? feedRange
                         : new FeedRangeEpk(feedRangePartitionKey.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
                 }
             }
