@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents.Rntbd;
@@ -45,31 +46,61 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// 
         /// </summary>
         /// <param name="systemUsageHistory"></param>
-        /// <param name="systemInfoCollection"></param>
         /// <param name="isDirectConnectionMode"></param>
-        internal static void RecordSystemUsage(
+        private static List<SystemInfo> RecordSystemUsage(
                 SystemUsageHistory systemUsageHistory, 
-                List<SystemInfo> systemInfoCollection,
                 bool isDirectConnectionMode)
         {
             if (systemUsageHistory.Values == null)
             {
-                return;
+                return null;
             }
 
             DefaultTrace.TraceVerbose("System Usage recorded by telemetry is : {0}", systemUsageHistory);
-
-            systemInfoCollection.Add(TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values));
+            List<SystemInfo> systemInfoCollection = new List<SystemInfo>
+            {
+                TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values)
+            }; // Reset System Information
 
             if (isDirectConnectionMode)
             {
                 systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values));
             }
 
+            return systemInfoCollection;
+        }
+        
+        /// <summary>
+        /// Record CPU and memory usage which will be sent as part of telemetry information
+        /// </summary>
+        internal static List<SystemInfo> RecordSystemUtilization(DiagnosticsHandlerHelper helper, bool isDirectMode)
+        {
+            try
+            {
+                DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
+
+                SystemUsageHistory systemUsageHistory = helper.GetClientTelemetrySystemHistory();
+
+                if (systemUsageHistory != null)
+                {
+                    return ClientTelemetryHelper.RecordSystemUsage(
+                        systemUsageHistory: systemUsageHistory,
+                        isDirectConnectionMode: isDirectMode);
+                }
+                else
+                {
+                    DefaultTrace.TraceWarning("System Usage History not available");
+                }
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("System Usage Recording Error : {0} ", ex);
+            }
+            return null;
         }
 
         /// <summary>

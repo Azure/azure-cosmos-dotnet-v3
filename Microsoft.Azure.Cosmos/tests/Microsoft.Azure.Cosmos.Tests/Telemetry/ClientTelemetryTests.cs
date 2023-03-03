@@ -119,7 +119,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         }
         
         [TestMethod]
-        public async Task CheckIfPayloadIsDividedCorrectlyAsync()
+        [DataRow(100, 50, 200)] // When operation, cacherefresh and request info is there in payload
+        [DataRow(0, 50, 0)] // When only cacherefresh info is there in payload
+        [DataRow(100, 50, 0)] // When only operation and cacherefresh info is there in payload
+        [DataRow(100, 0, 0)] // When only operation info is there in payload
+        public async Task CheckIfPayloadIsDividedCorrectlyAsync(int expectedOperationInfoSize, int expectedCacheRefreshInfoSize, int expectedRequestInfoSize)
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
             ClientTelemetryOptions.PayloadSizeThreshold = 1024 * 15; //15 Kb
@@ -157,10 +161,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object))),
                 Mock.Of<AuthorizationTokenProvider>());
 
-            int expectedOperationInfoSize = 100;
-            int expectedCacheRefreshInfoSize = 50;
-            int expectedRequestInfoSize = 200;
-            
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
                 = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 

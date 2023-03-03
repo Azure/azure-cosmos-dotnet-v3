@@ -834,7 +834,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (localCopyOfActualInfo == null);
 
             List<OperationInfo> actualOperationList = new List<OperationInfo>();
-            HashSet<SystemInfo> actualSystemInformation = new HashSet<SystemInfo>();
+            List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
             List<RequestInfo> actualRequestInformation = new List<RequestInfo>();
             
             if (localCopyOfActualInfo[0].ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant())
@@ -896,7 +896,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
             
-        private static void AssertSystemLevelInformation(HashSet<SystemInfo> actualSystemInformation, IDictionary<string, string> expectedMetricNameUnitMap)
+        private static void AssertSystemLevelInformation(List<SystemInfo> actualSystemInformation, IDictionary<string, string> expectedMetricNameUnitMap)
         {
             IDictionary<string, string> actualMetricNameUnitMap = new Dictionary<string, string>();
 
@@ -979,7 +979,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static void AssertAccountLevelInformation(
             List<ClientTelemetryProperties> localCopyOfActualInfo, 
             List<OperationInfo> actualOperationList, 
-            HashSet<SystemInfo> actualSystemInformation,
+            List<SystemInfo> actualSystemInformation,
             List<RequestInfo> actualRequestInformation,
             bool? isAzureInstance)
         {

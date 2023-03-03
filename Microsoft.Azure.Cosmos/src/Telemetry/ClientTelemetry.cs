@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Rntbd;
     using Util;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
@@ -170,8 +169,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     Compute vmInformation = VmMetadataApiHandler.GetMachineInfo();
                     this.clientTelemetryInfo.ApplicationRegion = vmInformation?.Location;
                     this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
-                    this.RecordSystemUtilization();
 
+                    this.clientTelemetryInfo.SystemInfo = ClientTelemetryHelper.RecordSystemUtilization(this.diagnosticsHelper,
+                        this.clientTelemetryInfo.IsDirectConnectionMode);
+
+                    // Take the copy for further processing i.e. serializing and dividing into chunks
                     ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
 
@@ -199,7 +201,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             else if (t.Status == TaskStatus.RanToCompletion)
                             {
                                 DefaultTrace.TraceInformation("Processing and Sending telemetry done.");
-                                this.Reset();
                                 this.numberOfFailures = 0;
                             }
                         });
@@ -369,43 +370,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     latencyHist.RecordValue(storetatistics.RequestLatency.Ticks);
                 }
             }
-        }
-
-        /// <summary>
-        /// Record CPU and memory usage which will be sent as part of telemetry information
-        /// </summary>
-        private void RecordSystemUtilization()
-        {
-            try
-            {
-                DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
-
-                SystemUsageHistory systemUsageHistory = this.diagnosticsHelper.GetClientTelemetrySystemHistory();
-
-                if (systemUsageHistory != null )
-                {
-                    ClientTelemetryHelper.RecordSystemUsage(
-                        systemUsageHistory: systemUsageHistory, 
-                        systemInfoCollection: this.clientTelemetryInfo.SystemInfo,
-                        isDirectConnectionMode: this.clientTelemetryInfo.IsDirectConnectionMode);
-                } 
-                else
-                {
-                    DefaultTrace.TraceWarning("System Usage History not available");
-                }
-            }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceError("System Usage Recording Error : {0} ", ex);
-            }
-        }
-
-        /// <summary>
-        /// Reset all the operation, System Utilization and Cache refresh related collections
-        /// </summary>
-        private void Reset()
-        {
-            this.clientTelemetryInfo.SystemInfo.Clear();
         }
 
         /// <summary>
