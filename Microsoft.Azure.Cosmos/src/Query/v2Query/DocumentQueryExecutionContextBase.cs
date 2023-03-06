@@ -328,22 +328,18 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestHeaders.Set(HttpConstants.HttpHeaders.MergeStaticId, this.feedOptions.MergeStaticId);
             }
 
-            if (this.feedOptions.CosmosSerializationFormatOptions != null)
+            if (this.feedOptions.TransportSerializationFormat != null)
             {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.CosmosSerializationFormatOptions.ContentSerializationFormat;
+                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.TransportSerializationFormat.Value.ToString();
             }
-            else if (this.feedOptions.ContentSerializationFormat.HasValue)
+            else
             {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.ContentSerializationFormat.Value.ToString();
+                requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = DefaultSupportedSerializationFormats;
             }
 
             if (this.feedOptions.SupportedSerializationFormats != null)
             {
                 requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = this.feedOptions.SupportedSerializationFormats.Value.ToString();
-            }
-            else
-            {
-                requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = DefaultSupportedSerializationFormats;
             }
 
             return requestHeaders;

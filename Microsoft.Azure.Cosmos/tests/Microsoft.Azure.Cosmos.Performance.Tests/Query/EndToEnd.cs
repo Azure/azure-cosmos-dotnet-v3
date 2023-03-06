@@ -209,20 +209,14 @@
             QueryRequestOptions queryRequestOptions,
             JsonSerializationFormat jsonSerializationFormat)
         {
-            string contentSerializationFormat = jsonSerializationFormat switch
+            TransportSerializationFormat contentSerializationFormat = jsonSerializationFormat switch
             {
-                JsonSerializationFormat.Text => "JsonText",
-                JsonSerializationFormat.Binary => "CosmosBinary",
-                JsonSerializationFormat.HybridRow => "HybridRow",
+                JsonSerializationFormat.Text => TransportSerializationFormat.JsonText,
+                JsonSerializationFormat.Binary => TransportSerializationFormat.CosmosBinary,
                 _ => throw new Exception(),
             };
 
-            CosmosSerializationFormatOptions formatOptions = new CosmosSerializationFormatOptions(
-                contentSerializationFormat,
-                (content) => JsonNavigator.Create(content),
-                () => JsonWriter.Create(JsonSerializationFormat.Text));
-
-            queryRequestOptions.CosmosSerializationFormatOptions = formatOptions;
+            queryRequestOptions.TransportSerializationFormat = contentSerializationFormat;
         }
 
         public IEnumerable<object[]> Data()

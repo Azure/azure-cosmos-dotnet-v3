@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Tests;
 
     [TestClass]
     public class FeedOptionTests
@@ -51,13 +52,15 @@ namespace Microsoft.Azure.Cosmos.Query
         }
 
         [TestMethod]
-        public async Task TestSupportedSerializationFormatsAsync()
+        public async Task TestSupportedSerializationFormats()
         {
             FeedOptions feedOptions = new FeedOptions();
             Mock<IDocumentQueryClient> client = new Mock<IDocumentQueryClient>(MockBehavior.Strict);
+            client.Setup(x => x.GetDefaultConsistencyLevelAsync()).Returns(Task.FromResult(ConsistencyLevel.BoundedStaleness));
+            client.Setup(x => x.GetDesiredConsistencyLevelAsync()).Returns(Task.FromResult<ConsistencyLevel?>(ConsistencyLevel.BoundedStaleness));
             Expression<Func<int, int>> randomFunc = x => x * 2;
 
-            TestQueryExecutionContext cxt = new TestQueryExecutionContext(
+            TestQueryExecutionContext testQueryExecutionContext = new TestQueryExecutionContext(
                 client.Object,
                 ResourceType.Document,
                 typeof(TestQueryExecutionContext),
@@ -65,12 +68,16 @@ namespace Microsoft.Azure.Cosmos.Query
                 feedOptions,
                 string.Empty,
                 true, Guid.NewGuid());
-            INameValueCollection headers = await cxt.CreateCommonHeadersAsync(feedOptions);
-            Assert.AreEqual("JsonText, CosmosBinary", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
+            INameValueCollection headers = await testQueryExecutionContext.CreateCommonHeadersAsync(feedOptions);
+            Assert.AreEqual("JsonText,CosmosBinary", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
 
             feedOptions.SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow;
-            headers = await cxt.CreateCommonHeadersAsync(feedOptions);
+            headers = await testQueryExecutionContext.CreateCommonHeadersAsync(feedOptions);
             Assert.AreEqual("CosmosBinary, HybridRow", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
+
+            feedOptions.TransportSerializationFormat = TransportSerializationFormat.CosmosBinary;
+            headers = await testQueryExecutionContext.CreateCommonHeadersAsync(feedOptions);
+            Assert.AreEqual("CosmosBinary", headers[HttpConstants.HttpHeaders.ContentSerializationFormat]);
         }
 
         internal class TestQueryExecutionContext : DocumentQueryExecutionContextBase

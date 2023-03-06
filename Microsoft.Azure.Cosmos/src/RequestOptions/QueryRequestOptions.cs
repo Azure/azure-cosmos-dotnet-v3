@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
@@ -170,6 +171,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
+        /// <summary> 
+        /// Gets or sets the serialization format for requests. 
+        /// Sends the query response over wire in the specified format. 
+        /// </summary>
+        public TransportSerializationFormat? TransportSerializationFormat { get; set; }
+
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
         internal string StartId { get; set; }
@@ -235,18 +242,18 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
             }
 
-            if (this.CosmosSerializationFormatOptions != null)
+            if (this.TransportSerializationFormat != null)
             {
-                request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.CosmosSerializationFormatOptions.ContentSerializationFormat;
-            }
-
-            if (this.SupportedSerializationFormats != null)
-            {
-                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats.ToString();
+                request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.TransportSerializationFormat.ToString();
             }
             else
             {
-                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = StoreRequestHeaders.DefaultSupportedSerializationFormats;
+                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
+            }
+            
+            if (this.SupportedSerializationFormats != null)
+            {
+                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats.ToString();
             }
 
             if (this.StartId != null)

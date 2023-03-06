@@ -83,10 +83,7 @@
             {
                 MaxConcurrency = this.MaxConcurrency,
                 MaxItemCount = this.MaxItemCount,
-                CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
-                            contentSerializationFormat: this.contentSerialization,
-                            createCustomNavigator: (content) => JsonNavigator.Create(content),
-                            createCustomWriter: () => JsonWriter.Create(this.contentSerialization == "JsonText" ? JsonSerializationFormat.Text : JsonSerializationFormat.Binary))
+                TransportSerializationFormat = this.contentSerialization == "JsonText" ? TransportSerializationFormat.JsonText : TransportSerializationFormat.CosmosBinary,
             };
 
             if (this.useStronglyTypedIterator)

@@ -249,9 +249,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestOptions: new QueryRequestOptions()
                 {
                     CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
-                        "JsonText",
                         (content) => JsonNavigator.Create(content),
                         () => Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text)),
+                    TransportSerializationFormat = TransportSerializationFormat.JsonText,
                 });
 
             await AssertQueryDrainsCorrectlyAsync(textFeedIterator);
@@ -261,9 +261,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestOptions: new QueryRequestOptions()
                 {
                     CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
-                        "CosmosBinary",
                         (content) => JsonNavigator.Create(content),
                         () => Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text)),
+                    TransportSerializationFormat = TransportSerializationFormat.CosmosBinary
                 });
 
             await AssertQueryDrainsCorrectlyAsync(binaryFeedIterator);

@@ -65,11 +65,11 @@ namespace Microsoft.Azure.Cosmos
             this.EndId = options.EndId;
             this.StartEpk = options.StartEpk;
             this.EndEpk = options.EndEpk;
-            this.ContentSerializationFormat = options.ContentSerializationFormat;
             this.EnableGroupBy = options.EnableGroupBy;
             this.MergeStaticId = options.MergeStaticId;
             this.Properties = options.Properties;
             this.SupportedSerializationFormats = options.SupportedSerializationFormats;
+            this.TransportSerializationFormat = options.TransportSerializationFormat;
         }
 
         /// <summary>
@@ -365,6 +365,12 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
 
+        /// <summary> 
+        /// Gets or sets the serialization format for requests. 
+        /// Request the query response in specifed serialization format.
+        /// </summary>
+        public TransportSerializationFormat? TransportSerializationFormat { get; set; }
+
         /// <summary>
         /// Gets or sets the flag that tells the backend to forces the query to perform a scan (at a request level).
         /// </summary>
@@ -405,14 +411,6 @@ namespace Microsoft.Azure.Cosmos
         /// To be used along with Read feed operation
         /// </summary>
         internal string EndEpk { get; set; }
-
-        /// <summary>
-        /// Gets or sets the ContentSerializationFormat for the feed (query/read feed) operation in the Azure Cosmos DB service.
-        /// </summary>
-        /// <remarks>
-        /// If the document is stored in a different serialization format then the one requested, then there will be a rewrite over the wire, but the source document will be untouched.
-        /// </remarks>
-        internal ContentSerializationFormat? ContentSerializationFormat { get; set; }
 
         internal bool EnableGroupBy { get; set; }
 

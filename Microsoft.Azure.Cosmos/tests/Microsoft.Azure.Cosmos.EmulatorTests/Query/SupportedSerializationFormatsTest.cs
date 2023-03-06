@@ -68,6 +68,24 @@
                 new QueryRequestOptions()
                 {
                     SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary
+                },
+                new QueryRequestOptions()
+                {
+                    TransportSerializationFormat = TransportSerializationFormat.JsonText
+                },
+                new QueryRequestOptions()
+                {
+                    TransportSerializationFormat = TransportSerializationFormat.CosmosBinary
+                },
+                new QueryRequestOptions()
+                {
+                    TransportSerializationFormat = TransportSerializationFormat.JsonText,
+                    SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary
+                },
+                new QueryRequestOptions()
+                {
+                    TransportSerializationFormat = TransportSerializationFormat.CosmosBinary,
+                    SupportedSerializationFormats = SupportedSerializationFormats.JsonText
                 }
             };
 

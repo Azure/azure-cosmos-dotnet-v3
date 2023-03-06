@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 memoryStream,
                 Documents.ResourceType.Document,
                 new CosmosSerializationFormatOptions(
-                    "JsonText",
                     (content) => JsonNavigator.Create(content),
                     () => JsonWriter.Create(JsonSerializationFormat.Text)));
 
