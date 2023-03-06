@@ -4,8 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
+    using System.Text;
     using Telemetry;
 
     internal sealed class OpenTelemetryResponse : OpenTelemetryAttributes
@@ -20,7 +23,8 @@ namespace Microsoft.Azure.Cosmos
                   requestMessage: null,
                   subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
                   activityId: responseMessage.Headers?.ActivityId,
-                  correlationId: responseMessage.Headers?.CorrelatedActivityId)
+                  correlationId: responseMessage.Headers?.CorrelatedActivityId,
+                  batchOperations: responseMessage.Operations)
         {
         }
 
@@ -50,7 +54,8 @@ namespace Microsoft.Azure.Cosmos
             int subStatusCode,
             string activityId,
             string correlationId,
-            Documents.OperationType operationType = Documents.OperationType.Invalid)
+            Documents.OperationType operationType = Documents.OperationType.Invalid,
+            IReadOnlyList<ItemBatchOperation> batchOperations = null)
             : base(requestMessage)
         {
             this.StatusCode = statusCode;
@@ -62,6 +67,23 @@ namespace Microsoft.Azure.Cosmos
             this.ActivityId = activityId;
             this.CorrelatedActivityId = correlationId;
             this.OperationType = operationType;
+            if (batchOperations != null) 
+            {
+                IDictionary<string, int> operationTypeCount = new Dictionary<string, int>();
+                foreach (ItemBatchOperation operation in batchOperations)
+                {
+                    string operationTypeAsString = operation.OperationType.ToString();
+                    if (operationTypeCount.ContainsKey(operationTypeAsString))
+                    {
+                        operationTypeCount[operationTypeAsString]++;
+                    }
+                    else
+                    {
+                        operationTypeCount.Add(operationTypeAsString, 1);
+                    }
+                }
+                this.BatchOperations = string.Join(", ", operationTypeCount.Select(pair => $"{pair.Key} : {pair.Value}"));
+            }
         }
 
         private static string GetPayloadSize(ResponseMessage response)

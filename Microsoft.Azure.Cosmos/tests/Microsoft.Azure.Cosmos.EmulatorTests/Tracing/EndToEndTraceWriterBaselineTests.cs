@@ -1171,7 +1171,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 startLineNumber = GetLineNumber();
                 string pkValue = "DiagnosticTestPk";
                 TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey(pkValue));
-                BatchCore batchCore = (BatchCore)batch;
                 List<PatchOperation> patch = new List<PatchOperation>()
                 {
                     PatchOperation.Remove("/cost")
@@ -1188,7 +1187,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 for (int i = 0; i < 20; i++)
                 {
                     batch.ReadItem(createItems[i].id);
-                    batchCore.PatchItem(createItems[i].id, patch);
+                    batch.PatchItem(createItems[i].id, patch);
                 }
 
                 TransactionalBatchRequestOptions requestOptions = null;

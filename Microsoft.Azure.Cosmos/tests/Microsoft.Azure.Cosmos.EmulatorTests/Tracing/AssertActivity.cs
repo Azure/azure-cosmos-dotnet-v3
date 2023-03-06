@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                  "db.cosmosdb.retry_count",
                  "db.cosmosdb.item_count",
                  "db.cosmosdb.request_diagnostics",
+                 "db.cosmosdb.batch_operations",
                  "exception.type",
                  "exception.message",
                  "exception.stacktrace",

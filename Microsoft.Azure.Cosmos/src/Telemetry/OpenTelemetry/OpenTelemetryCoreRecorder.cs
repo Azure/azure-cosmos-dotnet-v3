@@ -169,7 +169,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, this.response.ItemCount);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, this.response.CorrelatedActivityId);
-
+                    if (operationType == Documents.OperationType.Batch)
+                    {
+                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.BatchOperations, this.response.BatchOperations);
+                    }
+                   
                     if (this.response.Diagnostics != null)
                     {
                         this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(this.response.Diagnostics.GetContactedRegions()));
