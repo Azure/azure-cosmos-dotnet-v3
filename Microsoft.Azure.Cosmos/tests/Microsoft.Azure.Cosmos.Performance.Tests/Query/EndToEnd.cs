@@ -209,14 +209,14 @@
             QueryRequestOptions queryRequestOptions,
             JsonSerializationFormat jsonSerializationFormat)
         {
-            TransportSerializationFormat contentSerializationFormat = jsonSerializationFormat switch
+            TransportSerializationFormat transportSerializationFormat = jsonSerializationFormat switch
             {
                 JsonSerializationFormat.Text => TransportSerializationFormat.JsonText,
                 JsonSerializationFormat.Binary => TransportSerializationFormat.CosmosBinary,
                 _ => throw new Exception(),
             };
 
-            queryRequestOptions.TransportSerializationFormat = contentSerializationFormat;
+            queryRequestOptions.TransportSerializationFormat = transportSerializationFormat;
         }
 
         public IEnumerable<object[]> Data()

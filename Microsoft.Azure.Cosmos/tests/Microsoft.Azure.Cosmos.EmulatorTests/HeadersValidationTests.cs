@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
-    using global::Azure;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Routing;
@@ -310,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("hdetroja")]
-        public void TransportSerializationFormatTest()
+        public void ValidateTransportSerializationFormat()
         {
             QueryRequestOptions requestOption = new QueryRequestOptions()
             {

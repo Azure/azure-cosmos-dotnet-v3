@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Tests;
 
     [TestClass]
     public class FeedOptionTests
