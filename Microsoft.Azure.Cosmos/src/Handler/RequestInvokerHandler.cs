@@ -500,11 +500,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     .GetPartitionKeyDefinitionAsync(cancellationToken)
                     .ConfigureAwait(false);
 
-                if (partitionKeyDefinition != null && partitionKeyDefinition.Kind == PartitionKind.MultiHash)
+                if (partitionKeyDefinition != null && partitionKeyDefinition.Kind == PartitionKind.MultiHash
+                    && feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count >= partitionKeyDefinition.Paths?.Count)
                 {
-                    return feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count >= partitionKeyDefinition.Paths?.Count
-                        ? feedRange
-                        : new FeedRangeEpk(feedRangePartitionKey.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
+                   feedRange = new FeedRangeEpk(feedRangePartitionKey.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
                 }
             }
 
