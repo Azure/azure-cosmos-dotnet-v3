@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     {
                         this.numberOfFailures++;
 
-                        DefaultTrace.TraceError("Telemetry Job Processor failed with error : ", ex);
+                        DefaultTrace.TraceError("Telemetry Job Processor failed with error : {0}", ex);
                     }
                 }
             }
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 throw new ArgumentNullException(nameof(cacheRefreshSource));
             }
 
-            DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {cacheRefreshSource} data for Telemetry.");
+            DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {0} data for Telemetry.", cacheRefreshSource);
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(regionsContactedList);
 
