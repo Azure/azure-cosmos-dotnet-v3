@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         private const int SqlCoalesceScalarExpressionHashCode = -1400659633;
         private const int SqlConditionalScalarExpressionHashCode = -421337832;
         private const int SqlExistsScalarExpressionHashCode = 1168675587;
+        private const int SqlFirstScalarExpressionHashCode = -754458752;
         private const int SqlFromClauseHashCode = 52588336;
         private const int SqlFunctionCallScalarExpressionHashCode = 496783446;
         private const int SqlFunctionCallScalarExpressionUdfHashCode = 1547906315;
@@ -35,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         private const int SqlInScalarExpressionHashCode = 1439386783;
         private const int SqlInScalarExpressionNotHashCode = -1131398119;
         private const int SqlJoinCollectionExpressionHashCode = 1000382226;
+        private const int SqlLastScalarExpressionHashCode = 2018370813;
         private const int SqlLikeScalarExpressionHashCode = 317861;
         private const int SqlLimitSpecHashCode = 92601316;
         private const int SqlLiteralScalarExpressionHashCode = -158339101;
@@ -207,6 +209,13 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return hashCode;
         }
 
+        public override int Visit(SqlFirstScalarExpression sqlFirstScalarExpression)
+        {
+            int hashCode = SqlFirstScalarExpressionHashCode;
+            hashCode = CombineHashes(hashCode, sqlFirstScalarExpression.Subquery.Accept(this));
+            return hashCode;
+        }
+
         public override int Visit(SqlFromClause sqlFromClause)
         {
             int hashCode = SqlFromClauseHashCode;
@@ -295,6 +304,13 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             int hashCode = SqlJoinCollectionExpressionHashCode;
             hashCode = CombineHashes(hashCode, sqlJoinCollectionExpression.Left.Accept(this));
             hashCode = CombineHashes(hashCode, sqlJoinCollectionExpression.Right.Accept(this));
+            return hashCode;
+        }
+
+        public override int Visit(SqlLastScalarExpression sqlLastScalarExpression)
+        {
+            int hashCode = SqlLastScalarExpressionHashCode;
+            hashCode = CombineHashes(hashCode, sqlLastScalarExpression.Subquery.Accept(this));
             return hashCode;
         }
 

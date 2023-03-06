@@ -1004,6 +1004,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         return false;
                     }
 
+                    public override bool Visit(SqlFirstScalarExpression sqlFirstScalarExpression)
+                    {
+                        // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                        return false;
+                    }
+
                     public override bool Visit(SqlFunctionCallScalarExpression sqlFunctionCallScalarExpression)
                     {
                         return !sqlFunctionCallScalarExpression.IsUdf &&
@@ -1019,6 +1025,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         }
 
                         return hasAggregates;
+                    }
+
+                    public override bool Visit(SqlLastScalarExpression sqlLastScalarExpression)
+                    {
+                        // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                        return false;
                     }
 
                     public override bool Visit(SqlLiteralScalarExpression sqlLiteralScalarExpression)

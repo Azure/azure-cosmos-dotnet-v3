@@ -247,6 +247,38 @@
         }
 
         [TestMethod]
+        public void First()
+        {
+            List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()
+            {
+                // Positive
+                CreateInput(description: "Basic", scalarExpression: "FIRST(SELECT *)"),
+                CreateInput(description: "case insensitive", scalarExpression: "FIRST(SELECT *)"),
+                CreateInput(description: "nested", scalarExpression:"FIRST( SELECT * WHERE FIRST( SELECT *))"),
+                CreateInput(
+                    description: "multiple nested",
+                    scalarExpression:
+                        "FIRST( "                         +
+                        "   SELECT * "                    +
+                        "   WHERE FIRST( "                +
+                        "       SELECT *"                 +
+                        "       WHERE FIRST("             +
+                        "           SELECT *"             +
+                        "           WHERE FIRST("         +
+                        "               SELECT VALUE 1"   +
+                        "           )"                    +
+                        "       )"                        +
+                        "   )"                            +
+                        ")"),
+
+                // Negative
+                CreateInput(description: "No closing parens", scalarExpression: "FIRST(SELECT *")
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void FunctionCall()
         {
             List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()
@@ -286,6 +318,38 @@
                 CreateInput(description: "missing needle", scalarExpression: "IN (-123"),
                 CreateInput(description: "missing haystack", scalarExpression: "42 IN "),
                 CreateInput(description: "mispelled keyword", scalarExpression: "42 inn (123)"),
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void Last()
+        {
+            List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()
+            {
+                // Positive
+                CreateInput(description: "Basic", scalarExpression: "LAST(SELECT *)"),
+                CreateInput(description: "case insensitive", scalarExpression: "LAST(SELECT *)"),
+                CreateInput(description: "nested", scalarExpression:"LAST( SELECT * WHERE LAST( SELECT *))"),
+                CreateInput(
+                    description: "multiple nested",
+                    scalarExpression:
+                        "LAST( "                         +
+                        "   SELECT * "                   +
+                        "   WHERE LAST( "                +
+                        "       SELECT *"                +
+                        "       WHERE LAST("             +
+                        "           SELECT *"            +
+                        "           WHERE LAST("         +
+                        "               SELECT VALUE 1"  +
+                        "           )"                   +
+                        "       )"                       +
+                        "   )"                           +
+                        ")"),
+
+                // Negative
+                CreateInput(description: "No closing parens", scalarExpression: "LAST(SELECT *")
             };
 
             this.ExecuteTestSuite(inputs);
