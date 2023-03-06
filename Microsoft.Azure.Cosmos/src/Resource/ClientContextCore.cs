@@ -503,25 +503,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    if (recorder.IsEnabled == false && this.clientOptions.IsDistributedTracingEnabled)
+                    TResult result = await task(trace).ConfigureAwait(false);
+                    if (openTelemetry != null && recorder.IsEnabled)
                     {
-                        DiagnosticListener activitySource = new DiagnosticListener("Azure.Cosmos.Request");
-                        
-                        Activity activity = activitySource.StartActivity("Test", null);
-                        TResult result = await task(trace).ConfigureAwait(false);
-                        return null;
+                        // Record request response information
+                        OpenTelemetryAttributes response = openTelemetry(result);
+                        recorder.Record(response);
                     }
-                    else
-                    {
-                        TResult result = await task(trace).ConfigureAwait(false);
-                        if (openTelemetry != null && recorder.IsEnabled)
-                        {
-                            // Record request response information
-                            OpenTelemetryAttributes response = openTelemetry(result);
-                            recorder.Record(response);
-                        }
-                        return result;
-                    }
+                    return result;
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {

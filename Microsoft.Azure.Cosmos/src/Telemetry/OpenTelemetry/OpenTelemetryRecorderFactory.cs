@@ -48,6 +48,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         clientContext: clientContext,
                         config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
                 }
+                else
+                {
+                    DiagnosticScope requestScope = OpenTelemetryRecorderFactory
+                   .ScopeFactory
+                   .CreateScope(name: $"{OpenTelemetryAttributeKeys.NetworkLevelPrefix}.{operationName}");
+
+                    if (requestScope.IsEnabled)
+                    {
+                        return new OpenTelemetryCoreRecorder(
+                                       scope: scope);
+
+                    }
+                    else
+                    {
+                        return new OpenTelemetryCoreRecorder(operationName);
+                    }
+                }
             }
 
             return default;
