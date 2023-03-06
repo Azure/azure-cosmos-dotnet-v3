@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 enableDistributingTracing: true);
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
                 .WithBulkExecution(true)
-                .WithDistributedTracingOptions(new DistributedTracingOptions()
+                .WithEventTracingOptions(new EventTracingOptions()
                 {
                     LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
                 }));
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
                 builder
                     .AddCustomHandlers(requestHandler)
-                    .WithDistributedTracingOptions(new DistributedTracingOptions()
+                    .WithEventTracingOptions(new EventTracingOptions()
                     {
                         LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
                     }));
@@ -979,7 +979,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 Guid exceptionActivityId = Guid.NewGuid();
                 using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
                     builder
-                     .WithDistributedTracingOptions(new DistributedTracingOptions()
+                     .WithEventTracingOptions(new EventTracingOptions()
                      {
                          LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
                      })
@@ -1267,7 +1267,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                         maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
                         maxRetryAttemptsOnThrottledRequests: 3)
                         .WithBulkExecution(true)
-                        .WithDistributedTracingOptions(new DistributedTracingOptions()
+                        .WithEventTracingOptions(new EventTracingOptions()
                          {
                              LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
                          })

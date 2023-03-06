@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Telemetry.EventTracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
@@ -1001,6 +1002,12 @@ namespace Microsoft.Azure.Cosmos
                 return objectType == typeof(DateTime);
             }
         }
+
+        /// <summary>
+        /// Event Tracing Options. <see cref="Microsoft.Azure.Cosmos.EventTracingOptions"/>
+        /// </summary>
+        /// <remarks> There must be listener subscribed to "Azure-Cosmos-Operation-Request-Diagnostics" Event Source and filtering will happen based on this configuration</remarks>
+        internal EventTracingOptions EventTracingOptions { get; set; }
         
         /// <summary>
         /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>

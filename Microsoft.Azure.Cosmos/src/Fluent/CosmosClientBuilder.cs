@@ -454,6 +454,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Enables Event Tracing with a Configuration ref. <see cref="EventTracingOptions"/>
+        /// </summary>
+        /// <param name="options"><see cref="EventTracingOptions"/>.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>]
+        /// <remarks>Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
+        internal CosmosClientBuilder WithEventTracingOptions(EventTracingOptions options)
+        {
+            this.clientOptions.EventTracingOptions = options;
+
+            return this;
+        }
+
+        /// <summary>
         /// Sets the connection mode to Gateway. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <param name="maxConnectionLimit">The number specifies the number of connections that may be opened simultaneously. Default is 50 connections</param>

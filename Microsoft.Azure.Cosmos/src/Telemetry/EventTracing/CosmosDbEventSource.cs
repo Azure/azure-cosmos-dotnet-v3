@@ -2,10 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Diagnostics.Tracing;
     using global::Azure.Core.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
     /// <summary>
@@ -15,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal sealed class CosmosDbEventSource : AzureEventSource
     {
         internal const string EventSourceName = "Azure-Cosmos-Operation-Request-Diagnostics";
-        
+
         private static CosmosDbEventSource Singleton { get; } = new CosmosDbEventSource();
 
         private CosmosDbEventSource()
@@ -26,30 +28,39 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [NonEvent]
         public static bool IsEnabled(EventLevel level)
         {
-            return CosmosDbEventSource.Singleton.IsEnabled(level, EventKeywords.None);
+            return Singleton.IsEnabled(level, EventKeywords.None);
         }
 
         [NonEvent]
         public static void RecordDiagnosticsForRequests(
-            DistributedTracingOptions config,
+            EventTracingOptions config,
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
             if (DiagnosticsFilterHelper.IsTracingNeeded(
                     config: config,
                     operationType: operationType,
-                    response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
+                    response: response) && IsEnabled(EventLevel.Warning))
             {
-                CosmosDbEventSource.Singleton.LatencyOverThreshold(response.Diagnostics.ToString());
+                Singleton.LatencyOverThreshold(response.Diagnostics.ToString());
             }
         }
 
         [NonEvent]
         public static void RecordDiagnosticsForExceptions(CosmosDiagnostics diagnostics)
         {
-            if (CosmosDbEventSource.IsEnabled(EventLevel.Error))
+            if (IsEnabled(EventLevel.Error))
             {
-                CosmosDbEventSource.Singleton.Exception(diagnostics.ToString());
+                Singleton.Exception(diagnostics.ToString());
+            }
+        }
+        
+        [NonEvent]
+        public static void RecordDiagnosticsForExceptions(Exception exception)
+        {
+            if (IsEnabled(EventLevel.Error))
+            {
+                Singleton.Exception(exception.ToString());
             }
         }
 

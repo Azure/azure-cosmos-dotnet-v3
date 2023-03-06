@@ -13,12 +13,14 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.EventTracing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -507,14 +509,19 @@ namespace Microsoft.Azure.Cosmos
                         // Record request response information
                         OpenTelemetryAttributes response = openTelemetry(result);
                         recorder.Record(response);
+                        
+                        CosmosDbEventSource.RecordDiagnosticsForRequests(
+                            config: requestOptions?.EventTracingOptions ?? this.ClientOptions?.EventTracingOptions,
+                            operationType: operationType,
+                            response: response);
                     }
-
                     return result;
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
                     CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
                     recorder.MarkFailed(operationCancelledException);
+                    CosmosDbEventSource.RecordDiagnosticsForExceptions(operationCancelledException.Diagnostics);
                     
                     throw operationCancelledException;
                 }
@@ -525,7 +532,8 @@ namespace Microsoft.Azure.Cosmos
                         this.client,
                         trace);
                     recorder.MarkFailed(objectDisposedException);
-
+                    CosmosDbEventSource.RecordDiagnosticsForExceptions(objectDisposed);
+                    
                     throw objectDisposedException;
                 }
                 catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
@@ -534,13 +542,15 @@ namespace Microsoft.Azure.Cosmos
                         nullRefException,
                         trace);
                     recorder.MarkFailed(nullException);
+                    CosmosDbEventSource.RecordDiagnosticsForExceptions(nullRefException);
 
                     throw nullException;
                 }
                 catch (Exception ex)
                 {
                     recorder.MarkFailed(ex);
-
+                    CosmosDbEventSource.RecordDiagnosticsForExceptions(ex);
+                    
                     throw;
                 }
             }

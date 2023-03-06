@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
     using Documents;
+    using Microsoft.Azure.Cosmos.Telemetry.EventTracing;
 
     internal static class DiagnosticsFilterHelper
     {
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// </summary>
         /// <returns>true or false</returns>
         public static bool IsTracingNeeded(
-            DistributedTracingOptions config,
+            EventTracingOptions config,
             OperationType operationType,
             OpenTelemetryAttributes response)
         {
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             }
             else
             {
-                latencyThreshold = operationType == OperationType.Query ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
+                latencyThreshold = operationType == OperationType.Query ? EventTracingOptions.DefaultQueryTimeoutThreshold : EventTracingOptions.DefaultCrudLatencyThreshold;
             }
 
             return response.Diagnostics.GetClientElapsedTime() > latencyThreshold || !response.StatusCode.IsSuccess();

@@ -46,7 +46,12 @@ namespace Microsoft.Azure.Cosmos
         /// Set Request Level Distributed Tracing Options.
         /// </summary>
         internal DistributedTracingOptions DistributedTracingOptions { get; set; }
-        
+
+        /// <summary>
+        /// Set Request Level Event Tracing Options.
+        /// </summary>
+        internal EventTracingOptions EventTracingOptions { get; set; }
+
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>

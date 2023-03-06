@@ -152,11 +152,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public void Dispose()
         {
+            Documents.OperationType operationType
+                  = (this.response == null || this.response?.OperationType == Documents.OperationType.Invalid) ? this.operationType : this.response.OperationType;
+
             if (this.scope.IsEnabled)
             {
-                Documents.OperationType operationType 
-                    = (this.response == null || this.response?.OperationType == Documents.OperationType.Invalid) ? this.operationType : this.response.OperationType;
-
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationType);
 
                 if (this.response != null)
@@ -173,7 +173,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     if (this.response.Diagnostics != null)
                     {
                         this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(this.response.Diagnostics.GetContactedRegions()));
-                        CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, operationType, this.response);
                     }
                 }
 
