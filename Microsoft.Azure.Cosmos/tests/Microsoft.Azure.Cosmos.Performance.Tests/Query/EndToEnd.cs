@@ -211,8 +211,8 @@
         {
             TransportSerializationFormat transportSerializationFormat = jsonSerializationFormat switch
             {
-                JsonSerializationFormat.Text => TransportSerializationFormat.JsonText,
-                JsonSerializationFormat.Binary => TransportSerializationFormat.CosmosBinary,
+                JsonSerializationFormat.Text => TransportSerializationFormat.Text,
+                JsonSerializationFormat.Binary => TransportSerializationFormat.Binary,
                 _ => throw new Exception(),
             };
 

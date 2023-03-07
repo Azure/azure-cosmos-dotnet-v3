@@ -311,14 +311,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Owner("hdetroja")]
         public void ValidateTransportSerializationFormat()
         {
-            QueryRequestOptions requestOption = new QueryRequestOptions()
+            List<QueryRequestOptions> queryRequestOptionsList = new List<QueryRequestOptions>()
             {
-                TransportSerializationFormat = TransportSerializationFormat.CosmosBinary
+                new QueryRequestOptions()
+                {
+                TransportSerializationFormat = TransportSerializationFormat.Binary
+                },
+                new QueryRequestOptions()
+                {
+                    TransportSerializationFormat = TransportSerializationFormat.Text
+                }
             };
 
-            RequestMessage testrequestMessage = new RequestMessage();
-            requestOption.PopulateRequestOptions(testrequestMessage);
-            Assert.AreEqual("CosmosBinary", testrequestMessage.Headers.ContentSerializationFormat);
+            string[] expectedResults = new[] { "CosmosBinary", "JsonText" };
+            for (int i = 0; i < queryRequestOptionsList.Count; i++)
+            {
+                RequestMessage testrequestMessage = new RequestMessage();
+                queryRequestOptionsList[i].PopulateRequestOptions(testrequestMessage);
+                Assert.AreEqual(expectedResults[i], testrequestMessage.Headers.ContentSerializationFormat);
+            }
         }
 
         [TestMethod]

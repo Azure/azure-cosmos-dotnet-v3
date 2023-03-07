@@ -358,16 +358,12 @@ namespace Microsoft.Azure.Cosmos
         public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
-        /// Gets or sets the SupportedSerializationFormats for the feed (query/read feed) operation in the Azure Cosmos DB service.
+        /// Gets or sets the SupportedSerializationFormats for the query response from the service.
         /// </summary>
-        /// <remarks>
-        /// Default value of 'JsonText, CosmosBinary' will be passed if null. The backend will choose the best suited format for the response.
-        /// </remarks>
         public SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
 
         /// <summary> 
-        /// Gets or sets the serialization format for requests. 
-        /// Request the query response in specifed serialization format.
+        /// Gets or sets the transport serialization format for the query response from the service.
         /// </summary>
         public TransportSerializationFormat? TransportSerializationFormat { get; set; }
 

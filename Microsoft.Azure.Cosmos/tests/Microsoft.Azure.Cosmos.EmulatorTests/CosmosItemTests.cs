@@ -1630,12 +1630,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
 
             CosmosSerializationFormatOptions options = new CosmosSerializationFormatOptions(
-                (content) => JsonNavigator.Create(content),
                 () => JsonWriter.Create(JsonSerializationFormat.Binary));
 
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
-                TransportSerializationFormat = TransportSerializationFormat.CosmosBinary,
+                TransportSerializationFormat = TransportSerializationFormat.Binary,
                 CosmosSerializationFormatOptions = options,
                 MaxConcurrency = 5,
                 MaxItemCount = 5,

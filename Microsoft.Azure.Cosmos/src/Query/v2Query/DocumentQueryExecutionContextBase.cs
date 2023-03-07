@@ -330,16 +330,18 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (this.feedOptions.TransportSerializationFormat != null)
             {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.TransportSerializationFormat.Value.ToString();
-            }
-            else
-            {
-                requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = DefaultSupportedSerializationFormats;
+                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.TransportSerializationFormat == TransportSerializationFormat.Text
+                    ? ContentSerializationFormat.JsonText.ToString()
+                    : ContentSerializationFormat.CosmosBinary.ToString();
             }
 
             if (this.feedOptions.SupportedSerializationFormats != null)
             {
                 requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = this.feedOptions.SupportedSerializationFormats.Value.ToString();
+            }
+            else
+            {
+                requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = DefaultSupportedSerializationFormats;
             }
 
             return requestHeaders;
@@ -695,23 +697,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 content = memoryStream.ToArray();
             }
-
-            IJsonNavigator jsonNavigator = null;
-
-            // Use the users custom navigator first. If it returns null back try the
-            // internal navigator.
-            if (this.feedOptions.CosmosSerializationFormatOptions != null)
-            {
-                jsonNavigator = this.feedOptions.CosmosSerializationFormatOptions.CreateCustomNavigatorCallback(content);
-                if (jsonNavigator == null)
-                {
-                    throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");
-                }
-            }
-            else
-            {
-                jsonNavigator = JsonNavigator.Create(content);
-            }
+            IJsonNavigator jsonNavigator = JsonNavigator.Create(content);
 
             string resourceName = this.GetRootNodeName(documentServiceRequest.ResourceType);
 

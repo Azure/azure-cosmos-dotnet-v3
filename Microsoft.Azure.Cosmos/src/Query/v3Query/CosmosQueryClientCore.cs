@@ -449,7 +449,7 @@ namespace Microsoft.Azure.Cosmos
         public static CosmosArray ParseElementsFromRestStream(
             Stream stream,
             ResourceType resourceType,
-            CosmosSerializationFormatOptions cosmosSerializationOptions)
+            CosmosSerializationFormatOptions cosmosSerializationOptions = null)
         {
             if (!(stream is MemoryStream memoryStream))
             {
@@ -479,19 +479,7 @@ namespace Microsoft.Azure.Cosmos
 
             ReadOnlyMemory<byte> content = memoryStream.TryGetBuffer(out ArraySegment<byte> buffer) ? buffer : (ReadOnlyMemory<byte>)memoryStream.ToArray();
             IJsonNavigator jsonNavigator;
-            if (cosmosSerializationOptions != null)
-            {
-                // Use the users custom navigator
-                jsonNavigator = cosmosSerializationOptions.CreateCustomNavigatorCallback(content);
-                if (jsonNavigator == null)
-                {
-                    throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");
-                }
-            }
-            else
-            {
-                jsonNavigator = JsonNavigator.Create(content);
-            }
+            jsonNavigator = JsonNavigator.Create(content);
 
             string resourceName = resourceType switch
             {

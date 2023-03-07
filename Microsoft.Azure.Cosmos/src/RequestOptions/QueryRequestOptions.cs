@@ -172,8 +172,7 @@ namespace Microsoft.Azure.Cosmos
         public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
         /// <summary> 
-        /// Gets or sets the serialization format for requests. 
-        /// Sends the query response over wire in the specified format. 
+        /// Gets or sets the transport serialization format for the query response from the service.
         /// </summary>
         public TransportSerializationFormat? TransportSerializationFormat { get; set; }
 
@@ -244,16 +243,18 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.TransportSerializationFormat != null)
             {
-                request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.TransportSerializationFormat.ToString();
-            }
-            else
-            {
-                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
+                request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.TransportSerializationFormat == Cosmos.TransportSerializationFormat.Text
+                    ? ContentSerializationFormat.JsonText.ToString()
+                    : ContentSerializationFormat.CosmosBinary.ToString();
             }
             
             if (this.SupportedSerializationFormats != null)
             {
                 request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats.ToString();
+            }
+            else
+            {
+                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
             }
 
             if (this.StartId != null)

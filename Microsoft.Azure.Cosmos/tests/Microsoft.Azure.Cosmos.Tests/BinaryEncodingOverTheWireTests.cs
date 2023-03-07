@@ -245,14 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             FeedIterator<JToken> textFeedIterator = container.GetItemQueryIterator<JToken>(
-                queryDefinition: new QueryDefinition("SELECT * FROM c ORDER BY c._ts"),
-                requestOptions: new QueryRequestOptions()
-                {
-                    CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
-                        (content) => JsonNavigator.Create(content),
-                        () => Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text)),
-                    TransportSerializationFormat = TransportSerializationFormat.JsonText,
-                });
+                queryDefinition: new QueryDefinition("SELECT * FROM c ORDER BY c._ts"));
 
             await AssertQueryDrainsCorrectlyAsync(textFeedIterator);
 
@@ -260,10 +253,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 queryDefinition: new QueryDefinition("SELECT * FROM c ORDER BY c._ts"),
                 requestOptions: new QueryRequestOptions()
                 {
-                    CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
-                        (content) => JsonNavigator.Create(content),
-                        () => Cosmos.Json.JsonWriter.Create(JsonSerializationFormat.Text)),
-                    TransportSerializationFormat = TransportSerializationFormat.CosmosBinary
+                    TransportSerializationFormat = TransportSerializationFormat.Binary
                 });
 
             await AssertQueryDrainsCorrectlyAsync(binaryFeedIterator);
