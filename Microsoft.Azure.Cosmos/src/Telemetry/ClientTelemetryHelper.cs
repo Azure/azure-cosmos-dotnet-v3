@@ -57,7 +57,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             DefaultTrace.TraceVerbose("System Usage recorded by telemetry is : {0}", systemUsageHistory);
-            List<SystemInfo> systemInfoCollection = new List<SystemInfo>
+            
+            List<SystemInfo> systemInfoCollection = new List<SystemInfo>(6)
             {
                 TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values),
                 TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values),

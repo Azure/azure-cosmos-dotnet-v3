@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 requestInfoInfoSnapshot.TryAdd(reqInfo, latency);
             }
 
-            await processor.GenerateOptimalSizeOfPayloadAndSendAsync(
+            await processor.ProcessAndSendAsync(
                 clientTelemetryProperties,
                 operationInfoSnapshot,
                 cacheRefreshInfoSnapshot,

@@ -45,29 +45,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
             CancellationToken cancellationToken)
         {
-                await this.GenerateOptimalSizeOfPayloadAndSendAsync(
-                    clientTelemetryInfo, 
-                    operationInfoSnapshot, 
-                    cacheRefreshInfoSnapshot,
-                    requestInfoSnapshot,
-                    cancellationToken);
-        }
-
-        /// <summary>
-        /// If  payload size is greater than 2 MB, it breaks the list of objects into multiple chunks and send it one by one.
-        /// else send as it is.
-        /// </summary>
-        /// <param name="clientTelemetryInfo"></param>
-        /// <param name="operationInfoSnapshot"></param>
-        /// <param name="cacheRefreshInfoSnapshot"></param>
-        /// <param name="requestInfoSnapshot"></param>
-        /// <param name="cancellationToken"></param>
-        internal async Task GenerateOptimalSizeOfPayloadAndSendAsync(ClientTelemetryProperties clientTelemetryInfo,
-            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
-            ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
-            ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
-            CancellationToken cancellationToken)
-        {
             try
             {
                 await ClientTelemetryPayloadWriter.SerializedPayloadChunksAsync(
@@ -91,7 +68,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// In any case it resets the telemetry information to collect the latest one.
         /// </summary>
         /// <returns>Async Task</returns>
-        private async Task SendAsync(string globalDatabaseAccountName, string jsonPayload, CancellationToken cancellationToken)
+        private async Task SendAsync(
+            string globalDatabaseAccountName, 
+            string jsonPayload, 
+            CancellationToken cancellationToken)
         {
             if (endpointUrl == null)
             {
