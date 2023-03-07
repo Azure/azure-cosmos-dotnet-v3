@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
+    using System.Diagnostics;
     using global::Azure.Core.Pipeline;
 
     /// <summary>
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         clientContext: clientContext,
                         config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
                 }
-                else
+                else if (Activity.Current is null)
                 {
                     DiagnosticScope requestScope = OpenTelemetryRecorderFactory
                    .ScopeFactory
@@ -58,7 +59,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     {
                         return new OpenTelemetryCoreRecorder(
                                        scope: scope);
-
                     }
                     else
                     {
@@ -66,7 +66,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
                 }
             }
-
             return default;
         }
     }
