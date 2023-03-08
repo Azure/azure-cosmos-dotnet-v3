@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             
             JsonWriter writer = ClientTelemetryPayloadWriter.GetWriterWithSectionStartTag(stringBuilder, properties, "operationInfo");
             
-            if (operationInfoSnapshot.Any())
+            if (operationInfoSnapshot?.Any() == true)
             {
                 foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in operationInfoSnapshot)
                 {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             writer.WriteEndArray();
 
-            if (cacheRefreshInfoSnapshot.Any())
+            if (cacheRefreshInfoSnapshot?.Any() == true)
             {
                 writer.WritePropertyName("cacheRefreshInfo");
                 writer.WriteStartArray();
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             }
 
-            if (requestInfoSnapshot.Any())
+            if (requestInfoSnapshot?.Any() == true)
             {
                 writer.WritePropertyName("requestInfo");
                 writer.WriteStartArray();
