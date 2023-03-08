@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TOutput Visit(SqlCoalesceScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlConditionalScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlExistsScalarExpression sqlObject, TArg input);
+        public abstract TOutput Visit(SqlFirstScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlFromClause sqlObject, TArg input);
         public abstract TOutput Visit(SqlFunctionCallScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlGroupByClause sqlObject, TArg input);
@@ -32,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TOutput Visit(SqlInputPathCollection sqlObject, TArg input);
         public abstract TOutput Visit(SqlInScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlJoinCollectionExpression sqlObject, TArg input);
+        public abstract TOutput Visit(SqlLastScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlLikeScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlLimitSpec sqlObject, TArg input);
         public abstract TOutput Visit(SqlLiteralScalarExpression sqlObject, TArg input);

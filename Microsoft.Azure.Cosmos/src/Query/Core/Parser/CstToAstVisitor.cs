@@ -568,6 +568,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlExistsScalarExpression.Create(subquery);
         }
 
+        public override SqlObject VisitFirstScalarExpression([NotNull] sqlParser.FirstScalarExpressionContext context)
+        {
+            Contract.Requires(context != null);
+            // K_FIRST '(' sql_query ')'
+            Contract.Requires(context.ChildCount == 4);
+
+            SqlQuery subquery = (SqlQuery)this.Visit(context.children[2]);
+            return SqlFirstScalarExpression.Create(subquery);
+        }
+
         public override SqlObject VisitFunctionCallScalarExpression([NotNull] sqlParser.FunctionCallScalarExpressionContext context)
         {
             Contract.Requires(context != null);
@@ -625,6 +635,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
 
             return SqlInScalarExpression.Create(needle, not, searchList.ToImmutableArray());
+        }
+
+        public override SqlObject VisitLastScalarExpression([NotNull] sqlParser.LastScalarExpressionContext context)
+        {
+            Contract.Requires(context != null);
+            // K_LAST '(' sql_query ')'
+            Contract.Requires(context.ChildCount == 4);
+
+            SqlQuery subquery = (SqlQuery)this.Visit(context.children[2]);
+            return SqlLastScalarExpression.Create(subquery);
         }
 
         public override SqlObject VisitLike_scalar_expression([NotNull] sqlParser.Like_scalar_expressionContext context)
