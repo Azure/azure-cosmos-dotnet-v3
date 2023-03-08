@@ -1,6 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+using System.Reflection;
 
 namespace Microsoft.Azure.Cosmos
 {
@@ -10,6 +11,28 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public static class Regions
     {
+
+        /// <summary>
+        /// Retrieves a normalized Azure Region name as needed by the Azure Cosmos DB SDK to contact the specific service region
+        /// Accepts input such as "westus2", "west us2", "WestUs2", etc
+        /// </summary>
+        public static string GetNormalizedRegionName(string regionName)
+        {
+            // First, remove any spaces
+            regionName = regionName.Replace(" ", "");
+
+            Type regionsType = typeof(Regions);
+            FieldInfo[] fields = regionsType.GetFields(BindingFlags.Static | BindingFlags.Public);
+            foreach (FieldInfo f in fields)
+            {
+                if (string.Equals(f.Name, regionName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return (string)f.GetValue(null);
+                }
+            }
+            throw new ArgumentException($"No region found for input {regionName}");
+        }
+
         /// <summary>
         /// Name of the Azure West US region in the Azure Cosmos DB service.
         /// </summary>
