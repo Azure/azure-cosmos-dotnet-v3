@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.Linq
     {
         /// <summary>
         /// Returns a Boolean value indicating if the type of the specified expression is an array.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns>Returns true if the type of the specified expression is an array; otherwise, false.</returns>
@@ -39,6 +41,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         /// <summary>
         /// Returns a Boolean value indicating if the type of the specified expression is a boolean.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns>Returns true if the type of the specified expression is a boolean; otherwise, false.</returns>
@@ -94,6 +98,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         /// <summary>
         /// Returns a Boolean value indicating if the type of the specified expression is a number.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns>Returns true if the type of the specified expression is a number; otherwise, false.</returns>
@@ -111,6 +117,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         /// <summary>
         /// Returns a Boolean value indicating if the type of the specified expression is an object.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns>Returns true if the type of the specified expression is an object; otherwise, false.</returns>
@@ -150,6 +158,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         /// <summary>
         /// Returns a Boolean value indicating if the type of the specified expression is a string.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
         /// </summary>
         /// <param name="obj"></param>
         /// <returns>Returns true if the type of the specified expression is a string; otherwise, false.</returns>
@@ -183,7 +193,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-
 #if PREVIEW
         public
 #else
