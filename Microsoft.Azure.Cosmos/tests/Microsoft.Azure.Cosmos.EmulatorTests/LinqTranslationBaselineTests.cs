@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestTypeCheckFunctions()
         {
-            // IsDefined, IsNull, and IsPrimitive are not supported on the client side.
+            // IsArray, IsBool, IsDefined, IsNull, IsNumber, IsObject, IsPrimitive, and IsString are not supported on the client side.
             // Partly because IsPrimitive is not trivial to implement.
             // Therefore these methods are verified with baseline only.
             List<DataObject> data = new List<DataObject>();
