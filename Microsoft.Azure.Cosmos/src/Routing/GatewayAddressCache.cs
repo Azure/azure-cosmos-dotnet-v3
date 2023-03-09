@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly AsyncCacheNonBlocking<PartitionKeyRangeIdentity, PartitionAddressInformation> serverPartitionAddressCache;
         private readonly ConcurrentDictionary<PartitionKeyRangeIdentity, DateTime> suboptimalServerPartitionTimestamps;
-        private readonly ConcurrentDictionary<ServerKey, HashSet<PartitionKeyRangeIdentity>> serverPartitionAddressToPkRangeIdMap;
         private readonly IServiceConfigurationReader serviceConfigReader;
         private readonly long suboptimalPartitionForceRefreshIntervalInSeconds;
 
@@ -70,7 +69,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.serviceConfigReader = serviceConfigReader;
             this.serverPartitionAddressCache = new AsyncCacheNonBlocking<PartitionKeyRangeIdentity, PartitionAddressInformation>();
             this.suboptimalServerPartitionTimestamps = new ConcurrentDictionary<PartitionKeyRangeIdentity, DateTime>();
-            this.serverPartitionAddressToPkRangeIdMap = new ConcurrentDictionary<ServerKey, HashSet<PartitionKeyRangeIdentity>>();
             this.suboptimalMasterPartitionTimestamp = DateTime.MaxValue;
             this.enableTcpConnectionEndpointRediscovery = enableTcpConnectionEndpointRediscovery;
 
@@ -651,30 +649,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         internal Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> ToPartitionAddressAndRange(string collectionRid, IList<Address> addresses, bool inNetworkRequest)
         {
             Address address = addresses.First();
-
             IReadOnlyList<AddressInformation> addressInfosSorted = GatewayAddressCache.GetSortedAddressInformation(addresses);
-
             PartitionKeyRangeIdentity partitionKeyRangeIdentity = new PartitionKeyRangeIdentity(collectionRid, address.PartitionKeyRangeId);
-
-            if (this.enableTcpConnectionEndpointRediscovery && partitionKeyRangeIdentity.PartitionKeyRangeId != PartitionKeyRange.MasterPartitionKeyRangeId)
-            {
-                // add serverKey-pkRangeIdentity mapping only for addresses retrieved from gateway
-                foreach (AddressInformation addressInfo in addressInfosSorted)
-                {
-                    DefaultTrace.TraceInformation("Added address to serverPartitionAddressToPkRangeIdMap, collectionRid :{0}, pkRangeId: {1}, address: {2}",
-                       partitionKeyRangeIdentity.CollectionRid,
-                       partitionKeyRangeIdentity.PartitionKeyRangeId,
-                       addressInfo.PhysicalUri);
-
-                    HashSet<PartitionKeyRangeIdentity> pkRangeIdSet = this.serverPartitionAddressToPkRangeIdMap.GetOrAdd(
-                        new ServerKey(new Uri(addressInfo.PhysicalUri)),
-                        (_) => new HashSet<PartitionKeyRangeIdentity>());
-                    lock (pkRangeIdSet)
-                    {
-                        pkRangeIdSet.Add(partitionKeyRangeIdentity);
-                    }
-                }
-            }
 
             return Tuple.Create(
                 partitionKeyRangeIdentity,
