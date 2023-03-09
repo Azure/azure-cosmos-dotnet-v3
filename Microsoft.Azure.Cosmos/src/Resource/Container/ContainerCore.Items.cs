@@ -959,12 +959,6 @@ namespace Microsoft.Azure.Cosmos
             // User specified PK value, no need to extract it
             if (partitionKey.HasValue)
             {
-                PartitionKeyDefinition pKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
-                if (partitionKey.HasValue && partitionKey.Value != PartitionKey.None && partitionKey.Value.InternalKey.Components.Count != pKeyDefinition.Paths.Count)
-                {
-                    throw new ArgumentException(RMResources.MissingPartitionKeyValue);
-                }
-
                 return await this.ProcessItemStreamAsync(
                         partitionKey,
                         itemId,
