@@ -8,8 +8,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
-    using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents.Rntbd;
@@ -46,115 +46,62 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// 
         /// </summary>
         /// <param name="systemUsageHistory"></param>
-        /// <param name="systemInfoCollection"></param>
         /// <param name="isDirectConnectionMode"></param>
-        internal static void RecordSystemUsage(
+        private static List<SystemInfo> RecordSystemUsage(
                 SystemUsageHistory systemUsageHistory, 
-                List<SystemInfo> systemInfoCollection,
                 bool isDirectConnectionMode)
         {
             if (systemUsageHistory.Values == null)
             {
-                return;
+                return null;
             }
 
             DefaultTrace.TraceVerbose("System Usage recorded by telemetry is : {0}", systemUsageHistory);
-
-            systemInfoCollection.Add(TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values));
+            
+            List<SystemInfo> systemInfoCollection = new List<SystemInfo>(6)
+            {
+                TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values)
+            }; // Reset System Information
 
             if (isDirectConnectionMode)
             {
                 systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values));
             }
 
+            return systemInfoCollection;
         }
-
+        
         /// <summary>
-        /// Convert map with operation information to list of operations along with request latency and request charge metrics
+        /// Record CPU and memory usage which will be sent as part of telemetry information
         /// </summary>
-        /// <param name="metrics"></param>
-        /// <returns>Collection of ReportPayload</returns>
-        internal static List<OperationInfo> ToListWithMetricsInfo(
-                IDictionary<OperationInfo, 
-                (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
+        internal static List<SystemInfo> RecordSystemUtilization(DiagnosticsHandlerHelper helper, bool isDirectMode)
         {
-            DefaultTrace.TraceVerbose("Aggregating operation information to list started");
-
-            List<OperationInfo> payloadWithMetricInformation = new List<OperationInfo>();
-            foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
+            try
             {
-                OperationInfo payloadForLatency = entry.Key;
-                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
-                
-                payloadWithMetricInformation.Add(payloadForLatency);
+                DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
 
-                OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
-                payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
+                SystemUsageHistory systemUsageHistory = helper.GetClientTelemetrySystemHistory();
 
-                payloadWithMetricInformation.Add(payloadForRequestCharge);
+                if (systemUsageHistory != null)
+                {
+                    return ClientTelemetryHelper.RecordSystemUsage(
+                        systemUsageHistory: systemUsageHistory,
+                        isDirectConnectionMode: isDirectMode);
+                }
+                else
+                {
+                    DefaultTrace.TraceWarning("System Usage History not available");
+                }
             }
-
-            DefaultTrace.TraceVerbose("Aggregating operation information to list done");
-
-            return payloadWithMetricInformation;
-        }
-
-        /// <summary>
-        /// Convert map with request information to list of operations along with request latency and request charge metrics
-        /// </summary>
-        /// <param name="metrics"></param>
-        /// <returns>Collection of ReportPayload</returns>
-        internal static List<RequestInfo> ToListWithMetricsInfo(
-                IDictionary<RequestInfo,
-                LongConcurrentHistogram> metrics)
-        {
-            DefaultTrace.TraceVerbose("Aggregating RequestInfo information to list started");
-
-            List<RequestInfo> payloadWithMetricInformation = new List<RequestInfo>();
-            foreach (KeyValuePair<RequestInfo, LongConcurrentHistogram> entry in metrics)
+            catch (Exception ex)
             {
-                MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                metricInfo.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
-                
-                RequestInfo payloadForLatency = entry.Key;
-                payloadForLatency.Metrics.Add(metricInfo);
-              
-                payloadWithMetricInformation.Add(payloadForLatency);
+                DefaultTrace.TraceError("System Usage Recording Error : {0} ", ex);
             }
-
-            DefaultTrace.TraceVerbose("Aggregating RequestInfo information to list done");
-
-            return payloadWithMetricInformation;
-        }
-
-        /// <summary>
-        /// Convert map with CacheRefreshInfo information to list of operations along with request latency and request charge metrics
-        /// </summary>
-        /// <param name="metrics"></param>
-        /// <returns>Collection of ReportPayload</returns>
-        internal static List<CacheRefreshInfo> ToListWithMetricsInfo(IDictionary<CacheRefreshInfo, LongConcurrentHistogram> metrics)
-        {
-            DefaultTrace.TraceVerbose("Aggregating CacheRefreshInfo information to list started");
-
-            List<CacheRefreshInfo> payloadWithMetricInformation = new List<CacheRefreshInfo>();
-            foreach (KeyValuePair<CacheRefreshInfo, LongConcurrentHistogram> entry in metrics)
-            {
-                CacheRefreshInfo payloadForLatency = entry.Key;
-                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
-
-                payloadWithMetricInformation.Add(payloadForLatency);
-            }
-
-            DefaultTrace.TraceVerbose("Aggregating CacheRefreshInfo information to list done");
-
-            return payloadWithMetricInformation;
+            return null;
         }
 
         /// <summary>
