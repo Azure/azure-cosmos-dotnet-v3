@@ -33,6 +33,7 @@ WHERE (root["NumericField"] = 0)]]></SqlQuery>
 SELECT VALUE root["Point"] 
 FROM root 
 WHERE (((((root["Point"]["coordinates"]["Latitude"] = 100) AND (root["Point"]["coordinates"]["Longitude"] = 50)) AND (root["Point"]["coordinates"]["Altitude"] = 20)) AND (root["Point"]["coordinates"]["Coordinates"][0] = 100)) AND (root["Point"]["coordinates"]["Coordinates"][1] = 50))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Userserializerisbeingusedforinternaltype:Microsoft.Azure.Cosmos.Spatial.Point.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -45,6 +46,7 @@ WHERE (((((root["Point"]["coordinates"]["Latitude"] = 100) AND (root["Point"]["c
 SELECT VALUE root["Point"] 
 FROM root 
 WHERE (((((root["Point"]["coordinates"]["Latitude"] = 100) AND (root["Point"]["coordinates"]["Longitude"] = 50)) AND (root["Point"]["coordinates"]["Altitude"] = 20)) AND (root["Point"]["coordinates"]["Coordinates"][0] = 100)) AND (root["Point"]["coordinates"]["Coordinates"][1] = 50))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Userserializerisbeingusedforinternaltype:Microsoft.Azure.Cosmos.Spatial.Point.]]></ErrorMessage>
     </Output>
   </Result>
 </Results>
