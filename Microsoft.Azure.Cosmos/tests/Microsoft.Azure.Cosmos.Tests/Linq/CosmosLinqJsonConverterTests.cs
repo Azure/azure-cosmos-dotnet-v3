@@ -40,12 +40,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Arrange
             CosmosLinqSerializerOptions options = new()
             {
-                CustomCosmosSerializer = new CustomJsonSerializer()
+                CustomCosmosSerializer = new TestCustomJsonSerializer()
             };
 
             // Act
             TestEnum[] values = new[] { TestEnum.One, TestEnum.Two };
-            Expression<Func<EnumContainerDocument, bool>> expr = a => values.Contains(a.Value);
+            Expression<Func<TestEnumDocument, bool>> expr = a => values.Contains(a.Value);
             
             string sql = SqlTranslator.TranslateExpression(expr.Body, options);
 
@@ -59,12 +59,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Arrange
             CosmosLinqSerializerOptions options = new()
             {
-                CustomCosmosSerializer = new CustomJsonSerializer()
+                CustomCosmosSerializer = new TestCustomJsonSerializer()
             };
 
             // Act
             TestEnum statusValue = TestEnum.One;
-            Expression<Func<EnumContainerDocument, bool>> expr = a => a.Value == statusValue;
+            Expression<Func<TestEnumDocument, bool>> expr = a => a.Value == statusValue;
 
             string sql = SqlTranslator.TranslateExpression(expr.Body, options);
 
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Arrange
             CosmosLinqSerializerOptions options = new()
             {
-                CustomCosmosSerializer = new CustomJsonSerializer()
+                CustomCosmosSerializer = new TestCustomJsonSerializer()
             };
 
             // Act
@@ -87,12 +87,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             ConstantExpression status = Expression.Constant(TestEnum.One);
 
             // Get member access expression
-            ParameterExpression arg = Expression.Parameter(typeof(EnumContainerNewtonsoftAttributeDocument), "a");
+            ParameterExpression arg = Expression.Parameter(typeof(TestEnumNewtonsoftDocument), "a");
 
             // Access the value property
             MemberExpression docValueExpression = Expression.MakeMemberAccess(
                 arg,
-                typeof(EnumContainerNewtonsoftAttributeDocument).GetProperty(nameof(EnumContainerNewtonsoftAttributeDocument.Value))!
+                typeof(TestEnumNewtonsoftDocument).GetProperty(nameof(TestEnumNewtonsoftDocument.Value))!
             );
 
             // Create comparison expression
@@ -102,8 +102,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             );
 
             // Create lambda expression
-            Expression<Func<EnumContainerNewtonsoftAttributeDocument, bool>> lambda = 
-                Expression.Lambda<Func<EnumContainerNewtonsoftAttributeDocument, bool>>(expression, arg);
+            Expression<Func<TestEnumNewtonsoftDocument, bool>> lambda = 
+                Expression.Lambda<Func<TestEnumNewtonsoftDocument, bool>>(expression, arg);
 
             string sql = SqlTranslator.TranslateExpression(lambda.Body, options);
 
@@ -118,12 +118,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             Three,
         }
 
-        class EnumContainerDocument
+        class TestEnumDocument
         {
             public TestEnum Value { get; set; }
         }
 
-        class EnumContainerNewtonsoftAttributeDocument
+        class TestEnumNewtonsoftDocument
         {
             [JsonConverter(typeof(StringEnumConverter))]
             public TestEnum Value { get; set; }
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <remarks>
         // See: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos.Samples/Usage/SystemTextJson/CosmosSystemTextJsonSerializer.cs
         /// </remarks>
-        public class CustomJsonSerializer : CosmosSerializer
+        class TestCustomJsonSerializer : CosmosSerializer
         {
             private readonly JsonObjectSerializer systemTextJsonSerializer;
 
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             };
 
-            public CustomJsonSerializer()
+            public TestCustomJsonSerializer()
             {
                 this.systemTextJsonSerializer = new JsonObjectSerializer(JsonOptions);
             }
