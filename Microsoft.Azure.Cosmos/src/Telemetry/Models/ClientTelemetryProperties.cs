@@ -119,5 +119,77 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             this.PreferredRegions = preferredRegions;
             this.MachineId = machineId;
         }
+
+        public void Write(JsonWriter writer)
+        {
+            writer.WritePropertyName("timeStamp");
+            writer.WriteValue(this.DateTimeUtc);
+
+            writer.WritePropertyName("clientId");
+            writer.WriteValue(this.ClientId);
+
+            writer.WritePropertyName("machineId");
+            writer.WriteValue(this.MachineId);
+
+            writer.WritePropertyName("processId");
+            writer.WriteValue(this.ProcessId);
+
+            writer.WritePropertyName("userAgent");
+            writer.WriteValue(this.UserAgent);
+
+            writer.WritePropertyName("connectionMode");
+            writer.WriteValue(this.ConnectionMode);
+
+            writer.WritePropertyName("globalDatabaseAccountName");
+            writer.WriteValue(this.GlobalDatabaseAccountName);
+
+            writer.WritePropertyName("applicationRegion");
+            if (this.ApplicationRegion != null)
+            {
+                writer.WriteValue(this.ApplicationRegion);
+            }
+            else
+            {
+                writer.WriteNull();
+            }
+
+            writer.WritePropertyName("hostEnvInfo");
+            writer.WriteValue(this.HostEnvInfo);
+
+            writer.WritePropertyName("acceleratedNetworking");
+            if (this.AcceleratedNetworking.HasValue)
+            {
+                writer.WriteValue(this.AcceleratedNetworking.Value);
+            }
+            else
+            {
+                writer.WriteNull();
+            }
+
+            writer.WritePropertyName("preferredRegions");
+
+            if (this.PreferredRegions != null)
+            {
+                writer.WriteStartArray();
+                foreach (string region in this.PreferredRegions)
+                {
+                    writer.WriteValue(region);
+                }
+                writer.WriteEndArray();
+            }
+            else
+            {
+                writer.WriteNull();
+            }
+
+            writer.WritePropertyName("aggregationIntervalInSec");
+            writer.WriteValue(this.AggregationIntervalInSec);
+
+            if (this.SystemInfo != null && this.SystemInfo.Count > 0)
+            {
+                writer.WritePropertyName("systemInfo");
+                writer.WriteRawValue(JsonConvert.SerializeObject(this.SystemInfo));
+            }
+        }
     }
 }
