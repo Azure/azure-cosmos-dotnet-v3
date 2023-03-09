@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Condition to check Quorum(i.e. Strong) read with either an eventual consistency account or a consistent prefix account.
+        /// Condition to check Quorum(i.e. Strong/BoundedStaleness) read with either an eventual consistency account or a consistent prefix account.
         /// </summary>
         /// <param name="backendConsistency"></param>
         /// <param name="desiredConsistency"></param>
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            if (desiredConsistency != Documents.ConsistencyLevel.Strong)
+            if (desiredConsistency != Documents.ConsistencyLevel.Strong && desiredConsistency != Documents.ConsistencyLevel.BoundedStaleness)
             {
                 return false;
             }

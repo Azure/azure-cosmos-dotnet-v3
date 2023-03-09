@@ -13,8 +13,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         [DataRow(true, ConsistencyLevel.Eventual, ConsistencyLevel.Strong)]
         [DataRow(true, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.Strong)]
-        [DataRow(false, ConsistencyLevel.Eventual, ConsistencyLevel.BoundedStaleness)]
-        [DataRow(false, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.BoundedStaleness)]
+        [DataRow(true, ConsistencyLevel.Eventual, ConsistencyLevel.BoundedStaleness)]
+        [DataRow(true, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.BoundedStaleness)]
         [DataRow(false, ConsistencyLevel.Session, ConsistencyLevel.Strong)]
         [DataRow(false, ConsistencyLevel.BoundedStaleness, ConsistencyLevel.Strong)]
         public void TestIsValidConsistencyLevelOverwrite(bool isValidConsistencyLevelOverwrite,
@@ -33,6 +33,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         [DataRow(false, ConsistencyLevel.Eventual, ConsistencyLevel.Strong)]
         [DataRow(false, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.Strong)]
+        [DataRow(false, ConsistencyLevel.Eventual, ConsistencyLevel.BoundedStaleness)]
+        [DataRow(false, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.BoundedStaleness)]
         public void TestIsValidConsistencyLevelOverwrite_OnlyWhenSpecifyingExplicitOverwrite(bool isValidConsistencyLevelOverwrite,
             ConsistencyLevel backendConsistencyLevel,
             ConsistencyLevel desiredConsistencyLevel)
@@ -54,6 +56,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(false, ConsistencyLevel.Eventual, ConsistencyLevel.Strong, Documents.OperationType.QueryPlan)]
         [DataRow(false, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.Strong, Documents.OperationType.Create)]
         [DataRow(false, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.Strong, Documents.OperationType.Batch)]
+        [DataRow(true, ConsistencyLevel.Eventual, ConsistencyLevel.BoundedStaleness, Documents.OperationType.Read)]
+        [DataRow(true, ConsistencyLevel.Eventual, ConsistencyLevel.BoundedStaleness, Documents.OperationType.ReadFeed)]
+        [DataRow(true, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.BoundedStaleness, Documents.OperationType.Query)]
+        [DataRow(true, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.BoundedStaleness, Documents.OperationType.SqlQuery)]
+        [DataRow(false, ConsistencyLevel.Eventual, ConsistencyLevel.BoundedStaleness, Documents.OperationType.QueryPlan)]
+        [DataRow(false, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.BoundedStaleness, Documents.OperationType.Create)]
+        [DataRow(false, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.BoundedStaleness, Documents.OperationType.Batch)]
         public void TestIsValidConsistencyLevelOverwrite_OnlyAllowedForCertainOperationTypes(
             bool isValidConsistencyLevelOverwrite,
             ConsistencyLevel backendConsistencyLevel,
