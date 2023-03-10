@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Task</returns>
         internal async Task ProcessAndSendAsync(
             ClientTelemetryProperties clientTelemetryInfo, 
-            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
+            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
             ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
             CancellationToken cancellationToken)

@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Telemetry;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Cosmos.Telemetry.Sampler;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
@@ -118,17 +119,5 @@ namespace Microsoft.Azure.Cosmos.Tests
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
         }
 
-        [TestMethod]
-        [DataRow(200, 0 ,1, false)]
-        [DataRow(404, 0, 1, false)]
-        [DataRow(404, 1002, 1, true)]
-        [DataRow(409, 0, 1, false)]
-        [DataRow(409, 1002, 1, true)]
-        [DataRow(503, 2001, 1, true)]
-        [DataRow(200, 0, 6, true)]
-        public void CheckEligibleStatistics(int statusCode, int subStatusCode, int latencyInMs, bool expectedFlag)
-        {
-            Assert.AreEqual(expectedFlag, ClientTelemetryOptions.IsEligible(statusCode, subStatusCode, TimeSpan.FromMilliseconds(latencyInMs)));
-        }
     }
 }

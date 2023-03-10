@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
+                        Console.WriteLine(jsonObject);
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
+                        Console.WriteLine(jsonObject);
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
@@ -951,11 +951,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
                 Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
                 Assert.IsNotNull(operation.MetricInfo.UnitName, "UnitName is null");
-                Assert.IsNotNull(operation.MetricInfo.Percentiles, "Percentiles is null");
+                if(operation.MetricInfo.MetricsName != ClientTelemetryOptions.DroppedRntbdRequestsName)
+                {
+                    Assert.IsNotNull(operation.MetricInfo.Percentiles, "Percentiles is null");
+                    Assert.IsTrue(operation.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
+                    Assert.IsTrue(operation.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
+                    Assert.IsTrue(operation.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
+                }
+
                 Assert.IsTrue(operation.MetricInfo.Count > 0, "MetricInfo Count is not greater than 0");
-                Assert.IsTrue(operation.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
-                Assert.IsTrue(operation.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
-                Assert.IsTrue(operation.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
+
                 if (operation.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.RequestLatencyName)) // putting this condition to avoid doubling of count as we have same information for each metrics
                 {
                     if (!actualOperationRecordCountMap.TryGetValue(operation.Operation.ToString(), out long recordCount))

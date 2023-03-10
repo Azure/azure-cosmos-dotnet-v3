@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         public static async Task SerializedPayloadChunksAsync(
             ClientTelemetryProperties properties,
-            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
+            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
             ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
             Func<string, Task> callback)
@@ -29,13 +29,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 throw new ArgumentNullException(nameof(properties));
             }
             
-            StringBuilder stringBuilder = new StringBuilder(ClientTelemetryOptions.PayloadSizeThreshold);
+            StringBuilder stringBuilder = new StringBuilder(ClientTelemetryOptions.ClientTelemetryServicePayloadSizeThreshold);
             
             JsonWriter writer = ClientTelemetryPayloadWriter.GetWriterWithSectionStartTag(stringBuilder, properties, "operationInfo");
             
             if (operationInfoSnapshot?.Any() == true)
             {
-                foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in operationInfoSnapshot)
+                foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)> entry in operationInfoSnapshot)
                 {
                     long lengthNow = stringBuilder.Length;
                     
@@ -47,10 +47,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
                     payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
 
+                    OperationInfo payloadForDroppedRntbdRequests = payloadForLatency.Copy();
+                    payloadForRequestCharge.MetricInfo 
+                        = new MetricInfo(
+                                metricsName: ClientTelemetryOptions.DroppedRntbdRequestsName, 
+                                unitName: ClientTelemetryOptions.DroppedRntbdRequestsUnit, 
+                                count: entry.Value.droppedRequestCount);
+                    
                     string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
                     string requestChargeMetrics = JsonConvert.SerializeObject(payloadForRequestCharge);
-                    
-                    if (lengthNow + latencyMetrics.Length + requestChargeMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+                    string droppedRntbdRequestsMetrics = JsonConvert.SerializeObject(payloadForDroppedRntbdRequests);
+
+                    if (lengthNow + latencyMetrics.Length + requestChargeMetrics.Length > ClientTelemetryOptions.ClientTelemetryServicePayloadSizeThreshold)
                     {
                         writer.WriteEndArray();
                         writer.WriteEndObject();
@@ -62,6 +70,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     writer.WriteRawValue(latencyMetrics);
                     writer.WriteRawValue(requestChargeMetrics);
+                    writer.WriteRawValue(droppedRntbdRequestsMetrics);
                 }
 
             }
@@ -82,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
 
-                    if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+                    if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.ClientTelemetryServicePayloadSizeThreshold)
                     {
                         writer.WriteEndArray();
                         writer.WriteEndObject();
@@ -114,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     payloadForLatency.Metrics.Add(metricInfo);
                     string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
 
-                    if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+                    if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.ClientTelemetryServicePayloadSizeThreshold)
                     {
                         writer.WriteEndArray();
                         writer.WriteEndObject();

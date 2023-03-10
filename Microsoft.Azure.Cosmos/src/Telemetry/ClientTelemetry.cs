@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Net;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Handler;
@@ -33,10 +34,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private const int allowedNumberOfFailures = 3;
 
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
-        private static readonly NetworkRequestSampler networkRequestSampler 
-            = new NetworkRequestSampler(
-                topN: ClientTelemetryOptions.NetworkTelemetrySampleSize,
-                excludedStatusCodes: ClientTelemetryOptions.ExcludedStatusCodes);
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly ClientTelemetryProcessor processor;
@@ -48,8 +45,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private Task telemetryTask;
 
-        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
-            = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
+        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)> operationInfoMap 
+            = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)>();
 
         private ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoMap 
             = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
@@ -117,6 +114,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             GlobalEndpointManager globalEndpointManager)
         {
             this.diagnosticsHelper = diagnosticsHelper ?? throw new ArgumentNullException(nameof(diagnosticsHelper));
+            this.globalEndpointManager = globalEndpointManager;
+            
             this.processor = new ClientTelemetryProcessor(httpClient, authorizationTokenProvider);
 
             this.clientTelemetryInfo = new ClientTelemetryProperties(
@@ -128,7 +127,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
 
             this.cancellationTokenSource = new CancellationTokenSource();
-            this.globalEndpointManager = globalEndpointManager;
         }
 
         /// <summary>
@@ -179,15 +177,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         this.clientTelemetryInfo.IsDirectConnectionMode);
 
                     // Take the copy for further processing i.e. serializing and dividing into chunks
-                    ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
-                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
+                    ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)> operationInfoSnapshot
+                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)>());
 
                     ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
                         = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
-
+                    
                     ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot
                       = Interlocked.Exchange(ref this.requestInfoMap, new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>());
-
+                    
                     try
                     {
                         await this.processor
@@ -301,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             // Record Network/Replica Information
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
-            this.RecordRntbdResponses(containerId, databaseId, summaryDiagnostics.StoreResponseStatistics.Value);
+            this.RecordRntbdResponses(containerId, databaseId, summaryDiagnostics.StoreResponseStatistics.Value, out int droppedRequestCount);
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
 
@@ -316,13 +314,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             statusCode: (int)statusCode,
                                             subStatusCode: (int)subStatusCode);
 
-            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
+            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int requestDropCount) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
                                                         ClientTelemetryOptions.RequestLatencyPrecision),
                             requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                         ClientTelemetryOptions.RequestChargeMax,
-                                                        ClientTelemetryOptions.RequestChargePrecision)));
+                                                        ClientTelemetryOptions.RequestChargePrecision),
+                            droppedRequestCount: 0));
             try
             {
                 latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
@@ -341,6 +340,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex);
             }
+
+            droppedRequestCount = Interlocked.Increment(ref requestDropCount);
         }
 
         /// <summary>
@@ -349,11 +350,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="containerId"></param>
         /// <param name="databaseId"></param>
         /// <param name="storeResponseStatistics"></param>
-        private void RecordRntbdResponses(string containerId, string databaseId, List<StoreResponseStatistics> storeResponseStatistics)
+        /// <param name="droppedRntbdRequestCount"></param>
+        private void RecordRntbdResponses(string containerId, string databaseId, List<StoreResponseStatistics> storeResponseStatistics, out int droppedRntbdRequestCount)
         {
+            IClientTelemetrySampler<RequestInfo> networkRequestSampler 
+                = new NetworkRequestSampler(ClientTelemetryOptions.NetworkTelemetrySampleSize);
+
+            droppedRntbdRequestCount = 0;
             foreach (StoreResponseStatistics storetatistics in storeResponseStatistics)
             {
-                if (networkRequestSampler.ShouldSample(storetatistics))
+                if (NetworkRequestSampler.IsEligible(
+                        statusCode: (int)storetatistics.StoreResult.StatusCode,
+                        subStatusCode: (int)storetatistics.StoreResult.SubStatusCode,
+                        latencyInMs: storetatistics.RequestLatency))
                 {
                     RequestInfo requestInfo = new RequestInfo()
                     {
@@ -366,11 +375,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         Operation = storetatistics.RequestOperationType.ToString(),
                     };
 
-                    LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                            ClientTelemetryOptions.RequestLatencyMax,
-                                                            ClientTelemetryOptions.RequestLatencyPrecision));
-                    latencyHist.RecordValue(storetatistics.RequestLatency.Ticks);
+                    if (networkRequestSampler.ShouldSample(requestInfo))
+                    {
+                        LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                                ClientTelemetryOptions.RequestLatencyMax,
+                                                                ClientTelemetryOptions.RequestLatencyPrecision));
+                        latencyHist.RecordValue(storetatistics.RequestLatency.Ticks);
+                    }
+                    else
+                    {
+                        droppedRntbdRequestCount++;
+                    }
                 }
+              
             }
         }
 

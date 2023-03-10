@@ -6,23 +6,52 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Sampler
 {
     using System;
     using System.Collections.Generic;
-    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
 
-    internal sealed class NetworkRequestSampler : IClientTelemetrySampler<StoreResponseStatistics>
+    internal sealed class NetworkRequestSampler : IClientTelemetrySampler<RequestInfo>
     {
-        private readonly int TopNElement = 0;
-        private readonly List<int> ExcludedStatusCodes;
+        private readonly int NetworkFailuresCount;
+        private readonly ISet<RequestInfo> TempStorage;
+
+        private readonly object lockObject = new object();
         
-        public NetworkRequestSampler(int topN, List<int> excludedStatusCodes)
+        public NetworkRequestSampler(int maxNumberOfFailures)
         {
-            this.TopNElement = topN;
-            this.ExcludedStatusCodes = excludedStatusCodes;
+            this.NetworkFailuresCount = maxNumberOfFailures;
+            this.TempStorage = new HashSet<RequestInfo>();
         }
         
-        public bool ShouldSample(StoreResponseStatistics storetatistics)
+        public bool ShouldSample(RequestInfo requestInfo)
         {
-            return this.IsEligible((int)storetatistics.StoreResult.StatusCode, (int)storetatistics.StoreResult.SubStatusCode, storetatistics.RequestLatency);
-           
+            if (requestInfo == null)
+            {
+                return false;
+            }
+            
+            lock (this.lockObject)
+            {
+                if (this.TempStorage.Count < this.NetworkFailuresCount)
+                {
+                    return this.TempStorage.Add(requestInfo);
+                }
+                else
+                {
+                    bool isAdded = this.TempStorage.Add(requestInfo);
+                    if (isAdded)
+                    {
+                        this.TempStorage.Remove(requestInfo);
+                    }
+                    return !isAdded;
+                }
+            }
+        }
+
+        public void Clear()
+        {
+            lock (this.lockObject)
+            {
+                this.TempStorage.Clear();
+            }
         }
         
         /// <summary>
@@ -34,10 +63,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Sampler
         /// <param name="subStatusCode"></param>
         /// <param name="latencyInMs"></param>
         /// <returns>true/false</returns>
-        private bool IsEligible(int statusCode, int subStatusCode, TimeSpan latencyInMs)
+        public static bool IsEligible(int statusCode, int subStatusCode, TimeSpan latencyInMs)
         {
             return
-                this.IsStatusCodeNotExcluded(statusCode, subStatusCode) &&
+                NetworkRequestSampler.IsStatusCodeNotExcluded(statusCode, subStatusCode) &&
                     (NetworkRequestSampler.IsUserOrServerError(statusCode) || latencyInMs >= ClientTelemetryOptions.NetworkLatencyThreshold);
         }
 
@@ -46,9 +75,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Sampler
             return statusCode >= 400 && statusCode <= 599;
         }
 
-        private bool IsStatusCodeNotExcluded(int statusCode, int subStatusCode)
+        private static bool IsStatusCodeNotExcluded(int statusCode, int subStatusCode)
         {
-            return !(this.ExcludedStatusCodes.Contains(statusCode) && subStatusCode == 0);
+            return !(ClientTelemetryOptions.NetworkRequestExcludedStatusCodes.Contains(statusCode) && subStatusCode == 0);
         }
 
     }
