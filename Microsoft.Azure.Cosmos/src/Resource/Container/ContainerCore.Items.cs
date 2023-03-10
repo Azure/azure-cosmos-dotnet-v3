@@ -505,14 +505,11 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions ??= new QueryRequestOptions();
 
-            if (linqSerializerOptions == null && this.ClientContext.ClientOptions != null)
+            if (linqSerializerOptions == null && this.ClientContext.ClientOptions.SerializerOptions != null)
             {
                 linqSerializerOptions = new CosmosLinqSerializerOptions
                 {
-                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions != null 
-                                            ? this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
-                                            : CosmosPropertyNamingPolicy.Default,
-                    CustomCosmosSerializer = this.ClientContext.ClientOptions.Serializer
+                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
                 };
             }
 
