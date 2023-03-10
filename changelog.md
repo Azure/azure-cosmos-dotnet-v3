@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="3.32.2-preview"/> [3.32.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.2-preview) - 2023-03-10
 
 #### Fixed
+- [#3713](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3713) CosmosNullReferenceException: Refactors CosmosNullReferenceException to pass along InnerException property on parent NullReferenceException.
 - [#3749](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3749) Query: Fixes regression from LINQ custom serializer fix. Introduced in 3.32.0 PR [3749](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3749)
 
 ### <a name="3.32.1"/> [3.32.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.1) - 2023-03-01
