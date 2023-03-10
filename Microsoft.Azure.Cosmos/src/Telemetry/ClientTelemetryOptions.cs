@@ -88,17 +88,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
         // Why 5 sec? As of now, if any network request is taking more than 5 millisecond sec, we will consider it slow request this value can be revisited in future
-        private static readonly TimeSpan NetworkLatencyThreshold = TimeSpan.FromMilliseconds(5);
+        internal static readonly TimeSpan NetworkLatencyThreshold = TimeSpan.FromMilliseconds(5);
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings 
         { 
             NullValueHandling = NullValueHandling.Ignore,
             MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
         };
         
-        private static readonly List<int> ExcludedStatusCodes = new List<int> { 404, 409 };
+        internal static readonly List<int> ExcludedStatusCodes = new List<int> { 404, 409 };
 
         internal static int PayloadSizeThreshold = 1024 * 1024 * 2; // 2MB
-
+        internal static int NetworkTelemetrySampleSize = 100;
+        
         private static Uri clientTelemetryEndpoint;
         private static string environmentName;
         private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;
@@ -179,32 +180,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     String.Empty);
             }
             return environmentName;
-        }
-
-        /// <summary>
-        /// This method will return true if the request is failed with User or Server Exception and not excluded from telemetry.
-        /// This method will return true if the request latency is more than the threshold.
-        /// otherwise return false
-        /// </summary>
-        /// <param name="statusCode"></param>
-        /// <param name="subStatusCode"></param>
-        /// <param name="latencyInMs"></param>
-        /// <returns>true/false</returns>
-        internal static bool IsEligible(int statusCode, int subStatusCode, TimeSpan latencyInMs)
-        {
-            return
-                ClientTelemetryOptions.IsStatusCodeNotExcluded(statusCode, subStatusCode) && 
-                    (ClientTelemetryOptions.IsUserOrServerError(statusCode) || latencyInMs >= ClientTelemetryOptions.NetworkLatencyThreshold);
-        }
-
-        private static bool IsUserOrServerError(int statusCode)
-        {
-            return statusCode >= 400 && statusCode <= 599;
-        }
-
-        private static bool IsStatusCodeNotExcluded(int statusCode, int subStatusCode)
-        {
-            return !(ClientTelemetryOptions.ExcludedStatusCodes.Contains(statusCode) && subStatusCode == 0);
         }
 
     }

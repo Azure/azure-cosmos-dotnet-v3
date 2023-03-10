@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Cosmos.Telemetry.Sampler;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -32,6 +33,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private const int allowedNumberOfFailures = 3;
 
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
+        private static readonly NetworkRequestSampler networkRequestSampler 
+            = new NetworkRequestSampler(
+                topN: ClientTelemetryOptions.NetworkTelemetrySampleSize,
+                excludedStatusCodes: ClientTelemetryOptions.ExcludedStatusCodes);
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly ClientTelemetryProcessor processor;
@@ -53,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             = new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>();
 
         private int numberOfFailures = 0;
-
+        
         /// <summary>
         /// Only for Mocking in tests
         /// </summary>
@@ -348,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             foreach (StoreResponseStatistics storetatistics in storeResponseStatistics)
             {
-                if (ClientTelemetryOptions.IsEligible((int)storetatistics.StoreResult.StatusCode, (int)storetatistics.StoreResult.SubStatusCode, storetatistics.RequestLatency))
+                if (networkRequestSampler.ShouldSample(storetatistics))
                 {
                     RequestInfo requestInfo = new RequestInfo()
                     {
