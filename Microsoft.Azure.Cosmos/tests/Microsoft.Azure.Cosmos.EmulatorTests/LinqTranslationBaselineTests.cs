@@ -1,5 +1,5 @@
 ﻿//-----------------------------------------------------------------------
-// <copyright file="LinqTranslationBaselineTests.cs" company="Microsoft Corporation">
+// <copyright file="LinqAttributeContractTests.cs" company="Microsoft Corporation">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
