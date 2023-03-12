@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Net;
-    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Handler;
