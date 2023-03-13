@@ -20,7 +20,8 @@
 
         private static class PageSizeOptions
         {
-            public static readonly int[] NonGroupByPageSizeOptions = { -1, 1, 2, 10, 100 };
+            public static readonly int[] NonGroupByAndNoContinuationTokenPageSizeOptions = { -1, 10 };
+            public static readonly int[] NonGroupByWithContinuationTokenPageSizeOptions = { 1, 2, 5 };
             public static readonly int[] GroupByPageSizeOptions = { -1 };
             public static readonly int[] PageSize100 = { 100 };
         }
@@ -42,49 +43,93 @@
                     expectedResult: first5Integers,
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
                     expectedResult: first5Integers,
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: false,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Passthrough),
                 
-                // Simple query
+                // Simple query (requiresDist = false)
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
                     expectedResult: first7Integers,
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
                     expectedResult: first7Integers,
                     partitionKey: null,
                     enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-               
-                // DISTINCT with ORDER BY
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                
+                // DISTINCT with ORDER BY (requiresDist = true)
                 CreateInput(
                     query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
                     expectedResult: first7IntegersReversed,
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first7IntegersReversed,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first7IntegersReversed,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
                     expectedResult: first7IntegersReversed,
                     partitionKey: null,
                     enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
              
-                // TOP with GROUP BY
+                // DISTINCT (requiresDist = true)
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.GroupByPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.GroupByPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+
+                // TOP with GROUP BY (requiresDist = true)
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r GROUP BY r.{NumberField}",
                     expectedResult: first5Integers,
@@ -99,72 +144,248 @@
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.GroupByPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-              
-                // OFFSET LIMIT with WHERE and BETWEEN
+
+                // TOP (requiresDist = false)
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
+                    expectedResult: first5Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
+                    expectedResult: first5Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
+                    expectedResult: first5Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
+                    expectedResult: first5Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+
+                // TOP with ORDER BY (requiresDist = false)
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
+                    expectedResult: first5Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
+                    expectedResult: first5Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
+                    expectedResult: first5Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
+                    expectedResult: first5Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+
+                // OFFSET LIMIT with WHERE and BETWEEN (requiresDist = false)
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
                     expectedResult: new List<int> { 1 },
                     partitionKey: partitionKeyValue,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    enableOptimisticDirectExecution: true,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: partitionKeyValue,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     enableOptimisticDirectExecution: true,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
                     expectedResult: new List<int> { 1 },
                     partitionKey: null,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    enableOptimisticDirectExecution: true,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: null,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     enableOptimisticDirectExecution: true,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution)
             };
 
             List<DirectExecutionTestCase> multiPartitionContainerTestCases = new List<DirectExecutionTestCase>()
             {
-                // Simple query
+                // Simple query (requiresDist = false)
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
                     expectedResult: first7Integers,
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
                     expectedResult: first7Integers,
                     partitionKey: null,
                     enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Passthrough),
 
-                // DISTINCT with ORDER BY
+                // DISTINCT with ORDER BY (requiresDist = true)
                 CreateInput(
                     query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
                     expectedResult: first7IntegersReversed,
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first7IntegersReversed,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
                 CreateInput(
                     query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
                     expectedResult: first7IntegersReversed,
                     partitionKey: null,
                     enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first7IntegersReversed,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Specialized),
 
-                // OFFSET LIMIT with WHERE and BETWEEN
+                // TOP (requiresDist = false)
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
+                    expectedResult: first5Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
+                    expectedResult: first5Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
+                    expectedResult: first5Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
+                    expectedResult: first5Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
+                // TOP with ORDER BY (requiresDist = false)
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
+                    expectedResult: first5Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
+                    expectedResult: first5Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
+                    expectedResult: first5Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
+                    expectedResult: first5Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
+                // OFFSET LIMIT with WHERE and BETWEEN (requiresDist = false)
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
                     expectedResult: new List<int> { 1 },
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
                     expectedResult: new List<int> { 1 },
                     partitionKey: null,
                     enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByPageSizeOptions,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Specialized)
             };
 
@@ -279,7 +500,7 @@
                 { "SELECT TOP 10 * FOM r", null },
                 { "this is not a valid query", null },
             };
-           
+
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,

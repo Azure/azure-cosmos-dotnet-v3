@@ -101,6 +101,7 @@
                             feedRangeState: feedRangeState,
                             partitionKey: null,
                             queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                            new Cosmos.Query.Core.InternalRequestOptions(),
                             cancellationToken: default),
                         trace: NoOpTrace.Singleton);
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
@@ -144,6 +145,7 @@
                         feedRangeState: feedRangeState,
                         partitionKey: null,
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                        new Cosmos.Query.Core.InternalRequestOptions(),
                         cancellationToken: default),
                     trace: NoOpTrace.Singleton);
             }
@@ -167,6 +169,7 @@
                         feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
                         partitionKey: null,
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                        new Cosmos.Query.Core.InternalRequestOptions(),
                         cancellationToken: cancellationToken),
                     trace: NoOpTrace.Singleton);
 

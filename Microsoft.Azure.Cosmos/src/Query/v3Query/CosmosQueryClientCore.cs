@@ -119,12 +119,11 @@ namespace Microsoft.Azure.Cosmos
             string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            Guid clientQueryCorrelationId,
             FeedRange feedRange,
             QueryRequestOptions requestOptions,
+            InternalRequestOptions internalRequestOptions,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            bool isContinuationExpected,
             int pageSize,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -143,13 +142,14 @@ namespace Microsoft.Azure.Cosmos
                 {
                     cosmosRequestMessage.Headers.Add(
                         HttpConstants.HttpHeaders.IsContinuationExpected,
-                        isContinuationExpected.ToString());
+                        internalRequestOptions.IsContinuationExpected.ToString());
                     QueryRequestOptions.FillContinuationToken(
                         cosmosRequestMessage,
                         continuationToken);
-                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
-                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-                    cosmosRequestMessage.Headers.Add(WFConstants.BackendHeaders.CorrelatedActivityId, clientQueryCorrelationId.ToString());
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, internalRequestOptions.ContentType);
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, internalRequestOptions.IsQuery.ToString());
+                    cosmosRequestMessage.Headers.Add(WFConstants.BackendHeaders.CorrelatedActivityId, internalRequestOptions.CorrelatedActivityId.ToString());
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.OptimisticDirectExecute, internalRequestOptions.OptimisticDirectExecute.ToString());
                 },
                 trace: trace,
                 cancellationToken: cancellationToken);

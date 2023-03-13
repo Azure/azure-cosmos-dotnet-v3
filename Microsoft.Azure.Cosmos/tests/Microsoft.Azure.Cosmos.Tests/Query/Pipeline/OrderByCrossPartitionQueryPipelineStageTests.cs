@@ -299,6 +299,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     It.Is<SqlQuerySpec>(sqlQuerySpec => expectedQuerySpec.Equals(sqlQuerySpec.QueryText)),
                     It.IsAny<FeedRangeState<QueryState>>(),
                     It.IsAny<QueryPaginationOptions>(),
+                    new InternalRequestOptions(),
                     NoOpTrace.Singleton,
                     default))
                 .ReturnsAsync(TryCatch<QueryPage>.FromResult(emptyPage));
