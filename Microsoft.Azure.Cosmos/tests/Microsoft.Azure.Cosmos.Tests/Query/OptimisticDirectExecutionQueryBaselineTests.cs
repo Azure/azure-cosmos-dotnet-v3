@@ -193,21 +193,119 @@
         }
 
         [TestMethod]
-        public async Task TestPipelineForCasesWhichCanSwitchDistribution()
+        public async Task TestQueriesWhichNeverRequireDistribution()
         {
+            // requiresDist = false
+            int numItems = 100;
+            List<SwitchableRequiresDistributionTestCases> singlePartitionContainerTestCases = new List<SwitchableRequiresDistributionTestCases>()
+            {
+                new SwitchableRequiresDistributionTestCases("SELECT * FROM r", 10, 100),
+                new SwitchableRequiresDistributionTestCases("SELECT VALUE r.id FROM r", 0, 10),
+                new SwitchableRequiresDistributionTestCases("SELECT * FROM r WHERE r.id > 5", 0,  0),
+                new SwitchableRequiresDistributionTestCases("SELECT r.id FROM r JOIN id IN r.id",0, 0),
+                new SwitchableRequiresDistributionTestCases("SELECT TOP 5 r.id FROM r ORDER BY r.id", 0, 5),
+                new SwitchableRequiresDistributionTestCases("SELECT TOP 5 r.id FROM r WHERE r.id > 5 ORDER BY r.id", 0, 0),
+                new SwitchableRequiresDistributionTestCases("SELECT * FROM r OFFSET 5 LIMIT 3", 1, 3),
+                new SwitchableRequiresDistributionTestCases("SELECT * FROM r WHERE r.id > 5 OFFSET 5 LIMIT 3", 0, 0)
+            };
+
+            foreach (SwitchableRequiresDistributionTestCases testCase in singlePartitionContainerTestCases)
+            {
+                    OptimisticDirectExecutionTestInput input = CreateInput(
+                        description: @"Queries which can switch their requiresDist flag",
+                        query: testCase.Query,
+                        expectedOptimisticDirectExecution: true,
+                        partitionKeyPath: @"/pk",
+                        partitionKeyValue: "a");
+
+                    int result = await this.GetPipelineAndDrainAsync(
+                                input,
+                                numItems: numItems,
+                                isMultiPartition: false,
+                                expectedContinuationTokenCount: testCase.ExpectedContinuationTokenCount,
+                                switchRequiresDist: false);
+
+                    Assert.AreEqual(testCase.ExpectedDocumentCount, result);
+            }
+        }
+
+        [TestMethod]
+        public async Task TestQueriesWhichWillAlwaysRequireDistribution()
+        {
+            // requiresDist = true
+            int numItems = 100;
+            List<SwitchableRequiresDistributionTestCases> singlePartitionContainerTestCases = new List<SwitchableRequiresDistributionTestCases>()
+            {
+                new SwitchableRequiresDistributionTestCases("SELECT Sum(id) as sum_id FROM r JOIN id IN r.id", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT TOP 5 r.id FROM r ORDER BY r.id", 0, 5),
+                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT r.id FROM r GROUP BY r.id", 0,  10),
+                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT r.id, Sum(r.id) as sum_a FROM r GROUP BY r.id",0, 10),
+                new SwitchableRequiresDistributionTestCases("SELECT Count(1) FROM (SELECT DISTINCT r.id FROM root r)", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT id FROM r JOIN id in r.id", 0, 0),
+                new SwitchableRequiresDistributionTestCases("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id ORDER BY r.id", 0, 10),
+                new SwitchableRequiresDistributionTestCases("SELECT Count(1) as count FROM root r JOIN b IN r.id", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT Avg(1) AS avg FROM root r", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT r.id, Count(1) as count FROM r WHERE r.id > 0 GROUP BY r.id", 0, 0),
+                new SwitchableRequiresDistributionTestCases("SELECT r.id FROM r WHERE r.id > 0 GROUP BY r.id ORDER BY r.id", 0, 0)
+            };
+
+            foreach (SwitchableRequiresDistributionTestCases testCase in singlePartitionContainerTestCases)
+            {
+                OptimisticDirectExecutionTestInput input = CreateInput(
+                    description: @"Queries which can switch their requiresDist flag",
+                    query: testCase.Query,
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: "a");
+
+                int result = await this.GetPipelineAndDrainAsync(
+                            input,
+                            numItems: numItems,
+                            isMultiPartition: false,
+                            expectedContinuationTokenCount: testCase.ExpectedContinuationTokenCount,
+                            switchRequiresDist: true);
+
+                Assert.AreEqual(testCase.ExpectedDocumentCount, result);
+            }
+        }
+
+        [TestMethod]
+        public async Task TestQueriesWhichCanSwitchDistribution()
+        {
+            // requiresDist = true/false
             int numItems = 100;
             bool[] requiresDistSet = { true, false };
 
             List<SwitchableRequiresDistributionTestCases> singlePartitionContainerTestCases = new List<SwitchableRequiresDistributionTestCases>()
             {
-                new SwitchableRequiresDistributionTestCases("SELECT Count(c.id) AS count_a FROM c", 1),
-                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT c.id FROM c", 10),
-                new SwitchableRequiresDistributionTestCases("SELECT c.id, Count(1) AS count_a FROM c GROUP BY c.id", 10),
-                new SwitchableRequiresDistributionTestCases("SELECT Count(1) AS count FROM root c WHERE c.id < 2", 1),
-                new SwitchableRequiresDistributionTestCases("SELECT c.id, Count(c.id), Avg(c.id) FROM c WHERE c.id < 2 GROUP BY c.id", 0),
-                new SwitchableRequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM c", 1),
-                new SwitchableRequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM c ORDER BY c.id", 1),
-                new SwitchableRequiresDistributionTestCases("SELECT c.id FROM c GROUP BY c.id OFFSET 5 LIMIT 3", 3),
+                new SwitchableRequiresDistributionTestCases("SELECT Count(r.id) AS count_a FROM r", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT r.id FROM r", 0, 10),
+                new SwitchableRequiresDistributionTestCases("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id", 0, 10),
+                new SwitchableRequiresDistributionTestCases("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT r.id, Count(r.id), Avg(r.id) FROM r WHERE r.id < 2 GROUP BY r.id", 0, 0),
+                new SwitchableRequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM r", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM r ORDER BY r.id", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT r.id FROM r GROUP BY r.id OFFSET 5 LIMIT 3", 0, 3),
+                new SwitchableRequiresDistributionTestCases("SELECT Count(1) as count FROM r", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.id) as sum_a FROM r", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT Min(r.a) as min_a FROM r", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT Max(r.a) as min_a FROM r", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT Avg(r.a) as min_a FROM r", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 OFFSET 0 LIMIT 5", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 OFFSET 5 LIMIT 5", 0, 0),
+                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r ORDER BY r.a", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r ORDER BY r.a OFFSET 5 LIMIT 5", 0, 0),
+                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 ORDER BY r.a OFFSET 5 LIMIT 5", 0, 0),
+                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT VALUE r.id FROM r", 0, 10),
+                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT TOP 5 r.a FROM r", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT s.id FROM (SELECT DISTINCT r.id FROM root r) as s", 0, 10),
+                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT r.a FROM r OFFSET 3 LIMIT 5", 0, 0),
+                new SwitchableRequiresDistributionTestCases("SELECT Count(r.id) AS count_a FROM r", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id", 0, 10),
+                new SwitchableRequiresDistributionTestCases("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM r", 0, 1),
+                new SwitchableRequiresDistributionTestCases("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
             };
 
             foreach (SwitchableRequiresDistributionTestCases testCase in singlePartitionContainerTestCases)
@@ -225,7 +323,7 @@
                                 input,
                                 numItems: numItems,
                                 isMultiPartition: false,
-                                expectedContinuationTokenCount: 0,
+                                expectedContinuationTokenCount: testCase.ExpectedContinuationTokenCount,
                                 switchRequiresDist: requiresDist);
 
                     Assert.AreEqual(testCase.ExpectedDocumentCount, result);
@@ -648,13 +746,16 @@
         internal readonly struct SwitchableRequiresDistributionTestCases
         {
             public string Query { get; }
+            public int ExpectedContinuationTokenCount { get; }
             public int ExpectedDocumentCount { get; }
 
             public SwitchableRequiresDistributionTestCases(
                 string query,
+                int expectedContinuationTokenCount,
                 int expectedDocumentCount)
             {
                 this.Query = query;
+                this.ExpectedContinuationTokenCount = expectedContinuationTokenCount;
                 this.ExpectedDocumentCount = expectedDocumentCount;
             }
         }
