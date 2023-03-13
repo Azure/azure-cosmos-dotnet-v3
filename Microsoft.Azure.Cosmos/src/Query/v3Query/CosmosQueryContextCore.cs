@@ -51,16 +51,21 @@ namespace Microsoft.Azure.Cosmos.Query
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            InternalRequestOptions internalRequestOptions = new InternalRequestOptions
+            {
+                IsContinuationExpected = isContinuationExpected,
+                CorrelatedActivityId = this.CorrelatedActivityId
+            };
+
             return this.QueryClient.ExecuteItemQueryAsync(
                 resourceUri: this.ResourceLink,
                 resourceType: this.ResourceTypeEnum,
                 operationType: this.OperationTypeEnum,
-                clientQueryCorrelationId: this.CorrelatedActivityId,
                 requestOptions: queryRequestOptions,
+                internalRequestOptions: internalRequestOptions,
                 sqlQuerySpec: querySpecForInit,
                 continuationToken: continuationToken,
                 feedRange: feedRange,
-                isContinuationExpected: isContinuationExpected,
                 pageSize: pageSize,
                 trace: trace,
                 cancellationToken: cancellationToken);

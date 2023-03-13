@@ -239,6 +239,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             QueryPaginationOptions queryPaginationOptions,
+            InternalRequestOptions internalRequestOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -258,16 +259,18 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 
             QueryRequestOptions queryRequestOptions = this.queryRequestOptions == null ? new QueryRequestOptions() : this.queryRequestOptions;
+            internalRequestOptions.IsContinuationExpected = false;
+            internalRequestOptions.CorrelatedActivityId = this.correlatedActivityId;
+
             TryCatch<QueryPage> monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
                 this.resourceLink,
                 this.resourceType,
                 Documents.OperationType.Query,
-                this.correlatedActivityId,
                 feedRangeState.FeedRange,
                 queryRequestOptions,
+                internalRequestOptions,
                 sqlQuerySpec,
                 feedRangeState.State == null ? null : ((CosmosString)feedRangeState.State.Value).Value,
-                isContinuationExpected: false,
                 queryPaginationOptions.PageSizeLimit ?? int.MaxValue,
                 trace,
                 cancellationToken);

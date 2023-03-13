@@ -66,20 +66,7 @@
   </Result>
   <Result>
     <Input>
-      <Description>Null Partition Key Value</Description>
-      <Query>SELECT * FROM c</Query>
-      <PartitionKeys>
-        <Key>/pk</Key>
-      </PartitionKeys>
-      <PartitionKeyType>Hash</PartitionKeyType>
-    </Input>
-    <Output>
-      <ExecuteAsOptimisticDirectExecution>true</ExecuteAsOptimisticDirectExecution>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description>None Partition Key Value</Description>
+      <Description>Cosmos.PartitionKey.Null Partition Key Value</Description>
       <Query>SELECT * FROM c</Query>
       <PartitionKeys>
         <Key>/pk</Key>

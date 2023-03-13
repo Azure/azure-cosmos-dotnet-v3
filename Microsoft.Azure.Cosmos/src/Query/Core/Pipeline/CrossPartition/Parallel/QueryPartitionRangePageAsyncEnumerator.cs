@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         private readonly SqlQuerySpec sqlQuerySpec;
         private readonly QueryPaginationOptions queryPaginationOptions;
         private readonly Cosmos.PartitionKey? partitionKey;
+        private readonly InternalRequestOptions internalRequestOptions;
 
         public QueryPartitionRangePageAsyncEnumerator(
             IQueryDataSource queryDataSource,
@@ -25,12 +26,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             FeedRangeState<QueryState> feedRangeState,
             Cosmos.PartitionKey? partitionKey,
             QueryPaginationOptions queryPaginationOptions,
+            InternalRequestOptions internalRequestOptions,
             CancellationToken cancellationToken)
             : base(feedRangeState, cancellationToken)
         {
             this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
             this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
             this.queryPaginationOptions = queryPaginationOptions;
+            this.internalRequestOptions = internalRequestOptions;
             this.partitionKey = partitionKey;
         }
 
@@ -50,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
               sqlQuerySpec: this.sqlQuerySpec,
               feedRangeState: new FeedRangeState<QueryState>(feedRange, this.FeedRangeState.State),
               queryPaginationOptions: this.queryPaginationOptions,
+              internalRequestOptions: this.internalRequestOptions,
               trace: trace,
               cancellationToken);
         }

@@ -53,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
+            CosmosElement prevContinuationToken = this.continuationToken;
             TryCatch<bool> hasNext = await this.inner.TryAsync(pipelineStage => pipelineStage.MoveNextAsync(trace));
             bool success = hasNext.Succeeded && hasNext.Result;
             bool isPartitionSplitException = hasNext.Succeeded && this.Current.Failed && this.Current.InnerMostException.IsPartitionSplitException();
@@ -60,10 +61,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             if (success && !isPartitionSplitException)
             {
                 this.continuationToken = this.Current.Succeeded ? this.Current.Result.State?.Value : null;
+                if (this.Current.Succeeded)
+                {
+                    this.Current.Result.AdditionalHeaders.TryGetValue("x-ms-cosmos-query-requiresdistribution", out string requiresDistribution);
+                    if (requiresDistribution != null)
+                    {
+                        bool queryRequiresDistribution = bool.Parse(requiresDistribution);
+                        if (queryRequiresDistribution && this.continuationToken != null)
+                        {
+                            this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken(prevContinuationToken));
+                            this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
+                            if (this.inner.Failed)
+                            {
+                                return false;
+                            }
+
+                            success = await this.inner.Result.MoveNextAsync(trace);
+                        }
+                    }
+                }
             }
             else if (isPartitionSplitException && this.executionState == ExecutionState.OptimisticDirectExecution)
             {
-                this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken());
+                this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken(this.continuationToken));
                 this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
                 if (this.inner.Failed)
                 {
@@ -81,11 +101,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             this.inner.Try(pipelineStage => pipelineStage.SetCancellationToken(cancellationToken));
         }
 
-        private CosmosElement TryUnwrapContinuationToken()
+        private CosmosElement TryUnwrapContinuationToken(CosmosElement continuationToken)
         {
-            if (this.continuationToken != null)
+            if (continuationToken != null)
             {
-                CosmosObject cosmosObject = this.continuationToken as CosmosObject;
+                CosmosObject cosmosObject = continuationToken as CosmosObject;
                 CosmosElement backendContinuationToken = cosmosObject[optimisticDirectExecutionToken];
                 Debug.Assert(backendContinuationToken != null);
                 return CosmosArray.Create(backendContinuationToken);
@@ -227,12 +247,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
                 FeedRangeState<QueryState> feedRangeState = monadicExtractState.Result;
 
+                InternalRequestOptions internalRequestOptions = new InternalRequestOptions
+                {
+                    OptimisticDirectExecute = true
+                };
+
                 QueryPartitionRangePageAsyncEnumerator partitionPageEnumerator = new QueryPartitionRangePageAsyncEnumerator(
                     documentContainer,
                     sqlQuerySpec,
                     feedRangeState,
                     partitionKey,
                     queryPaginationOptions,
+                    internalRequestOptions,
                     cancellationToken);
 
                 OptimisticDirectExecutionQueryPipelineImpl stage = new OptimisticDirectExecutionQueryPipelineImpl(partitionPageEnumerator);
