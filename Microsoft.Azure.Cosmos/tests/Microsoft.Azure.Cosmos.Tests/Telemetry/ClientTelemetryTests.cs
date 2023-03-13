@@ -119,14 +119,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         }
         
         [TestMethod]
-        [DataRow(100, 50, 200)] // When operation, cacherefresh and request info is there in payload
+        [DataRow(150, 50, 200)] // When operation, cacherefresh and request info is there in payload
         [DataRow(0, 50, 0)] // When only cacherefresh info is there in payload
-        [DataRow(100, 50, 0)] // When only operation and cacherefresh info is there in payload
-        [DataRow(100, 0, 0)] // When only operation info is there in payload
+        [DataRow(150, 50, 0)] // When only operation and cacherefresh info is there in payload
+        [DataRow(150, 0, 0)] // When only operation info is there in payload
         public async Task CheckIfPayloadIsDividedCorrectlyAsync(int expectedOperationInfoSize, int expectedCacheRefreshInfoSize, int expectedRequestInfoSize)
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
-            ClientTelemetryOptions.ClientTelemetryServicePayloadSizeThreshold = 1024 * 15; //15 Kb
+            ClientTelemetryOptions.PayloadSizeThreshold = 1024 * 15; //15 Kb
 
             string data = File.ReadAllText("Telemetry/ClientTelemetryPayloadWithoutMetrics.json", Encoding.UTF8);
             ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 (request, cancellationToken) =>
                 {
                     string payloadJson = request.Content.ReadAsStringAsync().Result;
-                    Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.ClientTelemetryServicePayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
+                    Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.PayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
 
                     ClientTelemetryProperties propertiesToSend = JsonConvert.DeserializeObject<ClientTelemetryProperties>(payloadJson);
 
@@ -164,7 +164,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedrequestCount)> operationInfoSnapshot 
                 = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedrequestCount)> ();
 
-            for (int i = 0; i < (expectedOperationInfoSize/2); i++)
+            int numberOfMetricsInOperatiionSection = 3;
+            for (int i = 0; i < (expectedOperationInfoSize/ numberOfMetricsInOperatiionSection); i++)
             {
                 OperationInfo opeInfo = new OperationInfo(Regions.WestUS,
                                                         0,

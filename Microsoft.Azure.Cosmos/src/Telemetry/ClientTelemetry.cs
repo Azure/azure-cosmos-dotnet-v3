@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     try
                     {
                         await this.processor
-                        .ProcessAndSendAsync(
+                            .ProcessAndSendAsync(
                                 clientTelemetryInfo: this.clientTelemetryInfo,
                                 operationInfoSnapshot: operationInfoSnapshot,
                                 cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
@@ -352,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="droppedRntbdRequestCount"></param>
         private void RecordRntbdResponses(string containerId, string databaseId, List<StoreResponseStatistics> storeResponseStatistics, out int droppedRntbdRequestCount)
         {
-            IClientTelemetrySampler<RequestInfo> networkRequestSampler 
+            using IClientTelemetrySampler<RequestInfo> networkRequestSampler 
                 = new NetworkRequestSampler(ClientTelemetryOptions.NetworkTelemetrySampleSize);
 
             droppedRntbdRequestCount = 0;

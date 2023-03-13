@@ -4,10 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry.Sampler
 {
-    internal interface IClientTelemetrySampler<T>
+    using System;
+
+    internal interface IClientTelemetrySampler<T> : IDisposable
     {
         internal bool ShouldSample(T statisticsObj);
-
-        internal void Clear();
     }
 }

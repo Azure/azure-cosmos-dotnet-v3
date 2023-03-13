@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal const string DroppedRntbdRequestsName = "DroppedRntbdRequests";
         internal const string DroppedRntbdRequestsUnit = "Count";
-        
+
         internal const double DefaultTimeStampInSeconds = 600;
         internal const double Percentile50 = 50.0;
         internal const double Percentile90 = 90.0;
@@ -89,20 +89,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string EnvPropsClientTelemetryEndpoint = "COSMOS.CLIENT_TELEMETRY_ENDPOINT";
         internal const string EnvPropsClientTelemetryEnvironmentName = "COSMOS.ENVIRONMENT_NAME";
 
-        internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings
-        {
+        internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
+        // Why 5 sec? As of now, if any network request is taking more than 5 millisecond sec, we will consider it slow request this value can be revisited in future
+        internal static readonly TimeSpan NetworkLatencyThreshold = TimeSpan.FromMilliseconds(5);
+        internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings 
+        { 
             NullValueHandling = NullValueHandling.Ignore,
             MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
         };
         
-        internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
-        
-        // Why 5 millisec? As of now, if any network request is taking more than 5 millisecond sec, we will consider it slow request this value can be revisited in future
-        internal static readonly TimeSpan NetworkLatencyThreshold = TimeSpan.FromMilliseconds(5);
+        internal static readonly List<int> ExcludedStatusCodes = new List<int> { 404, 409 };
+
         internal static readonly int NetworkTelemetrySampleSize = 200;
-        internal static readonly List<int> NetworkRequestExcludedStatusCodes = new List<int> { 404, 409 };
-        internal static int ClientTelemetryServicePayloadSizeThreshold = 1024 * 1024 * 2; // 2MB
-        
+        internal static int PayloadSizeThreshold = 1024 * 1024 * 2; // 2MB
+
         private static Uri clientTelemetryEndpoint;
         private static string environmentName;
         private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;
@@ -184,6 +184,5 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             return environmentName;
         }
-
     }
 }

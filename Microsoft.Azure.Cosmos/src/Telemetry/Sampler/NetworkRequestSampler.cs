@@ -12,8 +12,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Sampler
     {
         private readonly int NetworkFailuresCount;
         private readonly ISet<RequestInfo> TempStorage;
-
-        private readonly object lockObject = new object();
         
         public NetworkRequestSampler(int maxNumberOfFailures)
         {
@@ -28,29 +26,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Sampler
                 return false;
             }
             
-            lock (this.lockObject)
+            if (this.TempStorage.Count < this.NetworkFailuresCount)
             {
-                if (this.TempStorage.Count < this.NetworkFailuresCount)
-                {
-                    return this.TempStorage.Add(requestInfo);
-                }
-                else
-                {
-                    bool isAdded = this.TempStorage.Add(requestInfo);
-                    if (isAdded)
-                    {
-                        this.TempStorage.Remove(requestInfo);
-                    }
-                    return !isAdded;
-                }
+                return this.TempStorage.Add(requestInfo);
             }
-        }
-
-        public void Clear()
-        {
-            lock (this.lockObject)
+            else
             {
-                this.TempStorage.Clear();
+                bool isAdded = this.TempStorage.Add(requestInfo);
+                if (isAdded)
+                {
+                    this.TempStorage.Remove(requestInfo);
+                }
+                return !isAdded;
             }
         }
         
@@ -77,8 +64,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Sampler
 
         private static bool IsStatusCodeNotExcluded(int statusCode, int subStatusCode)
         {
-            return !(ClientTelemetryOptions.NetworkRequestExcludedStatusCodes.Contains(statusCode) && subStatusCode == 0);
+            return !(ClientTelemetryOptions.ExcludedStatusCodes.Contains(statusCode) && subStatusCode == 0);
         }
 
+        public void Dispose()
+        {
+            this.TempStorage.Clear();
+        }
     }
 }
