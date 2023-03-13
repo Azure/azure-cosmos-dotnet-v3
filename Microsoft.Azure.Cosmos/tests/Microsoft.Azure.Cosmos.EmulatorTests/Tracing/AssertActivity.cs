@@ -22,11 +22,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Gateway.ToString())
             {
-                Assert.AreEqual(ActivityKind.Internal, activity.Kind, $" Actual Kind is {activity.Kind} but expected is {ActivityKind.Internal} for {activity.OperationName}");
+                Assert.AreEqual(ActivityKind.Internal, activity.Kind, 
+                    $" Actual Kind is {activity.Kind} but expected is {ActivityKind.Internal} for {activity.OperationName} and Connection Mode {activity.GetTagItem("db.cosmosdb.connection_mode")}");
             }
             else if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Direct.ToString())
             {
-                Assert.AreEqual(ActivityKind.Client, activity.Kind, $" Actual Kind is {activity.Kind} but expected is {ActivityKind.Client} for {activity.OperationName}");
+                Assert.AreEqual(ActivityKind.Client, activity.Kind, 
+                    $" Actual Kind is {activity.Kind} but expected is {ActivityKind.Client} for {activity.OperationName} and Connection Mode {activity.GetTagItem("db.cosmosdb.connection_mode")}");
             }
             
             IList<string> expectedTags = new List<string>

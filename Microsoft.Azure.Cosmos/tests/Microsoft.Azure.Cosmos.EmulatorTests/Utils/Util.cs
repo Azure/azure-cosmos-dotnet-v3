@@ -536,9 +536,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static TracerProvider OTelTracerProvider;
-        private static CustomListener TestListener;
+        private static TestDiagnosticListener TestListener;
         
-        internal static CustomListener ConfigureOpenTelemetryAndCustomListeners()
+        internal static TestDiagnosticListener ConfigureOpenTelemetryAndCustomListeners()
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
 
@@ -549,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .Build();
 
             // Custom Listener
-            Util.TestListener = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*", "Azure-Cosmos-Operation-Request-Diagnostics");
+            Util.TestListener = new TestDiagnosticListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*");
 
             return Util.TestListener;
 
@@ -557,6 +557,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static void DisposeOpenTelemetryAndCustomListeners()
         {
+            Console.WriteLine("Disposing OpenTelemetry and Custom Listeners");
             // Open Telemetry Listener
             Util.OTelTracerProvider?.Dispose();
 
