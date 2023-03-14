@@ -32,24 +32,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
                     isActivityEnabled: true);
 
-                // If there is no source then it will return default otherwise a valid diagnostic scope
-                DiagnosticScope scope = OpenTelemetryRecorderFactory
-                    .ScopeFactory
-                    .CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
-                                    kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
-
-                // Record values only when we have a valid Diagnostic Scope
-                if (scope.IsEnabled)
+                lock (lockObject)
                 {
-                    return new OpenTelemetryCoreRecorder(
-                        scope: scope,
-                        operationName: operationName,
-                        containerName: containerName,
-                        databaseName: databaseName,
-                        operationType: operationType,
-                        clientContext: clientContext,
-                        config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
+                    // If there is no source then it will return default otherwise a valid diagnostic scope
+                    DiagnosticScope scope = OpenTelemetryRecorderFactory
+                        .ScopeFactory
+                        .CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
+                                        kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
+
+                    // Record values only when we have a valid Diagnostic Scope
+                    if (scope.IsEnabled)
+                    {
+                        return new OpenTelemetryCoreRecorder(
+                            scope: scope,
+                            operationName: operationName,
+                            containerName: containerName,
+                            databaseName: databaseName,
+                            operationType: operationType,
+                            clientContext: clientContext,
+                            config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
+                    }
                 }
+              
             }
 
             return default;

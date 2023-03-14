@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
-    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
@@ -44,6 +43,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         [ClassInitialize]
         public static async Task ClassInitAsync(TestContext context)
         {
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+            
             Console.WriteLine("ClassInitialize");
             
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
@@ -91,8 +92,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         [ClassCleanup]
         public static async Task ClassCleanupAsync()
         {
-            await Task.Delay(5000);
-            
+           
             if (database != null)
             {
                 await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
@@ -101,6 +101,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             EndToEndTraceWriterBaselineTests.client?.Dispose();
             EndToEndTraceWriterBaselineTests.bulkClient?.Dispose();
             EndToEndTraceWriterBaselineTests.miscCosmosClient?.Dispose();
+
+            await Task.Delay(5000);
         }
 
         [TestInitialize]
@@ -111,9 +113,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         }
         
         [TestCleanup]
-        public void End()
+        public async Task End()
         {
             Util.DisposeOpenTelemetryAndCustomListeners();
+
+            await Task.Delay(5000);
         }
         
         private void AssertAndResetActivityInformation()

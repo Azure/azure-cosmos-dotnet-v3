@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Tracing
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -19,6 +20,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
             Assert.IsTrue(activity.OperationName == activity.DisplayName);
 
             Assert.IsFalse(string.IsNullOrEmpty(activity.GetTagItem("db.cosmosdb.connection_mode").ToString()), $"connection mode is emtpy for {activity.OperationName}");
+
+            Console.WriteLine($"AssertActivity : {activity.OperationName} === {activity.Kind}");
 
             if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Gateway.ToString())
             {
@@ -72,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public static void AreEqualAcrossListeners()
         {
             Assert.AreEqual(
-                JsonConvert.SerializeObject(CustomListener.CollectedActivities.OrderBy(x => x.Id)),
+                JsonConvert.SerializeObject(TestListener.CollectedActivities.OrderBy(x => x.Id)),
                 JsonConvert.SerializeObject(CustomOtelExporter.CollectedActivities.OrderBy(x => x.Id)));
         }
 
