@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     /// <summary>
     /// Internal Cosmos headers to pass between classes/functions
     /// </summary>
-    internal class AdditionalRequestHeaders
+    internal sealed class AdditionalRequestHeaders
     {
         // Boolean to let the backend know if a query is utilizing the OptimisticDirectExecute pipeline.
         internal bool OptimisticDirectExecute { get; }
