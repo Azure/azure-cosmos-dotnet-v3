@@ -1,7 +1,7 @@
 ﻿{
   "AppSettings": {
-    "GatewayEndpoint": "https://127.0.0.1:443/",
-    "ComputeGatewayEndpoint": "https://localhost:443/",
+    "GatewayEndpoint": "https://127.0.0.1:8081/",
+    "ComputeGatewayEndpoint": "https://localhost:8903/",
     "ComputeGatewayPort": "8903",
     "Location": "South Central US",
     "Location2": "West US",
