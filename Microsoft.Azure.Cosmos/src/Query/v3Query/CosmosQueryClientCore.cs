@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             FeedRange feedRange,
             QueryRequestOptions requestOptions,
-            InternalRequestOptions internalRequestOptions,
+            AdditionalRequestHeaders additionalRequestHeaders,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             int pageSize,
@@ -142,14 +142,14 @@ namespace Microsoft.Azure.Cosmos
                 {
                     cosmosRequestMessage.Headers.Add(
                         HttpConstants.HttpHeaders.IsContinuationExpected,
-                        internalRequestOptions.IsContinuationExpected.ToString());
+                        additionalRequestHeaders.IsContinuationExpected.ToString());
                     QueryRequestOptions.FillContinuationToken(
                         cosmosRequestMessage,
                         continuationToken);
-                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, internalRequestOptions.ContentType);
-                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, internalRequestOptions.IsQuery.ToString());
-                    cosmosRequestMessage.Headers.Add(WFConstants.BackendHeaders.CorrelatedActivityId, internalRequestOptions.CorrelatedActivityId.ToString());
-                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.OptimisticDirectExecute, internalRequestOptions.OptimisticDirectExecute.ToString());
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, additionalRequestHeaders.ContentType);
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, additionalRequestHeaders.IsQuery.ToString());
+                    cosmosRequestMessage.Headers.Add(WFConstants.BackendHeaders.CorrelatedActivityId, additionalRequestHeaders.CorrelatedActivityId.ToString());
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.OptimisticDirectExecute, additionalRequestHeaders.OptimisticDirectExecute.ToString());
                 },
                 trace: trace,
                 cancellationToken: cancellationToken);
