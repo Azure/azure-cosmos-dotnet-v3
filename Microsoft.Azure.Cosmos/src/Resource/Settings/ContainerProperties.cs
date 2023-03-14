@@ -287,6 +287,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets the collection containing <see cref="ComputedProperty"/> objects in the container.
+        /// </summary>
+        /// <value>
+        /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
+        /// </value>
+        [JsonProperty(PropertyName = "computedProperties", NullValueHandling = NullValueHandling.Ignore)]
+        public Collection<ComputedProperty> ComputedProperties { get; set; } = new Collection<ComputedProperty>();
+
+        /// <summary>
         /// Gets the <see cref="ChangeFeedPolicy"/> associated with the container from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
