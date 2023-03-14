@@ -126,13 +126,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             QueryPaginationOptions queryPaginationOptions,
-            InternalRequestOptions internalRequestOptions,
+            AdditionalRequestHeaders additionalRequestHeaders,
             ITrace trace,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicQueryAsync(
                 sqlQuerySpec,
                 feedRangeState,
                 queryPaginationOptions,
-                internalRequestOptions,
+                additionalRequestHeaders,
                 trace,
                 cancellationToken);
 
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     sqlQuerySpec,
                     feedRangeState,
                     queryPaginationOptions,
-                    new InternalRequestOptions(),
+                    new AdditionalRequestHeaders(),
                     trace,
                     cancellationToken),
                 cancellationToken);

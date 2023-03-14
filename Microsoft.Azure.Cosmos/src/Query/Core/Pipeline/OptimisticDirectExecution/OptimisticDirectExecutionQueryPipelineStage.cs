@@ -246,11 +246,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 }
 
                 FeedRangeState<QueryState> feedRangeState = monadicExtractState.Result;
-
-                InternalRequestOptions internalRequestOptions = new InternalRequestOptions
-                {
-                    OptimisticDirectExecute = true
-                };
+                AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders(optimisticDirectExecute: true);
 
                 QueryPartitionRangePageAsyncEnumerator partitionPageEnumerator = new QueryPartitionRangePageAsyncEnumerator(
                     documentContainer,
@@ -258,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     feedRangeState,
                     partitionKey,
                     queryPaginationOptions,
-                    internalRequestOptions,
+                    additionalRequestHeaders,
                     cancellationToken);
 
                 OptimisticDirectExecutionQueryPipelineImpl stage = new OptimisticDirectExecutionQueryPipelineImpl(partitionPageEnumerator);

@@ -51,18 +51,14 @@ namespace Microsoft.Azure.Cosmos.Query
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            InternalRequestOptions internalRequestOptions = new InternalRequestOptions
-            {
-                IsContinuationExpected = isContinuationExpected,
-                CorrelatedActivityId = this.CorrelatedActivityId
-            };
+            AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders(optimisticDirectExecute: false, isContinuationExpected, this.CorrelatedActivityId);
 
             return this.QueryClient.ExecuteItemQueryAsync(
                 resourceUri: this.ResourceLink,
                 resourceType: this.ResourceTypeEnum,
                 operationType: this.OperationTypeEnum,
                 requestOptions: queryRequestOptions,
-                internalRequestOptions: internalRequestOptions,
+                additionalRequestHeaders: additionalRequestHeaders,
                 sqlQuerySpec: querySpecForInit,
                 continuationToken: continuationToken,
                 feedRange: feedRange,

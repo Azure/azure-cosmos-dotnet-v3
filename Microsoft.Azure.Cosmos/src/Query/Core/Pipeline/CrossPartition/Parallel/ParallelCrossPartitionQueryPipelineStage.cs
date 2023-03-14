@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 feedRangeState,
                 partitionKey,
                 queryPaginationOptions,
-                new InternalRequestOptions(),
+                new AdditionalRequestHeaders(),
                 cancellationToken);
 
         public void SetCancellationToken(CancellationToken cancellationToken)

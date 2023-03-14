@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Documents.OperationType operationType,
             FeedRange feedRange,
             QueryRequestOptions requestOptions,
-            InternalRequestOptions internalRequestOptions,
+            AdditionalRequestHeaders additionalRequestHeaders,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             int pageSize,
