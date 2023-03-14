@@ -424,7 +424,6 @@
 
             if (!string.IsNullOrEmpty(containerState.Query))
             {
-                // System.Threading.Thread.Sleep(5000);
                 List<dynamic> results = await this.QueryItems(response.Container, containerState.Query);
 
                 Assert.AreEqual(containerState.ExpectedDocuments.Count, results.Count);
