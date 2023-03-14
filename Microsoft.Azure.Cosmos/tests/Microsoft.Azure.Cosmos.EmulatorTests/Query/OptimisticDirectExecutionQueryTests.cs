@@ -7,106 +7,355 @@
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("Query")]
     public sealed class OptimisticDirectExecutionQueryTests : QueryTestsBase
     {
+        private const int NumberOfDocuments = 8;
+        private const string PartitionKeyField = "key";
+        private const string NumberField = "numberField";
+        private const string NullField = "nullField";
+
         private static class PageSizeOptions
         {
-            public static readonly int[] NonGroupByAndNoContinuationTokenPageSizeOptions = { -1, 10, 100 };
+            public static readonly int[] NonGroupByAndNoContinuationTokenPageSizeOptions = { -1, 10 };
             public static readonly int[] NonGroupWithContinuationTokenPageSizeOptions = { 1, 2, 5 };
             public static readonly int[] GroupByPageSizeOptions = { -1 };
+            public static readonly int[] PageSize100 = { 100 };
         }
 
         [TestMethod]
         public async Task TestPassingOptimisticDirectExecutionQueries()
         {
-            int numberOfDocuments = 8;
-            string partitionKey = "key";
-            string numberField = "numberField";
-            string nullField = "nullField";
+            IReadOnlyList<int> empty = new List<int>(0);
+            IReadOnlyList<int> first5Integers = Enumerable.Range(0, 5).ToList();
+            IReadOnlyList<int> first7Integers = Enumerable.Range(0, NumberOfDocuments).ToList();
+            IReadOnlyList<int> first7IntegersReversed = Enumerable.Range(0, NumberOfDocuments).Reverse().ToList();
 
-            List<string> documents = CreateDocuments(numberOfDocuments, partitionKey, numberField, nullField);
-
+            PartitionKey partitionKeyValue = new PartitionKey("/value");
             List<DirectExecutionTestCase> singlePartitionContainerTestCases = new List<DirectExecutionTestCase>()
             {
                 // Tests for bool enableOptimisticDirectExecution
-                CreateInput( query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{partitionKey}", expectedResult: new List<long> { 0, 1, 2, 3, 4 }, partitionKey: "/value", partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{partitionKey}", expectedResult: new List<long> { 0, 1, 2, 3, 4 }, partitionKey: "/value", partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: false, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.Passthrough),
-                CreateInput( query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{partitionKey}", expectedResult: new List<long> { 0, 1, 2, 3, 4 }, partitionKey: "/value", partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{partitionKey}", expectedResult: new List<long> { 0, 1, 2, 3, 4 }, partitionKey: "/value", partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: false, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.Passthrough),
-
-                // Simple query (requiresDist = false)
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r", expectedResult: new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 }, partitionKey: "/value", partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r", expectedResult: new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 }, partitionKey: "/value", partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r", expectedResult: new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 }, partitionKey: null, partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r", expectedResult: new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 }, partitionKey: null, partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
+                    expectedResult: first5Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
+                    expectedResult: first5Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
                 
+                // Simple query (requiresDist = false)
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+               
                 // DISTINCT with ORDER BY (requiresDist = true)
-                CreateInput( query: $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField} DESC", expectedResult: new List<long> { 7, 6, 5, 4, 3, 2, 1, 0 }, partitionKey: "/value", partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField} DESC", expectedResult: new List<long> { 7, 6, 5, 4, 3, 2, 1, 0 }, partitionKey: "/value", partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.Specialized),
-                CreateInput( query: $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField} DESC", expectedResult: new List<long> { 7, 6, 5, 4, 3, 2, 1, 0 }, partitionKey: null, partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField} DESC", expectedResult: new List<long> { 7, 6, 5, 4, 3, 2, 1, 0 }, partitionKey: null, partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.Specialized),
-
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first7IntegersReversed,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first7IntegersReversed,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first7IntegersReversed,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first7IntegersReversed,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+             
                 // TOP with GROUP BY (requiresDist = true)
-                CreateInput( query: $"SELECT TOP 5 VALUE r.{numberField} FROM r GROUP BY r.{numberField}", expectedResult: new List<long> { 0, 1, 2, 3, 4 }, partitionKey: "/value", partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.GroupByPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT TOP 5 VALUE r.{numberField} FROM r GROUP BY r.{numberField}", expectedResult: new List<long> { 0, 1, 2, 3, 4 }, partitionKey: null, partition: CollectionTypes.SinglePartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.GroupByPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r GROUP BY r.{NumberField}",
+                    expectedResult: first5Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.GroupByPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r GROUP BY r.{NumberField}",
+                    expectedResult: first5Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.GroupByPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+              
                 // OFFSET LIMIT with WHERE and BETWEEN (requiresDist = false)
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", expectedResult: new List<long> { 1 }, partitionKey: "/value", partition: CollectionTypes.SinglePartition, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, enableOptimisticDirectExecution: true, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", expectedResult: new List<long> { 1 }, partitionKey: "/value", partition: CollectionTypes.SinglePartition, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, enableOptimisticDirectExecution: true, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", expectedResult: new List<long> { 1 }, partitionKey: null, partition: CollectionTypes.SinglePartition, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, enableOptimisticDirectExecution: true, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", expectedResult: new List<long> { 1 }, partitionKey: null, partition: CollectionTypes.SinglePartition, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, enableOptimisticDirectExecution: true, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution)
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: partitionKeyValue,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    enableOptimisticDirectExecution: true,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: partitionKeyValue,
+                    pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions,
+                    enableOptimisticDirectExecution: true,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: null,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    enableOptimisticDirectExecution: true,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: null,
+                    pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions,
+                    enableOptimisticDirectExecution: true,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution)
             };
             
             List<DirectExecutionTestCase> multiPartitionContainerTestCases = new List<DirectExecutionTestCase>()
             {
                 // Simple query (requiresDist = false)
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r", expectedResult: new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 }, partitionKey: "/value", partition: CollectionTypes.MultiPartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r", expectedResult: new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 }, partitionKey: "/value", partition: CollectionTypes.MultiPartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r", expectedResult: new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 }, partitionKey: null, partition: CollectionTypes.MultiPartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.Passthrough),
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r", expectedResult: new List<long> { 0, 1, 2, 3, 4, 5, 6, 7 }, partitionKey: null, partition: CollectionTypes.MultiPartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first7Integers,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
 
                 // DISTINCT with ORDER BY (requiresDist = true)
-                CreateInput( query: $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField} DESC", expectedResult: new List<long> { 7, 6, 5, 4, 3, 2, 1, 0 }, partitionKey: "/value", partition: CollectionTypes.MultiPartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField} DESC", expectedResult: new List<long> { 7, 6, 5, 4, 3, 2, 1, 0 }, partitionKey: "/value", partition: CollectionTypes.MultiPartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.Specialized),
-                CreateInput( query: $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField} DESC", expectedResult: new List<long> { 7, 6, 5, 4, 3, 2, 1, 0 }, partitionKey: null, partition: CollectionTypes.MultiPartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.Specialized),
-                CreateInput( query: $"SELECT DISTINCT VALUE r.{numberField} FROM r ORDER BY r.{numberField} DESC", expectedResult: new List<long> { 7, 6, 5, 4, 3, 2, 1, 0 }, partitionKey: null, partition: CollectionTypes.MultiPartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first7IntegersReversed,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first7IntegersReversed,
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first7IntegersReversed,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT DISTINCT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first7IntegersReversed,
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
 
                 // OFFSET LIMIT with WHERE and BETWEEN (requiresDist = false)
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", expectedResult: new List<long> { 1 }, partitionKey: "/value", partition: CollectionTypes.MultiPartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", expectedResult: new List<long> { 1 }, partitionKey: "/value", partition: CollectionTypes.MultiPartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", expectedResult: new List<long> { 1 }, partitionKey: null, partition: CollectionTypes.MultiPartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.Specialized),
-                CreateInput( query: $"SELECT VALUE r.numberField FROM r WHERE r.{numberField} BETWEEN 0 AND {numberOfDocuments} OFFSET 1 LIMIT 1", expectedResult: new List<long> { 1 }, partitionKey: null, partition: CollectionTypes.MultiPartition, enableOptimisticDirectExecution: true, pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions, expectedPipelineType: TestInjections.PipelineType.Specialized)
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: partitionKeyValue,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.NonGroupWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized)
             };
-            
+
+            IReadOnlyList<string> documents = CreateDocuments(NumberOfDocuments, PartitionKeyField, NumberField, NullField);
+
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition,
                 documents,
-                (container, documents) => RunPassingTests(singlePartitionContainerTestCases, container),
-                "/" + partitionKey);
-            
+                (container, documents) => RunTests(singlePartitionContainerTestCases, container),
+                "/" + PartitionKeyField);
+
             await this.CreateIngestQueryDeleteAsync(
                 ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.MultiPartition,
                 documents,
-                (container, documents) => RunPassingTests(multiPartitionContainerTestCases, container),
-                "/" + partitionKey);
+                (container, documents) => RunTests(multiPartitionContainerTestCases, container),
+                "/" + PartitionKeyField);
+        }
+
+        [TestMethod]
+        public async Task TestQueriesWithPartitionKeyNone()
+        {
+            int documentCount = 400;
+            IReadOnlyList<int> first400Integers = Enumerable.Range(0, documentCount).ToList();
+            IReadOnlyList<int> first400IntegersReversed = Enumerable.Range(0, documentCount).Reverse().ToList();
+
+            IReadOnlyList<DirectExecutionTestCase> testCases = new List<DirectExecutionTestCase>
+            {
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first400Integers,
+                    partitionKey: PartitionKey.None,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.PageSize100,
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} ASC",
+                    expectedResult: first400Integers,
+                    partitionKey: PartitionKey.None,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.PageSize100,
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first400IntegersReversed,
+                    partitionKey: PartitionKey.None,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.PageSize100,
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: PartitionKey.None,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.PageSize100,
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r",
+                    expectedResult: first400Integers,
+                    partitionKey: PartitionKey.None,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.PageSize100,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} ASC",
+                    expectedResult: first400Integers,
+                    partitionKey: PartitionKey.None,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.PageSize100,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
+                    expectedResult: first400IntegersReversed,
+                    partitionKey: PartitionKey.None,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.PageSize100,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                CreateInput(
+                    query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
+                    expectedResult: new List<int> { 1 },
+                    partitionKey: PartitionKey.None,
+                    enableOptimisticDirectExecution: true,
+                    pageSizeOptions: PageSizeOptions.PageSize100,
+                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+            };
+
+            List<string> documents = new List<string>(documentCount);
+            for (int i = 0; i < documentCount; ++i)
+            {
+                string document = $@"{{ {NumberField}: {i}, {NullField}: null }}";
+                documents.Add(document);
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.NonPartitioned | CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                documents,
+                (container, documents) => RunTests(testCases, container),
+                "/undefinedPartitionKey");
         }
 
         [TestMethod]
         public async Task TestFailingOptimisticDirectExecutionOutput()
         {
-            int numberOfDocuments = 8;
-            string partitionKey = "key";
-            string numberField = "numberField";
-            string nullField = "nullField";
-
-            List<string> documents = CreateDocuments(numberOfDocuments, partitionKey, numberField, nullField);
+            IReadOnlyList<string> documents = CreateDocuments(NumberOfDocuments, PartitionKeyField, NumberField, NullField);
 
             // check if bad continuation queries and syntax error queries are handled by pipeline
             IDictionary<string, string> invalidQueries = new Dictionary<string, string>
@@ -121,10 +370,10 @@
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 (container, documents) => RunFailingTests(container, invalidQueries),
-                "/" + partitionKey);
+                "/" + PartitionKeyField);
         }
 
-        private static async Task RunPassingTests(IEnumerable<DirectExecutionTestCase> testCases, Container container)
+        private static async Task RunTests(IEnumerable<DirectExecutionTestCase> testCases, Container container)
         {
             foreach (DirectExecutionTestCase testCase in testCases)
             {
@@ -133,9 +382,7 @@
                     QueryRequestOptions feedOptions = new QueryRequestOptions
                     {
                         MaxItemCount = pageSize,
-                        PartitionKey = testCase.PartitionKey == null
-                            ? null
-                            : new Cosmos.PartitionKey(testCase.PartitionKey),
+                        PartitionKey = testCase.PartitionKey,
                         EnableOptimisticDirectExecution = testCase.EnableOptimisticDirectExecution,
                         TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats())
                     };
@@ -145,7 +392,7 @@
                             testCase.Query,
                             feedOptions);
 
-                    long[] actual = items.Cast<CosmosNumber>().Select(x => Number64.ToLong(x.Value)).ToArray();
+                    int[] actual = items.Cast<CosmosNumber>().Select(x => (int)Number64.ToLong(x.Value)).ToArray();
 
                     Assert.IsTrue(testCase.ExpectedResult.SequenceEqual(actual));
                     Assert.AreEqual(testCase.ExpectedPipelineType, feedOptions.TestSettings.Stats.PipelineType.Value);
@@ -166,7 +413,7 @@
             {
                 try
                 {
-                    await container.GetItemQueryIterator<Document>(
+                    await container.GetItemQueryIterator<string>(
                         queryDefinition: new QueryDefinition(queryAndResult.Key),
                         continuationToken: queryAndResult.Value,
                         requestOptions: feedOptions).ReadNextAsync();
@@ -184,16 +431,13 @@
             }
         }
 
-        private static List<string> CreateDocuments(int documentCount, string partitionKey, string numberField, string nullField)
+        private static IReadOnlyList<string> CreateDocuments(int documentCount, string partitionKey, string numberField, string nullField)
         {
             List<string> documents = new List<string>(documentCount);
             for (int i = 0; i < documentCount; ++i)
             {
-                Document doc = new Document();
-                doc.SetPropertyValue(partitionKey, "/value");
-                doc.SetPropertyValue(numberField, i % documentCount);
-                doc.SetPropertyValue(nullField, null);
-                documents.Add(doc.ToString());
+                string document = $@"{{ {partitionKey}: ""/value"", {numberField}: {i}, {nullField}: null }}";
+                documents.Add(document);
             }
 
             return documents;
@@ -201,31 +445,28 @@
 
         private static DirectExecutionTestCase CreateInput(
             string query,
-            List<long> expectedResult,
-            string partitionKey,
-            CollectionTypes partition,
+            IReadOnlyList<int> expectedResult,
+            PartitionKey? partitionKey,
             bool enableOptimisticDirectExecution,
             int[] pageSizeOptions,
             TestInjections.PipelineType expectedPipelineType)
         {
-            return new DirectExecutionTestCase(query, expectedResult, partitionKey, partition, enableOptimisticDirectExecution, pageSizeOptions, expectedPipelineType);
+            return new DirectExecutionTestCase(query, expectedResult, partitionKey, enableOptimisticDirectExecution, pageSizeOptions, expectedPipelineType);
         }
 
-        internal readonly struct DirectExecutionTestCase
+        private readonly struct DirectExecutionTestCase
         {
             public string Query { get; }
-            public List<long> ExpectedResult { get; }
-            public string PartitionKey { get; }
-            public CollectionTypes Partition { get; }
+            public IReadOnlyList<int> ExpectedResult { get; }
+            public PartitionKey? PartitionKey { get; }
             public bool EnableOptimisticDirectExecution { get; }
             public int[] PageSizeOptions { get; }
             public TestInjections.PipelineType ExpectedPipelineType { get; }
 
             public DirectExecutionTestCase(
                 string query,
-                List<long> expectedResult,
-                string partitionKey,
-                CollectionTypes partition,
+                IReadOnlyList<int> expectedResult,
+                PartitionKey? partitionKey,
                 bool enableOptimisticDirectExecution,
                 int[] pageSizeOptions,
                 TestInjections.PipelineType expectedPipelineType)
@@ -233,7 +474,6 @@
                 this.Query = query;
                 this.ExpectedResult = expectedResult;
                 this.PartitionKey = partitionKey;
-                this.Partition = partition;
                 this.EnableOptimisticDirectExecution = enableOptimisticDirectExecution;
                 this.PageSizeOptions = pageSizeOptions;
                 this.ExpectedPipelineType = expectedPipelineType;
