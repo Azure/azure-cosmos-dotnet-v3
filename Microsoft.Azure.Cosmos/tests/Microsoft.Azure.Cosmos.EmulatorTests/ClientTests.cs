@@ -74,6 +74,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsFalse(object.ReferenceEquals(ex, cosmosException1));
                 Assert.IsTrue(httpCallCount > 0);
             }
+
+            //Test cleanup
+            cosmosClient.Dispose();
         }
 
         [TestMethod]
@@ -154,6 +157,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.TaskStartedCount = 0;
                 httpCallCount = 0;
             }
+
+            //Test cleanup
+            cosmosClient.Dispose();
         }
 
 
@@ -287,6 +293,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     masterKeyCredential.Update(authKey);
                     await TestCommon.DeleteDatabaseAsync(client, client.GetDatabase(databaseName));
                 }
+
+                //Test cleanup
+                client.Dispose();
             }
         }
 
@@ -338,6 +347,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Console.WriteLine("Expected exception while deserializing Resource: " + ex.Message);
                 }
+                
+                //Test cleanup
+                client.Dispose();
             }
         }
 
@@ -382,6 +394,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ulong capability = ulong.Parse(sdkSupportedCapability);
 
             Assert.AreEqual((ulong)SDKSupportedCapabilities.PartitionMerge, capability & (ulong)SDKSupportedCapabilities.PartitionMerge,$" received header value as {sdkSupportedCapability}");
+
+            //Test cleanup
+            cosmosClient.Dispose();
         }
 
         [TestMethod]
@@ -445,6 +460,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     await client.DeleteDatabaseAsync(db);
                 }
+                
+                //Test cleanup
+                client.Dispose();
             }
         }
         
@@ -487,6 +505,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await database?.DeleteStreamAsync();
             }
 
+            //Test cleanup
+            cosmosClient.Dispose();
         }
 
         [TestMethod]
@@ -857,6 +877,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await database.DeleteAsync();
                 }
             }
+
+            //Test cleanup
+            cosmosClient.Dispose();
         }
 
         [TestMethod]
@@ -878,7 +901,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ))
             {
                 CosmosHttpClient cosmosHttpClient = cosmosClient.DocumentClient.httpClient;
-                HttpClientHandler httpClientHandler = (HttpClientHandler)cosmosHttpClient.HttpMessageHandler;
+                SocketsHttpHandler httpClientHandler = (SocketsHttpHandler)cosmosHttpClient.HttpMessageHandler;
                 Assert.AreEqual(gatewayConnectionLimit, httpClientHandler.MaxConnectionsPerServer);
 
                 Cosmos.Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
@@ -897,6 +920,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Clean up the database and container
                 await database.DeleteAsync();
+                cosmosClient.Dispose();
             }
 
 
@@ -905,6 +929,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int connectionDiff = afterConnections.Count - excludeConnections.Count;
             Assert.IsTrue(connectionDiff <= gatewayConnectionLimit, $"Connection before : {excludeConnections.Count}, after {afterConnections.Count};" +
                 $"Before connections: {JsonConvert.SerializeObject(excludeConnections)}; After connections: {JsonConvert.SerializeObject(afterConnections)}");
+        }
+
+        [TestMethod]
+        public void PooledConnectionLifetimeTest()
+        {
+            //Create Cosmos Client
+            using CosmosClient cosmosClient = new CosmosClient(
+                accountEndpoint: "https://localhost:8081",
+                authKeyOrResourceToken: Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())));
+
+            //Assert type of message handler
+            Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
+            Type clientMessageHandlerType = cosmosClient.ClientContext.DocumentClient.httpClient.HttpMessageHandler.GetType();
+            Assert.AreEqual(socketHandlerType, clientMessageHandlerType);
+
+            //Test cleanup
+            cosmosClient.Dispose();
         }
 
         public static IReadOnlyList<string> GetActiveConnections()
