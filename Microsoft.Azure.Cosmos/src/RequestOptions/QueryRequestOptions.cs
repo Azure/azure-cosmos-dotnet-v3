@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.ComponentModel;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query;
@@ -243,19 +244,17 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.TransportSerializationFormat != null)
             {
-                request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.TransportSerializationFormat == Cosmos.TransportSerializationFormat.Text
-                    ? ContentSerializationFormat.JsonText.ToString()
-                    : ContentSerializationFormat.CosmosBinary.ToString();
+                request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.TransportSerializationFormat switch
+                {
+                    Cosmos.TransportSerializationFormat.Binary => ContentSerializationFormat.CosmosBinary.ToString(),
+                    Cosmos.TransportSerializationFormat.Text => ContentSerializationFormat.JsonText.ToString(),
+                    _ => throw new InvalidEnumArgumentException(),
+                };
             }
             
-            if (this.SupportedSerializationFormats != null)
-            {
-                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats.ToString();
-            }
-            else
-            {
-                request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
-            }
+            request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats != null
+                ? this.SupportedSerializationFormats.ToString()
+                : DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
 
             if (this.StartId != null)
             {

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -330,19 +331,17 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (this.feedOptions.TransportSerializationFormat != null)
             {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.TransportSerializationFormat == TransportSerializationFormat.Text
-                    ? ContentSerializationFormat.JsonText.ToString()
-                    : ContentSerializationFormat.CosmosBinary.ToString();
+                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.TransportSerializationFormat switch
+                {
+                    TransportSerializationFormat.Binary => ContentSerializationFormat.CosmosBinary.ToString(),
+                    TransportSerializationFormat.Text => ContentSerializationFormat.JsonText.ToString(),
+                    _ => throw new InvalidEnumArgumentException(),
+                };
             }
 
-            if (this.feedOptions.SupportedSerializationFormats != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = this.feedOptions.SupportedSerializationFormats.Value.ToString();
-            }
-            else
-            {
-                requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = DefaultSupportedSerializationFormats;
-            }
+            requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = this.feedOptions.SupportedSerializationFormats != null
+                ? this.feedOptions.SupportedSerializationFormats.Value.ToString()
+                : DefaultSupportedSerializationFormats;
 
             return requestHeaders;
         }

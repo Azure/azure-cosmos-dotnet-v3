@@ -12,13 +12,13 @@ namespace Microsoft.Azure.Cosmos
     public enum TransportSerializationFormat
     {
         /// <summary>
-        /// Indicates text format to be used for transport serialization.
-        /// </summary>
-        Text,
-
-        /// <summary>
         /// Indicates binary format to be used for transport serialization.
         /// </summary>
         Binary,
+
+        /// <summary>
+        /// Indicates text format to be used for transport serialization.
+        /// </summary>
+        Text, 
     }
 }

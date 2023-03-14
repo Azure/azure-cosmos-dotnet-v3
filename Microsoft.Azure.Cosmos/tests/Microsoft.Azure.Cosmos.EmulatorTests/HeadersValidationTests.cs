@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 new QueryRequestOptions()
                 {
-                TransportSerializationFormat = TransportSerializationFormat.Binary
+                    TransportSerializationFormat = TransportSerializationFormat.Binary
                 },
                 new QueryRequestOptions()
                 {
@@ -375,11 +375,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private void SupportedSerializationFormatsNegativeCases(
             DocumentClient client, 
             DocumentCollection collection, 
-            string value,
+            string invalidValue,
             SqlQuerySpec sqlQuerySpec = null)
         {
             INameValueCollection headers = new RequestNameValueCollection();
-            headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, value);
+            headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, invalidValue);
 
             try
             {

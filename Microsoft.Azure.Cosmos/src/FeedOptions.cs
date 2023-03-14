@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        internal FeedOptions(FeedOptions options)
+        public FeedOptions(FeedOptions options)
         {
             if (options == null)
             {
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Option is true if query tracing is enabled; otherwise, false.
         /// </value>
-        internal bool? EmitVerboseTracesInQuery { get; set; }
+        public bool? EmitVerboseTracesInQuery { get; set; }
 
         /// <summary>
         /// Gets or sets the schema rid which could be used to filter the document feed response
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos
         /// By default, it is <c>null</c> which means no filtering will be applied.
         /// Otherwise, it must be a valid resource id of Schema resource.
         /// </value>
-        internal string FilterBySchemaResourceId { get; set; }
+        public string FilterBySchemaResourceId { get; set; }
 
         /// <summary>
         ///  Gets or sets the <see cref="PopulateQueryMetrics"/> request option for document query requests in the Azure Cosmos DB service.
@@ -358,6 +358,47 @@ namespace Microsoft.Azure.Cosmos
         public ConsistencyLevel? ConsistencyLevel { get; set; }
 
         /// <summary>
+        /// Gets or sets the flag that tells the backend to forces the query to perform a scan (at a request level).
+        /// </summary>
+        public bool ForceQueryScan { get; set; }
+
+        /// <summary>
+        /// Gets or sets the EnumerationDirection
+        /// To be used along with Read feed operation
+        /// </summary>
+        public EnumerationDirection? EnumerationDirection { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ReadFeedKeyType
+        /// To be used along with Read feed operation
+        /// </summary>
+        public ReadFeedKeyType? ReadFeedKeyType { get; set; }
+
+        /// <summary>
+        /// Gets or sets the StartId
+        /// To be used along with Read feed operation
+        /// </summary>
+        public string StartId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the EndId
+        /// To be used along with Read feed operation
+        /// </summary>
+        public string EndId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the StartEpk
+        /// To be used along with Read feed operation
+        /// </summary>
+        public string StartEpk { get; set; }
+
+        /// <summary>
+        /// Gets or sets the EndEpk
+        /// To be used along with Read feed operation
+        /// </summary>
+        public string EndEpk { get; set; }
+
+        /// <summary>
         /// Gets or sets the SupportedSerializationFormats for the query response from the service.
         /// </summary>
         public SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
@@ -367,60 +408,19 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public TransportSerializationFormat? TransportSerializationFormat { get; set; }
 
-        /// <summary>
-        /// Gets or sets the flag that tells the backend to forces the query to perform a scan (at a request level).
-        /// </summary>
-        internal bool ForceQueryScan { get; set; }
-
-        /// <summary>
-        /// Gets or sets the EnumerationDirection
-        /// To be used along with Read feed operation
-        /// </summary>
-        internal EnumerationDirection? EnumerationDirection { get; set; }
-
-        /// <summary>
-        /// Gets or sets the ReadFeedKeyType
-        /// To be used along with Read feed operation
-        /// </summary>
-        internal ReadFeedKeyType? ReadFeedKeyType { get; set; }
-
-        /// <summary>
-        /// Gets or sets the StartId
-        /// To be used along with Read feed operation
-        /// </summary>
-        internal string StartId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the EndId
-        /// To be used along with Read feed operation
-        /// </summary>
-        internal string EndId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the StartEpk
-        /// To be used along with Read feed operation
-        /// </summary>
-        internal string StartEpk { get; set; }
-
-        /// <summary>
-        /// Gets or sets the EndEpk
-        /// To be used along with Read feed operation
-        /// </summary>
-        internal string EndEpk { get; set; }
-
-        internal bool EnableGroupBy { get; set; }
+        public bool EnableGroupBy { get; set; }
 
         /// <summary>
         /// Gets or sets the MergeStaticId.
         /// To be used along with Read feed operation when Static Column merge is desired.
         /// </summary>
-        internal string MergeStaticId { get; set; }
+        public string MergeStaticId { get; set; }
 
         /// <summary>
         /// Gets or sets the custom serialization options for query
         /// </summary>
-        internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
+        public CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
-        internal IDictionary<string, object> Properties { get; set; }
+        public IDictionary<string, object> Properties { get; set; }
     }
 }
