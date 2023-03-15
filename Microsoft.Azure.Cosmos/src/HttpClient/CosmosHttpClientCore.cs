@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
                     receivedResponseEventArgs);
             }
 
-            HttpClient httpClient = new HttpClient(httpMessageHandler, disposeHandler: false);
+            HttpClient httpClient = new HttpClient(httpMessageHandler);
 
             return CosmosHttpClientCore.CreateHelper(
                 httpClient: httpClient,
@@ -103,18 +103,17 @@ namespace Microsoft.Azure.Cosmos
             IWebProxy webProxy, 
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
-            try
+            Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
+
+            if (socketHandlerType != null)
             {
-                Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
-                return createSocketsHttpHandler(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
+                return CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
             }
-            catch
-            {
-                return createHttpClientHandler(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
-            }
+            
+            return CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
         }
 
-        private static HttpMessageHandler createSocketsHttpHandler(
+        private static HttpMessageHandler CreateSocketsHttpHandlerHelper(
             int gatewayModeMaxConnectionLimit, 
             IWebProxy webProxy, 
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
@@ -165,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
             return (HttpMessageHandler)socketHttpHandler;
         }
 
-        private static HttpMessageHandler createHttpClientHandler(
+        private static HttpMessageHandler CreateHttpClientHandlerHelper(
             int gatewayModeMaxConnectionLimit, 
             IWebProxy webProxy, 
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
