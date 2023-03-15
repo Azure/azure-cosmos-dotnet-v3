@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+    using HttpConstants = Microsoft.Azure.Documents.HttpConstants;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -22,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosClient cosmosClient = null;
         private Cosmos.Database cosmosDatabase = null;
+
+        private readonly string currentVersion = HttpConstants.Versions.CurrentVersion;
         private static long ToEpoch(DateTime dateTime)
         {
             return (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -30,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInit()
         {
+            HttpConstants.Versions.CurrentVersion = "2020-07-15";
             this.cosmosClient = TestCommon.CreateCosmosClient();
 
             string databaseName = Guid.NewGuid().ToString();
@@ -49,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 await this.cosmosDatabase.DeleteStreamAsync();
             }
+            HttpConstants.Versions.CurrentVersion = this.currentVersion;
             this.cosmosClient.Dispose();
         }
 
@@ -713,7 +718,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-#if PREVIEW
         //MultiHash container checks.
         [TestMethod]
         public async Task CreateContainerIfNotExistsAsyncForMultiHashCollectionsTest()
@@ -798,7 +802,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
-#endif
         [TestMethod]
         public async Task StreamPartitionedCreateWithPathDelete()
         {
