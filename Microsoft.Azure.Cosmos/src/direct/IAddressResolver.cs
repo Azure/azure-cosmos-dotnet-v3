@@ -17,10 +17,6 @@ namespace Microsoft.Azure.Documents
             CancellationToken cancellationToken);
 
         Task UpdateAsync(
-           IReadOnlyList<AddressCacheToken> addressCacheTokens,
-           CancellationToken cancellationToken = default(CancellationToken));
-
-        Task UpdateAsync(
            ServerKey serverKey,
            CancellationToken cancellationToken = default(CancellationToken));
     }

@@ -227,34 +227,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             return await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
         }
 
+        /// <inheritdoc/>
         public async Task UpdateAsync(
-            IReadOnlyList<AddressCacheToken> addressCacheTokens,
-            CancellationToken cancellationToken)
-        {
-            List<Task> tasks = new List<Task>();
-
-            foreach (AddressCacheToken cacheToken in addressCacheTokens)
-            {
-                if (this.addressCacheByEndpoint.TryGetValue(cacheToken.ServiceEndpoint, out EndpointCache endpointCache))
-                {
-                    tasks.Add(endpointCache.AddressCache.UpdateAsync(cacheToken.PartitionKeyRangeIdentity, cancellationToken));
-                }
-            }
-
-            await Task.WhenAll(tasks);
-        }
-
-        public Task UpdateAsync(
            ServerKey serverKey,
            CancellationToken cancellationToken)
         {
             foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
             {
-                // since we don't know which address cache contains the pkRanges mapped to this node, we do a tryRemove on all AddressCaches of all regions
-                addressCache.Value.AddressCache.TryRemoveAddresses(serverKey);
+                // since we don't know which address cache contains the pkRanges mapped to this node, we mark all transport uris to unhealthy status in the AddressCaches of all regions
+                await addressCache.Value.AddressCache.MarkAddressesUnhealthyAsync(serverKey);
             }
-
-            return Task.CompletedTask;
         }
 
         /// <summary>

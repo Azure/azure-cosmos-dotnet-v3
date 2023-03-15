@@ -387,7 +387,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public void TryRemoveAddresses(
+        /// <summary>
+        /// blabla.
+        /// </summary>
+        /// <param name="serverKey"></param>
+        public async Task MarkAddressesUnhealthyAsync(
             ServerKey serverKey)
         {
             if (serverKey == null)
@@ -395,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(serverKey));
             }
 
-            if (this.serverPartitionAddressToPkRangeIdMap.TryRemove(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
+            if (this.serverPartitionAddressToPkRangeIdMap.TryGetValue(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
             {
                 PartitionKeyRangeIdentity[] pkRangeIdsCopy;
                 lock (pkRangeIds)
@@ -410,7 +414,21 @@ namespace Microsoft.Azure.Cosmos.Routing
                        pkRangeId.PartitionKeyRangeId,
                        this.serviceEndpoint);
 
-                    this.serverPartitionAddressCache.TryRemove(pkRangeId);
+                    PartitionAddressInformation addressInfo = await this.serverPartitionAddressCache.GetAsync(
+                       key: pkRangeId,
+                       singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
+                           null,
+                           cachedAddresses: null,
+                           pkRangeId.CollectionRid,
+                           pkRangeId.PartitionKeyRangeId,
+                           forceRefresh: false),
+                       forceRefresh: (_) => false);
+
+                    IReadOnlyList<TransportAddressUri> transportAddresses = addressInfo.Get(Protocol.Tcp)?.ReplicaTransportAddressUris;
+                    foreach (TransportAddressUri address in transportAddresses)
+                    {
+                        address.SetUnhealthy();
+                    }
                 }
             }
         }
