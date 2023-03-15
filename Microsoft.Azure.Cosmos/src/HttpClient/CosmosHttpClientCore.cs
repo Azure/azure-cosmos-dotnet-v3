@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
                     receivedResponseEventArgs);
             }
 
-            HttpClient httpClient = new HttpClient(httpMessageHandler);
+            HttpClient httpClient = new HttpClient(httpMessageHandler, disposeHandler: false);
 
             return CosmosHttpClientCore.CreateHelper(
                 httpClient: httpClient,
@@ -98,76 +98,101 @@ namespace Microsoft.Azure.Cosmos
                 eventSource: eventSource);
         }
 
-        public static HttpMessageHandler CreateHttpClientHandler(int gatewayModeMaxConnectionLimit, IWebProxy webProxy, Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        public static HttpMessageHandler CreateHttpClientHandler(
+            int gatewayModeMaxConnectionLimit, 
+            IWebProxy webProxy, 
+            Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
-            HttpClientHandler httpClientHandler;
             try
             {
                 Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
-
-                object socketHttpHandler = Activator.CreateInstance(socketHandlerType);
-
-                PropertyInfo pooledConnectionLifetimeInfo = socketHandlerType.GetProperty("PooledConnectionLifetime");
-                pooledConnectionLifetimeInfo.SetValue(socketHttpHandler, TimeSpan.FromMinutes(5), null);
-
-                // Proxy is only set by users and can cause not supported exception on some platforms
-                if (webProxy != null)
-                {
-                    PropertyInfo webProxyInfo = socketHandlerType.GetProperty("Proxy");
-                    webProxyInfo.SetValue(socketHttpHandler, webProxy, null);
-                }
-
-                // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
-                try
-                {
-                    PropertyInfo maxConnectionsPerSercerInfo = socketHandlerType.GetProperty("MaxConnectionsPerServer");
-                    maxConnectionsPerSercerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit, null);
-
-                    if (serverCertificateCustomValidationCallback != null)
-                    {
-                        Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> customCertificateValidationCallback =
-                            (_, certificate2, x509Chain, sslPolicyErrors) => serverCertificateCustomValidationCallback(certificate2, x509Chain, sslPolicyErrors);
-
-                        PropertyInfo serverCertificateCustomValidationCallbackInfo = socketHandlerType.GetProperty("ServerCertificateCustomValidationCallback");
-                        serverCertificateCustomValidationCallbackInfo.SetValue(socketHttpHandler,
-                            customCertificateValidationCallback,
-                            null);                        
-                    }
-                }
-                // MaxConnectionsPerServer is not supported on some platforms.
-                catch (PlatformNotSupportedException)
-                {
-                }
-
-                return (HttpMessageHandler)socketHttpHandler;
-
+                return createSocketsHttpHandler(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
             }
             catch
             {
-                httpClientHandler = new HttpClientHandler();
+                return createHttpClientHandler(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
+            }
+        }
 
-                // Proxy is only set by users and can cause not supported exception on some platforms
-                if (webProxy != null)
-                {
-                    httpClientHandler.Proxy = webProxy;
-                }
+        private static HttpMessageHandler createSocketsHttpHandler(
+            int gatewayModeMaxConnectionLimit, 
+            IWebProxy webProxy, 
+            Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        {
+            Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
 
-                // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
-                try
-                {
-                    httpClientHandler.MaxConnectionsPerServer = gatewayModeMaxConnectionLimit;
-                    if (serverCertificateCustomValidationCallback != null)
-                    {
-                        httpClientHandler.ServerCertificateCustomValidationCallback = (_, certificate2, x509Chain, sslPolicyErrors) => serverCertificateCustomValidationCallback(certificate2, x509Chain, sslPolicyErrors);
-                    }
-                }
-                // MaxConnectionsPerServer is not supported on some platforms.
-                catch (PlatformNotSupportedException)
-                {
-                }
+            object socketHttpHandler = Activator.CreateInstance(socketHandlerType);
 
-                return httpClientHandler;
-            }           
+            PropertyInfo pooledConnectionLifetimeInfo = socketHandlerType.GetProperty("PooledConnectionLifetime");
+            pooledConnectionLifetimeInfo.SetValue(socketHttpHandler, TimeSpan.FromMinutes(5), null);
+
+            // Proxy is only set by users and can cause not supported exception on some platforms
+            if (webProxy != null)
+            {
+                PropertyInfo webProxyInfo = socketHandlerType.GetProperty("Proxy");
+                webProxyInfo.SetValue(socketHttpHandler, webProxy, null);
+            }
+
+            // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
+            try
+            {
+                PropertyInfo maxConnectionsPerSercerInfo = socketHandlerType.GetProperty("MaxConnectionsPerServer");
+                maxConnectionsPerSercerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit, null);
+
+                if (serverCertificateCustomValidationCallback != null)
+                {
+                    Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> customCertificateValidationCallback =
+                        (_, certificate2, x509Chain, sslPolicyErrors) => serverCertificateCustomValidationCallback(
+                                certificate2,
+                                x509Chain,
+                                sslPolicyErrors);
+
+                    PropertyInfo sslOptionsInfo = socketHandlerType.GetProperty("SslOptions");
+                    object sslOptions = sslOptionsInfo.GetValue(socketHttpHandler, null);
+                    PropertyInfo remoteCertificateValidationCallbackInfo = sslOptions.GetType().GetProperty("RemoteCertificateValidationCallback");
+                    remoteCertificateValidationCallbackInfo.SetValue(sslOptions, customCertificateValidationCallback, null);
+
+                    sslOptionsInfo.SetValue(socketHttpHandler,
+                        customCertificateValidationCallback,
+                        null);
+                }
+            }
+            // MaxConnectionsPerServer is not supported on some platforms.
+            catch (PlatformNotSupportedException)
+            {
+            }
+
+            return (HttpMessageHandler)socketHttpHandler;
+        }
+
+        private static HttpMessageHandler createHttpClientHandler(
+            int gatewayModeMaxConnectionLimit, 
+            IWebProxy webProxy, 
+            Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        {
+            HttpClientHandler httpClientHandler = new HttpClientHandler();
+
+            // Proxy is only set by users and can cause not supported exception on some platforms
+            if (webProxy != null)
+            {
+                httpClientHandler.Proxy = webProxy;
+            }
+
+            // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
+            try
+            {
+                httpClientHandler.MaxConnectionsPerServer = gatewayModeMaxConnectionLimit;
+                if (serverCertificateCustomValidationCallback != null)
+                {
+                    httpClientHandler.ServerCertificateCustomValidationCallback = (_, certificate2, x509Chain, sslPolicyErrors) => serverCertificateCustomValidationCallback(certificate2, x509Chain, sslPolicyErrors);
+                }
+            }
+            // MaxConnectionsPerServer is not supported on some platforms.
+            catch (PlatformNotSupportedException)
+            {
+            }
+
+            return httpClientHandler;
         }
 
         private static HttpMessageHandler CreateHttpMessageHandler(
