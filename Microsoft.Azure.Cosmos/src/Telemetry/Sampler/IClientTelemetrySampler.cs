@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Sampler
 {
     using System;
 
-    internal interface IClientTelemetrySampler<T> : IDisposable
+    internal interface IClientTelemetrySampler<T>
     {
         internal bool ShouldSample(T statisticsObj);
     }

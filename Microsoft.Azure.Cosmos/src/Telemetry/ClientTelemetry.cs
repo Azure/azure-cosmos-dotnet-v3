@@ -352,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="droppedRntbdRequestCount"></param>
         private void RecordRntbdResponses(string containerId, string databaseId, List<StoreResponseStatistics> storeResponseStatistics, out int droppedRntbdRequestCount)
         {
-            using IClientTelemetrySampler<RequestInfo> networkRequestSampler 
+            IClientTelemetrySampler<RequestInfo> networkRequestSampler 
                 = new NetworkRequestSampler(ClientTelemetryOptions.NetworkTelemetrySampleSize);
 
             droppedRntbdRequestCount = 0;

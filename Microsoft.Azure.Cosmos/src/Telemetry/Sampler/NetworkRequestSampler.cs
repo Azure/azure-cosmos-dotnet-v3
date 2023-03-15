@@ -66,10 +66,5 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Sampler
         {
             return !(ClientTelemetryOptions.ExcludedStatusCodes.Contains(statusCode) && subStatusCode == 0);
         }
-
-        public void Dispose()
-        {
-            this.TempStorage.Clear();
-        }
     }
 }
