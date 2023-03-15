@@ -391,7 +391,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// blabla.
         /// </summary>
         /// <param name="serverKey"></param>
-        public async Task MarkAddressesUnhealthyAsync(
+        public async Task MarkAddressesToUnhealthyAsync(
             ServerKey serverKey)
         {
             if (serverKey == null)
@@ -409,11 +409,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIdsCopy)
                 {
-                    DefaultTrace.TraceInformation("Remove addresses for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}",
-                       pkRangeId.CollectionRid,
-                       pkRangeId.PartitionKeyRangeId,
-                       this.serviceEndpoint);
-
                     PartitionAddressInformation addressInfo = await this.serverPartitionAddressCache.GetAsync(
                        key: pkRangeId,
                        singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
@@ -425,8 +420,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                        forceRefresh: (_) => false);
 
                     IReadOnlyList<TransportAddressUri> transportAddresses = addressInfo.Get(Protocol.Tcp)?.ReplicaTransportAddressUris;
-                    foreach (TransportAddressUri address in transportAddresses)
+                    foreach (TransportAddressUri address in from TransportAddressUri transportAddress in transportAddresses
+                                            where serverKey.Equals(transportAddress.serverKey)
+                                            select transportAddress)
                     {
+                        DefaultTrace.TraceInformation("Marking a backend replica to Unhealthy for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}, transportAddress: {3}",
+                           pkRangeId.CollectionRid,
+                           pkRangeId.PartitionKeyRangeId,
+                           this.serviceEndpoint,
+                           address.ToString());
+
                         address.SetUnhealthy();
                     }
                 }

@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
             {
                 // since we don't know which address cache contains the pkRanges mapped to this node, we mark all transport uris to unhealthy status in the AddressCaches of all regions
-                await addressCache.Value.AddressCache.MarkAddressesUnhealthyAsync(serverKey);
+                await addressCache.Value.AddressCache.MarkAddressesToUnhealthyAsync(serverKey);
             }
         }
 

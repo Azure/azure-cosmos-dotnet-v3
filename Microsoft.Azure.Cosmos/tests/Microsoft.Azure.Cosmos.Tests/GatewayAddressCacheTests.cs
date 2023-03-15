@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla.com"));
 
             // call updateAddress
-            await cache.MarkAddressesUnhealthyAsync(new Documents.Rntbd.ServerKey(new Uri("https://blabla.com")));
+            await cache.MarkAddressesToUnhealthyAsync(new Documents.Rntbd.ServerKey(new Uri("https://blabla.com")));
 
             // check if the addresss is updated
             addresses = await cache.TryGetAddressesAsync(
