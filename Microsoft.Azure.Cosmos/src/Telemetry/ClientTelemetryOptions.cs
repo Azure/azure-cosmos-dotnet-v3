@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
         };
         
-        internal static readonly List<int> ExcludedStatusCodes = new List<int> { 404, 409 };
+        internal static readonly List<int> ExcludedStatusCodes = new List<int> { 404, 409, 412 };
 
         internal static readonly int NetworkTelemetrySampleSize = 200;
         internal static int PayloadSizeThreshold = 1024 * 1024 * 2; // 2MB
