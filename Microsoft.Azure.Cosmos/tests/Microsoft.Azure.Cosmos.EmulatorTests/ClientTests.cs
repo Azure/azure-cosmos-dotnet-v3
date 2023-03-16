@@ -155,9 +155,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.TaskStartedCount = 0;
                 httpCallCount = 0;
             }
-
-            //Test cleanup
-            cosmosClient.Dispose();
         }
 
 
@@ -291,9 +288,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     masterKeyCredential.Update(authKey);
                     await TestCommon.DeleteDatabaseAsync(client, client.GetDatabase(databaseName));
                 }
-
-                //Test cleanup
-                client.Dispose();
             }
         }
 
@@ -389,9 +383,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ulong capability = ulong.Parse(sdkSupportedCapability);
 
             Assert.AreEqual((ulong)SDKSupportedCapabilities.PartitionMerge, capability & (ulong)SDKSupportedCapabilities.PartitionMerge,$" received header value as {sdkSupportedCapability}");
-
-            //Test cleanup
-            cosmosClient.Dispose();
         }
 
         [TestMethod]
@@ -455,9 +446,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     await client.DeleteDatabaseAsync(db);
                 }
-                
-                //Test cleanup
-                client.Dispose();
             }
         }
         
@@ -499,9 +487,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 await database?.DeleteStreamAsync();
             }
-
-            //Test cleanup
-            cosmosClient.Dispose();
         }
 
         [TestMethod]
@@ -872,9 +857,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await database.DeleteAsync();
                 }
             }
-
-            //Test cleanup
-            cosmosClient.Dispose();
         }
 
         [TestMethod]
@@ -913,9 +895,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await Task.WhenAll(creates);
 
-                // Clean up the database and container
+                // Clean up the database
                 await database.DeleteAsync();
-                cosmosClient.Dispose();
             }
 
 
@@ -938,9 +919,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
             Type clientMessageHandlerType = cosmosClient.ClientContext.DocumentClient.httpClient.HttpMessageHandler.GetType();
             Assert.AreEqual(socketHandlerType, clientMessageHandlerType);
-
-            //Test cleanup
-            cosmosClient.Dispose();
         }
 
         [TestMethod]
@@ -965,9 +943,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
 
             Assert.IsFalse(context.DocumentClient.remoteCertificateValidationCallback(new object(), x509Certificate2, x509Chain, sslPolicyErrors));
-
-            //Test Cleanup
-            cosmosClient.Dispose();
         }
        
         public static IReadOnlyList<string> GetActiveConnections()
