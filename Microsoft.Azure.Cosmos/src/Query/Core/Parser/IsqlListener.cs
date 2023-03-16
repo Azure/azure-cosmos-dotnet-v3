@@ -562,6 +562,18 @@ internal interface IsqlListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitObjectCreateScalarExpression([NotNull] sqlParser.ObjectCreateScalarExpressionContext context);
 	/// <summary>
+	/// Enter a parse tree produced by the <c>FirstScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterFirstScalarExpression([NotNull] sqlParser.FirstScalarExpressionContext context);
+	/// <summary>
+	/// Exit a parse tree produced by the <c>FirstScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitFirstScalarExpression([NotNull] sqlParser.FirstScalarExpressionContext context);
+	/// <summary>
 	/// Enter a parse tree produced by the <c>ArrayCreateScalarExpression</c>
 	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
 	/// </summary>
@@ -669,6 +681,18 @@ internal interface IsqlListener : IParseTreeListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	void ExitArrayScalarExpression([NotNull] sqlParser.ArrayScalarExpressionContext context);
+	/// <summary>
+	/// Enter a parse tree produced by the <c>LastScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterLastScalarExpression([NotNull] sqlParser.LastScalarExpressionContext context);
+	/// <summary>
+	/// Exit a parse tree produced by the <c>LastScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitLastScalarExpression([NotNull] sqlParser.LastScalarExpressionContext context);
 	/// <summary>
 	/// Enter a parse tree produced by the <c>PropertyRefScalarExpressionRecursive</c>
 	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
