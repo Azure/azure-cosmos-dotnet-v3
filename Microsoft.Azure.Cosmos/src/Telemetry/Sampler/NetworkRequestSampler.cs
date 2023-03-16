@@ -2,42 +2,69 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry.Sampler
+namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
-    internal sealed class NetworkRequestSampler : IClientTelemetrySampler<RequestInfo>
+    /// <summary>
+    /// This is Sample applied to all network calls during an operation call
+    /// </summary>
+    internal class NetworkRequestSampler : IClientTelemetrySampler<StoreResponseStatistics, RequestInfo>
     {
-        private readonly int NetworkFailuresCount;
-        private readonly ISet<RequestInfo> TempStorage;
+        private readonly string DatabaseId;
+        private readonly string ContainerId;
+
+        private readonly ISampler<RequestInfo> TopNSampler;
         
-        public NetworkRequestSampler(int maxNumberOfFailures)
+        public NetworkRequestSampler(string databaseId, string containerId)
         {
-            this.NetworkFailuresCount = maxNumberOfFailures;
-            this.TempStorage = new HashSet<RequestInfo>();
-        }
-        
-        public bool ShouldSample(RequestInfo requestInfo)
-        {
-            if (requestInfo == null)
-            {
-                return false;
-            }
+            this.DatabaseId = databaseId;
+            this.ContainerId = containerId;
             
-            if (this.TempStorage.Count < this.NetworkFailuresCount)
+            this.TopNSampler
+                = new TopNSampler(ClientTelemetryOptions.NetworkTelemetrySampleSize);
+        }
+
+        /// <summary>
+        /// Sampling implementation
+        /// </summary>
+        /// <param name="storeResponseStatistics">This is in input data</param>
+        /// <param name="droppedRntbdRequestCount">Number of request skipped due to sampling</param>
+        /// <param name="callback">call this to run logic on selected object</param>
+        public void Sample(List<StoreResponseStatistics> storeResponseStatistics, out int droppedRntbdRequestCount, Action<StoreResponseStatistics, RequestInfo> callback)
+        {
+            droppedRntbdRequestCount = 0;
+            foreach (StoreResponseStatistics storeStatistics in storeResponseStatistics)
             {
-                return this.TempStorage.Add(requestInfo);
-            }
-            else
-            {
-                bool isAdded = this.TempStorage.Add(requestInfo);
-                if (isAdded)
+                if (NetworkRequestSampler.IsEligible(
+                        statusCode: (int)storeStatistics.StoreResult.StatusCode,
+                        subStatusCode: (int)storeStatistics.StoreResult.SubStatusCode,
+                        latencyInMs: storeStatistics.RequestLatency))
                 {
-                    this.TempStorage.Remove(requestInfo);
+                    RequestInfo requestInfo = new RequestInfo()
+                    {
+                        DatabaseName = this.DatabaseId,
+                        ContainerName = this.ContainerId,
+                        Uri = storeStatistics.StoreResult.StorePhysicalAddress.ToString(),
+                        StatusCode = (int)storeStatistics.StoreResult.StatusCode,
+                        SubStatusCode = (int)storeStatistics.StoreResult.SubStatusCode,
+                        Resource = storeStatistics.RequestResourceType.ToString(),
+                        Operation = storeStatistics.RequestOperationType.ToString(),
+                    };
+
+                    if (this.TopNSampler.ShouldSample(requestInfo))
+                    {
+                        callback(storeStatistics, requestInfo);
+                    }
+                    else
+                    {
+                        droppedRntbdRequestCount++;
+                    }
                 }
-                return !isAdded;
+
             }
         }
         

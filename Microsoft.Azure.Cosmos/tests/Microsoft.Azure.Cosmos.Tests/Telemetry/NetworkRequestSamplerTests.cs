@@ -6,13 +6,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Diagnostics.Metrics;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using Microsoft.Azure.Cosmos.Telemetry.Sampler;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     [TestClass]
     public class NetworkRequestSamplerTests
@@ -36,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             ISet<RequestInfo> requestInfoList = new HashSet<RequestInfo>();
 
-            NetworkRequestSampler sampler = new NetworkRequestSampler(threshold);
+            TopNSampler sampler = new TopNSampler(threshold);
 
             for (int counter = 0; counter < 200; counter++)
             { 

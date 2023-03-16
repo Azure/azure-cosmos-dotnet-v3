@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Telemetry;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using Microsoft.Azure.Cosmos.Telemetry.Sampler;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.

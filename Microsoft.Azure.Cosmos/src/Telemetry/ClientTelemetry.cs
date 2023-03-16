@@ -14,8 +14,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using Microsoft.Azure.Cosmos.Telemetry.Sampler;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// Records RNTBD calls statistics
+        /// Records and Sample RNTBD calls statistics
         /// </summary>
         /// <param name="containerId"></param>
         /// <param name="databaseId"></param>
@@ -352,42 +352,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="droppedRntbdRequestCount"></param>
         private void RecordRntbdResponses(string containerId, string databaseId, List<StoreResponseStatistics> storeResponseStatistics, out int droppedRntbdRequestCount)
         {
-            IClientTelemetrySampler<RequestInfo> networkRequestSampler 
-                = new NetworkRequestSampler(ClientTelemetryOptions.NetworkTelemetrySampleSize);
+            NetworkRequestSampler sampler = new NetworkRequestSampler(databaseId, containerId);
 
-            droppedRntbdRequestCount = 0;
-            foreach (StoreResponseStatistics storetatistics in storeResponseStatistics)
+            sampler.Sample(storeResponseStatistics, out droppedRntbdRequestCount, (storeStatistics, requestInfo) => 
             {
-                if (NetworkRequestSampler.IsEligible(
-                        statusCode: (int)storetatistics.StoreResult.StatusCode,
-                        subStatusCode: (int)storetatistics.StoreResult.SubStatusCode,
-                        latencyInMs: storetatistics.RequestLatency))
-                {
-                    RequestInfo requestInfo = new RequestInfo()
-                    {
-                        DatabaseName = databaseId,
-                        ContainerName = containerId,
-                        Uri = storetatistics.StoreResult.StorePhysicalAddress.ToString(),
-                        StatusCode = (int)storetatistics.StoreResult.StatusCode,
-                        SubStatusCode = (int)storetatistics.StoreResult.SubStatusCode,
-                        Resource = storetatistics.RequestResourceType.ToString(),
-                        Operation = storetatistics.RequestOperationType.ToString(),
-                    };
-
-                    if (networkRequestSampler.ShouldSample(requestInfo))
-                    {
-                        LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                                ClientTelemetryOptions.RequestLatencyMax,
-                                                                ClientTelemetryOptions.RequestLatencyPrecision));
-                        latencyHist.RecordValue(storetatistics.RequestLatency.Ticks);
-                    }
-                    else
-                    {
-                        droppedRntbdRequestCount++;
-                    }
-                }
-              
-            }
+                LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                               ClientTelemetryOptions.RequestLatencyMax,
+                                                               ClientTelemetryOptions.RequestLatencyPrecision));
+                latencyHist.RecordValue(storeStatistics.RequestLatency.Ticks);
+            });
+            
         }
 
         /// <summary>
