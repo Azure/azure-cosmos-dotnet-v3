@@ -75,9 +75,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsFalse(object.ReferenceEquals(ex, cosmosException1));
                 Assert.IsTrue(httpCallCount > 0);
             }
-
-            //Test cleanup
-            cosmosClient.Dispose();
         }
 
         [TestMethod]
@@ -347,10 +344,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 catch (JsonReaderException ex)
                 {
                     Console.WriteLine("Expected exception while deserializing Resource: " + ex.Message);
-                }
-                
-                //Test cleanup
-                client.Dispose();
+                }              
             }
         }
 
