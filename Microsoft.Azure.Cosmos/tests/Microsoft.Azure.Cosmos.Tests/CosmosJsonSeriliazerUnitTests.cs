@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Linq;
     using System.Net;
     using System.Text;
+    using Castle.Core.Internal;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
@@ -251,6 +252,53 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             cosmosResponseFactory.CreateStoredProcedureResponse(storedProcedureResponse);
             cosmosResponseFactory.CreateTriggerResponse(triggerResponse);
             cosmosResponseFactory.CreateUserDefinedFunctionResponse(udfResponse);
+        }
+
+        [TestMethod]
+        public void ValidateSqlQuerySpecSerializerWithResumeInfo()
+        {
+            // Test serializing of different types
+            string queryText = "SELECT * FROM root r";
+            (SqlQueryResumeInfo.ResumeValue resumeValue, string resumeString)[] testValues = new (SqlQueryResumeInfo.ResumeValue resumeValue, string resumeString)[] {
+                (new SqlQueryResumeInfo.UndefinedResumeValue(), "[]"),
+                (new SqlQueryResumeInfo.NullResumeValue(), "null"),
+                (new SqlQueryResumeInfo.BooleanResumeValue(true), "true"),
+                (new SqlQueryResumeInfo.BooleanResumeValue(false), "false"),
+                (new SqlQueryResumeInfo.NumberResumeValue(10), "10"),
+                (new SqlQueryResumeInfo.StringResumeValue("testval"), "\"testval\""),
+                (new SqlQueryResumeInfo.ArrayResumeValue(UInt128.Create(10000,20000)), "{\"type\":\"array\",\"low\":10000,\"high\":20000}"),
+                (new SqlQueryResumeInfo.ObjectResumeValue(UInt128.Create(10000,20000)), "{\"type\":\"object\",\"low\":10000,\"high\":20000}")
+            };
+
+            CosmosJsonDotNetSerializer userSerializer = new CosmosJsonDotNetSerializer();
+            CosmosJsonDotNetSerializer propertiesSerializer = new CosmosJsonDotNetSerializer();
+
+            CosmosSerializer sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+                userSerializer,
+                propertiesSerializer);
+
+            foreach ((SqlQueryResumeInfo.ResumeValue resumeValue, string resumeString) in testValues)
+            {
+                foreach(string rid in new string[] { "rid", null})
+                {
+                    SqlQuerySpec querySpec = new SqlQuerySpec(
+                        queryText,
+                        new SqlParameterCollection(),
+                        new SqlQueryResumeInfo(true, rid, new List<SqlQueryResumeInfo.ResumeValue>() { resumeValue }));
+
+                    Stream stream = sqlQuerySpecSerializer.ToStream(querySpec);
+                    using (StreamReader sr = new StreamReader(stream))
+                    {
+                        string result = sr.ReadToEnd();
+                        Assert.IsNotNull(result);
+
+                        string expectedValue = rid.IsNullOrEmpty()
+                            ? $"{{\"query\":\"{queryText}\",\"resumeInfo\":{{\"exclude\":true,\"value\":[{resumeString}]}}}}"
+                            : $"{{\"query\":\"{queryText}\",\"resumeInfo\":{{\"exclude\":true,\"rid\":\"{rid}\",\"value\":[{resumeString}]}}}}";
+                        Assert.AreEqual(expectedValue, result);
+                    }
+                }
+            }
         }
 
         [TestMethod]

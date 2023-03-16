@@ -24,7 +24,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool CanConvert(Type objectType)
         {
-            return typeof(SqlParameter) == objectType;
+            return typeof(SqlParameter) == objectType
+                || typeof(SqlQueryResumeInfo.ResumeValue).IsAssignableFrom(objectType);
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
@@ -34,32 +35,76 @@ namespace Microsoft.Azure.Cosmos
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            SqlParameter sqlParameter = (SqlParameter)value;
-
-            writer.WriteStartObject();
-            writer.WritePropertyName("name");
-            serializer.Serialize(writer, sqlParameter.Name);
-            writer.WritePropertyName("value");
-
-            // if the SqlParameter has stream value we dont pass it through the custom serializer.
-            if (sqlParameter.Value is SerializedParameterValue serializedEncryptedData)
+            if (value is SqlParameter sqlParameter)
             {
-                writer.WriteRawValue(serializedEncryptedData.rawSerializedJsonValue);
-            }
-            else
-            {
-                // Use the user serializer for the parameter values so custom conversions are correctly handled
-                using (Stream str = this.UserSerializer.ToStream(sqlParameter.Value))
+                writer.WriteStartObject();
+                writer.WritePropertyName("name");
+                serializer.Serialize(writer, sqlParameter.Name);
+                writer.WritePropertyName("value");
+
+                // if the SqlParameter has stream value we dont pass it through the custom serializer.
+                if (sqlParameter.Value is SerializedParameterValue serializedEncryptedData)
                 {
-                    using (StreamReader streamReader = new StreamReader(str))
+                    writer.WriteRawValue(serializedEncryptedData.rawSerializedJsonValue);
+                }
+                else
+                {
+                    // Use the user serializer for the parameter values so custom conversions are correctly handled
+                    using (Stream str = this.UserSerializer.ToStream(sqlParameter.Value))
                     {
-                        string parameterValue = streamReader.ReadToEnd();
-                        writer.WriteRawValue(parameterValue);
+                        using (StreamReader streamReader = new StreamReader(str))
+                        {
+                            string parameterValue = streamReader.ReadToEnd();
+                            writer.WriteRawValue(parameterValue);
+                        }
                     }
                 }
-            }
 
-            writer.WriteEndObject();
+                writer.WriteEndObject();
+            }
+            else if (value is SqlQueryResumeInfo.UndefinedResumeValue)
+            {
+                writer.WriteStartArray();
+                writer.WriteEndArray();
+            }
+            else if (value is SqlQueryResumeInfo.NullResumeValue)
+            {
+                writer.WriteNull();
+            }
+            else if (value is SqlQueryResumeInfo.BooleanResumeValue booleanValue)
+            {
+                serializer.Serialize(writer, booleanValue.Value);
+            }
+            else if (value is SqlQueryResumeInfo.NumberResumeValue numberValue)
+            {
+                serializer.Serialize(writer, numberValue.Value);
+            }
+            else if (value is SqlQueryResumeInfo.StringResumeValue stringValue)
+            {
+                serializer.Serialize(writer, stringValue.Value.ToString());
+            }
+            else if (value is SqlQueryResumeInfo.ArrayResumeValue arrayValue)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("type");
+                writer.WriteValue("array");
+                writer.WritePropertyName("low");
+                writer.WriteValue(arrayValue.HashValue.GetLow());
+                writer.WritePropertyName("high");
+                writer.WriteValue(arrayValue.HashValue.GetHigh());
+                writer.WriteEndObject();
+            }
+            else if (value is SqlQueryResumeInfo.ObjectResumeValue objectValue)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("type");
+                writer.WriteValue("object");
+                writer.WritePropertyName("low");
+                writer.WriteValue(objectValue.HashValue.GetLow());
+                writer.WritePropertyName("high");
+                writer.WriteValue(objectValue.HashValue.GetHigh());
+                writer.WriteEndObject();
+            }
         }
 
         /// <summary>

@@ -149,6 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                     parallelContinuationToken,
                     new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", element} })) },
+                    resumeValues: null,
                     rid: "rid",
                     skipCount: 42,
                     filter: "filter");
@@ -188,6 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>(){ { "item1", element1 } })),
                             new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>(){ { "item2", element2 } }))
                         },
+                        resumeValues: null,
                         rid: "rid",
                         skipCount: 42,
                         filter: "filter");
@@ -236,6 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     OrderByContinuationToken orderByContinuationToken1 = new OrderByContinuationToken(
                         parallelContinuationToken1,
                         new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", element1 } })) },
+                        resumeValues: null,
                         rid: "rid",
                         skipCount: 42,
                         filter: "filter");
@@ -247,6 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     OrderByContinuationToken orderByContinuationToken2 = new OrderByContinuationToken(
                         parallelContinuationToken2,
                         new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", element2 } })) },
+                        resumeValues: null,
                         rid: "rid",
                         skipCount: 42,
                         filter: "filter");
@@ -291,12 +295,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 additionalHeaders: default,
                 state: default);
 
-            string expectedQuerySpec = "SELECT * FROM c WHERE ( c._ts >= 1665482200 OR IS_STRING(c._ts) OR IS_ARRAY(c._ts) OR IS_OBJECT(c._ts) ) ORDER BY c._ts";
+            string expectedQuerySpec = "SELECT * FROM c WHERE true ORDER BY c._ts";
             Mock<IDocumentContainer> mockContainer = new Mock<IDocumentContainer>(MockBehavior.Strict);
             mockContainer
                 .Setup(
                 c => c.MonadicQueryAsync(
-                    It.Is<SqlQuerySpec>(sqlQuerySpec => expectedQuerySpec.Equals(sqlQuerySpec.QueryText)),
+                    It.Is<SqlQuerySpec>(sqlQuerySpec => expectedQuerySpec.Equals(sqlQuerySpec.QueryText) && sqlQuerySpec.ResumeInfo.ResumeValues.Count == 1),
                     It.IsAny<FeedRangeState<QueryState>>(),
                     It.IsAny<QueryPaginationOptions>(),
                     NoOpTrace.Singleton,

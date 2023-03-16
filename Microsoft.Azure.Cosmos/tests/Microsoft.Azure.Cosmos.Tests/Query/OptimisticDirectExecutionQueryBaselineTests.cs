@@ -93,6 +93,7 @@
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                     parallelContinuationToken,
                     new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", CosmosString.Create("asdf") } })) },
+                    resumeValues: null,
                     rid: "43223532",
                     skipCount: 42,
                     filter: "filter");

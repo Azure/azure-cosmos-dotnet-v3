@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                 parallelContinuationToken,
                 orderByItems,
+                resumeValues: null,
                 rid,
                 skipCount,
                 filter);
@@ -137,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query
             sb.Clear();
             element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
-                $@"{{""item"":C_Guid(""{guid.ToString()}""),""item2"":C_Binary(""0x{hexString}"")}}",
+                $@"{{""item"":C_Guid(""{guid}""),""item2"":C_Binary(""0x{hexString}"")}}",
                 sb.ToString());
 
             // deeply nested arrays and objects
@@ -166,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Query
             sb.Clear();
             element.Accept(new CosmosElementToQueryLiteral(sb));
             Assert.AreEqual(
-                $@"{{""item"":C_Guid(""{guid.ToString()}""),""item2"":[],""item3"":{{}},""item4"":[{{""a"":C_Int8(3),""b"":""adf""}},C_Int16(25)]}}",
+                $@"{{""item"":C_Guid(""{guid}""),""item2"":[],""item3"":{{}},""item4"":[{{""a"":C_Int8(3),""b"":""adf""}},C_Int16(25)]}}",
                 sb.ToString());
         }
     }
