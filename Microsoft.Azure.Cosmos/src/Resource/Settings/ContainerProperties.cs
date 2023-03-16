@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        /// <param name="partitionKeyPaths">The path to the partition key. Example: /location</param>
+        /// <param name="partitionKeyPaths">The paths of a mulihashed partition key. Example: ["/state", "/city"]</param>
         public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
         {
             this.Id = id;
@@ -341,6 +341,11 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
+                if (this.PartitionKey?.Kind == PartitionKind.MultiHash && this.PartitionKey?.Paths.Count > 1)
+                {
+                    throw new NotImplementedException($"This MultiHash collection has more than 1 partition key path please use `PartitionKeyPaths`");
+                }
+
                 return this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
             }
             set
@@ -365,7 +370,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// JSON path used for containers partitioning
+        /// List of JSON paths used for containers with subpartitioning
         /// </summary>
         [JsonIgnore]
         public IReadOnlyList<string> PartitionKeyPaths
