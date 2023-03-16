@@ -139,21 +139,25 @@ namespace Microsoft.Azure.Cosmos
                 maxConnectionsPerSercerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit, null);
 
                 if (serverCertificateCustomValidationCallback != null)
-                {
-                    Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> customCertificateValidationCallback =
-                        (_, certificate2, x509Chain, sslPolicyErrors) => serverCertificateCustomValidationCallback(
-                                certificate2,
-                                x509Chain,
-                                sslPolicyErrors);
-
+                {                     
+                    //Get SslOptions Property
                     PropertyInfo sslOptionsInfo = socketHandlerType.GetProperty("SslOptions");
                     object sslOptions = sslOptionsInfo.GetValue(socketHttpHandler, null);
-                    PropertyInfo remoteCertificateValidationCallbackInfo = sslOptions.GetType().GetProperty("RemoteCertificateValidationCallback");
-                    remoteCertificateValidationCallbackInfo.SetValue(sslOptions, customCertificateValidationCallback, null);
 
-                    sslOptionsInfo.SetValue(socketHttpHandler,
-                        customCertificateValidationCallback,
+                    //Set SslOptions Property with custom certificate validation
+                    PropertyInfo remoteCertificateValidationCallbackInfo = sslOptions.GetType().GetProperty("RemoteCertificateValidationCallback");
+                    remoteCertificateValidationCallbackInfo.SetValue(
+                        sslOptions,
+                        new RemoteCertificateValidationCallback((object _, X509Certificate certificate, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors) => serverCertificateCustomValidationCallback(
+                                certificate is { } ? new X509Certificate2(certificate) : null,
+                                x509Chain,
+                                sslPolicyErrors)),
                         null);
+
+                    ////set SslOptions value
+                    //sslOptionsInfo.SetValue(socketHttpHandler,
+                    //    sslOptions,
+                    //    null);
                 }
             }
             // MaxConnectionsPerServer is not supported on some platforms.
