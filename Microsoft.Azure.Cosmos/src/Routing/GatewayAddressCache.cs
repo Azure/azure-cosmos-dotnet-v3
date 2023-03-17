@@ -387,7 +387,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public void TryRemoveAddresses(
+        /// <summary>
+        /// Marks the <see cref="TransportAddressUri"/> to Unhealthy that matches with the faulted
+        /// server key.
+        /// </summary>
+        /// <param name="serverKey">An instance of <see cref="ServerKey"/> that contains the host and
+        /// port of the backend replica.</param>
+        public async Task MarkAddressesToUnhealthyAsync(
             ServerKey serverKey)
         {
             if (serverKey == null)
@@ -395,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(serverKey));
             }
 
-            if (this.serverPartitionAddressToPkRangeIdMap.TryRemove(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
+            if (this.serverPartitionAddressToPkRangeIdMap.TryGetValue(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
             {
                 PartitionKeyRangeIdentity[] pkRangeIdsCopy;
                 lock (pkRangeIds)
@@ -405,12 +411,29 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIdsCopy)
                 {
-                    DefaultTrace.TraceInformation("Remove addresses for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}",
-                       pkRangeId.CollectionRid,
-                       pkRangeId.PartitionKeyRangeId,
-                       this.serviceEndpoint);
+                    PartitionAddressInformation addressInfo = await this.serverPartitionAddressCache.GetAsync(
+                       key: pkRangeId,
+                       singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
+                           null,
+                           cachedAddresses: null,
+                           pkRangeId.CollectionRid,
+                           pkRangeId.PartitionKeyRangeId,
+                           forceRefresh: false),
+                       forceRefresh: (_) => false);
 
-                    this.serverPartitionAddressCache.TryRemove(pkRangeId);
+                    IReadOnlyList<TransportAddressUri> transportAddresses = addressInfo.Get(Protocol.Tcp)?.ReplicaTransportAddressUris;
+                    foreach (TransportAddressUri address in from TransportAddressUri transportAddress in transportAddresses
+                                                            where serverKey.Equals(transportAddress.ReplicaServerKey)
+                                                            select transportAddress)
+                    {
+                        DefaultTrace.TraceInformation("Marking a backend replica to Unhealthy for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}, transportAddress: {3}",
+                           pkRangeId.CollectionRid,
+                           pkRangeId.PartitionKeyRangeId,
+                           this.serviceEndpoint,
+                           address.ToString());
+
+                        address.SetUnhealthy();
+                    }
                 }
             }
         }
