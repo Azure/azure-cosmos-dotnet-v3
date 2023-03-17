@@ -4,22 +4,20 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
     using System;
-    using System.Net.Http;
-    using System.Net;
-    using System.Threading;
-    using System.IO;
-    using System.Net.Sockets;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Net;
+    using System.Net.Http;
+    using System.Net.Security;
+    using System.Security.Cryptography;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
-    using System.Net.Security;
-    using System.Security.Cryptography.X509Certificates;
-    using FluentAssertions;
-    using System.Security.Cryptography;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class CosmosHttpClientCoreTests

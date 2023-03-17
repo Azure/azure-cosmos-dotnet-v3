@@ -920,30 +920,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Type clientMessageHandlerType = cosmosClient.ClientContext.DocumentClient.httpClient.HttpMessageHandler.GetType();
             Assert.AreEqual(socketHandlerType, clientMessageHandlerType);
         }
-
-        [TestMethod]
-        public void CustomCertificateValidatorTest()
-        {
-            //Create Cosmos Client
-            using CosmosClient cosmosClient = new CosmosClient(
-                accountEndpoint: "https://localhost:8081",
-                authKeyOrResourceToken: Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
-                new CosmosClientOptions()
-                {
-                    ServerCertificateCustomValidationCallback = (X509Certificate2 cerf, X509Chain chain, SslPolicyErrors error) => false
-                });
-
-            CosmosClientContext context = ClientContextCore.Create(
-                    cosmosClient,
-                    cosmosClient.ClientOptions);
-
-            //Create cert for test
-            X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
-            X509Chain x509Chain = new X509Chain();
-            SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
-
-            Assert.IsFalse(context.DocumentClient.remoteCertificateValidationCallback(new object(), x509Certificate2, x509Chain, sslPolicyErrors));
-        }
        
         public static IReadOnlyList<string> GetActiveConnections()
         {
