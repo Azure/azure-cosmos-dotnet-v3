@@ -141,8 +141,8 @@ namespace Microsoft.Azure.Cosmos
             // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
             try
             {
-                PropertyInfo maxConnectionsPerSevcerInfo = socketHandlerType.GetProperty("MaxConnectionsPerServer");
-                maxConnectionsPerSevcerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);
+                PropertyInfo maxConnectionsPerServerInfo = socketHandlerType.GetProperty("MaxConnectionsPerServer");
+                maxConnectionsPerServerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);
 
                 if (serverCertificateCustomValidationCallback != null)
                 {                     
