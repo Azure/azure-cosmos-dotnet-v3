@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
         private const int defaultMediaRequestTimeout = 300;
         private const int defaultMaxConcurrentFanoutRequests = 32;
         private const int defaultMaxConcurrentConnectionLimit = 50;
+        private const int defaultPooledConnectionLifetime = 5;
 
         internal UserAgentContainer UserAgentContainer;
         private static ConnectionPolicy defaultPolicy;
@@ -50,6 +51,7 @@ namespace Microsoft.Azure.Cosmos
             this.EnableReadRequestsFallback = null;
             this.EnableClientTelemetry = ClientTelemetryOptions.IsClientTelemetryEnabled();
             this.ServerCertificateCustomValidationCallback = null;
+            this.PooledConnectionLifetime = TimeSpan.FromMinutes(defaultPooledConnectionLifetime);
         }
 
         /// <summary>
@@ -106,6 +108,20 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>Default value is 10 seconds.</value>
         public TimeSpan RequestTimeout
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets the pooled connection timeout in minutes when connected to the Azure Cosmos DB service.
+        /// This property defines maximal connection lifetime in the pool, tracking its age from when the connection was established, 
+        /// regardless of how much time it spent idle or active. Connections are not torn down while actively being used to service requests. 
+        /// This lifetime is useful in order to allow connections to be reestablished periodically so as to better reflect DNS or other network changes.
+        /// This value is only used in .NET version 6.0 and above.
+        /// </summary>
+        /// <value>Default value is 5 minutes.</value>
+        public TimeSpan PooledConnectionLifetime
         {
             get;
             set;

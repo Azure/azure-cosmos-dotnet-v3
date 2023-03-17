@@ -421,12 +421,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             IWebProxy webProxy = null;
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback = (certificate2, x509Chain, sslPolicyErrors) => false;
 
-            HttpMessageHandler handler = CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayLimit, webProxy, serverCertificateCustomValidationCallback);
+            HttpMessageHandler handler = CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(
+                gatewayLimit, 
+                webProxy, 
+                serverCertificateCustomValidationCallback, 
+                TimeSpan.FromMinutes(10));
 
             Assert.AreEqual(Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http"), handler.GetType());
             SocketsHttpHandler socketsHandler = (SocketsHttpHandler)handler;
             
-            Assert.AreEqual(TimeSpan.FromMinutes(5), socketsHandler.PooledConnectionLifetime);
+            Assert.AreEqual(TimeSpan.FromMinutes(10), socketsHandler.PooledConnectionLifetime);
             Assert.AreEqual(webProxy, socketsHandler.Proxy);
             Assert.AreEqual(gatewayLimit, socketsHandler.MaxConnectionsPerServer);
 

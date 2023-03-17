@@ -55,6 +55,8 @@ namespace Microsoft.Azure.Cosmos
 
         private const ApiType DefaultApiType = ApiType.None;
 
+        private const int DefaultPooledConnectionLifetime = 5;
+
         /// <summary>
         /// Default request timeout
         /// </summary>
@@ -85,6 +87,7 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
+            this.PooledConnectionLifetime = TimeSpan.FromMinutes(CosmosClientOptions.DefaultPooledConnectionLifetime);
         }
 
         /// <summary>
@@ -226,6 +229,17 @@ namespace Microsoft.Azure.Cosmos
         /// <value>Default value is 1 minute.</value>
         /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
         public TimeSpan RequestTimeout { get; set; }
+
+        /// <summary>
+        /// Gets the pooled connection timeout in minutes when connected to the Azure Cosmos DB service.
+        /// This property defines maximal connection lifetime in the pool, tracking its age from when the connection was established, 
+        /// regardless of how much time it spent idle or active. Connections are not torn down while actively being used to service requests. 
+        /// This lifetime is useful in order to allow connections to be reestablished periodically so as to better reflect DNS or other network changes.
+        /// This value is only used in .NET version 6.0 and above.
+        /// </summary>
+        /// <value>Default value is 5 minutes.</value>
+        /// <seealso href="https://learn.microsoft.com/en-us/dotnet/api/system.net.http.socketshttphandler.pooledconnectionlifetime?view=net-8.0"/>       
+        public TimeSpan PooledConnectionLifetime { get; set; }
 
         /// <summary>
         /// The SDK does a background refresh based on the time interval set to refresh the token credentials.
