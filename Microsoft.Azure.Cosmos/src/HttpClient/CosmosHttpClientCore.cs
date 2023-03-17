@@ -103,6 +103,7 @@ namespace Microsoft.Azure.Cosmos
             IWebProxy webProxy, 
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
+            // TODO: Remove type check and use #if NET6_0_OR_GREATER when multitargetting is possible
             Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
 
             if (socketHandlerType != null)
@@ -113,11 +114,12 @@ namespace Microsoft.Azure.Cosmos
             return CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
         }
 
-        private static HttpMessageHandler CreateSocketsHttpHandlerHelper(
+        public static HttpMessageHandler CreateSocketsHttpHandlerHelper(
             int gatewayModeMaxConnectionLimit, 
             IWebProxy webProxy, 
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
+            // TODO: Remove Reflection when multitargetting is possible
             Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
 
             object socketHttpHandler = Activator.CreateInstance(socketHandlerType);
@@ -129,20 +131,20 @@ namespace Microsoft.Azure.Cosmos
             if (webProxy != null)
             {
                 PropertyInfo webProxyInfo = socketHandlerType.GetProperty("Proxy");
-                webProxyInfo.SetValue(socketHttpHandler, webProxy, null);
+                webProxyInfo.SetValue(socketHttpHandler, webProxy);
             }
 
             // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
             try
             {
-                PropertyInfo maxConnectionsPerSercerInfo = socketHandlerType.GetProperty("MaxConnectionsPerServer");
-                maxConnectionsPerSercerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit, null);
+                PropertyInfo maxConnectionsPerSevcerInfo = socketHandlerType.GetProperty("MaxConnectionsPerServer");
+                maxConnectionsPerSevcerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);
 
                 if (serverCertificateCustomValidationCallback != null)
                 {                     
                     //Get SslOptions Property
                     PropertyInfo sslOptionsInfo = socketHandlerType.GetProperty("SslOptions");
-                    object sslOptions = sslOptionsInfo.GetValue(socketHttpHandler, null);
+                    object sslOptions = sslOptionsInfo.GetValue(socketHttpHandler);
 
                     //Set SslOptions Property with custom certificate validation
                     PropertyInfo remoteCertificateValidationCallbackInfo = sslOptions.GetType().GetProperty("RemoteCertificateValidationCallback");
@@ -151,13 +153,7 @@ namespace Microsoft.Azure.Cosmos
                         new RemoteCertificateValidationCallback((object _, X509Certificate certificate, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors) => serverCertificateCustomValidationCallback(
                                 certificate is { } ? new X509Certificate2(certificate) : null,
                                 x509Chain,
-                                sslPolicyErrors)),
-                        null);
-
-                    ////set SslOptions value
-                    //sslOptionsInfo.SetValue(socketHttpHandler,
-                    //    sslOptions,
-                    //    null);
+                                sslPolicyErrors)));                   
                 }
             }
             // MaxConnectionsPerServer is not supported on some platforms.
@@ -168,7 +164,7 @@ namespace Microsoft.Azure.Cosmos
             return (HttpMessageHandler)socketHttpHandler;
         }
 
-        private static HttpMessageHandler CreateHttpClientHandlerHelper(
+        public static HttpMessageHandler CreateHttpClientHandlerHelper(
             int gatewayModeMaxConnectionLimit, 
             IWebProxy webProxy, 
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)

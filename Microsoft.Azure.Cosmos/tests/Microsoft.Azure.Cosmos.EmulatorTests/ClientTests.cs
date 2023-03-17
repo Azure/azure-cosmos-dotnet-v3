@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 catch (JsonReaderException ex)
                 {
                     Console.WriteLine("Expected exception while deserializing Resource: " + ex.Message);
-                }              
+                }
             }
         }
 
