@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
                 clientOptions.GatewayModeMaxConnectionLimit,
                 clientOptions.WebProxy,
                 clientOptions.ServerCertificateCustomValidationCallback,
-                clientOptions.PooledConnectionLifetime);
+                clientOptions.HttpConnectionLifetime);
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,

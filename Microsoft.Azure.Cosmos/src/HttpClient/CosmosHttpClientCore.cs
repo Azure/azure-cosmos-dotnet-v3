@@ -44,8 +44,7 @@ namespace Microsoft.Azure.Cosmos
             ConnectionPolicy connectionPolicy,
             HttpMessageHandler httpMessageHandler,
             EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
-            EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs,
-            TimeSpan pooledConnectionLifetime)
+            EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs)
         {
             if (connectionPolicy == null)
             {
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
                         gatewayModeMaxConnectionLimit: connectionPolicy.MaxConnectionLimit,
                         webProxy: null,
                         serverCertificateCustomValidationCallback: connectionPolicy.ServerCertificateCustomValidationCallback,
-                        connectionPolicy.PooledConnectionLifetime);
+                        connectionPolicy.HttpConnectionLifetime);
             }
 
             if (sendingRequestEventArgs != null ||
@@ -104,14 +103,14 @@ namespace Microsoft.Azure.Cosmos
             int gatewayModeMaxConnectionLimit, 
             IWebProxy webProxy, 
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback,
-            TimeSpan pooledConnectionLifetime)
+            TimeSpan httpConnectionLifetime)
         {
             // TODO: Remove type check and use #if NET6_0_OR_GREATER when multitargetting is possible
             Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
 
             if (socketHandlerType != null)
             {
-                return CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback, pooledConnectionLifetime);
+                return CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback, httpConnectionLifetime);
             }
             
             return CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
@@ -121,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
             int gatewayModeMaxConnectionLimit, 
             IWebProxy webProxy, 
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback,
-            TimeSpan pooledConnectionLifetime)
+            TimeSpan httpConnectionLifetime)
         {
             // TODO: Remove Reflection when multitargetting is possible
             Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
@@ -129,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
             object socketHttpHandler = Activator.CreateInstance(socketHandlerType);
 
             PropertyInfo pooledConnectionLifetimeInfo = socketHandlerType.GetProperty("PooledConnectionLifetime");
-            pooledConnectionLifetimeInfo.SetValue(socketHttpHandler, pooledConnectionLifetime, null);
+            pooledConnectionLifetimeInfo.SetValue(socketHttpHandler, httpConnectionLifetime);
 
             // Proxy is only set by users and can cause not supported exception on some platforms
             if (webProxy != null)

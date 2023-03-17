@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
         private const int defaultMediaRequestTimeout = 300;
         private const int defaultMaxConcurrentFanoutRequests = 32;
         private const int defaultMaxConcurrentConnectionLimit = 50;
-        private const int defaultPooledConnectionLifetime = 5;
+        private const int defaultHttpConnectionLifetime = 5;
 
         internal UserAgentContainer UserAgentContainer;
         private static ConnectionPolicy defaultPolicy;
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             this.EnableReadRequestsFallback = null;
             this.EnableClientTelemetry = ClientTelemetryOptions.IsClientTelemetryEnabled();
             this.ServerCertificateCustomValidationCallback = null;
-            this.PooledConnectionLifetime = TimeSpan.FromMinutes(defaultPooledConnectionLifetime);
+            this.HttpConnectionLifetime = TimeSpan.FromMinutes(defaultHttpConnectionLifetime);
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
         /// This value is only used in .NET version 6.0 and above.
         /// </summary>
         /// <value>Default value is 5 minutes.</value>
-        public TimeSpan PooledConnectionLifetime
+        public TimeSpan HttpConnectionLifetime
         {
             get;
             set;

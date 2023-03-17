@@ -924,8 +924,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy,
                 handler,
                 this.sendingRequest,
-                this.receivedResponse,
-                this.ConnectionPolicy.PooledConnectionLifetime);
+                this.receivedResponse);
 
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);

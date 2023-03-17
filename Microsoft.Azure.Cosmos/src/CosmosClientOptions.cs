@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
 
         private const ApiType DefaultApiType = ApiType.None;
 
-        private const int DefaultPooledConnectionLifetime = 5;
+        private const int DefaultHttpConnectionLifetime = 5;
 
         /// <summary>
         /// Default request timeout
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
-            this.PooledConnectionLifetime = TimeSpan.FromMinutes(CosmosClientOptions.DefaultPooledConnectionLifetime);
+            this.HttpConnectionLifetime = TimeSpan.FromMinutes(CosmosClientOptions.DefaultHttpConnectionLifetime);
         }
 
         /// <summary>
@@ -232,14 +232,16 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets or sets the HTTP pooled connection lifetime when connected to the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
         /// This property defines maximal connection lifetime in the pool, tracking its age from when the connection was established, 
         /// regardless of how much time it spent idle or active. Connections are not torn down while actively being used to service requests. 
         /// This lifetime is useful in order to allow connections to be reestablished periodically so as to better reflect DNS or other network changes.
         /// This value is only used in .NET version 6.0 and above.
-        /// </summary>
+        /// </remarks>
         /// <value>Default value is 5 minutes.</value>
-        /// <seealso href="https://learn.microsoft.com/en-us/dotnet/api/system.net.http.socketshttphandler.pooledconnectionlifetime?view=net-8.0"/>       
-        public TimeSpan PooledConnectionLifetime { get; set; }
+        /// <seealso href="https://learn.microsoft.com/dotnet/fundamentals/networking/http/httpclient-guidelines#dns-behavior"/>       
+        public TimeSpan HttpConnectionLifetime { get; set; }
 
         /// <summary>
         /// The SDK does a background refresh based on the time interval set to refresh the token credentials.

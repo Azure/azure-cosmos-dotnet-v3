@@ -54,8 +54,7 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy: connectionPolicy,
                 httpMessageHandler: null,
                 sendingRequestEventArgs: null,
-                receivedResponseEventArgs: null,
-                pooledConnectionLifetime: TimeSpan.FromMinutes(5));
+                receivedResponseEventArgs: null);
 
             Assert.IsNotNull(httpClient);
             HttpResponseMessage response = await httpClient.GetAsync(
@@ -88,8 +87,7 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy: connectionPolicy,
                 httpMessageHandler: null,
                 sendingRequestEventArgs: null,
-                receivedResponseEventArgs: null,
-                pooledConnectionLifetime: TimeSpan.FromMinutes(5));
+                receivedResponseEventArgs: null);
 
             Assert.IsNotNull(httpClient);
 
