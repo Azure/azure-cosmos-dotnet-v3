@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan RequestTimeout { get; set; }
 
         /// <summary>
-        /// Gets the pooled connection timeout in minutes when connected to the Azure Cosmos DB service.
+        /// Gets or sets the HTTP pooled connection lifetime when connected to the Azure Cosmos DB service.
         /// This property defines maximal connection lifetime in the pool, tracking its age from when the connection was established, 
         /// regardless of how much time it spent idle or active. Connections are not torn down while actively being used to service requests. 
         /// This lifetime is useful in order to allow connections to be reestablished periodically so as to better reflect DNS or other network changes.
