@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
                         gatewayModeMaxConnectionLimit: connectionPolicy.MaxConnectionLimit,
                         webProxy: null,
                         serverCertificateCustomValidationCallback: connectionPolicy.ServerCertificateCustomValidationCallback,
-                        pooledConnectionLifetime);
+                        connectionPolicy.PooledConnectionLifetime);
             }
 
             if (sendingRequestEventArgs != null ||
