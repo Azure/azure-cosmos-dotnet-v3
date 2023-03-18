@@ -411,15 +411,37 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         this.uninitializedEnumeratorsAndTokens.Enqueue((currentEnumerator, (OrderByContinuationToken)null));
 
                         // Use the token for the next page, since we fully drained the enumerator.
-                        OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                            new ParallelContinuationToken(
-                                token: ((CosmosString)currentEnumerator.FeedRangeState.State.Value).Value,
-                                range: ((FeedRangeEpk)currentEnumerator.FeedRangeState.FeedRange).Range),
-                            orderByQueryResult.OrderByItems,
-                            resumeValues: null,
-                            orderByQueryResult.Rid,
-                            skipCount: 0,
-                            filter: currentEnumerator.Filter);
+                        OrderByContinuationToken orderByContinuationToken;
+                        if (HasNonJsonTypes(orderByQueryResult.OrderByItems))
+                        {
+                            orderByContinuationToken = new OrderByContinuationToken(
+                                new ParallelContinuationToken(
+                                    token: ((CosmosString)currentEnumerator.FeedRangeState.State.Value).Value,
+                                    range: ((FeedRangeEpk)currentEnumerator.FeedRangeState.FeedRange).Range),
+                                orderByQueryResult.OrderByItems,
+                                resumeValues: null,
+                                orderByQueryResult.Rid,
+                                skipCount: 0,
+                                filter: currentEnumerator.Filter);
+                        }
+                        else
+                        {
+                            List<ResumeValue> resumeValues = new List<ResumeValue>();
+                            foreach (OrderByItem orderByItem in orderByQueryResult.OrderByItems)
+                            {
+                                resumeValues.Add(orderByItem.Item.Accept(CosmosElementToResumeValueVisitor.Singleton));
+                            }
+
+                            orderByContinuationToken = new OrderByContinuationToken(
+                                new ParallelContinuationToken(
+                                    token: ((CosmosString)currentEnumerator.FeedRangeState.State.Value).Value,
+                                    range: ((FeedRangeEpk)currentEnumerator.FeedRangeState.FeedRange).Range),
+                                orderByItems: null,
+                                resumeValues,
+                                orderByQueryResult.Rid,
+                                skipCount: 0,
+                                filter: currentEnumerator.Filter);
+                        }
 
                         CosmosElement cosmosElementOrderByContinuationToken = OrderByContinuationToken.ToCosmosElement(orderByContinuationToken);
                         CosmosArray continuationTokenList = CosmosArray.Create(new List<CosmosElement>() { cosmosElementOrderByContinuationToken });
@@ -464,15 +486,37 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
             else
             {
-                OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                    new ParallelContinuationToken(
-                        token: currentEnumerator.StartOfPageState != null ? ((CosmosString)currentEnumerator.StartOfPageState.Value).Value : null,
-                        range: ((FeedRangeEpk)currentEnumerator.FeedRangeState.FeedRange).Range),
-                    orderByQueryResult.OrderByItems,
-                    resumeValues: null,
-                    orderByQueryResult.Rid,
-                    skipCount: skipCount,
-                    filter: currentEnumerator.Filter);
+                OrderByContinuationToken orderByContinuationToken;
+                if (HasNonJsonTypes(orderByQueryResult.OrderByItems))
+                {
+                    orderByContinuationToken = new OrderByContinuationToken(
+                        new ParallelContinuationToken(
+                            token: currentEnumerator.StartOfPageState != null ? ((CosmosString)currentEnumerator.StartOfPageState.Value).Value : null,
+                            range: ((FeedRangeEpk)currentEnumerator.FeedRangeState.FeedRange).Range),
+                        orderByQueryResult.OrderByItems,
+                        resumeValues: null,
+                        orderByQueryResult.Rid,
+                        skipCount: skipCount,
+                        filter: currentEnumerator.Filter);
+                }
+                else
+                {
+                    List<ResumeValue> resumeValues = new List<ResumeValue>();
+                    foreach (OrderByItem orderByItem in orderByQueryResult.OrderByItems)
+                    {
+                        resumeValues.Add(orderByItem.Item.Accept(CosmosElementToResumeValueVisitor.Singleton));
+                    }
+
+                    orderByContinuationToken = new OrderByContinuationToken(
+                        new ParallelContinuationToken(
+                            token: currentEnumerator.StartOfPageState != null ? ((CosmosString)currentEnumerator.StartOfPageState.Value).Value : null,
+                            range: ((FeedRangeEpk)currentEnumerator.FeedRangeState.FeedRange).Range),
+                        orderByItems: null,
+                        resumeValues,
+                        orderByQueryResult.Rid,
+                        skipCount: skipCount,
+                        filter: currentEnumerator.Filter);
+                }
 
                 CosmosElement cosmosElementOrderByContinuationToken = OrderByContinuationToken.ToCosmosElement(orderByContinuationToken);
                 CosmosArray continuationTokenList = CosmosArray.Create(new List<CosmosElement>() { cosmosElementOrderByContinuationToken });
@@ -758,7 +802,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             foreach (OrderByContinuationToken suppliedOrderByContinuationToken in orderByContinuationTokens)
             {
-                if (suppliedOrderByContinuationToken.OrderByItems.Count != numOrderByColumns)
+                int orderByCount = suppliedOrderByContinuationToken.ResumeValues != null ?
+                    suppliedOrderByContinuationToken.ResumeValues.Count : suppliedOrderByContinuationToken.OrderByItems.Count;
+
+                if (orderByCount != numOrderByColumns)
                 {
                     return TryCatch<List<OrderByContinuationToken>>.FromException(
                         new MalformedContinuationTokenException(
@@ -1031,9 +1078,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 resumeValues.Add(orderByItem.Accept(CosmosElementToResumeValueVisitor.Singleton));
             }
 
+            // NOTE: SkipCount == 0 indicates that backend continuation token needs to be used so resume info is not set for the target partition
             return (
                 new SqlQueryResumeInfo(true, null, resumeValues),
-                new SqlQueryResumeInfo(continuationToken.SkipCount == 0, continuationToken.Rid, resumeValues),
+                continuationToken.SkipCount == 0 ? null : new SqlQueryResumeInfo(false, continuationToken.Rid, resumeValues),
                 new SqlQueryResumeInfo(false, null, resumeValues)
             );
         }
@@ -1054,10 +1102,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     originalSpec.Parameters,
                     new SqlQueryResumeInfo(true, null, targetContinuationToken.ResumeValues));
 
+                // NOTE: SkipCount == 0 indicates that backend continuation token needs to be used so resume info is not set for the target partition
                 targetQuerySpec = new SqlQuerySpec(
                     originalSpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: TrueFilter),
                     originalSpec.Parameters,
-                    new SqlQueryResumeInfo(targetContinuationToken.SkipCount == 0, targetContinuationToken.Rid, targetContinuationToken.ResumeValues));
+                    targetContinuationToken.SkipCount == 0 ? null : new SqlQueryResumeInfo(false, targetContinuationToken.Rid, targetContinuationToken.ResumeValues));
 
                 rightQuerySpec = new SqlQuerySpec(
                     originalSpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: TrueFilter),
@@ -1077,23 +1126,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 }
 
                 // Check if the order by items have any C* types
-                bool nonJsonType = false;
-                foreach (CosmosElement orderByItem in orderByItems)
-                {
-                    if (!(orderByItem is CosmosUndefined
-                          || orderByItem is CosmosNull
-                          || orderByItem is CosmosBoolean
-                          || orderByItem is CosmosNumber
-                          || orderByItem is CosmosString
-                          || orderByItem is CosmosArray
-                          || orderByItem is CosmosObject))
-                    {
-                        nonJsonType = true;
-                        break;
-                    }
-                }
-
-                if (nonJsonType)
+                if (HasNonJsonTypes(targetContinuationToken.OrderByItems))
                 {
                     // If resume value contains a non-json type like CInt8, CGuid etc, we utilize the filter re-write logic for continuation
                     ReadOnlyMemory<(OrderByColumn, CosmosElement)> columnAndItems = orderByColumns.Zip(orderByItems, (column, item) => (column, item)).ToArray();
@@ -1139,6 +1172,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
 
             return (leftQuerySpec, targetQuerySpec, rightQuerySpec);
+        }
+
+        private static bool HasNonJsonTypes(IReadOnlyList<OrderByItem> orderByItems)
+        {
+            foreach (OrderByItem orderByItem in orderByItems)
+            {
+                if (!(orderByItem.Item is CosmosUndefined
+                      || orderByItem.Item is CosmosNull
+                      || orderByItem.Item is CosmosBoolean
+                      || orderByItem.Item is CosmosNumber
+                      || orderByItem.Item is CosmosString
+                      || orderByItem.Item is CosmosArray
+                      || orderByItem.Item is CosmosObject))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static async Task<TryCatch<(bool doneFiltering, int itemsLeftToSkip, TryCatch<OrderByQueryPage> monadicQueryByPage)>> FilterNextAsync(
@@ -1187,9 +1239,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 OrderByQueryResult orderByResult = new OrderByQueryResult(documents.Current);
                 for (int i = 0; (i < sortOrders.Count) && (sortOrderCompare == 0); ++i)
                 {
-                    sortOrderCompare = ItemComparer.Instance.Compare(
-                        continuationToken.OrderByItems[i].Item,
-                        orderByResult.OrderByItems[i].Item);
+                    sortOrderCompare = continuationToken.ResumeValues != null
+                        ? CompareResumeValue(orderByResult.OrderByItems[i].Item, continuationToken.ResumeValues[i])
+                        : ItemComparer.Instance.Compare(
+                            continuationToken.OrderByItems[i].Item,
+                            orderByResult.OrderByItems[i].Item);
 
                     if (sortOrderCompare != 0)
                     {
@@ -1255,6 +1309,63 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             // If we made it here it means we failed to find the resume order by item which is possible
             // if the user added documents inbetween continuations, so we need to yield and filter the next page of results also.
             return TryCatch<(bool, int, TryCatch<OrderByQueryPage>)>.FromResult((false, itemsToSkip, enumerator.Current));
+        }
+
+        private static int CompareResumeValue(CosmosElement orderByResult, ResumeValue resumeValue)
+        {
+            if (resumeValue is UndefinedResumeValue)
+            {
+                return ItemComparer.Instance.Compare(CosmosUndefined.Create(), orderByResult);
+            }
+            else if (resumeValue is NullResumeValue)
+            {
+                return ItemComparer.Instance.Compare(CosmosNull.Create(), orderByResult);
+            }
+            else if (resumeValue is BooleanResumeValue booleanValue)
+            {
+                return ItemComparer.Instance.Compare(CosmosBoolean.Create(booleanValue.Value), orderByResult);
+            }
+            else if (resumeValue is NumberResumeValue numberValue)
+            {
+                return ItemComparer.Instance.Compare(CosmosNumber64.Create(numberValue.Value), orderByResult);
+            }
+            else if (resumeValue is StringResumeValue stringValue)
+            {
+                return ItemComparer.Instance.Compare(CosmosString.Create(stringValue.Value), orderByResult);
+            }
+            else if (resumeValue is ArrayResumeValue arrayValue)
+            {
+                // If the order by result is also of array type, then compare the hash values
+                // For other types create an empty array and call CosmosElement comparer which
+                // will take care of ordering based on types.
+                if (orderByResult is CosmosArray arrayResult)
+                {
+                    return UInt128BinaryComparer.Singleton.Compare(arrayValue.HashValue, DistinctHash.GetHash(arrayResult));
+                }
+                else
+                {
+                    return ItemComparer.Instance.Compare(CosmosArray.Empty, orderByResult);
+                }
+            }
+            else if (resumeValue is ObjectResumeValue objectValue)
+            {
+                // If the order by result is also of object type, then compare the hash values
+                // For other types create an empty object and call CosmosElement comparer which
+                // will take care of ordering based on types.
+                if (orderByResult is CosmosObject objectResult)
+                {
+                    // same type so compare the hash values
+                    return UInt128BinaryComparer.Singleton.Compare(objectValue.HashValue, DistinctHash.GetHash(objectResult));
+                }
+                else
+                {
+                    return ItemComparer.Instance.Compare(CosmosObject.Create(new Dictionary<string, CosmosElement>()), orderByResult);
+                }
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
         }
 
         private static bool IsSplitException(Exception exception)
@@ -1401,56 +1512,49 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosArray cosmosArray)
+            public ResumeValue Visit(CosmosArray cosmosArray)
             {
-                //if (cosmosArray.Count == 0)
-                //{
-                //    return new SqlQueryResumeInfo.UndefinedResumeValue();
-                //}
-                //else
-                //{
-                return new SqlQueryResumeInfo.ArrayResumeValue(DistinctHash.GetHash(cosmosArray));
-                //}
+                return new ArrayResumeValue(DistinctHash.GetHash(cosmosArray));
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosBinary cosmosBinary)
+            public ResumeValue Visit(CosmosBinary cosmosBinary)
             {
                 throw new NotSupportedException();
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosBoolean cosmosBoolean)
+            public ResumeValue Visit(CosmosBoolean cosmosBoolean)
             {
-                return new SqlQueryResumeInfo.BooleanResumeValue(cosmosBoolean.Value);
+                return new BooleanResumeValue(cosmosBoolean.Value);
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosGuid cosmosGuid)
+            public ResumeValue Visit(CosmosGuid cosmosGuid)
             {
                 throw new NotSupportedException();
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosNull cosmosNull)
+            public ResumeValue Visit(CosmosNull cosmosNull)
             {
-                return new SqlQueryResumeInfo.NullResumeValue();
+                return new NullResumeValue();
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosUndefined cosmosUndefined)
+            public ResumeValue Visit(CosmosUndefined cosmosUndefined)
             {
-                return new SqlQueryResumeInfo.UndefinedResumeValue();
+                return new UndefinedResumeValue();
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosNumber cosmosNumber)
+            public ResumeValue Visit(CosmosNumber cosmosNumber)
             {
-                return new SqlQueryResumeInfo.NumberResumeValue(cosmosNumber.Value);
+                return new NumberResumeValue(cosmosNumber.Value);
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosObject cosmosObject)
+            public ResumeValue Visit(CosmosObject cosmosObject)
             {
-                return new SqlQueryResumeInfo.ObjectResumeValue(DistinctHash.GetHash(cosmosObject));
+                return new ObjectResumeValue(DistinctHash.GetHash(cosmosObject));
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosString cosmosString)
+            public ResumeValue Visit(CosmosString cosmosString)
             {
-                return new SqlQueryResumeInfo.StringResumeValue(cosmosString.Value);
+                return new StringResumeValue(cosmosString.Value);
             }
         }
 
