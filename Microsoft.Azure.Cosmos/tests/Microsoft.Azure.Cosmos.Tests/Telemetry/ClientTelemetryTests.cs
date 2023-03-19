@@ -180,12 +180,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                             ClientTelemetryOptions.RequestLatencyMax,
                                                             ClientTelemetryOptions.RequestLatencyPrecision);
-                latency.RecordValue(10l);
+                latency.RecordValue(10);
 
                 LongConcurrentHistogram requestcharge = new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                             ClientTelemetryOptions.RequestChargeMax,
                                                             ClientTelemetryOptions.RequestChargePrecision);
-                requestcharge.RecordValue(11l);
+                requestcharge.RecordValue(11);
 
                 operationInfoSnapshot.TryAdd(opeInfo, (latency, requestcharge, 100));
             }
@@ -208,13 +208,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                             ClientTelemetryOptions.RequestLatencyMax,
                                                             ClientTelemetryOptions.RequestLatencyPrecision);
-                latency.RecordValue(10l);
+                latency.RecordValue(10);
 
                 cacheRefreshInfoSnapshot.TryAdd(crInfo, latency);
             }
 
-            ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoInfoSnapshot
-               = new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>();
+            List<RequestInfo> requestInfoList = new List<RequestInfo>();
             for (int i = 0; i < expectedRequestInfoSize; i++)
             {
                 RequestInfo reqInfo = new RequestInfo
@@ -228,19 +227,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                     SubStatusCode = 0
                 };
 
-                LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                            ClientTelemetryOptions.RequestLatencyMax,
-                                                            ClientTelemetryOptions.RequestLatencyPrecision);
-                latency.RecordValue(10l);
+                MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
 
-                requestInfoInfoSnapshot.TryAdd(reqInfo, latency);
+                LongConcurrentHistogram histogram = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                        ClientTelemetryOptions.RequestLatencyMax,
+                                                        ClientTelemetryOptions.RequestLatencyPrecision);
+                histogram.RecordValue(TimeSpan.FromMinutes(1).Ticks);
+                
+                metricInfo.SetAggregators(histogram, ClientTelemetryOptions.TicksToMsFactor);
+                reqInfo.Metrics.Add(metricInfo);
+
+                requestInfoList.Add(reqInfo); ;
             }
-
+            
             await processor.ProcessAndSendAsync(
                 clientTelemetryProperties,
                 operationInfoSnapshot,
                 cacheRefreshInfoSnapshot,
-                requestInfoInfoSnapshot,
+                requestInfoList,
                 new CancellationToken());
 
             Assert.AreEqual(expectedOperationInfoSize, actualOperationInfoSize, "Operation Info is not correct");

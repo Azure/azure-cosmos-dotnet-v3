@@ -195,6 +195,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
             ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
+
+            Console.WriteLine(createResponse.Diagnostics);
+            
             ToDoActivity testItemCreated = createResponse.Resource;
 
             // Read an Item

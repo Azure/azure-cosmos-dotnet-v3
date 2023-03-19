@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -37,7 +36,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly ClientTelemetryProcessor processor;
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
-
+        private readonly NetworkDataRecorder networkDataRecorder;
+        
         private readonly CancellationTokenSource cancellationTokenSource;
 
         private readonly GlobalEndpointManager globalEndpointManager;
@@ -49,9 +49,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoMap 
             = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
-
-        private ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoMap
-            = new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>();
 
         private int numberOfFailures = 0;
         
@@ -125,6 +122,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 preferredRegions: preferredRegions,
                 aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
 
+            this.networkDataRecorder = new NetworkDataRecorder();
+            
             this.cancellationTokenSource = new CancellationTokenSource();
         }
 
@@ -182,9 +181,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
                         = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
                     
-                    ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot
-                      = Interlocked.Exchange(ref this.requestInfoMap, new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>());
-                    
                     try
                     {
                         await this.processor
@@ -192,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                 clientTelemetryInfo: this.clientTelemetryInfo,
                                 operationInfoSnapshot: operationInfoSnapshot,
                                 cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
-                                requestInfoSnapshot: requestInfoSnapshot,
+                                requestInfoSnapshot: this.networkDataRecorder.GetRequests(),
                                 cancellationToken: this.cancellationTokenSource.Token);
 
                         this.numberOfFailures = 0;
@@ -298,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             // Record Network/Replica Information
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
-            this.RecordRntbdResponses(containerId, databaseId, summaryDiagnostics.StoreResponseStatistics.Value, out int droppedRequestCount);
+            this.networkDataRecorder.Record(summaryDiagnostics.StoreResponseStatistics.Value, databaseId, containerId);
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
 
@@ -339,29 +335,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex);
             }
-
-            droppedRequestCount = Interlocked.Increment(ref requestDropCount);
-        }
-
-        /// <summary>
-        /// Records and Sample RNTBD calls statistics
-        /// </summary>
-        /// <param name="containerId"></param>
-        /// <param name="databaseId"></param>
-        /// <param name="storeResponseStatistics"></param>
-        /// <param name="droppedRntbdRequestCount"></param>
-        private void RecordRntbdResponses(string containerId, string databaseId, List<StoreResponseStatistics> storeResponseStatistics, out int droppedRntbdRequestCount)
-        {
-            NetworkRequestSampler sampler = new NetworkRequestSampler(databaseId, containerId);
-
-            sampler.Sample(storeResponseStatistics, out droppedRntbdRequestCount, (storeStatistics, requestInfo) => 
-            {
-                LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                               ClientTelemetryOptions.RequestLatencyMax,
-                                                               ClientTelemetryOptions.RequestLatencyPrecision));
-                latencyHist.RecordValue(storeStatistics.RequestLatency.Ticks);
-            });
-            
         }
 
         /// <summary>

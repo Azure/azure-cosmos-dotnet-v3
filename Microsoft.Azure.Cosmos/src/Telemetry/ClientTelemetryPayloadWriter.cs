@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ClientTelemetryProperties properties,
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
-            ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
+            List<RequestInfo> sampledRequestInfo,
             Func<string, Task> callback)
         {
             if (properties == null)
@@ -108,21 +108,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             }
 
-            if (requestInfoSnapshot?.Any() == true)
+            if (sampledRequestInfo?.Any() == true)
             {
                 writer.WritePropertyName("requestInfo");
                 writer.WriteStartArray();
                 
-                foreach (KeyValuePair<RequestInfo, LongConcurrentHistogram> entry in requestInfoSnapshot)
+                foreach (RequestInfo entry in sampledRequestInfo)
                 {
                     long lengthNow = stringBuilder.Length;
-                    
-                    MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                    metricInfo.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
-                    
-                    RequestInfo payloadForLatency = entry.Key;
-                    payloadForLatency.Metrics.Add(metricInfo);
-                    string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
+                  
+                    string latencyMetrics = JsonConvert.SerializeObject(entry);
 
                     if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
                     {

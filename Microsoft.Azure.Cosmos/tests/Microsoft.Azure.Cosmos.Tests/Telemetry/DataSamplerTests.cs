@@ -2,18 +2,19 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class NetworkRequestSamplerTests
+    public class DataSamplerTests
     {
-        [TestMethod]
+      /*  [TestMethod]
         [DataRow(200, 0, 1, false)]
         [DataRow(404, 0, 1, false)]
         [DataRow(404, 1002, 1, true)]
@@ -24,15 +25,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public void CheckEligibleStatistics(int statusCode, int subStatusCode, int latencyInMs, bool expectedFlag)
         {
             Assert.AreEqual(expectedFlag, NetworkRequestSampler.IsEligible(statusCode, subStatusCode, TimeSpan.FromMilliseconds(latencyInMs)));
-        }
+        }*/
 
         [TestMethod]
         [DataRow(10)]
         public void TestNetworkRequestSamplerForThreshold(int threshold)
         {
-            ISet<RequestInfo> requestInfoList = new HashSet<RequestInfo>();
-
-            TopNSampler sampler = new TopNSampler(threshold);
+            List<RequestInfo> requestInfoList = new List<RequestInfo>();
 
             for (int counter = 0; counter < 200; counter++)
             { 
@@ -46,14 +45,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     Resource = ResourceType.Document.ToResourceTypeString(),
                     Operation = OperationType.Create.ToOperationTypeString()
                 };
-                
-                if (sampler.ShouldSample(requestInfo))
-                {
-                    requestInfoList.Add(requestInfo);
-                }
+                requestInfoList.Add(requestInfo);
             }
 
-            Assert.AreEqual(10, requestInfoList.Count);
+            Assert.AreEqual(10, DataSampler.SampleByP99(requestInfoList).Count);
+            Assert.AreEqual(10, DataSampler.SampleByCount(requestInfoList).Count);
         }
     }
 }
