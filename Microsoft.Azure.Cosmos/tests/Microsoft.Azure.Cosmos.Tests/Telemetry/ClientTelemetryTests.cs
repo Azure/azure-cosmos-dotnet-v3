@@ -161,8 +161,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object))),
                 Mock.Of<AuthorizationTokenProvider>());
 
-            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedrequestCount)> operationInfoSnapshot 
-                = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedrequestCount)> ();
+            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
+                = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> ();
 
             int numberOfMetricsInOperatiionSection = 3;
             for (int i = 0; i < (expectedOperationInfoSize/ numberOfMetricsInOperatiionSection); i++)
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                             ClientTelemetryOptions.RequestChargePrecision);
                 requestcharge.RecordValue(11);
 
-                operationInfoSnapshot.TryAdd(opeInfo, (latency, requestcharge, 100));
+                operationInfoSnapshot.TryAdd(opeInfo, (latency, requestcharge));
             }
 
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot 

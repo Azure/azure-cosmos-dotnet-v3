@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         public static async Task SerializedPayloadChunksAsync(
             ClientTelemetryProperties properties,
-            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)> operationInfoSnapshot,
+            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
             List<RequestInfo> sampledRequestInfo,
             Func<string, Task> callback)
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             
             if (operationInfoSnapshot?.Any() == true)
             {
-                foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)> entry in operationInfoSnapshot)
+                foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in operationInfoSnapshot)
                 {
                     long lengthNow = stringBuilder.Length;
                     
@@ -46,19 +46,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
                     payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
                     payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
-
-                    OperationInfo payloadForDroppedRntbdRequests = payloadForLatency.Copy();
-                    payloadForRequestCharge.MetricInfo 
-                        = new MetricInfo(
-                                metricsName: ClientTelemetryOptions.DroppedRntbdRequestsName, 
-                                unitName: ClientTelemetryOptions.DroppedRntbdRequestsUnit, 
-                                count: entry.Value.droppedRequestCount);
                     
                     string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
                     string requestChargeMetrics = JsonConvert.SerializeObject(payloadForRequestCharge);
-                    string droppedRntbdRequestsMetrics = JsonConvert.SerializeObject(payloadForDroppedRntbdRequests);
 
-                    int thisSectionLength = latencyMetrics.Length + requestChargeMetrics.Length + droppedRntbdRequestsMetrics.Length;
+                    int thisSectionLength = latencyMetrics.Length + requestChargeMetrics.Length;
                     if (lengthNow + thisSectionLength > ClientTelemetryOptions.PayloadSizeThreshold)
                     {
                         writer.WriteEndArray();
@@ -71,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     writer.WriteRawValue(latencyMetrics);
                     writer.WriteRawValue(requestChargeMetrics);
-                    writer.WriteRawValue(droppedRntbdRequestsMetrics);
                 }
 
             }

@@ -14,19 +14,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     [TestClass]
     public class DataSamplerTests
     {
-      /*  [TestMethod]
-        [DataRow(200, 0, 1, false)]
-        [DataRow(404, 0, 1, false)]
-        [DataRow(404, 1002, 1, true)]
-        [DataRow(409, 0, 1, false)]
-        [DataRow(409, 1002, 1, true)]
-        [DataRow(503, 2001, 1, true)]
-        [DataRow(200, 0, 6, true)]
-        public void CheckEligibleStatistics(int statusCode, int subStatusCode, int latencyInMs, bool expectedFlag)
-        {
-            Assert.AreEqual(expectedFlag, NetworkRequestSampler.IsEligible(statusCode, subStatusCode, TimeSpan.FromMilliseconds(latencyInMs)));
-        }*/
-
         [TestMethod]
         [DataRow(10)]
         public void TestNetworkRequestSamplerForThreshold(int threshold)

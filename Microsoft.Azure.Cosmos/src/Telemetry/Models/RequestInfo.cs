@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         [JsonProperty("resource")]
         public string Resource { get; set; }
 
-        [JsonProperty("statusCode")] 
+        [JsonProperty("statusCode")]
         public int? StatusCode { get; set; }
 
         [JsonProperty("subStatusCode")]

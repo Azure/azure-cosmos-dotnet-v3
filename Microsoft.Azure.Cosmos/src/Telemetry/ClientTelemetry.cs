@@ -44,8 +44,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private Task telemetryTask;
 
-        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)> operationInfoMap 
-            = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)>();
+        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
+            = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
         private ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoMap 
             = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
@@ -175,8 +175,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         this.clientTelemetryInfo.IsDirectConnectionMode);
 
                     // Take the copy for further processing i.e. serializing and dividing into chunks
-                    ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)> operationInfoSnapshot
-                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int droppedRequestCount)>());
+                    ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
+                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
 
                     ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
                         = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
@@ -309,14 +309,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             statusCode: (int)statusCode,
                                             subStatusCode: (int)subStatusCode);
 
-            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge, int requestDropCount) = this.operationInfoMap
+            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
                                                         ClientTelemetryOptions.RequestLatencyPrecision),
                             requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                         ClientTelemetryOptions.RequestChargeMax,
-                                                        ClientTelemetryOptions.RequestChargePrecision),
-                            droppedRequestCount: 0));
+                                                        ClientTelemetryOptions.RequestChargePrecision)));
             try
             {
                 latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
