@@ -35,8 +35,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 requestInfoList.Add(requestInfo);
             }
 
-            Assert.AreEqual(10, DataSampler.SampleByP99(requestInfoList).Count);
-            Assert.AreEqual(10, DataSampler.SampleByCount(requestInfoList).Count);
+            Assert.AreEqual(10, DataSampler.SampleOrderByP99(requestInfoList).Count);
+            Assert.AreEqual(10, DataSampler.SampleOrderByCount(requestInfoList).Count);
         }
     }
 }

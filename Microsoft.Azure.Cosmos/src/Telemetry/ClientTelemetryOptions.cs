@@ -72,9 +72,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string IsThreadStarvingName = "SystemPool_IsThreadStarving_True";
         internal const string IsThreadStarvingUnit = "Count";
 
-        internal const string DroppedRntbdRequestsName = "DroppedRntbdRequests";
-        internal const string DroppedRntbdRequestsUnit = "Count";
-
         internal const double DefaultTimeStampInSeconds = 600;
         internal const double Percentile50 = 50.0;
         internal const double Percentile90 = 90.0;
@@ -92,6 +89,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
         // Why 5 sec? As of now, if any network request is taking more than 5 millisecond sec, we will consider it slow request this value can be revisited in future
         internal static readonly TimeSpan NetworkLatencyThreshold = TimeSpan.FromMilliseconds(5);
+        internal static readonly int NetworkRequestsSampleSizeThrehold = 10;
+        
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings 
         { 
             NullValueHandling = NullValueHandling.Ignore,

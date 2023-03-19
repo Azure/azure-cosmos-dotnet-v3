@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal sealed class DataSampler
     {
-        public static List<RequestInfo> SampleByP99(List<RequestInfo> requestInfoList, int numberOfObjects = 10)
+        public static List<RequestInfo> SampleOrderByP99(List<RequestInfo> requestInfoList)
         {
             return requestInfoList.GroupBy(r => new
             {
@@ -25,12 +25,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 r.SubStatusCode
             })
              .SelectMany(g => g.OrderByDescending(r => r.Metrics.FirstOrDefault(m => m.MetricsName == ClientTelemetryOptions.RequestLatencyName)?.Percentiles[ClientTelemetryOptions.Percentile99])
-                                .Take(10)
+                                .Take(ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold)
                                 .ToList())
              .ToList();
         }
 
-        public static List<RequestInfo> SampleByCount(List<RequestInfo> requestInfoList, int numberOfObjects = 10)
+        public static List<RequestInfo> SampleOrderByCount(List<RequestInfo> requestInfoList)
         {
             return requestInfoList.GroupBy(r => new
             {
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 r.SubStatusCode
             })
              .SelectMany(g => g.OrderByDescending(r => r.Metrics.FirstOrDefault(m => m.MetricsName == ClientTelemetryOptions.RequestLatencyName)?.Count)
-                                .Take(10)
+                                .Take(ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold))
                                 .ToList())
              .ToList();
         }
