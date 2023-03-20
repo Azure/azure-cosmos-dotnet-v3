@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             foreach (StoreResponseStatistics storeStatistics in storeResponseStatistics)
             {
-                if (NetworkDataRecorder
+                if (storeStatistics?.StoreResult?.StorePhysicalAddress != null && NetworkDataRecorder
                         .IsStatusCodeNotExcluded((int)storeStatistics.StoreResult.StatusCode, (int)storeStatistics.StoreResult.SubStatusCode))
                 {
                     if (NetworkDataRecorder.IsErrored(storeStatistics))
@@ -99,8 +99,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     DatabaseName = databaseId,
                     ContainerName = containerId,
                     Uri = storeResponseStatistic.StoreResult.StorePhysicalAddress.ToString(),
-                    StatusCode = (int)storeResponseStatistic.StoreResult.StatusCode,
-                    SubStatusCode = (int)storeResponseStatistic.StoreResult.SubStatusCode,
+                    StatusCode = (int)storeResponseStatistic.StoreResult?.StatusCode,
+                    SubStatusCode = (int)storeResponseStatistic.StoreResult?.SubStatusCode,
                     Resource = storeResponseStatistic.RequestResourceType.ToString(),
                     Operation = storeResponseStatistic.RequestOperationType.ToString(),
                 };
