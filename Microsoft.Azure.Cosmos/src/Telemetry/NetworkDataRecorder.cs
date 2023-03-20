@@ -22,8 +22,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             foreach (StoreResponseStatistics storeStatistics in storeResponseStatistics)
             {
-                if (storeStatistics?.StoreResult?.StorePhysicalAddress != null && NetworkDataRecorder
-                        .IsStatusCodeNotExcluded((int)storeStatistics.StoreResult.StatusCode, (int)storeStatistics.StoreResult.SubStatusCode))
+                if (NetworkDataRecorder.IsStatusCodeNotExcluded((int)storeStatistics.StoreResult.StatusCode, (int)storeStatistics.StoreResult.SubStatusCode))
                 {
                     if (NetworkDataRecorder.IsErrored(storeStatistics))
                     {
@@ -46,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
-        private List<RequestInfo> GetErroredRequests()
+        internal List<RequestInfo> GetErroredRequests()
         {
             ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoErrorList 
                 = Interlocked.Exchange(ref this.RequestInfoErrorBucket, new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>());
@@ -62,11 +61,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 requestInfoList.Add(payloadForLatency);
             }
-
+            
             return DataSampler.SampleOrderByP99(requestInfoList);
         }
         
-        private List<RequestInfo> GetHighLatencyRequests()
+        internal List<RequestInfo> GetHighLatencyRequests()
         {
             ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoHighLatencyList 
                 = Interlocked.Exchange(ref this.RequestInfoHighLatencyBucket, new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>());
@@ -92,13 +91,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return DataSampler.SampleOrderByCount(requestInfoList);
         }
 
-        private RequestInfo CreateRequestInfo(StoreResponseStatistics storeResponseStatistic, string databaseId, string containerId)
+        internal RequestInfo CreateRequestInfo(StoreResponseStatistics storeResponseStatistic, string databaseId, string containerId)
         {
             return new RequestInfo()
                 {
                     DatabaseName = databaseId,
                     ContainerName = containerId,
-                    Uri = storeResponseStatistic.StoreResult.StorePhysicalAddress.ToString(),
+                    Uri = storeResponseStatistic.StoreResult?.StorePhysicalAddress?.ToString(),
                     StatusCode = (int)storeResponseStatistic.StoreResult?.StatusCode,
                     SubStatusCode = (int)storeResponseStatistic.StoreResult?.SubStatusCode,
                     Resource = storeResponseStatistic.RequestResourceType.ToString(),

@@ -28,7 +28,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 new StoreResponseStatistics(
                      requestStartTime: DateTime.Now,
                      requestResponseTime: DateTime.Now.AddMilliseconds(10),
-                     storeResult: StoreResult.CreateForTesting(storeResponse: new StoreResponse()).Target,
+                     storeResult: StoreResult.CreateForTesting(storeResponse: new StoreResponse()
+                     {
+                         Status = 200
+                     }).Target,
+                     resourceType: Documents.ResourceType.Document,
+                     operationType: OperationType.Create,
+                     requestSessionToken: default,
+                     locationEndpoint: new Uri("https://dummy.url")),
+
+                 new StoreResponseStatistics(
+                     requestStartTime: DateTime.Now,
+                     requestResponseTime: DateTime.Now.AddMilliseconds(10),
+                     storeResult: StoreResult.CreateForTesting(storeResponse: new StoreResponse()
+                     {
+                         Status = 401
+                     }).Target,
                      resourceType: Documents.ResourceType.Document,
                      operationType: OperationType.Create,
                      requestSessionToken: default,
@@ -37,9 +52,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             recorder.Record(stats, "databaseId", "containerId");
 
-            Assert.AreEqual(1, recorder.GetRequests());
+            Assert.AreEqual(1, recorder.GetHighLatencyRequests().Count);
+            Assert.AreEqual(1, recorder.GetErroredRequests().Count);
 
-
+            // you can get the values only once
+            Assert.AreEqual(0, recorder.GetHighLatencyRequests().Count);
+            Assert.AreEqual(0, recorder.GetErroredRequests().Count);
         }
     }
 }

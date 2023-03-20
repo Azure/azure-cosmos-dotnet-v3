@@ -195,9 +195,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
             ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
-
-            Console.WriteLine(createResponse.Diagnostics);
-            
             ToDoActivity testItemCreated = createResponse.Resource;
 
             // Read an Item
@@ -950,29 +947,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 
                 Assert.AreEqual(expectedSubstatuscode, operation.SubStatusCode);
                 Assert.AreEqual(expectedConsistencyLevel?.ToString(), operation.Consistency, $"Consistency is not {expectedConsistencyLevel}");
-                
-                if (operation.MetricInfo != null)
+
+                Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
+                Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
+                Assert.IsNotNull(operation.MetricInfo.UnitName, "UnitName is null");
+                Assert.IsNotNull(operation.MetricInfo.Percentiles, "Percentiles is null");
+                Assert.IsTrue(operation.MetricInfo.Count > 0, "MetricInfo Count is not greater than 0");
+                Assert.IsTrue(operation.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
+                Assert.IsTrue(operation.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
+                Assert.IsTrue(operation.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
+                if (operation.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.RequestLatencyName)) // putting this condition to avoid doubling of count as we have same information for each metrics
                 {
-                    Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
-                    Assert.IsNotNull(operation.MetricInfo.UnitName, "UnitName is null");
-
-                    Assert.IsNotNull(operation.MetricInfo.Percentiles, "Percentiles is null");
-                    Assert.IsTrue(operation.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
-                    Assert.IsTrue(operation.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
-                    Assert.IsTrue(operation.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
-                    Assert.IsTrue(operation.MetricInfo.Count >= 0, "MetricInfo Count is not greater than or equal to 0");
-
-                    if (operation.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.RequestLatencyName)) // putting this condition to avoid doubling of count as we have same information for each metrics
+                    if (!actualOperationRecordCountMap.TryGetValue(operation.Operation.ToString(), out long recordCount))
                     {
-                        if (!actualOperationRecordCountMap.TryGetValue(operation.Operation.ToString(), out long recordCount))
-                        {
-                            actualOperationRecordCountMap.Add(operation.Operation.ToString(), operation.MetricInfo.Count);
-                        }
-                        else
-                        {
-                            actualOperationRecordCountMap.Remove(operation.Operation.ToString());
-                            actualOperationRecordCountMap.Add(operation.Operation.ToString(), recordCount + operation.MetricInfo.Count);
-                        }
+                        actualOperationRecordCountMap.Add(operation.Operation.ToString(), operation.MetricInfo.Count);
+                    }
+                    else
+                    {
+                        actualOperationRecordCountMap.Remove(operation.Operation.ToString());
+                        actualOperationRecordCountMap.Add(operation.Operation.ToString(), recordCount + operation.MetricInfo.Count);
                     }
                 }
             }
