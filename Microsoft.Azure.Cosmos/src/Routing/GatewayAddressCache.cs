@@ -438,28 +438,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task<PartitionAddressInformation> UpdateAsync(
-            PartitionKeyRangeIdentity partitionKeyRangeIdentity,
-            CancellationToken cancellationToken)
-        {
-            if (partitionKeyRangeIdentity == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKeyRangeIdentity));
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return await this.serverPartitionAddressCache.GetAsync(
-                       key: partitionKeyRangeIdentity,
-                       singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
-                           null,
-                           cachedAddresses: null,
-                           partitionKeyRangeIdentity.CollectionRid,
-                           partitionKeyRangeIdentity.PartitionKeyRangeId,
-                           forceRefresh: true),
-                       forceRefresh: (_) => true);
-        }
-
         private async Task<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> ResolveMasterAsync(DocumentServiceRequest request, bool forceRefresh)
         {
             Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterAddressAndRange = this.masterPartitionAddressCache;
