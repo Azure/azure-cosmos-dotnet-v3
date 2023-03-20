@@ -147,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                     string payloadJson = request.Content.ReadAsStringAsync().Result;
                     Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.PayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
 
+                    Console.WriteLine(payloadJson);
                     ClientTelemetryProperties propertiesToSend = JsonConvert.DeserializeObject<ClientTelemetryProperties>(payloadJson);
 
                     Assert.AreEqual(7, propertiesToSend.SystemInfo.Count, "System Info is not correct");
@@ -164,8 +165,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
                 = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> ();
 
-            int numberOfMetricsInOperatiionSection = 3;
-            for (int i = 0; i < (expectedOperationInfoSize/ numberOfMetricsInOperatiionSection); i++)
+            int numberOfMetricsInOperationSection = 2;
+            for (int i = 0; i < (expectedOperationInfoSize/ numberOfMetricsInOperationSection); i++)
             {
                 OperationInfo opeInfo = new OperationInfo(Regions.WestUS,
                                                         0,
