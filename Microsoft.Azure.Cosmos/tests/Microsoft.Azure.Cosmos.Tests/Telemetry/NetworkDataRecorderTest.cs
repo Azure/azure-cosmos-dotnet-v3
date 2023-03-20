@@ -26,16 +26,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             List<StoreResponseStatistics> stats = new List<StoreResponseStatistics>()
             {
                 new StoreResponseStatistics(
-                 requestStartTime: DateTime.Now,
-                 requestResponseTime: DateTime.Now.AddMilliseconds(10),
-                 storeResult: new StoreResult(),
-                 resourceType: Documents.ResourceType.Document,
-                 operationType: OperationType.Create,
-                 requestSessionToken: default,
-                 locationEndpoint: new Uri("https://dummy.url")
-            }
+                     requestStartTime: DateTime.Now,
+                     requestResponseTime: DateTime.Now.AddMilliseconds(10),
+                     storeResult: StoreResult.CreateForTesting(storeResponse: new StoreResponse()).Target,
+                     resourceType: Documents.ResourceType.Document,
+                     operationType: OperationType.Create,
+                     requestSessionToken: default,
+                     locationEndpoint: new Uri("https://dummy.url"))
+            };
 
-            recorder.Record(stats, "databaseId", "containerId")
+            recorder.Record(stats, "databaseId", "containerId");
 
             Assert.AreEqual(1, recorder.GetRequests());
 

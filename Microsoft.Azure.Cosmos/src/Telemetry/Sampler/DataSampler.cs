@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 r.SubStatusCode
             })
              .SelectMany(g => g.OrderByDescending(r => r.Metrics.FirstOrDefault(m => m.MetricsName == ClientTelemetryOptions.RequestLatencyName)?.Count)
-                                .Take(ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold))
+                                .Take(ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold)
                                 .ToList())
              .ToList();
         }
