@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -109,8 +110,11 @@ namespace Microsoft.Azure.Cosmos
         public async Task TestGatewayAddressCacheUpdateOnConnectionResetAsync()
         {
             FakeMessageHandler messageHandler = new FakeMessageHandler();
-            HttpClient httpClient = new HttpClient(messageHandler);
-            httpClient.Timeout = TimeSpan.FromSeconds(120);
+            HttpClient httpClient = new HttpClient(messageHandler)
+            {
+                Timeout = TimeSpan.FromSeconds(120)
+            };
+
             GatewayAddressCache cache = new GatewayAddressCache(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
                 Documents.Client.Protocol.Tcp,
@@ -131,7 +135,8 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla.com"));
 
             // Mark transport addresses to Unhealthy depcting a connection reset event.
-            await cache.MarkAddressesToUnhealthyAsync(new Documents.Rntbd.ServerKey(new Uri("https://blabla.com")));
+            ServerKey faultyServerKey = new (new Uri("https://blabla2.com"));
+            await cache.MarkAddressesToUnhealthyAsync(faultyServerKey);
 
             // check if the addresss is updated
             addresses = await cache.TryGetAddressesAsync(
@@ -141,12 +146,15 @@ namespace Microsoft.Azure.Cosmos
              false,
              CancellationToken.None);
 
-            // Validate that the above transport uri with host blabla.com has been marked Unhealthy.
-            IReadOnlyList<TransportAddressUri> transportAddressUris = addresses.Get(Protocol.Tcp)?.ReplicaTransportAddressUris;
-            foreach (TransportAddressUri transportAddressUri in transportAddressUris)
-            {
-                Assert.IsTrue(transportAddressUri.GetCurrentHealthState().GetHealthStatus().Equals(TransportAddressHealthState.HealthStatus.Unhealthy));
-            }
+            // Validate that the above transport uri with host blabla2.com has been marked Unhealthy.
+            IReadOnlyList<TransportAddressUri> transportAddressUris = addresses
+                .Get(Protocol.Tcp)?
+                .ReplicaTransportAddressUris;
+
+            TransportAddressUri transportAddressUri = transportAddressUris
+                .Single(x => x.ReplicaServerKey.Equals(faultyServerKey));
+
+            Assert.IsTrue(condition: transportAddressUri.GetCurrentHealthState().GetHealthStatus().Equals(TransportAddressHealthState.HealthStatus.Unhealthy));
         }
 
         [TestMethod]
