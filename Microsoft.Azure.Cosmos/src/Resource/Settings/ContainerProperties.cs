@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        /// <param name="partitionKeyPaths">The paths of a subpartitioned partition keys. Example: ["/state", "/city"]</param>
+        /// <param name="partitionKeyPaths">The paths of the hierarchical partition keys. Example: ["/tenantId", "/userId"]</param>
         public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
         {
             this.Id = id;
@@ -370,7 +370,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// List of JSON paths used for containers with subpartitioning
+        /// List of JSON paths used for containers with hierarchical partition keys
         /// </summary>
         [JsonIgnore]
         public IReadOnlyList<string> PartitionKeyPaths
