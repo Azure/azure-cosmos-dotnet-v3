@@ -126,18 +126,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return NetworkDataRecorder.IsUserOrServerError((int)storeStatistics.StoreResult.StatusCode);
         }
 
-        private static bool IsHighLatency(double latency)
+        internal static bool IsHighLatency(double latency)
         {
             return
                 latency >= ClientTelemetryOptions.NetworkLatencyThreshold.TotalMilliseconds;
         }
 
-        private static bool IsUserOrServerError(int statusCode)
+        internal static bool IsUserOrServerError(int statusCode)
         {
             return statusCode >= 400 && statusCode <= 599;
         }
 
-        private static bool IsStatusCodeNotExcluded(int statusCode, int subStatusCode)
+        internal static bool IsStatusCodeNotExcluded(int statusCode, int subStatusCode)
         {
             return !(ClientTelemetryOptions.ExcludedStatusCodes.Contains(statusCode) && subStatusCode == 0);
         }

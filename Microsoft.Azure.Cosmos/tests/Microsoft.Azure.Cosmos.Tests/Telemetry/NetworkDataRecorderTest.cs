@@ -59,5 +59,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             Assert.AreEqual(0, recorder.GetHighLatencyRequests().Count);
             Assert.AreEqual(0, recorder.GetErroredRequests().Count);
         }
+
+        [TestMethod]
+        [DataRow(200, 0, 1, false)]
+        [DataRow(404, 0, 1, false)]
+        [DataRow(404, 1002, 1, true)]
+        [DataRow(409, 0, 1, false)]
+        [DataRow(409, 1002, 1, true)]
+        [DataRow(503, 2001, 1, true)]
+        [DataRow(200, 0, 6, true)]
+        public void CheckEligibleStatistics(int statusCode, int subStatusCode, int latencyInMs, bool expectedFlag)
+        {
+            Assert.AreEqual(expectedFlag, NetworkDataRecorderTest.IsEligible(statusCode, subStatusCode, TimeSpan.FromMilliseconds(latencyInMs)));
+        }
+
+        private static bool IsEligible(int statusCode, int subStatusCode, TimeSpan latencyInMs)
+        {
+            return
+                NetworkDataRecorder.IsStatusCodeNotExcluded(statusCode, subStatusCode) &&
+                    (NetworkDataRecorder.IsUserOrServerError(statusCode) || NetworkDataRecorder.IsHighLatency(latencyInMs.TotalMilliseconds));
+        }
     }
 }
