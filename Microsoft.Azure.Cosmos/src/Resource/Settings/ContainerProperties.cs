@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.PartitionKey?.Kind == PartitionKind.MultiHash && this.PartitionKey?.Paths.Count > 1)
                 {
-                    throw new NotImplementedException($"This MultiHash collection has more than 1 partition key path please use `PartitionKeyPaths`");
+                    throw new NotImplementedException($"This subpartitioned container has more than 1 partition key path please use `PartitionKeyPaths`");
                 }
 
                 return this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
