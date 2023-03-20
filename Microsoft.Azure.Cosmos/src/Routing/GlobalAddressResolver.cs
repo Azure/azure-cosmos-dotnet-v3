@@ -298,7 +298,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.serviceConfigReader,
                         this.httpClient,
                         this.openConnectionsHandler,
-                        enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery);
+                        enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
+                        isFirstPreferredReadRegion: endpoint.Equals(this.endpointManager.ReadEndpoints.First()));
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);

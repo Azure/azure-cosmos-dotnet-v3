@@ -243,17 +243,21 @@ namespace Microsoft.Azure.Documents
             IEnumerable<TransportAddressUri> addresses,
             HashSet<TransportAddressUri> failedReplicasPerRequest)
         {
-            List<TransportAddressUri> failedReplicas = null, pendingReplicas = null;
-            foreach(TransportAddressUri transportAddressUri in addresses)
+            List<TransportAddressUri> unknownReplicas = null, failedReplicas = null, pendingReplicas = null;
+            foreach (TransportAddressUri transportAddressUri in addresses)
             {
                 TransportAddressHealthState.HealthStatus status = AddressEnumerator.GetEffectiveStatus(
                     addressUri: transportAddressUri,
                     failedEndpoints: failedReplicasPerRequest);
 
-                if (status == TransportAddressHealthState.HealthStatus.Connected ||
-                    status == TransportAddressHealthState.HealthStatus.Unknown)
+                if (status == TransportAddressHealthState.HealthStatus.Connected)
                 {
                     yield return transportAddressUri;
+                }
+                else if (status == TransportAddressHealthState.HealthStatus.Unknown)
+                {
+                    unknownReplicas ??= new ();
+                    unknownReplicas.Add(transportAddressUri);
                 }
                 else if (status == TransportAddressHealthState.HealthStatus.UnhealthyPending)
                 {
@@ -267,6 +271,14 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
+            if (unknownReplicas != null)
+            {
+                foreach (TransportAddressUri transportAddressUri in unknownReplicas)
+                {
+                    yield return transportAddressUri;
+                }
+            }
+
             if (pendingReplicas != null)
             {
                 foreach (TransportAddressUri transportAddressUri in pendingReplicas)
@@ -275,7 +287,7 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            if(failedReplicas != null)
+            if (failedReplicas != null)
             {
                 foreach (TransportAddressUri transportAddressUri in failedReplicas)
                 {
