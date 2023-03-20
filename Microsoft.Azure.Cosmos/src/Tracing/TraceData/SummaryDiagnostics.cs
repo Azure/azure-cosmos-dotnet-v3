@@ -8,25 +8,31 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System.Collections.Generic;
     using System.Globalization;
     using Microsoft.Azure.Cosmos.Json;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     internal struct SummaryDiagnostics
     {
         public SummaryDiagnostics(ITrace trace)
             : this()
         {
-            this.DirectRequestsSummary = new Lazy<Dictionary<(int, int), int>>(() =>
-                                                new Dictionary<(int, int), int>());
-            this.GatewayRequestsSummary = new Lazy<Dictionary<(int, int), int>>(() =>
-                                                new Dictionary<(int, int), int>());
-            this.AllRegionsContacted = new Lazy<HashSet<Uri>>(() => new HashSet<Uri>());
+            this.DirectRequestsSummary 
+                = new Lazy<Dictionary<(int, int), int>>(() => new Dictionary<(int, int), int>());
+            this.GatewayRequestsSummary 
+                = new Lazy<Dictionary<(int, int), int>>(() => new Dictionary<(int, int), int>());
+            this.AllRegionsContacted 
+                = new Lazy<HashSet<Uri>>(() => new HashSet<Uri>());
+            
             this.CollectSummaryFromTraceTree(trace);
         }
 
+        public Lazy<HashSet<string>> AllRegionsNameContacted { get; private set; } = new Lazy<HashSet<string>>(() => new HashSet<string>());
         public Lazy<HashSet<Uri>> AllRegionsContacted { get; private set; }
 
+        public Lazy<List<StoreResponseStatistics>> StoreResponseStatistics { get; private set; } = new Lazy<List<StoreResponseStatistics>>(() => new List<StoreResponseStatistics>());
         // Count of (StatusCode, SubStatusCode) tuples
         public Lazy<Dictionary<(int statusCode, int subStatusCode), int>> DirectRequestsSummary { get; private set; }
 
+        public Lazy<List<HttpResponseStatistics>> HttpResponseStatistics { get; private set; } = new Lazy<List<HttpResponseStatistics>>(() => new List<HttpResponseStatistics>());
         public Lazy<Dictionary<(int statusCode, int subStatusCode), int>> GatewayRequestsSummary { get; private set; }
 
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
@@ -49,9 +55,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         private void AggregateRegionsContacted(HashSet<(string, Uri)> regionsContacted)
         {
-            foreach ((string _, Uri uri) in regionsContacted)
+            foreach ((string name, Uri uri) in regionsContacted)
             {
                 this.AllRegionsContacted.Value.Add(uri);
+                this.AllRegionsNameContacted.Value.Add(name);
             }
         }
 
@@ -59,6 +66,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics httpResponseStatistics in httpResponseStatisticsList)
             {
+                this.HttpResponseStatistics.Value.Add(httpResponseStatistics);
+                
                 int statusCode = 0;
                 int substatusCode = 0;
                 if (httpResponseStatistics.HttpResponseMessage != null)
@@ -91,8 +100,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             foreach (ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics storeResponseStatistics in storeResponseStatisticsList)
             {
+                this.StoreResponseStatistics.Value.Add(storeResponseStatistics);
+                
                 int statusCode = (int)storeResponseStatistics.StoreResult.StatusCode;
                 int subStatusCode = (int)storeResponseStatistics.StoreResult.SubStatusCode;
+                
                 if (!this.DirectRequestsSummary.Value.ContainsKey((statusCode, subStatusCode)))
                 {
                     this.DirectRequestsSummary.Value[(statusCode, subStatusCode)] = 1;
