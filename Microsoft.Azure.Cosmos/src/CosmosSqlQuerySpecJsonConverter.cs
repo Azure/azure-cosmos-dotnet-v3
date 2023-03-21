@@ -86,22 +86,22 @@ namespace Microsoft.Azure.Cosmos
             else if (value is SqlQueryResumeInfo.ArrayResumeValue arrayValue)
             {
                 writer.WriteStartObject();
-                writer.WritePropertyName("type");
-                writer.WriteValue("array");
-                writer.WritePropertyName("low");
+                writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Type);
+                writer.WriteValue(SqlQueryResumeInfo.ResumeValue.PropertyNames.ArrayType);
+                writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Low);
                 writer.WriteValue(arrayValue.HashValue.GetLow());
-                writer.WritePropertyName("high");
+                writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.High);
                 writer.WriteValue(arrayValue.HashValue.GetHigh());
                 writer.WriteEndObject();
             }
             else if (value is SqlQueryResumeInfo.ObjectResumeValue objectValue)
             {
                 writer.WriteStartObject();
-                writer.WritePropertyName("type");
-                writer.WriteValue("object");
-                writer.WritePropertyName("low");
+                writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Type);
+                writer.WriteValue(SqlQueryResumeInfo.ResumeValue.PropertyNames.ObjectType);
+                writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Low);
                 writer.WriteValue(objectValue.HashValue.GetLow());
-                writer.WritePropertyName("high");
+                writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.High);
                 writer.WriteValue(objectValue.HashValue.GetHigh());
                 writer.WriteEndObject();
             }

@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
@@ -30,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeInfo;
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
@@ -507,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
 
                 SqlQuery sqlQuery = monadicParse.Result;
-                if ((sqlQuery.OrderByClause != null) && (feedRangeState.State != null))
+                if ((sqlQuery.OrderByClause != null) && (feedRangeState.State != null) && (sqlQuerySpec.ResumeInfo == null))
                 {
                     // This is a hack.
                     // If the query is an ORDER BY query then we need to seek to the resume term.
@@ -546,6 +549,49 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
                 IEnumerable<CosmosElement> queryResults = SqlInterpreter.ExecuteQuery(documents, sqlQuery);
                 IEnumerable<CosmosElement> queryPageResults = queryResults;
+
+                // If the resume value is passed in query spec, filter out the results that has order by item value smaller than resume values
+                if (sqlQuerySpec.ResumeInfo != null)
+                {
+                    if (sqlQuery.OrderByClause.OrderByItems.Length != 1)
+                    {
+                        throw new NotImplementedException("Can only support a single order by column");
+                    }
+
+                    SqlOrderByItem orderByItem = sqlQuery.OrderByClause.OrderByItems[0];
+                    IEnumerator<CosmosElement> queryResultEnumerator = queryPageResults.GetEnumerator();
+
+                    int skipCount = 0;
+                    while(queryResultEnumerator.MoveNext())
+                    {
+                        CosmosObject document = (CosmosObject)queryResultEnumerator.Current;
+                        CosmosElement orderByValue = ((CosmosObject)((CosmosArray)document["orderByItems"])[0])["item"];
+
+                        int sortOrderCompare = CompareResumeValue(orderByValue, sqlQuerySpec.ResumeInfo.ResumeValues[0]);
+
+                        if (sortOrderCompare != 0)
+                        {
+                            sortOrderCompare = orderByItem.IsDescending ? -sortOrderCompare : sortOrderCompare;
+                        }
+
+                        if (sortOrderCompare < 0)
+                        {
+                            // We might have passed the item due to deletions and filters.
+                            break;
+                        }
+
+                        if (sortOrderCompare >= 0)
+                        {
+                            // This document does not match the sort order, so skip it.
+                            skipCount++;
+                        }
+                    }
+
+                    queryPageResults = queryPageResults.Skip(skipCount);
+
+                    // NOTE: We still need to handle duplicate values and break the tie with the rid
+                    // But since all the values are unique for our testing purposes we can ignore this for now.
+                }
 
                 // Filter for the continuation token
                 string continuationResourceId;
@@ -1513,6 +1559,63 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
             {
                 return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
+            }
+        }
+
+        private static int CompareResumeValue(CosmosElement orderByResult, ResumeValue resumeValue)
+        {
+            if (resumeValue is UndefinedResumeValue)
+            {
+                return ItemComparer.Instance.Compare(CosmosUndefined.Create(), orderByResult);
+            }
+            else if (resumeValue is NullResumeValue)
+            {
+                return ItemComparer.Instance.Compare(CosmosNull.Create(), orderByResult);
+            }
+            else if (resumeValue is BooleanResumeValue booleanValue)
+            {
+                return ItemComparer.Instance.Compare(CosmosBoolean.Create(booleanValue.Value), orderByResult);
+            }
+            else if (resumeValue is NumberResumeValue numberValue)
+            {
+                return ItemComparer.Instance.Compare(CosmosNumber64.Create(numberValue.Value), orderByResult);
+            }
+            else if (resumeValue is StringResumeValue stringValue)
+            {
+                return ItemComparer.Instance.Compare(CosmosString.Create(stringValue.Value), orderByResult);
+            }
+            else if (resumeValue is ArrayResumeValue arrayValue)
+            {
+                // If the order by result is also of array type, then compare the hash values
+                // For other types create an empty array and call CosmosElement comparer which
+                // will take care of ordering based on types.
+                if (orderByResult is CosmosArray arrayResult)
+                {
+                    return UInt128BinaryComparer.Singleton.Compare(arrayValue.HashValue, DistinctHash.GetHash(arrayResult));
+                }
+                else
+                {
+                    return ItemComparer.Instance.Compare(CosmosArray.Empty, orderByResult);
+                }
+            }
+            else if (resumeValue is ObjectResumeValue objectValue)
+            {
+                // If the order by result is also of object type, then compare the hash values
+                // For other types create an empty object and call CosmosElement comparer which
+                // will take care of ordering based on types.
+                if (orderByResult is CosmosObject objectResult)
+                {
+                    // same type so compare the hash values
+                    return UInt128BinaryComparer.Singleton.Compare(objectValue.HashValue, DistinctHash.GetHash(objectResult));
+                }
+                else
+                {
+                    return ItemComparer.Instance.Compare(CosmosObject.Create(new Dictionary<string, CosmosElement>()), orderByResult);
+                }
+            }
+            else
+            {
+                throw new NotSupportedException();
             }
         }
     }

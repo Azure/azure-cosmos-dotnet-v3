@@ -38,6 +38,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
         public class ResumeValue
         {
+            public static class PropertyNames
+            {
+                public const string Type = "type";
+                public const string ArrayType = "array";
+                public const string ObjectType = "object";
+                public const string Low = "low";
+                public const string High = "high";
+            }
         }
 
         public class UndefinedResumeValue : ResumeValue
@@ -96,7 +104,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             {
                 this.HashValue = hashValue;
             }
-
         }
     }
 }

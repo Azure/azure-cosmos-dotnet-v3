@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Linq;
     using System.Net;
     using System.Text;
-    using Castle.Core.Internal;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
@@ -292,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                         string result = sr.ReadToEnd();
                         Assert.IsNotNull(result);
 
-                        string expectedValue = rid.IsNullOrEmpty()
+                        string expectedValue = string.IsNullOrEmpty(rid)
                             ? $"{{\"query\":\"{queryText}\",\"resumeInfo\":{{\"exclude\":true,\"value\":[{resumeString}]}}}}"
                             : $"{{\"query\":\"{queryText}\",\"resumeInfo\":{{\"exclude\":true,\"rid\":\"{rid}\",\"value\":[{resumeString}]}}}}";
                         Assert.AreEqual(expectedValue, result);

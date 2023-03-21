@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using System.Linq;
     using System.Linq.Expressions;
     using System.Net;
-    using System.Security.Cryptography;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -429,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             List<ResumeValue> resumeValues = new List<ResumeValue>();
                             foreach (OrderByItem orderByItem in orderByQueryResult.OrderByItems)
                             {
-                                resumeValues.Add(orderByItem.Item.Accept(CosmosElementToResumeValueVisitor.Singleton));
+                                resumeValues.Add(orderByItem.Item.Accept(OrderByValueToResumeValueVisitor.Singleton));
                             }
 
                             orderByContinuationToken = new OrderByContinuationToken(
@@ -504,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     List<ResumeValue> resumeValues = new List<ResumeValue>();
                     foreach (OrderByItem orderByItem in orderByQueryResult.OrderByItems)
                     {
-                        resumeValues.Add(orderByItem.Item.Accept(CosmosElementToResumeValueVisitor.Singleton));
+                        resumeValues.Add(orderByItem.Item.Accept(OrderByValueToResumeValueVisitor.Singleton));
                     }
 
                     orderByContinuationToken = new OrderByContinuationToken(
@@ -1075,7 +1074,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             List<SqlQueryResumeInfo.ResumeValue> resumeValues = new List<SqlQueryResumeInfo.ResumeValue>();
             foreach (CosmosElement orderByItem in orderByItems)
             {
-                resumeValues.Add(orderByItem.Accept(CosmosElementToResumeValueVisitor.Singleton));
+                resumeValues.Add(orderByItem.Accept(OrderByValueToResumeValueVisitor.Singleton));
             }
 
             // NOTE: SkipCount == 0 indicates that backend continuation token needs to be used so resume info is not set for the target partition
@@ -1504,11 +1503,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
         }
 
-        private sealed class CosmosElementToResumeValueVisitor : ICosmosElementVisitor<SqlQueryResumeInfo.ResumeValue>
+        private sealed class OrderByValueToResumeValueVisitor : ICosmosElementVisitor<SqlQueryResumeInfo.ResumeValue>
         {
-            public static readonly CosmosElementToResumeValueVisitor Singleton = new CosmosElementToResumeValueVisitor();
+            public static readonly OrderByValueToResumeValueVisitor Singleton = new OrderByValueToResumeValueVisitor();
 
-            private CosmosElementToResumeValueVisitor()
+            private OrderByValueToResumeValueVisitor()
             {
             }
 
