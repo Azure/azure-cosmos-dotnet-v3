@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
         private TryCatch<IQueryPipelineStage> inner;
         private CosmosElement continuationToken;
         private ExecutionState executionState;
+        private bool? previousRequiresDistribution;
 
         private OptimisticDirectExecutionQueryPipelineStage(TryCatch<IQueryPipelineStage> inner, FallbackQueryPipelineStageFactory queryPipelineStageFactory, CosmosElement continuationToken)
         {
@@ -53,7 +54,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
-            CosmosElement prevContinuationToken = this.continuationToken;
             TryCatch<bool> hasNext = await this.inner.TryAsync(pipelineStage => pipelineStage.MoveNextAsync(trace));
             bool success = hasNext.Succeeded && hasNext.Result;
             bool isPartitionSplitException = hasNext.Succeeded && this.Current.Failed && this.Current.InnerMostException.IsPartitionSplitException();
@@ -67,9 +67,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     if (requiresDistribution != null)
                     {
                         bool queryRequiresDistribution = bool.Parse(requiresDistribution);
+                        if (this.previousRequiresDistribution != null)
+                        {
+                            Debug.Assert(this.previousRequiresDistribution == queryRequiresDistribution, "OptimisticDirectExecuteQueryPipelineStage Assert!", "RequiresDistribution flag cannot switch midway through execution");
+                        }
+                        else
+                        { 
+                            this.previousRequiresDistribution = queryRequiresDistribution;
+                        }
+
                         if (queryRequiresDistribution && this.continuationToken != null)
                         {
-                            this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken(prevContinuationToken));
+                            this.inner = await this.queryPipelineStageFactory(null);
                             this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
                             if (this.inner.Failed)
                             {
@@ -83,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             }
             else if (isPartitionSplitException && this.executionState == ExecutionState.OptimisticDirectExecution)
             {
-                this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken(this.continuationToken));
+                this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken());
                 this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
                 if (this.inner.Failed)
                 {
@@ -101,11 +110,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             this.inner.Try(pipelineStage => pipelineStage.SetCancellationToken(cancellationToken));
         }
 
-        private CosmosElement TryUnwrapContinuationToken(CosmosElement continuationToken)
+        private CosmosElement TryUnwrapContinuationToken()
         {
-            if (continuationToken != null)
+            if (this.continuationToken != null)
             {
-                CosmosObject cosmosObject = continuationToken as CosmosObject;
+                CosmosObject cosmosObject = this.continuationToken as CosmosObject;
                 CosmosElement backendContinuationToken = cosmosObject[optimisticDirectExecutionToken];
                 Debug.Assert(backendContinuationToken != null);
                 return CosmosArray.Create(backendContinuationToken);
