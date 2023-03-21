@@ -46,10 +46,16 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the priority level for a request.
         /// </summary>
         /// <remarks>
-        /// When Priority Based Throttling is enabled, once the user has exhausted their provisioned throughput,
-        /// low priority requests are throttled before high priority requests start getting throttled.
+        /// Setting priority level only has an effect if Priority Based Execution is enabled.
+        /// If it is not enabled, the priority level is ignored by the backend.
         /// Default PriorityLevel for each request is treated as High. It can be explicitly set to Low for some requests.
+        /// When Priority based execution is enabled, if there are more requests than the configured RU/S in a second, 
+        /// then Cosmos DB will throttle low priority requests to allow high priority requests to execute.
+        /// This does not limit the throughput available to each priority level. Each priority level can consume the complete
+        /// provisioned throughput in absence of the other. If both priorities are present and the user goes above the
+        /// configured RU/s, low priority requests start getting throttled first to allow execution of mission critical workloads.
         /// </remarks>
+        /// <seealso href="https://aka.ms/CosmosDB/PriorityBasedExecution"/>
 #if PREVIEW
         public
 #else
@@ -61,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         /// Set Request Level Distributed Tracing Options.
         /// </summary>
         internal DistributedTracingOptions DistributedTracingOptions { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
