@@ -25,9 +25,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 r.SubStatusCode
             })
              .SelectMany(g => g.OrderByDescending(r => r.Metrics.FirstOrDefault(m => m.MetricsName == ClientTelemetryOptions.RequestLatencyName)?.Percentiles[ClientTelemetryOptions.Percentile99])
-                                .Take(ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold)
-                                .ToList())
-             .ToList();
+                                .Take(ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold)).ToList();
         }
 
         public static List<RequestInfo> SampleOrderByCount(List<RequestInfo> requestInfoList)
@@ -42,9 +40,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 r.SubStatusCode
             })
              .SelectMany(g => g.OrderByDescending(r => r.Metrics.FirstOrDefault(m => m.MetricsName == ClientTelemetryOptions.RequestLatencyName)?.Count)
-                                .Take(ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold)
-                                .ToList())
-             .ToList();
+                                .Take(ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold)).ToList();
         }
     }
 }
