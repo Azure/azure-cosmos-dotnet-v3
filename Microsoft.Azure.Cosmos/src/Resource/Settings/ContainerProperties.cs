@@ -112,14 +112,8 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        /// <param name="partitionKeyPaths">The path to the partition key. Example: /location</param>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-
-        ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
+        /// <param name="partitionKeyPaths">The paths of the hierarchical partition keys. Example: ["/tenantId", "/userId"]</param>
+        public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
         {
             this.Id = id;
 
@@ -347,12 +341,11 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-#if PREVIEW
                 if (this.PartitionKey?.Kind == PartitionKind.MultiHash && this.PartitionKey?.Paths.Count > 1)
                 {
-                    throw new NotImplementedException($"This MultiHash collection has more than 1 partition key path please use `PartitionKeyPaths`");
+                    throw new NotImplementedException($"This subpartitioned container has more than 1 partition key path please use `PartitionKeyPaths`");
                 }
-#endif
+
                 return this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
             }
             set
@@ -377,15 +370,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// JSON path used for containers partitioning
+        /// List of JSON paths used for containers with hierarchical partition keys
         /// </summary>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else 
-        internal
-#endif
-        IReadOnlyList<string> PartitionKeyPaths
+        public IReadOnlyList<string> PartitionKeyPaths
         {
             get => this.PartitionKey?.Paths;
             set
@@ -657,12 +645,10 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-#if PREVIEW
                 if (this.PartitionKey.Kind == Documents.PartitionKind.MultiHash && this.PartitionKeyPaths == null)
                 {
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
-#endif
 
                 List<IReadOnlyList<string>> partitionKeyPathTokensList = new List<IReadOnlyList<string>>();
                 foreach (string path in this.PartitionKey?.Paths)
