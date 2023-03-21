@@ -161,6 +161,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                     if (feedRange != null)
                     {
+                        if (!request.OperationType.IsPointOperation()) 
+                        {
+                            feedRange = await RequestInvokerHandler.ResolveFeedRangeBasedOnPrefixContainerAsync(
+                                feedRange: feedRange,
+                                cosmosContainerCore: cosmosContainerCore,
+                                cancellationToken: cancellationToken);
+                        }
+                        
                         if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
                         {
                             if (cosmosContainerCore == null && object.ReferenceEquals(feedRangePartitionKey.PartitionKey, Cosmos.PartitionKey.None))
@@ -479,6 +487,27 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return clientOptions != null
                 && clientOptions.EnableContentResponseOnWrite.HasValue
                 && RequestInvokerHandler.IsItemNoRepsonseSet(clientOptions.EnableContentResponseOnWrite.Value, operationType);
+        }
+
+        internal static async Task<FeedRange> ResolveFeedRangeBasedOnPrefixContainerAsync(
+            FeedRange feedRange,
+            ContainerInternal cosmosContainerCore,
+            CancellationToken cancellationToken)
+        {
+            if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
+            {
+                PartitionKeyDefinition partitionKeyDefinition = await cosmosContainerCore
+                    .GetPartitionKeyDefinitionAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (partitionKeyDefinition != null && partitionKeyDefinition.Kind == PartitionKind.MultiHash
+                    && feedRangePartitionKey.PartitionKey.InternalKey?.Components?.Count < partitionKeyDefinition.Paths?.Count)
+                {
+                   feedRange = new FeedRangeEpk(feedRangePartitionKey.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition));
+                }
+            }
+
+            return feedRange;
         }
     }
 }

@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                 List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                                     cosmosQueryContext.ResourceLink,
                                     containerQueryProperties.ResourceId,
-                                    inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
+                                    containerQueryProperties.EffectivePartitionKeyString,
                                     forceRefresh: false,
                                     createQueryPipelineTrace);
 
@@ -755,22 +755,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         {
             if (!inputParameters.EnableOptimisticDirectExecution) return null;
 
-            // case 1: Is query going to a single partition
-            bool hasPartitionKey = inputParameters.PartitionKey.HasValue
-                && inputParameters.PartitionKey != PartitionKey.Null
-                && inputParameters.PartitionKey != PartitionKey.None;
+            Debug.Assert(containerQueryProperties.ResourceId != null, "CosmosQueryExecutionContextFactory Assert!", "Container ResourceId cannot be null!");
 
-            // case 2: does query execution plan have a single query range
-            bool hasQueryRanges = partitionedQueryExecutionInfo != null 
-                && partitionedQueryExecutionInfo.QueryRanges.Count == 1 
-                && partitionedQueryExecutionInfo.QueryRanges[0].IsSingleValue;
-           
-            if (!hasPartitionKey && !hasQueryRanges) return null;
-
-            //TODO: does collection have only one physical partition
-
-            List<Documents.PartitionKeyRange> targetRanges = new List<Documents.PartitionKeyRange>();
-
+            List<Documents.PartitionKeyRange> targetRanges;
             if (partitionedQueryExecutionInfo != null)
             {
                 targetRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
@@ -785,12 +772,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             else
             {
                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                if (partitionKeyDefinition != null && containerQueryProperties.ResourceId != null && inputParameters.PartitionKey != null)
+                if (inputParameters.PartitionKey != null)
                 {
+                    Debug.Assert(partitionKeyDefinition != null, "CosmosQueryExecutionContextFactory Assert!", "PartitionKeyDefinition cannot be null if partitionKey is defined");
+
                     targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
                         cosmosQueryContext.ResourceLink,
                         containerQueryProperties.ResourceId,
-                        inputParameters.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition),
+                        containerQueryProperties.EffectivePartitionKeyString,
+                        forceRefresh: false,
+                        trace);
+                }
+                else
+                {
+                    targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
+                        cosmosQueryContext.ResourceLink,
+                        containerQueryProperties.ResourceId,
+                        new List<Documents.Routing.Range<string>> { FeedRangeEpk.FullRange.Range },
                         forceRefresh: false,
                         trace);
                 }
@@ -1006,6 +1004,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         return false;
                     }
 
+                    public override bool Visit(SqlFirstScalarExpression sqlFirstScalarExpression)
+                    {
+                        // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                        return false;
+                    }
+
                     public override bool Visit(SqlFunctionCallScalarExpression sqlFunctionCallScalarExpression)
                     {
                         return !sqlFunctionCallScalarExpression.IsUdf &&
@@ -1021,6 +1025,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         }
 
                         return hasAggregates;
+                    }
+
+                    public override bool Visit(SqlLastScalarExpression sqlLastScalarExpression)
+                    {
+                        // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                        return false;
                     }
 
                     public override bool Visit(SqlLiteralScalarExpression sqlLiteralScalarExpression)
