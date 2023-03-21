@@ -411,6 +411,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIdsCopy)
                 {
+                    // The forceRefresh flag is set to true for the callback delegate is because, if the GetAsync() from the async
+                    // non-blocking cache fails to look up the pkRangeId, then there are some inconsistency present in the cache, and it is
+                    // more safe to do a force refresh to fetch the addresses from the gateway, instead of fetching it from the cache itself.
+                    // Please note that, the chances of encountering such scenario is highly unlikely.
                     PartitionAddressInformation addressInfo = await this.serverPartitionAddressCache.GetAsync(
                        key: pkRangeId,
                        singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
@@ -418,7 +422,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                            cachedAddresses: null,
                            pkRangeId.CollectionRid,
                            pkRangeId.PartitionKeyRangeId,
-                           forceRefresh: false),
+                           forceRefresh: true),
                        forceRefresh: (_) => false);
 
                     IReadOnlyList<TransportAddressUri> transportAddresses = addressInfo.Get(Protocol.Tcp)?.ReplicaTransportAddressUris;
