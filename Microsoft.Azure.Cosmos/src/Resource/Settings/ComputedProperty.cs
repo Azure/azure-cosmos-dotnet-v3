@@ -9,7 +9,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary> 
     /// Represents a computed property definition in a Cosmos DB collection.
     /// </summary>
-    public sealed class ComputedProperty
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    sealed class ComputedProperty
     {
         /// <summary>
         /// Gets or sets the name of the computed property.

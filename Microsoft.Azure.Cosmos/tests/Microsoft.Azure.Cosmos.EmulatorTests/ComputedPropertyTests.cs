@@ -57,31 +57,31 @@
                     }
                 };
             IndexAllComputedProperties_ExcludeAll = new IndexingPolicy
-            {
-                IncludedPaths = new Collection<IncludedPath>
-                    {
-                        { new IncludedPath { Path = $"/{LowerName.Name}/*" } },
-                        { new IncludedPath { Path = $"/{ParentsFullName.Name}/*" } },
-                    },
-                ExcludedPaths = new Collection<ExcludedPath>
-                    {
-                        { new ExcludedPath { Path = $"/*" } }
-                    }
-            };
+                {
+                    IncludedPaths = new Collection<IncludedPath>
+                        {
+                            { new IncludedPath { Path = $"/{LowerName.Name}/*" } },
+                            { new IncludedPath { Path = $"/{ParentsFullName.Name}/*" } },
+                        },
+                    ExcludedPaths = new Collection<ExcludedPath>
+                        {
+                            { new ExcludedPath { Path = $"/*" } }
+                        }
+                };
             IndexDefault_IncludeAll = new IndexingPolicy
-            {
-                IncludedPaths = new Collection<IncludedPath>
-                    {
-                        { new IncludedPath { Path = $"/*" } },
-                    }
-            };
+                {
+                    IncludedPaths = new Collection<IncludedPath>
+                        {
+                            { new IncludedPath { Path = $"/*" } },
+                        }
+                };
             IndexDefault_ExcludeAll = new IndexingPolicy
-            {
-                ExcludedPaths = new Collection<ExcludedPath>
-                    {
-                        { new ExcludedPath { Path = $"/*" } }
-                    }
-            };
+                {
+                    ExcludedPaths = new Collection<ExcludedPath>
+                        {
+                            { new ExcludedPath { Path = $"/*" } }
+                        }
+                };
 
             SelectAllComputedPropertiesQuery = @"SELECT c.lowerLastName, c.parentsFullName FROM c";
             AllComputedPropertiesResult = new List<string>
@@ -424,12 +424,12 @@
 
             if (!string.IsNullOrEmpty(containerState.Query))
             {
-                List<dynamic> results = await this.QueryItems(response.Container, containerState.Query);
+                List<string> results = await this.QueryItems(response.Container, containerState.Query);
 
                 Assert.AreEqual(containerState.ExpectedDocuments.Count, results.Count);
                 for (int i = 0; i < containerState.ExpectedDocuments.Count; i++)
                 {
-                    Assert.AreEqual(containerState.ExpectedDocuments[i], results[i].ToString());
+                    Assert.AreEqual(containerState.ExpectedDocuments[i], results[i]);
                 }
             }
 
@@ -455,13 +455,13 @@
             }
         }
 
-        private async Task<List<dynamic>> QueryItems(Container container, string query)
+        private async Task<List<string>> QueryItems(Container container, string query)
         {
-            List<dynamic> results = new List<dynamic>();
-            FeedIterator<dynamic> iterator = container.GetItemQueryIterator<dynamic>(query);
+            List<string> results = new List<string>();
+            FeedIterator<string> iterator = container.GetItemQueryIterator<string>(query);
             do
             {
-                FeedResponse<dynamic> page = await iterator.ReadNextAsync();
+                FeedResponse<string> page = await iterator.ReadNextAsync();
                 results.AddRange(page);
             } while (iterator.HasMoreResults);
 
@@ -470,7 +470,7 @@
 
         private void ValidateComputedProperties(Collection<ComputedProperty> expected, Collection<ComputedProperty> actual)
         {
-            ComputedPropertiesComparer.AssertAreEqual(expected, actual);
+            ComputedPropertyComparer.AssertAreEqual(expected, actual);
         }
 
         private class TestVariation

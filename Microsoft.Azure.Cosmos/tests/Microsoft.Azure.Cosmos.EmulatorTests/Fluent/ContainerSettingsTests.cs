@@ -147,8 +147,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ClientEncryptionIncludedPath clientEncryptionIncludedPath = responseProperties.ClientEncryptionPolicy.IncludedPaths.First();
             Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(clientEncryptionIncludedPath1, clientEncryptionIncludedPath));
 
-            ComputedPropertiesComparer.AssertAreEqual(containerProperties.ComputedProperties, responseProperties.ComputedProperties);
-            ComputedPropertiesComparer.AssertAreEqual(containerProperties.ComputedProperties, deserialziedTest.ComputedProperties);
+            ComputedPropertyComparer.AssertAreEqual(containerProperties.ComputedProperties, responseProperties.ComputedProperties);
+            ComputedPropertyComparer.AssertAreEqual(containerProperties.ComputedProperties, deserialziedTest.ComputedProperties);
         }
 
         [TestMethod]
@@ -382,7 +382,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, propertiesAfterReplace.IndexingPolicy.SpatialIndexes.Count);
             Assert.AreEqual("/address/test/*", propertiesAfterReplace.IndexingPolicy.SpatialIndexes.First().Path);
 
-            ComputedPropertiesComparer.AssertAreEqual(containerProperties.ComputedProperties, propertiesAfterReplace.ComputedProperties);
+            ComputedPropertyComparer.AssertAreEqual(containerProperties.ComputedProperties, propertiesAfterReplace.ComputedProperties);
         }
 
         [TestMethod]
@@ -612,7 +612,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
             Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
-            Container container = containerResponse;
 
             Assert.AreEqual(2, containerResponse.Resource.ComputedProperties.Count);
             Assert.AreEqual(definitions[0].Name, containerResponse.Resource.ComputedProperties[0].Name);
@@ -620,6 +619,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(definitions[1].Name, containerResponse.Resource.ComputedProperties[1].Name);
             Assert.AreEqual(definitions[1].Query, containerResponse.Resource.ComputedProperties[1].Query);
 
+            Container container = containerResponse;
             containerResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);

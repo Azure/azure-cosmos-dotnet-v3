@@ -254,23 +254,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         [TestMethod]
         public async Task WithComputedProperties()
         {
-            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
-            Mock<Database> mockContainers = new Mock<Database>();
-            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
-            mockContainers.Setup(m => m.Client).Returns(mockClient.Object);
-            mockContainers
+            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>(MockBehavior.Strict);
+            Mock<Database> mockDatabase = new Mock<Database>(MockBehavior.Strict);
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>(MockBehavior.Strict);
+            mockDatabase.Setup(m => m.Client).Returns(mockClient.Object);
+            mockDatabase
                 .Setup(c => c.CreateContainerAsync(
                     It.IsAny<ContainerProperties>(),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
-            mockContainers
+            mockDatabase
                 .Setup(c => c.Id)
                 .Returns(Guid.NewGuid().ToString());
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
-                mockContainers.Object,
+                mockDatabase.Object,
                 containerName,
                 partitionKey);
 
@@ -286,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     .Attach()
                 .CreateAsync();
 
-            mockContainers.Verify(c => c.CreateContainerAsync(
+            mockDatabase.Verify(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) =>
                             settings.ComputedProperties.Count == 2 &&
                             definitions[0].Name.Equals(settings.ComputedProperties[0].Name) &&
@@ -296,7 +296,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                         ),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
-                    It.IsAny<CancellationToken>()), Times.Once);
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
         }
 
         [TestMethod]

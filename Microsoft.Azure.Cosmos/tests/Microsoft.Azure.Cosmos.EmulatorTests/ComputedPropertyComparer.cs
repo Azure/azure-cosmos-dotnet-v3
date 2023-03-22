@@ -6,7 +6,7 @@
     using System.Diagnostics.CodeAnalysis;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    class ComputedPropertiesComparer : IEqualityComparer<ComputedProperty>
+    class ComputedPropertyComparer : IEqualityComparer<ComputedProperty>
     {
         public static void AssertAreEqual(Collection<ComputedProperty> expected, Collection<ComputedProperty> actual)
         {
@@ -22,7 +22,7 @@
 
         public static void AssertAreEqual(ComputedProperty expected, ComputedProperty actual)
         {
-            ComputedPropertiesComparer comparer = new ComputedPropertiesComparer();
+            ComputedPropertyComparer comparer = new ComputedPropertyComparer();
             Assert.IsTrue(comparer.Equals(expected, actual), $"Expected: {ToString(expected)}{Environment.NewLine}Actual:{ToString(actual)}");
         }
 
