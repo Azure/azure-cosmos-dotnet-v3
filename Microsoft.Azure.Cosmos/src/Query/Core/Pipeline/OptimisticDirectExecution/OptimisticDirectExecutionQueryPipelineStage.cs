@@ -83,13 +83,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
                         if (requiresDistribution)
                         {
-                            success = await this.CreateAndRunFallbackPipelineAsync(isPartitionSplitException: false, trace);
+                            success = await this.CreateAndCallFallbackPipelineAsync(isPartitionSplitException: false, trace);
                         }
                     }
                 }
                 else if (isPartitionSplitException)
                 {
-                    success = await this.CreateAndRunFallbackPipelineAsync(isPartitionSplitException, trace);
+                    success = await this.CreateAndCallFallbackPipelineAsync(isPartitionSplitException, trace);
                 }
             }
 
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             return null;
         }
 
-        private async Task<bool> CreateAndRunFallbackPipelineAsync(bool isPartitionSplitException, ITrace trace)
+        private async Task<bool> CreateAndCallFallbackPipelineAsync(bool isPartitionSplitException, ITrace trace)
         {
             this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
             this.inner = isPartitionSplitException
