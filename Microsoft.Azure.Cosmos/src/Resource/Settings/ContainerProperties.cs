@@ -298,15 +298,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        Collection<ComputedProperty> ComputedProperties
-        {
-            get;
-#if PREVIEW
-            internal
-#endif
-            set;
-        }
-            = new Collection<ComputedProperty>();
+        Collection<ComputedProperty> ComputedProperties { get; set; } = new Collection<ComputedProperty>();
 
         /// <summary>
         /// Gets the <see cref="ChangeFeedPolicy"/> associated with the container from the Azure Cosmos DB service.

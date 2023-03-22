@@ -458,11 +458,11 @@
         private async Task<List<string>> QueryItems(Container container, string query)
         {
             List<string> results = new List<string>();
-            FeedIterator<string> iterator = container.GetItemQueryIterator<string>(query);
+            FeedIterator<object> iterator = container.GetItemQueryIterator<object>(query);
             do
             {
-                FeedResponse<string> page = await iterator.ReadNextAsync();
-                results.AddRange(page);
+                FeedResponse<object> page = await iterator.ReadNextAsync();
+                results.AddRange(page.Select(item => item.ToString()));
             } while (iterator.HasMoreResults);
 
             return results;
