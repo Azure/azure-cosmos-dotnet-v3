@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders(optimisticDirectExecute: false, isContinuationExpected, this.CorrelatedActivityId);
+            AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders(this.CorrelatedActivityId, isContinuationExpected, optimisticDirectExecute: false);
 
             return this.QueryClient.ExecuteItemQueryAsync(
                 resourceUri: this.ResourceLink,

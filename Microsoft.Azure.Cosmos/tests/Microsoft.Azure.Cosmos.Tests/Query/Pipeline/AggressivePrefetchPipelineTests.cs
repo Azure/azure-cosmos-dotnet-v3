@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 SqlQuerySpec sqlQuerySpec,
                 FeedRangeState<QueryState> feedRangeState,
                 QueryPaginationOptions queryPaginationOptions,
-                AdditionalRequestHeaders additionalRequestHeaders,
+                bool optimisticDirectExecute,
                 ITrace trace,
                 CancellationToken cancellationToken)
             {
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             sqlQuerySpec,
                             new FeedRangeState<QueryState>(feedRange, innerState),
                             queryPaginationOptions,
-                            additionalRequestHeaders,
+                            optimisticDirectExecute,
                             trace,
                             cancellationToken);
 
