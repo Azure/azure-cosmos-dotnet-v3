@@ -293,14 +293,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             string expectedQuerySpec = "SELECT * FROM c WHERE ( c._ts >= 1665482200 OR IS_STRING(c._ts) OR IS_ARRAY(c._ts) OR IS_OBJECT(c._ts) ) ORDER BY c._ts";
             Mock<IDocumentContainer> mockContainer = new Mock<IDocumentContainer>(MockBehavior.Strict);
-            AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders();
             mockContainer
                 .Setup(
                 c => c.MonadicQueryAsync(
                     It.Is<SqlQuerySpec>(sqlQuerySpec => expectedQuerySpec.Equals(sqlQuerySpec.QueryText)),
                     It.IsAny<FeedRangeState<QueryState>>(),
                     It.IsAny<QueryPaginationOptions>(),
-                    additionalRequestHeaders,
+                    false,
                     NoOpTrace.Singleton,
                     default))
                 .ReturnsAsync(TryCatch<QueryPage>.FromResult(emptyPage));

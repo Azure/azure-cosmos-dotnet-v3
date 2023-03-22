@@ -146,8 +146,8 @@ namespace Microsoft.Azure.Cosmos
                     QueryRequestOptions.FillContinuationToken(
                         cosmosRequestMessage,
                         continuationToken);
-                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, additionalRequestHeaders.ContentType);
-                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, additionalRequestHeaders.IsQuery.ToString());
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                     cosmosRequestMessage.Headers.Add(WFConstants.BackendHeaders.CorrelatedActivityId, additionalRequestHeaders.CorrelatedActivityId.ToString());
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.OptimisticDirectExecute, additionalRequestHeaders.OptimisticDirectExecute.ToString());
                 },

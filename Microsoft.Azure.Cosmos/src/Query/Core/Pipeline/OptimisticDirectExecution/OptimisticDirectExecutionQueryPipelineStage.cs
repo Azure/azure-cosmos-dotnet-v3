@@ -58,48 +58,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             bool success = hasNext.Succeeded && hasNext.Result;
             bool isPartitionSplitException = hasNext.Succeeded && this.Current.Failed && this.Current.InnerMostException.IsPartitionSplitException();
 
-            if (success && !isPartitionSplitException)
+            if (this.executionState == ExecutionState.OptimisticDirectExecution)
             {
-                this.continuationToken = this.Current.Succeeded ? this.Current.Result.State?.Value : null;
-                if (this.Current.Succeeded)
+                if (success && !isPartitionSplitException)
                 {
-                    this.Current.Result.AdditionalHeaders.TryGetValue("x-ms-cosmos-query-requiresdistribution", out string requiresDistribution);
-                    if (requiresDistribution != null)
+                    this.continuationToken = this.Current.Succeeded ? this.Current.Result.State?.Value : null;
+                    if (this.continuationToken != null)
                     {
-                        bool queryRequiresDistribution = bool.Parse(requiresDistribution);
+                        this.Current.Result.AdditionalHeaders.TryGetValue("x-ms-cosmos-query-requiresdistribution", out string requiresDistributionHeaderValue);
+                        Debug.Assert(!string.IsNullOrEmpty(requiresDistributionHeaderValue), "OptimisticDirectExecuteQueryPipelineStage Assert!", "Missing requiresDistribution flag in backend response for OptimisticDirectExecute request");
+                        
+                        bool requiresDistribution = bool.Parse(requiresDistributionHeaderValue);
                         if (this.previousRequiresDistribution != null)
                         {
-                            Debug.Assert(this.previousRequiresDistribution == queryRequiresDistribution, "OptimisticDirectExecuteQueryPipelineStage Assert!", "RequiresDistribution flag cannot switch midway through execution");
+                            if (this.previousRequiresDistribution != requiresDistribution)
+                            {
+                                throw new InvalidOperationException("RequiresDistribution flag cannot switch midway through execution");
+                            }
                         }
                         else
-                        { 
-                            this.previousRequiresDistribution = queryRequiresDistribution;
+                        {
+                            this.previousRequiresDistribution = requiresDistribution;
                         }
 
-                        if (queryRequiresDistribution && this.continuationToken != null)
+                        if (requiresDistribution)
                         {
-                            this.inner = await this.queryPipelineStageFactory(null);
-                            this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
-                            if (this.inner.Failed)
-                            {
-                                return false;
-                            }
-
-                            success = await this.inner.Result.MoveNextAsync(trace);
+                            success = await this.CreateAndRunFallbackPipelineAsync(isPartitionSplitException: false, trace);
                         }
                     }
                 }
-            }
-            else if (isPartitionSplitException && this.executionState == ExecutionState.OptimisticDirectExecution)
-            {
-                this.inner = await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken());
-                this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
-                if (this.inner.Failed)
+                else if (isPartitionSplitException)
                 {
-                    return false;
+                    success = await this.CreateAndRunFallbackPipelineAsync(isPartitionSplitException, trace);
                 }
-
-                success = await this.inner.Result.MoveNextAsync(trace);
             }
 
             return success;
@@ -121,6 +112,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             }
 
             return null;
+        }
+
+        private async Task<bool> CreateAndRunFallbackPipelineAsync(bool isPartitionSplitException, ITrace trace)
+        {
+            this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
+            this.inner = isPartitionSplitException
+                ? await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken())
+                : await this.queryPipelineStageFactory(null);
+
+            if (this.inner.Failed)
+            {
+                return false;
+            }
+
+            return await this.inner.Result.MoveNextAsync(trace);
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
@@ -255,15 +261,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 }
 
                 FeedRangeState<QueryState> feedRangeState = monadicExtractState.Result;
-                AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders(optimisticDirectExecute: true);
-
                 QueryPartitionRangePageAsyncEnumerator partitionPageEnumerator = new QueryPartitionRangePageAsyncEnumerator(
                     documentContainer,
                     sqlQuerySpec,
                     feedRangeState,
                     partitionKey,
                     queryPaginationOptions,
-                    additionalRequestHeaders,
+                    optimisticDirectExecute: true,
                     cancellationToken);
 
                 OptimisticDirectExecutionQueryPipelineImpl stage = new OptimisticDirectExecutionQueryPipelineImpl(partitionPageEnumerator);
