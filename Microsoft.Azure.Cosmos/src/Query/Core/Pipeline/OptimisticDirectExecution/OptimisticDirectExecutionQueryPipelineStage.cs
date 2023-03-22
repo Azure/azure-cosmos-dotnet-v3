@@ -73,6 +73,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                         {
                             if (this.previousRequiresDistribution != requiresDistribution)
                             {
+                                // We should never enter this if statement as requiresDistribution flag can never switch mid execution.
+                                // Hence, this exception should never be thrown.
                                 throw new InvalidOperationException("RequiresDistribution flag cannot switch midway through execution");
                             }
                         }
