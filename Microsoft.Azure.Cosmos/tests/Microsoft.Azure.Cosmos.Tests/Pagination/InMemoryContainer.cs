@@ -567,7 +567,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         CosmosObject document = (CosmosObject)queryResultEnumerator.Current;
                         CosmosElement orderByValue = ((CosmosObject)((CosmosArray)document["orderByItems"])[0])["item"];
 
-                        int sortOrderCompare = CompareResumeValue(orderByValue, sqlQuerySpec.ResumeInfo.ResumeValues[0]);
+                        int sortOrderCompare = ResumeValueComparer.Compare(orderByValue, sqlQuerySpec.ResumeInfo.ResumeValues[0]);
 
                         if (sortOrderCompare != 0)
                         {
@@ -1559,63 +1559,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public SqlScalarExpression Visit(CosmosUndefined cosmosUndefined)
             {
                 return SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
-            }
-        }
-
-        private static int CompareResumeValue(CosmosElement orderByResult, ResumeValue resumeValue)
-        {
-            if (resumeValue is UndefinedResumeValue)
-            {
-                return ItemComparer.Instance.Compare(CosmosUndefined.Create(), orderByResult);
-            }
-            else if (resumeValue is NullResumeValue)
-            {
-                return ItemComparer.Instance.Compare(CosmosNull.Create(), orderByResult);
-            }
-            else if (resumeValue is BooleanResumeValue booleanValue)
-            {
-                return ItemComparer.Instance.Compare(CosmosBoolean.Create(booleanValue.Value), orderByResult);
-            }
-            else if (resumeValue is NumberResumeValue numberValue)
-            {
-                return ItemComparer.Instance.Compare(CosmosNumber64.Create(numberValue.Value), orderByResult);
-            }
-            else if (resumeValue is StringResumeValue stringValue)
-            {
-                return ItemComparer.Instance.Compare(CosmosString.Create(stringValue.Value), orderByResult);
-            }
-            else if (resumeValue is ArrayResumeValue arrayValue)
-            {
-                // If the order by result is also of array type, then compare the hash values
-                // For other types create an empty array and call CosmosElement comparer which
-                // will take care of ordering based on types.
-                if (orderByResult is CosmosArray arrayResult)
-                {
-                    return UInt128BinaryComparer.Singleton.Compare(arrayValue.HashValue, DistinctHash.GetHash(arrayResult));
-                }
-                else
-                {
-                    return ItemComparer.Instance.Compare(CosmosArray.Empty, orderByResult);
-                }
-            }
-            else if (resumeValue is ObjectResumeValue objectValue)
-            {
-                // If the order by result is also of object type, then compare the hash values
-                // For other types create an empty object and call CosmosElement comparer which
-                // will take care of ordering based on types.
-                if (orderByResult is CosmosObject objectResult)
-                {
-                    // same type so compare the hash values
-                    return UInt128BinaryComparer.Singleton.Compare(objectValue.HashValue, DistinctHash.GetHash(objectResult));
-                }
-                else
-                {
-                    return ItemComparer.Instance.Compare(CosmosObject.Create(new Dictionary<string, CosmosElement>()), orderByResult);
-                }
-            }
-            else
-            {
-                throw new NotSupportedException();
             }
         }
     }

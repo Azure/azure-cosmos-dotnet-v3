@@ -62,48 +62,61 @@ namespace Microsoft.Azure.Cosmos
 
                 writer.WriteEndObject();
             }
-            else if (value is SqlQueryResumeInfo.UndefinedResumeValue)
+            else if (value is SqlQueryResumeInfo.ResumeValue resumeValue)
             {
-                writer.WriteStartArray();
-                writer.WriteEndArray();
+                this.WriteResumeValue(writer, resumeValue, serializer);
             }
-            else if (value is SqlQueryResumeInfo.NullResumeValue)
+        }
+
+        private void WriteResumeValue(JsonWriter writer, SqlQueryResumeInfo.ResumeValue value, JsonSerializer serializer)
+        {
+            switch (value)
             {
-                writer.WriteNull();
-            }
-            else if (value is SqlQueryResumeInfo.BooleanResumeValue booleanValue)
-            {
-                serializer.Serialize(writer, booleanValue.Value);
-            }
-            else if (value is SqlQueryResumeInfo.NumberResumeValue numberValue)
-            {
-                serializer.Serialize(writer, numberValue.Value);
-            }
-            else if (value is SqlQueryResumeInfo.StringResumeValue stringValue)
-            {
-                serializer.Serialize(writer, stringValue.Value.ToString());
-            }
-            else if (value is SqlQueryResumeInfo.ArrayResumeValue arrayValue)
-            {
-                writer.WriteStartObject();
-                writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Type);
-                writer.WriteValue(SqlQueryResumeInfo.ResumeValue.PropertyNames.ArrayType);
-                writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Low);
-                writer.WriteValue(arrayValue.HashValue.GetLow());
-                writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.High);
-                writer.WriteValue(arrayValue.HashValue.GetHigh());
-                writer.WriteEndObject();
-            }
-            else if (value is SqlQueryResumeInfo.ObjectResumeValue objectValue)
-            {
-                writer.WriteStartObject();
-                writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Type);
-                writer.WriteValue(SqlQueryResumeInfo.ResumeValue.PropertyNames.ObjectType);
-                writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Low);
-                writer.WriteValue(objectValue.HashValue.GetLow());
-                writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.High);
-                writer.WriteValue(objectValue.HashValue.GetHigh());
-                writer.WriteEndObject();
+                case SqlQueryResumeInfo.UndefinedResumeValue:
+                    writer.WriteStartArray();
+                    writer.WriteEndArray();
+                    break;
+
+                case SqlQueryResumeInfo.NullResumeValue:
+                    writer.WriteNull();
+                    break;
+
+                case SqlQueryResumeInfo.BooleanResumeValue booleanValue:
+                    serializer.Serialize(writer, booleanValue.Value);
+                    break;
+
+                case SqlQueryResumeInfo.NumberResumeValue numberValue:
+                    serializer.Serialize(writer, numberValue.Value);
+                    break;
+
+                case SqlQueryResumeInfo.StringResumeValue stringValue:
+                    serializer.Serialize(writer, stringValue.Value.ToString());
+                    break;
+
+                case SqlQueryResumeInfo.ArrayResumeValue arrayValue:
+                    writer.WriteStartObject();
+                    writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Type);
+                    writer.WriteValue(SqlQueryResumeInfo.ResumeValue.PropertyNames.ArrayType);
+                    writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Low);
+                    writer.WriteValue(arrayValue.HashValue.GetLow());
+                    writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.High);
+                    writer.WriteValue(arrayValue.HashValue.GetHigh());
+                    writer.WriteEndObject();
+                    break;
+
+                case SqlQueryResumeInfo.ObjectResumeValue objectValue:
+                    writer.WriteStartObject();
+                    writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Type);
+                    writer.WriteValue(SqlQueryResumeInfo.ResumeValue.PropertyNames.ObjectType);
+                    writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Low);
+                    writer.WriteValue(objectValue.HashValue.GetLow());
+                    writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.High);
+                    writer.WriteValue(objectValue.HashValue.GetHigh());
+                    writer.WriteEndObject();
+                    break;
+
+                default:
+                    throw new ArgumentException($"Invalid {nameof(SqlQueryResumeInfo.ResumeValue)} type.");
             }
         }
 

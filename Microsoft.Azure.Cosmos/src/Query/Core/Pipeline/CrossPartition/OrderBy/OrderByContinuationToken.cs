@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
+    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeInfo;
 
     /// <summary>
     /// <para>
@@ -79,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         public OrderByContinuationToken(
             ParallelContinuationToken compositeContinuationToken,
             IReadOnlyList<OrderByItem> orderByItems,
-            IReadOnlyList<SqlQueryResumeInfo.ResumeValue> resumeValues,
+            IReadOnlyList<ResumeValue> resumeValues,
             string rid,
             int skipCount,
             string filter)
@@ -166,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         /// This is an array to support multi item order by.
         /// </remarks>>
         [JsonProperty(PropertyNames.ResumeValues)]
-        public IReadOnlyList<SqlQueryResumeInfo.ResumeValue> ResumeValues
+        public IReadOnlyList<ResumeValue> ResumeValues
         {
             get;
         }
@@ -259,32 +260,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             List<CosmosElement> resumeValuesRaw = new List<CosmosElement>();
             if (orderByContinuationToken.ResumeValues != null)
             {
-                foreach (SqlQueryResumeInfo.ResumeValue resumeValue in orderByContinuationToken.ResumeValues)
+                foreach (ResumeValue resumeValue in orderByContinuationToken.ResumeValues)
                 {
-                    CosmosElement resumeElement = resumeValue switch
-                    {
-                        SqlQueryResumeInfo.UndefinedResumeValue => CosmosArray.Create(new List<CosmosElement>()),
-                        SqlQueryResumeInfo.NullResumeValue => CosmosNull.Create(),
-                        SqlQueryResumeInfo.BooleanResumeValue booleanValue => CosmosBoolean.Create(booleanValue.Value),
-                        SqlQueryResumeInfo.NumberResumeValue numberValue => CosmosNumber64.Create(numberValue.Value),
-                        SqlQueryResumeInfo.StringResumeValue stringValue => CosmosString.Create(stringValue.Value),
-                        SqlQueryResumeInfo.ArrayResumeValue arrayValue => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { SqlQueryResumeInfo.ResumeValue.PropertyNames.Type, CosmosString.Create(SqlQueryResumeInfo.ResumeValue.PropertyNames.ArrayType) },
-                                { SqlQueryResumeInfo.ResumeValue.PropertyNames.Low, CosmosNumber64.Create(arrayValue.HashValue.GetLow()) },
-                                { SqlQueryResumeInfo.ResumeValue.PropertyNames.High, CosmosNumber64.Create(arrayValue.HashValue.GetHigh()) }
-                            }),
-                        SqlQueryResumeInfo.ObjectResumeValue objectValue => CosmosObject.Create(
-                            new Dictionary<string, CosmosElement>()
-                            {
-                                { SqlQueryResumeInfo.ResumeValue.PropertyNames.Type, CosmosString.Create(SqlQueryResumeInfo.ResumeValue.PropertyNames.ObjectType) },
-                                { SqlQueryResumeInfo.ResumeValue.PropertyNames.Low, CosmosNumber64.Create(objectValue.HashValue.GetLow()) },
-                                { SqlQueryResumeInfo.ResumeValue.PropertyNames.High, CosmosNumber64.Create(objectValue.HashValue.GetHigh()) }
-                            }),
-                        _ => throw new NotSupportedException(),
-                    };
-                    resumeValuesRaw.Add(resumeElement);
+                    resumeValuesRaw.Add(ResumeValueToCosmosElementConverter.Convert(resumeValue));
                 }
             }
 
@@ -334,10 +312,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             ParallelContinuationToken compositeContinuationToken = tryCompositeContinuation.Result;
 
             // Try to get ResumeValues first, if it is not present then try to get order by items
-            List<SqlQueryResumeInfo.ResumeValue> resumeValues;
+            List<ResumeValue> resumeValues;
             if (cosmosObject.TryGetValue(PropertyNames.ResumeValues, out CosmosArray resumeValuesRaw))
             {
-                resumeValues = new List<SqlQueryResumeInfo.ResumeValue>();
+                resumeValues = new List<ResumeValue>();
                 foreach (CosmosElement resumeValue in resumeValuesRaw)
                 {
                     resumeValues.Add(resumeValue.Accept(CosmosElementToResumeValueVisitor.Singleton));
@@ -398,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             return TryCatch<OrderByContinuationToken>.FromResult(orderByContinuationToken);
         }
 
-        private sealed class CosmosElementToResumeValueVisitor : ICosmosElementVisitor<SqlQueryResumeInfo.ResumeValue>
+        private sealed class CosmosElementToResumeValueVisitor : ICosmosElementVisitor<ResumeValue>
         {
             public static readonly CosmosElementToResumeValueVisitor Singleton = new CosmosElementToResumeValueVisitor();
 
@@ -406,78 +384,78 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosArray cosmosArray)
+            public ResumeValue Visit(CosmosArray cosmosArray)
             {
                 if (cosmosArray.Count != 0)
                 {
-                    throw new ArgumentException();
+                    throw new ArgumentException($"Only empty arrays can be converted to ResumeValue. Array has {cosmosArray.Count} elements.");
                 }
 
-                return new SqlQueryResumeInfo.UndefinedResumeValue();
+                return new UndefinedResumeValue();
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosBinary cosmosBinary)
+            public ResumeValue Visit(CosmosBinary cosmosBinary)
             {
-                throw new NotSupportedException();
+                throw new NotSupportedException($"Converting {nameof(CosmosBinary)} to {nameof(ResumeValue)} is not supported");
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosBoolean cosmosBoolean)
+            public ResumeValue Visit(CosmosBoolean cosmosBoolean)
             {
-                return new SqlQueryResumeInfo.BooleanResumeValue(cosmosBoolean.Value);
+                return new BooleanResumeValue(cosmosBoolean.Value);
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosGuid cosmosGuid)
+            public ResumeValue Visit(CosmosGuid cosmosGuid)
             {
-                throw new NotSupportedException();
+                throw new NotSupportedException($"Converting {nameof(CosmosGuid)} to {nameof(ResumeValue)} is not supported");
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosNull cosmosNull)
+            public ResumeValue Visit(CosmosNull cosmosNull)
             {
-                return new SqlQueryResumeInfo.NullResumeValue();
+                return new NullResumeValue();
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosUndefined cosmosUndefined)
+            public ResumeValue Visit(CosmosUndefined cosmosUndefined)
             {
-                return new SqlQueryResumeInfo.UndefinedResumeValue();
+                return new UndefinedResumeValue();
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosNumber cosmosNumber)
+            public ResumeValue Visit(CosmosNumber cosmosNumber)
             {
-                return new SqlQueryResumeInfo.NumberResumeValue(cosmosNumber.Value);
+                return new NumberResumeValue(cosmosNumber.Value);
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosObject cosmosObject)
+            public ResumeValue Visit(CosmosObject cosmosObject)
             {
-                if (!cosmosObject.TryGetValue(SqlQueryResumeInfo.ResumeValue.PropertyNames.Type, out CosmosString objectType)
-                    || !cosmosObject.TryGetValue(SqlQueryResumeInfo.ResumeValue.PropertyNames.Low, out CosmosNumber64 lowValue)
-                    || !cosmosObject.TryGetValue(SqlQueryResumeInfo.ResumeValue.PropertyNames.High, out CosmosNumber64 highValue))
+                if (!cosmosObject.TryGetValue(ResumeValue.PropertyNames.Type, out CosmosString objectType)
+                    || !cosmosObject.TryGetValue(ResumeValue.PropertyNames.Low, out CosmosNumber64 lowValue)
+                    || !cosmosObject.TryGetValue(ResumeValue.PropertyNames.High, out CosmosNumber64 highValue))
                 {
-                    throw new ArgumentException();
+                    throw new ArgumentException($"Incorrect Array / Object Resume Value. One or more of the required properties are missing.");
                 }
 
-                if (string.Equals(objectType.Value, SqlQueryResumeInfo.ResumeValue.PropertyNames.ArrayType))
+                if (string.Equals(objectType.Value, ResumeValue.PropertyNames.ArrayType))
                 {
-                    return new SqlQueryResumeInfo.ArrayResumeValue(
+                    return new ArrayResumeValue(
                         UInt128.Create(
                             (ulong)Number64.ToLong(lowValue.Value),
                             (ulong)Number64.ToLong(highValue.Value)));
                 }
-                else if (string.Equals(objectType.Value, SqlQueryResumeInfo.ResumeValue.PropertyNames.ObjectType))
+                else if (string.Equals(objectType.Value, ResumeValue.PropertyNames.ObjectType))
                 {
-                    return new SqlQueryResumeInfo.ObjectResumeValue(
+                    return new ObjectResumeValue(
                         UInt128.Create(
                             (ulong)Number64.ToLong(lowValue.Value),
                             (ulong)Number64.ToLong(highValue.Value)));
                 }
                 else
                 {
-                    throw new ArgumentException();
+                    throw new ArgumentException($"Incorrect value for {ResumeValue.PropertyNames.Type} property. Value is {objectType.Value}.");
                 }
             }
 
-            public SqlQueryResumeInfo.ResumeValue Visit(CosmosString cosmosString)
+            public ResumeValue Visit(CosmosString cosmosString)
             {
-                return new SqlQueryResumeInfo.StringResumeValue(cosmosString.Value);
+                return new StringResumeValue(cosmosString.Value);
             }
         }
     }
