@@ -265,7 +265,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (lease.Owner != this.options.HostName)
             {
                 DefaultTrace.TraceInformation("Lease with token '{0}' was taken over by owner '{1}' before lease properties update", lease.CurrentLeaseToken, lease.Owner);
-                throw new LeaseLostException(lease);
+                throw new LeaseLostException(
+                    lease,
+                    CosmosExceptionFactory.Create(
+                        statusCode: HttpStatusCode.PreconditionFailed,
+                        message: $"{lease.CurrentLeaseToken} lease token was taken over by owner '{lease.Owner}'",
+                        headers: new Headers(),
+                        stackTrace: default,
+                        trace: NoOpTrace.Singleton,
+                        error: default,
+                        innerException: default),
+                    isGone: false);
             }
 
             return await this.leaseUpdater.UpdateLeaseAsync(
