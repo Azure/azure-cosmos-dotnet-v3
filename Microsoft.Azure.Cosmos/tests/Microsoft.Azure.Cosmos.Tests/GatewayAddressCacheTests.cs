@@ -18,6 +18,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -108,8 +110,11 @@ namespace Microsoft.Azure.Cosmos
         public async Task TestGatewayAddressCacheUpdateOnConnectionResetAsync()
         {
             FakeMessageHandler messageHandler = new FakeMessageHandler();
-            HttpClient httpClient = new HttpClient(messageHandler);
-            httpClient.Timeout = TimeSpan.FromSeconds(120);
+            HttpClient httpClient = new HttpClient(messageHandler)
+            {
+                Timeout = TimeSpan.FromSeconds(120)
+            };
+
             GatewayAddressCache cache = new GatewayAddressCache(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
                 Documents.Client.Protocol.Tcp,
@@ -129,8 +134,9 @@ namespace Microsoft.Azure.Cosmos
 
             Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla.com"));
 
-            // call updateAddress
-            cache.TryRemoveAddresses(new Documents.Rntbd.ServerKey(new Uri("https://blabla.com")));
+            // Mark transport addresses to Unhealthy depcting a connection reset event.
+            ServerKey faultyServerKey = new (new Uri("https://blabla2.com"));
+            await cache.MarkAddressesToUnhealthyAsync(faultyServerKey);
 
             // check if the addresss is updated
             addresses = await cache.TryGetAddressesAsync(
@@ -140,7 +146,15 @@ namespace Microsoft.Azure.Cosmos
              false,
              CancellationToken.None);
 
-            Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla5.com"));
+            // Validate that the above transport uri with host blabla2.com has been marked Unhealthy.
+            IReadOnlyList<TransportAddressUri> transportAddressUris = addresses
+                .Get(Protocol.Tcp)?
+                .ReplicaTransportAddressUris;
+
+            TransportAddressUri transportAddressUri = transportAddressUris
+                .Single(x => x.ReplicaServerKey.Equals(faultyServerKey));
+
+            Assert.IsTrue(condition: transportAddressUri.GetCurrentHealthState().GetHealthStatus().Equals(TransportAddressHealthState.HealthStatus.Unhealthy));
         }
 
         [TestMethod]
@@ -1458,23 +1472,23 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Task IOpenConnectionsHandler.TryOpenRntbdChannelsAsync(
-                IReadOnlyList<TransportAddressUri> addresses)
+                IEnumerable<TransportAddressUri> addresses)
             {
-                this.totalReceivedAddressesCounter = addresses.Count;
-                for (int i = 0; i < addresses.Count; i++)
+                this.totalReceivedAddressesCounter = addresses.Count();
+                for (int i = 0; i < addresses.Count(); i++)
                 {
                     if (this.useAttemptBasedFailingIndexs)
                     {
                         if (this.failIndexesByAttempts.ContainsKey(i) && this.failIndexesByAttempts[i].Contains(this.methodInvocationCounter))
                         {
                             this.ExecuteFailureCondition(
-                                addresses: addresses,
+                                addresses: addresses.ToList(),
                                 index: i);
                         }
                         else
                         {
                             this.ExecuteSuccessCondition(
-                                addresses: addresses,
+                                addresses: addresses.ToList(),
                                 index: i);
                         }
                     }
@@ -1483,13 +1497,13 @@ namespace Microsoft.Azure.Cosmos
                         if (this.failingIndexes.Contains(i))
                         {
                             this.ExecuteFailureCondition(
-                                addresses: addresses,
+                                addresses: addresses.ToList(),
                                 index: i);
                         }
                         else
                         {
                             this.ExecuteSuccessCondition(
-                                addresses: addresses,
+                                addresses: addresses.ToList(),
                                 index: i);
                         }
                     }
