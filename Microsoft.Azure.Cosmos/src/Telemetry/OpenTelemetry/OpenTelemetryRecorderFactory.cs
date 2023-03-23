@@ -10,28 +10,27 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// <summary>
     /// This class is used to generate Activities with Azure.Cosmos.Operation Source Name
     /// </summary>
-    internal static class OpenTelemetryRecorderFactory
+    internal class OpenTelemetryRecorderFactory
     {
         /// <summary>
         /// Singleton to make sure we only have one instance of the DiagnosticScopeFactory and pattern matching of listener happens only once
         /// </summary>
-        private static Lazy<DiagnosticScopeFactory> ScopeFactory = new Lazy<DiagnosticScopeFactory>(() => new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
-                        resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                        isActivityEnabled: true),
-            isThreadSafe: true);
-        
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
+        public OpenTelemetryCoreRecorder CreateRecorder(string operationName,
             string containerName,
             string databaseName,
             Documents.OperationType operationType,
             RequestOptions requestOptions, 
             CosmosClientContext clientContext)
         {
+            DiagnosticScopeFactory scopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
+                        resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
+                        isActivityEnabled: clientContext?.ClientOptions.IsDistributedTracingEnabled);
+        
             if (clientContext is { ClientOptions.IsDistributedTracingEnabled: true })
             {
                 // If there is no source then it will return default otherwise a valid diagnostic scope
                 DiagnosticScope scope = OpenTelemetryRecorderFactory
-                    .ScopeFactory.Value
+                    .ScopeFactory
                     .CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
                                  kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
 
