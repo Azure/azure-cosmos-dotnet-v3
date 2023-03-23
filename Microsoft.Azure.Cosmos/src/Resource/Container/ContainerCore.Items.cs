@@ -505,14 +505,11 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions ??= new QueryRequestOptions();
 
-            if (linqSerializerOptions == null && this.ClientContext.ClientOptions != null)
+            if (linqSerializerOptions == null && this.ClientContext.ClientOptions.SerializerOptions != null)
             {
                 linqSerializerOptions = new CosmosLinqSerializerOptions
                 {
-                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions != null 
-                                            ? this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
-                                            : CosmosPropertyNamingPolicy.Default,
-                    CustomCosmosSerializer = this.ClientContext.ClientOptions.Serializer
+                    PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
                 };
             }
 
@@ -959,12 +956,6 @@ namespace Microsoft.Azure.Cosmos
             // User specified PK value, no need to extract it
             if (partitionKey.HasValue)
             {
-                PartitionKeyDefinition pKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
-                if (partitionKey.HasValue && partitionKey.Value != PartitionKey.None && partitionKey.Value.InternalKey.Components.Count != pKeyDefinition.Paths.Count)
-                {
-                    throw new ArgumentException(RMResources.MissingPartitionKeyValue);
-                }
-
                 return await this.ProcessItemStreamAsync(
                         partitionKey,
                         itemId,

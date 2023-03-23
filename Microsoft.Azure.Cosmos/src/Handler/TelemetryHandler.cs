@@ -40,11 +40,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 resourceType: request.ResourceType,
                                 consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
                                 requestCharge: response.Headers.RequestCharge,
-                                subStatusCode: response.Headers.SubStatusCode);
+                                subStatusCode: response.Headers.SubStatusCode,
+                                trace: response.Trace);
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceError("Error while collecting telemetry information : " + ex.Message);
+                    DefaultTrace.TraceError("Error while collecting telemetry information : {0}", ex);
                 }
             }
             return response;

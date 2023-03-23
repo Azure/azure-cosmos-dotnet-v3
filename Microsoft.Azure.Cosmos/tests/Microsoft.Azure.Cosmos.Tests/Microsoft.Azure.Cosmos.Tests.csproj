@@ -9,7 +9,7 @@
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos.Tests</RootNamespace>
-	<LangVersion>$(LangVersion)</LangVersion>
+    <LangVersion>$(LangVersion)</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,9 +34,11 @@
     <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.ScenariosAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.Serialization.xml" />
     <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.TraceData.xml" />
+    <None Remove="Telemetry\ClientTelemetryPayloadWithoutMetrics.json" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
   </ItemGroup>
 
@@ -66,6 +68,9 @@
 
   <ItemGroup Condition="$(OS) != 'Linux' AND '$(ProjectRef)' != 'True' ">
     <None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\microsoft.hybridrow.nuspec">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\Microsoft.Azure.Cosmos.Direct.nuspec">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="..\..\src\Microsoft.Azure.Cosmos.csproj">
@@ -170,12 +175,24 @@
     <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.ArrayCreate.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-	<None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.All.xml">
-		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	</None>
-	<None Update="BaselineTest\TestBaseline\AggregateSubquerySqlParserBaselineTests.All.xml">
-		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	</None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.All.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.First.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\ScalarExpressionSqlParserBaselineTests.Last.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\AggregateSubquerySqlParserBaselineTests.All.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\AggregateSubquerySqlParserBaselineTests.First.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\AggregateSubquerySqlParserBaselineTests.Last.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.SystemFunctions.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -194,9 +211,9 @@
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.GroupBy.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-	<None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Like.xml">
+    <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Like.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>	
+    </None>    
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.ManyRanges.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -357,6 +374,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlUnaryScalarOperators.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Telemetry\ClientTelemetryPayloadWithoutMetrics.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

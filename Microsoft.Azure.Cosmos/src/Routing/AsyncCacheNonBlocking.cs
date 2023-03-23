@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
                     key: key,
                     initialValue: initialLazyValue,
                     callbackDelegate: singleValueInitFunc,
-                    operationName: "GetAsync");
+                    operationName: nameof(GetAsync));
             }
 
             // The AsyncLazyWithRefreshTask is lazy and won't create the task until GetValue is called.
@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos
                     key: key,
                     initialValue: initialLazyValue,
                     callbackDelegate: singleValueInitFunc,
-                    operationName: "RefreshAsync");
+                    operationName: nameof(RefreshAsync));
             }
         }
 
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos
                 Func<T, Task<T>> createRefreshTask)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
-                
+
                 // The original task is still being created. Just return the original task.
                 Task<T> valueSnapshot = this.value;
                 if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(valueSnapshot))
