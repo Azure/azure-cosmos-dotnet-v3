@@ -13,13 +13,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tests;
     
-    internal class TestEventListener : EventListener
+    internal class CustomEventListener : EventListener
     {
-        private string eventName;
+        private readonly string eventName;
         
         public ConcurrentBag<string> CollectedEvents { set; get; } = new();
 
-        internal TestEventListener(string eventName)
+        internal CustomEventListener(string eventName)
         {
             this.eventName = eventName;
         }
@@ -54,8 +54,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public override void Dispose()
         {
             base.Dispose();
-
-            this.eventName = null;
         }
     }
 }

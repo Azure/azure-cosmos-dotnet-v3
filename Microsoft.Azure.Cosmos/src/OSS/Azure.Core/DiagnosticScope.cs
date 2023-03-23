@@ -180,7 +180,6 @@ namespace Azure.Core.Pipeline
                 this.kind = kind;
                 this.diagnosticSourceArgs = diagnosticSourceArgs;
 
-                Console.WriteLine($"{activityName} $$$ {this.kind}");
                 switch (this.kind)
                 {
                     case ActivityKind.Internal:

@@ -15,10 +15,10 @@
         IObserver<DiagnosticListener>,
         IDisposable
     {
-        private Func<string, bool> sourceNameFilter;
+        private readonly Func<string, bool> sourceNameFilter;
 
-        private readonly TestListener listener 
-            = new TestListener("Azure-Cosmos-Operation-Request-Diagnostics");
+        private readonly CustomListener listener 
+            = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*", "Azure-Cosmos-Operation-Request-Diagnostics");
         
         private List<IDisposable> subscriptions = new();
 
@@ -82,8 +82,6 @@
                 }
             }
             this.listener.Dispose();
-
-            this.sourceNameFilter = null;
         }
 
         public List<string> GetRecordedAttributes()

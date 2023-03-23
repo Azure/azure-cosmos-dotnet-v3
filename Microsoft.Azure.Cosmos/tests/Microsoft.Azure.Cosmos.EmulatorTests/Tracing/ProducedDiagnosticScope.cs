@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using static Microsoft.Azure.Cosmos.Tests.TestListener;
+    using static Microsoft.Azure.Cosmos.Tests.CustomListener;
 
     public class ProducedDiagnosticScope
     {

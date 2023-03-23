@@ -8,7 +8,6 @@
 
 namespace Azure.Core.Pipeline
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading;
@@ -46,7 +45,6 @@ namespace Azure.Core.Pipeline
 
         public DiagnosticScope CreateScope(string name, DiagnosticScope.ActivityKind kind = DiagnosticScope.ActivityKind.Client)
         {
-            Console.WriteLine($"{name} ==== {kind}");
             if (this.source == null)
             {
                 return default;
