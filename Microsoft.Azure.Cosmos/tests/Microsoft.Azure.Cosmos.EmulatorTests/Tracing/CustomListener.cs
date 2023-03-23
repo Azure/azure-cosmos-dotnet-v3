@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // Unimplemented Method
         }
-
+        
         /// <summary>
         /// IObserver Override
         /// </summary>
@@ -69,6 +69,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             lock (this.Scopes)
             {
+                if (!Activity.Current.IsAllDataRequested)
+                {
+                    return;
+                }
+                
                 // Check for disposal
                 if (this.subscriptions == null) return;
 
@@ -76,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string stopSuffix = ".Stop";
                 string exceptionSuffix = ".Exception";
                 
-                if (value.Key.EndsWith(startSuffix))
+                if (value.Key.EndsWith(startSuffix) && Activity.Current.IsAllDataRequested)
                 {
                     string name = value.Key[..^startSuffix.Length];
                     PropertyInfo propertyInfo = value.Value.GetType().GetTypeInfo().GetDeclaredProperty("Links");
