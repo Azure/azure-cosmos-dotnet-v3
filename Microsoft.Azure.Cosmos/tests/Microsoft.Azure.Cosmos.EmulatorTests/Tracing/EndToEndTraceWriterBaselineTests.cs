@@ -43,8 +43,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         [ClassInitialize]
         public static async Task ClassInitAsync(TestContext context)
         {
-            Environment.SetEnvironmentVariable("AZURE_EXPERIMENTAL_ENABLE_ACTIVITY_SOURCE", "true");
-
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
+            
             Console.WriteLine("ClassInitialize");
             
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
@@ -102,8 +102,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             EndToEndTraceWriterBaselineTests.bulkClient?.Dispose();
             EndToEndTraceWriterBaselineTests.miscCosmosClient?.Dispose();
 
-            Environment.SetEnvironmentVariable("AZURE_EXPERIMENTAL_ENABLE_ACTIVITY_SOURCE", "false");
-            
             await Task.Delay(5000);
         }
 
