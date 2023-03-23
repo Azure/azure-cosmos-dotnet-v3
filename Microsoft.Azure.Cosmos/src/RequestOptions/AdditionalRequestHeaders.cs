@@ -13,17 +13,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     internal sealed class AdditionalRequestHeaders
     {
         /// <summary>
-        /// GUID to enable backend to link multiple activityIds that belong to the same operation.
+        /// Enable backend to link multiple activityIds that belong to the same operation.
         /// </summary>
         public Guid CorrelatedActivityId { get; }
 
         /// <summary>
-        /// Boolean to let the backend know if continuations are expected for a certain query.
+        /// Let the backend know if continuations are expected for a certain query.
         /// </summary>
         public bool IsContinuationExpected { get; }
 
         /// <summary>
-        /// Boolean to let the backend know if a query is utilizing the OptimisticDirectExecute pipeline.
+        /// Let the backend know if a query is utilizing the OptimisticDirectExecute pipeline.
         /// </summary>
         public bool OptimisticDirectExecute { get; }
 

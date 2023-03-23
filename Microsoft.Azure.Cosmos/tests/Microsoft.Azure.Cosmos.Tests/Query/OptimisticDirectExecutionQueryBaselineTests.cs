@@ -223,7 +223,7 @@
                                 numItems: numItems,
                                 isMultiPartition: false,
                                 expectedContinuationTokenCount: testCase.ExpectedContinuationTokenCount,
-                                switchRequiresDist: false);
+                                requiresDist: false);
 
                     Assert.AreEqual(testCase.ExpectedDocumentCount, result);
             }
@@ -263,7 +263,7 @@
                             numItems: numItems,
                             isMultiPartition: false,
                             expectedContinuationTokenCount: testCase.ExpectedContinuationTokenCount,
-                            switchRequiresDist: true);
+                            requiresDist: true);
 
                 Assert.AreEqual(testCase.ExpectedDocumentCount, result);
             }
@@ -324,7 +324,7 @@
                                 numItems: numItems,
                                 isMultiPartition: false,
                                 expectedContinuationTokenCount: testCase.ExpectedContinuationTokenCount,
-                                switchRequiresDist: requiresDist);
+                                requiresDist: requiresDist);
 
                     Assert.AreEqual(testCase.ExpectedDocumentCount, result);
                 }
@@ -484,10 +484,10 @@
             return (mergeTest, queryPipelineStage);
         }
 
-        private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount, bool switchRequiresDist = false)
+        private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount, bool requiresDist = false)
         {
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-            DocumentContainer inMemoryCollection = switchRequiresDist
+            DocumentContainer inMemoryCollection = requiresDist
                 ? await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition, requiresDist: true)
                 : await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition);
             IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
@@ -497,7 +497,7 @@
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
-                if (!switchRequiresDist)
+                if (!requiresDist)
                 {
                     Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
                 }
@@ -578,8 +578,8 @@
             };
 
             InMemoryContainer inMemoryContainer = new InMemoryContainer(partitionKeyDefinition);
-            if (requiresDist) 
-            { 
+            if (requiresDist)
+            {
                 inMemoryContainer.RequiresDistribution = true; 
             }
 
