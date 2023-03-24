@@ -755,6 +755,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return false;
                 }
 
+                public override bool Visit(SqlFirstScalarExpression scalarExpression)
+                {
+                    return false;
+                }
+
                 public override bool Visit(SqlFunctionCallScalarExpression scalarExpression)
                 {
                     if (this.MatchesGroupByExpression(scalarExpression))
@@ -803,6 +808,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     }
 
                     return true;
+                }
+
+                public override bool Visit(SqlLastScalarExpression scalarExpression)
+                {
+                    return false;
                 }
 
                 public override bool Visit(SqlLikeScalarExpression scalarExpression)

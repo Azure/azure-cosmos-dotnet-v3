@@ -105,6 +105,11 @@ namespace Microsoft.Azure.Documents
         GetStorageAuthToken = 59,
         CreateClientEncryptionKey = 60,
         ReplaceClientEncryptionKey = 61,
+        UpdatePartitionThroughput = 62,
+
+        // Operation type for recreating RidRange resources during the pitr restore of a multi master partition
+        CreateRidRangeResources = 64,
+        Truncate = 65,
 #endif
 
         // These names make it unclear what they map to in RequestOperationType.
@@ -129,6 +134,7 @@ namespace Microsoft.Azure.Documents
         GetGraphDatabaseAccountConfiguration = -19,
         GetCustomerManagedKeyStatus = -20,
         GetBatchCustomerManagedKeyStatus = -21,
+        XPDatabaseAccountMetaData = -22,
 #endif
     }
 
@@ -184,9 +190,12 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.GetSplitPoints ||
                    type == OperationType.ForcePartitionBackup ||
                    type == OperationType.CreateSystemSnapshot ||
+                   type == OperationType.CreateRidRangeResources ||
                    type == OperationType.UpdateFailoverPriorityList ||
                    type == OperationType.Pause ||
-                   type == OperationType.Resume
+                   type == OperationType.Resume ||
+                   type == OperationType.UpdatePartitionThroughput ||
+                   type == OperationType.Truncate
 #endif
                    ;
         }

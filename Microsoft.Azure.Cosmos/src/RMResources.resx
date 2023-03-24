@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!--
-    Microsoft ResX Schema
-
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -586,7 +586,7 @@
     <value>The value of offer throughput specified exceeded supported maximum throughput for Fixed size container. Please enter value less than {0}.</value>
   </data>
   <data name="InsufficientPartitionedDataForOfferThroughput" xml:space="preserve">
-    <value>For containers migrated from fixed to unlimited, scale operation can be performed only if the container has documents populated with partition key. Please retry the throughput scale operation after populating documents with partition key.</value>
+    <value>For containers migrated from fixed to unlimited, scale operation can be performed only if the container has documents populated with partition key. Please retry the throughput scale operation after populating documents with partition key. Please see https://aka.ms/migrate-to-partitioned-collection for more information.</value>
   </data>
   <data name="UnSupportedOfferThroughput" xml:space="preserve">
     <value>The value of offer throughput specified is invalid. Please specify a value between {0} and {1} inclusive in increments of {2}. Please contact https://azure.microsoft.com/support to request limit increases beyond {1} RU/s.</value>
@@ -1033,9 +1033,6 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="ZoneRedundantAccountsNotSupportedInLocation" xml:space="preserve">
     <value>Zone Redundant Accounts are not supported in {0} Location yet. Please try other locations.</value>
   </data>
-  <data name="EnableAnalyticsStorageAndEnableServerlessNotSupported" xml:space="preserve">
-    <value>Serverless accounts do not support analytics storage(i.e. EnableAnalyticsStorage=true).</value>
-  </data>
   <data name="EnableMultipleWriteLocationsAndEnableServerlessNotSupported" xml:space="preserve">
     <value>Serverless accounts do not support multiple write locations(i.e. EnableMultipleWriteLocations=true).</value>
   </data>
@@ -1229,11 +1226,29 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="FirstKeyVaultAccessAttemptShouldBeUnauthorized" xml:space="preserve">
     <value>Unexpected status code for first Azure Key Vault Access. First request to get Azure Key Vault metadata should always return Unauthorized.</value>
   </data>
-  <data name="FailoverDisabled" xml:space="preserve">
+  <data name="InvalidMSALScopeLength" xml:space="preserve">
+    <value>The expected scope array should be of length 1. Instead received scope with length {0}.</value>
+  </data>
+  <data name="InvalidRequestedScopeFormat" xml:space="preserve">
+    <value>The requested scope is not a well formed URI string.</value>
+  </data>
+  <data name="InvalidSchemeInScope" xml:space="preserve">
+    <value>The requested scope is not https.</value>
+  </data>
+  <data name="InvalildScopeSegments" xml:space="preserve">
+    <value>The requested scope contains unexpected segments.</value>
+  </data>
+	<data name="FailoverDisabled" xml:space="preserve">
     <value>Cannot perform failover as it is disabled for the account.</value>
   </data>
   <data name="UnsupportedPartitionDefinitionKindForPartialKeyOperations" xml:space="preserve">
     <value>This partition key definition kind is not supported for partial partition key operations</value>
+  </data>
+  <data name="InvalidMongoCollectionName" xml:space="preserve">
+    <value>Collection name '{0}' is invalid for MongoDB API.</value>
+  </data>
+  <data name="InvalidMongoDatabaseName" xml:space="preserve">
+    <value>Database name '{0}' is invalid for MongoDB API.</value>
   </data>
   <data name="DuplicatePhysicalPartitionIdInTargetPartitionThroughputInfo" xml:space="preserve">
     <value>There cannot be duplicate physical partition ids in x-ms-cosmos-target-partition-throughput-info header.</value>
@@ -1306,5 +1321,20 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="CrossTenantCMKNotSupportedWithSystemAssignedIdentity" xml:space="preserve">
     <value>Cross-tenant CMK is not supported with System Assigned identities as Default identities. Please use an User Assigned Identity instead.</value>
+  </data>
+  <data name="InvalidFederationCapAction" xml:space="preserve">
+    <value>Federation cap action is not currently supported.</value>
+  </data>
+  <data name="DefaultIdentityNotValidFormat" xml:space="preserve">
+    <value>The given default identity for {0} is not valid. The format for the default identity is not valid, please use 'FirstPartyIdentity'/'SystemAssignedIdentity'/'UserAssignedIdentity=&lt;UA_resource_id&gt;'</value>
+  </data>
+  <data name="DefaultIdentityWithoutCorrespondingDelegatedIdentity" xml:space="preserve">
+    <value>The given default identity for {0} is not valid. The default identity points to a delegated identity that does not exist in {0}.</value>
+  </data>
+  <data name="DefaultIdentityWithoutCorrespondingSystemIdentity" xml:space="preserve">
+    <value>The given default identity for {0} is not valid. The default identity points to a system identity that does not exist in {0}.</value>
+  </data>
+  <data name="DefaultIdentityWithoutCorrespondingUserIdentity" xml:space="preserve">
+    <value>The given default identity for {0} is not valid. The default identity points to an user identity that does not exist in {0}.</value>
   </data>
 </root>

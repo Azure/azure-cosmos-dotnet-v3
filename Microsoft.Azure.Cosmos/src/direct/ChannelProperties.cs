@@ -5,7 +5,9 @@ namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
     using System.Diagnostics;
+    using System.Net;
     using System.Net.Security;
+    using System.Threading.Tasks;
 
     internal sealed class ChannelProperties
     {
@@ -19,7 +21,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             TimeSpan idleTimeout, TimerPool idleTimerPool,
             RntbdConstants.CallerId callerId, bool enableChannelMultiplexing,
             MemoryStreamPool memoryStreamPool,
-            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback,
+            Func<string, Task<IPAddress>> dnsResolutionFunction)
         {
             Debug.Assert(userAgent != null);
             this.UserAgent = userAgent;
@@ -53,6 +56,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.MaxConcurrentOpeningConnectionCount = maxConcurrentOpeningConnectionCount;
             this.MemoryStreamPool = memoryStreamPool;
             this.RemoteCertificateValidationCallback = remoteCertificateValidationCallback;
+            this.DnsResolutionFunction = dnsResolutionFunction;
         }
 
         public UserAgentContainer UserAgent { get; private set; }
@@ -102,5 +106,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         public MemoryStreamPool MemoryStreamPool { get; private set; }
 
         public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; private set; }
+
+        public Func<string, Task<System.Net.IPAddress>> DnsResolutionFunction { get; private set; }
     }
 }

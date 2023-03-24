@@ -91,7 +91,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.CallerId,
                     clientOptions.EnableChannelMultiplexing,
                     clientOptions.MemoryStreamPool,
-                    clientOptions.RemoteCertificateValidationCallback));
+                    clientOptions.RemoteCertificateValidationCallback,
+                    clientOptions.DnsResolutionFunction));
         }
 
         internal override Task<StoreResponse> InvokeStoreAsync(
@@ -379,6 +380,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.CallerId = RntbdConstants.CallerId.Anonymous;
                 this.EnableChannelMultiplexing = false;
                 this.MaxConcurrentOpeningConnectionCount = ushort.MaxValue;
+                this.DnsResolutionFunction = null;
             }
 
             public TimeSpan RequestTimeout { get; private set; }
@@ -457,6 +459,11 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; internal set; }
 
+            /// <summary>
+            /// Override for DNS resolution callbacks for RNTBD connections.
+            /// </summary>
+            public Func<string, Task<System.Net.IPAddress>> DnsResolutionFunction { get; internal set; }
+
             public override string ToString()
             {
                 StringBuilder s = new StringBuilder();
@@ -493,6 +500,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 s.AppendLine(this.MaxConcurrentOpeningConnectionCount.ToString(CultureInfo.InvariantCulture));
                 s.Append("  Use_RecyclableMemoryStream: ");
                 s.AppendLine(this.MemoryStreamPool != null ? bool.TrueString : bool.FalseString);
+                s.Append("  Use_CustomDnsResolution: ");
+                s.AppendLine(this.DnsResolutionFunction != null ? bool.TrueString : bool.FalseString);
                 return s.ToString();
             }
 

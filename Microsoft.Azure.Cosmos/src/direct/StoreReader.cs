@@ -181,14 +181,6 @@ namespace Microsoft.Azure.Documents
                      includePrimary,
                      entity.RequestContext.ForceRefreshAddressCache);
 
-            if (!string.IsNullOrEmpty(requestedCollectionRid) && !string.IsNullOrEmpty(entity.RequestContext.ResolvedCollectionRid))
-            {
-                if (!requestedCollectionRid.Equals(entity.RequestContext.ResolvedCollectionRid))
-                {
-                    this.sessionContainer.ClearTokenByResourceId(requestedCollectionRid);
-                }
-            }
-
             ISessionToken requestSessionToken = null;
             if (useSessionToken)
             {
@@ -430,7 +422,7 @@ namespace Microsoft.Azure.Documents
 
             DateTime startTimeUtc = DateTime.UtcNow;
             StrongBox<DateTime?> endTimeUtc = new ();
-            using ReferenceCountedDisposable<StoreResult> storeResult = await this.GetResult(entity, requiresValidLsn, primaryUri, endTimeUtc);
+            using ReferenceCountedDisposable<StoreResult> storeResult = await GetResult(entity, requiresValidLsn, primaryUri, endTimeUtc);
             entity.RequestContext.ClientRequestStatistics.RecordResponse(
                 entity,
                 storeResult.Target,

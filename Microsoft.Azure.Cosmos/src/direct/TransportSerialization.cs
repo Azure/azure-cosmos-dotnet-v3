@@ -156,6 +156,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddPopulateQueryMetrics(requestHeaders, rntbdRequest);
             TransportSerialization.AddPopulateQueryMetricsIndexUtilization(requestHeaders, rntbdRequest);
             TransportSerialization.AddPopulateIndexMetricsText(requestHeaders, rntbdRequest);
+            TransportSerialization.AddOptimisticDirectExecute(requestHeaders, rntbdRequest);
             TransportSerialization.AddQueryForceScan(requestHeaders, rntbdRequest);
             TransportSerialization.AddResponseContinuationTokenLimitInKb(requestHeaders, rntbdRequest);
             TransportSerialization.AddPopulatePartitionStatistics(requestHeaders, rntbdRequest);
@@ -180,6 +181,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddFanoutOperationStateHeader(requestHeaders, rntbdRequest);
             TransportSerialization.AddStartAndEndKeys(request, requestHeaders, rntbdRequest);
             TransportSerialization.AddContentSerializationFormat(requestHeaders, rntbdRequest);
+            TransportSerialization.AddSupportedSerializationFormats(requestHeaders, rntbdRequest);
             TransportSerialization.AddIsUserRequest(requestHeaders, rntbdRequest);
             TransportSerialization.AddPreserveFullContent(requestHeaders, rntbdRequest);
             TransportSerialization.AddIsRUPerGBEnforcementRequest(requestHeaders, rntbdRequest);
@@ -199,10 +201,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddRequestedCollectionType(requestHeaders, rntbdRequest);
             TransportSerialization.AddIsThroughputCapRequest(requestHeaders, rntbdRequest);
             TransportSerialization.AddUpdateOfferStateToPending(requestHeaders, rntbdRequest);
+            TransportSerialization.AddUpdateOfferStateToRestorePending(requestHeaders, rntbdRequest);
+            TransportSerialization.AddMasterResourcesDeletionPending(requestHeaders, rntbdRequest);
             TransportSerialization.AddIsInternalServerlessRequest(requestHeaders, rntbdRequest);
             TransportSerialization.AddOfferReplaceRURedistribution(requestHeaders, rntbdRequest);
             TransportSerialization.AddIsMaterializedViewSourceSchemaReplaceBatchRequest(requestHeaders, rntbdRequest);
             TransportSerialization.AddIsCassandraAlterTypeRequest(request, rntbdRequest);
+            TransportSerialization.AddHighPriorityForcedBackup(requestHeaders, rntbdRequest);
 
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.Authorization, requestHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.SessionToken, requestHeaders.SessionToken, rntbdRequest.sessionToken, rntbdRequest);
@@ -283,7 +288,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.ForceDatabaseAccountUpdate, requestHeaders.ForceDatabaseAccountUpdate, rntbdRequest.forceDatabaseAccountUpdate, rntbdRequest);
             TransportSerialization.AddPriorityLevelHeader(request, HttpConstants.HttpHeaders.PriorityLevel, requestHeaders.PriorityLevel, requestHeaders, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.AllowRestoreParamsUpdate, requestHeaders.AllowRestoreParamsUpdate, rntbdRequest.allowRestoreParamsUpdate, rntbdRequest);
-
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.PruneCollectionSchemas, requestHeaders.PruneCollectionSchemas, rntbdRequest.pruneCollectionSchemas, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.IsMigratedFixedCollection, requestHeaders.IsMigratedFixedCollection, rntbdRequest.isMigratedFixedCollection, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.PopulateMinGLSNForDocumentOperations, requestHeaders.PopulateMinGLSNForDocumentOperations, rntbdRequest.populateMinGLSNForDocumentOperations, rntbdRequest);
+            
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
             // BE will respect the per-request value.
@@ -420,175 +428,25 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         internal static StoreResponse MakeStoreResponse(
-           StatusCodes status,
-           Guid activityId,
-           RntbdConstants.Response response,
-           Stream body,
-           string serverVersion)
-        {
-            StoreResponseNameValueCollection responseHeaders = new StoreResponseNameValueCollection();
-            StoreResponse storeResponse = new StoreResponse()
-            {
-                Headers = responseHeaders
-            };
-
-            // When adding new RntbdResponseTokens please add the constant name and constant value to the
-            // list at the top of the StoreResponseNameValueCollection.tt file.
-            // This will add the new property matching the constant name to the StoreResponseNameValueCollection which avoids the dictionary overhead
-            responseHeaders.LastStateChangeUtc = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.lastStateChangeDateTime);
-            responseHeaders.Continuation = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.continuationToken);
-            responseHeaders.ETag = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.eTag);
-            responseHeaders.RetryAfterInMilliseconds = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.retryAfterMilliseconds);
-            responseHeaders.MaxResourceQuota = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.storageMaxResoureQuota);
-            responseHeaders.CurrentResourceQuotaUsage = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.storageResourceQuotaUsage);
-            responseHeaders.CollectionPartitionIndex = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.collectionPartitionIndex);
-            responseHeaders.CollectionServiceIndex = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.collectionServiceIndex);
-            responseHeaders.LSN = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.lSN);
-            responseHeaders.ItemCount = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.itemCount);
-            responseHeaders.SchemaVersion = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.schemaVersion);
-            responseHeaders.OwnerFullName = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.ownerFullName);
-            responseHeaders.OwnerId = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.ownerId);
-            responseHeaders.DatabaseAccountId = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.databaseAccountId);
-            responseHeaders.QuorumAckedLSN = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.quorumAckedLSN);
-            responseHeaders.RequestValidationFailure = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.requestValidationFailure);
-            responseHeaders.SubStatus = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.subStatus);
-            responseHeaders.CollectionIndexTransformationProgress = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.collectionUpdateProgress);
-            responseHeaders.CurrentWriteQuorum = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.currentWriteQuorum);
-            responseHeaders.CurrentReplicaSetSize = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.currentReplicaSetSize);
-            responseHeaders.CollectionLazyIndexingProgress = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.collectionLazyIndexProgress);
-            responseHeaders.PartitionKeyRangeId = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.partitionKeyRangeId);
-            responseHeaders.LogResults = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.logResults);
-            responseHeaders.XPRole = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.xPRole);
-            responseHeaders.IsRUPerMinuteUsed = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.isRUPerMinuteUsed);
-            responseHeaders.QueryMetrics = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.queryMetrics);
-            responseHeaders.QueryExecutionInfo = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.queryExecutionInfo);
-            responseHeaders.IndexUtilization = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.indexUtilization);
-            responseHeaders.GlobalCommittedLSN = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.globalCommittedLSN);
-            responseHeaders.NumberOfReadRegions = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.numberOfReadRegions);
-            responseHeaders.OfferReplacePending = TransportSerialization.GetResponseBoolHeaderIfPresent(response.offerReplacePending);
-            responseHeaders.ItemLSN = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.itemLSN);
-            responseHeaders.RestoreState = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.restoreState);
-            responseHeaders.CollectionSecurityIdentifier = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.collectionSecurityIdentifier);
-            responseHeaders.TransportRequestID = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.transportRequestID);
-            responseHeaders.ShareThroughput = TransportSerialization.GetResponseBoolHeaderIfPresent(response.shareThroughput);
-            responseHeaders.DisableRntbdChannel = TransportSerialization.GetResponseBoolHeaderIfPresent(response.disableRntbdChannel);
-            responseHeaders.XDate = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.serverDateTimeUtc);
-            responseHeaders.LocalLSN = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.localLSN);
-            responseHeaders.QuorumAckedLocalLSN = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.quorumAckedLocalLSN);
-            responseHeaders.ItemLocalLSN = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.itemLocalLSN);
-            responseHeaders.HasTentativeWrites = TransportSerialization.GetResponseBoolHeaderIfPresent(response.hasTentativeWrites);
-            responseHeaders.SessionToken = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.sessionToken);
-            responseHeaders.ReplicatorLSNToGLSNDelta = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.replicatorLSNToGLSNDelta);
-            responseHeaders.ReplicatorLSNToLLSNDelta = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.replicatorLSNToLLSNDelta);
-            responseHeaders.VectorClockLocalProgress = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.vectorClockLocalProgress);
-            responseHeaders.MinimumRUsForOffer = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.minimumRUsForOffer);
-            responseHeaders.XPConfigurationSessionsCount = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.xPConfigurationSessionsCount);
-            responseHeaders.UnflushedMergLogEntryCount = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.unflushedMergeLogEntryCount);
-            responseHeaders.ResourceId = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.resourceName);
-            responseHeaders.TimeToLiveInSeconds = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.timeToLiveInSeconds);
-            responseHeaders.ReplicaStatusRevoked = TransportSerialization.GetResponseBoolHeaderIfPresent(response.replicaStatusRevoked);
-            responseHeaders.SoftMaxAllowedThroughput = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.softMaxAllowedThroughput);
-            responseHeaders.BackendRequestDurationMilliseconds = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.backendRequestDurationMilliseconds);
-            responseHeaders.CorrelatedActivityId = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.correlatedActivityId);
-            responseHeaders.ConfirmedStoreChecksum = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.confirmedStoreChecksum);
-            responseHeaders.TentativeStoreChecksum = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.tentativeStoreChecksum);
-            responseHeaders.PendingPKDelete = TransportSerialization.GetResponseBoolHeaderIfPresent(response.pendingPKDelete);
-            responseHeaders.AadAppliedRoleAssignmentId = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.aadAppliedRoleAssignmentId);
-            responseHeaders.CollectionUniqueIndexReIndexProgress = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.collectionUniqueIndexReIndexProgress);
-            responseHeaders.CollectionUniqueKeysUnderReIndex = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.collectionUniqueKeysUnderReIndex);
-            responseHeaders.AnalyticalMigrationProgress = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.analyticalMigrationProgress);
-            responseHeaders.TotalAccountThroughput = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.totalAccountThroughput);
-            responseHeaders.ByokEncryptionProgress = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.bYOKEncryptionProgress);
-            responseHeaders.AppliedPolicyElementId = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.appliedPolicyElementId);
-            responseHeaders.MergeProgressBlocked = TransportSerialization.GetResponseBoolHeaderIfPresent(response.mergeProgressBlocked);
-            responseHeaders.ChangeFeedInfo = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.changeFeedInfo);
-            responseHeaders.ReIndexerProgress = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.reindexerProgress);
-            responseHeaders.OfferReplacePendingForMerge = TransportSerialization.GetResponseBoolHeaderIfPresent(response.offerReplacePendingForMerge);
-            responseHeaders.OldestActiveSchemaId = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.oldestActiveSchemaId);
-            responseHeaders.PhysicalPartitionId = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.physicalPartitionId);
-            responseHeaders.MaxContentLength = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.maxContentLength);
-            if (response.requestCharge.isPresent)
-            {
-                responseHeaders.RequestCharge = string.Format(CultureInfo.InvariantCulture, "{0:0.##}", response.requestCharge.value.valueDouble);
-            }
-
-            if (response.indexingDirective.isPresent)
-            {
-                string indexingDirective;
-                switch (response.indexingDirective.value.valueByte)
+            StatusCodes status,
+            Guid activityId,
+            Stream body,
+            string serverVersion,
+            ref BytesDeserializer rntbdHeaderReader) => new()
                 {
-                case (byte) RntbdConstants.RntbdIndexingDirective.Default:
-                    indexingDirective = IndexingDirectiveStrings.Default;
-                    break;
-                case (byte) RntbdConstants.RntbdIndexingDirective.Exclude:
-                    indexingDirective = IndexingDirectiveStrings.Exclude;
-                    break;
-                case (byte) RntbdConstants.RntbdIndexingDirective.Include:
-                    indexingDirective = IndexingDirectiveStrings.Include;
-                    break;
-                default:
-                    throw new Exception();
-                }
-
-                responseHeaders.IndexingDirective = indexingDirective;
-            }
-
-            responseHeaders.ServerVersion = serverVersion;
-
-            responseHeaders.ActivityId = activityId.ToString();
-
-            storeResponse.ResponseBody = body;
-            storeResponse.Status = (int)status;
-
-            return storeResponse;
-        }
+                    Headers = HeadersTransportSerialization.BuildStoreResponseNameValueCollection(
+                        activityId,
+                        serverVersion,
+                        ref rntbdHeaderReader),    
+                    ResponseBody = body,
+                    Status = (int)status
+                };
 
         internal static RntbdHeader DecodeRntbdHeader(byte[] header)
         {
             StatusCodes status = (StatusCodes) BitConverter.ToUInt32(header, 4);
             Guid activityId = BytesSerializer.ReadGuidFromBytes(new ArraySegment<byte>(header, 8, 16));
             return new RntbdHeader(status, activityId);
-        }
-
-        private static string GetStringFromRntbdTokenIfPresent(RntbdToken token)
-        {
-            if (token.isPresent)
-            {
-                switch (token.GetTokenType())
-                {
-                    case RntbdTokenTypes.Guid:
-                        return token.value.valueGuid.ToString();
-                    case RntbdTokenTypes.LongLong:
-                        return token.value.valueLongLong.ToString(CultureInfo.InvariantCulture);
-                    case RntbdTokenTypes.Double:
-                        return token.value.valueDouble.ToString(CultureInfo.InvariantCulture);
-                    case RntbdTokenTypes.ULong:
-                        return token.value.valueULong.ToString(CultureInfo.InvariantCulture);
-                    case RntbdTokenTypes.ULongLong:
-                        return token.value.valueULongLong.ToString(CultureInfo.InvariantCulture);
-                    case RntbdTokenTypes.Byte:
-                        return token.value.valueByte.ToString(CultureInfo.InvariantCulture);
-                    case RntbdTokenTypes.String:
-                    case RntbdTokenTypes.SmallString:
-                        return BytesSerializer.GetStringFromBytes(token.value.valueBytes);
-                    case RntbdTokenTypes.Long:
-                        return token.value.valueLong.ToString(CultureInfo.InvariantCulture);
-                    default:
-                        throw new Exception($"Unsupported token type {token.GetTokenType()}");
-                }
-            }
-
-            return null;
-        }
-
-        private static string GetResponseBoolHeaderIfPresent(RntbdToken token)
-        {
-            if (token.isPresent)
-            {
-                return (token.value.valueByte != 0).ToString().ToLowerInvariant();
-            }
-
-            return null;
         }
 
         private static RntbdConstants.RntbdOperationType GetRntbdOperationType(OperationType operationType)
@@ -688,10 +546,16 @@ namespace Microsoft.Azure.Documents.Rntbd
                 return RntbdConstants.RntbdOperationType.MetadataCheckAccess;
             case OperationType.CreateSystemSnapshot:
                 return RntbdConstants.RntbdOperationType.CreateSystemSnapshot;
+            case OperationType.CreateRidRangeResources:
+                return RntbdConstants.RntbdOperationType.CreateRidRangeResources;
             case OperationType.UpdateFailoverPriorityList:
                 return RntbdConstants.RntbdOperationType.UpdateFailoverPriorityList;
             case OperationType.GetStorageAuthToken:
                 return RntbdConstants.RntbdOperationType.GetStorageAuthToken;
+            case OperationType.UpdatePartitionThroughput:
+                return RntbdConstants.RntbdOperationType.UpdatePartitionThroughput;
+            case OperationType.Truncate:
+                return RntbdConstants.RntbdOperationType.Truncate;
 #endif
             case OperationType.AddComputeGatewayRequestCharges:
                 return RntbdConstants.RntbdOperationType.AddComputeGatewayRequestCharges;
@@ -1503,6 +1367,18 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        private static void AddOptimisticDirectExecute(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
+        {
+            if (!string.IsNullOrEmpty(requestHeaders.OptimisticDirectExecute))
+            {
+                rntbdRequest.optimisticDirectExecute.value.valueByte = (requestHeaders.OptimisticDirectExecute.
+                    Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                    ? (byte)0x01
+                    : (byte)0x00;
+                rntbdRequest.optimisticDirectExecute.isPresent = true;
+            }
+        }
+
         private static void AddQueryForceScan(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
         {
             if (!string.IsNullOrEmpty(requestHeaders.ForceQueryScan))
@@ -2115,6 +1991,47 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1305:Specify IFormatProvider", Justification = "Roslyn Baseline 12/12/2022 16:40")]
+        private static void AddSupportedSerializationFormats(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
+        {
+            if (requestHeaders.SupportedSerializationFormats != null)
+            {
+                RntbdConstants.RntbdSupportedSerializationFormats rntbdSupportedSerializationFormats = RntbdConstants.RntbdSupportedSerializationFormats.None;
+
+                // Making empty header value check consistent with http request. If header value is empty throw exception.
+                if (requestHeaders.SupportedSerializationFormats.Length == 0 || !Enum.TryParse<SupportedSerializationFormats>(requestHeaders.SupportedSerializationFormats, true, out SupportedSerializationFormats supportedSerializationFormats))
+                {
+                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
+                        requestHeaders.SupportedSerializationFormats, nameof(SupportedSerializationFormats)));
+                }
+
+                if(supportedSerializationFormats.HasFlag(SupportedSerializationFormats.JsonText))
+                {
+                    rntbdSupportedSerializationFormats |= RntbdConstants.RntbdSupportedSerializationFormats.JsonText;
+                }
+
+                if(supportedSerializationFormats.HasFlag(SupportedSerializationFormats.CosmosBinary))
+                {
+                    rntbdSupportedSerializationFormats |= RntbdConstants.RntbdSupportedSerializationFormats.CosmosBinary;
+                }
+
+                if (supportedSerializationFormats.HasFlag(SupportedSerializationFormats.HybridRow))
+                {
+                    rntbdSupportedSerializationFormats |= RntbdConstants.RntbdSupportedSerializationFormats.HybridRow;
+                }
+
+                if((supportedSerializationFormats & 
+                    ~(SupportedSerializationFormats.JsonText | SupportedSerializationFormats.CosmosBinary | SupportedSerializationFormats.HybridRow)) != SupportedSerializationFormats.None)
+                {
+                    throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidEnumValue,
+                            requestHeaders.SupportedSerializationFormats, nameof(SupportedSerializationFormats)));
+                }
+
+                rntbdRequest.supportedSerializationFormats.value.valueByte = (byte)rntbdSupportedSerializationFormats;
+                rntbdRequest.supportedSerializationFormats.isPresent = true;
+            }
+        }
+
         private static void FillTokenFromHeader(DocumentServiceRequest request, string headerName, string headerStringValue, RntbdToken token, RntbdConstants.Request rntbdRequest)
         {
             object headerValue = null;
@@ -2532,6 +2449,30 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        private static void AddUpdateOfferStateToRestorePending(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
+        {
+            if (!string.IsNullOrEmpty(requestHeaders.UpdateOfferStateToRestorePending))
+            {
+                rntbdRequest.updateOfferStateToRestorePending.value.valueByte = (requestHeaders.UpdateOfferStateToRestorePending.
+                    Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                    ? (byte)0x01
+                    : (byte)0x00;
+                rntbdRequest.updateOfferStateToRestorePending.isPresent = true;
+            }
+        }
+
+        private static void AddMasterResourcesDeletionPending(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
+        {
+            if (!string.IsNullOrEmpty(requestHeaders.SetMasterResourcesDeletionPending))
+            {
+                rntbdRequest.setMasterResourcesDeletionPending.value.valueByte = (requestHeaders.SetMasterResourcesDeletionPending.
+                    Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                    ? (byte)0x01
+                    : (byte)0x00;
+                rntbdRequest.setMasterResourcesDeletionPending.isPresent = true;
+            }
+        }
+
         private static void AddOfferReplaceRURedistribution(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
         {
             if(!string.IsNullOrEmpty(requestHeaders.OfferReplaceRURedistribution))
@@ -2565,6 +2506,18 @@ namespace Microsoft.Azure.Documents.Rntbd
                     ? (byte)0x01
                     : (byte)0x00;
                 rntbdRequest.isCassandraAlterTypeRequest.isPresent = true;
+            }
+        }
+
+        private static void AddHighPriorityForcedBackup(RequestNameValueCollection requestHeaders, RntbdConstants.Request rntbdRequest)
+        {
+            if (!string.IsNullOrEmpty(requestHeaders.HighPriorityForcedBackup))
+            {
+                rntbdRequest.highPriorityForcedBackup.value.valueByte = (requestHeaders.HighPriorityForcedBackup.
+                    Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                    ? (byte)0x01
+                    : (byte)0x00;
+                rntbdRequest.highPriorityForcedBackup.isPresent = true;
             }
         }
 

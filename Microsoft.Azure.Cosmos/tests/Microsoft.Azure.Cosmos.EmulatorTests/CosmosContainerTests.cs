@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+    using HttpConstants = Microsoft.Azure.Documents.HttpConstants;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -23,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         private CosmosClient cosmosClient = null;
         private Cosmos.Database cosmosDatabase = null;
+
         private static long ToEpoch(DateTime dateTime)
         {
             return (long)(dateTime - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -714,7 +716,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-#if PREVIEW
         //MultiHash container checks.
         [TestMethod]
         public async Task CreateContainerIfNotExistsAsyncForMultiHashCollectionsTest()
@@ -799,7 +800,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
-#endif
         [TestMethod]
         public async Task StreamPartitionedCreateWithPathDelete()
         {
