@@ -370,4 +370,3 @@ namespace Microsoft.Azure.Documents
         internal const string ItalyNorth = "Italy North";
     }
 }
-

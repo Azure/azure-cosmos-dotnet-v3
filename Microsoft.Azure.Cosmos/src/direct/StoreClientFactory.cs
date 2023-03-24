@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Diagnostics;
     using System.Net.Security;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Client;
 
@@ -47,7 +48,8 @@ namespace Microsoft.Azure.Documents
             bool enableChannelMultiplexing = false,
             int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue, // Optional for Rntbd
             MemoryStreamPool memoryStreamPool = null,
-            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null) 
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
+            Func<string, Task<System.Net.IPAddress>> dnsResolutionFunction = null)  // optional override
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -218,6 +220,7 @@ namespace Microsoft.Azure.Documents
                         MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
                         MemoryStreamPool = memoryStreamPool,
                         RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
+                        DnsResolutionFunction = dnsResolutionFunction
                     });
 
                 this.fallbackTransportClient = new Rntbd.TransportClient(
@@ -243,6 +246,7 @@ namespace Microsoft.Azure.Documents
                         MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
                         MemoryStreamPool = memoryStreamPool,
                         RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
+                        DnsResolutionFunction = dnsResolutionFunction
                     });
             }
             else

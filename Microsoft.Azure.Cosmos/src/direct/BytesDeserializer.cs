@@ -15,12 +15,11 @@ namespace Microsoft.Azure.Cosmos.Rntbd
         {
             this.metadata = new Memory<byte>(metadata, 0, length);
             this.Position = 0;
-            this.Length = length;
         }
 
         public int Position { get; private set; }
 
-        public int Length { get; }
+        public int Length => this.metadata.Length;
 
         public ushort ReadUInt16()
         {
@@ -28,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             this.Position += 2;
             return value;
         }
+
+        public void AdvancePositionByUInt16() => this.Position += 2;
 
         public byte ReadByte()
         {
@@ -43,12 +44,16 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             return value;
         }
 
+        public void AdvancePositionByUInt32() => this.Position += 4;
+
         public int ReadInt32()
         {
             int value = MemoryMarshal.Read<int>(this.metadata.Span.Slice(this.Position));
             this.Position += 4;
             return value;
         }
+
+        public void AdvancePositionByInt32() => this.Position += 4;
 
         public ulong ReadUInt64()
         {
@@ -57,12 +62,16 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             return value;
         }
 
+        public void AdvancePositionByUInt64() => this.Position += 8;
+
         public long ReadInt64()
         {
             long value = MemoryMarshal.Read<long>(this.metadata.Span.Slice(this.Position));
             this.Position += 8;
             return value;
         }
+
+        public void AdvancePositionByInt64() => this.Position += 8;
 
         public float ReadSingle()
         {
@@ -71,12 +80,16 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             return value;
         }
 
+        public void AdvancePositionBySingle() => this.Position += 4;
+
         public double ReadDouble()
         {
             double value = MemoryMarshal.Read<double>(this.metadata.Span.Slice(this.Position));
             this.Position += 8;
             return value;
         }
+
+        public void AdvancePositionByDouble() => this.Position += 8;
 
         public Guid ReadGuid()
         {
@@ -85,11 +98,15 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             return value;
         }
 
+        public void AdvancePositionByGuid() => this.Position += 16;
+
         public ReadOnlyMemory<byte> ReadBytes(int length)
         {
             ReadOnlyMemory<byte> value = this.metadata.Slice(this.Position, length);
             this.Position += length;
             return value;
         }
+
+        public void AdvancePositionByBytes(int count) => this.Position += count;
     }
 }

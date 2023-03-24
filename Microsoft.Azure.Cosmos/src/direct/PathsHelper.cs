@@ -41,6 +41,8 @@ namespace Microsoft.Azure.Documents
             string databaseName = string.Empty;
             string collectionName = string.Empty;
 
+            resourceUrl = PathsHelper.RemoveAccountsSegment(resourceUrl);
+
             if (!string.IsNullOrEmpty(resourceUrl) && resourceUrl.Contains(Paths.OperationsPathSegment) &&
                 (resourceUrl.Contains(Paths.PartitionKeyDeletePathSegment) || resourceUrl.Contains(Paths.CollectionTruncatePathsegment)))
             {
@@ -140,6 +142,8 @@ namespace Microsoft.Azure.Documents
             {
                 return false;
             }
+
+            resourceUrl = PathsHelper.RemoveAccountsSegment(resourceUrl);
 
             string[] segments = resourceUrl.Split(PathsHelper.PathSeparatorArray, StringSplitOptions.RemoveEmptyEntries);
 
@@ -363,6 +367,8 @@ namespace Microsoft.Azure.Documents
             {
                 return false;
             }
+
+            resourceUrl = PathsHelper.RemoveAccountsSegment(resourceUrl);
 
             string[] segments = resourceUrl.Split(PathsHelper.PathSeparatorArray, StringSplitOptions.RemoveEmptyEntries);
 
@@ -1447,6 +1453,8 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetFederationConfigurations;
                 case OperationType.GetDatabaseAccountConfigurations:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetDatabaseAccountConfigurations;
+                case OperationType.XPDatabaseAccountMetaData:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_XPDatabaseAccountMetaData;
                 case OperationType.GetGraphDatabaseAccountConfiguration:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetGraphDatabaseAccountConfiguration;
                 case OperationType.GetStorageServiceConfigurations:
@@ -1554,6 +1562,7 @@ namespace Microsoft.Azure.Documents
                    operationTypeSegment.Equals(Paths.Operations_GetStorageAccountKey, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetStorageAccountSas, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetDatabaseAccountConfigurations, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_XPDatabaseAccountMetaData, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetUnwrappedDek, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetCustomerManagedKeyStatus, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_ReadReplicaFromMasterPartition, StringComparison.OrdinalIgnoreCase) ||
@@ -1573,6 +1582,17 @@ namespace Microsoft.Azure.Documents
             }
 
             return false;
+        }
+
+        public static string RemoveAccountsSegment(string resourceUrl)
+        {
+            if (!string.IsNullOrEmpty(resourceUrl) && resourceUrl.StartsWith("/accounts/", StringComparison.OrdinalIgnoreCase))
+            {
+                int index = resourceUrl.IndexOfNth('/', 3);
+                resourceUrl = resourceUrl.Substring(index, resourceUrl.Length - index);
+            }
+
+            return resourceUrl;
         }
 
         internal static bool IsNameBased(string resourceIdOrFullName)

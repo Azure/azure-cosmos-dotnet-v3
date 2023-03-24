@@ -46,7 +46,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.IdleTimeout,
                 channelProperties.EnableChannelMultiplexing,
                 channelProperties.MemoryStreamPool,
-                channelProperties.RemoteCertificateValidationCallback);
+                channelProperties.RemoteCertificateValidationCallback,
+                channelProperties.DnsResolutionFunction);
             this.timerPool = channelProperties.RequestTimerPool;
             this.requestTimeoutSeconds = (int) channelProperties.RequestTimeout.TotalSeconds;
             this.serverUri = serverUri;

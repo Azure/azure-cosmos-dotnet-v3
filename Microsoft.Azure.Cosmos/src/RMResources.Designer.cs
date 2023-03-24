@@ -613,6 +613,50 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to The given default identity for {0} is not valid. The format for the default identity is not valid, please use &apos;FirstPartyIdentity&apos;/&apos;SystemAssignedIdentity&apos;/&apos;UserAssignedIdentity=&lt;UA_resource_id&gt;&apos;.
+        /// </summary>
+        internal static string DefaultIdentityNotValidFormat
+        {
+            get
+            {
+                return ResourceManager.GetString("DefaultIdentityNotValidFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The given default identity for {0} is not valid. The default identity points to a delegated identity that does not exist in {0}..
+        /// </summary>
+        internal static string DefaultIdentityWithoutCorrespondingDelegatedIdentity
+        {
+            get
+            {
+                return ResourceManager.GetString("DefaultIdentityWithoutCorrespondingDelegatedIdentity", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The given default identity for {0} is not valid. The default identity points to a system identity that does not exist in {0}..
+        /// </summary>
+        internal static string DefaultIdentityWithoutCorrespondingSystemIdentity
+        {
+            get
+            {
+                return ResourceManager.GetString("DefaultIdentityWithoutCorrespondingSystemIdentity", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The given default identity for {0} is not valid. The default identity points to an user identity that does not exist in {0}..
+        /// </summary>
+        internal static string DefaultIdentityWithoutCorrespondingUserIdentity
+        {
+            get
+            {
+                return ResourceManager.GetString("DefaultIdentityWithoutCorrespondingUserIdentity", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to DNS resolution failed..
         /// </summary>
         internal static string DnsResolutionFailedTransportError
@@ -1340,6 +1384,18 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("InvalidFailoverPriority", resourceCulture);
+            }
+        }
+
+
+        /// <summary>
+        ///   Looks up a localized string similar to Federation cap action is not currently supported.
+        /// </summary>
+        internal static string InvalidFederationCapAction
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidFederationCapAction", resourceCulture);
             }
         }
 
@@ -2748,6 +2804,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Request is blocked because ResourceId [{0}] cannot be resolved. Principal = [{1}], Action = [{2}], ResourceType = [{3}]..
+        /// </summary>
+        internal static string RbacCannotResolveResourceRid
+        {
+            get
+            {
+                return ResourceManager.GetString("RbacCannotResolveResourceRid", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Read Quorum size of {0} is not met for the request..
         /// </summary>
         internal static string ReadQuorumNotMet
@@ -3316,6 +3383,149 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("CrossTenantCMKDatabaseAccountLogstoreFeaturesNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized string similar to The server encountered an unexpected condition that prevented it from fulfilling the Azure Key Vault resource request.
+        /// </summary>
+        internal static string UnexpectedExceptionCaughtonKeyVaultAccessClient
+        {
+            get
+            {
+                return ResourceManager.GetString("UnexpectedExceptionCaughtonKeyVaultAccessClient", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// The expected scope array should be of length 1. Instead received scope with length {0}.
+        /// </summary>
+        internal static string InvalidMSALScopeLength
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidMSALScopeLength", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// The requested scope is not a well formed URI string.
+        /// </summary>
+        internal static string InvalidRequestedScopeFormat
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidRequestedScopeFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// The requested scope is not https.
+        /// </summary>
+        internal static string InvalidSchemeInScope
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidSchemeInScope", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// The requested scope contains unexpected segments.
+        /// </summary>
+        internal static string InvalildScopeSegments
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalildScopeSegments", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized string similar to Error contacting the Azure Key Vault resource. Please try again.
+        /// </summary>
+        internal static string KeyVaultServiceUnavailable
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyVaultServiceUnavailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized string similar to The provided Azure Key Vault resource key URI is invalid. Please follow the format: https://{vault-name}.vault.azure.net/keys/{key-name} or https://{vault-name}.vault.azure.net/certificates/{certificate-name} or https://{vault-name}.vault.azure.net/secrets/{secret-name} .
+        /// </summary>
+        internal static string InvalidKeyVaultKeyAndCertURI
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidKeyVaultKeyAndCertURI", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized string similar to The provided Azure Key Vault resource key URI is invalid. Please follow the format: https://{vault-name}.vault.azure.net/secrets/{secret-name} .
+        /// </summary>
+        internal static string InvalidKeyVaulSecretURI
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidKeyVaulSecretURI", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized string similar to The remote name could not be resolved for the Azure Key Vault resource. Please provide a valid URI for an existing Key vault.
+        /// </summary>
+        internal static string KeyVaultDNSNotResolved
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyVaultDNSNotResolved", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized string similar to Could not find any secret with the.pem extension related to the provided certificate.
+        /// </summary>
+        internal static string KeyVaultCertificateException
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyVaultCertificateException", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized string similar to The Input provided is not a valid base 64 string.
+        /// </summary>
+        internal static string KeyVaultInvalidInputBytes
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyVaultInvalidInputBytes", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized string similar to Failed to acquire the access token needed to access the Azure Key Vault resource. Please verify that the tenant has all corresponding permissions assigned.
+        /// </summary>
+        internal static string KeyVaultAadClientCredentialsGrantFailure
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyVaultAadClientCredentialsGrantFailure", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        /// Looks up a localized string similar to The Status Code for the first Azure Key Vault resource access try should be Unauthorized.
+        /// </summary>
+        internal static string FirstKeyVaultAccessAttemptShouldBeUnauthorized
+        {
+            get
+            {
+                return ResourceManager.GetString("FirstKeyVaultAccessAttemptShouldBeUnauthorized", resourceCulture);
             }
         }
 
@@ -4330,6 +4540,28 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("PhysicalPartitionIdinTargetOrSourceDoesNotExist", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Collection name &apos;{0}&apos; is invalid for MongoDB API..
+        /// </summary>
+        internal static string InvalidMongoCollectionName
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidMongoCollectionName", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Database name &apos;{0}&apos; is invalid for MongoDB API..
+        /// </summary>
+        internal static string InvalidMongoDatabaseName
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidMongoDatabaseName", resourceCulture);
             }
         }
     }

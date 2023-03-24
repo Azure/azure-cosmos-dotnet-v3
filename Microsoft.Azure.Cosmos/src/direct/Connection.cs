@@ -116,6 +116,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// </summary>
         private readonly TimeSpan idleConnectionClosureTimeout;
 
+        private readonly Func<string, Task<IPAddress>> dnsResolutionFunction;
+
         // Only one task may write to the stream at once. Reads don't need
         // mutual exclusion because only one thread consumes from the stream.
         private readonly SemaphoreSlim writeSemaphore = new SemaphoreSlim(1);
@@ -141,13 +143,15 @@ namespace Microsoft.Azure.Documents.Rntbd
             TimeSpan sendHangDetectionTime,
             TimeSpan idleTimeout,
             MemoryStreamPool memoryStreamPool,
-            RemoteCertificateValidationCallback remoteCertificateValidationCallback = null)
+            RemoteCertificateValidationCallback remoteCertificateValidationCallback,
+            Func<string, Task<IPAddress>> dnsResolutionFunction)
         {
-            Debug.Assert(serverUri.PathAndQuery.Equals("/"), serverUri.AbsoluteUri,
+            Debug.Assert(serverUri.PathAndQuery.Equals("/", StringComparison.Ordinal), serverUri.AbsoluteUri,
                 "The server URI must not specify a path and query");
             this.serverUri = serverUri;
             this.hostNameCertificateOverride = hostNameCertificateOverride;
             this.BufferProvider = new BufferProvider();
+            this.dnsResolutionFunction = dnsResolutionFunction ?? Connection.ResolveHostAsync;
 
             if (receiveHangDetectionTime <= Connection.receiveHangGracePeriod)
             {
@@ -631,7 +635,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 errorCode = TransportErrorCode.DnsResolutionFailed;
                 args.CommonArguments.SetTimeoutCode(
                     TransportErrorCode.DnsResolutionTimeout);
-                IPAddress address = await Connection.ResolveHostAsync(this.serverUri.DnsSafeHost);
+                IPAddress address = await this.dnsResolutionFunction(this.serverUri.DnsSafeHost);
 
                 errorCode = TransportErrorCode.ConnectFailed;
                 args.CommonArguments.SetTimeoutCode(TransportErrorCode.ConnectTimeout);
@@ -1078,7 +1082,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             return Tuple.Create(await Connection.ConnectUnicastPortAsync(serverUri, address), false);
         }
 
-        private static async Task<IPAddress> ResolveHostAsync(string hostName)
+        internal static async Task<IPAddress> ResolveHostAsync(string hostName)
         {
             IPAddress[] serverAddresses = await Dns.GetHostAddressesAsync(hostName);
             int addressIndex = 0;

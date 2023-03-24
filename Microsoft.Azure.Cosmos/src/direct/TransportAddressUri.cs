@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Documents
         public TransportAddressUri(Uri addressUri)
         {
             this.Uri = addressUri ?? throw new ArgumentNullException(paramName: nameof(addressUri));
+            this.ReplicaServerKey = new (uri: addressUri);
             this.uriToString = addressUri.ToString();
             this.PathAndQuery = addressUri.PathAndQuery.TrimEnd(TransportSerialization.UrlTrim);
             this.healthState = new (
@@ -68,6 +69,11 @@ namespace Microsoft.Azure.Documents
         /// Gets the current path and query as string.
         /// </summary>
         public string PathAndQuery { get; }
+
+        /// <summary>
+        /// An instance of <see cref="ServerKey"/> containing the replica host and port details.
+        /// </summary>
+        public ServerKey ReplicaServerKey { get; }
 
         /// <summary>
         /// Is a flag to determine if the replica the URI is pointing to is unhealthy.
