@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     sortedData.Sort(DataComparer.Instance);
 
-                    if (sortedData.Count > ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold)
+                    if (sortedData.Count > ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold)
                     {
                         sortedData.RemoveAt(sortedData.Count - 1);
                     }
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     // Create a new list of KeyValue pair where we will be sorting this list by the key and Value is original Request Info object
                     // In this case key can be duplicated as latency and samplecount can be same for different scenario, hence using KeyValuePair to store this info
                     List<KeyValuePair<double, RequestInfo>> newSortedData 
-                        = new List<KeyValuePair<double, RequestInfo>>(ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold + 1);
+                        = new List<KeyValuePair<double, RequestInfo>>(ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold + 1);
 
                     DataSampler.AddToList(orderBy, requestInfo, newSortedData);
 

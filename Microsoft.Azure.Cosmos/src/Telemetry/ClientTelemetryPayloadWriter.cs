@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ClientTelemetryProperties properties,
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
-            List<RequestInfo> sampledRequestInfo,
+            IReadOnlyList<RequestInfo> sampledRequestInfo,
             Func<string, Task> callback)
         {
             if (properties == null)

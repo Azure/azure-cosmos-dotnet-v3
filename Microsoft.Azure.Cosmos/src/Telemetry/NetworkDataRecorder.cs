@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 if (NetworkDataRecorder.IsStatusCodeNotExcluded((int)storeStatistics.StoreResult.StatusCode, (int)storeStatistics.StoreResult.SubStatusCode))
                 {
-                    if (NetworkDataRecorder.IsErrored(storeStatistics))
+                    if (NetworkDataRecorder.IsUserOrServerError((int)storeStatistics.StoreResult.StatusCode))
                     {
                         RequestInfo requestInfo = this.CreateRequestInfo(storeStatistics, databaseId, containerId);
                         LongConcurrentHistogram latencyHist = this.RequestInfoErrorBucket.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
@@ -45,12 +45,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
-        internal List<RequestInfo> GetErroredRequests()
+        internal void GetErroredRequests(List<RequestInfo> requestInfoList)
         {
             ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoErrorList 
                 = Interlocked.Exchange(ref this.RequestInfoErrorBucket, new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>());
 
-            List<RequestInfo> requestInfoList = new List<RequestInfo>();
+            List<RequestInfo> allRequests = new List<RequestInfo>();
             foreach (KeyValuePair<RequestInfo, LongConcurrentHistogram> entry in requestInfoErrorList)
             {
                 MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
@@ -59,18 +59,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 RequestInfo payloadForLatency = entry.Key;
                 payloadForLatency.Metrics.Add(metricInfo);
 
-                requestInfoList.Add(payloadForLatency);
+                allRequests.Add(payloadForLatency);
             }
             
-            return DataSampler.OrderAndSample(requestInfoList, DataSamplerOrderBy.SampleCount);
+            requestInfoList.AddRange(DataSampler.OrderAndSample(allRequests, DataSamplerOrderBy.SampleCount));
         }
         
-        internal List<RequestInfo> GetHighLatencyRequests()
+        internal void GetHighLatencyRequests(List<RequestInfo> requestInfoList)
         {
             ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoHighLatencyList 
                 = Interlocked.Exchange(ref this.RequestInfoHighLatencyBucket, new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>());
 
-            List<RequestInfo> requestInfoList = new List<RequestInfo>();
+            List<RequestInfo> allRequests = new List<RequestInfo>();
             foreach (KeyValuePair<RequestInfo, LongConcurrentHistogram> entry in requestInfoHighLatencyList)
             {
                 MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
@@ -84,11 +84,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 
                 RequestInfo payloadForLatency = entry.Key;
                 payloadForLatency.Metrics.Add(metricInfo);
-                
-                requestInfoList.Add(payloadForLatency);
+
+                allRequests.Add(payloadForLatency);
             }
 
-            return DataSampler.OrderAndSample(requestInfoList, DataSamplerOrderBy.Latency);
+            requestInfoList.AddRange(DataSampler.OrderAndSample(allRequests, DataSamplerOrderBy.Latency));
         }
 
         internal RequestInfo CreateRequestInfo(StoreResponseStatistics storeResponseStatistic, string databaseId, string containerId)
@@ -109,21 +109,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public List<RequestInfo> GetRequests()
         {
             List<RequestInfo> requestInfoList = new List<RequestInfo>();
-            requestInfoList.AddRange(this.GetErroredRequests());
-            requestInfoList.AddRange(this.GetHighLatencyRequests());
+            this.GetErroredRequests(requestInfoList);
+            this.GetHighLatencyRequests(requestInfoList);
             
             return requestInfoList;
-        }
-
-        /// <summary>
-        /// This method will return true if the request is failed with User or Server Exception and not excluded from telemetry.
-        /// This method will return true if the request latency is more than the threshold.
-        /// otherwise return false
-        /// </summary>
-        /// <returns>true/false</returns>
-        private static bool IsErrored(StoreResponseStatistics storeStatistics)
-        {
-            return NetworkDataRecorder.IsUserOrServerError((int)storeStatistics.StoreResult.StatusCode);
         }
 
         internal static bool IsHighLatency(double latency)
@@ -132,6 +121,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 latency >= ClientTelemetryOptions.NetworkLatencyThreshold.TotalMilliseconds;
         }
 
+        /// <summary>
+        /// This method will return true if the request is failed with User or Server Exception and not excluded from telemetry.
+        /// otherwise return false
+        /// </summary>
+        /// <returns>true/false</returns>
         internal static bool IsUserOrServerError(int statusCode)
         {
             return statusCode >= 400 && statusCode <= 599;

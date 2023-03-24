@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ClientTelemetryProperties clientTelemetryInfo, 
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharget)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
-            List<RequestInfo> requestInfoSnapshot,
+            IReadOnlyList<RequestInfo> requestInfoSnapshot,
             CancellationToken cancellationToken)
         {
             try

@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         [DataRow(5)]
         public void TestNetworkRequestSamplerForThreshold(int threshold)
         {
-            int numberOfElementsInEachGroup = ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold;
+            int numberOfElementsInEachGroup = ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold;
             int numberOfGroups = 5;
                
             List<RequestInfo> requestInfoList = new List<RequestInfo>();

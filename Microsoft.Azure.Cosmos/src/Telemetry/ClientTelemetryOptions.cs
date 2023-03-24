@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
         // Why 5 sec? As of now, if any network request is taking more than 5 millisecond sec, we will consider it slow request this value can be revisited in future
         internal static readonly TimeSpan NetworkLatencyThreshold = TimeSpan.FromMilliseconds(5);
-        internal static readonly int NetworkRequestsSampleSizeThrehold = 10;
+        internal static readonly int NetworkRequestsSampleSizeThreshold = 10;
         
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings 
         { 

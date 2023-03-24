@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
@@ -52,12 +53,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             recorder.Record(stats, "databaseId", "containerId");
 
-            Assert.AreEqual(1, recorder.GetHighLatencyRequests().Count);
-            Assert.AreEqual(1, recorder.GetErroredRequests().Count);
+            List<RequestInfo> highLatencyRequests = new List<RequestInfo>();
+            recorder.GetHighLatencyRequests(highLatencyRequests);
+            Assert.AreEqual(1, highLatencyRequests.Count);
+
+            List<RequestInfo> erroredRequests = new List<RequestInfo>();
+            recorder.GetErroredRequests(erroredRequests);
+            Assert.AreEqual(1, erroredRequests.Count);
 
             // you can get the values only once
-            Assert.AreEqual(0, recorder.GetHighLatencyRequests().Count);
-            Assert.AreEqual(0, recorder.GetErroredRequests().Count);
+            List<RequestInfo> requests = new List<RequestInfo>();
+            recorder.GetHighLatencyRequests(requests);
+            recorder.GetErroredRequests(requests);
+            
+            Assert.AreEqual(0, requests.Count);
         }
 
         [TestMethod]
