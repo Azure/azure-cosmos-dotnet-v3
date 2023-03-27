@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// <summary>
     /// This class is used to add information in an Activity tags ref. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3058
     /// </summary>
-    internal struct OpenTelemetryCoreRecorder : IDisposable
+    internal class OpenTelemetryCoreRecorder : IDisposable
     {
         private const string CosmosDb = "cosmosdb";
         

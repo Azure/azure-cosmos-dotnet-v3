@@ -27,6 +27,8 @@ namespace Azure.Core.Pipeline
         {
             object? activitySource = GetActivitySource(ns, scopeName);
 
+            Console.WriteLine("activitySource1 " + activitySource);
+            
             this.IsEnabled = source.IsEnabled() || ActivityExtensions.ActivitySourceHasListeners(activitySource);
 
             this.activityAdapter = this.IsEnabled ? new ActivityAdapter(activitySource, source, scopeName, kind, null) : null;
@@ -34,6 +36,7 @@ namespace Azure.Core.Pipeline
 
         internal DiagnosticScope(string scopeName, DiagnosticListener source, object? diagnosticSourceArgs, object? activitySource, ActivityKind kind)
         {
+            Console.WriteLine("activitySource2 " + activitySource ?? "null");
             this.IsEnabled = source.IsEnabled() || ActivityExtensions.ActivitySourceHasListeners(activitySource);
 
             this.activityAdapter = this.IsEnabled ? new ActivityAdapter(activitySource, source, scopeName, kind, diagnosticSourceArgs) : null;
@@ -50,8 +53,10 @@ namespace Azure.Core.Pipeline
         /// </summary>
         private static object? GetActivitySource(string ns, string name)
         {
+            Console.WriteLine("GetActivitySource " + ns + " " + name);
             if (!ActivityExtensions.SupportsActivitySource())
             {
+                Console.WriteLine("not supported activity source");
                 return null;
             }
 
@@ -174,6 +179,8 @@ namespace Azure.Core.Pipeline
 
             public ActivityAdapter(object? activitySource, DiagnosticSource diagnosticSource, string activityName, ActivityKind kind, object? diagnosticSourceArgs)
             {
+                Console.WriteLine("ActivityAdapter -> this.activitySource " + activitySource);
+                
                 this.activitySource = activitySource;
                 this.diagnosticSource = diagnosticSource;
                 this.activityName = activityName;
@@ -205,19 +212,22 @@ namespace Azure.Core.Pipeline
 
             public void AddTag(string name, string? value)
             {
-                if (this.currentActivity == null)
+                lock (this)
                 {
-                    Console.WriteLine("adding tag when activity is null. name " + name + " value " + value + " this.currentActivity " + this.kind);
-                    // Activity is not started yet, add the value to the collection
-                    // that is going to be passed to StartActivity
-                    this.tagCollection ??= ActivityExtensions.CreateTagsCollection() ?? new List<KeyValuePair<string, object>>();
-                    this.tagCollection?.Add(new KeyValuePair<string, object>(name, value!));
-                }
-                else
-                {
-                    Console.WriteLine("adding tag when activity is NOT null. name " + name + " value " + value + " this.currentActivity " + this.kind);
+                    if (this.currentActivity == null)
+                    {
+                        Console.WriteLine("adding tag when activity is null. name " + name + " value " + value + " this.currentActivity " + this.kind);
+                        // Activity is not started yet, add the value to the collection
+                        // that is going to be passed to StartActivity
+                        this.tagCollection ??= ActivityExtensions.CreateTagsCollection() ?? new List<KeyValuePair<string, object>>();
+                        this.tagCollection?.Add(new KeyValuePair<string, object>(name, value!));
+                    }
+                    else
+                    {
+                        Console.WriteLine("adding tag when activity is NOT null. name " + name + " value " + value + " this.currentActivity " + this.kind);
 
-                    this.currentActivity?.AddTag(name, value!);
+                        this.currentActivity?.AddTag(name, value!);
+                    }
                 }
             }
 
@@ -277,7 +287,7 @@ namespace Azure.Core.Pipeline
             public void Start()
             {
                 this.currentActivity = this.StartActivitySourceActivity();
-
+                
                 if (this.currentActivity == null)
                 {
                     if (!this.diagnosticSource.IsEnabled(this.activityName, this.diagnosticSourceArgs))
@@ -313,6 +323,7 @@ namespace Azure.Core.Pipeline
             private Activity? StartActivitySourceActivity()
             {
                 Console.WriteLine("StartActivitySourceActivity -> Activity.Kind " + kind);
+
                 return ActivityExtensions.ActivitySourceStartActivity(
                     this.activitySource,
                     this.activityName,
@@ -479,6 +490,8 @@ namespace Azure.Core.Pipeline
 
         public static bool SupportsActivitySource()
         {
+            Console.WriteLine("ActivitySourceType : " + ActivitySourceType);
+            Console.WriteLine("SupportsActivitySourceSwitch : " + SupportsActivitySourceSwitch);
             return SupportsActivitySourceSwitch && ActivitySourceType != null;
         }
 
@@ -575,9 +588,10 @@ namespace Azure.Core.Pipeline
         {
             if (activitySource == null)
             {
+                Console.WriteLine("ActivitySourceStartActivity -> activitySource is null");
                 return null;
             }
-
+            Console.WriteLine("ActivitySourceStartActivity  : start");
             if (ActivitySourceStartActivityMethod == null)
             {
                 if (ActivityLinkType == null ||
@@ -585,6 +599,7 @@ namespace Azure.Core.Pipeline
                     ActivityContextType == null ||
                     ActivityKindType == null)
                 {
+                    Console.WriteLine("ActivitySourceStartActivityMethod is null");
                     ActivitySourceStartActivityMethod = (_, _, _, _, _, _) => null;
                 }
                 else
@@ -601,10 +616,13 @@ namespace Azure.Core.Pipeline
 
                     if (method == null)
                     {
+                        Console.WriteLine("method is null");
                         ActivitySourceStartActivityMethod = (_, _, _, _, _, _) => null;
                     }
                     else
                     {
+                        Console.WriteLine("method is " + method);
+                        
                         var sourceParameter = Expression.Parameter(typeof(object));
                         var nameParameter = Expression.Parameter(typeof(string));
                         var kindParameter = Expression.Parameter(typeof(int));
@@ -612,6 +630,9 @@ namespace Azure.Core.Pipeline
                         var tagsParameter = Expression.Parameter(typeof(ICollection<KeyValuePair<string, object>>));
                         var linksParameter = Expression.Parameter(typeof(IList));
                         var methodParameter = method.GetParameters();
+
+                        Console.WriteLine("method is " + method + " kind " + Expression.Convert(kindParameter, methodParameter[1].ParameterType));
+                        
                         ActivitySourceStartActivityMethod = Expression.Lambda<Func<object, string, int, ICollection<KeyValuePair<string, object>>?, IList?, DateTimeOffset, Activity?>>(
                             Expression.Call(
                                 Expression.Convert(sourceParameter, method.DeclaringType!),
@@ -627,6 +648,7 @@ namespace Azure.Core.Pipeline
                 }
             }
 
+            Console.WriteLine("ActivitySourceStartActivity  : stop");
             return ActivitySourceStartActivityMethod.Invoke(activitySource, activityName, kind, tags, links, startTime);
         }
 
@@ -666,6 +688,8 @@ namespace Azure.Core.Pipeline
             SupportsActivitySourceSwitch = AppContextSwitchHelper.GetConfigValue(
                 "Azure.Experimental.EnableActivitySource",
                 "AZURE_EXPERIMENTAL_ENABLE_ACTIVITY_SOURCE");
+
+            Console.WriteLine("SupportsActivitySourceSwitch " + SupportsActivitySourceSwitch);
         }
     }
 }

@@ -69,11 +69,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             lock (this.Scopes)
             {
-                if (!Activity.Current.IsAllDataRequested)
-                {
-                    return;
-                }
-                
                 // Check for disposal
                 if (this.subscriptions == null) return;
 
@@ -87,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     PropertyInfo propertyInfo = value.Value.GetType().GetTypeInfo().GetDeclaredProperty("Links");
                     IEnumerable<Activity> links = propertyInfo?.GetValue(value.Value) as IEnumerable<Activity> ?? Array.Empty<Activity>();
 
+                    Console.WriteLine("Start : Custom Listener: Kind " + Activity.Current.Kind);
                     ProducedDiagnosticScope scope = new ProducedDiagnosticScope()
                     {
                         Name = name,
@@ -104,6 +100,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         if (producedDiagnosticScope.Activity.Id == Activity.Current.Id)
                         {
+                            Console.WriteLine("Stop : Custom Listener:Activity.Current Kind " + Activity.Current.Kind);
+                            Console.WriteLine("Stop : Custom Listener:producedDiagnosticScope.Activity Kind " + producedDiagnosticScope.Activity.Kind);
+                            
                             AssertActivity.IsValid(producedDiagnosticScope.Activity);
                             
                             CustomListener.CollectedActivities.Add(producedDiagnosticScope.Activity);
@@ -121,6 +120,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         if (producedDiagnosticScope.Activity.Id == Activity.Current.Id)
                         {
+                            Console.WriteLine("Exception : Custom Listener:Activity.Current Kind " + Activity.Current.Kind);
+                            Console.WriteLine("Exception : Custom Listener:producedDiagnosticScope.Activity Kind " + producedDiagnosticScope.Activity.Kind);
+                            
                             if (producedDiagnosticScope.IsCompleted)
                             {
                                 throw new InvalidOperationException("Scope should not be stopped when calling Failed");

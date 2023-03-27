@@ -28,11 +28,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         
             if (clientContext is { ClientOptions.IsDistributedTracingEnabled: true })
             {
+                ActivityExtensions.ResetFeatureSwitch();
+                Console.WriteLine("Feature flag is true");
                 // If there is no source then it will return default otherwise a valid diagnostic scope
                 DiagnosticScope scope = scopeFactory
                     .CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
                                  kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
-
+                
+                Console.WriteLine("Scope is " + scope.IsEnabled);
                 // Record values only when we have a valid Diagnostic Scope
                 if (scope.IsEnabled)
                 {
@@ -46,8 +49,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
                 }
             }
-
-            return default;
+            Console.WriteLine("Feature flag is false");
+            return null;
         }
     }
 }
