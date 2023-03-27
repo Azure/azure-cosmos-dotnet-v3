@@ -1015,7 +1015,15 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is true (for preview package).
         /// </value>
         /// <remarks>This flag is there to disable it from source. Please Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
-        internal bool IsDistributedTracingEnabled { get; set; } = true;
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            bool IsDistributedTracingEnabled { get; set; }
+#if PREVIEW
+        = true;
+#endif
 
     }
 }

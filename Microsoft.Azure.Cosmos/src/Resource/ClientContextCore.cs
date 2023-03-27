@@ -489,24 +489,24 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions)
         {
-            OpenTelemetryCoreRecorder recorder =
+            using (OpenTelemetryCoreRecorder recorder = 
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     operationName: operationName,
                                     containerName: containerName,
                                     databaseName: databaseName,
                                     operationType: operationType,
                                     requestOptions: requestOptions,
-                                    clientContext: this.isDisposed ? null : this);
+                                    clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
                 {
                     TResult result = await task(trace).ConfigureAwait(false);
-                    if (openTelemetry != null && (recorder?.IsEnabled ?? false))
+                    if (openTelemetry != null && recorder.IsEnabled)
                     {
                         // Record request response information
                         OpenTelemetryAttributes response = openTelemetry(result);
-                        recorder?.Record(response);
+                        recorder.Record(response);
                     }
 
                     return result;
@@ -514,7 +514,7 @@ namespace Microsoft.Azure.Cosmos
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
                     CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
-                    recorder?.MarkFailed(operationCancelledException);
+                    recorder.MarkFailed(operationCancelledException);
                     
                     throw operationCancelledException;
                 }
@@ -524,7 +524,7 @@ namespace Microsoft.Azure.Cosmos
                         objectDisposed,
                         this.client,
                         trace);
-                    recorder?.MarkFailed(objectDisposedException);
+                    recorder.MarkFailed(objectDisposedException);
 
                     throw objectDisposedException;
                 }
@@ -533,19 +533,15 @@ namespace Microsoft.Azure.Cosmos
                     CosmosNullReferenceException nullException = new CosmosNullReferenceException(
                         nullRefException,
                         trace);
-                    recorder?.MarkFailed(nullException);
+                    recorder.MarkFailed(nullException);
 
                     throw nullException;
                 }
                 catch (Exception ex)
                 {
-                    recorder?.MarkFailed(ex);
+                    recorder.MarkFailed(ex);
 
                     throw;
-                }
-                finally
-                {
-                    recorder?.Dispose();
                 }
             }
         }

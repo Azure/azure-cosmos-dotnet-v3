@@ -10,11 +10,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// <summary>
     /// This class is used to generate Activities with Azure.Cosmos.Operation Source Name
     /// </summary>
-    internal class OpenTelemetryRecorderFactory
+    internal static class OpenTelemetryRecorderFactory
     {
         /// <summary>
         /// Singleton to make sure we only have one instance of the DiagnosticScopeFactory and pattern matching of listener happens only once
         /// </summary>
+        private static Lazy<DiagnosticScopeFactory> ScopeFactory = new Lazy<DiagnosticScopeFactory>(() => new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
+                        resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
+                        isActivityEnabled: true),
+            isThreadSafe: true);
+
         public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
             string containerName,
             string databaseName,
@@ -22,20 +27,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             RequestOptions requestOptions, 
             CosmosClientContext clientContext)
         {
-            DiagnosticScopeFactory scopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
-                        resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                        isActivityEnabled: clientContext?.ClientOptions.IsDistributedTracingEnabled ?? false);
-        
             if (clientContext is { ClientOptions.IsDistributedTracingEnabled: true })
             {
                 ActivityExtensions.ResetFeatureSwitch();
-                Console.WriteLine("Feature flag is true");
+                
                 // If there is no source then it will return default otherwise a valid diagnostic scope
-                DiagnosticScope scope = scopeFactory
+                DiagnosticScope scope = OpenTelemetryRecorderFactory
+                    .ScopeFactory.Value
                     .CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
                                  kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
-                
-                Console.WriteLine("Scope is " + scope.IsEnabled);
+
                 // Record values only when we have a valid Diagnostic Scope
                 if (scope.IsEnabled)
                 {
@@ -49,8 +50,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
                 }
             }
-            Console.WriteLine("Feature flag is false");
-            return null;
+
+            return default;
         }
     }
 }
