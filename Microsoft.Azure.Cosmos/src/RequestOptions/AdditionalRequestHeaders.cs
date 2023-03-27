@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     /// <summary>
-    /// Capturing additional headers to be sent in the web request.
+    /// Captures additional headers to be sent in the web request.
     /// </summary>
     internal sealed class AdditionalRequestHeaders
     {
