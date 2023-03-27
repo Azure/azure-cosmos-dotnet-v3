@@ -39,8 +39,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     {
                         sortedData.RemoveAt(sortedData.Count - 1);
                     }
-                    sampledRawData.Remove(key);
-                    sampledRawData.Add(key, sortedData);
+                    sampledRawData[key] = sortedData;
                 }
                 else
                 {
