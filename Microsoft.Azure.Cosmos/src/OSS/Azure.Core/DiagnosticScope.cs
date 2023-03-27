@@ -179,7 +179,7 @@ namespace Azure.Core.Pipeline
                 this.activityName = activityName;
                 this.kind = kind;
                 this.diagnosticSourceArgs = diagnosticSourceArgs;
-
+                
                 switch (this.kind)
                 {
                     case ActivityKind.Internal:
@@ -198,12 +198,16 @@ namespace Azure.Core.Pipeline
                         this.AddTag("kind", "consumer");
                         break;
                 }
+
+                Console.WriteLine("ActivityAdapter -> Activity.Kind " + kind);
+                Console.WriteLine("ActivityAdapter -> Activity.Tag  " + this.tagCollection);
             }
 
             public void AddTag(string name, string? value)
             {
                 if (this.currentActivity == null)
                 {
+                    Console.WriteLine("adding tag when activity is null. name " + name + " value " + value + " this.currentActivity " + this.kind);
                     // Activity is not started yet, add the value to the collection
                     // that is going to be passed to StartActivity
                     this.tagCollection ??= ActivityExtensions.CreateTagsCollection() ?? new List<KeyValuePair<string, object>>();
@@ -211,6 +215,8 @@ namespace Azure.Core.Pipeline
                 }
                 else
                 {
+                    Console.WriteLine("adding tag when activity is NOT null. name " + name + " value " + value + " this.currentActivity " + this.kind);
+
                     this.currentActivity?.AddTag(name, value!);
                 }
             }
@@ -306,6 +312,7 @@ namespace Azure.Core.Pipeline
 
             private Activity? StartActivitySourceActivity()
             {
+                Console.WriteLine("StartActivitySourceActivity -> Activity.Kind " + kind);
                 return ActivityExtensions.ActivitySourceStartActivity(
                     this.activitySource,
                     this.activityName,
