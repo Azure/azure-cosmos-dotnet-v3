@@ -17,8 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     public class DataSamplerTests
     {
         [TestMethod]
-        [DataRow(5)]
-        public void TestNetworkRequestSamplerForThreshold(int threshold)
+        public void TestNetworkRequestSamplerForThreshold()
         {
             int numberOfElementsInEachGroup = ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold;
             int numberOfGroups = 5;
@@ -54,57 +53,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 };
                 requestInfoList.Add(requestInfo);
             }
-
-          /*  Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();*/
+            
             List<RequestInfo> sampleDataByLatency = DataSampler.OrderAndSample(requestInfoList, DataSamplerOrderBy.Latency);
-            /*stopWatch.Stop();
-
-            Console.WriteLine("non linq execution time " + stopWatch.ElapsedTicks + " " + Process.GetCurrentProcess().PrivateMemorySize64);
-                */
             Assert.AreEqual(numberOfGroups * numberOfElementsInEachGroup, sampleDataByLatency.Count);
 
-          /*  stopWatch = Stopwatch.StartNew();
-            stopWatch.Start();
-            List<RequestInfo> sortedList = requestInfoList.GroupBy(r => new
-            {
-                r.DatabaseName,
-                r.ContainerName,
-                r.Operation,
-                r.Resource,
-                r.StatusCode,
-                r.SubStatusCode
-            })
-             .SelectMany(g => g.OrderByDescending(r => r.Metrics.FirstOrDefault(m => m.MetricsName == ClientTelemetryOptions.RequestLatencyName)?.Percentiles[ClientTelemetryOptions.Percentile99])
-                                .Take(ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold)).ToList();
-            stopWatch.Stop();
-            Console.WriteLine("linq execution time " + stopWatch.ElapsedTicks + " " + Process.GetCurrentProcess().PrivateMemorySize64);
-            Console.WriteLine("Count is " + sampleDataByLatency.Count);
-
-            int c = 0;
-            foreach (RequestInfo reqInfo in sampleDataByLatency)
-            {
-                Console.WriteLine(reqInfo?.ToString() ?? "null");
-                c++;
-                if (c == ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold)
-                {
-                    Console.WriteLine();
-                    c = 0;
-                }
-            }
-            
-            int c1 = 0;
-            foreach (RequestInfo reqInfo in sortedList)
-            {
-                Console.WriteLine(reqInfo?.ToString() ?? "null");
-                c1++;
-                if (c1 == ClientTelemetryOptions.NetworkRequestsSampleSizeThrehold)
-                {
-                    Console.WriteLine();
-                    c1 = 0;
-                }
-            }*/
-            
             List<RequestInfo> sampleDataBySampleCount = DataSampler.OrderAndSample(requestInfoList, DataSamplerOrderBy.SampleCount);
             Assert.AreEqual(numberOfGroups * numberOfElementsInEachGroup, sampleDataBySampleCount.Count);
         }
