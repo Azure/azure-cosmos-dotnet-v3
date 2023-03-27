@@ -115,11 +115,8 @@ namespace Microsoft.Azure.Cosmos
 
         static CosmosClient()
         {
-#if PREVIEW
             HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2020_07_15;
-#else
-            HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
-#endif
+
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
 
             ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() =>
