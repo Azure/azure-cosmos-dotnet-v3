@@ -56,10 +56,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
         {
             TryCatch<bool> hasNext = await this.inner.TryAsync(pipelineStage => pipelineStage.MoveNextAsync(trace));
             bool success = hasNext.Succeeded && hasNext.Result;
-            bool isPartitionSplitException = hasNext.Succeeded && this.Current.Failed && this.Current.InnerMostException.IsPartitionSplitException();
-
             if (this.executionState == ExecutionState.OptimisticDirectExecution)
             {
+                bool isPartitionSplitException = hasNext.Succeeded && this.Current.Failed && this.Current.InnerMostException.IsPartitionSplitException();
                 if (success && !isPartitionSplitException)
                 {
                     this.continuationToken = this.Current.Succeeded ? this.Current.Result.State?.Value : null;
@@ -69,29 +68,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                         Debug.Assert(!string.IsNullOrEmpty(requiresDistributionHeaderValue), "OptimisticDirectExecuteQueryPipelineStage Assert!", "Missing requiresDistribution flag in backend response for OptimisticDirectExecute request");
                         
                         bool requiresDistribution = bool.Parse(requiresDistributionHeaderValue);
-                        if (this.previousRequiresDistribution != null)
+                        if (this.previousRequiresDistribution.HasValue && this.previousRequiresDistribution != requiresDistribution)
                         {
-                            if (this.previousRequiresDistribution != requiresDistribution)
-                            {
-                                // We should never enter this if statement as requiresDistribution flag can never switch mid execution.
-                                // Hence, this exception should never be thrown.
-                                throw new InvalidOperationException("RequiresDistribution flag cannot switch midway through execution");
-                            }
-                        }
-                        else
-                        {
-                            this.previousRequiresDistribution = requiresDistribution;
+                            // We should never enter this if statement as requiresDistribution flag can never switch mid execution.
+                            // Hence, this exception should never be thrown.
+                            throw new InvalidOperationException("Unexpected switch in 'x-ms-cosmos-query-requiresdistribution' value. Previous value : " + this.previousRequiresDistribution + " Current value : " + requiresDistribution + ".");
                         }
 
                         if (requiresDistribution)
                         {
-                            success = await this.CreateAndCallFallbackPipelineAsync(isPartitionSplitException: false, trace);
+                            success = await this.SwitchToFallbackPipelineAsync(isPartitionSplitException: false, trace);
                         }
+
+                        this.previousRequiresDistribution = requiresDistribution;
                     }
                 }
                 else if (isPartitionSplitException)
                 {
-                    success = await this.CreateAndCallFallbackPipelineAsync(isPartitionSplitException, trace);
+                    success = await this.SwitchToFallbackPipelineAsync(isPartitionSplitException, trace);
                 }
             }
 
@@ -116,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             return null;
         }
 
-        private async Task<bool> CreateAndCallFallbackPipelineAsync(bool isPartitionSplitException, ITrace trace)
+        private async Task<bool> SwitchToFallbackPipelineAsync(bool isPartitionSplitException, ITrace trace)
         {
             this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
             this.inner = isPartitionSplitException
