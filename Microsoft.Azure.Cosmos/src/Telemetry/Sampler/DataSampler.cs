@@ -26,11 +26,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             foreach (RequestInfo requestInfo in requestInfoList)
             {
+                // Get a unique key identifier for an object
                 int key = requestInfo.GetHashCodeForSampler();
 
                 // Check if similar object is already present
                 if (sampledRawData.TryGetValue(key, out List<KeyValuePair<double, RequestInfo>> sortedData))
                 {
+                    // Add the new object to the list
                     DataSampler.AddToList(orderBy, requestInfo, sortedData);
 
                     sortedData.Sort(DataComparer.Instance);
@@ -67,18 +69,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private static void AddToList(DataSamplerOrderBy orderBy, RequestInfo requestInfo, List<KeyValuePair<double, RequestInfo>> sortedData)
         {
+            double valueToStore;
             if (orderBy == DataSamplerOrderBy.Latency)
             {
-                sortedData.Add(new KeyValuePair<double, RequestInfo>(requestInfo.GetP99Latency(), requestInfo));
+                valueToStore = requestInfo.GetP99Latency();
             }
             else if (orderBy == DataSamplerOrderBy.SampleCount)
             {
-                sortedData.Add(new KeyValuePair<double, RequestInfo>(requestInfo.GetSampleCount(), requestInfo));
+                valueToStore = requestInfo.GetSampleCount();
             }
             else
             {
                 throw new Exception("order by not supported. Only Supported values are Latency, SampleCount");
             }
+            
+            sortedData.Add(new KeyValuePair<double, RequestInfo>(valueToStore, requestInfo));
         }
     }
 
