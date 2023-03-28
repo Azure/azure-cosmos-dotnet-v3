@@ -15,11 +15,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Singleton to make sure we only have one instance of the DiagnosticScopeFactory and pattern matching of listener happens only once
         /// </summary>
-        private static Lazy<DiagnosticScopeFactory> ScopeFactory = new Lazy<DiagnosticScopeFactory>(() => new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
-                        resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                        isActivityEnabled: true),
-            isThreadSafe: true);
-
+        private static DiagnosticScopeFactory ScopeFactory { get; set; } 
+        
         public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
             string containerName,
             string databaseName,
@@ -29,11 +26,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (clientContext is { ClientOptions.IsDistributedTracingEnabled: true })
             {
-                ActivityExtensions.ResetFeatureSwitch();
+                OpenTelemetryRecorderFactory.ScopeFactory ??= new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
+                        resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
+                        isActivityEnabled: true);
                 
                 // If there is no source then it will return default otherwise a valid diagnostic scope
                 DiagnosticScope scope = OpenTelemetryRecorderFactory
-                    .ScopeFactory.Value
+                    .ScopeFactory
                     .CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
                                  kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
 

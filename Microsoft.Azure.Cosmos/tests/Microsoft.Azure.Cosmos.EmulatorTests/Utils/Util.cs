@@ -570,7 +570,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Util.TestListener = null;
 
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
-            
+
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
         }
 
