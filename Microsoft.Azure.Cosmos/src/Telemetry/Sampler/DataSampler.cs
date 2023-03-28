@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Sampler to select top N unique records and return true/false on the basis of elements already selected.
@@ -22,77 +23,76 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             List<RequestInfo> sampledData = new List<RequestInfo>(capacity: requestInfoList.Count);
 
             // Processing (Grouping, Sorting will happen in this collection)
-            IDictionary<int, List<KeyValuePair<double, RequestInfo>>> sampledRawData = new Dictionary<int, List<KeyValuePair<double, RequestInfo>>>();
+            IDictionary<int, List<RequestInfo>> sampledRawData = new Dictionary<int, List<RequestInfo>>();
 
             foreach (RequestInfo requestInfo in requestInfoList)
             {
                 // Get a unique key identifier for an object
                 int key = requestInfo.GetHashCodeForSampler();
-
-                // Check if similar object is already present
-                if (sampledRawData.TryGetValue(key, out List<KeyValuePair<double, RequestInfo>> sortedData))
+                
+                // Check if similar object is already present otherwise create a new list and add
+                if (sampledRawData.TryGetValue(key, out List<RequestInfo> groupedData))
                 {
-                    // Add the new object to the list
-                    DataSampler.AddToList(orderBy, requestInfo, sortedData);
-
-                    sortedData.Sort(DataComparer.Instance);
-
-                    if (sortedData.Count > ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold)
-                    {
-                        sortedData.RemoveAt(sortedData.Count - 1);
-                    }
-                    sampledRawData[key] = sortedData;
+                    groupedData.Add(requestInfo);
+                    sampledRawData[key] = groupedData;
                 }
                 else
                 {
-                    // Create a new list of KeyValue pair where we will be sorting this list by the key and Value is original Request Info object
-                    // In this case key can be duplicated as latency and samplecount can be same for different scenario, hence using KeyValuePair to store this info
-                    List<KeyValuePair<double, RequestInfo>> newSortedData 
-                        = new List<KeyValuePair<double, RequestInfo>>(ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold + 1);
-
-                    DataSampler.AddToList(orderBy, requestInfo, newSortedData);
-
-                    sampledRawData.Add(key, newSortedData);
+                    sampledRawData.Add(key, new List<RequestInfo>() { requestInfo });
                 }
             }
 
-            foreach (List<KeyValuePair<double, RequestInfo>> sampledRequestInfo in sampledRawData.Values)
+            // Get the comparator
+            IComparer<RequestInfo> comparer = DataSampler.GetComparer(orderBy);
+            
+            // If list is greater than threshold then sort it and get top N objects otherwise add list as it is
+            foreach (List<RequestInfo> sampledRequestInfo in sampledRawData.Values)
             {
-                foreach (KeyValuePair<double, RequestInfo> pair in sampledRequestInfo)
+                if (sampledRequestInfo.Count > ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold)
                 {
-                    sampledData.Add(pair.Value);
+                    sampledRequestInfo.Sort(comparer);
+                    sampledData.AddRange(sampledRequestInfo.GetRange(
+                        index: 0,
+                        count: ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold));
+                }
+                else
+                {
+                    sampledData.AddRange(sampledRequestInfo);
                 }
             }
 
             return sampledData;
         }
-
-        private static void AddToList(DataSamplerOrderBy orderBy, RequestInfo requestInfo, List<KeyValuePair<double, RequestInfo>> sortedData)
+        
+        private static IComparer<RequestInfo> GetComparer(DataSamplerOrderBy orderBy)
         {
-            double valueToStore;
-            if (orderBy == DataSamplerOrderBy.Latency)
+            switch (orderBy)
             {
-                valueToStore = requestInfo.GetP99Latency();
+                case DataSamplerOrderBy.Latency:
+                    return DataLatencyComparer.Instance;
+                case DataSamplerOrderBy.SampleCount:
+                    return DataSampleCountComparer.Instance;
+                default:
+                    throw new ArgumentException("order by not supported. Only Supported values are Latency, SampleCount");
             }
-            else if (orderBy == DataSamplerOrderBy.SampleCount)
-            {
-                valueToStore = requestInfo.GetSampleCount();
-            }
-            else
-            {
-                throw new Exception("order by not supported. Only Supported values are Latency, SampleCount");
-            }
-            
-            sortedData.Add(new KeyValuePair<double, RequestInfo>(valueToStore, requestInfo));
+        }
+    }
+    
+    internal class DataLatencyComparer : IComparer<RequestInfo>
+    {
+        public static DataLatencyComparer Instance = new DataLatencyComparer();
+        public int Compare(RequestInfo a, RequestInfo b)
+        {
+            return b.GetP99Latency().CompareTo(a.GetP99Latency());
         }
     }
 
-    internal class DataComparer : IComparer<KeyValuePair<double, RequestInfo>>
+    internal class DataSampleCountComparer : IComparer<RequestInfo>
     {
-        public static DataComparer Instance = new DataComparer();
-        public int Compare(KeyValuePair<double, RequestInfo> a, KeyValuePair<double, RequestInfo> b)
+        public static DataSampleCountComparer Instance = new DataSampleCountComparer();
+        public int Compare(RequestInfo a, RequestInfo b)
         {
-            return b.Key.CompareTo(a.Key);
+            return b.GetSampleCount().CompareTo(a.GetSampleCount());
         }
     }
 
