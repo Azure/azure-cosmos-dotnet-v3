@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 allRequests.Add(payloadForLatency);
             }
             
-            requestInfoList.AddRange(DataSampler.OrderAndSample(allRequests, DataSamplerOrderBy.SampleCount));
+            requestInfoList.AddRange(DataSampler.OrderAndSample(allRequests, DataSampleCountComparer.Instance));
         }
         
         internal void GetHighLatencyRequests(List<RequestInfo> requestInfoList)
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 allRequests.Add(payloadForLatency);
             }
 
-            requestInfoList.AddRange(DataSampler.OrderAndSample(allRequests, DataSamplerOrderBy.Latency));
+            requestInfoList.AddRange(DataSampler.OrderAndSample(allRequests, DataLatencyComparer.Instance));
         }
 
         internal RequestInfo CreateRequestInfo(StoreResponseStatistics storeResponseStatistic, string databaseId, string containerId)

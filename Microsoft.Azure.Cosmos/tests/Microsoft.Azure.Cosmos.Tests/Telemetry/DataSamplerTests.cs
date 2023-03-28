@@ -54,10 +54,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 requestInfoList.Add(requestInfo);
             }
             
-            List<RequestInfo> sampleDataByLatency = DataSampler.OrderAndSample(requestInfoList, DataSamplerOrderBy.Latency);
+            List<RequestInfo> sampleDataByLatency = DataSampler.OrderAndSample(requestInfoList, DataLatencyComparer.Instance);
             Assert.AreEqual(numberOfGroups * numberOfElementsInEachGroup, sampleDataByLatency.Count);
 
-            List<RequestInfo> sampleDataBySampleCount = DataSampler.OrderAndSample(requestInfoList, DataSamplerOrderBy.SampleCount);
+            List<RequestInfo> sampleDataBySampleCount = DataSampler.OrderAndSample(requestInfoList, DataSampleCountComparer.Instance);
             Assert.AreEqual(numberOfGroups * numberOfElementsInEachGroup, sampleDataBySampleCount.Count);
         }
 
@@ -66,8 +66,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         {
             List<RequestInfo> requestInfoList = new List<RequestInfo>();
 
-            Assert.AreEqual(0, DataSampler.OrderAndSample(requestInfoList, DataSamplerOrderBy.SampleCount).Count);
-            Assert.AreEqual(0, DataSampler.OrderAndSample(requestInfoList, DataSamplerOrderBy.Latency).Count);
+            Assert.AreEqual(0, DataSampler.OrderAndSample(requestInfoList, DataSampleCountComparer.Instance).Count);
+            Assert.AreEqual(0, DataSampler.OrderAndSample(requestInfoList, DataLatencyComparer.Instance).Count);
         }
 
         [TestMethod]
@@ -108,10 +108,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 requestInfoList.Add(requestInfo);
             }
 
-            List<RequestInfo> sampleDataByLatency = DataSampler.OrderAndSample(requestInfoList, DataSamplerOrderBy.Latency);
+            List<RequestInfo> sampleDataByLatency = DataSampler.OrderAndSample(requestInfoList, DataLatencyComparer.Instance);
             Assert.AreEqual(10, sampleDataByLatency.Count);
-            
-            List<RequestInfo> sampleDataBySampleCount = DataSampler.OrderAndSample(requestInfoList, DataSamplerOrderBy.SampleCount);
+
+            List<RequestInfo> sampleDataBySampleCount = DataSampler.OrderAndSample(requestInfoList, DataSampleCountComparer.Instance);
             Assert.AreEqual(10, sampleDataBySampleCount.Count);
         }
 

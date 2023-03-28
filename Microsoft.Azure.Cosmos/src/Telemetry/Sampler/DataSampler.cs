@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal sealed class DataSampler
     {
-        public static List<RequestInfo> OrderAndSample(List<RequestInfo> requestInfoList, DataSamplerOrderBy orderBy)
+        public static List<RequestInfo> OrderAndSample(List<RequestInfo> requestInfoList, IComparer<RequestInfo> comparer)
         {
             // It will store final result
             List<RequestInfo> sampledData = new List<RequestInfo>(capacity: requestInfoList.Count);
@@ -41,9 +41,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     sampledRawData.Add(key, new List<RequestInfo>() { requestInfo });
                 }
             }
-
-            // Get the comparator
-            IComparer<RequestInfo> comparer = DataSampler.GetComparer(orderBy);
             
             // If list is greater than threshold then sort it and get top N objects otherwise add list as it is
             foreach (List<RequestInfo> sampledRequestInfo in sampledRawData.Values)
@@ -64,18 +61,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return sampledData;
         }
         
-        private static IComparer<RequestInfo> GetComparer(DataSamplerOrderBy orderBy)
-        {
-            switch (orderBy)
-            {
-                case DataSamplerOrderBy.Latency:
-                    return DataLatencyComparer.Instance;
-                case DataSamplerOrderBy.SampleCount:
-                    return DataSampleCountComparer.Instance;
-                default:
-                    throw new ArgumentException("order by not supported. Only Supported values are Latency, SampleCount");
-            }
-        }
     }
     
     internal class DataLatencyComparer : IComparer<RequestInfo>
@@ -95,10 +80,5 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return b.GetSampleCount().CompareTo(a.GetSampleCount());
         }
     }
-
-    internal enum DataSamplerOrderBy
-    {
-        Latency, 
-        SampleCount
-    }
+    
 }
