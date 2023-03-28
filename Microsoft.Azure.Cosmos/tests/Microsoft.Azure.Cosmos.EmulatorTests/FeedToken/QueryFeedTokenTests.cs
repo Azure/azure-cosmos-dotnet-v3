@@ -50,12 +50,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 container = (ContainerInlineCore)containerResponse;
 
                 // Get all the partition key ranges to verify there is more than one partition
-                IRoutingMapProvider routingMapProvider = await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+                IRoutingMapProvider routingMapProvider = await this.GetClient().DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
 
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
                     null,
-                    containerResponse.Resource.PartitionKey);
+                    containerResponse.Resource.PartitionKey,
+                    containerResponse.Resource.GeospatialConfig.GeospatialType);
 
                 IReadOnlyList<FeedRange> feedTokens = await container.GetFeedRangesAsync();
 

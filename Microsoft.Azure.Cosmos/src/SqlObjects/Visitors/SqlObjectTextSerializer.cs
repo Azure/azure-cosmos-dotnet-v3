@@ -39,6 +39,14 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             }
         }
 
+        public override void Visit(SqlAllScalarExpression sqlAllScalarExpression)
+        {
+            this.writer.Write("ALL");
+            this.WriteStartContext("(");
+            sqlAllScalarExpression.Subquery.Accept(this);
+            this.WriteEndContext(")");
+        }
+
         public override void Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
         {
             int numberOfItems = sqlArrayCreateScalarExpression.Items.Count();
@@ -143,6 +151,14 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             this.writer.Write("EXISTS");
             this.WriteStartContext("(");
             sqlExistsScalarExpression.Subquery.Accept(this);
+            this.WriteEndContext(")");
+        }
+
+        public override void Visit(SqlFirstScalarExpression sqlFirstScalarExpression)
+        {
+            this.writer.Write("FIRST");
+            this.WriteStartContext("(");
+            sqlFirstScalarExpression.Subquery.Accept(this);
             this.WriteEndContext(")");
         }
 
@@ -274,6 +290,14 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             this.WriteTab();
             this.writer.Write(" JOIN ");
             sqlJoinCollectionExpression.Right.Accept(this);
+        }
+
+        public override void Visit(SqlLastScalarExpression sqlLastScalarExpression)
+        {
+            this.writer.Write("LAST");
+            this.WriteStartContext("(");
+            sqlLastScalarExpression.Subquery.Accept(this);
+            this.WriteEndContext(")");
         }
 
         public override void Visit(SqlLimitSpec sqlObject)

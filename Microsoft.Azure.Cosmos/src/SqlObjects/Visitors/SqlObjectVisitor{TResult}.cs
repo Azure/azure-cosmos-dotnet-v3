@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
     abstract class SqlObjectVisitor<TResult>
     {
         public abstract TResult Visit(SqlAliasedCollectionExpression sqlObject);
+        public abstract TResult Visit(SqlAllScalarExpression sqlObject);
         public abstract TResult Visit(SqlArrayCreateScalarExpression sqlObject);
         public abstract TResult Visit(SqlArrayIteratorCollectionExpression sqlObject);
         public abstract TResult Visit(SqlArrayScalarExpression sqlObject);
@@ -23,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TResult Visit(SqlCoalesceScalarExpression sqlObject);
         public abstract TResult Visit(SqlConditionalScalarExpression sqlObject);
         public abstract TResult Visit(SqlExistsScalarExpression sqlObject);
+        public abstract TResult Visit(SqlFirstScalarExpression sqlObject);
         public abstract TResult Visit(SqlFromClause sqlObject);
         public abstract TResult Visit(SqlFunctionCallScalarExpression sqlObject);
         public abstract TResult Visit(SqlGroupByClause sqlObject);
@@ -30,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TResult Visit(SqlIdentifierPathExpression sqlObject);
         public abstract TResult Visit(SqlInputPathCollection sqlObject);
         public abstract TResult Visit(SqlJoinCollectionExpression sqlObject);
+        public abstract TResult Visit(SqlLastScalarExpression sqlObject);
         public abstract TResult Visit(SqlLikeScalarExpression sqlObject);
         public abstract TResult Visit(SqlInScalarExpression sqlObject);
         public abstract TResult Visit(SqlLimitSpec sqlObject);

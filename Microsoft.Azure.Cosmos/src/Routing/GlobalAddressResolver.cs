@@ -8,9 +8,13 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -20,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// AddressCache implementation for client SDK. Supports cross region address routing based on
     /// avaialbility and preference list.
     /// </summary>
-    internal sealed class GlobalAddressResolver : IAddressResolver, IDisposable
+    internal sealed class GlobalAddressResolver : IAddressResolverExtension, IDisposable
     {
         private const int MaxBackupReadRegions = 3;
 
@@ -35,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly CosmosHttpClient httpClient;
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
+        private IOpenConnectionsHandler openConnectionsHandler;
 
         public GlobalAddressResolver(
             GlobalEndpointManager endpointManager,
@@ -100,10 +105,109 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
             {
-                tasks.Add(endpointCache.AddressCache.OpenAsync(databaseName, collection, ranges, cancellationToken));
+                tasks.Add(endpointCache.AddressCache.OpenConnectionsAsync(
+                    databaseName: databaseName,
+                    collection: collection,
+                    partitionKeyRangeIdentities: ranges,
+                    shouldOpenRntbdChannels: false,
+                    cancellationToken: cancellationToken));
             }
 
             await Task.WhenAll(tasks);
+        }
+
+        /// <summary>
+        /// Invokes the gateway address cache to open the rntbd connections to the backend replicas.
+        /// </summary>
+        /// <param name="databaseName">A string containing the name of the database.</param>
+        /// <param name="containerLinkUri">A string containing the container's link uri.</param>
+        /// <param name="cancellationToken">An Instance of the <see cref="CancellationToken"/>.</param>
+        public async Task OpenConnectionsToAllReplicasAsync(
+            string databaseName,
+            string containerLinkUri,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                ContainerProperties collection = await this.collectionCache.ResolveByNameAsync(
+                        apiVersion: HttpConstants.Versions.CurrentVersion,
+                        resourceAddress: containerLinkUri,
+                        forceRefesh: false,
+                        trace: NoOpTrace.Singleton,
+                        clientSideRequestStatistics: null,
+                        cancellationToken: cancellationToken);
+
+                if (collection == null)
+                {
+                    throw CosmosExceptionFactory.Create(
+                        statusCode: HttpStatusCode.NotFound,
+                        message: $"Could not resolve the collection: {containerLinkUri} for database: {databaseName}.",
+                        stackTrace: default,
+                        headers: new Headers(),
+                        trace: NoOpTrace.Singleton,
+                        error: null,
+                        innerException: default);
+                }
+
+                IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await this.routingMapProvider?.TryGetOverlappingRangesAsync(
+                        collectionRid: collection.ResourceId,
+                        range: FeedRangeEpk.FullRange.Range,
+                        trace: NoOpTrace.Singleton);
+
+                IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities = partitionKeyRanges?.Select(
+                    range => new PartitionKeyRangeIdentity(
+                        collection.ResourceId,
+                        range.Id))
+                    .ToList();
+
+                Uri firstPreferredReadRegion = this.endpointManager
+                    .ReadEndpoints
+                    .First();
+
+                if (!this.addressCacheByEndpoint.ContainsKey(firstPreferredReadRegion))
+                {
+                    DefaultTrace.TraceWarning("The Address Cache doesn't contain a value for the first preferred read region: {0} under the database: {1}. '{2}'",
+                        firstPreferredReadRegion,
+                        databaseName,
+                        System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                    return;
+                }
+
+                await this.addressCacheByEndpoint[firstPreferredReadRegion]
+                    .AddressCache
+                    .OpenConnectionsAsync(
+                        databaseName: databaseName,
+                        collection: collection,
+                        partitionKeyRangeIdentities: partitionKeyRangeIdentities,
+                        shouldOpenRntbdChannels: true,
+                        cancellationToken: cancellationToken);
+
+            }
+            catch (Exception ex)
+            {
+                throw ex switch
+                {
+                    DocumentClientException dce => CosmosExceptionFactory.Create(
+                        dce,
+                        NoOpTrace.Singleton),
+
+                    _ => ex,
+                };
+            }
+        }
+
+        /// <inheritdoc/>
+        public void SetOpenConnectionsHandler(IOpenConnectionsHandler openConnectionsHandler)
+        {
+            this.openConnectionsHandler = openConnectionsHandler;
+
+            // Sets the openConnectionsHandler for the existing address cache.
+            // For the new address caches added later, the openConnectionsHandler
+            // will be set through the constructor.
+            foreach (EndpointCache endpointCache in this.addressCacheByEndpoint.Values)
+            {
+                endpointCache.AddressCache.SetOpenConnectionsHandler(openConnectionsHandler);
+            }
         }
 
         public async Task<PartitionAddressInformation> ResolveAsync(
@@ -124,33 +228,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public async Task UpdateAsync(
-            IReadOnlyList<AddressCacheToken> addressCacheTokens,
-            CancellationToken cancellationToken)
-        {
-            List<Task> tasks = new List<Task>();
-
-            foreach (AddressCacheToken cacheToken in addressCacheTokens)
-            {
-                if (this.addressCacheByEndpoint.TryGetValue(cacheToken.ServiceEndpoint, out EndpointCache endpointCache))
-                {
-                    tasks.Add(endpointCache.AddressCache.UpdateAsync(cacheToken.PartitionKeyRangeIdentity, cancellationToken));
-                }
-            }
-
-            await Task.WhenAll(tasks);
-        }
-
-        public Task UpdateAsync(
            ServerKey serverKey,
            CancellationToken cancellationToken)
         {
             foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
             {
-                // since we don't know which address cache contains the pkRanges mapped to this node, we do a tryRemove on all AddressCaches of all regions
-                addressCache.Value.AddressCache.TryRemoveAddresses(serverKey);
+                // since we don't know which address cache contains the pkRanges mapped to this node,
+                // we mark all transport uris that has the same server key to unhealthy status in the
+                // AddressCaches of all regions.
+                await addressCache.Value.AddressCache.MarkAddressesToUnhealthyAsync(serverKey);
             }
-
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -193,6 +280,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.tokenProvider,
                         this.serviceConfigReader,
                         this.httpClient,
+                        this.openConnectionsHandler,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery);
 
                     string location = this.endpointManager.GetLocation(endpoint);

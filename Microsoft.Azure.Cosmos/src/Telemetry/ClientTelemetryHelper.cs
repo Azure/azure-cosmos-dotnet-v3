@@ -5,13 +5,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using System.Net.Http;
+    using System.Linq;
     using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
-    using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Handler;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents.Rntbd;
 
     internal static class ClientTelemetryHelper
@@ -20,14 +20,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Task to get Account Properties from cache if available otherwise make a network call.
         /// </summary>
         /// <returns>Async Task</returns>
-        internal static async Task<AccountProperties> SetAccountNameAsync(DocumentClient documentclient)
+        internal static async Task<AccountProperties> SetAccountNameAsync(GlobalEndpointManager globalEndpointManager)
         {
             DefaultTrace.TraceVerbose("Getting Account Information for Telemetry.");
             try
             {
-                if (documentclient.GlobalEndpointManager != null)
+                if (globalEndpointManager != null)
                 {
-                    return await documentclient.GlobalEndpointManager.GetDatabaseAccountAsync();
+                    return await globalEndpointManager.GetDatabaseAccountAsync();
                 }
             }
             catch (Exception ex)
@@ -46,74 +46,70 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// 
         /// </summary>
         /// <param name="systemUsageHistory"></param>
-        /// <param name="systemInfoCollection"></param>
         /// <param name="isDirectConnectionMode"></param>
-        internal static void RecordSystemUsage(
+        private static List<SystemInfo> RecordSystemUsage(
                 SystemUsageHistory systemUsageHistory, 
-                List<SystemInfo> systemInfoCollection,
                 bool isDirectConnectionMode)
         {
             if (systemUsageHistory.Values == null)
             {
-                return;
+                return null;
             }
 
-            DefaultTrace.TraceInformation("System Usage recorded by telemetry is : {0}", systemUsageHistory);
-
-            systemInfoCollection.Add(TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values));
-            systemInfoCollection.Add(TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values));
+            DefaultTrace.TraceVerbose("System Usage recorded by telemetry is : {0}", systemUsageHistory);
+            
+            List<SystemInfo> systemInfoCollection = new List<SystemInfo>(6)
+            {
+                TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values)
+            }; // Reset System Information
 
             if (isDirectConnectionMode)
             {
                 systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values));
             }
 
+            return systemInfoCollection;
         }
-
+        
         /// <summary>
-        /// Convert map with operation information to list of operations along with request latency and request charge metrics
+        /// Record CPU and memory usage which will be sent as part of telemetry information
         /// </summary>
-        /// <param name="metrics"></param>
-        /// <returns>Collection of ReportPayload</returns>
-        internal static List<OperationInfo> ToListWithMetricsInfo(
-                IDictionary<OperationInfo, 
-                (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
+        internal static List<SystemInfo> RecordSystemUtilization(DiagnosticsHandlerHelper helper, bool isDirectMode)
         {
-            DefaultTrace.TraceInformation("Aggregating operation information to list started");
-
-            List<OperationInfo> payloadWithMetricInformation = new List<OperationInfo>();
-            foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
+            try
             {
-                OperationInfo payloadForLatency = entry.Key;
-                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
+                DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
 
-                payloadWithMetricInformation.Add(payloadForLatency);
+                SystemUsageHistory systemUsageHistory = helper.GetClientTelemetrySystemHistory();
 
-                OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
-                payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
-
-                payloadWithMetricInformation.Add(payloadForRequestCharge);
+                if (systemUsageHistory != null)
+                {
+                    return ClientTelemetryHelper.RecordSystemUsage(
+                        systemUsageHistory: systemUsageHistory,
+                        isDirectConnectionMode: isDirectMode);
+                }
+                else
+                {
+                    DefaultTrace.TraceWarning("System Usage History not available");
+                }
             }
-
-            DefaultTrace.TraceInformation("Aggregating operation information to list done");
-
-            return payloadWithMetricInformation;
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("System Usage Recording Error : {0} ", ex);
+            }
+            return null;
         }
 
         /// <summary>
         /// Get comma separated list of regions contacted from the diagnostic
         /// </summary>
-        /// <param name="cosmosDiagnostics"></param>
         /// <returns>Comma separated region list</returns>
-        internal static string GetContactedRegions(CosmosDiagnostics cosmosDiagnostics)
+        internal static string GetContactedRegions(IReadOnlyCollection<(string regionName, Uri uri)> regionList)
         {
-            IReadOnlyList<(string regionName, Uri uri)> regionList = cosmosDiagnostics.GetContactedRegions();
-
             if (regionList == null || regionList.Count == 0)
             {
                 return null;
@@ -121,9 +117,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             if (regionList.Count == 1)
             {
-                return regionList[0].regionName;
+                return regionList.ElementAt(0).regionName;
             }
-
+            
             StringBuilder regionsContacted = new StringBuilder();
             foreach ((string name, _) in regionList)
             {

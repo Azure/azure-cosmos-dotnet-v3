@@ -1,0 +1,92 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[FIRST in an SqlSelectItem as an alias]]></Description>
+      <Query><![CDATA[SELECT 1 AS FIRST]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT 1 AS FIRST]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FIRST in an AliasedCollectionExpression as an alias]]></Description>
+      <Query><![CDATA[SELECT * FROM (SELECT VALUE 1) AS FIRST]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM (SELECT VALUE 1) AS FIRST]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FIRST in an ArrayIteratorCollectionExpression]]></Description>
+      <Query><![CDATA[SELECT * FROM FIRST IN (SELECT VALUE 1)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM FIRST IN (SELECT VALUE 1)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FIRST in an InputPathCollection and IdentifierPathExpression]]></Description>
+      <Query><![CDATA[SELECT * FROM FIRST.FIRST]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * FROM FIRST.FIRST]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FIRST in a PropertyRefScalarExpression]]></Description>
+      <Query><![CDATA[SELECT FIRST]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT FIRST]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FIRST in a PropertyRefScalarExpression as child]]></Description>
+      <Query><![CDATA[SELECT c.FIRST]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT c.FIRST]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FIRST in a PropertyRefScalarExpression as parent and child]]></Description>
+      <Query><![CDATA[SELECT FIRST.FIRST]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT FIRST.FIRST]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FIRST in a function cFIRST]]></Description>
+      <Query><![CDATA[SELECT FIRST(1, 2)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT FIRST(1, 2)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FIRST in a UDF function cFIRST]]></Description>
+      <Query><![CDATA[SELECT udf.FIRST(1, 2)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT udf.FIRST(1, 2)]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FIRST in every possible grammar rule at the same time]]></Description>
+      <Query><![CDATA[SELECT FIRST(1, 2) AS FIRST FROM FIRST IN (SELECT FIRST.FIRST) WHERE FIRST(     SELECT FIRST     FROM (SELECT udf.FIRST(1, 2)) AS FIRST     WHERE FIRST( SELECT VALUE 1) )]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT FIRST(1, 2) AS FIRST FROM FIRST IN (SELECT FIRST.FIRST) WHERE FIRST(SELECT FIRST FROM (SELECT udf.FIRST(1, 2)) AS FIRST WHERE FIRST(SELECT VALUE 1))]]></ParsedQuery>
+    </Output>
+  </Result>
+</Results>

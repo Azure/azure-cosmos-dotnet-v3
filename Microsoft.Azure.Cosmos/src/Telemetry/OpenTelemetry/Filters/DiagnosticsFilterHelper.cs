@@ -17,17 +17,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// <returns>true or false</returns>
         public static bool IsTracingNeeded(
             DistributedTracingOptions config,
+            OperationType operationType,
             OpenTelemetryAttributes response)
         {
             TimeSpan latencyThreshold;
 
-            if (config?.DiagnosticsLatencyThreshold != null)
+            if (config?.LatencyThresholdForDiagnosticEvent != null)
             {
-                latencyThreshold = config.DiagnosticsLatencyThreshold.Value;
+                latencyThreshold = config.LatencyThresholdForDiagnosticEvent.Value;
             }
             else
             {
-                latencyThreshold = response.OperationType == OperationType.Query.ToOperationTypeString() ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
+                latencyThreshold = operationType == OperationType.Query ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
             }
 
             return response.Diagnostics.GetClientElapsedTime() > latencyThreshold || !response.StatusCode.IsSuccess();

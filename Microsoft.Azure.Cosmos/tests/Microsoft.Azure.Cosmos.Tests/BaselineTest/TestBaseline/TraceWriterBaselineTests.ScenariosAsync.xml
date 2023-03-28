@@ -26,145 +26,132 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       │       └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │       ├── Get Child Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │               └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
-        └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       │       └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │       ├── Get Child Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │               └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Read Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
+        └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start datetime": "0544-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "children": [
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[,FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[,FF) move next",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Read Feed Transport",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
                       ]
@@ -175,26 +162,18 @@
             },
             {
               "name": "Get Child Ranges",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Read Feed Transport",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -207,26 +186,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -237,26 +208,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -267,26 +230,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -297,26 +252,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -327,26 +274,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -357,26 +296,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -387,26 +318,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -417,26 +340,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -447,26 +362,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -477,26 +384,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -507,26 +406,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -537,26 +428,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -567,26 +450,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -597,26 +472,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -627,26 +494,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -657,26 +516,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -687,26 +538,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -717,26 +560,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -747,26 +582,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -777,26 +604,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -807,26 +626,18 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Read Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -837,14 +648,10 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0
         }
       ]
@@ -888,113 +695,100 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       │       └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │       ├── Get Child Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │               └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    └── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  12:00:00:000  0.00 milliseconds  
-        ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-        │   └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-        │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-        └── Drain NotModified Pages(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  12:00:00:000  0.00 milliseconds  
-            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-            │   └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-            │   └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-            │   └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-            │   └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-            │   └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-            │   └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-            └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-                └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-                    └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       │       └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │       ├── Get Child Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │               └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    └── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+        ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        │   └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        └── Drain NotModified Pages(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+            │   └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+            │   └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+            │   └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+            │   └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+            │   └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+            │   └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+            └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+                └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+                    └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start datetime": "0544-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "children": [
     {
       "name": "ChangeFeed MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[,FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Prefetch",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "[,FF) move next",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "children": [
                         {
                           "name": "Change Feed Transport",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "start time": "12:00:00:000",
                           "duration in milliseconds": 0
                         }
                       ]
@@ -1005,26 +799,18 @@
             },
             {
               "name": "Get Child Ranges",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             },
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Change Feed Transport",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -1037,26 +823,18 @@
     },
     {
       "name": "ChangeFeed MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Change Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -1067,26 +845,18 @@
     },
     {
       "name": "ChangeFeed MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Change Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -1097,26 +867,18 @@
     },
     {
       "name": "ChangeFeed MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Change Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -1127,26 +889,18 @@
     },
     {
       "name": "ChangeFeed MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Change Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -1157,26 +911,18 @@
     },
     {
       "name": "ChangeFeed MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Change Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -1187,26 +933,18 @@
     },
     {
       "name": "ChangeFeed MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Change Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -1217,26 +955,18 @@
     },
     {
       "name": "ChangeFeed MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Change Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -1247,26 +977,18 @@
     },
     {
       "name": "ChangeFeed MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Change Feed Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -1275,26 +997,18 @@
         },
         {
           "name": "Drain NotModified Pages",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Change Feed Transport",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -1303,20 +1017,14 @@
             },
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Change Feed Transport",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -1325,20 +1033,14 @@
             },
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Change Feed Transport",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -1347,20 +1049,14 @@
             },
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Change Feed Transport",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -1369,20 +1065,14 @@
             },
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Change Feed Transport",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -1391,20 +1081,14 @@
             },
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Change Feed Transport",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -1413,20 +1097,14 @@
             },
             {
               "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Change Feed Transport",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -1464,118 +1142,107 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   │       └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   │           └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │   ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   ├── Get Child Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │           └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │   └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
-    └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   │       └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   │           └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   ├── Get Child Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │   └── [DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    │       └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start datetime": "0544-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "children": [
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "Prefetching",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Prefetch",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "[,FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "children": [
                     {
                       "name": "Query Transport",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "start time": "12:00:00:000",
                       "duration in milliseconds": 0
                     }
                   ]
@@ -1586,32 +1253,22 @@
         },
         {
           "name": "[,FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0
         },
         {
           "name": "Get Child Ranges",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0
         },
         {
           "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "children": [
                 {
                   "name": "Query Transport",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "start time": "12:00:00:000",
                   "duration in milliseconds": 0
                 }
               ]
@@ -1622,20 +1279,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1644,20 +1295,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1666,20 +1311,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1688,20 +1327,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1710,20 +1343,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1732,20 +1359,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1754,20 +1375,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1776,20 +1391,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1798,20 +1407,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1820,20 +1423,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1842,20 +1439,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1864,20 +1455,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1886,20 +1471,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1908,20 +1487,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1930,20 +1503,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1952,20 +1519,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1974,20 +1535,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -1996,20 +1551,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -2018,20 +1567,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -2040,20 +1583,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -2062,20 +1599,14 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "children": [
         {
           "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "children": [
             {
               "name": "Query Transport",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "start time": "12:00:00:000",
               "duration in milliseconds": 0
             }
           ]
@@ -2084,14 +1615,10 @@
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0
     },
     {
       "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "start time": "12:00:00:000",
       "duration in milliseconds": 0
     }
   ]

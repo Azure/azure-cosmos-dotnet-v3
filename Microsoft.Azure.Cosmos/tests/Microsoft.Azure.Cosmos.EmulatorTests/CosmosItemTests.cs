@@ -27,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using JsonReader = Json.JsonReader;
-    using JsonSerializer = Json.JsonSerializer;
     using JsonWriter = Json.JsonWriter;
     using PartitionKey = Documents.PartitionKey;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
@@ -70,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void ParentResourceTest()
         {
             Assert.AreEqual(this.database, this.Container.Database);
-            Assert.AreEqual(this.cosmosClient, this.Container.Database.Client);
+            Assert.AreEqual(this.GetClient(), this.Container.Database.Client);
         }
 
         [TestMethod]
@@ -97,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string[] selfLinkSegments = containerProperties.SelfLink.Split('/');
             string databaseRid = selfLinkSegments[1];
             string containerRid = selfLinkSegments[3];
-            Container containerByRid = this.cosmosClient.GetContainer(databaseRid, containerRid);
+            Container containerByRid = this.GetClient().GetContainer(databaseRid, containerRid);
 
             // List of invalid characters are listed here.
             //https://docs.microsoft.com/dotnet/api/microsoft.azure.documents.resource.id?view=azure-dotnet#remarks
@@ -417,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Item -> Container -> Database contract 
             string dbName = Guid.NewGuid().ToString();
-            testContainer = this.cosmosClient.GetDatabase(dbName).GetContainer(collectionName);
+            testContainer = this.GetClient().GetDatabase(dbName).GetContainer(collectionName);
             await CosmosItemTests.TestNonePKForNonExistingContainer(testContainer);
         }
 
@@ -425,7 +424,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task NonPartitionKeyLookupCacheTest()
         {
             int count = 0;
-            CosmosClient client = TestCommon.CreateCosmosClient(builder =>
+            using CosmosClient client = TestCommon.CreateCosmosClient(builder =>
             {
                 builder.WithConnectionModeDirect();
                 builder.WithSendingRequestEventArgs((sender, e) =>
@@ -510,6 +509,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // OkRagnes should be fetched only once. 
             // Possible to make multiple calls for ranges
             Assert.AreEqual(expected, count);
+
+            await db.DeleteStreamAsync();
         }
 
         [TestMethod]
@@ -768,11 +769,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string currentVersion = HttpConstants.Versions.CurrentVersion;
             HttpConstants.Versions.CurrentVersion = "2020-07-15";
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
             Cosmos.Database database = null;
             try
             {
-                CosmosClient client = TestCommon.CreateCosmosClient(true);
-                
                 database = await client.CreateDatabaseIfNotExistsAsync("mydb");
                 
                 ContainerProperties containerProperties = new ContainerProperties("subpartitionedcontainer", new List<string> { "/Country", "/City" });
@@ -1576,7 +1576,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = (ContainerInlineCore)containerResponse;
 
                 // Get all the partition key ranges to verify there is more than one partition
-                IRoutingMapProvider routingMapProvider = await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+                IRoutingMapProvider routingMapProvider = await this.GetClient().DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
                 IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
                     containerResponse.Resource.ResourceId,
                     new Documents.Routing.Range<string>("00", "FF", isMaxInclusive: true, isMinInclusive: true),
@@ -1589,7 +1589,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
                     null,
-                    containerResponse.Resource.PartitionKey);
+                    containerResponse.Resource.PartitionKey,
+                    containerResponse.Resource.GeospatialConfig.GeospatialType);
 
                 // There should only be one range since the EPK option is set.
                 List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
@@ -2692,7 +2693,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("Quarantine") /* Gated runs emulator as rate limiting disabled */]
         public async Task VerifyToManyRequestTest(bool isQuery)
         {
-            CosmosClient client = TestCommon.CreateCosmosClient();
+            using CosmosClient client = TestCommon.CreateCosmosClient();
             Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync("LoadTest");
             Container container = await db.CreateContainerIfNotExistsAsync("LoadContainer", "/pk");
 
@@ -2755,7 +2756,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task VerifySessionNotFoundStatistics()
         {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { ConsistencyLevel = Cosmos.ConsistencyLevel.Session });
+            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { ConsistencyLevel = Cosmos.ConsistencyLevel.Session });
             DatabaseResponse database = await cosmosClient.CreateDatabaseIfNotExistsAsync("NoSession");
             Container container = await database.Database.CreateContainerIfNotExistsAsync("NoSession", "/pk");
 
@@ -2815,8 +2816,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 operation = ExecuteReadFeedAsync;
             }
 
-            CosmosClient cc1 = TestCommon.CreateCosmosClient();
-            CosmosClient cc2 = TestCommon.CreateCosmosClient();
+            using CosmosClient cc1 = TestCommon.CreateCosmosClient();
+            using CosmosClient cc2 = TestCommon.CreateCosmosClient();
             Cosmos.Database db1 = null;
             try
             {
@@ -3005,115 +3006,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-#if PREVIEW
-        [TestMethod]
-        public async Task VerifyDocumentCrudWithMultiHashKind()
-        {
-            string currentVersion = HttpConstants.Versions.CurrentVersion;
-            HttpConstants.Versions.CurrentVersion = "2020-07-15";
-            CosmosClient client = TestCommon.CreateCosmosClient(true);
-            Cosmos.Database database = null;
-            database = await client.CreateDatabaseIfNotExistsAsync("mydb");
-            try
-            {
-                ContainerProperties containerProperties = new ContainerProperties("mycoll", new List<string> { "/ZipCode", "/Address" });
-                Container container = await database.CreateContainerAsync(containerProperties);
-                
-                //Document create.
-                ItemResponse<Document>[] documents = new ItemResponse<Document>[3];
-                Document doc1 = new Document { Id = "document1" };
-                doc1.SetValue("ZipCode", "500026");
-                doc1.SetValue("Address", "Secunderabad");
-                documents[0] = await container.CreateItemAsync<Document>(doc1);
-
-                doc1 = new Document { Id = "document2" };
-                doc1.SetValue("ZipCode", "15232");
-                doc1.SetValue("Address", "Pittsburgh");
-                documents[1] = await container.CreateItemAsync<Document>(doc1);
-
-                doc1 = new Document { Id = "document3" };
-                doc1.SetValue("ZipCode", "11790");
-                doc1.SetValue("Address", "Stonybrook");
-                documents[2] = await container.CreateItemAsync<Document>(doc1);
-
-                Assert.AreEqual(3, documents.Select(document => ((Document)document).SelfLink).Distinct().Count());
-
-                //Negative test
-                {
-                    doc1 = new Document { Id = "doc1" };
-                    doc1.SetValue("Zipcode", 11790);
-
-                    PartitionKeyBuilder pKValueList = new PartitionKeyBuilder();
-                    pKValueList.Add(doc1.GetPropertyValue<long>("ZipCode"));
-
-                    Cosmos.PartitionKey pKeyErr = pKValueList.Build();
-                    ResponseMessage response =  await this.Container.CreateItemStreamAsync(streamPayload: TestCommon.SerializerCore.ToStream(doc1), partitionKey: pKeyErr);
-
-                    Assert.IsNotNull(response);
-                    Assert.IsNull(response.Content);
-                    Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
-                }
-                
-                //Document Read.
-                foreach (Document document in documents)
-                {
-                    Cosmos.PartitionKey pKey = new PartitionKeyBuilder()
-                        .Add(document.GetPropertyValue<string>("ZipCode"))
-                        .Add(document.GetPropertyValue<string>("Address"))
-                        .Build();
-
-                    Document readDocument = (await container.ReadItemAsync<Document>(document.Id, pKey)).Resource;
-                    Assert.AreEqual(document.ToString(), readDocument.ToString());
-                }
-
-                //Document Update.
-                foreach (ItemResponse<Document> obj in documents)
-                {
-                    Cosmos.PartitionKey pKey = new PartitionKeyBuilder()
-                        .Add(obj.Resource.GetValue<string>("ZipCode"))
-                        .Add(obj.Resource.GetPropertyValue<string>("Address"))
-                        .Build();
-
-                    Document document = (await container.ReadItemAsync<Document>(obj.Resource.Id, pKey)).Resource;
-                    document.SetPropertyValue("Name", document.Id);
-
-                    Document readDocument = (await container.ReplaceItemAsync<Document>(document, document.Id, pKey)).Resource;
-                    Assert.AreEqual(readDocument.GetValue<string>("Name"), document.GetValue<string>("Name"));
-                }
-
-                //Document Delete.
-                foreach (Document document in documents)
-                {
-                    Cosmos.PartitionKey pKey = new PartitionKeyBuilder()
-                        .Add(document.GetPropertyValue<string>("ZipCode"))
-                        .Add(document.GetPropertyValue<string>("Address"))
-                        .Build();
-
-                    Document readDocument = (await container.DeleteItemAsync<Document>(document.Id, pKey)).Resource;
-                    try
-                    {
-                        readDocument = await container.ReadItemAsync<Document>(document.Id, pKey);
-                    }
-                    catch (CosmosException clientException)
-                    {
-                        Assert.AreEqual(clientException.StatusCode, HttpStatusCode.NotFound);
-                    }
-                }
-
-            }
-            catch (Exception)
-            {
-                Assert.Fail();
-            }
-            finally
-            {
-                await database.DeleteAsync();
-                HttpConstants.Versions.CurrentVersion = currentVersion;
-            }
-
-        }
-
-#endif
         private async Task<T> AutoGenerateIdPatternTest<T>(Cosmos.PartitionKey pk, T itemWithoutId)
         {
             string autoId = Guid.NewGuid().ToString();

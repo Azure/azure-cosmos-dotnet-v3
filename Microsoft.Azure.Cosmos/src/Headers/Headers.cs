@@ -37,6 +37,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or Set the CoorelatedActivityId in the current <see cref="ResponseMessage"/>.
+        /// </summary>
+        internal virtual string CorrelatedActivityId
+        {
+            get => this.CosmosMessageHeaders.Get(HttpConstants.HttpHeaders.CorrelatedActivityId);
+            set => this.CosmosMessageHeaders.Set(HttpConstants.HttpHeaders.CorrelatedActivityId, value);
+        }
+
+        /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
         /// </summary>
         /// <value>

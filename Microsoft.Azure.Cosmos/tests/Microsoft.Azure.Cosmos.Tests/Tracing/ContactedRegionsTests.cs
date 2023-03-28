@@ -71,7 +71,7 @@
         {
             CosmosDiagnostics diagnostics = new CosmosTraceDiagnostics(this.CreateTestTraceTree());
 
-            string regionsContacted  = ClientTelemetryHelper.GetContactedRegions(diagnostics);            
+            string regionsContacted  = ClientTelemetryHelper.GetContactedRegions(diagnostics.GetContactedRegions());            
             Assert.IsNotNull(regionsContacted);
             Assert.AreEqual("Central US,Central India,East US 2,France Central", regionsContacted);
             
@@ -91,7 +91,7 @@
            
             CosmosDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
 
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(diagnostics);
+            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(diagnostics.GetContactedRegions());
             Assert.IsNotNull(regionsContacted);
             Assert.AreEqual("France Central", regionsContacted);
         }

@@ -144,6 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 executionEnvironment: queryRequestOptions.ExecutionEnvironment,
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
                 forcePassthrough: forcePassthrough,
+                enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 testInjections: queryRequestOptions.TestSettings);
 
             return new QueryIterator(
@@ -235,6 +236,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     RequestCharge = tryGetQueryPage.Result.RequestCharge,
                     ActivityId = tryGetQueryPage.Result.ActivityId,
+                    CorrelatedActivityId = this.correlatedActivityId.ToString(),
                     SubStatusCode = Documents.SubStatusCodes.Unknown
                 };
 

@@ -25,9 +25,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal CosmosNullReferenceException(
             NullReferenceException originalException,
-            ITrace trace)
+            ITrace trace) 
+            : base(originalException?.Message ?? throw new ArgumentNullException(nameof(originalException)), originalException ?? throw new ArgumentNullException(nameof(originalException)))
         {
-            this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
+            this.originalException = originalException;
 
             if (trace == null)
             {
@@ -79,7 +80,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal static void RecordOtelAttributes(CosmosNullReferenceException exception, DiagnosticScope scope)
         {
-            scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics));
+            scope.AddAttribute(OpenTelemetryAttributeKeys.Region, 
+                ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics?.GetContactedRegions()));
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.GetBaseException().Message);
 
             CosmosDbEventSource.RecordDiagnosticsForExceptions(exception.Diagnostics);

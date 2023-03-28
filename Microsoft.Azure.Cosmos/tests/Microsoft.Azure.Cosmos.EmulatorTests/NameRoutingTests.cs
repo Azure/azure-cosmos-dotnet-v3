@@ -32,22 +32,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task NameRoutingSmokeGatewayTest()
         {
-            CosmosClient client = TestCommon.CreateCosmosClient(true);
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
 
             await SmokeTestForNameAPI(client);
         }
 
 #if DIRECT_MODE
     // DIRECT MODE has ReadFeed issues in the Public emulator
-
-        [TestMethod]
-        public void NameRoutingSmokeDirectHttpsTest()
-        {
-            DocumentClient client;
-            client = TestCommon.CreateClient(false, Protocol.Https, 10, ConsistencyLevel.Session);
-
-            this.NameRoutingSmokeTestPrivateAsync(client).Wait();
-        }
 
         [TestMethod]
         public void NameRoutingSmokeDirectTcpTest()
@@ -428,16 +419,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void ReplaceDocumentWithUri()
+        public async Task ReplaceDocumentWithUri()
         {
-            CosmosClient client;
-
-            client = TestCommon.CreateCosmosClient(true);
-            this.ReplaceDocumentWithUriPrivateAsync(client).Wait();
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
+            await this.ReplaceDocumentWithUriPrivateAsync(client);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            client = TestCommon.CreateClient(false, Protocol.Https);
-            this.ReplaceDocumentWithUriPrivateAsync(client).Wait();            
 
             client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.ReplaceDocumentWithUriPrivateAsync(client).Wait();
@@ -488,6 +475,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             sqlQueryText = @"select * from root r where r.title = ""My old Book""";
             cosmosResultSet = collection.GetItemQueryIterator<LinqGeneralBaselineTests.Book>(queryText: sqlQueryText, requestOptions: options);
             Assert.AreEqual(1, await GetCountFromIterator(cosmosResultSet), "Query Count doesnt match");
+
+            await database.DeleteStreamAsync();
         }
 
         [TestMethod]
@@ -495,16 +484,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             // when collection name changes, the collectionName ->Id cache at the gateway need to get invalidated and refreshed.
             // This test is to verify this case is working well.
-            DocumentClient client;
-            client = TestCommon.CreateClient(true);
+            using DocumentClient client = TestCommon.CreateClient(true);
             await this.CollectionDeleteAndCreateWithSameNameTestPrivateAsync(client);
 
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            client = TestCommon.CreateClient(false, Protocol.Https);
-            await this.CollectionDeleteAndCreateWithSameNameTestPrivateAsync(client);
-            
-
             client = TestCommon.CreateClient(false, Protocol.Tcp);
             await this.CollectionDeleteAndCreateWithSameNameTestPrivateAsync(client);
 #endif
@@ -572,7 +556,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             finally
             {
-                TestCommon.DeleteAllDatabasesAsync().Wait();
+                await TestCommon.DeleteAllDatabasesAsync();
             }
         }
 
@@ -606,14 +590,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         // 11. Now it succeed.
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-
-        [TestMethod]
-        public void VerifyGatewayNameIdCacheRefreshDirectHttp()
-        {
-            DocumentClient client = TestCommon.CreateClient(false, Protocol.Https);
-            this.VerifyGatewayNameIdCacheRefreshPrivateAsync(client).Wait();
-        }
-
         [TestMethod]
         public void VerifyGatewayNameIdCacheRefreshDirectTcp()
         {
@@ -760,9 +736,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.VerifyInvalidPartitionExceptionPrivateAsync(client).Wait();
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            client = TestCommon.CreateClient(false, Protocol.Https);
-            this.VerifyInvalidPartitionExceptionPrivateAsync(client).Wait();
-
             client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.VerifyInvalidPartitionExceptionPrivateAsync(client).Wait();
 #endif
@@ -797,9 +770,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.VerifyInvalidPartitionExceptionWithPopulateQuotaInfo(client);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            client = TestCommon.CreateClient(false, Protocol.Https);
-            await this.VerifyInvalidPartitionExceptionWithPopulateQuotaInfo(client);
-
             client = TestCommon.CreateClient(false, Protocol.Tcp);
             await this.VerifyInvalidPartitionExceptionWithPopulateQuotaInfo(client);
 #endif
@@ -850,9 +820,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.VerifyNameIdCacheTaskReusePrivateAsync(client).Wait();
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            client = TestCommon.CreateClient(false, Protocol.Https);
-            this.VerifyNameIdCacheTaskReusePrivateAsync(client).Wait();
-
             client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.VerifyNameIdCacheTaskReusePrivateAsync(client).Wait();
 #endif
@@ -903,10 +870,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-
-            client = TestCommon.CreateClient(false, Protocol.Https);
-            this.CrazyNameTestPrivateAsync(client, false).Wait();
-
             client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.CrazyNameTestPrivateAsync(client, false, true).Wait(); 
 #endif
@@ -1019,9 +982,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.NameRoutingBadUrlTestPrivateAsync(client, false).Wait();
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            client = TestCommon.CreateClient(false, Protocol.Https);
-            this.NameRoutingBadUrlTestPrivateAsync(client, false).Wait();
-
             client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.NameRoutingBadUrlTestPrivateAsync(client, false, true).Wait();
 #endif
@@ -1106,8 +1066,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.VerifyInvalidNameTestPrivateAsync(client).Wait();
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            client = TestCommon.CreateClient(false, Protocol.Https);
-            this.VerifyInvalidNameTestPrivateAsync(client).Wait();
 
             client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.VerifyInvalidNameTestPrivateAsync(client).Wait();
@@ -1250,14 +1208,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
         [TestMethod]
-        [TestCategory("Ignore")]
-        public void VerifyMasterNodeThrottlingDirectHttp()
-        {
-            DocumentClient client = TestCommon.CreateClient(false, Protocol.Https);
-            this.VerifyMasterNodeThrottlingPrivateAsync(client).Wait();
-        }        
-
-        [TestMethod]
         public void VerifyMasterNodeThrottlingDirectTcp()
         {
             DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp);
@@ -1271,9 +1221,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.VerifyNameBasedCollectionCRUDOperationsAsync(client);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
-            client = TestCommon.CreateClient(false, Protocol.Https);
-            await this.VerifyNameBasedCollectionCRUDOperationsAsync(client);
-
             client = TestCommon.CreateClient(false, Protocol.Tcp);
             await this.VerifyNameBasedCollectionCRUDOperationsAsync(client);
 #endif
@@ -1291,7 +1238,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestPartitionKeyDefinitionOnCollectionRecreate(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
-            await this.TestPartitionKeyDefinitionOnCollectionRecreate(TestCommon.CreateClient(false, protocol: Protocol.Https));
 #endif
         }
 
@@ -1328,7 +1274,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestPartitionKeyDefinitionOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
-            await this.TestPartitionKeyDefinitionOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateClient(false, protocol: Protocol.Https));
 #endif
         }
 
@@ -1422,11 +1367,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Ignore /* TODO: This tests throws a "The read session is not available for the input session token" */]
         public async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForQuery()
         {
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForQuery(TestCommon.CreateClient(true));
+            using DocumentClient client = TestCommon.CreateClient(true);
+            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForQuery(client);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForQuery(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForQuery(TestCommon.CreateClient(false, protocol: Protocol.Https));
 #endif
         }
 
@@ -1480,11 +1425,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Ignore /* TODO: This tests throws a "The read session is not available for the input session token" */]
         public async Task TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForParallelQuery()
         {
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForParallelQuery(TestCommon.CreateClient(true));
+            using DocumentClient client = TestCommon.CreateClient(true);
+            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForParallelQuery(client);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForParallelQuery(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromNonPartitionedToPartitionedForParallelQuery(TestCommon.CreateClient(false, protocol: Protocol.Https));
 #endif
         }
 
@@ -1498,12 +1443,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
             Assert.AreEqual(1, client.CreateDocumentQuery("/dbs/db1/colls/coll1", "SELECT * FROM c WHERE c.field1 IN (1, 2)", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
 
-            DocumentClient otherClient = TestCommon.CreateClient(false);
+            using DocumentClient otherClient = TestCommon.CreateClient(false);
             await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
             PartitionKeyDefinition partitionKeyDefinition2 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field2" }), Kind = PartitionKind.Hash };
             DocumentCollection coll = await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition2 }, new RequestOptions { OfferThroughput = 12000 });
 
-            DocumentClient directClient = TestCommon.CreateClient(false);
+            using DocumentClient directClient = TestCommon.CreateClient(false);
             string sessionToken1 = (await directClient.CreateDocumentAsync("/dbs/db1/colls/coll1", document1)).SessionToken;
             document1 = new Document { Id = "doc2" };
             document1.SetPropertyValue("field1", 2);
@@ -1522,7 +1467,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(2, client.CreateDocumentQuery("/dbs/db1/colls/coll1", "SELECT * FROM c WHERE c.field1 IN (1, 2)", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
 
-            DocumentClient newClient = TestCommon.CreateClient(false);
+            using DocumentClient newClient = TestCommon.CreateClient(false);
             Assert.AreEqual(2, newClient.CreateDocumentQuery("/dbs/db1/colls/coll1", "SELECT * FROM c WHERE c.field1 IN (1, 2)", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
         }
 
@@ -1535,9 +1480,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestCollectionRecreateFromMultipartitionToSinglePartitionedForQuery()
         {
-            await this.TestCollectionRecreateFromMultipartitionToSinglePartitionedForQuery(TestCommon.CreateClient(true));
-            await this.TestCollectionRecreateFromMultipartitionToSinglePartitionedForQuery(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
-            await this.TestCollectionRecreateFromMultipartitionToSinglePartitionedForQuery(TestCommon.CreateClient(false, protocol: Protocol.Https));
+            using DocumentClient client = TestCommon.CreateClient(true);
+            await this.TestCollectionRecreateFromMultipartitionToSinglePartitionedForQuery(client);
+            using DocumentClient directClient = TestCommon.CreateClient(false, protocol: Protocol.Tcp);
+            await this.TestCollectionRecreateFromMultipartitionToSinglePartitionedForQuery(directClient);
         }
 
         internal async Task TestCollectionRecreateFromMultipartitionToSinglePartitionedForQuery(DocumentClient client)
@@ -1580,11 +1526,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestRouteToNonExistentRangeAfterCollectionRecreate()
         {
-            await this.TestRouteToNonExistentRangeAfterCollectionRecreate(TestCommon.CreateCosmosClient(true));
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
+            await this.TestRouteToNonExistentRangeAfterCollectionRecreate(client);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestRouteToNonExistentRangeAfterCollectionRecreate(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
-            await this.TestRouteToNonExistentRangeAfterCollectionRecreate(TestCommon.CreateClient(false, protocol: Protocol.Https));
 #endif
         }
 
@@ -1653,11 +1599,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestRouteToExistentRangeAfterCollectionRecreate()
         {
-            await this.TestRouteToExistentRangeAfterCollectionRecreate(TestCommon.CreateCosmosClient(true));
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
+            await this.TestRouteToExistentRangeAfterCollectionRecreate(client);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestRouteToExistentRangeAfterCollectionRecreate(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
-            await this.TestRouteToExistentRangeAfterCollectionRecreate(TestCommon.CreateClient(false, protocol: Protocol.Https));
 #endif
         }
 
@@ -1732,11 +1678,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitionedForQuery()
         {
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitionedForQuery(TestCommon.CreateClient(true));
+            using DocumentClient client = TestCommon.CreateClient(true);
+            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitionedForQuery(client);
 #if DIRECT_MODE
             // DIRECT MODE has ReadFeed issues in the Public emulator
             await this.TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitionedForQuery(TestCommon.CreateClient(false, protocol: Protocol.Tcp));
-            await this.TestPartitionKeyDefinitionOnCollectionRecreateFromPartitionedToNonPartitionedForQuery(TestCommon.CreateClient(false, protocol: Protocol.Https));
 #endif
         }
 
@@ -1784,7 +1730,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath()
         {
-            await this.TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath(TestCommon.CreateCosmosClient(true));
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
+            await this.TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath(client);
         }
 
         internal async Task TestScriptCreateOnContainerRecreateFromDifferentPartitionKeyPath(CosmosClient client)

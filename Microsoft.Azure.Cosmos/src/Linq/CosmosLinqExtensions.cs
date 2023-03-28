@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <code language="c#">
         /// <![CDATA[
         /// IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
-        /// using (FeedIterator setIterator = linqQueryable.Where(item => (item.taskNum < 100)).ToFeedIterator()
+        /// using (FeedIterator setIterator = linqQueryable.Where(item => (item.taskNum < 100)).ToStreamIterator())
         /// ]]>
         /// </code>
         /// </example>

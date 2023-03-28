@@ -351,6 +351,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             FeedRangeInternal feedRangeInternal,
             QueryRequestOptions requestOptions,
+            GeospatialType geospatialType,
             CancellationToken cancellationToken = default)
         {
             if (queryDefinition == null)
@@ -418,6 +419,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyDefinition,
                 requestOptions.PartitionKey.HasValue,
                 useSystemPrefix: QueryIterator.IsSystemPrefixExpected(requestOptions),
+                geospatialType: geospatialType,
                 cancellationToken);
 
             if (tryGetQueryInfoAndIfSupported.Failed)
@@ -954,12 +956,6 @@ namespace Microsoft.Azure.Cosmos
             // User specified PK value, no need to extract it
             if (partitionKey.HasValue)
             {
-                PartitionKeyDefinition pKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
-                if (partitionKey.HasValue && partitionKey.Value != PartitionKey.None && partitionKey.Value.InternalKey.Components.Count != pKeyDefinition.Paths.Count)
-                {
-                    throw new ArgumentException(RMResources.MissingPartitionKeyValue);
-                }
-
                 return await this.ProcessItemStreamAsync(
                         partitionKey,
                         itemId,

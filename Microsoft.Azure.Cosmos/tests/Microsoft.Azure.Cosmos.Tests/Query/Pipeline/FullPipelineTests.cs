@@ -421,7 +421,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 allowNonValueAggregateQuery: true,
                 allowDCount: true,
                 hasLogicalPartitionKey: false,
-                useSystemPrefix: false);
+                useSystemPrefix: false,
+                geospatialType: Cosmos.GeospatialType.Geography);
 
             info.ThrowIfFailed();
             return info.Result.QueryInfo;

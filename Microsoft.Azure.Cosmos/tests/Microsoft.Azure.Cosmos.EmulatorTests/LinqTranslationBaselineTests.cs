@@ -60,6 +60,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 await testDb.DeleteStreamAsync();
             }
+
+            cosmosClient?.Dispose();
         }
 
         [TestInitialize]
@@ -114,6 +116,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public int? NullableField;
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value false
             public bool BooleanField;
+            public Guid GuidField;
 #pragma warning restore // Field is never assigned to, and will always have its default value false
 
             [JsonConverter(typeof(StringEnumConverter))]
@@ -663,7 +666,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 {
                     StringField = sb.ToString(),
                     Id = Guid.NewGuid().ToString(),
-                    Pk = "Test"
+                    Pk = "Test",
+                    
+                    // For ToString tests
+                    ArrayField = new int[] {},
+                    Point = new Point(0, 0)
                 };
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -757,13 +764,23 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("String constant StartsWith (case-insensitive)", b => getQuery(b).Select(doc => "sTr".StartsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))),
                 // Substring
                 new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.Substring(0, 1))),
+                // ToString
+                new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField.ToString()))),
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.StringField.ToString())),
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.NumericField.ToString())),
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.GuidField.ToString())),
+                // For these fields, .NET ToString and CosmosDB ToString don't produce the same behavior. Manually verified that BE behavior is as expected
+                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.ArrayField.ToString())),
+                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.Point.ToString())),
+                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.BooleanField.ToString())),
+                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.UnixTime.ToString())),
                 // ToUpper
                 new LinqTestInput("ToUpper", b => getQuery(b).Select(doc => doc.StringField.ToUpper()))
             };
             this.ExecuteTestSuite(inputs);
-        }
+    }
 
-        [TestMethod]
+    [TestMethod]
         public void TestArrayFunctions()
         {
             const int Records = 100;

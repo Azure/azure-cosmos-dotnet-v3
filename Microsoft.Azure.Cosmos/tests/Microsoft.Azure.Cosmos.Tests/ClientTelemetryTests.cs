@@ -5,16 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Net;
-    using System.Text;
-    using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using HdrHistogram;
-    using System.Net.Http;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Telemetry;
     using System.Collections.Generic;
-    using System.Xml.Serialization;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
@@ -34,13 +30,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             MetricInfo metrics = new MetricInfo("metricsName", "unitName");
 
             LongConcurrentHistogram histogram = new LongConcurrentHistogram(1,
-                   Int64.MaxValue,
+                   long.MaxValue,
                    5);
 
-            histogram.RecordValue((long)10);
-            histogram.RecordValue((long)20);
-            histogram.RecordValue((long)30);
-            histogram.RecordValue((long)40);
+            histogram.RecordValue(10);
+            histogram.RecordValue(20);
+            histogram.RecordValue(30);
+            histogram.RecordValue(40);
 
             metrics.SetAggregators(histogram);
 
@@ -62,14 +58,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             MetricInfo metrics = new MetricInfo("metricsName", "unitName");
             long adjustmentFactor = 1000;
 
-           LongConcurrentHistogram histogram = new LongConcurrentHistogram(1,
-                         Int64.MaxValue,
-                         5);
+            LongConcurrentHistogram histogram = new LongConcurrentHistogram(1,
+                          long.MaxValue,
+                          5);
 
-            histogram.RecordValue((long)(10 * adjustmentFactor));
-            histogram.RecordValue((long)(20 * adjustmentFactor));
-            histogram.RecordValue((long)(30 * adjustmentFactor));
-            histogram.RecordValue((long)(40 * adjustmentFactor));
+            histogram.RecordValue(10 * adjustmentFactor);
+            histogram.RecordValue(20 * adjustmentFactor);
+            histogram.RecordValue(30 * adjustmentFactor);
+            histogram.RecordValue(40 * adjustmentFactor);
 
             metrics.SetAggregators(histogram, adjustmentFactor);
 
@@ -89,7 +85,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void CheckJsonSerializerContract()
         {
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, null, 10), ClientTelemetryOptions.JsonSerializerSettings);
+            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties(clientId: "clientId",
+                processId: "",
+                userAgent: null,
+                connectionMode: ConnectionMode.Direct,
+                preferredRegions: null,
+                aggregationIntervalInSec: 10), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"aggregationIntervalInSec\":10,\"systemInfo\":[]}", json);
         }
 
@@ -100,16 +101,34 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 "region1"
             };
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, preferredRegion, 1), ClientTelemetryOptions.JsonSerializerSettings);
+            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties(clientId: "clientId",
+                processId: "",
+                userAgent: null,
+                connectionMode: ConnectionMode.Direct,
+                preferredRegions: preferredRegion,
+                aggregationIntervalInSec: 1), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[]}", json);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(System.FormatException))]
+        [ExpectedException(typeof(FormatException))]
         public void CheckMisconfiguredTelemetry_should_fail()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "non-boolean");
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+        }
+
+        [TestMethod]
+        [DataRow(200, 0 ,1, false)]
+        [DataRow(404, 0, 1, false)]
+        [DataRow(404, 1002, 1, true)]
+        [DataRow(409, 0, 1, false)]
+        [DataRow(409, 1002, 1, true)]
+        [DataRow(503, 2001, 1, true)]
+        [DataRow(200, 0, 6, true)]
+        public void CheckEligibleStatistics(int statusCode, int subStatusCode, int latencyInMs, bool expectedFlag)
+        {
+            Assert.AreEqual(expectedFlag, ClientTelemetryOptions.IsEligible(statusCode, subStatusCode, TimeSpan.FromMilliseconds(latencyInMs)));
         }
     }
 }

@@ -279,6 +279,63 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
+        public async Task TestFormattedFiltersForTargetPartitionWithContinuationTokenAsync()
+        {
+            QueryPage emptyPage = new QueryPage(
+                documents: new List<CosmosElement>(),
+                requestCharge: 0,
+                activityId: string.Empty,
+                responseLengthInBytes: 0,
+                cosmosQueryExecutionInfo: default,
+                disallowContinuationTokenMessage: default,
+                additionalHeaders: default,
+                state: default);
+
+            string expectedQuerySpec = "SELECT * FROM c WHERE ( c._ts >= 1665482200 OR IS_STRING(c._ts) OR IS_ARRAY(c._ts) OR IS_OBJECT(c._ts) ) ORDER BY c._ts";
+            Mock<IDocumentContainer> mockContainer = new Mock<IDocumentContainer>(MockBehavior.Strict);
+            mockContainer
+                .Setup(
+                c => c.MonadicQueryAsync(
+                    It.Is<SqlQuerySpec>(sqlQuerySpec => expectedQuerySpec.Equals(sqlQuerySpec.QueryText)),
+                    It.IsAny<FeedRangeState<QueryState>>(),
+                    It.IsAny<QueryPaginationOptions>(),
+                    NoOpTrace.Singleton,
+                    default))
+                .ReturnsAsync(TryCatch<QueryPage>.FromResult(emptyPage));
+
+            string continuationToken = @"[{""compositeToken"":{""token"":null,""range"":{""min"":""A"",""max"":""B""}},""orderByItems"":[{""item"":1665482200}],""rid"":""64kUAPYyHHk6XgIAAADACQ=="",""skipCount"":1,""filter"":""( c._ts >= 1665482198 OR IS_STRING(c._ts) OR IS_ARRAY(c._ts) OR IS_OBJECT(c._ts) )""}]";
+
+            IReadOnlyList<FeedRangeEpk> targetRanges = new List<FeedRangeEpk>()
+            {
+                new FeedRangeEpk(new Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)),
+                new FeedRangeEpk(new Range<string>(min: "B", max: "C", isMinInclusive: true, isMaxInclusive: false))
+            };
+
+            TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
+                documentContainer: mockContainer.Object,
+                sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c WHERE {documentdb-formattableorderbyquery-filter} ORDER BY c._ts"),
+                targetRanges: targetRanges,
+                partitionKey: null,
+                orderByColumns: new List<OrderByColumn>()
+                {
+                    new OrderByColumn("c._ts", SortOrder.Ascending)
+                },
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 1),
+                maxConcurrency: 0,
+                cancellationToken: default,
+                continuationToken: CosmosElement.Parse(continuationToken));
+            Assert.IsTrue(monadicCreate.Succeeded);
+
+            IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
+            for (int i = 0; i < targetRanges.Count; ++i)
+            {
+                Assert.IsTrue(await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton));
+            }
+
+            Assert.IsFalse(await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton));
+        }
+
+        [TestMethod]
         public async Task TestDrainFully_StartFromBeginingAsync_NoDocuments()
         {
             int numItems = 0;

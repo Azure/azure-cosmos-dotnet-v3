@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -38,6 +39,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
             if(enableTelemetry)
             {
+                documentClient.clientTelemetry = new Mock<ClientTelemetry>().Object;
+
                 cosmosClientBuilder.WithTelemetryEnabled();
             }
 
