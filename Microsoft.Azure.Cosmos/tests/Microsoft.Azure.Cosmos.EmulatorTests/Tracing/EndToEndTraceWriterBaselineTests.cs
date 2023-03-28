@@ -118,7 +118,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
                 EndToEndTraceWriterBaselineTests.testListener.Dispose();
                 
-                await Task.Delay(2000);
             }
         }
         
