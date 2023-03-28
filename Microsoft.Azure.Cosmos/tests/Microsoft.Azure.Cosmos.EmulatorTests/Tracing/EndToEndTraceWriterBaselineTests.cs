@@ -98,6 +98,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
             Util.DisposeOpenTelemetryAndCustomListeners();
 
+            testListener.Dispose();
+            
             EndToEndTraceWriterBaselineTests.client?.Dispose();
             EndToEndTraceWriterBaselineTests.bulkClient?.Dispose();
             EndToEndTraceWriterBaselineTests.miscCosmosClient?.Dispose();
