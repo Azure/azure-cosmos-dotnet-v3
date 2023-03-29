@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
                         if (requiresDistribution)
                         {
-                            success = await this.SwitchToFallbackPipelineAsync(isPartitionSplitException: false, trace);
+                            success = await this.SwitchToFallbackPipelineAsync(useContinuation: false, trace);
                         }
 
                         this.previousRequiresDistribution = requiresDistribution;
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 }
                 else if (isPartitionSplitException)
                 {
-                    success = await this.SwitchToFallbackPipelineAsync(isPartitionSplitException, trace);
+                    success = await this.SwitchToFallbackPipelineAsync(useContinuation: true, trace);
                 }
             }
 
@@ -110,12 +110,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             return null;
         }
 
-        private async Task<bool> SwitchToFallbackPipelineAsync(bool isPartitionSplitException, ITrace trace)
+        private async Task<bool> SwitchToFallbackPipelineAsync(bool useContinuation, ITrace trace)
         {
+            Debug.Assert(this.executionState == ExecutionState.OptimisticDirectExecution, "OptimisticDirectExecuteQueryPipelineStage Assert!", "Only OptimisticDirectExecute pipeline can create this fallback pipeline");
             this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
-            this.inner = isPartitionSplitException
-                ? await this.queryPipelineStageFactory(this.TryUnwrapContinuationToken())
-                : await this.queryPipelineStageFactory(null);
+            this.inner = await this.queryPipelineStageFactory(useContinuation ? this.TryUnwrapContinuationToken() : null);
 
             if (this.inner.Failed)
             {
