@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
-        private static readonly int TotalTestMethod = 11;
+        private static readonly int TotalTestMethod = typeof(EndToEndTraceWriterBaselineTests).GetMethods().Where(m => m.GetCustomAttributes(typeof(TestMethodAttribute), false).Length > 0).Count();
         
         private static int MethodCount = 0;
         
