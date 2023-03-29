@@ -1084,11 +1084,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public IEnumerable<int> PartitionKeyRangeIds => this.partitionKeyRangeIdToHashRange.Keys;
 
-        public bool RequiresDistribution
-        {
-            get => this.requiresDistribution;
-            set => this.requiresDistribution = value;
-        }
+        public bool RequiresDistribution { get; set; }
 
         private static PartitionKeyHash GetHashFromPayload(
             CosmosObject payload,

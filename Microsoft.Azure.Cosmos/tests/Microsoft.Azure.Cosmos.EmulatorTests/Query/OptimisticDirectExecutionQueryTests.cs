@@ -388,7 +388,7 @@
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Specialized)
             };
-
+            
             IReadOnlyList<string> documents = CreateDocuments(NumberOfDocuments, PartitionKeyField, NumberField, NullField);
 
             await this.CreateIngestQueryDeleteAsync(

@@ -197,22 +197,22 @@
         {
             // requiresDist = false
             int numItems = 100;
-            List<SwitchableRequiresDistributionTestCases> singlePartitionContainerTestCases = new List<SwitchableRequiresDistributionTestCases>()
+            List<RequiresDistributionTestCases> singlePartitionContainerTestCases = new List<RequiresDistributionTestCases>()
             {
-                new SwitchableRequiresDistributionTestCases("SELECT * FROM r", 10, 100),
-                new SwitchableRequiresDistributionTestCases("SELECT VALUE r.id FROM r", 0, 10),
-                new SwitchableRequiresDistributionTestCases("SELECT * FROM r WHERE r.id > 5", 0,  0),
-                new SwitchableRequiresDistributionTestCases("SELECT r.id FROM r JOIN id IN r.id",0, 0),
-                new SwitchableRequiresDistributionTestCases("SELECT TOP 5 r.id FROM r ORDER BY r.id", 0, 5),
-                new SwitchableRequiresDistributionTestCases("SELECT TOP 5 r.id FROM r WHERE r.id > 5 ORDER BY r.id", 0, 0),
-                new SwitchableRequiresDistributionTestCases("SELECT * FROM r OFFSET 5 LIMIT 3", 1, 3),
-                new SwitchableRequiresDistributionTestCases("SELECT * FROM r WHERE r.id > 5 OFFSET 5 LIMIT 3", 0, 0)
+                new RequiresDistributionTestCases("SELECT * FROM r", 10, 100),
+                new RequiresDistributionTestCases("SELECT VALUE r.id FROM r", 0, 10),
+                new RequiresDistributionTestCases("SELECT * FROM r WHERE r.id > 5", 0,  0),
+                new RequiresDistributionTestCases("SELECT r.id FROM r JOIN id IN r.id",0, 0),
+                new RequiresDistributionTestCases("SELECT TOP 5 r.id FROM r ORDER BY r.id", 0, 5),
+                new RequiresDistributionTestCases("SELECT TOP 5 r.id FROM r WHERE r.id > 5 ORDER BY r.id", 0, 0),
+                new RequiresDistributionTestCases("SELECT * FROM r OFFSET 5 LIMIT 3", 1, 3),
+                new RequiresDistributionTestCases("SELECT * FROM r WHERE r.id > 5 OFFSET 5 LIMIT 3", 0, 0)
             };
 
-            foreach (SwitchableRequiresDistributionTestCases testCase in singlePartitionContainerTestCases)
+            foreach (RequiresDistributionTestCases testCase in singlePartitionContainerTestCases)
             {
                     OptimisticDirectExecutionTestInput input = CreateInput(
-                        description: @"Queries which can switch their requiresDist flag",
+                        description: @"Queries which will never require distribution",
                         query: testCase.Query,
                         expectedOptimisticDirectExecution: true,
                         partitionKeyPath: @"/pk",
@@ -234,25 +234,25 @@
         {
             // requiresDist = true
             int numItems = 100;
-            List<SwitchableRequiresDistributionTestCases> singlePartitionContainerTestCases = new List<SwitchableRequiresDistributionTestCases>()
+            List<RequiresDistributionTestCases> singlePartitionContainerTestCases = new List<RequiresDistributionTestCases>()
             {
-                new SwitchableRequiresDistributionTestCases("SELECT Sum(id) as sum_id FROM r JOIN id IN r.id", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT TOP 5 r.id FROM r ORDER BY r.id", 0, 5),
-                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT r.id FROM r GROUP BY r.id", 0,  10),
-                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT r.id, Sum(r.id) as sum_a FROM r GROUP BY r.id",0, 10),
-                new SwitchableRequiresDistributionTestCases("SELECT Count(1) FROM (SELECT DISTINCT r.id FROM root r)", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT id FROM r JOIN id in r.id", 0, 0),
-                new SwitchableRequiresDistributionTestCases("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id ORDER BY r.id", 0, 10),
-                new SwitchableRequiresDistributionTestCases("SELECT Count(1) as count FROM root r JOIN b IN r.id", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT Avg(1) AS avg FROM root r", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT r.id, Count(1) as count FROM r WHERE r.id > 0 GROUP BY r.id", 0, 0),
-                new SwitchableRequiresDistributionTestCases("SELECT r.id FROM r WHERE r.id > 0 GROUP BY r.id ORDER BY r.id", 0, 0)
+                new RequiresDistributionTestCases("SELECT Sum(id) as sum_id FROM r JOIN id IN r.id", 0, 1),
+                new RequiresDistributionTestCases("SELECT DISTINCT TOP 5 r.id FROM r ORDER BY r.id", 0, 5),
+                new RequiresDistributionTestCases("SELECT DISTINCT r.id FROM r GROUP BY r.id", 0,  10),
+                new RequiresDistributionTestCases("SELECT DISTINCT r.id, Sum(r.id) as sum_a FROM r GROUP BY r.id",0, 10),
+                new RequiresDistributionTestCases("SELECT Count(1) FROM (SELECT DISTINCT r.id FROM root r)", 0, 1),
+                new RequiresDistributionTestCases("SELECT DISTINCT id FROM r JOIN id in r.id", 0, 0),
+                new RequiresDistributionTestCases("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id ORDER BY r.id", 0, 10),
+                new RequiresDistributionTestCases("SELECT Count(1) as count FROM root r JOIN b IN r.id", 0, 1),
+                new RequiresDistributionTestCases("SELECT Avg(1) AS avg FROM root r", 0, 1),
+                new RequiresDistributionTestCases("SELECT r.id, Count(1) as count FROM r WHERE r.id > 0 GROUP BY r.id", 0, 0),
+                new RequiresDistributionTestCases("SELECT r.id FROM r WHERE r.id > 0 GROUP BY r.id ORDER BY r.id", 0, 0)
             };
 
-            foreach (SwitchableRequiresDistributionTestCases testCase in singlePartitionContainerTestCases)
+            foreach (RequiresDistributionTestCases testCase in singlePartitionContainerTestCases)
             {
                 OptimisticDirectExecutionTestInput input = CreateInput(
-                    description: @"Queries which can switch their requiresDist flag",
+                    description: @"Queries which will always require distribution",
                     query: testCase.Query,
                     expectedOptimisticDirectExecution: true,
                     partitionKeyPath: @"/pk",
@@ -276,44 +276,44 @@
             int numItems = 100;
             bool[] requiresDistSet = { true, false };
 
-            List<SwitchableRequiresDistributionTestCases> singlePartitionContainerTestCases = new List<SwitchableRequiresDistributionTestCases>()
+            List<RequiresDistributionTestCases> singlePartitionContainerTestCases = new List<RequiresDistributionTestCases>()
             {
-                new SwitchableRequiresDistributionTestCases("SELECT Count(r.id) AS count_a FROM r", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT r.id FROM r", 0, 10),
-                new SwitchableRequiresDistributionTestCases("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id", 0, 10),
-                new SwitchableRequiresDistributionTestCases("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT r.id, Count(r.id), Avg(r.id) FROM r WHERE r.id < 2 GROUP BY r.id", 0, 0),
-                new SwitchableRequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM r", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM r ORDER BY r.id", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT r.id FROM r GROUP BY r.id OFFSET 5 LIMIT 3", 0, 3),
-                new SwitchableRequiresDistributionTestCases("SELECT Count(1) as count FROM r", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.id) as sum_a FROM r", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT Min(r.a) as min_a FROM r", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT Max(r.a) as min_a FROM r", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT Avg(r.a) as min_a FROM r", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 OFFSET 0 LIMIT 5", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 OFFSET 5 LIMIT 5", 0, 0),
-                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r ORDER BY r.a", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r ORDER BY r.a OFFSET 5 LIMIT 5", 0, 0),
-                new SwitchableRequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 ORDER BY r.a OFFSET 5 LIMIT 5", 0, 0),
-                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT VALUE r.id FROM r", 0, 10),
-                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT TOP 5 r.a FROM r", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT s.id FROM (SELECT DISTINCT r.id FROM root r) as s", 0, 10),
-                new SwitchableRequiresDistributionTestCases("SELECT DISTINCT r.a FROM r OFFSET 3 LIMIT 5", 0, 0),
-                new SwitchableRequiresDistributionTestCases("SELECT Count(r.id) AS count_a FROM r", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id", 0, 10),
-                new SwitchableRequiresDistributionTestCases("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM r", 0, 1),
-                new SwitchableRequiresDistributionTestCases("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
+                new RequiresDistributionTestCases("SELECT Count(r.id) AS count_a FROM r", 0, 1),
+                new RequiresDistributionTestCases("SELECT DISTINCT r.id FROM r", 0, 10),
+                new RequiresDistributionTestCases("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id", 0, 10),
+                new RequiresDistributionTestCases("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
+                new RequiresDistributionTestCases("SELECT r.id, Count(r.id), Avg(r.id) FROM r WHERE r.id < 2 GROUP BY r.id", 0, 0),
+                new RequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM r", 0, 1),
+                new RequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM r ORDER BY r.id", 0, 1),
+                new RequiresDistributionTestCases("SELECT r.id FROM r GROUP BY r.id OFFSET 5 LIMIT 3", 0, 3),
+                new RequiresDistributionTestCases("SELECT Count(1) as count FROM r", 0, 1),
+                new RequiresDistributionTestCases("SELECT Sum(r.id) as sum_a FROM r", 0, 1),
+                new RequiresDistributionTestCases("SELECT Min(r.a) as min_a FROM r", 0, 1),
+                new RequiresDistributionTestCases("SELECT Max(r.a) as min_a FROM r", 0, 1),
+                new RequiresDistributionTestCases("SELECT Avg(r.a) as min_a FROM r", 0, 1),
+                new RequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0", 0, 1),
+                new RequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 OFFSET 0 LIMIT 5", 0, 1),
+                new RequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 OFFSET 5 LIMIT 5", 0, 0),
+                new RequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r ORDER BY r.a", 0, 1),
+                new RequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r ORDER BY r.a OFFSET 5 LIMIT 5", 0, 0),
+                new RequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 ORDER BY r.a OFFSET 5 LIMIT 5", 0, 0),
+                new RequiresDistributionTestCases("SELECT DISTINCT VALUE r.id FROM r", 0, 10),
+                new RequiresDistributionTestCases("SELECT DISTINCT TOP 5 r.a FROM r", 0, 1),
+                new RequiresDistributionTestCases("SELECT s.id FROM (SELECT DISTINCT r.id FROM root r) as s", 0, 10),
+                new RequiresDistributionTestCases("SELECT DISTINCT r.a FROM r OFFSET 3 LIMIT 5", 0, 0),
+                new RequiresDistributionTestCases("SELECT Count(r.id) AS count_a FROM r", 0, 1),
+                new RequiresDistributionTestCases("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id", 0, 10),
+                new RequiresDistributionTestCases("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
+                new RequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM r", 0, 1),
+                new RequiresDistributionTestCases("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
             };
 
-            foreach (SwitchableRequiresDistributionTestCases testCase in singlePartitionContainerTestCases)
+            foreach (RequiresDistributionTestCases testCase in singlePartitionContainerTestCases)
             {
                 foreach (bool requiresDist in requiresDistSet)
                 {
                     OptimisticDirectExecutionTestInput input = CreateInput(
-                        description: @"Queries which can switch their requiresDist flag",
+                        description: @"Queries which can require distribution in certain cases",
                         query: testCase.Query,
                         expectedOptimisticDirectExecution: true,
                         partitionKeyPath: @"/pk",
@@ -577,11 +577,10 @@
                 Version = PartitionKeyDefinitionVersion.V2,
             };
 
-            InMemoryContainer inMemoryContainer = new InMemoryContainer(partitionKeyDefinition);
-            if (requiresDist)
+            InMemoryContainer inMemoryContainer = new InMemoryContainer(partitionKeyDefinition)
             {
-                inMemoryContainer.RequiresDistribution = true; 
-            }
+                RequiresDistribution = requiresDist
+            };
 
             IMonadicDocumentContainer monadicDocumentContainer = inMemoryContainer;
             if (failureConfigs != null)
@@ -743,13 +742,14 @@
             }
             };
         }
-        internal readonly struct SwitchableRequiresDistributionTestCases
+
+        internal readonly struct RequiresDistributionTestCases
         {
             public string Query { get; }
             public int ExpectedContinuationTokenCount { get; }
             public int ExpectedDocumentCount { get; }
 
-            public SwitchableRequiresDistributionTestCases(
+            public RequiresDistributionTestCases(
                 string query,
                 int expectedContinuationTokenCount,
                 int expectedDocumentCount)
