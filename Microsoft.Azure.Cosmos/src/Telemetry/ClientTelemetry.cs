@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Util;
-    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     /// <summary>
     /// This class collects and send all the telemetry information.
@@ -39,19 +38,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly NetworkDataRecorder networkDataRecorder;
         
         private readonly CancellationTokenSource cancellationTokenSource;
-
+        private readonly CancellationTokenSource processorCancellationTokenSource = new CancellationTokenSource(ClientTelemetryOptions.ProcessorTimeOutInMs); // 5 min 
+        
         private readonly GlobalEndpointManager globalEndpointManager;
 
         private Task telemetryTask;
-
+        // Not disposing this task. If we dispose a client then, telemetry job(telemetryTask) should stop but processor task(processorTask) should make best effort to finish the job in background.
+        private Task processorTask;
+        
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
             = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
         private ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoMap 
             = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
 
-        private int numberOfFailures = 0;
-        
         /// <summary>
         /// Only for Mocking in tests
         /// </summary>
@@ -149,12 +149,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
-                    if (this.numberOfFailures == allowedNumberOfFailures)
-                    {
-                        this.Dispose();
-                        break;
-                    }
-
                     if (string.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName))
                     {
                         AccountProperties accountProperties = await ClientTelemetryHelper.SetAccountNameAsync(this.globalEndpointManager);
@@ -180,23 +174,32 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
                         = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
+
+                    List<RequestInfo> requestInfoSnapshot = this.networkDataRecorder.GetRequests();
                     
                     try
                     {
-                        await this.processor
+                        // Use the Wait method with a CancellationToken to wait for the task to complete.
+                        // If anyhow prev task was not finished sucessfully in 5 min then ,Do not trigger a new task. 
+                        this.processorTask?.Wait(this.processorCancellationTokenSource.Token);
+
+                        Task tempProcessorTask = Task.Run(() => this.processor
                             .ProcessAndSendAsync(
                                 clientTelemetryInfo: this.clientTelemetryInfo,
                                 operationInfoSnapshot: operationInfoSnapshot,
                                 cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
-                                requestInfoSnapshot: this.networkDataRecorder.GetRequests(),
-                                cancellationToken: this.cancellationTokenSource.Token);
+                                requestInfoSnapshot: requestInfoSnapshot,
+                                cancellationToken: this.cancellationTokenSource.Token));
+                        tempProcessorTask.Start(); // run it in background
 
-                        this.numberOfFailures = 0;
+                        this.processorTask = tempProcessorTask;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        DefaultTrace.TraceError("Telemetry Job Processor failed due to timeout in 5 min");
                     }
                     catch (Exception ex)
                     {
-                        this.numberOfFailures++;
-
                         DefaultTrace.TraceError("Telemetry Job Processor failed with error : {0}", ex);
                     }
                 }
