@@ -6666,8 +6666,8 @@ namespace Microsoft.Azure.Cosmos
                     enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
                     addressResolver: this.AddressResolver,
                     rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
-                    remoteCertificateValidationCallback: this.remoteCertificateValidationCallback);
-                    //isDistributedTracingEnabled: this.isDistributedTracingEnabled);
+                    remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
+                    isDistributedTracingEnabled: this.isDistributedTracingEnabled);
 
                 if (this.transportClientHandlerFactory != null)
                 {
