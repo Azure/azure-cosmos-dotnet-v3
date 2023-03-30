@@ -387,7 +387,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public void TryRemoveAddresses(
+        /// <summary>
+        /// Marks the <see cref="TransportAddressUri"/> to Unhealthy that matches with the faulted
+        /// server key.
+        /// </summary>
+        /// <param name="serverKey">An instance of <see cref="ServerKey"/> that contains the host and
+        /// port of the backend replica.</param>
+        public async Task MarkAddressesToUnhealthyAsync(
             ServerKey serverKey)
         {
             if (serverKey == null)
@@ -395,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(serverKey));
             }
 
-            if (this.serverPartitionAddressToPkRangeIdMap.TryRemove(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
+            if (this.serverPartitionAddressToPkRangeIdMap.TryGetValue(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
             {
                 PartitionKeyRangeIdentity[] pkRangeIdsCopy;
                 lock (pkRangeIds)
@@ -405,36 +411,35 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIdsCopy)
                 {
-                    DefaultTrace.TraceInformation("Remove addresses for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}",
-                       pkRangeId.CollectionRid,
-                       pkRangeId.PartitionKeyRangeId,
-                       this.serviceEndpoint);
-
-                    this.serverPartitionAddressCache.TryRemove(pkRangeId);
-                }
-            }
-        }
-
-        public async Task<PartitionAddressInformation> UpdateAsync(
-            PartitionKeyRangeIdentity partitionKeyRangeIdentity,
-            CancellationToken cancellationToken)
-        {
-            if (partitionKeyRangeIdentity == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKeyRangeIdentity));
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return await this.serverPartitionAddressCache.GetAsync(
-                       key: partitionKeyRangeIdentity,
+                    // The forceRefresh flag is set to true for the callback delegate is because, if the GetAsync() from the async
+                    // non-blocking cache fails to look up the pkRangeId, then there are some inconsistency present in the cache, and it is
+                    // more safe to do a force refresh to fetch the addresses from the gateway, instead of fetching it from the cache itself.
+                    // Please note that, the chances of encountering such scenario is highly unlikely.
+                    PartitionAddressInformation addressInfo = await this.serverPartitionAddressCache.GetAsync(
+                       key: pkRangeId,
                        singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
                            null,
                            cachedAddresses: null,
-                           partitionKeyRangeIdentity.CollectionRid,
-                           partitionKeyRangeIdentity.PartitionKeyRangeId,
+                           pkRangeId.CollectionRid,
+                           pkRangeId.PartitionKeyRangeId,
                            forceRefresh: true),
-                       forceRefresh: (_) => true);
+                       forceRefresh: (_) => false);
+
+                    IReadOnlyList<TransportAddressUri> transportAddresses = addressInfo.Get(Protocol.Tcp)?.ReplicaTransportAddressUris;
+                    foreach (TransportAddressUri address in from TransportAddressUri transportAddress in transportAddresses
+                                                            where serverKey.Equals(transportAddress.ReplicaServerKey)
+                                                            select transportAddress)
+                    {
+                        DefaultTrace.TraceInformation("Marking a backend replica to Unhealthy for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}, transportAddress: {3}",
+                           pkRangeId.CollectionRid,
+                           pkRangeId.PartitionKeyRangeId,
+                           this.serviceEndpoint,
+                           address.ToString());
+
+                        address.SetUnhealthy();
+                    }
+                }
+            }
         }
 
         private async Task<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> ResolveMasterAsync(DocumentServiceRequest request, bool forceRefresh)
