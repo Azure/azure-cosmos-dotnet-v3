@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
             PropertyInfo pooledConnectionLifetimeInfo = socketHandlerType.GetProperty("PooledConnectionLifetime");
             
             //Sets the timeout for unused connections to a random time between 5 minutes and 5 minutes and 30 seconds.
-            //This is to avoid the issue where a large number of connections are closed at the same time.
+            //This is to avoid the issue where a large number of connections are closed at the same time on a cluster of multiple machines
             TimeSpan connectionTimeSpan = TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(30 * new Random().NextDouble());
             pooledConnectionLifetimeInfo.SetValue(socketHttpHandler, connectionTimeSpan);
 
