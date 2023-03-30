@@ -477,7 +477,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 documentContainer: documentContainer,
                 inputParameters: inputParameters,
                 targetRange: new FeedRangeEpk(targetRange.ToRange()),
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount),
                 fallbackQueryPipelineStageFactory: (continuationToken) =>
                 {
                     // In fallback scenario, the Specialized pipeline is always invoked

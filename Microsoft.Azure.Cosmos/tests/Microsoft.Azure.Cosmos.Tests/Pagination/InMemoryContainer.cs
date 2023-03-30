@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     {
         private readonly PartitionKeyDefinition partitionKeyDefinition;
         private readonly Dictionary<int, (int, int)> parentToChildMapping;
-        private bool requiresDistribution;
 
         private PartitionKeyHashRangeDictionary<Records> partitionedRecords;
         private PartitionKeyHashRangeDictionary<List<Change>> partitionedChanges;
@@ -50,7 +49,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
             PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: new PartitionKeyHash(Cosmos.UInt128.MaxValue));
             PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRanges.Create(new PartitionKeyHashRange[] { fullRange });
-            this.requiresDistribution = false;
             this.partitionedRecords = new PartitionKeyHashRangeDictionary<Records>(partitionKeyHashRanges);
             this.partitionedRecords[fullRange] = new Records();
             this.partitionedChanges = new PartitionKeyHashRangeDictionary<List<Change>>(partitionKeyHashRanges);
@@ -455,7 +453,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             QueryPaginationOptions queryPaginationOptions,
-            bool optimisticDirectExecute,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -642,7 +639,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 ImmutableDictionary<string, string>.Builder additionalHeaders = ImmutableDictionary.CreateBuilder<string, string>();
                 additionalHeaders.Add("x-ms-documentdb-partitionkeyrangeid", "0");
                 additionalHeaders.Add("x-ms-test-header", "true");
-                additionalHeaders.Add("x-ms-cosmos-query-requiresdistribution", this.RequiresDistribution.ToString());
 
                 return Task.FromResult(
                     TryCatch<QueryPage>.FromResult(
@@ -1083,8 +1079,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         public IEnumerable<int> PartitionKeyRangeIds => this.partitionKeyRangeIdToHashRange.Keys;
-
-        public bool RequiresDistribution { get; set; }
 
         private static PartitionKeyHash GetHashFromPayload(
             CosmosObject payload,
