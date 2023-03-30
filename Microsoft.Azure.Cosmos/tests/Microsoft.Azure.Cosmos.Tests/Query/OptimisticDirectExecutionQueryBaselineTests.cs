@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
@@ -487,11 +488,8 @@
         private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount, bool requiresDist = false)
         {
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-            DocumentContainer inMemoryCollection = requiresDist
-                ? await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition, requiresDist: true)
-                : await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition);
+            DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition, requiresDist: requiresDist);
             IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
-
             List<CosmosElement> documents = new List<CosmosElement>();
             int continuationTokenCount = 0;
 
@@ -577,12 +575,9 @@
                 Version = PartitionKeyDefinitionVersion.V2,
             };
 
-            InMemoryContainer inMemoryContainer = new InMemoryContainer(partitionKeyDefinition)
-            {
-                RequiresDistribution = requiresDist
-            };
+            MockDocumentContainer mockContainer = new MockDocumentContainer(partitionKeyDefinition, requiresDist);
+            IMonadicDocumentContainer monadicDocumentContainer = mockContainer;
 
-            IMonadicDocumentContainer monadicDocumentContainer = inMemoryContainer;
             if (failureConfigs != null)
             {
                 monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
@@ -759,7 +754,52 @@
                 this.ExpectedDocumentCount = expectedDocumentCount;
             }
         }
+        
+        private sealed class MockDocumentContainer : InMemoryContainer
+        {
+            private readonly bool requiresDistribution;
 
+            public MockDocumentContainer(
+                PartitionKeyDefinition partitionKeyDefinition,
+                bool requiresDistribution)
+                : base(partitionKeyDefinition)
+            {
+                this.requiresDistribution = requiresDistribution;
+            }
+
+            public override async Task<TryCatch<QueryPage>> MonadicQueryAsync(
+                SqlQuerySpec sqlQuerySpec,
+                FeedRangeState<QueryState> feedRangeState,
+                QueryPaginationOptions queryPaginationOptions,
+                ITrace trace,
+                CancellationToken cancellationToken)
+            {
+                Task<TryCatch<QueryPage>> queryPage = base.MonadicQueryAsync(
+                sqlQuerySpec,
+                feedRangeState,
+                queryPaginationOptions,
+                trace,
+                cancellationToken);
+
+                ImmutableDictionary<string, string>.Builder additionalHeaders = ImmutableDictionary.CreateBuilder<string, string>();
+                additionalHeaders.Add("x-ms-documentdb-partitionkeyrangeid", "0");
+                additionalHeaders.Add("x-ms-test-header", "true");
+                additionalHeaders.Add("x-ms-cosmos-query-requiresdistribution", this.requiresDistribution.ToString());
+
+                return await Task.FromResult(
+                    TryCatch<QueryPage>.FromResult(
+                        new QueryPage(
+                            queryPage.Result.Result.Documents,
+                            requestCharge: 42,
+                            activityId: Guid.NewGuid().ToString(),
+                            responseLengthInBytes: 1337,
+                            cosmosQueryExecutionInfo: default,
+                            disallowContinuationTokenMessage: default,
+                            additionalHeaders: additionalHeaders.ToImmutable(),
+                            state: queryPage.Result.Result.State)));
+            }
+        }
+        
         private class MergeTestUtil
         {
             public int MoveNextCounter { get; private set; }

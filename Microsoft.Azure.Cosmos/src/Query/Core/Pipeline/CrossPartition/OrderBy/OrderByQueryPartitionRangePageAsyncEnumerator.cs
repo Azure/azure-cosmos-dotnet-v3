@@ -102,7 +102,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         sqlQuerySpec: this.SqlQuerySpec,
                         feedRangeState: new FeedRangeState<QueryState>(feedRange, this.FeedRangeState.State),
                         queryPaginationOptions: this.QueryPaginationOptions,
-                        optimisticDirectExecute: false, 
                         trace: trace,
                         cancellationToken);
                 if (monadicQueryPage.Failed)

@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
     internal sealed class NetworkAttachedDocumentContainer : IMonadicDocumentContainer
     {
+        private const string optimisticDirectExecute = "OptimisticDirectExecute";
         private readonly ContainerInternal container;
         private readonly CosmosQueryClient cosmosQueryClient;
         private readonly QueryRequestOptions queryRequestOptions;
@@ -239,7 +240,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             QueryPaginationOptions queryPaginationOptions,
-            bool optimisticDirectExecute,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -259,7 +259,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 
             QueryRequestOptions queryRequestOptions = this.queryRequestOptions == null ? new QueryRequestOptions() : this.queryRequestOptions;
-            AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders(this.correlatedActivityId, isContinuationExpected: false, optimisticDirectExecute);
+            AdditionalRequestHeaders additionalRequestHeaders = queryPaginationOptions.AdditionalHeaders.TryGetValue(optimisticDirectExecute, out string isOptimisticDirectExecute)
+                ? new AdditionalRequestHeaders(this.correlatedActivityId, isContinuationExpected: false, optimisticDirectExecute: bool.Parse(isOptimisticDirectExecute))
+                : new AdditionalRequestHeaders(this.correlatedActivityId, isContinuationExpected: false, optimisticDirectExecute: false);
 
             TryCatch<QueryPage> monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
                 this.resourceLink,
