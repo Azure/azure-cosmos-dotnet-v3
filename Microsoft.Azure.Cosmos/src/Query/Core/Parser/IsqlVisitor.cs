@@ -347,6 +347,13 @@ internal interface IsqlVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitObjectCreateScalarExpression([NotNull] sqlParser.ObjectCreateScalarExpressionContext context);
 	/// <summary>
+	/// Visit a parse tree produced by the <c>FirstScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitFirstScalarExpression([NotNull] sqlParser.FirstScalarExpressionContext context);
+	/// <summary>
 	/// Visit a parse tree produced by the <c>ArrayCreateScalarExpression</c>
 	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
 	/// </summary>
@@ -409,6 +416,13 @@ internal interface IsqlVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitArrayScalarExpression([NotNull] sqlParser.ArrayScalarExpressionContext context);
+	/// <summary>
+	/// Visit a parse tree produced by the <c>LastScalarExpression</c>
+	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitLastScalarExpression([NotNull] sqlParser.LastScalarExpressionContext context);
 	/// <summary>
 	/// Visit a parse tree produced by the <c>PropertyRefScalarExpressionRecursive</c>
 	/// labeled alternative in <see cref="sqlParser.primary_expression"/>.

@@ -479,6 +479,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public string RequestSessionToken { get; }
             public Uri LocationEndpoint { get; }
             public bool IsSupplementalResponse { get; }
+            public TimeSpan RequestLatency => this.RequestResponseTime - this.RequestStartTime.GetValueOrDefault();
         }
 
         public readonly struct HttpResponseStatistics
