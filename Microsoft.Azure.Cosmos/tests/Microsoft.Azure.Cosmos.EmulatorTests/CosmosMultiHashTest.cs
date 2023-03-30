@@ -41,7 +41,7 @@
             HttpConstants.Versions.CurrentVersion = this.currentVersion;
             this.client.Dispose();
         }
-
+     
         [TestMethod]
         public async Task MultiHashCreateDocumentTest()
         {

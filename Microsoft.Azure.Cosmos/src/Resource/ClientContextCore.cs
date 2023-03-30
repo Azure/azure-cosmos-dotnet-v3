@@ -68,8 +68,7 @@ namespace Microsoft.Azure.Cosmos
             HttpMessageHandler httpMessageHandler = CosmosHttpClientCore.CreateHttpClientHandler(
                 clientOptions.GatewayModeMaxConnectionLimit,
                 clientOptions.WebProxy,
-                clientOptions.ServerCertificateCustomValidationCallback,
-                clientOptions.HttpConnectionLifetime);
+                clientOptions.ServerCertificateCustomValidationCallback);
 
             DocumentClient documentClient = new DocumentClient(
                cosmosClient.Endpoint,
