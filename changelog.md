@@ -13,6 +13,12 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.32.3"/> [3.32.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.3) - 2023-03-30
+### <a name="3.32.3-preview"/> [3.32.3-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.3-preview) - 2023-03-30
+
+#### Fixed
+
+
 ### <a name="3.32.2"/> [3.32.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.2) - 2023-03-10
 ### <a name="3.32.2-preview"/> [3.32.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.2-preview) - 2023-03-10
 
