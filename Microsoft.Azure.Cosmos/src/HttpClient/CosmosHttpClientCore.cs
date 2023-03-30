@@ -125,10 +125,16 @@ namespace Microsoft.Azure.Cosmos
             object socketHttpHandler = Activator.CreateInstance(socketHandlerType);
 
             PropertyInfo pooledConnectionLifetimeInfo = socketHandlerType.GetProperty("PooledConnectionLifetime");
-            
+
             //Sets the timeout for unused connections to a random time between 5 minutes and 5 minutes and 30 seconds.
             //This is to avoid the issue where a large number of connections are closed at the same time.
-            TimeSpan connectionTimeSpan = TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(30 * new Random().NextDouble());
+            Type threadSafeRandomType = Type.GetType("System.Random+ThreadSafeRandom, System.Private.CoreLib,");
+
+            object random = Activator.CreateInstance(threadSafeRandomType);
+            
+            MethodInfo nextDoubleInfo = threadSafeRandomType.GetMethod("NextDouble");
+
+            TimeSpan connectionTimeSpan = TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(30 * (double)nextDoubleInfo.Invoke(random, null));
             pooledConnectionLifetimeInfo.SetValue(socketHttpHandler, connectionTimeSpan);
 
             // Proxy is only set by users and can cause not supported exception on some platforms
