@@ -18,9 +18,13 @@
         private Container container = null;
         private ContainerProperties containerProperties = null;
 
+        private readonly string currentVersion = HttpConstants.Versions.CurrentVersion;
+
+
         [TestInitialize]
         public async Task TestInitialize()
         {
+            HttpConstants.Versions.CurrentVersion = "2020-07-15";
             this.client = TestCommon.CreateCosmosClient(true);
             this.database = await this.client.CreateDatabaseIfNotExistsAsync("mydb");
 
@@ -33,8 +37,11 @@
         {
             await this.database.DeleteAsync();
             this.client.Dispose();
+
+            HttpConstants.Versions.CurrentVersion = this.currentVersion;
+            this.client.Dispose();
         }
-     
+
         [TestMethod]
         public async Task MultiHashCreateDocumentTest()
         {
