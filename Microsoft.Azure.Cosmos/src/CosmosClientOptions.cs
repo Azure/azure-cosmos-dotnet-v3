@@ -1020,7 +1020,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-            bool IsDistributedTracingEnabled { get; set; } = true;
+            bool IsDistributedTracingEnabled = true;
 #if PREVIEW
         = true;
 #endif
