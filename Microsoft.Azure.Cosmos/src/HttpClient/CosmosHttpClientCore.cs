@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
 
             //Sets the timeout for unused connections to a random time between 5 minutes and 5 minutes and 30 seconds.
             //This is to avoid the issue where a large number of connections are closed at the same time.
-            Type threadSafeRandomType = Type.GetType("System.Random+ThreadSafeRandom, System.Private.CoreLib,");
+            Type threadSafeRandomType = Type.GetType("System.Random+ThreadSafeRandom, System.Private.CoreLib");
 
             object random = Activator.CreateInstance(threadSafeRandomType);
             
