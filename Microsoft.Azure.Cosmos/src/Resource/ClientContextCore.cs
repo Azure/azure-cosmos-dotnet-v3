@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Handlers;
