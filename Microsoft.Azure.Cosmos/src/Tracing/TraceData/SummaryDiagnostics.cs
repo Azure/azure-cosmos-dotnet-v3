@@ -152,55 +152,22 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         }
 
         /// <summary>
-        /// Gets the sub status code as a comma separated value from the http response message headers or
-        /// from the http response content headers. If the sub status code header is not found in either
-        /// of the two, then returns a null.
+        /// Gets the sub status code as a comma separated value from the http response message headers.
+        /// If the sub status code header is not found, then returns null.
         /// </summary>
         /// <param name="httpResponseStatistics">An instance of <see cref="HttpResponseStatistics"/>.</param>
         /// <returns>A string containing the sub status code.</returns>
         private static string GetSubStatusCodes(
             HttpResponseStatistics httpResponseStatistics)
         {
-            if (httpResponseStatistics
-                .HttpResponseMessage
-                .Headers
-                .Contains(Documents.WFConstants.BackendHeaders.SubStatus))
-            {
-                httpResponseStatistics
+            return httpResponseStatistics
                     .HttpResponseMessage
                     .Headers
                     .TryGetValues(
                         name: Documents.WFConstants.BackendHeaders.SubStatus,
-                        values: out IEnumerable<string> httpResponseHeaderValues);
-
-                if (httpResponseHeaderValues != null && httpResponseHeaderValues.Any())
-                {
-                    return string.Join(",", httpResponseHeaderValues);
-                }
-            }
-
-            if ((httpResponseStatistics
-                .HttpResponseMessage
-                .Content?
-                .Headers
-                .Contains(Documents.WFConstants.BackendHeaders.SubStatus))
-                .Value)
-            {
-                httpResponseStatistics
-                    .HttpResponseMessage
-                    .Content
-                    .Headers
-                    .TryGetValues(
-                        name: Documents.WFConstants.BackendHeaders.SubStatus,
-                        values: out IEnumerable<string> httpContentHeaderValues);
-
-                if (httpContentHeaderValues != null && httpContentHeaderValues.Any())
-                {
-                    return string.Join(",", httpContentHeaderValues);
-                }
-            }
-
-            return null;
+                        values: out IEnumerable<string> httpResponseHeaderValues) ?
+                        string.Join(",", httpResponseHeaderValues) :
+                        null;
         }
     }
 }
