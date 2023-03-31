@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             else
             {
-                this.activity.Stop();
+                this.activity?.Stop();
             }
         }
     }
