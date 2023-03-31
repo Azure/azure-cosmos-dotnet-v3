@@ -120,13 +120,12 @@
 
             List<OptimisticDirectExecutionTestInput> testVariations = new List<OptimisticDirectExecutionTestInput>
             {
-                // Test case has been commented out due to an existing bug in the code (https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2030)
-                /*CreateInput(
+                CreateInput(
                     description: @"None Partition Key Value",
                     query: "SELECT * FROM c",
                     expectedOptimisticDirectExecution: false,
                     partitionKeyPath: @"/pk",
-                    partitionKeyValue: Cosmos.PartitionKey.None),*/
+                    partitionKeyValue: Cosmos.PartitionKey.None),
 
                 CreateInput(
                     description: @"Single Partition Key with Parallel continuation token",
@@ -198,19 +197,19 @@
         {
             // requiresDist = false
             int numItems = 100;
-            List<RequiresDistributionTestCases> singlePartitionContainerTestCases = new List<RequiresDistributionTestCases>()
+            List<RequiresDistributionTestCase> singlePartitionContainerTestCases = new List<RequiresDistributionTestCase>()
             {
-                new RequiresDistributionTestCases("SELECT * FROM r", 10, 100),
-                new RequiresDistributionTestCases("SELECT VALUE r.id FROM r", 0, 10),
-                new RequiresDistributionTestCases("SELECT * FROM r WHERE r.id > 5", 0,  0),
-                new RequiresDistributionTestCases("SELECT r.id FROM r JOIN id IN r.id",0, 0),
-                new RequiresDistributionTestCases("SELECT TOP 5 r.id FROM r ORDER BY r.id", 0, 5),
-                new RequiresDistributionTestCases("SELECT TOP 5 r.id FROM r WHERE r.id > 5 ORDER BY r.id", 0, 0),
-                new RequiresDistributionTestCases("SELECT * FROM r OFFSET 5 LIMIT 3", 1, 3),
-                new RequiresDistributionTestCases("SELECT * FROM r WHERE r.id > 5 OFFSET 5 LIMIT 3", 0, 0)
+                new RequiresDistributionTestCase("SELECT * FROM r", 10, 100),
+                new RequiresDistributionTestCase("SELECT VALUE r.id FROM r", 0, 10),
+                new RequiresDistributionTestCase("SELECT * FROM r WHERE r.id > 5", 0,  0),
+                new RequiresDistributionTestCase("SELECT r.id FROM r JOIN id IN r.id",0, 0),
+                new RequiresDistributionTestCase("SELECT TOP 5 r.id FROM r ORDER BY r.id", 0, 5),
+                new RequiresDistributionTestCase("SELECT TOP 5 r.id FROM r WHERE r.id > 5 ORDER BY r.id", 0, 0),
+                new RequiresDistributionTestCase("SELECT * FROM r OFFSET 5 LIMIT 3", 1, 3),
+                new RequiresDistributionTestCase("SELECT * FROM r WHERE r.id > 5 OFFSET 5 LIMIT 3", 0, 0)
             };
 
-            foreach (RequiresDistributionTestCases testCase in singlePartitionContainerTestCases)
+            foreach (RequiresDistributionTestCase testCase in singlePartitionContainerTestCases)
             {
                     OptimisticDirectExecutionTestInput input = CreateInput(
                         description: @"Queries which will never require distribution",
@@ -235,22 +234,22 @@
         {
             // requiresDist = true
             int numItems = 100;
-            List<RequiresDistributionTestCases> singlePartitionContainerTestCases = new List<RequiresDistributionTestCases>()
+            List<RequiresDistributionTestCase> singlePartitionContainerTestCases = new List<RequiresDistributionTestCase>()
             {
-                new RequiresDistributionTestCases("SELECT Sum(id) as sum_id FROM r JOIN id IN r.id", 0, 1),
-                new RequiresDistributionTestCases("SELECT DISTINCT TOP 5 r.id FROM r ORDER BY r.id", 0, 5),
-                new RequiresDistributionTestCases("SELECT DISTINCT r.id FROM r GROUP BY r.id", 0,  10),
-                new RequiresDistributionTestCases("SELECT DISTINCT r.id, Sum(r.id) as sum_a FROM r GROUP BY r.id",0, 10),
-                new RequiresDistributionTestCases("SELECT Count(1) FROM (SELECT DISTINCT r.id FROM root r)", 0, 1),
-                new RequiresDistributionTestCases("SELECT DISTINCT id FROM r JOIN id in r.id", 0, 0),
-                new RequiresDistributionTestCases("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id ORDER BY r.id", 0, 10),
-                new RequiresDistributionTestCases("SELECT Count(1) as count FROM root r JOIN b IN r.id", 0, 1),
-                new RequiresDistributionTestCases("SELECT Avg(1) AS avg FROM root r", 0, 1),
-                new RequiresDistributionTestCases("SELECT r.id, Count(1) as count FROM r WHERE r.id > 0 GROUP BY r.id", 0, 0),
-                new RequiresDistributionTestCases("SELECT r.id FROM r WHERE r.id > 0 GROUP BY r.id ORDER BY r.id", 0, 0)
+                new RequiresDistributionTestCase("SELECT Sum(id) as sum_id FROM r JOIN id IN r.id", 0, 1),
+                new RequiresDistributionTestCase("SELECT DISTINCT TOP 5 r.id FROM r ORDER BY r.id", 0, 5),
+                new RequiresDistributionTestCase("SELECT DISTINCT r.id FROM r GROUP BY r.id", 0,  10),
+                new RequiresDistributionTestCase("SELECT DISTINCT r.id, Sum(r.id) as sum_a FROM r GROUP BY r.id",0, 10),
+                new RequiresDistributionTestCase("SELECT Count(1) FROM (SELECT DISTINCT r.id FROM root r)", 0, 1),
+                new RequiresDistributionTestCase("SELECT DISTINCT id FROM r JOIN id in r.id", 0, 0),
+                new RequiresDistributionTestCase("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id ORDER BY r.id", 0, 10),
+                new RequiresDistributionTestCase("SELECT Count(1) as count FROM root r JOIN b IN r.id", 0, 1),
+                new RequiresDistributionTestCase("SELECT Avg(1) AS avg FROM root r", 0, 1),
+                new RequiresDistributionTestCase("SELECT r.id, Count(1) as count FROM r WHERE r.id > 0 GROUP BY r.id", 0, 0),
+                new RequiresDistributionTestCase("SELECT r.id FROM r WHERE r.id > 0 GROUP BY r.id ORDER BY r.id", 0, 0)
             };
 
-            foreach (RequiresDistributionTestCases testCase in singlePartitionContainerTestCases)
+            foreach (RequiresDistributionTestCase testCase in singlePartitionContainerTestCases)
             {
                 OptimisticDirectExecutionTestInput input = CreateInput(
                     description: @"Queries which will always require distribution",
@@ -277,39 +276,39 @@
             int numItems = 100;
             bool[] requiresDistSet = { true, false };
 
-            List<RequiresDistributionTestCases> singlePartitionContainerTestCases = new List<RequiresDistributionTestCases>()
+            List<RequiresDistributionTestCase> singlePartitionContainerTestCases = new List<RequiresDistributionTestCase>()
             {
-                new RequiresDistributionTestCases("SELECT Count(r.id) AS count_a FROM r", 0, 1),
-                new RequiresDistributionTestCases("SELECT DISTINCT r.id FROM r", 0, 10),
-                new RequiresDistributionTestCases("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id", 0, 10),
-                new RequiresDistributionTestCases("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
-                new RequiresDistributionTestCases("SELECT r.id, Count(r.id), Avg(r.id) FROM r WHERE r.id < 2 GROUP BY r.id", 0, 0),
-                new RequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM r", 0, 1),
-                new RequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM r ORDER BY r.id", 0, 1),
-                new RequiresDistributionTestCases("SELECT r.id FROM r GROUP BY r.id OFFSET 5 LIMIT 3", 0, 3),
-                new RequiresDistributionTestCases("SELECT Count(1) as count FROM r", 0, 1),
-                new RequiresDistributionTestCases("SELECT Sum(r.id) as sum_a FROM r", 0, 1),
-                new RequiresDistributionTestCases("SELECT Min(r.a) as min_a FROM r", 0, 1),
-                new RequiresDistributionTestCases("SELECT Max(r.a) as min_a FROM r", 0, 1),
-                new RequiresDistributionTestCases("SELECT Avg(r.a) as min_a FROM r", 0, 1),
-                new RequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0", 0, 1),
-                new RequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 OFFSET 0 LIMIT 5", 0, 1),
-                new RequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 OFFSET 5 LIMIT 5", 0, 0),
-                new RequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r ORDER BY r.a", 0, 1),
-                new RequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r ORDER BY r.a OFFSET 5 LIMIT 5", 0, 0),
-                new RequiresDistributionTestCases("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 ORDER BY r.a OFFSET 5 LIMIT 5", 0, 0),
-                new RequiresDistributionTestCases("SELECT DISTINCT VALUE r.id FROM r", 0, 10),
-                new RequiresDistributionTestCases("SELECT DISTINCT TOP 5 r.a FROM r", 0, 1),
-                new RequiresDistributionTestCases("SELECT s.id FROM (SELECT DISTINCT r.id FROM root r) as s", 0, 10),
-                new RequiresDistributionTestCases("SELECT DISTINCT r.a FROM r OFFSET 3 LIMIT 5", 0, 0),
-                new RequiresDistributionTestCases("SELECT Count(r.id) AS count_a FROM r", 0, 1),
-                new RequiresDistributionTestCases("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id", 0, 10),
-                new RequiresDistributionTestCases("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
-                new RequiresDistributionTestCases("SELECT TOP 5 Count(1) as count FROM r", 0, 1),
-                new RequiresDistributionTestCases("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
+                new RequiresDistributionTestCase("SELECT Count(r.id) AS count_a FROM r", 0, 1),
+                new RequiresDistributionTestCase("SELECT DISTINCT r.id FROM r", 0, 10),
+                new RequiresDistributionTestCase("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id", 0, 10),
+                new RequiresDistributionTestCase("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
+                new RequiresDistributionTestCase("SELECT r.id, Count(r.id), Avg(r.id) FROM r WHERE r.id < 2 GROUP BY r.id", 0, 0),
+                new RequiresDistributionTestCase("SELECT TOP 5 Count(1) as count FROM r", 0, 1),
+                new RequiresDistributionTestCase("SELECT TOP 5 Count(1) as count FROM r ORDER BY r.id", 0, 1),
+                new RequiresDistributionTestCase("SELECT r.id FROM r GROUP BY r.id OFFSET 5 LIMIT 3", 0, 3),
+                new RequiresDistributionTestCase("SELECT Count(1) as count FROM r", 0, 1),
+                new RequiresDistributionTestCase("SELECT Sum(r.id) as sum_a FROM r", 0, 1),
+                new RequiresDistributionTestCase("SELECT Min(r.a) as min_a FROM r", 0, 1),
+                new RequiresDistributionTestCase("SELECT Max(r.a) as min_a FROM r", 0, 1),
+                new RequiresDistributionTestCase("SELECT Avg(r.a) as min_a FROM r", 0, 1),
+                new RequiresDistributionTestCase("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0", 0, 1),
+                new RequiresDistributionTestCase("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 OFFSET 0 LIMIT 5", 0, 1),
+                new RequiresDistributionTestCase("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 OFFSET 5 LIMIT 5", 0, 0),
+                new RequiresDistributionTestCase("SELECT Sum(r.a) as sum_a FROM r ORDER BY r.a", 0, 1),
+                new RequiresDistributionTestCase("SELECT Sum(r.a) as sum_a FROM r ORDER BY r.a OFFSET 5 LIMIT 5", 0, 0),
+                new RequiresDistributionTestCase("SELECT Sum(r.a) as sum_a FROM r WHERE r.a > 0 ORDER BY r.a OFFSET 5 LIMIT 5", 0, 0),
+                new RequiresDistributionTestCase("SELECT DISTINCT VALUE r.id FROM r", 0, 10),
+                new RequiresDistributionTestCase("SELECT DISTINCT TOP 5 r.a FROM r", 0, 1),
+                new RequiresDistributionTestCase("SELECT s.id FROM (SELECT DISTINCT r.id FROM root r) as s", 0, 10),
+                new RequiresDistributionTestCase("SELECT DISTINCT r.a FROM r OFFSET 3 LIMIT 5", 0, 0),
+                new RequiresDistributionTestCase("SELECT Count(r.id) AS count_a FROM r", 0, 1),
+                new RequiresDistributionTestCase("SELECT r.id, Count(1) AS count_a FROM r GROUP BY r.id", 0, 10),
+                new RequiresDistributionTestCase("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
+                new RequiresDistributionTestCase("SELECT TOP 5 Count(1) as count FROM r", 0, 1),
+                new RequiresDistributionTestCase("SELECT Count(1) AS count FROM root r WHERE r.id < 2", 0, 1),
             };
 
-            foreach (RequiresDistributionTestCases testCase in singlePartitionContainerTestCases)
+            foreach (RequiresDistributionTestCase testCase in singlePartitionContainerTestCases)
             {
                 foreach (bool requiresDist in requiresDistSet)
                 {
@@ -738,13 +737,13 @@
             };
         }
 
-        internal readonly struct RequiresDistributionTestCases
+        internal readonly struct RequiresDistributionTestCase
         {
             public string Query { get; }
             public int ExpectedContinuationTokenCount { get; }
             public int ExpectedDocumentCount { get; }
 
-            public RequiresDistributionTestCases(
+            public RequiresDistributionTestCase(
                 string query,
                 int expectedContinuationTokenCount,
                 int expectedDocumentCount)

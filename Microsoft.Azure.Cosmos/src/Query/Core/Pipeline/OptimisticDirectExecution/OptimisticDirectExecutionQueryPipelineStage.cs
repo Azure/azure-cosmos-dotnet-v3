@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             SpecializedDocumentQueryExecution,
         }
 
-        private const string optimisticDirectExecute = "OptimisticDirectExecute";
         private const string optimisticDirectExecutionToken = "OptimisticDirectExecutionToken";
         private readonly FallbackQueryPipelineStageFactory queryPipelineStageFactory;
         private TryCatch<IQueryPipelineStage> inner;
@@ -43,6 +42,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             this.queryPipelineStageFactory = queryPipelineStageFactory;
             this.continuationToken = continuationToken;
             this.executionState = ExecutionState.OptimisticDirectExecution;
+
+            if (this.continuationToken != null)
+            {
+                this.previousRequiresDistribution = false;
+            }
+
         }
 
         public delegate Task<TryCatch<IQueryPipelineStage>> FallbackQueryPipelineStageFactory(CosmosElement continuationToken);
@@ -74,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                         {
                             // We should never enter this if statement as requiresDistribution flag can never switch mid execution.
                             // Hence, this exception should never be thrown.
-                            throw new InvalidOperationException($"Unexpected switch in 'x-ms-cosmos-query-requiresdistribution' value. Previous value : {this.previousRequiresDistribution} Current value : {requiresDistribution}.");
+                            throw new InvalidOperationException($"Unexpected switch in {HttpConstants.HttpHeaders.RequiresDistribution} value. Previous value : {this.previousRequiresDistribution} Current value : {requiresDistribution}.");
                         }
 
                         if (requiresDistribution)
@@ -135,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
         {
             Dictionary<string, string> additionalHeaders = new Dictionary<string, string>
             {
-                { optimisticDirectExecute, "true" }
+                { HttpConstants.HttpHeaders.OptimisticDirectExecute, "true" }
             };
 
             QueryPaginationOptions paginationOptions = new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount, additionalHeaders: additionalHeaders);
@@ -154,11 +159,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             }
 
             OptimisticDirectExecutionQueryPipelineStage odePipelineStageMonadicCreate = new OptimisticDirectExecutionQueryPipelineStage(pipelineStage, fallbackQueryPipelineStageFactory, inputParameters.InitialUserContinuationToken);
-            if (inputParameters.InitialUserContinuationToken != null)
-            {
-                odePipelineStageMonadicCreate.previousRequiresDistribution = false;
-            }
-
             return TryCatch<IQueryPipelineStage>.FromResult(odePipelineStageMonadicCreate);
         }
 
