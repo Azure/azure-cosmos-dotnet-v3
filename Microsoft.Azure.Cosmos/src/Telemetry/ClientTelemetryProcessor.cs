@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Net.Http;
     using System.Text;
     using System.Threading;
@@ -22,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         
         private readonly AuthorizationTokenProvider tokenProvider;
         private readonly CosmosHttpClient httpClient;
-
+            
         internal ClientTelemetryProcessor(CosmosHttpClient httpClient, AuthorizationTokenProvider tokenProvider)
         {
             this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -32,17 +33,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// It will create Task to process and send client telemetry payload to Client Telemetry Service.
         /// </summary>
-        /// <param name="clientTelemetryInfo"></param>
-        /// <param name="operationInfoSnapshot"></param>
-        /// <param name="cacheRefreshInfoSnapshot"></param>
-        /// <param name="requestInfoSnapshot"></param>
-        /// <param name="cancellationToken"></param>
         /// <returns>Task</returns>
         internal async Task ProcessAndSendAsync(
             ClientTelemetryProperties clientTelemetryInfo, 
-            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
+            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharget)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
-            ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
+            IReadOnlyList<RequestInfo> requestInfoSnapshot,
             CancellationToken cancellationToken)
         {
             try
@@ -51,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     properties: clientTelemetryInfo,
                     operationInfoSnapshot: operationInfoSnapshot,
                     cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
-                    requestInfoSnapshot: requestInfoSnapshot,
+                    sampledRequestInfo: requestInfoSnapshot,
                     callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken));
             }
             catch (Exception ex)
