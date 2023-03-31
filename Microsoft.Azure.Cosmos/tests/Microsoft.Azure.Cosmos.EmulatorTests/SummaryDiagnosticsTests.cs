@@ -128,5 +128,35 @@
             Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(410, (int)SubStatusCodes.TransportGenerated410)], 3);
             Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(201, 0)], 1);
         }
+
+        /// <summary>
+        /// Test to validate that when a read operation is done on a database and a container that
+        /// does not exists, then the <see cref="SummaryDiagnostics"/> should capture the sub status
+        /// codes successfully.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task SummaryDiagnostics_WhenContainerDoesNotExists_ShouldRecordSubStatusCode()
+        {
+            string partitionKey = "/pk";
+            string databaseName = "testdb";
+            string containerName = "testcontainer";
+            int notFoundStatusCode = 404, notFoundSubStatusCode = 1003;
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(useGateway: false);
+
+            try
+            {
+                Container container = cosmosClient.GetContainer(databaseName, containerName);
+                ItemResponse<dynamic> readResponse = await container.ReadItemAsync<dynamic>(partitionKey, new Cosmos.PartitionKey(partitionKey));
+            }
+            catch (CosmosException ex)
+            {
+                ITrace trace = ((CosmosTraceDiagnostics)ex.Diagnostics).Value;
+                SummaryDiagnostics summaryDiagnostics = new(trace);
+
+                Assert.IsNotNull(value: summaryDiagnostics);
+                Assert.IsTrue(condition: summaryDiagnostics.GatewayRequestsSummary.Value.ContainsKey((notFoundStatusCode, notFoundSubStatusCode)));
+            }
+        }
     }
 }

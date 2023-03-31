@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
@@ -73,10 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 if (httpResponseStatistics.HttpResponseMessage != null)
                 {
                     statusCode = (int)httpResponseStatistics.HttpResponseMessage.StatusCode;
-                    HttpResponseHeadersWrapper gatewayHeaders = new HttpResponseHeadersWrapper(
-                                                    httpResponseStatistics.HttpResponseMessage.Headers,
-                                                    httpResponseStatistics.HttpResponseMessage.Content?.Headers);
-                    if (!int.TryParse(gatewayHeaders.SubStatus,
+                    if (!int.TryParse(SummaryDiagnostics.GetSubStatusCodes(httpResponseStatistics),
                                 NumberStyles.Integer,
                                 CultureInfo.InvariantCulture,
                                 out substatusCode))
@@ -151,6 +149,58 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
 
             jsonWriter.WriteObjectEnd();
+        }
+
+        /// <summary>
+        /// Gets the sub status code as a comma separated value from the http response message headers or
+        /// from the http response content headers. If the sub status code header is not found in either
+        /// of the two, then returns a null.
+        /// </summary>
+        /// <param name="httpResponseStatistics">An instance of <see cref="HttpResponseStatistics"/>.</param>
+        /// <returns>A string containing the sub status code.</returns>
+        private static string GetSubStatusCodes(
+            HttpResponseStatistics httpResponseStatistics)
+        {
+            if (httpResponseStatistics
+                .HttpResponseMessage
+                .Headers
+                .Contains(Documents.WFConstants.BackendHeaders.SubStatus))
+            {
+                httpResponseStatistics
+                    .HttpResponseMessage
+                    .Headers
+                    .TryGetValues(
+                        name: Documents.WFConstants.BackendHeaders.SubStatus,
+                        values: out IEnumerable<string> httpResponseHeaderValues);
+
+                if (httpResponseHeaderValues != null && httpResponseHeaderValues.Any())
+                {
+                    return string.Join(",", httpResponseHeaderValues);
+                }
+            }
+
+            if ((httpResponseStatistics
+                .HttpResponseMessage
+                .Content?
+                .Headers
+                .Contains(Documents.WFConstants.BackendHeaders.SubStatus))
+                .Value)
+            {
+                httpResponseStatistics
+                    .HttpResponseMessage
+                    .Content
+                    .Headers
+                    .TryGetValues(
+                        name: Documents.WFConstants.BackendHeaders.SubStatus,
+                        values: out IEnumerable<string> httpContentHeaderValues);
+
+                if (httpContentHeaderValues != null && httpContentHeaderValues.Any())
+                {
+                    return string.Join(",", httpContentHeaderValues);
+                }
+            }
+
+            return null;
         }
     }
 }
