@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             SpecializedDocumentQueryExecution,
         }
 
-        private const string optimisticDirectExecute = "OptimisticDirectExecute";
         private const string optimisticDirectExecutionToken = "OptimisticDirectExecutionToken";
         private readonly FallbackQueryPipelineStageFactory queryPipelineStageFactory;
         private TryCatch<IQueryPipelineStage> inner;
@@ -155,11 +154,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             }
 
             OptimisticDirectExecutionQueryPipelineStage odePipelineStageMonadicCreate = new OptimisticDirectExecutionQueryPipelineStage(pipelineStage, fallbackQueryPipelineStageFactory, inputParameters.InitialUserContinuationToken);
-            if (inputParameters.InitialUserContinuationToken != null)
-            {
-                odePipelineStageMonadicCreate.previousRequiresDistribution = false;
-            }
-
             return TryCatch<IQueryPipelineStage>.FromResult(odePipelineStageMonadicCreate);
         }
 

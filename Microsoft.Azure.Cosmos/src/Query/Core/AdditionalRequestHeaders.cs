@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </summary>
         public bool OptimisticDirectExecute { get; }
 
-        public AdditionalRequestHeaders(Guid correlatedActivityId = default, bool isContinuationExpected = false, bool optimisticDirectExecute = false)
+        public AdditionalRequestHeaders(Guid correlatedActivityId, bool isContinuationExpected, bool optimisticDirectExecute)
         {
             this.CorrelatedActivityId = correlatedActivityId;
             this.IsContinuationExpected = isContinuationExpected;
