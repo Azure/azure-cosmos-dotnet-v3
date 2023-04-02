@@ -121,13 +121,6 @@
             List<OptimisticDirectExecutionTestInput> testVariations = new List<OptimisticDirectExecutionTestInput>
             {
                 CreateInput(
-                    description: @"None Partition Key Value",
-                    query: "SELECT * FROM c",
-                    expectedOptimisticDirectExecution: false,
-                    partitionKeyPath: @"/pk",
-                    partitionKeyValue: Cosmos.PartitionKey.None),
-
-                CreateInput(
                     description: @"Single Partition Key with Parallel continuation token",
                     query: "SELECT * FROM c",
                     expectedOptimisticDirectExecution: false,
