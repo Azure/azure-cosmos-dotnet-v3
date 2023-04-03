@@ -138,12 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             FallbackQueryPipelineStageFactory fallbackQueryPipelineStageFactory,
             CancellationToken cancellationToken)
         {
-            Dictionary<string, string> additionalHeaders = new Dictionary<string, string>
-            {
-                { HttpConstants.HttpHeaders.OptimisticDirectExecute, "true" }
-            };
-
-            QueryPaginationOptions paginationOptions = new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount, additionalHeaders: additionalHeaders);
+            QueryPaginationOptions paginationOptions = new QueryPaginationOptions(pageSizeHint: inputParameters.MaxItemCount, optimisticDirectExecute: true);
             TryCatch<IQueryPipelineStage> pipelineStage = OptimisticDirectExecutionQueryPipelineImpl.MonadicCreate(
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
