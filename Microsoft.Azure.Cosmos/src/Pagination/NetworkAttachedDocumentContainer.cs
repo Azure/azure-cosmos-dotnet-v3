@@ -258,9 +258,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 
             QueryRequestOptions queryRequestOptions = this.queryRequestOptions == null ? new QueryRequestOptions() : this.queryRequestOptions;
-            AdditionalRequestHeaders additionalRequestHeaders = queryPaginationOptions.AdditionalHeaders.TryGetValue(HttpConstants.HttpHeaders.OptimisticDirectExecute, out string isOptimisticDirectExecute)
-                ? new AdditionalRequestHeaders(this.correlatedActivityId, isContinuationExpected: false, optimisticDirectExecute: bool.Parse(isOptimisticDirectExecute))
-                : new AdditionalRequestHeaders(this.correlatedActivityId, isContinuationExpected: false, optimisticDirectExecute: false);
+            AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders(this.correlatedActivityId, isContinuationExpected: false, optimisticDirectExecute: queryPaginationOptions.OptimisticDirectExecute);
 
             TryCatch<QueryPage> monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
                 this.resourceLink,
