@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     .TryGetValues(
                         name: Documents.WFConstants.BackendHeaders.SubStatus,
                         values: out IEnumerable<string> httpResponseHeaderValues) ?
-                        httpResponseHeaderValues.First() :
+                        httpResponseHeaderValues.FirstOrDefault() :
                         null;
         }
     }
