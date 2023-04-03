@@ -35,8 +35,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
         private readonly NetworkDataRecorder networkDataRecorder;
         
-        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-        private readonly CancellationTokenSource processorCancellationTokenSource = new CancellationTokenSource(ClientTelemetryOptions.ProcessorTimeOut); // 5 min 
+        private readonly CancellationTokenSource cancellationTokenSource;
         
         private readonly GlobalEndpointManager globalEndpointManager;
 
@@ -120,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
 
             this.networkDataRecorder = new NetworkDataRecorder();
+            this.cancellationTokenSource = new CancellationTokenSource();
         }
 
         /// <summary>
@@ -175,22 +175,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     try
                     {
                         // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service service
-                        this.processorTask = Task.Run(
-                            function: () => this.processor
-                                                    .ProcessAndSendAsync(
-                                                        clientTelemetryInfo: this.clientTelemetryInfo,
-                                                        operationInfoSnapshot: operationInfoSnapshot,
-                                                        cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
-                                                        requestInfoSnapshot: requestInfoSnapshot),
-                            cancellationToken: this.processorCancellationTokenSource.Token)
-                                                .ContinueWith((i) =>
-                                                {
-                                                    Exception ex = i.Exception?.GetBaseException();
-                                                    if (ex != null)
-                                                    {
-                                                        DefaultTrace.TraceError($"Client Telemetry data processing task faulted and stopped running. ErrorType={ex.GetType()} ErrorMessage={ex.Message}");
-                                                    }
-                                                }, TaskContinuationOptions.OnlyOnFaulted);
+                        this.processorTask = Task.Run(() => ClientTelemetry.RunProcessorTaskAsync(this.processor
+                                                                .ProcessAndSendAsync(
+                                                                    clientTelemetryInfo: this.clientTelemetryInfo,
+                                                                    operationInfoSnapshot: operationInfoSnapshot,
+                                                                    cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
+                                                                    requestInfoSnapshot: requestInfoSnapshot)), new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut).Token);
                     }
                     catch (Exception ex)
                     {
@@ -204,6 +194,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             DefaultTrace.TraceInformation("Telemetry Job Stopped.");
+        }
+
+        private static async Task RunProcessorTaskAsync(Task processingTask)
+        {
+            try
+            {
+                await processingTask;
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError($"Client Telemetry data processing task faulted. {0}", ex);
+            }
         }
 
         /// <summary>

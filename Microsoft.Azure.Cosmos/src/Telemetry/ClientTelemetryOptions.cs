@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string EnvPropsClientTelemetryEnvironmentName = "COSMOS.ENVIRONMENT_NAME";
 
         internal static readonly TimeSpan ClientTelemetryServiceTimeOut = TimeSpan.FromMinutes(1);
-        internal static readonly TimeSpan ProcessorTimeOut = TimeSpan.FromMinutes(5); // 5 minutes
+        internal static readonly TimeSpan ClientTelemetryProcessorTimeOut = TimeSpan.FromMinutes(5); // 5 minutes
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
         // Why 5 sec? As of now, if any network request is taking more than 5 millisecond sec, we will consider it slow request this value can be revisited in future
         internal static readonly TimeSpan NetworkLatencyThreshold = TimeSpan.FromMilliseconds(5);

@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         
         private readonly AuthorizationTokenProvider tokenProvider;
         private readonly CosmosHttpClient httpClient;
-        private readonly CancellationTokenSource serviceCancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryServiceTimeOut);
         
         internal ClientTelemetryProcessor(CosmosHttpClient httpClient, AuthorizationTokenProvider tokenProvider)
         {
@@ -41,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
             IReadOnlyList<RequestInfo> requestInfoSnapshot)
         {
+            CancellationTokenSource serviceCancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryServiceTimeOut);
             try
             {
                 await ClientTelemetryPayloadWriter.SerializedPayloadChunksAsync(
@@ -48,10 +48,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     operationInfoSnapshot: operationInfoSnapshot,
                     cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                     sampledRequestInfo: requestInfoSnapshot,
-                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, this.serviceCancellationToken.Token));
+                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, serviceCancellationToken.Token));
             }
             catch (Exception ex)
             {
+                serviceCancellationToken.Dispose();
+
                 DefaultTrace.TraceError($"Exception while serializing telemetry payload: {ex}");
                 throw;
             }
