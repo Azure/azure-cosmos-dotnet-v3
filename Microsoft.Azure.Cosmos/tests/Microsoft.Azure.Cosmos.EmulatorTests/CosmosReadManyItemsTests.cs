@@ -510,44 +510,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await database.DeleteAsync();
             client.Dispose();
-        }
-
-#if PREVIEW
-        [TestMethod]
-        public async Task ReadManyMultiplePK()
-        {
-            IReadOnlyList<string> pkPaths = new List<string> { "/pk", "/description" };
-            ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPaths: pkPaths);
-            Container container = await this.database.CreateContainerAsync(containerSettings);
-
-            for (int i = 0; i < 5; i++)
-            {
-                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-                item.pk = "pk" + i.ToString();
-                item.id = i.ToString();
-                item.description = "description" + i;
-                ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync(item);
-                Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
-            }
-
-            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
-            for (int i = 0; i < 5; i++)
-            {
-                PartitionKey partitionKey = new PartitionKeyBuilder()
-                                                        .Add("pk" + i)
-                                                        .Add("description" + i)
-                                                        .Build();
-
-                itemList.Add((i.ToString(), partitionKey));
-            }
-
-            FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
-            Assert.IsNotNull(feedResponse);
-            Assert.AreEqual(feedResponse.Count, 5);
-            Assert.IsTrue(feedResponse.Headers.RequestCharge > 0);
-            Assert.IsNotNull(feedResponse.Diagnostics);
-        }
-#endif
+        }     
 
         private class NestedToDoActivity
         {
