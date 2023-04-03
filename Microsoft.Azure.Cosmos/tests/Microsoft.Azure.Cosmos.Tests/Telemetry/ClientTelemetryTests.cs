@@ -245,8 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 clientTelemetryProperties,
                 operationInfoSnapshot,
                 cacheRefreshInfoSnapshot,
-                requestInfoList,
-                new CancellationToken());
+                requestInfoList);
 
             Assert.AreEqual(expectedOperationInfoSize, actualOperationInfoSize, "Operation Info is not correct");
             Assert.AreEqual(expectedCacheRefreshInfoSize, actualCacheRefreshInfoSize, "Cache Refresh Info is not correct");
