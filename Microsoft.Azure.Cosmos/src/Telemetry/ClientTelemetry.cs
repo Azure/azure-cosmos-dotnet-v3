@@ -174,13 +174,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     
                     try
                     {
+                        CancellationTokenSource cancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
+                        
                         // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service service
                         this.processorTask = Task.Run(() => ClientTelemetry.RunProcessorTaskAsync(this.processor
                                                                 .ProcessAndSendAsync(
                                                                     clientTelemetryInfo: this.clientTelemetryInfo,
                                                                     operationInfoSnapshot: operationInfoSnapshot,
                                                                     cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
-                                                                    requestInfoSnapshot: requestInfoSnapshot)), new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut).Token);
+                                                                    requestInfoSnapshot: requestInfoSnapshot)), cancellationToken.Token);
                     }
                     catch (Exception ex)
                     {
@@ -200,7 +202,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             try
             {
-                await processingTask;
+                Task completedTask = await Task.WhenAny(processingTask, Task.Delay(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut));
+                
+                if (completedTask != processingTask)
+                {
+                    throw new TimeoutException($"Telemetry Processor Task timed out after {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut.TotalMilliseconds}ms");
+                }
             }
             catch (Exception ex)
             {
