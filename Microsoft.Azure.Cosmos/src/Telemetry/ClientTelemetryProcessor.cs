@@ -23,7 +23,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         
         private readonly AuthorizationTokenProvider tokenProvider;
         private readonly CosmosHttpClient httpClient;
-            
+        private readonly CancellationTokenSource serviceCancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryServiceTimeOut);
+        
         internal ClientTelemetryProcessor(CosmosHttpClient httpClient, AuthorizationTokenProvider tokenProvider)
         {
             this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -38,8 +39,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ClientTelemetryProperties clientTelemetryInfo, 
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharget)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
-            IReadOnlyList<RequestInfo> requestInfoSnapshot,
-            CancellationToken cancellationToken)
+            IReadOnlyList<RequestInfo> requestInfoSnapshot)
         {
             try
             {
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     operationInfoSnapshot: operationInfoSnapshot,
                     cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                     sampledRequestInfo: requestInfoSnapshot,
-                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken));
+                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, this.serviceCancellationToken.Token));
             }
             catch (Exception ex)
             {
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
         
         /// <summary>
-        /// Task to send telemetry information to configured Juno endpoint. 
+        /// Task to send telemetry information to configured Client Telemetry Service endpoint. 
         /// If endpoint is not configured then it won't even try to send information. It will just trace an error message.
         /// In any case it resets the telemetry information to collect the latest one.
         /// </summary>

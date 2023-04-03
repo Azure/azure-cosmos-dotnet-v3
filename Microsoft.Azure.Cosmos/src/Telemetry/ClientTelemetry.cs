@@ -28,8 +28,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        private const int allowedNumberOfFailures = 3;
-
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
@@ -37,8 +35,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
         private readonly NetworkDataRecorder networkDataRecorder;
         
-        private readonly CancellationTokenSource cancellationTokenSource;
-        private readonly CancellationTokenSource processorCancellationTokenSource = new CancellationTokenSource(ClientTelemetryOptions.ProcessorTimeOutInMs); // 5 min 
+        private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource processorCancellationTokenSource = new CancellationTokenSource(ClientTelemetryOptions.ProcessorTimeOut); // 5 min 
         
         private readonly GlobalEndpointManager globalEndpointManager;
 
@@ -57,7 +55,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         internal ClientTelemetry()
         {
-            this.cancellationTokenSource = new CancellationTokenSource();
         }
 
         /// <summary>
@@ -123,8 +120,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
 
             this.networkDataRecorder = new NetworkDataRecorder();
-            
-            this.cancellationTokenSource = new CancellationTokenSource();
         }
 
         /// <summary>
@@ -137,9 +132,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         /// <summary>
         /// Task which does below operations , periodically
-        ///  1. Set Account information (one time at the time of initialization)
-        ///  2. Load VM metedata information (one time at the time of initialization)
-        ///  3. Calculate and Send telemetry Information to juno service (never ending task)/// </summary>
+        ///  1. Set Account information (one time during initialization)
+        ///  2. Load VM metedata information (one time during initialization)
+        ///  3. Calculate and Send telemetry Information to Client Telemetry Service (never ending task)/// </summary>
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
@@ -179,28 +174,27 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     
                     try
                     {
-                        // Use the Wait method with a CancellationToken to wait for the task to complete.
-                        // If anyhow prev task was not finished sucessfully in 5 min then ,Do not trigger a new task. 
-                        this.processorTask?.Wait(this.processorCancellationTokenSource.Token);
-
-                        Task tempProcessorTask = Task.Run(() => this.processor
-                            .ProcessAndSendAsync(
-                                clientTelemetryInfo: this.clientTelemetryInfo,
-                                operationInfoSnapshot: operationInfoSnapshot,
-                                cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
-                                requestInfoSnapshot: requestInfoSnapshot,
-                                cancellationToken: this.cancellationTokenSource.Token));
-                        tempProcessorTask.Start(); // run it in background
-
-                        this.processorTask = tempProcessorTask;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        DefaultTrace.TraceError("Telemetry Job Processor failed due to timeout in 5 min");
+                        // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service service
+                        this.processorTask = Task.Run(
+                            function: () => this.processor
+                                                    .ProcessAndSendAsync(
+                                                        clientTelemetryInfo: this.clientTelemetryInfo,
+                                                        operationInfoSnapshot: operationInfoSnapshot,
+                                                        cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
+                                                        requestInfoSnapshot: requestInfoSnapshot),
+                            cancellationToken: this.processorCancellationTokenSource.Token)
+                                                .ContinueWith((i) =>
+                                                {
+                                                    Exception ex = i.Exception?.GetBaseException();
+                                                    if (ex != null)
+                                                    {
+                                                        DefaultTrace.TraceError($"Client Telemetry data processing task faulted and stopped running. ErrorType={ex.GetType()} ErrorMessage={ex.Message}");
+                                                    }
+                                                }, TaskContinuationOptions.OnlyOnFaulted);
                     }
                     catch (Exception ex)
                     {
-                        DefaultTrace.TraceError("Telemetry Job Processor failed with error : {0}", ex);
+                        DefaultTrace.TraceError("Telemetry Job Processor failed to run with error : {0}", ex);
                     }
                 }
             }

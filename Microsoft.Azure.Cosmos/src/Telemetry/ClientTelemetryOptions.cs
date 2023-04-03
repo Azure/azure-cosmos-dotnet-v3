@@ -79,13 +79,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const double Percentile99 = 99.0;
         internal const double Percentile999 = 99.9;
         internal const string DateFormat = "yyyy-MM-ddTHH:mm:ssZ";
-        internal const int ProcessorTimeOutInMs = 5 * 60 * 1000; // 5 minutes
+
         internal const string EnvPropsClientTelemetrySchedulingInSeconds = "COSMOS.CLIENT_TELEMETRY_SCHEDULING_IN_SECONDS";
         internal const string EnvPropsClientTelemetryEnabled = "COSMOS.CLIENT_TELEMETRY_ENABLED";
         internal const string EnvPropsClientTelemetryVmMetadataUrl = "COSMOS.VM_METADATA_URL";
         internal const string EnvPropsClientTelemetryEndpoint = "COSMOS.CLIENT_TELEMETRY_ENDPOINT";
         internal const string EnvPropsClientTelemetryEnvironmentName = "COSMOS.ENVIRONMENT_NAME";
 
+        internal static readonly TimeSpan ClientTelemetryServiceTimeOut = TimeSpan.FromMinutes(1);
+        internal static readonly TimeSpan ProcessorTimeOut = TimeSpan.FromMinutes(5); // 5 minutes
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
         // Why 5 sec? As of now, if any network request is taking more than 5 millisecond sec, we will consider it slow request this value can be revisited in future
         internal static readonly TimeSpan NetworkLatencyThreshold = TimeSpan.FromMilliseconds(5);
