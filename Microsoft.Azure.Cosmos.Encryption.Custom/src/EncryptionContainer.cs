@@ -791,13 +791,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return this.container.GetFeedRangesAsync(cancellationToken);
         }
 
-        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedRange feedRange,
-            CancellationToken cancellationToken = default)
-        {
-            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
-        }
-
         public override FeedIterator GetItemQueryStreamIterator(
             FeedRange feedRange,
             QueryDefinition queryDefinition,
@@ -1008,17 +1001,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 cancellationToken);
 
             return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
-        }
-
-        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default)
-        {
-            return this.container.DeleteAllItemsByPartitionKeyStreamAsync(
-                partitionKey,
-                requestOptions,
-                cancellationToken);
         }
 
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
