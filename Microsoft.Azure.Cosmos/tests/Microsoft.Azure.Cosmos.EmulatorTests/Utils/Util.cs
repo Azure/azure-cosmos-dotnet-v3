@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using OpenTelemetry;
     using OpenTelemetry.Trace;
-    using AzureCore = global::Azure.Core.Pipeline;
+    using AzureCore = global::Azure.Core;
     
     internal enum DocumentClientType
     {
