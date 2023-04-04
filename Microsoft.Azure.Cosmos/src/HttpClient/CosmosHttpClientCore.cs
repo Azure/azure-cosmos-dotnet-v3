@@ -107,18 +107,18 @@ namespace Microsoft.Azure.Cosmos
             // TODO: Remove type check and use #if NET6_0_OR_GREATER when multitargetting is possible
             Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
 
-            try
+            if (socketHandlerType != null)
             {
-                if (socketHandlerType != null)
-                {
+                try
+                {               
                     return CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
-                }            
+                }
+                catch (Exception e)
+                {
+                    DefaultTrace.TraceError("Failed to create SocketsHttpHandler: {0}", e);
+                }
             }
-            catch (Exception e) 
-            {
-                DefaultTrace.TraceError("Failed to create SocketsHttpHandler: {0}", e);
-            }
-
+            
             return CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
         }
 
