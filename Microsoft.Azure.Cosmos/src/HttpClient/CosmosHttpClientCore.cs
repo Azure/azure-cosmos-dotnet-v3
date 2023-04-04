@@ -109,16 +109,14 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                if (socketHandlerType != null)
-                {
-                    return CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
-                }
+                return CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
             }
             catch (Exception e) 
             {
-                DefaultTrace.TraceError("Failed to create SocketsHttpHandler: {0}", e.ToString());
-                return CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
-            }                     
+                DefaultTrace.TraceError("Failed to create SocketsHttpHandler: {0}", e);
+            }
+
+            return CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
         }
 
         public static HttpMessageHandler CreateSocketsHttpHandlerHelper(
