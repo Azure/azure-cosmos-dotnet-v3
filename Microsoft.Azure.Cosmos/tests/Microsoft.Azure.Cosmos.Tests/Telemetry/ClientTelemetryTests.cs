@@ -147,7 +147,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                     string payloadJson = request.Content.ReadAsStringAsync().Result;
                     Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.PayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
 
-                    Console.WriteLine(payloadJson);
                     ClientTelemetryProperties propertiesToSend = JsonConvert.DeserializeObject<ClientTelemetryProperties>(payloadJson);
 
                     Assert.AreEqual(7, propertiesToSend.SystemInfo.Count, "System Info is not correct");
@@ -251,7 +250,43 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             Assert.AreEqual(expectedCacheRefreshInfoSize, actualCacheRefreshInfoSize, "Cache Refresh Info is not correct");
             Assert.AreEqual(expectedRequestInfoSize, actualRequestInfoSize, "Request Info is not correct");
         }
-        
+
+        [TestMethod]
+        public async Task ClientTelmetryProcessor_should_TimeOut()
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
+            ClientTelemetryOptions.ClientTelemetryProcessorTimeOut = TimeSpan.FromTicks(1);
+            
+            string data = File.ReadAllText("Telemetry/ClientTelemetryPayloadWithoutMetrics.json", Encoding.UTF8);
+            ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
+
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
+            _ = mockHttpHandler.Setup(x => x.SendAsync(
+                It.IsAny<HttpRequestMessage>(),
+                It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
+
+            ClientTelemetryProcessor processor = new ClientTelemetryProcessor(
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object))),
+                Mock.Of<AuthorizationTokenProvider>());
+            try
+            {
+                Task processorTask = Task.Run(() => processor.ProcessAndSendAsync(
+                                                     clientTelemetryProperties,
+                                                     default,
+                                                     default,
+                                                     default));
+
+                await ClientTelemetry.RunProcessorTaskAsync(DateTime.Now.ToString(), processorTask);
+
+                Assert.Fail("Expected TimeoutException");
+            }
+            catch(TimeoutException ex)
+            {
+                Assert.IsTrue(ex is TimeoutException, "TimeoutException is not thrown");
+            }
+        }
+
         [TestMethod]
         [ExpectedException(typeof(FormatException))]
         public void CheckMisconfiguredTelemetry_should_fail()

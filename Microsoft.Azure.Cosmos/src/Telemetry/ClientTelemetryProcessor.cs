@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Net.Http;
     using System.Text;
     using System.Threading;
@@ -52,10 +53,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                serviceCancellationToken.Dispose();
-
                 DefaultTrace.TraceError($"Exception while serializing telemetry payload: {ex}");
                 throw;
+            }
+            finally
+            {
+                serviceCancellationToken.Dispose();
             }
            
         }
