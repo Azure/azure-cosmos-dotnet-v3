@@ -3,7 +3,7 @@
 
 # Microsoft Azure Cosmos DB .NET SDK Version 3
 
-This client library enables client applications to connect to Azure Cosmos via the SQL API. Azure Cosmos is a globally distributed, multi-model database service. For more information, refer to https://azure.microsoft.com/services/cosmos-db/.
+This client library enables client applications to connect to Azure Cosmos DB for NoSQL. Azure Cosmos DB is a globally distributed, multi-model database service. For more information, refer to https://azure.microsoft.com/services/cosmos-db/.
 
 ```csharp
 CosmosClient client = new CosmosClient("https://mycosmosaccount.documents.azure.com:443/", "mysupersecretkey");
@@ -45,7 +45,7 @@ using (FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynam
 - [Resource Model of Azure Cosmos DB Service](https://docs.microsoft.com/azure/cosmos-db/sql-api-resources)
 - [Cosmos DB Resource URI](https://docs.microsoft.com/rest/api/documentdb/documentdb-resource-uri-syntax-for-rest)
 - [Partitioning](https://docs.microsoft.com/azure/cosmos-db/partition-data)
-- [Introduction to SQL API of Azure Cosmos DB Service](https://docs.microsoft.com/azure/cosmos-db/sql-api-sql-query)
+- [Introduction to Azure Cosmos DB for NoSQL queries](https://docs.microsoft.com/azure/cosmos-db/sql-api-sql-query)
 - [SDK API](https://docs.microsoft.com/dotnet/api/microsoft.azure.cosmos?view=azure-dotnet)
 - [Using emulator](https://github.com/Azure/azure-documentdb-dotnet/blob/master/docs/documentdb-nosql-local-emulator.md)
 - [Capture traces](https://github.com/Azure/azure-documentdb-dotnet/blob/master/docs/documentdb-sdk_capture_etl.md)
