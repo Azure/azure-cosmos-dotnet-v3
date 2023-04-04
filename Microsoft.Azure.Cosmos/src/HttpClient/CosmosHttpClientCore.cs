@@ -109,7 +109,10 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                return CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
+                if (socketHandlerType != null)
+                {
+                    return CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
+                }            
             }
             catch (Exception e) 
             {
