@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -106,12 +107,18 @@ namespace Microsoft.Azure.Cosmos
             // TODO: Remove type check and use #if NET6_0_OR_GREATER when multitargetting is possible
             Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
 
-            if (socketHandlerType != null)
+            try
             {
-                return CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
+                if (socketHandlerType != null)
+                {
+                    return CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
+                }
             }
-            
-            return CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
+            catch (Exception e) 
+            {
+                DefaultTrace.TraceError("Failed to create SocketsHttpHandler: {0}", e.ToString());
+                return CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
+            }                     
         }
 
         public static HttpMessageHandler CreateSocketsHttpHandlerHelper(
