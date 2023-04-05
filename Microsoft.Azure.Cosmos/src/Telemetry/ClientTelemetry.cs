@@ -36,7 +36,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly ClientTelemetryProcessor processor;
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
-
+        private readonly NetworkDataRecorder networkDataRecorder;
+        
         private readonly CancellationTokenSource cancellationTokenSource;
 
         private readonly GlobalEndpointManager globalEndpointManager;
@@ -49,11 +50,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoMap 
             = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
 
-        private ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoMap
-            = new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>();
-
         private int numberOfFailures = 0;
-
+        
         /// <summary>
         /// Only for Mocking in tests
         /// </summary>
@@ -112,6 +110,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             GlobalEndpointManager globalEndpointManager)
         {
             this.diagnosticsHelper = diagnosticsHelper ?? throw new ArgumentNullException(nameof(diagnosticsHelper));
+            this.globalEndpointManager = globalEndpointManager;
+            
             this.processor = new ClientTelemetryProcessor(httpClient, authorizationTokenProvider);
 
             this.clientTelemetryInfo = new ClientTelemetryProperties(
@@ -122,8 +122,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 preferredRegions: preferredRegions,
                 aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
 
+            this.networkDataRecorder = new NetworkDataRecorder();
+            
             this.cancellationTokenSource = new CancellationTokenSource();
-            this.globalEndpointManager = globalEndpointManager;
         }
 
         /// <summary>
@@ -179,18 +180,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
                         = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
-
-                    ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot
-                      = Interlocked.Exchange(ref this.requestInfoMap, new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>());
-
+                    
                     try
                     {
                         await this.processor
-                        .ProcessAndSendAsync(
+                            .ProcessAndSendAsync(
                                 clientTelemetryInfo: this.clientTelemetryInfo,
                                 operationInfoSnapshot: operationInfoSnapshot,
                                 cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
-                                requestInfoSnapshot: requestInfoSnapshot,
+                                requestInfoSnapshot: this.networkDataRecorder.GetRequests(),
                                 cancellationToken: this.cancellationTokenSource.Token);
 
                         this.numberOfFailures = 0;
@@ -296,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             // Record Network/Replica Information
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
-            this.RecordRntbdResponses(containerId, databaseId, summaryDiagnostics.StoreResponseStatistics.Value);
+            this.networkDataRecorder.Record(summaryDiagnostics.StoreResponseStatistics.Value, databaseId, containerId);
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
 
@@ -335,37 +333,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex);
-            }
-        }
-
-        /// <summary>
-        /// Records RNTBD calls statistics
-        /// </summary>
-        /// <param name="containerId"></param>
-        /// <param name="databaseId"></param>
-        /// <param name="storeResponseStatistics"></param>
-        private void RecordRntbdResponses(string containerId, string databaseId, List<StoreResponseStatistics> storeResponseStatistics)
-        {
-            foreach (StoreResponseStatistics storetatistics in storeResponseStatistics)
-            {
-                if (ClientTelemetryOptions.IsEligible((int)storetatistics.StoreResult.StatusCode, (int)storetatistics.StoreResult.SubStatusCode, storetatistics.RequestLatency))
-                {
-                    RequestInfo requestInfo = new RequestInfo()
-                    {
-                        DatabaseName = databaseId,
-                        ContainerName = containerId,
-                        Uri = storetatistics.StoreResult.StorePhysicalAddress.ToString(),
-                        StatusCode = (int)storetatistics.StoreResult.StatusCode,
-                        SubStatusCode = (int)storetatistics.StoreResult.SubStatusCode,
-                        Resource = storetatistics.RequestResourceType.ToString(),
-                        Operation = storetatistics.RequestOperationType.ToString(),
-                    };
-
-                    LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                            ClientTelemetryOptions.RequestLatencyMax,
-                                                            ClientTelemetryOptions.RequestLatencyPrecision));
-                    latencyHist.RecordValue(storetatistics.RequestLatency.Ticks);
-                }
             }
         }
 
