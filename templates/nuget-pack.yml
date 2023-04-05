@@ -8,6 +8,7 @@ parameters:
   OutputPath: ''
   ReleasePackage: false
   BlobVersion: ''
+  DeletePreviousContent: false
 
 jobs:
 - job: GenerateNugetPackages
@@ -47,7 +48,7 @@ jobs:
         BuildDropPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
 
     - task: AzureFileCopy@2
-      displayName: ' Copy Artifacts to Azure SDK Release blob storage'
+      displayName: 'Copy Artifacts to Azure SDK Release blob storage'
       condition: and(succeeded(),ne(${{ parameters.BlobVersion }}, ''))
       inputs:
         SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
@@ -56,6 +57,7 @@ jobs:
         storage: azuresdkpartnerdrops
         ContainerName: 'drops'
         BlobPrefix: 'cosmosdb/csharp/$(BlobVersion)'
+        CleanTargetBeforeCopy: DeletePreviousContent
 
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
