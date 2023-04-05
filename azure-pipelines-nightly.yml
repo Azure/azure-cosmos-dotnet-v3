@@ -28,5 +28,5 @@ stages:
         VmImage: $(VmImage)
         ReleasePackage: true
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
-        BlobVersion: ''
+        BlobVersion: 'nightly'
         DeletePreviousContent: false
