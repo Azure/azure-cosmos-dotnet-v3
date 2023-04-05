@@ -227,17 +227,17 @@ namespace Microsoft.Azure.Cosmos.Routing
             return await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
         }
 
-        public async Task UpdateAsync(
+        public Task UpdateAsync(
            ServerKey serverKey,
            CancellationToken cancellationToken)
         {
             foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
             {
-                // since we don't know which address cache contains the pkRanges mapped to this node,
-                // we mark all transport uris that has the same server key to unhealthy status in the
-                // AddressCaches of all regions.
-                await addressCache.Value.AddressCache.MarkAddressesToUnhealthyAsync(serverKey);
+                // since we don't know which address cache contains the pkRanges mapped to this node, we do a tryRemove on all AddressCaches of all regions
+                addressCache.Value.AddressCache.TryRemoveAddresses(serverKey);
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>

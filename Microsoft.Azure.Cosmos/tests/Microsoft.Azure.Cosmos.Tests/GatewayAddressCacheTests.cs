@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Mark transport addresses to Unhealthy depcting a connection reset event.
             ServerKey faultyServerKey = new (new Uri("https://blabla2.com"));
-            await cache.MarkAddressesToUnhealthyAsync(faultyServerKey);
+            cache.TryRemoveAddresses(faultyServerKey);
 
             // check if the addresss is updated
             addresses = await cache.TryGetAddressesAsync(
