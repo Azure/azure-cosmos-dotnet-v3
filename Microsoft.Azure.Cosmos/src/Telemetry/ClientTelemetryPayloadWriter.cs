@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.IO;
     using System.Linq;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
@@ -22,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
             IReadOnlyList<RequestInfo> sampledRequestInfo,
+            CancellationToken cancellationToken,
             Func<string, Task> callback)
         {
             if (properties == null)
@@ -37,6 +39,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in operationInfoSnapshot)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        throw new TimeoutException("Operation data Processing is cancelled due to timeout");
+                    }
+                    
                     long lengthNow = stringBuilder.Length;
                     
                     OperationInfo payloadForLatency = entry.Key;
@@ -75,6 +82,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 
                 foreach (KeyValuePair<CacheRefreshInfo, LongConcurrentHistogram> entry in cacheRefreshInfoSnapshot)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        throw new TimeoutException("Cache data Processing is cancelled due to timeout");
+                    }
+                    
                     long lengthNow = stringBuilder.Length;
                         
                     CacheRefreshInfo payloadForLatency = entry.Key;
@@ -106,6 +118,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 
                 foreach (RequestInfo entry in sampledRequestInfo)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        throw new TimeoutException("Request data Processing is cancelled due to timeout");
+                    }
+                    
                     long lengthNow = stringBuilder.Length;
                   
                     string latencyMetrics = JsonConvert.SerializeObject(entry);

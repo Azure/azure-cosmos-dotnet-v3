@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         AccountProperties accountProperties = await ClientTelemetryHelper.SetAccountNameAsync(this.globalEndpointManager);
                         this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
                     }
-                    
+
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
@@ -170,24 +170,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
 
                     List<RequestInfo> requestInfoSnapshot = this.networkDataRecorder.GetRequests();
-                    
+
                     try
                     {
                         CancellationTokenSource cancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
-                        Task processorTask = Task.Run(() => this.processor
-                                                                    .ProcessAndSendAsync(
-                                                                            clientTelemetryInfo: this.clientTelemetryInfo,
-                                                                            operationInfoSnapshot: operationInfoSnapshot,
-                                                                            cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
-                                                                            requestInfoSnapshot: requestInfoSnapshot), cancellationToken.Token);
 
                         // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service
                         // Not disposing this task. If we dispose a client then, telemetry job(telemetryTask) should stop but processor task(processorTask) should make best effort to finish the job in background.
-                        _ = ClientTelemetry.RunProcessorTaskAsync(this.clientTelemetryInfo.DateTimeUtc, processorTask);
+                        _ = Task.Run(() => ClientTelemetry
+                                           .RunProcessorTaskAsync(this.processor.ProcessAndSendAsync(
+                                                                      clientTelemetryInfo: this.clientTelemetryInfo,
+                                                                      operationInfoSnapshot: operationInfoSnapshot,
+                                                                      cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
+                                                                      requestInfoSnapshot: requestInfoSnapshot,
+                                                                      cancellationToken: cancellationToken)), cancellationToken.Token);
                     }
                     catch (Exception ex)
                     {
-                        DefaultTrace.TraceError("Telemetry Job Processor failed to run with error : {0}", ex);
+                        DefaultTrace.TraceError("Exception while processing the data : {0} with telemetry date as {1}", ex.Message, this.clientTelemetryInfo.DateTimeUtc);
                     }
                 }
             }
@@ -199,18 +199,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             DefaultTrace.TraceInformation("Telemetry Job Stopped.");
         }
 
-        internal static async Task RunProcessorTaskAsync(string telemetryDate, Task processingTask)
+        internal static async Task RunProcessorTaskAsync(Task processingTask)
         {
-            Task[] tasks = new Task[] { Task.Delay(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut), processingTask };
-            Task completedTask = await Task.WhenAny(tasks);
-
-            if (!object.ReferenceEquals(completedTask, processingTask))
+            try
             {
-                DefaultTrace.TraceError($"Telemetry Processor Task timed out after {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut.TotalMilliseconds}ms with telemetry date as {telemetryDate}");
-
-                processingTask.Dispose();
-                
-                throw new TimeoutException($"Telemetry Processor Task timed out after {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut.TotalMilliseconds}ms with telemetry date as {telemetryDate}");
+               await processingTask;
+            }
+            finally
+            {
+                processingTask.Dispose(); // release all resources
             }
         }
 

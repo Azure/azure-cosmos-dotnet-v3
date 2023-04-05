@@ -244,7 +244,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 clientTelemetryProperties,
                 operationInfoSnapshot,
                 cacheRefreshInfoSnapshot,
-                requestInfoList);
+                requestInfoList, 
+                new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut));
 
             Assert.AreEqual(expectedOperationInfoSize, actualOperationInfoSize, "Operation Info is not correct");
             Assert.AreEqual(expectedCacheRefreshInfoSize, actualCacheRefreshInfoSize, "Cache Refresh Info is not correct");
@@ -275,9 +276,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                      clientTelemetryProperties,
                                                      default,
                                                      default,
-                                                     default));
+                                                     default,
+                                                     new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut)));
 
-                await ClientTelemetry.RunProcessorTaskAsync(DateTime.Now.ToString(), processorTask);
+                await ClientTelemetry.RunProcessorTaskAsync(processorTask);
 
                 Assert.Fail("Expected TimeoutException");
             }

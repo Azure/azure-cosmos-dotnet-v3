@@ -39,16 +39,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ClientTelemetryProperties clientTelemetryInfo, 
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharget)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
-            IReadOnlyList<RequestInfo> requestInfoSnapshot)
+            IReadOnlyList<RequestInfo> requestInfoSnapshot,
+            CancellationTokenSource cancellationToken)
         {
             CancellationTokenSource serviceCancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryServiceTimeOut);
             try
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw new TimeoutException("Processing is cancelled due to timeout");
+                }
+                
                 await ClientTelemetryPayloadWriter.SerializedPayloadChunksAsync(
                     properties: clientTelemetryInfo,
                     operationInfoSnapshot: operationInfoSnapshot,
                     cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                     sampledRequestInfo: requestInfoSnapshot,
+                    cancellationToken: cancellationToken.Token,
                     callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, serviceCancellationToken.Token));
             }
             catch (Exception ex)
