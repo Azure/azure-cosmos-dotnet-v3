@@ -29,4 +29,4 @@ stages:
         ReleasePackage: true
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
         BlobVersion: 'nightly'
-        DeletePreviousContent: false
+        DeletePreviousContent: true

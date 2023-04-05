@@ -32,4 +32,4 @@ stages:
         VmImage: $(VmImage)
         ReleasePackage: true
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
-        BlobVersion: variables['BlobVersion']
+        BlobVersion: $(BlobVersion)
