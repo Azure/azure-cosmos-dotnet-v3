@@ -37,7 +37,7 @@ jobs:
       configuration: $(BuildConfiguration)
       nugetConfigPath: NuGet.config
       projects: Microsoft.Azure.Cosmos/src/Microsoft.Azure.Cosmos.csproj 
-      arguments: --configuration ${{ parameters.BuildConfiguration }} -p:Optimize=true 
+      arguments: --configuration ${{ parameters.BuildConfiguration }} -p:Optimize=true ${{ parameters.Arguments }}
       versioningScheme: OFF
 
   - task: DotNetCoreCLI@2
@@ -60,22 +60,23 @@ jobs:
       inputs:
         BuildDropPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
 
-    - task: AzureFileCopy@2
-      displayName: 'Copy Artifacts to Azure SDK Release blob storage'
-      condition: and(succeeded(),ne('${{ parameters.BlobVersion }}', ''))
-      inputs:
-        SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
-        azureSubscription: azuresdkpartnerdrops
-        Destination: AzureBlob
-        storage: azuresdkpartnerdrops
-        ContainerName: 'drops'
-        BlobPrefix: 'cosmosdb/csharp/$(BlobVersion)'
-        CleanTargetBeforeCopy: DeletePreviousContent
+    - ${{ if ne(parameters.BlobVersion, '') }}:
+      - task: AzureFileCopy@2
+        displayName: 'Copy Artifacts to Azure SDK Release blob storage'
+        condition: succeeded()
+        inputs:
+          SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
+          azureSubscription: azuresdkpartnerdrops
+          Destination: AzureBlob
+          storage: azuresdkpartnerdrops
+          ContainerName: 'drops'
+          BlobPrefix: 'cosmosdb/csharp/$(BlobVersion)'
+          CleanTargetBeforeCopy: DeletePreviousContent
 
-    - task: PublishBuildArtifacts@1
-      displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
-      inputs:
-        artifactName: Microsoft.Azure.Cosmos
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
+        inputs:
+          artifactName: Microsoft.Azure.Cosmos
 
-    - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
-      displayName: 'Component Detection'
+      - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+        displayName: 'Component Detection'
