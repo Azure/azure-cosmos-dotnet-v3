@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ITrace trace,
             CosmosClientContext clientContext)
         {
+            OpenTelemetryCoreRecorder openTelemetryRecorder = default;
             if (clientContext is { ClientOptions.IsDistributedTracingEnabled: true })
             {
                 // If there is no source then it will return default otherwise a valid diagnostic scope
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 // Record values only when we have a valid Diagnostic Scope
                 if (scope.IsEnabled)
                 {
-                    return new OpenTelemetryCoreRecorder(
+                    openTelemetryRecorder = new OpenTelemetryCoreRecorder(
                         scope: scope,
                         operationName: operationName,
                         containerName: containerName,
@@ -56,18 +57,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     DiagnosticScope requestScope = LazyScopeFactory.Value.CreateScope(name: $"{OpenTelemetryAttributeKeys.NetworkLevelPrefix}.{operationName}");
 
-                    if (requestScope.IsEnabled)
-                    {
-                        return new OpenTelemetryCoreRecorder(scope: requestScope);
-                    }
-                    else
-                    {
-                        return new OpenTelemetryCoreRecorder(operationName);
-                    }
+                    openTelemetryRecorder = requestScope.IsEnabled ? new OpenTelemetryCoreRecorder(scope: requestScope) : new OpenTelemetryCoreRecorder(operationName);
                 }
 #endif
+                trace.AddDatum("DistributedTraceId", Activity.Current?.Id);
             }
-            return default;
+            return openTelemetryRecorder;
         }
     }
 }

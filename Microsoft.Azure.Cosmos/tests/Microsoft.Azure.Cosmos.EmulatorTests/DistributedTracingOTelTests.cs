@@ -80,103 +80,6 @@
             }
         }
 
-        [TestMethod]
-        public async Task NewTest()
-        {
-            try
-
-            {
-                using CosmosClient client = new(
-
-                accountEndpoint: "https://localhost:8081",
-
-                authKeyOrResourceToken: "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==");
-                client.ClientOptions.IsDistributedTracingEnabled = true;
-
-                // Database reference with creation if it does not already exist
-
-                Database database = await client.CreateDatabaseIfNotExistsAsync(
-
-                    id: "adventureworks"
-
-                );
-                Console.WriteLine(Activity.Current?.Id);
-                // Container reference with creation if it does not alredy exist
-
-                Container container = await database.CreateContainerIfNotExistsAsync(
-
-                    id: "products",
-
-                    partitionKeyPath: "/category",
-
-                    throughput: 400
-
-                );
-
-                Container container2 = await database.CreateContainerIfNotExistsAsync(
-
-                    id: "products2",
-
-                    partitionKeyPath: "/category2",
-
-                    throughput: 400
-
-                );
-                Console.WriteLine(Activity.Current?.Id);
-
-                // Create new object and upsert (create or replace) to container
-
-                Product newItem = new(
-
-                    Id: "68719518391",
-
-                    Category: "gear-surf-surfboards",
-
-                    Name: "Yamba Surfboard"
-
-                );
-                Console.WriteLine(Activity.Current?.Id);
-                ItemResponse<Product> createdItem = await container.UpsertItemAsync<Product>(
-
-                    item: newItem,
-
-                    partitionKey: new PartitionKey("gear-surf-surfboards")
-
-                );
-
-                Product readItem = await container.ReadItemAsync<Product>(
-
-                   id: "68719518391",
-
-                   partitionKey: new PartitionKey("gear-surf-surfboards")
-
-               );
-
-            }
-
-            catch (CosmosException cosmosException)
-
-            {
-                Console.WriteLine("The current UI culture is {0}",
-
-                                   Thread.CurrentThread.CurrentUICulture.Name);
-
-                string a = cosmosException.Diagnostics.ToString();
-
-                //Console.WriteLine($"Error log:\t{cosmosException.ToString()}");
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                Console.WriteLine("Error Custom {0}", ex.Message.ToString());
-
-            }
-
-        }
-
         [TestCleanup]
         public async Task CleanUp()
         {
@@ -193,22 +96,6 @@
         {
             AssertActivity.AreEqualAcrossListeners();
             CustomOtelExporter.CollectedActivities = new();
-        }
-
-    }
-
-    internal class Product
-    {
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public string Category { get; set; }
-        public Product() { }
-
-        public Product(string Id, string Category, string Name)
-        {
-            this.Id = Id;
-            this.Category = Category;
-            this.Name = Name;
         }
     }
 }
