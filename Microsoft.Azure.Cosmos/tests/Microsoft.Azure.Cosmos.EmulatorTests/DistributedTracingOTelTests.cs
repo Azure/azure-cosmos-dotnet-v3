@@ -28,100 +28,58 @@
         public static Database database;
         public static Container container;
 
-        ////[DataRow( $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation")]
-        //[DataRow( $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request")]
-        //[TestMethod]
-        //public async Task OperationScopeEnabled(string source)
-        //{
-        //    AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
-        //    AzureCore.ActivityExtensions.ResetFeatureSwitch();
-        //    CustomOtelExporter exporter = new CustomOtelExporter();
-        //    using (TracerProvider provider = Sdk.CreateTracerProviderBuilder()
-        //        .AddCustomOtelExporter()
-        //        .AddSource(source)
-        //        .Build())
-        //    {
-        //        client = TestCommon.CreateCosmosClient(
-        //            useGateway: false,
-        //            enableDistributingTracing: true);
-
-        //        database = await client.CreateDatabaseAsync(
-        //                Guid.NewGuid().ToString(),
-        //                cancellationToken: default);
-
-        //        List<Activity> a = CustomOtelExporter.CollectedActivities.ToList();
-        //        Console.WriteLine(a);
-        //        Assert.AreEqual(1, CustomOtelExporter.CollectedActivities.Count());
-        //    }
-        //}
-
-        [TestMethod]
-        public async Task NetworkScopeEnabled()
+        [TestInitialize]
+        public void TestInitialize()
         {
+            CustomOtelExporter.ResetData();
+        }
+
+        [DataRow(true, true, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", 1)]
+        [DataRow(true, true, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", 1)]
+        [TestMethod]
+        public async Task OperationScopeEnabled(bool enableDistributingTracing, bool enableActivitySource, string source, int activityCount)
+        {
+            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", enableActivitySource);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
-            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
-            AzureCore.ActivityExtensions.ResetFeatureSwitch();
-            CustomOtelExporter exporter = new CustomOtelExporter();
             using (TracerProvider provider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter()
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request")
+                .AddSource(source)
                 .Build())
             {
                 client = TestCommon.CreateCosmosClient(
                     useGateway: false,
-                    enableDistributingTracing: true);
+                    enableDistributingTracing: enableDistributingTracing);
 
                 database = await client.CreateDatabaseAsync(
                         Guid.NewGuid().ToString(),
                         cancellationToken: default);
-
-                List<Activity> activityCollection = exporter.ExportData();
-                Assert.AreEqual(1, activityCollection.Count());
+                Assert.AreEqual(activityCount, CustomOtelExporter.CollectedActivities.Count());
+                Assert.AreEqual(source, CustomOtelExporter.CollectedActivities.FirstOrDefault().Source.Name);
             }
         }
 
+        [DataRow(true)]
+        [DataRow(false)]
         [TestMethod]
-        public async Task NoScopeEnabled()
+        public async Task NoScopeEnabled(bool enableDistributingTracing)
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
-            CustomOtelExporter exporter = new CustomOtelExporter();
             using (TracerProvider provider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter()
-                .AddSource()
                 .Build())
             {
                 client = TestCommon.CreateCosmosClient(
                     useGateway: false,
-                    enableDistributingTracing: true);
+                    enableDistributingTracing: enableDistributingTracing);
 
                 database = await client.CreateDatabaseAsync(
                         Guid.NewGuid().ToString(),
                         cancellationToken: default);
-
                 Assert.AreEqual(0, CustomOtelExporter.CollectedActivities.Count());
             }
         }
 
-        [TestMethod]
-        public void NoScopeEnabled2()
-        {
-            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
-            AzureCore.ActivityExtensions.ResetFeatureSwitch();
-            //CustomOtelExporter exporter = new CustomOtelExporter();
-            using (TracerProvider provider = Sdk.CreateTracerProviderBuilder()
-                .AddCustomOtelExporter()
-                .AddSource()
-                .Build())
-            {
-                Activity activity = new Activity("Test");
-                activity.Start();
-                Console.WriteLine("hello");
-                activity.Stop();
-                activity.Dispose();
-                Assert.AreEqual(0, CustomOtelExporter.CollectedActivities.Count());
-            }
-        }
         [TestMethod]
         public async Task NewTest()
         {

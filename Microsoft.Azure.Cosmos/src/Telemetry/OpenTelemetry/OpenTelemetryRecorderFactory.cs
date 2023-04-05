@@ -58,8 +58,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     if (requestScope.IsEnabled)
                     {
-                        return new OpenTelemetryCoreRecorder(
-                                       scope: scope);
+                        return new OpenTelemetryCoreRecorder(scope: requestScope);
                     }
                     else
                     {
