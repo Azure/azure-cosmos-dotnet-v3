@@ -46,10 +46,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatistics = new List<HttpResponseStatistics>();
             this.TraceSummary = summary;
+            this.DistributedTraceId = Activity.Current?.Id;
         }
 
         public DateTime RequestStartTimeUtc { get; }
-
+        public string DistributedTraceId { get; }
         public DateTime? RequestEndTimeUtc { get; private set; }
 
         public IReadOnlyDictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics

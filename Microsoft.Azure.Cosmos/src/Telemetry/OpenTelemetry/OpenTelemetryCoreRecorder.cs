@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using global::Azure.Core;
 
     /// <summary>
@@ -14,11 +15,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
         private const string CosmosDb = "cosmosdb";
-        
-        private readonly DiagnosticScope scope;
-        private readonly DistributedTracingOptions config;
 
-        private readonly Documents.OperationType operationType;
+        private readonly DiagnosticScope scope = default;
+        private readonly DistributedTracingOptions config = null;
+        private readonly Activity activity = null;
+
+        private readonly Documents.OperationType operationType = Documents.OperationType.Invalid;
         private OpenTelemetryAttributes response = null;
 
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> OTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
@@ -30,6 +32,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             { typeof(ChangeFeedProcessorUserException), (exception, scope) => ChangeFeedProcessorUserException.RecordOtelAttributes((ChangeFeedProcessorUserException)exception, scope)}
         };
 
+        public OpenTelemetryCoreRecorder(DiagnosticScope scope)
+        {
+            this.scope = scope;
+            this.scope.Start();
+        }
+        public OpenTelemetryCoreRecorder(string operationName)
+        {
+            this.activity = new Activity(operationName);
+            this.activity.Start();
+        }
         public OpenTelemetryCoreRecorder(
             DiagnosticScope scope,
             string operationName,
@@ -178,6 +190,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
 
                 this.scope.Dispose();
+            }
+            else
+            {
+                this.activity?.Stop();
             }
         }
     }

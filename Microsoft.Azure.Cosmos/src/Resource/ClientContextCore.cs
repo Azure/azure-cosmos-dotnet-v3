@@ -83,7 +83,8 @@ namespace Microsoft.Azure.Cosmos
                handler: httpMessageHandler,
                sessionContainer: clientOptions.SessionContainer,
                cosmosClientId: cosmosClient.Id,
-               remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback));
+               remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback),
+               isDistributedTracingEnabled: clientOptions.IsDistributedTracingEnabled);
 
             return ClientContextCore.Create(
                 cosmosClient,
@@ -496,6 +497,7 @@ namespace Microsoft.Azure.Cosmos
                                     databaseName: databaseName,
                                     operationType: operationType,
                                     requestOptions: requestOptions,
+                                    trace: trace,
                                     clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {
