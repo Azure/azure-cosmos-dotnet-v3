@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             Assert.AreEqual("(a[\"StartDate\"] <= \"2022-05-26\")", sql);
         }
 
+        // Ignored for now because the test is failing in current production implementation of Cosmos SDK
         [TestMethod, Ignore]
         public void EnumIsPreservedAsINTest()
         {
