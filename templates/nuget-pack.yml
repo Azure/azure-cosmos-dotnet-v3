@@ -1,14 +1,27 @@
 # File: templates/nuget-pack.yml
 
 parameters:
-  BuildConfiguration: ''
-  Arguments: ''
-  VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
-  OS: 'Windows'
-  OutputPath: ''
-  ReleasePackage: false
-  BlobVersion: ''
-  DeletePreviousContent: false
+  - name: BuildConfiguration
+    type: string
+    default: ''
+  - name: Arguments
+    type: string
+    default: ''
+  - name: VmImage
+    type: string
+    default: ''
+  - name: OutputPath
+    type: string
+    default: ''
+  - name: BlobVersion
+    type: string
+    default: ''
+  - name: DeletePreviousContent
+    type: boolean
+    default: false
+  - name: ReleasePackage
+    type: boolean
+    default: false
 
 jobs:
 - job: GenerateNugetPackages
