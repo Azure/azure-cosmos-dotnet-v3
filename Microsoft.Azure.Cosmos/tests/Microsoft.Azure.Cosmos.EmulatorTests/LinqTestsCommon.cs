@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="count">number of test data to be created</param>
         /// <param name="container">the target container</param>
         /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable</returns>
-        public static Func<bool, IQueryable<T>> GenerateTestCosmosData<T>(Func<Random, T> func, int count, Container container)
+        public static LinqQuerySet<T> GenerateTestCosmosData<T>(Func<Random, T> func, int count, Container container, CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
             List<T> data = new List<T>();
             int seed = DateTime.Now.Millisecond;
@@ -295,17 +295,37 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 ItemResponse<T> response = container.CreateItemAsync(obj, new Cosmos.PartitionKey("Test")).Result;
             }
 
-            FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true);
+            // IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.
             // That is done by using Func that take a boolean Func. The parameter of the Func indicate whether the Cosmos DB query 
             // or the data list should be used. When a test is executed, the compiled LINQ expression would pass different values
             // to this getQuery method.
-            IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
+            // IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
 
-            return getQuery;
+            // return getQuery;
+
+            return new LinqQuerySet<T>(container, data);
+        }
+
+        internal class LinqQuerySet<T>
+        {
+            private readonly IQueryable<T> dataAsQueryable;
+            private readonly IQueryable<T> defaultQuery;
+            private readonly IQueryable<T> queryWithIsDefinedPrefix;
+
+            public LinqQuerySet(Container container, IReadOnlyList<T> data)
+            {
+                this.dataAsQueryable = data.AsQueryable();
+                this.defaultQuery = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true);
+                this.queryWithIsDefinedPrefix = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true,
+                    linqSerializerOptions: new CosmosLinqSerializerOptions { PrefixNullChecksWithIsDefined = true });
+            }
+
+            public IQueryable<T> GetQuery(bool useQuery) => useQuery ? this.defaultQuery : this.dataAsQueryable;
+
+            public IQueryable<T> GetQueryWithIsDefinedPrefix(bool useQuery) => useQuery ? this.queryWithIsDefinedPrefix : this.dataAsQueryable;
         }
 
         public static Func<bool, IQueryable<Family>> GenerateFamilyCosmosData(
@@ -451,7 +471,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 return obj;
             }
 
-            Func<bool, IQueryable<Family>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, container);
+            Func<bool, IQueryable<Family>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, container).GetQuery;
             return getQuery;
         }
 
@@ -594,18 +614,22 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         internal int randomSeed = -1;
         internal Expression<Func<bool, IQueryable>> Expression { get; }
         internal string expressionStr;
+        internal CosmosLinqSerializerOptions SerializerOptions { get; }
 
         // We skip the verification between Cosmos DB and actual query restuls in the following cases
         //     - unordered query since the results are not deterministics for LinQ results and actual query results
         //     - scenarios not supported in LINQ, e.g. sequence doesn't contain element.
         internal bool skipVerification;
 
-        internal LinqTestInput(string description, Expression<Func<bool, IQueryable>> expr, bool skipVerification = false, string expressionStr = null)
+        internal LinqTestInput(string description, Expression<Func<bool, IQueryable>> expr, bool skipVerification = false, string expressionStr = null, bool verifyIsDefinedChecks = true)
             : base(description)
         {
             this.Expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
             this.skipVerification = skipVerification;
             this.expressionStr = expressionStr;
+            this.SerializerOptions = verifyIsDefinedChecks
+                ? new CosmosLinqSerializerOptions() { PrefixNullChecksWithIsDefined = true }
+                : null;
         }
 
         public static string FilterInputExpression(string input)

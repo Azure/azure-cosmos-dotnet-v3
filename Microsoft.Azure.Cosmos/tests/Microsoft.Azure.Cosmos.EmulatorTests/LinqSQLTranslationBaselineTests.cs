@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 obj.pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<simple>> dataQuery = LinqTestsCommon.GenerateTestCosmosData<simple>(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<simple>> dataQuery = LinqTestsCommon.GenerateTestCosmosData<simple>(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select cast float", b => dataQuery(b).Select(x => (int)floatValue)));
@@ -266,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 obj.pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<complex>> getQuery = LinqTestsCommon.GenerateTestCosmosData<complex>(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<complex>> getQuery = LinqTestsCommon.GenerateTestCosmosData<complex>(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select equality", b => getQuery(b).Select(s => s.str == "5")));

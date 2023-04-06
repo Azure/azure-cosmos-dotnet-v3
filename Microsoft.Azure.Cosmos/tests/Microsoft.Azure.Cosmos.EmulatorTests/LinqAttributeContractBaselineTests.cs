@@ -24,7 +24,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqAttributeContractBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
+        //private static LinqTestsCommon.LinqQuerySet<Datum> querySet;
         private static Func<bool, IQueryable<Datum>> getQuery;
+        private static Func<bool, IQueryable<Datum>> getQueryWithIsDefinedCheck;
         private static CosmosClient client;
         private static Cosmos.Database testDb;
         private static Container testCollection;
@@ -90,7 +92,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Default = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 return obj;
             };
-            getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataFunc, Records, testCollection);
+
+            LinqTestsCommon.LinqQuerySet<Datum> querySet = LinqTestsCommon.GenerateTestCosmosData(createDataFunc, Records, testCollection);
+            getQuery = querySet.GetQuery;
+            getQueryWithIsDefinedCheck = querySet.GetQueryWithIsDefinedPrefix;
         }
 
         [TestCleanup]
@@ -186,10 +191,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestWhereAttributeContract()
         {
             var inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("Filter by JsonProperty", b => getQuery(b).Where(doc => doc.JsonProperty == "Hello")));
-            inputs.Add(new LinqTestInput("Filter by DataMember", b => getQuery(b).Where(doc => doc.DataMember == "Hello")));
-            inputs.Add(new LinqTestInput("Filter by Default", b => getQuery(b).Where(doc => doc.Default == "Hello")));
-            inputs.Add(new LinqTestInput("Filter by JsonPropertyAndDataMember", b => getQuery(b).Where(doc => doc.JsonPropertyAndDataMember == "Hello")));
+            foreach ((Func<bool, IQueryable<Datum>> func, string description) in new[]
+                {
+                    (getQuery, string.Empty),
+                    //(getQueryWithIsDefinedCheck, " WithIsDefinedCheck")
+                })
+            {
+                inputs.Add(new LinqTestInput($"Filter by JsonProperty{description}", b => getQuery(b).Where(doc => doc.JsonProperty == "Hello")));
+                inputs.Add(new LinqTestInput($"Filter by DataMember{description}", b => getQuery(b).Where(doc => doc.DataMember == "Hello")));
+                inputs.Add(new LinqTestInput($"Filter by Default{description}", b => getQuery(b).Where(doc => doc.Default == "Hello")));
+                inputs.Add(new LinqTestInput($"Filter by JsonPropertyAndDataMember{description}", b => getQuery(b).Where(doc => doc.JsonPropertyAndDataMember == "Hello")));
+            }
             this.ExecuteTestSuite(inputs);
         }
 

@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 };
                 return obj;
             }
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
@@ -358,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 };
                 return obj;
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new()
             {
@@ -421,7 +421,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
@@ -449,7 +449,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 NumericField = (1.0 * random.Next()) - (random.NextDouble() / 2)
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
@@ -499,7 +499,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 Id = Guid.NewGuid().ToString(),
                 Pk = "Test"
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             // some scenarios below requires input to be within data type range in order to be correct
             // therefore, we filter the right inputs for them accordingly.
@@ -673,7 +673,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     Point = new Point(0, 0)
                 };
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
             return getQuery;
         }
 
@@ -804,7 +804,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             List<int> emptyList = new List<int>();
             List<int> constantList = new List<int>() { 1, 2, 3 };
@@ -890,7 +890,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
@@ -929,7 +929,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
@@ -955,7 +955,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
@@ -983,7 +983,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
@@ -1075,7 +1075,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.Pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
@@ -1185,7 +1185,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 return obj;
             };
 
-            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer).GetQuery;
             return getQuery;
         }
 
