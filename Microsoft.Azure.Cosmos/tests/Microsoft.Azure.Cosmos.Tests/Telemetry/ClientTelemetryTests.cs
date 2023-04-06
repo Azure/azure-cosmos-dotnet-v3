@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 operationInfoSnapshot,
                 cacheRefreshInfoSnapshot,
                 requestInfoList, 
-                new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut));
+                new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut).Token);
 
             Assert.AreEqual(expectedOperationInfoSize, actualOperationInfoSize, "Operation Info is not correct");
             Assert.AreEqual(expectedCacheRefreshInfoSize, actualCacheRefreshInfoSize, "Cache Refresh Info is not correct");
@@ -253,11 +253,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         }
 
         [TestMethod]
-        [DataRow(1)] // 1 tick smallest value for a timespan to get timeout exception
-        public async Task ClientTelmetryProcessor_should_timeout(int timeOutInTicks)
+        public async Task ClientTelmetryProcessor_should_timeout()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
-            ClientTelemetryOptions.ClientTelemetryProcessorTimeOut = TimeSpan.FromTicks(timeOutInTicks);
             
             string data = File.ReadAllText("Telemetry/ClientTelemetryPayloadWithoutMetrics.json", Encoding.UTF8);
             ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
@@ -344,15 +342,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                      operationInfoSnapshot,
                                                      cacheRefreshInfoSnapshot,
                                                      default,
-                                                     new CancellationTokenSource(TimeSpan.FromSeconds(1))));
+                                                     new CancellationTokenSource(TimeSpan.FromSeconds(1)).Token));
 
                 await ClientTelemetry.RunProcessorTaskAsync(DateTime.Now.ToString(), processorTask, TimeSpan.FromTicks(1));
 
                 Assert.Fail("should have thrown exception");
             }
-            catch (TimeoutException ex)
+            catch (OperationCanceledException ex)
             {
-                Assert.IsTrue(ex is TimeoutException);
+                Assert.IsTrue(ex is OperationCanceledException);
             }
         }
 

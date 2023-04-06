@@ -10,10 +10,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.IO;
     using System.Linq;
     using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
     using HdrHistogram;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Newtonsoft.Json;
 

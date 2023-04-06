@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Net.Http;
     using System.Text;
     using System.Threading;
@@ -24,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         
         private readonly AuthorizationTokenProvider tokenProvider;
         private readonly CosmosHttpClient httpClient;
-        
+            
         internal ClientTelemetryProcessor(CosmosHttpClient httpClient, AuthorizationTokenProvider tokenProvider)
         {
             this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -40,18 +39,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharget)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
             IReadOnlyList<RequestInfo> requestInfoSnapshot,
-            CancellationTokenSource processorCancelToken)
+            CancellationToken cancellationToken)
         {
             try
             {
-                using CancellationTokenSource cancellationToken = CancellationTokenSource.CreateLinkedTokenSource(processorCancelToken.Token);
-
                 await ClientTelemetryPayloadWriter.SerializedPayloadChunksAsync(
                     properties: clientTelemetryInfo,
                     operationInfoSnapshot: operationInfoSnapshot,
                     cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                     sampledRequestInfo: requestInfoSnapshot,
-                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken.Token));
+                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken));
             }
             catch (Exception ex)
             {
@@ -62,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
         
         /// <summary>
-        /// Task to send telemetry information to configured Client Telemetry Service endpoint. 
+        /// Task to send telemetry information to configured Juno endpoint. 
         /// If endpoint is not configured then it won't even try to send information. It will just trace an error message.
         /// In any case it resets the telemetry information to collect the latest one.
         /// </summary>

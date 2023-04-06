@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                                             operationInfoSnapshot: operationInfoSnapshot,
                                                                             cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                                                                             requestInfoSnapshot: requestInfoSnapshot,
-                                                                            processorCancelToken: cancellationToken), cancellationToken.Token);
+                                                                            cancellationToken: cancellationToken.Token), cancellationToken.Token);
 
                         // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service
                         // Not disposing this task. If we dispose a client then, telemetry job(telemetryTask) should stop but processor task(processorTask) should make best effort to finish the job in background.
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
                     catch (Exception ex)
                     {
-                        DefaultTrace.TraceError("Exception while processing the data : {0} with telemetry date as {1}", ex.Message, this.clientTelemetryInfo.DateTimeUtc);
+                        DefaultTrace.TraceError("Exception while initiating processing task : {0} with telemetry date as {1}", ex.Message, this.clientTelemetryInfo.DateTimeUtc);
                     }
                 }
             }
@@ -215,9 +215,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 Task resultTask = await Task.WhenAny(processingTask, delayTask);
                 if (resultTask == delayTask)
                 {
-                    DefaultTrace.TraceVerbose($"Processor task with date as {telemetryDate} is cancelled as it did not finish in {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut} milliseconds.");
+                    DefaultTrace.TraceVerbose($"Processor task with date as {telemetryDate} is canceled as it did not finish in {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut}");
                     // Operation cancelled
-                    throw new TimeoutException($"Processor task with date as {telemetryDate} is cancelled as it did not finish in {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut} milliseconds.");
+                    throw new OperationCanceledException($"Processor task with date as {telemetryDate} is canceled as it did not finish in {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut}");
                 }
                 else
                 {
