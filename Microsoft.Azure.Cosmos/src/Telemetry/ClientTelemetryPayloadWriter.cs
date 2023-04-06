@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Threading;
     using System.Threading.Tasks;
     using HdrHistogram;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Newtonsoft.Json;
 
@@ -41,7 +42,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        throw new TimeoutException("Operation data Processing is cancelled due to timeout");
+                        DefaultTrace.TraceError($"Client Telemetry Processor took more than {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut} to process the data. Skipped while processing operation data.");
+                        // if it took more than allowed time, then go ahead with the data whatever is processed
+                        continue;
                     }
                     
                     long lengthNow = stringBuilder.Length;
@@ -84,7 +87,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        throw new TimeoutException("Cache data Processing is cancelled due to timeout");
+                        DefaultTrace.TraceError($"Client Telemetry Processor took more than {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut} to process the data. Skipped while processing cache refresh data.");
+                        // if it took more than allowed time, then go ahead with the data whatever is processed
+                        continue;
                     }
                     
                     long lengthNow = stringBuilder.Length;
@@ -120,7 +125,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        throw new TimeoutException("Request data Processing is cancelled due to timeout");
+                        DefaultTrace.TraceError($"Client Telemetry Processor took more than {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut} to process the data. Skipped while processing RequestInfo data.");
+                        // if it took more than allowed time, then go ahead with the data whatever is processed
+                        continue;
                     }
                     
                     long lengthNow = stringBuilder.Length;

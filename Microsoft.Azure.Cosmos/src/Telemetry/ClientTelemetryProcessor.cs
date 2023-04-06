@@ -45,10 +45,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             CancellationTokenSource serviceCancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryServiceTimeOut);
             try
             {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    throw new TimeoutException("Processing is cancelled due to timeout");
-                }
+                cancellationToken.Token.ThrowIfCancellationRequested();
                 
                 await ClientTelemetryPayloadWriter.SerializedPayloadChunksAsync(
                     properties: clientTelemetryInfo,
