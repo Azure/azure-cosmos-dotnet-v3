@@ -33,7 +33,8 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         public IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris,
                                                                       Lazy<HashSet<TransportAddressUri>> failedEndpoints,
-                                                                      bool replicaAddressValidationEnabled)
+                                                                      bool replicaAddressValidationEnabled,
+                                                                      bool validateUnknownReplicasAggressively)
         {
             if (failedEndpoints == null)
             {
@@ -51,7 +52,8 @@ namespace Microsoft.Azure.Documents
             return AddressEnumerator.ReorderReplicasByHealthStatus(
                 randomPermutation: randomPermutation,
                 lazyFailedReplicasPerRequest: failedEndpoints,
-                replicaAddressValidationEnabled: replicaAddressValidationEnabled);
+                replicaAddressValidationEnabled: replicaAddressValidationEnabled,
+                validateUnknownReplicasAggressively: validateUnknownReplicasAggressively);
         }
 
         /// <summary>
@@ -202,11 +204,13 @@ namespace Microsoft.Azure.Documents
         /// <param name="randomPermutation">A list containing the permutation of the replicas.</param>
         /// <param name="lazyFailedReplicasPerRequest">A lazy set containing the unhealthy replicas.</param>
         /// <param name="replicaAddressValidationEnabled">A boolean flag indicating if the replica validation is enabled.</param>
+        /// <param name="validateUnknownReplicasAggressively">A boolean flag indicating if aggressive validation of unknown replicas are enabled.</param>
         /// <returns>A list of <see cref="TransportAddressUri"/> ordered by the replica health statuses.</returns>
         private static IEnumerable<TransportAddressUri> ReorderReplicasByHealthStatus(
             IEnumerable<TransportAddressUri> randomPermutation,
             Lazy<HashSet<TransportAddressUri>> lazyFailedReplicasPerRequest,
-            bool replicaAddressValidationEnabled)
+            bool replicaAddressValidationEnabled,
+            bool validateUnknownReplicasAggressively)
         {
             HashSet<TransportAddressUri> failedReplicasPerRequest = null;
             if (lazyFailedReplicasPerRequest != null &&
@@ -226,7 +230,8 @@ namespace Microsoft.Azure.Documents
             {
                 return AddressEnumerator.ReorderAddressesWhenReplicaValidationEnabled(
                     addresses: randomPermutation,
-                    failedReplicasPerRequest: failedReplicasPerRequest);
+                    failedReplicasPerRequest: failedReplicasPerRequest,
+                    validateUnknownReplicasAggressively: validateUnknownReplicasAggressively);
             }
         }
 
@@ -238,24 +243,42 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="addresses">A random list containing all of the replica <see cref="TransportAddressUri"/> addresses.</param>
         /// <param name="failedReplicasPerRequest">A hash set containing the failed replica addresses.</param>
+        /// <param name="validateUnknownReplicasAggressively">A boolean flag indicating if aggressive validation of unknown replicas are enabled.</param>
         /// <returns>The reordered list of <see cref="TransportAddressUri"/>.</returns>
         private static IEnumerable<TransportAddressUri> ReorderAddressesWhenReplicaValidationEnabled(
             IEnumerable<TransportAddressUri> addresses,
-            HashSet<TransportAddressUri> failedReplicasPerRequest)
+            HashSet<TransportAddressUri> failedReplicasPerRequest,
+            bool validateUnknownReplicasAggressively)
         {
-            List<TransportAddressUri> failedReplicas = null, pendingReplicas = null;
-            foreach(TransportAddressUri transportAddressUri in addresses)
+            List<TransportAddressUri> unknownReplicas = null, failedReplicas = null, pendingReplicas = null;
+            foreach (TransportAddressUri transportAddressUri in addresses)
             {
                 TransportAddressHealthState.HealthStatus status = AddressEnumerator.GetEffectiveStatus(
                     addressUri: transportAddressUri,
                     failedEndpoints: failedReplicasPerRequest);
 
-                if (status == TransportAddressHealthState.HealthStatus.Connected ||
-                    status == TransportAddressHealthState.HealthStatus.Unknown)
+                if (validateUnknownReplicasAggressively)
                 {
-                    yield return transportAddressUri;
+                    if (status == TransportAddressHealthState.HealthStatus.Connected)
+                    {
+                        yield return transportAddressUri;
+                    }
+                    else if (status == TransportAddressHealthState.HealthStatus.Unknown)
+                    {
+                        unknownReplicas ??= new ();
+                        unknownReplicas.Add(transportAddressUri);
+                    }
                 }
-                else if (status == TransportAddressHealthState.HealthStatus.UnhealthyPending)
+                else
+                {
+                    if (status == TransportAddressHealthState.HealthStatus.Connected
+                        || status == TransportAddressHealthState.HealthStatus.Unknown)
+                    {
+                        yield return transportAddressUri;
+                    }
+                }
+
+                if (status == TransportAddressHealthState.HealthStatus.UnhealthyPending)
                 {
                     pendingReplicas ??= new ();
                     pendingReplicas.Add(transportAddressUri);
@@ -267,6 +290,14 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
+            if (unknownReplicas != null)
+            {
+                foreach (TransportAddressUri transportAddressUri in unknownReplicas)
+                {
+                    yield return transportAddressUri;
+                }
+            }
+
             if (pendingReplicas != null)
             {
                 foreach (TransportAddressUri transportAddressUri in pendingReplicas)
@@ -275,7 +306,7 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            if(failedReplicas != null)
+            if (failedReplicas != null)
             {
                 foreach (TransportAddressUri transportAddressUri in failedReplicas)
                 {

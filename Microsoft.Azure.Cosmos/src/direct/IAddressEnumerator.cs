@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Documents
     {
         IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris,
                                                                Lazy<HashSet<TransportAddressUri>> failedEndpoints,
-                                                               bool replicaAddressValidationEnabled);
+                                                               bool replicaAddressValidationEnabled,
+                                                               bool validateUnknownReplicasAggressively);
     }
 }

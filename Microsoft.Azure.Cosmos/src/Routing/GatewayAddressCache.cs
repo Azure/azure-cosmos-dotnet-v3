@@ -44,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly string protocolFilter;
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly bool enableTcpConnectionEndpointRediscovery;
+        private readonly bool isFirstPreferredReadRegion;
 
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
@@ -61,7 +62,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             CosmosHttpClient httpClient,
             IOpenConnectionsHandler openConnectionsHandler,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
-            bool enableTcpConnectionEndpointRediscovery = false)
+            bool enableTcpConnectionEndpointRediscovery = false,
+            bool isFirstPreferredReadRegion = false)
         {
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
@@ -88,6 +90,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariableAsBool(
                 name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
                 defaultValue: false);
+
+            this.isFirstPreferredReadRegion = isFirstPreferredReadRegion;
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
@@ -549,7 +553,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         }
                     }
 
-                    this.ValidateUnhealthyPendingReplicas(transportAddressUris);
+                    this.ValidateReplicaAddresses(transportAddressUris);
 
                     return mergedAddresses;
                 }
@@ -840,12 +844,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Validates the unhealthy pending replicas by attempting to open the Rntbd connection. This operation
-        /// will eventually marks the unhealthy pending replicas to healthy, if the rntbd connection attempt made was
+        /// Validates the unknown or unhealthy-pending replicas by attempting to open the Rntbd connection. This operation
+        /// will eventually marks the unknown or unhealthy-pending replicas to healthy, if the rntbd connection attempt made was
         /// successful or unhealthy otherwise.
         /// </summary>
         /// <param name="addresses">A read-only list of <see cref="TransportAddressUri"/> needs to be validated.</param>
-        private void ValidateUnhealthyPendingReplicas(
+        private void ValidateReplicaAddresses(
             IReadOnlyList<TransportAddressUri> addresses)
         {
             if (addresses == null)
@@ -853,15 +857,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(addresses));
             }
 
-            IEnumerable<TransportAddressUri> addressesNeedToValidation = addresses
-                .Where(address => address
+            IEnumerable<TransportAddressUri> addressesNeedToValidateStatus = addresses
+                .Where(address => this.isFirstPreferredReadRegion ?
+                    address
                     .GetCurrentHealthState()
-                    .GetHealthStatus() == TransportAddressHealthState.HealthStatus.UnhealthyPending);
+                    .GetHealthStatus() is
+                    TransportAddressHealthState.HealthStatus.Unknown or
+                    TransportAddressHealthState.HealthStatus.UnhealthyPending :
+                    address
+                    .GetCurrentHealthState()
+                    .GetHealthStatus() is
+                    TransportAddressHealthState.HealthStatus.UnhealthyPending);
 
-            if (addressesNeedToValidation.Any())
+            if (addressesNeedToValidateStatus.Any())
             {
                 Task openConnectionsInBackgroundTask = Task.Run(async () => await this.openConnectionsHandler.TryOpenRntbdChannelsAsync(
-                    addresses: addressesNeedToValidation.ToList()));
+                    addresses: addressesNeedToValidateStatus.ToList()));
             }
         }
 
