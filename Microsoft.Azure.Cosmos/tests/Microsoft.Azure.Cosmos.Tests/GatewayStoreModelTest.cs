@@ -161,6 +161,67 @@ namespace Microsoft.Azure.Cosmos
 
         }
 
+        /// <summary>
+        /// Verifies that if the DCE has Properties set, the HttpRequestMessage has them too. Used on ThinClient.
+        /// </summary>
+        [TestMethod]
+        public async Task PassesPropertiesFromDocumentServiceRequest()
+        {
+            IDictionary<string, object> properties = new Dictionary<string, object>()
+            {
+                {"property1", Guid.NewGuid() },
+                {"property2", Guid.NewGuid().ToString() }
+            };
+
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
+            {
+                Assert.AreEqual(properties.Count, request.Properties.Count);
+                foreach (KeyValuePair<string, object> item in properties)
+                {
+                    Assert.AreEqual(item.Value, request.Properties[item.Key]);
+                }
+
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) );
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            ISessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+
+            using (new ActivityScope(Guid.NewGuid()))
+            {
+                using (DocumentServiceRequest request =
+                DocumentServiceRequest.Create(
+                    Documents.OperationType.Query,
+                    Documents.ResourceType.Document,
+                    new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
+                    new MemoryStream(Encoding.UTF8.GetBytes("content1")),
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    null))
+                {
+                    // Add properties to the DCE
+                    request.Properties = new Dictionary<string, object>();
+                    foreach (KeyValuePair<string, object> property in properties)
+                    {
+                        request.Properties.Add(property.Key, property.Value);
+                    }
+
+                    await storeModel.ProcessMessageAsync(request);
+                }
+            }
+        }
+
         [TestMethod]
         public async Task TestApplySessionForMasterOperation()
         {
