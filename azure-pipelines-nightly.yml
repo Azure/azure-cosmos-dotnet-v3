@@ -16,6 +16,7 @@ variables:
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
   BuildConfiguration: Release
   Packaging.EnableSBOMSigning: true
+  currentDate: $[ format('{0:MMddyyyy}', pipeline.startTime) ]
 
 stages:
 - stage:
@@ -28,5 +29,4 @@ stages:
         VmImage: $(VmImage)
         ReleasePackage: true
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
-        BlobVersion: 'nightly'
-        DeletePreviousContent: true
+        BlobVersion: 'nightly/$(currentDate)'

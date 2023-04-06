@@ -16,9 +16,6 @@ parameters:
   - name: BlobVersion
     type: string
     default: ''
-  - name: DeletePreviousContent
-    type: boolean
-    default: false
   - name: ReleasePackage
     type: boolean
     default: false
@@ -71,7 +68,6 @@ jobs:
           storage: azuresdkpartnerdrops
           ContainerName: 'drops'
           BlobPrefix: 'cosmosdb/csharp/${{ parameters.BlobVersion }}'
-          CleanTargetBeforeCopy: true
 
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
