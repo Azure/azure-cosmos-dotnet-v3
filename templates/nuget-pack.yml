@@ -71,7 +71,7 @@ jobs:
           storage: azuresdkpartnerdrops
           ContainerName: 'drops'
           BlobPrefix: 'cosmosdb/csharp/${{ parameters.BlobVersion }}'
-          CleanTargetBeforeCopy: DeletePreviousContent
+          CleanTargetBeforeCopy: true
 
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
