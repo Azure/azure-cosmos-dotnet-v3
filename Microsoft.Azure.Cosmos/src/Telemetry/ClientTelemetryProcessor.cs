@@ -40,29 +40,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharget)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
             IReadOnlyList<RequestInfo> requestInfoSnapshot,
-            CancellationTokenSource cancellationToken)
+            CancellationTokenSource processorCancelToken)
         {
-            CancellationTokenSource serviceCancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryServiceTimeOut);
             try
             {
-                cancellationToken.Token.ThrowIfCancellationRequested();
-                
+                using CancellationTokenSource cancellationToken = CancellationTokenSource.CreateLinkedTokenSource(processorCancelToken.Token);
+
                 await ClientTelemetryPayloadWriter.SerializedPayloadChunksAsync(
                     properties: clientTelemetryInfo,
                     operationInfoSnapshot: operationInfoSnapshot,
                     cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                     sampledRequestInfo: requestInfoSnapshot,
-                    cancellationToken: cancellationToken.Token,
-                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, serviceCancellationToken.Token));
+                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken.Token));
             }
             catch (Exception ex)
             {
                 DefaultTrace.TraceError($"Exception while serializing telemetry payload: {ex}");
                 throw;
-            }
-            finally
-            {
-                serviceCancellationToken.Dispose();
             }
            
         }

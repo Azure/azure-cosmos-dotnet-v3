@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
             IReadOnlyList<RequestInfo> sampledRequestInfo,
-            CancellationToken cancellationToken,
             Func<string, Task> callback)
         {
             if (properties == null)
@@ -40,13 +39,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in operationInfoSnapshot)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        DefaultTrace.TraceError($"Client Telemetry Processor took more than {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut} to process the data. Skipped while processing operation data.");
-                        // if it took more than allowed time, then go ahead with the data whatever is processed
-                        continue;
-                    }
-                    
                     long lengthNow = stringBuilder.Length;
                     
                     OperationInfo payloadForLatency = entry.Key;
@@ -85,13 +77,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 
                 foreach (KeyValuePair<CacheRefreshInfo, LongConcurrentHistogram> entry in cacheRefreshInfoSnapshot)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        DefaultTrace.TraceError($"Client Telemetry Processor took more than {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut} to process the data. Skipped while processing cache refresh data.");
-                        // if it took more than allowed time, then go ahead with the data whatever is processed
-                        continue;
-                    }
-                    
                     long lengthNow = stringBuilder.Length;
                         
                     CacheRefreshInfo payloadForLatency = entry.Key;
@@ -123,13 +108,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 
                 foreach (RequestInfo entry in sampledRequestInfo)
                 {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        DefaultTrace.TraceError($"Client Telemetry Processor took more than {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut} to process the data. Skipped while processing RequestInfo data.");
-                        // if it took more than allowed time, then go ahead with the data whatever is processed
-                        continue;
-                    }
-                    
                     long lengthNow = stringBuilder.Length;
                   
                     string latencyMetrics = JsonConvert.SerializeObject(entry);

@@ -254,18 +254,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
         [TestMethod]
         [DataRow(1)] // 1 tick smallest value for a timespan to get timeout exception
-        [DataRow(10000)] // 1/2 Millisecond
-        public async Task ClientTelmetryProcessor_should_timeOut_or_skip_records(int timeInTicks)
+        public async Task ClientTelmetryProcessor_should_timeout(int timeOutInTicks)
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
-            ClientTelemetryOptions.ClientTelemetryProcessorTimeOut = TimeSpan.FromTicks(timeInTicks);
+            ClientTelemetryOptions.ClientTelemetryProcessorTimeOut = TimeSpan.FromTicks(timeOutInTicks);
             
             string data = File.ReadAllText("Telemetry/ClientTelemetryPayloadWithoutMetrics.json", Encoding.UTF8);
             ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
-            
-            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
-                = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
-
+ 
             int actualOperationInfoSize = 0;
             int actualCacheRefreshInfoSize = 0;
             
@@ -289,7 +285,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             ClientTelemetryProcessor processor = new ClientTelemetryProcessor(
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object))),
                 Mock.Of<AuthorizationTokenProvider>());
-     
+            
+            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
+                = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
+
             for (int i = 0; i < 20; i++)
             {
                 OperationInfo opeInfo = new OperationInfo(Regions.WestUS,
@@ -340,34 +339,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             try
             {
-                await processor.ProcessAndSendAsync(
-                                    clientTelemetryProperties,
-                                    operationInfoSnapshot,
-                                    cacheRefreshInfoSnapshot,
-                                    default,
-                                    new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut));
-                if (timeInTicks > 1)
-                {
-                    Assert.IsTrue(actualOperationInfoSize > 0, "actualOperationInfoSize is " + actualOperationInfoSize);
-                    Assert.AreEqual(0, actualCacheRefreshInfoSize, "Cache Refresh Info is not correct");
-                }
-                else
-                {
-                    Assert.Fail("should have thrown exception");
-                }
-            }
-            catch (OperationCanceledException ex)
-            {
-                if (timeInTicks == 1)
-                {
-                    Assert.IsTrue(ex is OperationCanceledException);
-                }
-                else
-                {
-                    Assert.Fail("should not throw exception");
-                }
-            }
+                Task processorTask = Task.Run(() => processor.ProcessAndSendAsync(
+                                                     clientTelemetryProperties,
+                                                     operationInfoSnapshot,
+                                                     cacheRefreshInfoSnapshot,
+                                                     default,
+                                                     new CancellationTokenSource(TimeSpan.FromSeconds(1))));
 
+                await ClientTelemetry.RunProcessorTaskAsync(DateTime.Now.ToString(), processorTask, TimeSpan.FromTicks(1));
+
+                Assert.Fail("should have thrown exception");
+            }
+            catch (TimeoutException ex)
+            {
+                Assert.IsTrue(ex is TimeoutException);
+            }
         }
 
         [TestMethod]

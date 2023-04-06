@@ -173,16 +173,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     try
                     {
                         CancellationTokenSource cancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
+                        Task processorTask = Task.Run(() => this.processor
+                                                                    .ProcessAndSendAsync(
+                                                                            clientTelemetryInfo: this.clientTelemetryInfo,
+                                                                            operationInfoSnapshot: operationInfoSnapshot,
+                                                                            cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
+                                                                            requestInfoSnapshot: requestInfoSnapshot,
+                                                                            processorCancelToken: cancellationToken), cancellationToken.Token);
 
                         // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service
                         // Not disposing this task. If we dispose a client then, telemetry job(telemetryTask) should stop but processor task(processorTask) should make best effort to finish the job in background.
-                        _ = Task.Run(() => ClientTelemetry
-                                           .RunProcessorTaskAsync(this.processor.ProcessAndSendAsync(
-                                                                      clientTelemetryInfo: this.clientTelemetryInfo,
-                                                                      operationInfoSnapshot: operationInfoSnapshot,
-                                                                      cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
-                                                                      requestInfoSnapshot: requestInfoSnapshot,
-                                                                      cancellationToken: cancellationToken)), cancellationToken.Token);
+                        _ = ClientTelemetry.RunProcessorTaskAsync(this.clientTelemetryInfo.DateTimeUtc, processorTask, ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
+
                     }
                     catch (Exception ex)
                     {
@@ -198,15 +200,30 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             DefaultTrace.TraceInformation("Telemetry Job Stopped.");
         }
 
-        internal static async Task RunProcessorTaskAsync(Task processingTask)
+        /// <summary>
+        /// This Task makes sure, processing task is timing out after 5 minute of timeout
+        /// </summary>
+        /// <param name="telemetryDate"></param>
+        /// <param name="processingTask"></param>
+        /// <param name="timeout"></param>
+        internal static async Task RunProcessorTaskAsync(string telemetryDate, Task processingTask, TimeSpan timeout)
         {
-            try
+            using (CancellationTokenSource tokenForDelayTask = new CancellationTokenSource())
             {
-               await processingTask;
-            }
-            finally
-            {
-                processingTask.Dispose(); // release all resources
+                Task delayTask = Task.Delay(timeout, tokenForDelayTask.Token);
+                
+                Task resultTask = await Task.WhenAny(processingTask, delayTask);
+                if (resultTask == delayTask)
+                {
+                    DefaultTrace.TraceVerbose($"Processor task with date as {telemetryDate} is cancelled as it did not finish in {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut} milliseconds.");
+                    // Operation cancelled
+                    throw new TimeoutException($"Processor task with date as {telemetryDate} is cancelled as it did not finish in {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut} milliseconds.");
+                }
+                else
+                {
+                    // Cancel the timer task so that it does not fire
+                    tokenForDelayTask.Cancel();
+                }
             }
         }
 
