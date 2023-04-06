@@ -79,7 +79,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const double Percentile99 = 99.0;
         internal const double Percentile999 = 99.9;
         internal const string DateFormat = "yyyy-MM-ddTHH:mm:ssZ";
-
         internal const string EnvPropsClientTelemetrySchedulingInSeconds = "COSMOS.CLIENT_TELEMETRY_SCHEDULING_IN_SECONDS";
         internal const string EnvPropsClientTelemetryEnabled = "COSMOS.CLIENT_TELEMETRY_ENABLED";
         internal const string EnvPropsClientTelemetryVmMetadataUrl = "COSMOS.VM_METADATA_URL";

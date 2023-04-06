@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly NetworkDataRecorder networkDataRecorder;
         
         private readonly CancellationTokenSource cancellationTokenSource;
-        
         private readonly GlobalEndpointManager globalEndpointManager;
 
         private Task telemetryTask;
