@@ -24,64 +24,56 @@ namespace Microsoft.Azure.Cosmos.Linq
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    }
-                ),
+                    }),
                 [nameof(CosmosLinqExtensions.IsBool)] = new SqlBuiltinFunctionVisitor(
                     "IS_BOOL",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    }
-                ),
+                    }),
                 [nameof(CosmosLinqExtensions.IsDefined)] = new SqlBuiltinFunctionVisitor(
                     "IS_DEFINED",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    }
-                ),
+                    }),
                 [nameof(CosmosLinqExtensions.IsNull)] = new SqlBuiltinFunctionVisitor(
                     "IS_NULL",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    }
-                ),
+                    }),
                 [nameof(CosmosLinqExtensions.IsNumber)] = new SqlBuiltinFunctionVisitor(
                     "IS_NUMBER",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    }
-                ),
+                    }),
                 [nameof(CosmosLinqExtensions.IsObject)] = new SqlBuiltinFunctionVisitor(
                     "IS_OBJECT",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    }
-                ),
+                    }),
                 [nameof(CosmosLinqExtensions.IsPrimitive)] = new SqlBuiltinFunctionVisitor(
                     "IS_PRIMITIVE",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    }
-                ),
+                    }),
                 [nameof(CosmosLinqExtensions.IsString)] = new SqlBuiltinFunctionVisitor(
                     "IS_STRING",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    }
-                ),
+                    }),
             };
         }
 
