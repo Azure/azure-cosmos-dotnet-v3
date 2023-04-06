@@ -18,78 +18,70 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             TypeCheckFunctionsDefinitions = new Dictionary<string, BuiltinFunctionVisitor>
             {
-                {
-                    nameof(CosmosLinqExtensions.IsArray),
-                    new SqlBuiltinFunctionVisitor("IS_ARRAY",
+                [nameof(CosmosLinqExtensions.IsArray)] = new SqlBuiltinFunctionVisitor(
+                    "IS_ARRAY",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    })
-                },
-                {
-                    nameof(CosmosLinqExtensions.IsBool),
-                    new SqlBuiltinFunctionVisitor("IS_BOOL",
+                    }
+                ),
+                [nameof(CosmosLinqExtensions.IsBool)] = new SqlBuiltinFunctionVisitor(
+                    "IS_BOOL",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    })
-                },
-                {
-                    nameof(CosmosLinqExtensions.IsDefined),
-                    new SqlBuiltinFunctionVisitor("IS_DEFINED",
+                    }
+                ),
+                [nameof(CosmosLinqExtensions.IsDefined)] = new SqlBuiltinFunctionVisitor(
+                    "IS_DEFINED",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    })
-                },
-                {
-                    nameof(CosmosLinqExtensions.IsNull),
-                    new SqlBuiltinFunctionVisitor("IS_NULL",
+                    }
+                ),
+                [nameof(CosmosLinqExtensions.IsNull)] = new SqlBuiltinFunctionVisitor(
+                    "IS_NULL",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    })
-                },
-                {
-                    nameof(CosmosLinqExtensions.IsNumber),
-                    new SqlBuiltinFunctionVisitor("IS_NUMBER",
+                    }
+                ),
+                [nameof(CosmosLinqExtensions.IsNumber)] = new SqlBuiltinFunctionVisitor(
+                    "IS_NUMBER",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    })
-                },
-                {
-                    nameof(CosmosLinqExtensions.IsObject),
-                    new SqlBuiltinFunctionVisitor("IS_OBJECT",
+                    }
+                ),
+                [nameof(CosmosLinqExtensions.IsObject)] = new SqlBuiltinFunctionVisitor(
+                    "IS_OBJECT",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    })
-                },
-                {
-                    nameof(CosmosLinqExtensions.IsPrimitive),
-                    new SqlBuiltinFunctionVisitor("IS_PRIMITIVE",
+                    }
+                ),
+                [nameof(CosmosLinqExtensions.IsPrimitive)] = new SqlBuiltinFunctionVisitor(
+                    "IS_PRIMITIVE",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    })
-                },
-                {
-                    nameof(CosmosLinqExtensions.IsString),
-                    new SqlBuiltinFunctionVisitor("IS_STRING",
+                    }
+                ),
+                [nameof(CosmosLinqExtensions.IsString)] = new SqlBuiltinFunctionVisitor(
+                    "IS_STRING",
                     true,
                     new List<Type[]>()
                     {
                         new Type[]{typeof(object)},
-                    })
-                }
+                    }
+                ),
             };
         }
 
