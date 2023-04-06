@@ -61,7 +61,7 @@ jobs:
         BuildDropPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
 
     - ${{ if ne(parameters.BlobVersion, '') }}:
-      - task: AzureFileCopy@5
+      - task: AzureFileCopy@2
         displayName: 'Copy Artifacts to Azure SDK Release blob storage'
         condition: succeeded()
         inputs:
