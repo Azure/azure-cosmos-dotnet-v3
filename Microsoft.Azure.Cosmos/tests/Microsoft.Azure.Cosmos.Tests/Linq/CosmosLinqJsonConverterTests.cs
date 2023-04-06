@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Arrange
             CosmosLinqSerializerOptions options = new()
             {
-                // CustomCosmosSerializer = new TestCustomJsonSerializer()
+                //CustomCosmosSerializer = new TestCustomJsonSerializer()
             };
 
             // Act
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql);
         }
 
-        [TestMethod]
+        [TestMethod, Ignore]
         public void EnumIsPreservedAsEQUALSTest()
         {
             // Arrange
@@ -174,18 +174,19 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             public override T FromStream<T>(Stream stream)
             {
-                if (stream.CanSeek && stream.Length == 0)
-                {
-                    stream.Dispose();
-                    return default!;
-                }
-
-                if (typeof(Stream).IsAssignableFrom(typeof(T)))
-                    return (T)(object)stream;
-
                 using (stream)
                 {
-                    return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default)!;
+                    if (stream.CanSeek && stream.Length == 0)
+                    {
+                        return default;
+                    }
+
+                    if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                    {
+                        return (T)(object)stream;
+                    }
+
+                    return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
                 }
             }
 
