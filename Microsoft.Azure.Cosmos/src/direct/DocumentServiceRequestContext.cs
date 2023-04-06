@@ -97,6 +97,11 @@ namespace Microsoft.Azure.Documents
         public string RegionName { get; set; }
 
         /// <summary>
+        /// The first preferred read region.
+        /// </summary>
+        public string FirstPreferredReadRegion { get; set; }
+
+        /// <summary>
         /// Indicates if the request is orginating from  the same Azure region as the Cosmos DB account
         /// </summary>
         public bool LocalRegionRequest { get; set; }

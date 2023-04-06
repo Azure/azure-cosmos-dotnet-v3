@@ -268,16 +268,6 @@ namespace Microsoft.Azure.Documents
                         unknownReplicas ??= new ();
                         unknownReplicas.Add(transportAddressUri);
                     }
-                    else if (status == TransportAddressHealthState.HealthStatus.UnhealthyPending)
-                    {
-                        pendingReplicas ??= new ();
-                        pendingReplicas.Add(transportAddressUri);
-                    }
-                    else
-                    {
-                        failedReplicas ??= new ();
-                        failedReplicas.Add(transportAddressUri);
-                    }
                 }
                 else
                 {
@@ -286,16 +276,17 @@ namespace Microsoft.Azure.Documents
                     {
                         yield return transportAddressUri;
                     }
-                    else if (status == TransportAddressHealthState.HealthStatus.UnhealthyPending)
-                    {
-                        pendingReplicas ??= new ();
-                        pendingReplicas.Add(transportAddressUri);
-                    }
-                    else
-                    {
-                        failedReplicas ??= new ();
-                        failedReplicas.Add(transportAddressUri);
-                    }
+                }
+
+                if (status == TransportAddressHealthState.HealthStatus.UnhealthyPending)
+                {
+                    pendingReplicas ??= new ();
+                    pendingReplicas.Add(transportAddressUri);
+                }
+                else
+                {
+                    failedReplicas ??= new ();
+                    failedReplicas.Add(transportAddressUri);
                 }
             }
 

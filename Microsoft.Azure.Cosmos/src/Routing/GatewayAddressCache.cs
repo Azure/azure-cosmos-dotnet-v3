@@ -48,7 +48,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
-        private readonly bool validateUnknownReplicasAggressively;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
@@ -91,9 +90,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariableAsBool(
                 name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
                 defaultValue: false);
-            this.validateUnknownReplicasAggressively = Helpers.GetEnvironmentVariableAsBool(
-                name: Constants.EnvironmentVariables.ValidateUnknownReplicasAggressively,
-                defaultValue: false);
+
             this.isFirstPreferredReadRegion = isFirstPreferredReadRegion;
         }
 
@@ -860,14 +857,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(addresses));
             }
 
-            bool shouldValidateUnknownReplicas = (this.validateUnknownReplicasAggressively) ||
-                (this.isFirstPreferredReadRegion || addresses
-                                .Count(address => address
-                                .GetCurrentHealthState()
-                                .GetHealthStatus() is TransportAddressHealthState.HealthStatus.Connected) > 1);
-
             IEnumerable<TransportAddressUri> addressesNeedToValidateStatus = addresses
-                .Where(address => shouldValidateUnknownReplicas ?
+                .Where(address => this.isFirstPreferredReadRegion ?
                     address
                     .GetCurrentHealthState()
                     .GetHealthStatus() is

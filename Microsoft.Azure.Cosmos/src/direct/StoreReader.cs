@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Documents
         private readonly ISessionContainer sessionContainer;
         private readonly bool canUseLocalLSNBasedHeaders;
         private readonly bool isReplicaAddressValidationEnabled;
-        private readonly bool validateUnknownReplicasAggressively;
 
         public StoreReader(
             TransportClient transportClient,
@@ -35,9 +34,6 @@ namespace Microsoft.Azure.Documents
             this.canUseLocalLSNBasedHeaders = VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.Versions.v2018_06_18);
             this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariableAsBool(
                 name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
-                defaultValue: false);
-            this.validateUnknownReplicasAggressively = Helpers.GetEnvironmentVariableAsBool(
-                name: Constants.EnvironmentVariables.ValidateUnknownReplicasAggressively,
                 defaultValue: false);
         }
 
@@ -218,6 +214,7 @@ namespace Microsoft.Azure.Documents
 
             bool hasGoneException = false;
             bool hasCancellationException = false;
+            bool aggressiveValidationEnabled = entity.RequestContext.RegionName.Equals(entity.RequestContext.FirstPreferredReadRegion);
             Exception cancellationException = null;
             Exception exceptionToThrow = null;
             SubStatusCodes subStatusCodeForException = SubStatusCodes.Unknown;
@@ -225,7 +222,7 @@ namespace Microsoft.Azure.Documents
                                                             .GetTransportAddresses(transportAddressUris: resolveApiResults,
                                                                                    failedEndpoints: entity.RequestContext.FailedEndpoints,
                                                                                    replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled,
-                                                                                   validateUnknownReplicasAggressively: this.validateUnknownReplicasAggressively)
+                                                                                   validateUnknownReplicasAggressively: aggressiveValidationEnabled)
                                                             .GetEnumerator();
 
             // The replica health status of the transport address uri will change eventually with the motonically increasing time.

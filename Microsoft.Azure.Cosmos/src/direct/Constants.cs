@@ -2117,7 +2117,6 @@ namespace Microsoft.Azure.Documents
         public static class EnvironmentVariables
         {
             public const string ReplicaConnectivityValidationEnabled = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
-            public const string ValidateUnknownReplicasAggressively = "AZURE_COSMOS_VALIDATE_UNKNOWN_REPLICA_AGGRESSIVELY";
         }
     }
 }
