@@ -136,13 +136,7 @@ namespace Microsoft.Azure.Cosmos
 
             //Sets the timeout for unused connections to a random time between 5 minutes and 5 minutes and 30 seconds.
             //This is to avoid the issue where a large number of connections are closed at the same time.
-            Type threadSafeRandomType = Type.GetType("System.Random+ThreadSafeRandom, System.Private.CoreLib");
-
-            object random = Activator.CreateInstance(threadSafeRandomType);
-            
-            MethodInfo nextDoubleInfo = threadSafeRandomType.GetMethod("NextDouble");
-
-            TimeSpan connectionTimeSpan = TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(30 * (double)nextDoubleInfo.Invoke(random, null));
+            TimeSpan connectionTimeSpan = TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(30 * CustomTypeExtensions.GetRandomNumber().NextDouble());
             pooledConnectionLifetimeInfo.SetValue(socketHttpHandler, connectionTimeSpan);
 
             // Proxy is only set by users and can cause not supported exception on some platforms
@@ -156,27 +150,27 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 PropertyInfo maxConnectionsPerServerInfo = socketHandlerType.GetProperty("MaxConnectionsPerServer");
-                maxConnectionsPerServerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);
-
-                if (serverCertificateCustomValidationCallback != null)
-                {                     
-                    //Get SslOptions Property
-                    PropertyInfo sslOptionsInfo = socketHandlerType.GetProperty("SslOptions");
-                    object sslOptions = sslOptionsInfo.GetValue(socketHttpHandler);
-
-                    //Set SslOptions Property with custom certificate validation
-                    PropertyInfo remoteCertificateValidationCallbackInfo = sslOptions.GetType().GetProperty("RemoteCertificateValidationCallback");
-                    remoteCertificateValidationCallbackInfo.SetValue(
-                        sslOptions,
-                        new RemoteCertificateValidationCallback((object _, X509Certificate certificate, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors) => serverCertificateCustomValidationCallback(
-                                certificate is { } ? new X509Certificate2(certificate) : null,
-                                x509Chain,
-                                sslPolicyErrors)));                   
-                }
+                maxConnectionsPerServerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);              
             }
             // MaxConnectionsPerServer is not supported on some platforms.
             catch (PlatformNotSupportedException)
             {
+            }
+
+            if (serverCertificateCustomValidationCallback != null)
+            {
+                //Get SslOptions Property
+                PropertyInfo sslOptionsInfo = socketHandlerType.GetProperty("SslOptions");
+                object sslOptions = sslOptionsInfo.GetValue(socketHttpHandler);
+
+                //Set SslOptions Property with custom certificate validation
+                PropertyInfo remoteCertificateValidationCallbackInfo = sslOptions.GetType().GetProperty("RemoteCertificateValidationCallback");
+                remoteCertificateValidationCallbackInfo.SetValue(
+                    sslOptions,
+                    new RemoteCertificateValidationCallback((object _, X509Certificate certificate, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors) => serverCertificateCustomValidationCallback(
+                            certificate is { } ? new X509Certificate2(certificate) : null,
+                            x509Chain,
+                            sslPolicyErrors)));
             }
 
             return (HttpMessageHandler)socketHttpHandler;
@@ -198,15 +192,16 @@ namespace Microsoft.Azure.Cosmos
             // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
             try
             {
-                httpClientHandler.MaxConnectionsPerServer = gatewayModeMaxConnectionLimit;
-                if (serverCertificateCustomValidationCallback != null)
-                {
-                    httpClientHandler.ServerCertificateCustomValidationCallback = (_, certificate2, x509Chain, sslPolicyErrors) => serverCertificateCustomValidationCallback(certificate2, x509Chain, sslPolicyErrors);
-                }
+                httpClientHandler.MaxConnectionsPerServer = gatewayModeMaxConnectionLimit;               
             }
             // MaxConnectionsPerServer is not supported on some platforms.
             catch (PlatformNotSupportedException)
             {
+            }
+
+            if (serverCertificateCustomValidationCallback != null)
+            {
+                httpClientHandler.ServerCertificateCustomValidationCallback = (_, certificate2, x509Chain, sslPolicyErrors) => serverCertificateCustomValidationCallback(certificate2, x509Chain, sslPolicyErrors);
             }
 
             return httpClientHandler;
