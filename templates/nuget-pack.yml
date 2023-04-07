@@ -43,7 +43,7 @@ jobs:
       command: custom
       projects: 'Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj'
       custom: pack
-      arguments: '-v detailed -c ${{ parameters.BuildConfiguration }} --no-build --no-restore -o "${{ parameters.OutputPath }}"'
+      arguments: '-v detailed -c ${{ parameters.BuildConfiguration }} --no-build ${{ parameters.Arguments }} --no-restore -o "${{ parameters.OutputPath }}"'
 
   - ${{ if eq(parameters.ReleasePackage, true) }}:
     - task: DotNetCoreCLI@2
