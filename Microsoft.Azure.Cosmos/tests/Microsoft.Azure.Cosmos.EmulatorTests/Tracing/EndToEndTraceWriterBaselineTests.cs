@@ -92,11 +92,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
             EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
         }
-        
+
         [TestCleanup]
         public async Task CleanUp()
         {
             await EndToEndTraceWriterBaselineTests.ClassCleanupAsync();
+
+            EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
         }
         
         public static async Task ClassCleanupAsync()
@@ -132,8 +134,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         [TestMethod]
         public async Task ReadFeedAsync()
         {
-            EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
-
             List<Input> inputs = new List<Input>();
 
             int startLineNumber;
@@ -1404,6 +1404,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 itemList.Add(("id" + i, new PartitionKey(i.ToString())));
             }
+
+            EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
 
             //----------------------------------------------------------------
             //  Read Many Stream
