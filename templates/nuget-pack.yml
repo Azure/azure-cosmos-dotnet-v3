@@ -52,7 +52,7 @@ jobs:
         command: custom
         projects: 'Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj'
         custom: pack
-        arguments: '-v detailed -c ${{ parameters.BuildConfiguration }} --no-build --include-symbols /p:SymbolPackageFormat=snupkg --no-restore -o "${{ parameters.OutputPath }}"'
+        arguments: '-v detailed -c ${{ parameters.BuildConfiguration }} --no-build --include-symbols /p:SymbolPackageFormat=snupkg ${{ parameters.Arguments }} --no-restore -o "${{ parameters.OutputPath }}"'
     - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
       inputs:
         BuildDropPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
@@ -73,6 +73,3 @@ jobs:
     displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
     inputs:
       artifactName: Microsoft.Azure.Cosmos
-
-  - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
-    displayName: 'Component Detection'
