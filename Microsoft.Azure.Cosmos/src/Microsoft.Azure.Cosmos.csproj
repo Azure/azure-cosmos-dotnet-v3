@@ -10,7 +10,8 @@
 		<ClientVersion Condition=" '$(IsPreview)' != 'true' ">$(ClientOfficialVersion)</ClientVersion>
 		<ClientVersion Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewVersion)</ClientVersion>
 		<VersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(ClientPreviewSuffixVersion)</VersionSuffix>
-        <VersionSuffix Condition=" '$(IsNightly)' == 'true' ">$(VersionSuffix)nightly-$(CurrentDate)</VersionSuffix>
+		<VersionSuffix Condition=" '$(IsNightly)' == 'true' AND '$(IsPreview)' != 'true' ">nightly-$(CurrentDate)</VersionSuffix>
+		<VersionSuffix Condition=" '$(IsNightly)' == 'true' AND '$(IsPreview)' == 'true' ">$(VersionSuffix)-nightly-$(CurrentDate)</VersionSuffix>
 		<Version Condition=" '$(VersionSuffix)' == '' ">$(ClientVersion)</Version>
 		<Version Condition=" '$(VersionSuffix)' != '' ">$(ClientVersion)-$(VersionSuffix)</Version>
 		<FileVersion>$(ClientVersion)</FileVersion>

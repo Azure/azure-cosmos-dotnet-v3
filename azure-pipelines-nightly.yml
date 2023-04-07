@@ -27,7 +27,7 @@ stages:
         BuildConfiguration: Release
         Arguments: /p:IsNightly=true
         VmImage: $(VmImage)
-        ReleasePackage: false
+        ReleasePackage: true
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
         BlobVersion: 'nightly/$(currentDate)'
 - stage:
@@ -38,6 +38,6 @@ stages:
         BuildConfiguration: Release
         Arguments: /p:IsNightly=true /p:IsPreview=true
         VmImage: $(VmImage)
-        ReleasePackage: false
+        ReleasePackage: true
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
         BlobVersion: 'nightly/$(currentDate)/preview'
