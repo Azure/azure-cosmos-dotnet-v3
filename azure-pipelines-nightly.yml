@@ -20,13 +20,24 @@ variables:
 
 stages:
 - stage:
-  displayName: Publish 
+  displayName: Generate nightly GA 
   jobs:
     - template:  templates/nuget-pack.yml
       parameters:
         BuildConfiguration: Release
         Arguments: /p:IsNightly=true
         VmImage: $(VmImage)
-        ReleasePackage: true
+        ReleasePackage: false
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
         BlobVersion: 'nightly/$(currentDate)'
+- stage:
+  displayName: Generate nightly preview 
+  jobs:
+    - template:  templates/nuget-pack.yml
+      parameters:
+        BuildConfiguration: Release
+        Arguments: /p:IsNightly=true /p:IsPreview=true
+        VmImage: $(VmImage)
+        ReleasePackage: false
+        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
+        BlobVersion: 'nightly/$(currentDate)/preview'
