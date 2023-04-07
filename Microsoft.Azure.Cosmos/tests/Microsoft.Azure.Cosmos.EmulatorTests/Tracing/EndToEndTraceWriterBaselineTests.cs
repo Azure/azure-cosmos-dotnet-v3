@@ -97,8 +97,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         public async Task CleanUp()
         {
             await EndToEndTraceWriterBaselineTests.ClassCleanupAsync();
-
-            EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
         }
         
         public static async Task ClassCleanupAsync()
@@ -134,6 +132,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         [TestMethod]
         public async Task ReadFeedAsync()
         {
+            EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
+
             List<Input> inputs = new List<Input>();
 
             int startLineNumber;
