@@ -280,33 +280,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable</returns>
         public static LinqQuerySet<T> GenerateTestCosmosData<T>(Func<Random, T> func, int count, Container container, CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
-            List<T> data = new List<T>();
-            int seed = DateTime.Now.Millisecond;
-            Random random = new Random(seed);
-            Debug.WriteLine("Random seed: {0}", seed);
-            LinqTestInput.RandomSeed = seed;
-            for (int i = 0; i < count; ++i)
-            {
-                data.Add(func(random));
-            }
-
+            Random random = GenerateNewRandom();
+            List<T> data = GenerateData(random, func, count);
             foreach (T obj in data)
             {
                 ItemResponse<T> response = container.CreateItemAsync(obj, new Cosmos.PartitionKey("Test")).Result;
             }
 
-            // IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true);
-
-            // To cover both query against backend and queries on the original data using LINQ nicely, 
-            // the LINQ expression should be written once and they should be compiled and executed against the two sources.
-            // That is done by using Func that take a boolean Func. The parameter of the Func indicate whether the Cosmos DB query 
-            // or the data list should be used. When a test is executed, the compiled LINQ expression would pass different values
-            // to this getQuery method.
-            // IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
-
-            // return getQuery;
-
             return new LinqQuerySet<T>(container, data);
+        }
+
+        private static Random GenerateNewRandom()
+        {
+            int seed = DateTime.Now.Millisecond;
+            Random random = new Random(seed);
+            Debug.WriteLine("Random seed: {0}", seed);
+            LinqTestInput.RandomSeed = seed;
+
+            return random;
+        }
+
+        public static List<T> GenerateData<T>(Random random, Func<Random, T> documentGenerator, int count)
+        {
+            List<T> data = new List<T>();
+            for (int i = 0; i < count; ++i)
+            {
+                data.Add(documentGenerator(random));
+            }
+
+            return data;
         }
 
         internal class LinqQuerySet<T>
@@ -318,6 +320,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             public LinqQuerySet(Container container, IReadOnlyList<T> data)
             {
                 this.dataAsQueryable = data.AsQueryable();
+
+                // To cover both query against backend and queries on the original data using LINQ nicely, 
+                // the LINQ expression should be written once and they should be compiled and executed against the two sources.
+                // That is done by using Func that take a boolean Func. The parameter of the Func indicate whether the Cosmos DB query 
+                // or the data list should be used. When a test is executed, the compiled LINQ expression would pass different values
+                // to this getQuery method.
                 this.defaultQuery = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true);
                 this.queryWithIsDefinedPrefix = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true,
                     linqSerializerOptions: new CosmosLinqSerializerOptions { PrefixNullChecksWithIsDefined = true });
@@ -328,8 +336,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             public IQueryable<T> GetQueryWithIsDefinedPrefix(bool useQuery) => useQuery ? this.queryWithIsDefinedPrefix : this.dataAsQueryable;
         }
 
-        public static Func<bool, IQueryable<Family>> GenerateFamilyCosmosData(
+        public static LinqQuerySet<Family> GenerateFamilyCosmosData(
             Cosmos.Database cosmosDatabase, out Container container)
+        {
+            container = CreateFamilyCollection(cosmosDatabase);
+
+            const int Records = 100;
+            return LinqTestsCommon.GenerateTestCosmosData<Family>(CreateFamilyObject, Records, container);
+        }
+
+        private static Container CreateFamilyCollection(Cosmos.Database cosmosDatabase)
         {
             // The test collection should have range index on string properties
             // for the orderby tests
@@ -383,8 +399,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     }
                 }
             };
-            container = cosmosDatabase.CreateContainerAsync(newCol).Result;
-            const int Records = 100;
+            Container container = cosmosDatabase.CreateContainerAsync(newCol).Result;
+
+            return container;
+        }
+
+        private static Family CreateFamilyObject(Random random)
+        {
             const int MaxNameLength = 100;
             const int MaxThingStringLength = 50;
             const int MaxChild = 5;
@@ -394,85 +415,123 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             const int MaxTransaction = 20;
             const int MaxTransactionMinuteRange = 200;
             int MaxTransactionType = Enum.GetValues(typeof(TransactionType)).Length;
-            Family createDataObj(Random random)
+
+            Family obj = new Family
             {
-                Family obj = new Family
+                FamilyId = random.NextDouble() < 0.05 ? "some id" : Guid.NewGuid().ToString(),
+                IsRegistered = random.NextDouble() < 0.5,
+                NullableInt = random.NextDouble() < 0.5 ? (int?)random.Next() : null,
+                Int = random.NextDouble() < 0.5 ? 5 : random.Next(),
+                Id = Guid.NewGuid().ToString(),
+                Pk = "Test",
+                Parents = new Parent[random.Next(2) + 1]
+            };
+            for (int i = 0; i < obj.Parents.Length; ++i)
+            {
+                obj.Parents[i] = new Parent()
                 {
-                    FamilyId = random.NextDouble() < 0.05 ? "some id" : Guid.NewGuid().ToString(),
-                    IsRegistered = random.NextDouble() < 0.5,
-                    NullableInt = random.NextDouble() < 0.5 ? (int?)random.Next() : null,
-                    Int = random.NextDouble() < 0.5 ? 5 : random.Next(),
-                    Id = Guid.NewGuid().ToString(),
-                    Pk = "Test",
-                    Parents = new Parent[random.Next(2) + 1]
+                    FamilyName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
+                    GivenName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength))
                 };
-                for (int i = 0; i < obj.Parents.Length; ++i)
-                {
-                    obj.Parents[i] = new Parent()
-                    {
-                        FamilyName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
-                        GivenName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength))
-                    };
-                }
-
-                obj.Tags = new string[random.Next(MaxChild)];
-                for (int i = 0; i < obj.Tags.Length; ++i)
-                {
-                    obj.Tags[i] = (i + random.Next(30, 36)).ToString();
-                }
-
-                obj.Children = new Child[random.Next(MaxChild)];
-                for (int i = 0; i < obj.Children.Length; ++i)
-                {
-                    obj.Children[i] = new Child()
-                    {
-                        Gender = random.NextDouble() < 0.5 ? "male" : "female",
-                        FamilyName = obj.Parents[random.Next(obj.Parents.Length)].FamilyName,
-                        GivenName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
-                        Grade = random.Next(MaxGrade)
-                    };
-
-                    obj.Children[i].Pets = new List<Pet>();
-                    for (int j = 0; j < random.Next(MaxPets); ++j)
-                    {
-                        obj.Children[i].Pets.Add(new Pet()
-                        {
-                            GivenName = random.NextDouble() < 0.5 ?
-                                LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)) :
-                                "Fluffy"
-                        });
-                    }
-
-                    obj.Children[i].Things = new Dictionary<string, string>();
-                    for (int j = 0; j < random.Next(MaxThings) + 1; ++j)
-                    {
-                        obj.Children[i].Things.Add(
-                            j == 0 ? "A" : $"{j}-{random.Next().ToString()}",
-                            LinqTestsCommon.RandomString(random, random.Next(MaxThingStringLength)));
-                    }
-                }
-
-                obj.Records = new Logs
-                {
-                    LogId = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
-                    Transactions = new Transaction[random.Next(MaxTransaction)]
-                };
-                for (int i = 0; i < obj.Records.Transactions.Length; ++i)
-                {
-                    Transaction transaction = new Transaction()
-                    {
-                        Amount = random.Next(),
-                        Date = DateTime.Now.AddMinutes(random.Next(MaxTransactionMinuteRange)),
-                        Type = (TransactionType)random.Next(MaxTransactionType)
-                    };
-                    obj.Records.Transactions[i] = transaction;
-                }
-
-                return obj;
             }
 
-            Func<bool, IQueryable<Family>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, container).GetQuery;
-            return getQuery;
+            obj.Tags = new string[random.Next(MaxChild)];
+            for (int i = 0; i < obj.Tags.Length; ++i)
+            {
+                obj.Tags[i] = (i + random.Next(30, 36)).ToString();
+            }
+
+            obj.Children = new Child[random.Next(MaxChild)];
+            for (int i = 0; i < obj.Children.Length; ++i)
+            {
+                obj.Children[i] = new Child()
+                {
+                    Gender = random.NextDouble() < 0.5 ? "male" : "female",
+                    FamilyName = obj.Parents[random.Next(obj.Parents.Length)].FamilyName,
+                    GivenName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
+                    Grade = random.Next(MaxGrade)
+                };
+
+                obj.Children[i].Pets = new List<Pet>();
+                for (int j = 0; j < random.Next(MaxPets); ++j)
+                {
+                    obj.Children[i].Pets.Add(new Pet()
+                    {
+                        GivenName = random.NextDouble() < 0.5 ?
+                            LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)) :
+                            "Fluffy"
+                    });
+                }
+
+                obj.Children[i].Things = new Dictionary<string, string>();
+                for (int j = 0; j < random.Next(MaxThings) + 1; ++j)
+                {
+                    obj.Children[i].Things.Add(
+                        j == 0 ? "A" : $"{j}-{random.Next().ToString()}",
+                        LinqTestsCommon.RandomString(random, random.Next(MaxThingStringLength)));
+                }
+            }
+
+            obj.Records = new Logs
+            {
+                LogId = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
+                Transactions = new Transaction[random.Next(MaxTransaction)]
+            };
+            for (int i = 0; i < obj.Records.Transactions.Length; ++i)
+            {
+                Transaction transaction = new Transaction()
+                {
+                    Amount = random.Next(),
+                    Date = DateTime.Now.AddMinutes(random.Next(MaxTransactionMinuteRange)),
+                    Type = (TransactionType)random.Next(MaxTransactionType)
+                };
+                obj.Records.Transactions[i] = transaction;
+            }
+
+            return obj;
+        }
+
+        private static FamilyV2 CreateFamilyV2Object(Random random)
+        {
+            Family family = CreateFamilyObject(random);
+
+            FamilyV2 familyV2 = new FamilyV2()
+            {
+                Children = family.Children,
+                FamilyId = family.FamilyId,
+                Id = family.Id,
+                Int = family.Int,
+                IsRegistered = family.IsRegistered,
+                NullableInt = family.NullableInt,
+                NullObject = family.NullObject,
+                Parents = family.Parents,
+                Pk = family.Pk,
+                Records = family.Records,
+                Tags = family.Tags,
+                YearsLived = random.Next() % 20
+            };
+
+            if (random.Next() % 2 == 0)
+            {
+                familyV2.Address = new Address()
+                    {
+                        Number = random.Next(),
+                        AddressLine1 = random.Next() % 2 == 0 ? "Golden Street" : "Evergreen Avenue",
+                        State = random.Next() % 2 == 0 ? State.California : State.Washington
+                    };
+                familyV2.IsCurrentAddress = random.Next() % 2 == 0;
+                familyV2.YearsLived = random.Next() % 20;
+            }
+
+            return familyV2;
+        }
+
+        public static LinqQuerySet<FamilyV2> GenerateFamilyV2CosmosData(Cosmos.Database cosmosDatabase, out Container container)
+        {
+            container = CreateFamilyCollection(cosmosDatabase);
+
+            const int Records = 100;
+            return LinqTestsCommon.GenerateTestCosmosData(CreateFamilyV2Object, Records, container);
         }
 
         public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(

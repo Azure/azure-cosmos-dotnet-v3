@@ -5,6 +5,7 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 {
+    using Microsoft.Azure.Cosmos.Pagination;
     using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
@@ -78,6 +79,27 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     {
         Debit,
         Credit
+    }
+
+    public class FamilyV2 : Family
+    {
+        public Address Address;
+        public bool IsCurrentAddress;
+        public int YearsLived;
+    }
+
+    public class Address : LinqTestObject
+    {
+        public int Number;
+        public string AddressLine1;
+        public string AddressLine2;
+        public State State;
+    }
+
+    public enum State
+    {
+        California,
+        Washington
     }
 
     #endregion

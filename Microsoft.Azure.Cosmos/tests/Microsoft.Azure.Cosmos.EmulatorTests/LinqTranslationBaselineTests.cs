@@ -778,9 +778,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("ToUpper", b => getQuery(b).Select(doc => doc.StringField.ToUpper()))
             };
             this.ExecuteTestSuite(inputs);
-    }
+        }
 
-    [TestMethod]
+        [TestMethod]
         public void TestArrayFunctions()
         {
             const int Records = 100;
