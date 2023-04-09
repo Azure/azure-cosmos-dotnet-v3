@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         public void Cleanup()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
         }
 
         [TestMethod]
@@ -334,24 +335,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
                 cacheRefreshInfoSnapshot.TryAdd(crInfo, latency);
             }
-
-            try
+            
+            Task processorTask = Task.Run(async () =>
             {
-                Task processorTask = Task.Run(() => processor.ProcessAndSendAsync(
-                                                     clientTelemetryProperties,
-                                                     operationInfoSnapshot,
-                                                     cacheRefreshInfoSnapshot,
-                                                     default,
-                                                     new CancellationTokenSource(TimeSpan.FromSeconds(1)).Token));
+                CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
+                await Task.Delay(1000, cts.Token); // Making this task wait to ensure that processir is taking more time.
+                await processor.ProcessAndSendAsync(clientTelemetryProperties,
+                                                    operationInfoSnapshot,
+                                                    cacheRefreshInfoSnapshot,
+                                                    default,
+                                                    cts.Token);
+            });
 
-                await ClientTelemetry.RunProcessorTaskAsync(DateTime.Now.ToString(), processorTask, TimeSpan.FromTicks(1));
-
-                Assert.Fail("should have thrown exception");
-            }
-            catch (OperationCanceledException ex)
-            {
-                Assert.IsTrue(ex is OperationCanceledException);
-            }
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => ClientTelemetry.RunProcessorTaskAsync(
+                                                                                                    telemetryDate: DateTime.Now.ToString(), 
+                                                                                                    processingTask: processorTask, 
+                                                                                                    timeout: TimeSpan.FromTicks(1)));
         }
 
         [TestMethod]

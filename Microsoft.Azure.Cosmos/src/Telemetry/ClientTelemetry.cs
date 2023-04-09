@@ -215,9 +215,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 Task resultTask = await Task.WhenAny(processingTask, delayTask);
                 if (resultTask == delayTask)
                 {
-                    DefaultTrace.TraceVerbose($"Processor task with date as {telemetryDate} is canceled as it did not finish in {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut}");
+                    DefaultTrace.TraceVerbose($"Processor task with date as {telemetryDate} is canceled as it did not finish in {timeout}");
                     // Operation cancelled
-                    throw new OperationCanceledException($"Processor task with date as {telemetryDate} is canceled as it did not finish in {ClientTelemetryOptions.ClientTelemetryProcessorTimeOut}");
+                    throw new OperationCanceledException($"Processor task with date as {telemetryDate} is canceled as it did not finish in {timeout}");
                 }
                 else
                 {
