@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         }
 
         public DateTime RequestStartTimeUtc { get; }
+
         public DateTime? RequestEndTimeUtc { get; private set; }
 
         public IReadOnlyDictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics

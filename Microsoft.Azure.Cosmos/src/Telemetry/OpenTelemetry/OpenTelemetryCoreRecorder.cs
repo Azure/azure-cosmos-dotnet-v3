@@ -32,16 +32,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             { typeof(ChangeFeedProcessorUserException), (exception, scope) => ChangeFeedProcessorUserException.RecordOtelAttributes((ChangeFeedProcessorUserException)exception, scope)}
         };
 
+        /// <summary>
+        /// Used for creating parent activity in scenario where there are no listeners at operation level 
+        /// but they are present at network level
+        /// </summary>
         public OpenTelemetryCoreRecorder(DiagnosticScope scope)
         {
             this.scope = scope;
             this.scope.Start();
         }
+
+        /// <summary>
+        /// Used for creating parent activity in scenario where there are no listeners at operation level and network level
+        /// </summary>
         public OpenTelemetryCoreRecorder(string operationName)
         {
             this.activity = new Activity(operationName);
             this.activity.Start();
         }
+
+        /// <summary>
+        /// Used for creating parent activity in scenario where there are listeners at operation level 
+        /// </summary>
         public OpenTelemetryCoreRecorder(
             DiagnosticScope scope,
             string operationName,
