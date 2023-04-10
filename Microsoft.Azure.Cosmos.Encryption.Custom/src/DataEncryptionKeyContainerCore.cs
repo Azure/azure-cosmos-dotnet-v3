@@ -335,6 +335,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 unwrapResult.DataEncryptionKey);
 
             return new MdeEncryptionAlgorithm(
+                unwrapResult.DataEncryptionKey,
                 plaintextDataEncryptionKey,
                 Data.Encryption.Cryptography.EncryptionType.Randomized);
         }
