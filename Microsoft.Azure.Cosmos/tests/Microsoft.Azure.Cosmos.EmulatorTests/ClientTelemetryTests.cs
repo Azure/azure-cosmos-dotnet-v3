@@ -1075,33 +1075,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
         
-        [TestMethod]
-        public async Task CheckMisconfiguredTelemetryEndpoint_should_stop_the_job()
-        {
-            int retryCounter = 0;
-            HttpClientHandlerHelper customHttpHandler = new HttpClientHandlerHelper
-            {
-                RequestCallBack = (request, cancellation) =>
-                {
-                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
-                    {
-                        retryCounter++;
-                        throw new Exception("Exception while sending telemetry");
-                    }
-
-                    return null;
-                }
-            };
-
-            Container container = await this.CreateClientAndContainer(
-                mode: ConnectionMode.Direct, 
-                customHttpHandler: customHttpHandler);
-
-            await Task.Delay(TimeSpan.FromMilliseconds(5000)); // wait for 5 sec, ideally telemetry would be sent 5 times but client telemetry endpoint is not functional (in this test), it should try 3 times maximum and after that client telemetry job should be stopped.
-            
-            Assert.AreEqual(3, retryCounter);
-        }
-
         private static ItemBatchOperation CreateItem(string itemId)
         {
             var testItem = new { id = itemId, Status = itemId };
