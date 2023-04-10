@@ -385,7 +385,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
                 {
-                    DataEncryptionKey dek = this.InitMdeEncryptionAlgorithm(dekProperties);
+                    EncryptionKeyUnwrapResult unwrapResult;
+                    try
+                    {
+                        // unwrap with original wrap provider
+                        unwrapResult = await this.DekProvider.EncryptionKeyWrapProvider.UnwrapKeyAsync(
+                                    dekProperties.WrappedDataEncryptionKey,
+                                    dekProperties.EncryptionKeyWrapMetadata,
+                                    cancellationToken);
+                    }
+                    catch (Exception exception)
+                    {
+                        throw EncryptionExceptionFactory.EncryptionKeyNotFoundException(
+                            $"Failed to unwrap Data Encryption Key with id: '{dekProperties.Id}'.",
+                            exception);
+                    }
+
+                    DataEncryptionKey dek = this.InitMdeEncryptionAlgorithm(unwrapResult.DataEncryptionKey, dekProperties);
 
                     // TTL is not used since DEK is not cached.
                     return new InMemoryRawDek(dek, TimeSpan.FromMilliseconds(0));
@@ -565,15 +581,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return unwrapResult;
         }
 
-        internal DataEncryptionKey InitMdeEncryptionAlgorithm(DataEncryptionKeyProperties dekProperties)
+        internal DataEncryptionKey InitMdeEncryptionAlgorithm(byte[] unwrapKey, DataEncryptionKeyProperties dekProperties)
         {
             if (this.DekProvider.MdeKeyWrapProvider == null)
             {
                 throw new InvalidOperationException($"For use of '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}' algorithm, " +
                     "Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.");
             }
-
             return new MdeEncryptionAlgorithm(
+                unwrapKey,
                 dekProperties,
                 Data.Encryption.Cryptography.EncryptionType.Randomized,
                 this.DekProvider.MdeKeyWrapProvider.EncryptionKeyStoreProvider,

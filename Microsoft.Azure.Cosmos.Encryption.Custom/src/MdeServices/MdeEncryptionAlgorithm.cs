@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="encryptionType"> Encryption type </param>
         /// <param name="encryptionKeyStoreProvider"> EncryptionKeyStoreProvider for wrapping and unwrapping </param>
         public MdeEncryptionAlgorithm(
+            byte[] unwrapKey,
             DataEncryptionKeyProperties dekProperties,
             Data.Encryption.Cryptography.EncryptionType encryptionType,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                        keyEncryptionKey,
                        dekProperties.WrappedDataEncryptionKey);
             }
-
+            this.unwrapKey = unwrapKey;
             this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                 protectedDataEncryptionKey,
                 encryptionType);
