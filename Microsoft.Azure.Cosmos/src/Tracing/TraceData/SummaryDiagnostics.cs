@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
@@ -73,10 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 if (httpResponseStatistics.HttpResponseMessage != null)
                 {
                     statusCode = (int)httpResponseStatistics.HttpResponseMessage.StatusCode;
-                    HttpResponseHeadersWrapper gatewayHeaders = new HttpResponseHeadersWrapper(
-                                                    httpResponseStatistics.HttpResponseMessage.Headers,
-                                                    httpResponseStatistics.HttpResponseMessage.Content?.Headers);
-                    if (!int.TryParse(gatewayHeaders.SubStatus,
+                    if (!int.TryParse(SummaryDiagnostics.GetSubStatusCodes(httpResponseStatistics),
                                 NumberStyles.Integer,
                                 CultureInfo.InvariantCulture,
                                 out substatusCode))
@@ -151,6 +149,25 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
 
             jsonWriter.WriteObjectEnd();
+        }
+
+        /// <summary>
+        /// Gets the sub status code as a comma separated value from the http response message headers.
+        /// If the sub status code header is not found, then returns null.
+        /// </summary>
+        /// <param name="httpResponseStatistics">An instance of <see cref="HttpResponseStatistics"/>.</param>
+        /// <returns>A string containing the sub status code.</returns>
+        private static string GetSubStatusCodes(
+            HttpResponseStatistics httpResponseStatistics)
+        {
+            return httpResponseStatistics
+                    .HttpResponseMessage
+                    .Headers
+                    .TryGetValues(
+                        name: Documents.WFConstants.BackendHeaders.SubStatus,
+                        values: out IEnumerable<string> httpResponseHeaderValues) ?
+                        httpResponseHeaderValues.FirstOrDefault() :
+                        null;
         }
     }
 }
