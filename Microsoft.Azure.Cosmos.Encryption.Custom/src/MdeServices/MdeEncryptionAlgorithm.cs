@@ -14,8 +14,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         private readonly AeadAes256CbcHmac256EncryptionAlgorithm mdeAeadAes256CbcHmac256EncryptionAlgorithm;
 
+        private readonly byte[] unwrapKey;
+
         // unused for MDE Algorithm.
-        public override byte[] RawKey => null;
+        public override byte[] RawKey => this.unwrapKey;
 
         public override string EncryptionAlgorithm => CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized;
 
@@ -90,9 +92,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="dataEncryptionKey"> Data Encryption Key </param>
         /// <param name="encryptionType"> Encryption type </param>
         public MdeEncryptionAlgorithm(
+            byte[] unwrapKey,
             Data.Encryption.Cryptography.DataEncryptionKey dataEncryptionKey,
             Data.Encryption.Cryptography.EncryptionType encryptionType)
         {
+            this.unwrapKey = unwrapKey;
             this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                 dataEncryptionKey,
                 encryptionType);
