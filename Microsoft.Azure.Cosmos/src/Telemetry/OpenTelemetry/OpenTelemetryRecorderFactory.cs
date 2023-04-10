@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 OpenTelemetryRecorderFactory.ScopeFactory ??= new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
                         resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
                         isActivityEnabled: true,
-                        suppressNestedClientActivities: false);
+                        suppressNestedClientActivities: true);
                 
                 // If there is no source then it will return default otherwise a valid diagnostic scope
                 DiagnosticScope scope = OpenTelemetryRecorderFactory
