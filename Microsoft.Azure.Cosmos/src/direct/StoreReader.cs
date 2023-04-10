@@ -218,18 +218,18 @@ namespace Microsoft.Azure.Documents
             Exception cancellationException = null;
             Exception exceptionToThrow = null;
             SubStatusCodes subStatusCodeForException = SubStatusCodes.Unknown;
-            IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator
+            IEnumerable<TransportAddressUri> transportAddresses = this.addressEnumerator
                                                             .GetTransportAddresses(transportAddressUris: resolveApiResults,
                                                                                    failedEndpoints: entity.RequestContext.FailedEndpoints,
                                                                                    replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled,
-                                                                                   validateUnknownReplicasAggressively: aggressiveValidationEnabled)
-                                                            .GetEnumerator();
+                                                                                   validateUnknownReplicasAggressively: aggressiveValidationEnabled);
 
             // The replica health status of the transport address uri will change eventually with the motonically increasing time.
             // However, the purpose of this list is to capture the health status snapshot at this moment.
-            IReadOnlyList<string> replicaHealthStatuses = resolveApiResults
-                .Select(x => x.GetCurrentHealthState().GetHealthStatusDiagnosticString())
-                .ToList();
+            IEnumerable<string> replicaHealthStatuses = transportAddresses
+                .Select(x => x.GetCurrentHealthState().GetHealthStatusDiagnosticString());
+
+            IEnumerator<TransportAddressUri> uriEnumerator = transportAddresses.GetEnumerator();
 
             // Loop until we have the read quorum number of valid responses or if we have read all the replicas
             while (replicasToRead > 0 && uriEnumerator.MoveNext())
