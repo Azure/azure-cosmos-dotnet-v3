@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         public void Cleanup()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
         }
 
         [TestMethod]
@@ -147,7 +148,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                     string payloadJson = request.Content.ReadAsStringAsync().Result;
                     Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.PayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
 
-                    Console.WriteLine(payloadJson);
                     ClientTelemetryProperties propertiesToSend = JsonConvert.DeserializeObject<ClientTelemetryProperties>(payloadJson);
 
                     Assert.AreEqual(7, propertiesToSend.SystemInfo.Count, "System Info is not correct");
@@ -245,14 +245,114 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 clientTelemetryProperties,
                 operationInfoSnapshot,
                 cacheRefreshInfoSnapshot,
-                requestInfoList,
-                new CancellationToken());
+                requestInfoList, 
+                new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut).Token);
 
             Assert.AreEqual(expectedOperationInfoSize, actualOperationInfoSize, "Operation Info is not correct");
             Assert.AreEqual(expectedCacheRefreshInfoSize, actualCacheRefreshInfoSize, "Cache Refresh Info is not correct");
             Assert.AreEqual(expectedRequestInfoSize, actualRequestInfoSize, "Request Info is not correct");
         }
-        
+
+        [TestMethod]
+        public async Task ClientTelmetryProcessor_should_timeout()
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
+            
+            string data = File.ReadAllText("Telemetry/ClientTelemetryPayloadWithoutMetrics.json", Encoding.UTF8);
+            ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
+ 
+            int actualOperationInfoSize = 0;
+            int actualCacheRefreshInfoSize = 0;
+            
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
+            _ = mockHttpHandler.Setup(x => x.SendAsync(
+                It.IsAny<HttpRequestMessage>(),
+                It.IsAny<CancellationToken>()))
+                 .Callback<HttpRequestMessage, CancellationToken>(
+                (request, cancellationToken) =>
+                {
+                    string payloadJson = request.Content.ReadAsStringAsync().Result;
+                    Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.PayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
+
+                    ClientTelemetryProperties propertiesToSend = JsonConvert.DeserializeObject<ClientTelemetryProperties>(payloadJson);
+
+                    actualOperationInfoSize += propertiesToSend.OperationInfo?.Count ?? 0;
+                    actualCacheRefreshInfoSize += propertiesToSend.CacheRefreshInfo?.Count ?? 0;
+                })
+                .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
+
+            ClientTelemetryProcessor processor = new ClientTelemetryProcessor(
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object))),
+                Mock.Of<AuthorizationTokenProvider>());
+            
+            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
+                = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
+
+            for (int i = 0; i < 20; i++)
+            {
+                OperationInfo opeInfo = new OperationInfo(Regions.WestUS,
+                                                        0,
+                                                        Documents.ConsistencyLevel.Session.ToString(),
+                                                        "databaseName" + i,
+                                                        "containerName",
+                                                        Documents.OperationType.Read,
+                                                        Documents.ResourceType.Document,
+                                                        200,
+                                                        0);
+
+                LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                            ClientTelemetryOptions.RequestLatencyMax,
+                                                            ClientTelemetryOptions.RequestLatencyPrecision);
+                latency.RecordValue(10);
+
+                LongConcurrentHistogram requestcharge = new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                                                            ClientTelemetryOptions.RequestChargeMax,
+                                                            ClientTelemetryOptions.RequestChargePrecision);
+                requestcharge.RecordValue(11);
+
+                operationInfoSnapshot.TryAdd(opeInfo, (latency, requestcharge));
+            }
+
+            ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
+                = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
+            for (int i = 0; i < 10; i++)
+            {
+                CacheRefreshInfo crInfo = new CacheRefreshInfo(Regions.WestUS,
+                                                        10,
+                                                        Documents.ConsistencyLevel.Session.ToString(),
+                                                        "databaseName" + i,
+                                                        "containerName",
+                                                        Documents.OperationType.Read,
+                                                        Documents.ResourceType.Document,
+                                                        200,
+                                                        1002,
+                                                        "dummycache");
+
+                LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                                                            ClientTelemetryOptions.RequestLatencyMax,
+                                                            ClientTelemetryOptions.RequestLatencyPrecision);
+                latency.RecordValue(10);
+
+                cacheRefreshInfoSnapshot.TryAdd(crInfo, latency);
+            }
+            
+            Task processorTask = Task.Run(async () =>
+            {
+                CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
+                await Task.Delay(1000, cts.Token); // Making this task wait to ensure that processir is taking more time.
+                await processor.ProcessAndSendAsync(clientTelemetryProperties,
+                                                    operationInfoSnapshot,
+                                                    cacheRefreshInfoSnapshot,
+                                                    default,
+                                                    cts.Token);
+            });
+
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => ClientTelemetry.RunProcessorTaskAsync(
+                                                                                                    telemetryDate: DateTime.Now.ToString(), 
+                                                                                                    processingTask: processorTask, 
+                                                                                                    timeout: TimeSpan.FromTicks(1)));
+        }
+
         [TestMethod]
         [ExpectedException(typeof(FormatException))]
         public void CheckMisconfiguredTelemetry_should_fail()
