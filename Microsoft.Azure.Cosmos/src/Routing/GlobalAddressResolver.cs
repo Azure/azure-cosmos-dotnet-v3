@@ -216,9 +216,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             CancellationToken cancellationToken)
         {
             request.RequestContext.FirstPreferredReadRegion = this.endpointManager
-                .ReadEndpoints
-                .First()?
-                .ToString();
+                .GetLocation(endpoint: this.endpointManager
+                    .ReadEndpoints
+                    .First());
 
             IAddressResolver resolver = this.GetAddressResolver(request);
             PartitionAddressInformation partitionAddressInformation = await resolver.ResolveAsync(request, forceRefresh, cancellationToken);

@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Documents
                     pendingReplicas ??= new ();
                     pendingReplicas.Add(transportAddressUri);
                 }
-                else
+                else if (status == TransportAddressHealthState.HealthStatus.Unhealthy)
                 {
                     failedReplicas ??= new ();
                     failedReplicas.Add(transportAddressUri);
