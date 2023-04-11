@@ -214,7 +214,10 @@ namespace Microsoft.Azure.Documents
 
             bool hasGoneException = false;
             bool hasCancellationException = false;
-            bool aggressiveValidationEnabled = entity.RequestContext.RegionName?.Equals(entity.RequestContext.FirstPreferredReadRegion) ?? false;
+            bool aggressiveValidationEnabled = entity.RequestContext.RegionName?.Equals(
+                value: entity.RequestContext.FirstPreferredReadRegion,
+                comparisonType: StringComparison.OrdinalIgnoreCase) ?? false;
+
             Exception cancellationException = null;
             Exception exceptionToThrow = null;
             SubStatusCodes subStatusCodeForException = SubStatusCodes.Unknown;
