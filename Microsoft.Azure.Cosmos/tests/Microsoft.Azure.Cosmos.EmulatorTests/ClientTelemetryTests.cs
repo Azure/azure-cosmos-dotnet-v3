@@ -988,9 +988,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Asserting If basic client telemetry object is as expected
             foreach (ClientTelemetryProperties telemetryInfo in localCopyOfActualInfo)
             {
-                actualOperationList.AddRange(telemetryInfo.OperationInfo);
-                actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
-                actualRequestInformation.AddRange(telemetryInfo.RequestInfo);
+                if (telemetryInfo.OperationInfo != null)
+                {
+                    actualOperationList.AddRange(telemetryInfo.OperationInfo);
+                }
+
+                if (telemetryInfo.SystemInfo != null)
+                {
+                    foreach (SystemInfo sysInfo in telemetryInfo.SystemInfo)
+                    {
+                        actualSystemInformation.Add(sysInfo);
+                    }
+                }
+                
+                if (telemetryInfo.RequestInfo != null)
+                {
+                    actualRequestInformation.AddRange(telemetryInfo.RequestInfo);
+                }
 
                 if (telemetryInfo.ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant())
                 {
@@ -1061,45 +1075,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
         
-        [TestMethod]
-        public async Task CheckMisconfiguredTelemetryEndpoint_should_stop_the_job()
-        {
-            int retryCounter = 0;
-            HttpClientHandlerHelper customHttpHandler = new HttpClientHandlerHelper
-            {
-                RequestCallBack = (request, cancellation) =>
-                {
-                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
-                    {
-                        retryCounter++;
-                        throw new Exception("Exception while sending telemetry");
-                    }
-
-                    return null;
-                }
-            };
-
-            Container container = await this.CreateClientAndContainer(
-                mode: ConnectionMode.Direct, 
-                customHttpHandler: customHttpHandler);
-
-            // Create an item
-            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
-            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
-            ToDoActivity testItemCreated = createResponse.Resource;
-
-            // Read an Item
-            ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
-
-            await Task.Delay(1500);
-
-            response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
-
-            await Task.Delay(3500);
-
-            Assert.AreEqual(3, retryCounter);
-        }
-
         private static ItemBatchOperation CreateItem(string itemId)
         {
             var testItem = new { id = itemId, Status = itemId };

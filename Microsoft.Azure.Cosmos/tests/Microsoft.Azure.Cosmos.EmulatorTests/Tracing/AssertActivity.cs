@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                  "net.peer.name",
                  "db.cosmosdb.client_id",
                  "db.cosmosdb.machine_id",
-                 "db.cosmosdb.user_agent",
+                 "user_agent.original",
                  "db.cosmosdb.connection_mode",
                  "db.cosmosdb.operation_type",
                  "db.cosmosdb.container",

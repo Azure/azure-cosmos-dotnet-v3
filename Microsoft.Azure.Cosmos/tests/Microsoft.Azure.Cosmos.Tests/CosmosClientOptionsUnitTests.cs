@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build();
             CosmosHttpClient cosmosHttpClient = cosmosClient.DocumentClient.httpClient;
-            HttpClientHandler handler = (HttpClientHandler)cosmosHttpClient.HttpMessageHandler;
+            SocketsHttpHandler handler = (SocketsHttpHandler)cosmosHttpClient.HttpMessageHandler;
             
             Assert.IsTrue(object.ReferenceEquals(webProxy, handler.Proxy));
         }
