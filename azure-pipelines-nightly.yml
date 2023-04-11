@@ -29,7 +29,8 @@ stages:
         VmImage: $(VmImage)
         ReleasePackage: true
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
-        BlobVersion: 'nightly/$(currentDate)'
+        BlobVersion: 'nightly'
+        CleanupFolder: true
 - stage:
   displayName: Generate nightly preview 
   jobs:
@@ -40,4 +41,5 @@ stages:
         VmImage: $(VmImage)
         ReleasePackage: true
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
-        BlobVersion: 'nightly/$(currentDate)-preview'
+        BlobVersion: 'nightly-preview'
+        CleanupFolder: true
