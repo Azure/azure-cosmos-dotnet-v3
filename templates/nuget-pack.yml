@@ -65,7 +65,7 @@ jobs:
         displayName: 'Copy Artifacts to Azure SDK Release blob storage'
         condition: succeeded()
         inputs:
-          SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos/'
+          SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos/**'
           azureSubscription: azuresdkpartnerdrops
           Destination: AzureBlob
           storage: azuresdkpartnerdrops
