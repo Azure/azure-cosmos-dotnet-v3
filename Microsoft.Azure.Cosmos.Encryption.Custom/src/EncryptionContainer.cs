@@ -1003,6 +1003,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
 
+#if ENCRYPTIONPREVIEW
+        public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedRange feedRange,
+            CancellationToken cancellationToken = default)
+        {
+            return this.container.GetPartitionKeyRangesAsync(feedRange, cancellationToken);
+        }
+
+        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default)
+        {
+            return this.container.DeleteAllItemsByPartitionKeyStreamAsync(
+                partitionKey,
+                requestOptions,
+                cancellationToken);
+        }
+#endif
+
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
            ReadManyRequestOptions readManyRequestOptions = null,
