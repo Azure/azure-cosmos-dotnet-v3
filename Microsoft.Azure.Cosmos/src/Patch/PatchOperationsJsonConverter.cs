@@ -88,7 +88,12 @@ namespace Microsoft.Azure.Cosmos
                 writer.WritePropertyName(PatchConstants.PropertyNames.Path);
                 writer.WriteValue(operation.Path);
 
-                if (operation.TrySerializeValueParameter(this.userSerializer, out Stream valueStream))
+                if (operation.OperationType == PatchOperationType.Move)
+                {
+                    writer.WritePropertyName(PatchConstants.PropertyNames.From);
+                    writer.WriteValue(operation.From);
+                }
+                else if (operation.TrySerializeValueParameter(this.userSerializer, out Stream valueStream))
                 {
                     string valueParam;
                     using (valueStream)
