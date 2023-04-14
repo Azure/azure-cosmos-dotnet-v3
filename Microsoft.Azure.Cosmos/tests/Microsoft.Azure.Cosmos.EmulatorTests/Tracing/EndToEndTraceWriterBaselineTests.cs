@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
-    using Diagnostics = System.Diagnostics;
     
     [VisualStudio.TestTools.UnitTesting.TestClass]
     [TestCategory("UpdateContract")]

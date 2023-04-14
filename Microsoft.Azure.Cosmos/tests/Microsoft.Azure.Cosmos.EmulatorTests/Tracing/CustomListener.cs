@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private string SourceType { set; get; }
         
         public CustomListener(string name, string eventName)
-            : this(n => Regex.Match(n, string.Join(".", name.Split(".")[0], name.Split(".")[1])).Success, name.Split(".")[2], eventName)
+            : this(n => Regex.Match(n, $"{name.Split(".")[0]}.{name.Split(".")[1]}").Success, name.Split(".")[2], eventName)
         {
         }
 
@@ -126,8 +126,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                             {
                                 throw new InvalidOperationException("Scope should not be stopped when calling Failed");
                             }
-                            Console.WriteLine("Activity Exception " + Activity.Current.DisplayName + " -- " + Activity.Current.Id + " -- " + (Exception)value.Value);
-                            producedDiagnosticScope.Exception = (Exception)value.Value;
                         }
                     }
                 }
