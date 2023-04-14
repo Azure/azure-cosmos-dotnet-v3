@@ -30,8 +30,6 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
-    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -74,8 +72,6 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
-    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -102,8 +98,6 @@
     ├── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
     │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -132,8 +126,6 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
-    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -160,8 +152,6 @@
     └── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │       [DistributedTraceId]
         │       Redacted To Not Change The Baselines From Run To Run
         │   )
         ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -255,8 +245,7 @@
       "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -419,8 +408,7 @@
       "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -507,8 +495,7 @@
       "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -595,8 +582,7 @@
       "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -683,8 +669,7 @@
       "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -968,18 +953,10 @@
   ]
 }]]></Json>
       <OTelActivities><ACTIVITY><OPERATION>Operation.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Change Feed Iterator Read Next Async</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Change Feed Iterator Read Next Async</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Change Feed Iterator Read Next Async</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Change Feed Iterator Read Next Async</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Change Feed Iterator Read Next Async</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
@@ -1019,8 +996,6 @@
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
     │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -1065,8 +1040,6 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
-    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -1095,8 +1068,6 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
-    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -1124,8 +1095,6 @@
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │       [DistributedTraceId]
         │       Redacted To Not Change The Baselines From Run To Run
         │   )
         ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -1162,8 +1131,7 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -1330,8 +1298,7 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -1422,8 +1389,7 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -1514,8 +1480,7 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -1605,18 +1570,10 @@
   ]
 }]]></Json>
       <OTelActivities><ACTIVITY><OPERATION>Operation.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Typed FeedIterator ReadNextAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Typed FeedIterator ReadNextAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Typed FeedIterator ReadNextAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Typed FeedIterator ReadNextAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Typed FeedIterator ReadNextAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
@@ -1657,8 +1614,6 @@
     ├── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
     │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -1702,8 +1657,6 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
-    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -1731,8 +1684,6 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
-    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -1759,8 +1710,6 @@
     └── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │       [DistributedTraceId]
         │       Redacted To Not Change The Baselines From Run To Run
         │   )
         ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -1796,8 +1745,7 @@
       "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -1960,8 +1908,7 @@
       "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -2048,8 +1995,7 @@
       "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -2136,8 +2082,7 @@
       "name": "Change Feed Iterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -2223,18 +2168,10 @@
   ]
 }]]></Json>
       <OTelActivities><ACTIVITY><OPERATION>Operation.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Change Feed Iterator Read Next Async</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Change Feed Iterator Read Next Async</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Change Feed Iterator Read Next Async</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Change Feed Iterator Read Next Async</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Change Feed Iterator Read Next Async</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Change Feed Iterator Read Next Async</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
@@ -2275,8 +2212,6 @@
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   │   (
     │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
     │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -2321,8 +2256,6 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
-    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -2351,8 +2284,6 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │       [DistributedTraceId]
-    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -2380,8 +2311,6 @@
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │       [DistributedTraceId]
         │       Redacted To Not Change The Baselines From Run To Run
         │   )
         ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -2418,8 +2347,7 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -2586,8 +2514,7 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -2678,8 +2605,7 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -2770,8 +2696,7 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -2861,18 +2786,10 @@
   ]
 }]]></Json>
       <OTelActivities><ACTIVITY><OPERATION>Operation.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Typed FeedIterator ReadNextAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Typed FeedIterator ReadNextAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Typed FeedIterator ReadNextAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Typed FeedIterator ReadNextAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <ACTIVITY><OPERATION>Operation.Typed FeedIterator ReadNextAsync</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Typed FeedIterator ReadNextAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
@@ -2908,8 +2825,6 @@
     └── Change Feed Estimator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │       [DistributedTraceId]
         │       Redacted To Not Change The Baselines From Run To Run
         │   )
         ├── Initialize Lease Store(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -2980,8 +2895,7 @@
       "name": "Change Feed Estimator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -3152,12 +3066,7 @@
     }
   ]
 }]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Operation.Change Feed Estimator Read Next Async</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Change Feed Estimator Read Next Async</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.ReadFeed</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
-<ACTIVITY><OPERATION>Request.Query</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY></ACTIVITY>
+      <OTelActivities><ACTIVITY><OPERATION>Operation.Change Feed Estimator Read Next Async</OPERATION><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Change Feed Estimator Read Next Async</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadFeed</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
 <EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
 </OTelActivities>
     </Output>
