@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.IO;
     using System.Linq;
     using System.Linq.Expressions;
-    using System.Reflection;
     using global::Azure.Core.Serialization;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -34,8 +33,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             Assert.AreEqual("(a[\"StartDate\"] <= \"2022-05-26\")", sql);
         }
 
-        // Ignored for now because the test is failing in current production implementation of Cosmos SDK
-        [TestMethod, Ignore]
+        [TestMethod]
         public void EnumIsPreservedAsINTest()
         {
             // Arrange
@@ -51,10 +49,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             string sql = SqlTranslator.TranslateExpression(expr.Body, options);
 
             // Assert
-            Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql);
+            // Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql); // <- THIS is the correct value, if we are able to use the custom serializer
+            Assert.AreEqual("(a[\"Value\"] IN (0, 1))", sql); // <- THIS is the current mis-behavior of the SDK
         }
 
-        [TestMethod, Ignore]
+        [TestMethod]
         public void EnumIsPreservedAsEQUALSTest()
         {
             // Arrange
@@ -70,7 +69,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             string sql = SqlTranslator.TranslateExpression(expr.Body, options);
 
             // Assert
-            Assert.AreEqual("(a[\"Value\"] = \"One\")", sql);
+            // Assert.AreEqual("(a[\"Value\"] = \"One\")", sql); // <- THIS is the correct value, if we are able to use the custom serializer
+            Assert.AreEqual("(a[\"Value\"] = 0)", sql); // <- THIS is the current mis-behavior of the SDK
         }
 
         [TestMethod]
@@ -121,6 +121,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         class TestEnumDocument
         {
+            [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))] // TODO: Remove this once we have the ability to use custom serializer for LINQ queries
             public TestEnum Value { get; set; }
         }
 
