@@ -33,15 +33,18 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static ConcurrentBag<Activity> CollectedActivities { private set; get; } = new();
         private static ConcurrentBag<string> CollectedEvents { set; get; } = new();
 
+        private string SourceType { set; get; }
+        
         public CustomListener(string name, string eventName)
-            : this(n => Regex.Match(n, name).Success, eventName)
+            : this(n => Regex.Match(n, $"{name.Split(".")[0]}.{name.Split(".")[1]}").Success, name.Split(".")[2], eventName)
         {
         }
 
-        public CustomListener(Func<string, bool> filter, string eventName)
+        public CustomListener(Func<string, bool> filter, string sourceType, string eventName)
         {
             this.sourceNameFilter = filter;
             this.eventName = eventName;
+            this.SourceType = sourceType;
             
             DiagnosticListener.AllListeners.Subscribe(this);
         }
@@ -76,6 +79,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string stopSuffix = ".Stop";
                 string exceptionSuffix = ".Exception";
                 
+                if(!this.SourceType.Contains("*") && !Activity.Current.OperationName.Contains(this.SourceType)) 
+                {
+                    return;
+                }
+                
                 if (value.Key.EndsWith(startSuffix))
                 {
                     string name = value.Key[..^startSuffix.Length];
@@ -89,7 +97,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Links = links.Select(a => new ProducedLink(a.ParentId, a.TraceStateString)).ToList(),
                         LinkedActivities = links.ToList()
                     };
-
                     this.Scopes.Add(scope);
                 }
                 else if (value.Key.EndsWith(stopSuffix))
@@ -100,7 +107,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         if (producedDiagnosticScope.Activity.Id == Activity.Current.Id)
                         {
                             AssertActivity.IsValid(producedDiagnosticScope.Activity);
-                            
                             CustomListener.CollectedActivities.Add(producedDiagnosticScope.Activity);
 
                             producedDiagnosticScope.IsCompleted = true;
@@ -120,8 +126,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                             {
                                 throw new InvalidOperationException("Scope should not be stopped when calling Failed");
                             }
-
-                            producedDiagnosticScope.Exception = (Exception)value.Value;
                         }
                     }
                 }

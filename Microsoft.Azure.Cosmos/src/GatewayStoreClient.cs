@@ -320,6 +320,14 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            if (request.Properties != null)
+            {
+                foreach (KeyValuePair<string, object> property in request.Properties)
+                {
+                    requestMessage.Properties.Add(property);
+                }
+            }
+
             // add activityId
             Guid activityId = System.Diagnostics.Trace.CorrelationManager.ActivityId;
             Debug.Assert(activityId != Guid.Empty);

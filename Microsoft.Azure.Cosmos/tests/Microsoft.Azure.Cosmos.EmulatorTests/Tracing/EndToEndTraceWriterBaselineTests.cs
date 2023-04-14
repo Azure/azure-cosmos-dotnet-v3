@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
             EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
         }
-        
+
         [TestCleanup]
         public async Task CleanUp()
         {
@@ -1403,6 +1403,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 itemList.Add(("id" + i, new PartitionKey(i.ToString())));
             }
+
+            EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
 
             //----------------------------------------------------------------
             //  Read Many Stream
