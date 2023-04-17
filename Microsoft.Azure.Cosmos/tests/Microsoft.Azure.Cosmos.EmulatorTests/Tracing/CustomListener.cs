@@ -34,7 +34,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static ConcurrentBag<string> CollectedEvents { set; get; } = new();
 
         private string SourceType { set; get; }
-        
+
+        // Regex is used to match string 'n' against diagnosticNameSpace string
+        // which is constructed by combining first two parts of name.
+        // Eg: Azure.Cosmos.Operation where diagnosticNameSpace is Azure.Cosmos and Operation is the sourceType
         public CustomListener(string name, string eventName)
             : this(n =>
             {
