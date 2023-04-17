@@ -36,7 +36,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         private string SourceType { set; get; }
         
         public CustomListener(string name, string eventName)
-            : this(n => Regex.Match(n, $"{name.Split(".")[0]}.{name.Split(".")[1]}").Success, name.Split(".")[2], eventName)
+            : this(n =>
+            {
+                string[] nameParts = name.Split(".");
+                string diagnosticNameSpace = $"{nameParts[0]}.{nameParts[1]}";
+                return Regex.Match(n, diagnosticNameSpace).Success;
+            }, name.Split(".")[2], eventName)
+
         {
         }
 
