@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos
 
         public T ToObjectpublic<T>(ResponseMessage responseMessage)
         {
-            if (responseMessage.Content == null)
+            if (responseMessage.Content == null || responseMessage.Content.Length == 0)
             {
                 return default;
             }
