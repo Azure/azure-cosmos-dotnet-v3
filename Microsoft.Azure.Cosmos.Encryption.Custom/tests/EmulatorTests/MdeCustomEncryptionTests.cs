@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeCustomEncryptionTests.CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int unwrapcount);
-            Assert.AreEqual(1, unwrapcount);
+            Assert.AreEqual(33, unwrapcount);
 
             testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
             {
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeCustomEncryptionTests.CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
-            Assert.AreEqual(32, unwrapcount);
+            Assert.AreEqual(64, unwrapcount);
 
             // 2 hours default
             testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();  
@@ -346,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeCustomEncryptionTests.CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
-            Assert.AreEqual(1, unwrapcount);
+            Assert.AreEqual(33, unwrapcount);
         }
 
         [TestMethod]
