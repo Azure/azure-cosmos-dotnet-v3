@@ -118,7 +118,7 @@
         "requireAllStatuses": false,
         "requireSpecificCheckRuns": false,
         "usePrDescriptionAsCommitMessage": false,
-        "minMinutesOpen": "10",
+        "minMinutesOpen": "60",
         "enforceDMPAsStatus": true
       }
     },
