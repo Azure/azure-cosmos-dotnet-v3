@@ -215,6 +215,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool forceRefresh,
             CancellationToken cancellationToken)
         {
+            request.RequestContext.FirstPreferredReadRegion = this.endpointManager
+                .GetLocation(endpoint: this.endpointManager
+                    .ReadEndpoints
+                    .First());
+
             IAddressResolver resolver = this.GetAddressResolver(request);
             PartitionAddressInformation partitionAddressInformation = await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
 
@@ -281,7 +286,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.serviceConfigReader,
                         this.httpClient,
                         this.openConnectionsHandler,
-                        enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery);
+                        enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
+                        isCurrentReadRegion: endpoint.Equals(this.endpointManager.ReadEndpoints.First()));
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);
