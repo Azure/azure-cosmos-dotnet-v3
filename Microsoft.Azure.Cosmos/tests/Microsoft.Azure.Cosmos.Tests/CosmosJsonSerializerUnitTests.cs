@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Linq;
     using System.Net;
     using System.Text;
+    using Castle.Core.Internal;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
@@ -182,6 +183,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             // Verify all the user types use the user specified version
             ItemResponse<ToDoActivity> itemResponseFromFactory = cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponse);
             Assert.IsNotNull(itemResponseFromFactory.Diagnostics);
+            // Verify that FromStream is not called as the stream is empty
+            mockUserJsonSerializer.Verify(x => x.FromStream<ToDoActivity>(itemResponse.Content), Times.Never);
             cosmosResponseFactory.CreateStoredProcedureExecuteResponse<ToDoActivity>(storedProcedureExecuteResponse);
 
             // Throw if the setups were not called
