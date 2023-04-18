@@ -19,15 +19,15 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using Newtonsoft.Json;
 
     [TestClass]
-    public class CosmosJsonSeriliazerUnitTests
+    public class CosmosJsonSerializerUnitTests
     {
         private readonly ToDoActivity toDoActivity = new ToDoActivity()
         {
-            id = "c1d433c1-369d-430e-91e5-14e3ce588f71",
-            taskNum = 42,
-            cost = double.MaxValue,
-            description = "cosmos json serializer",
-            status = "TBD"
+            Id = "c1d433c1-369d-430e-91e5-14e3ce588f71",
+            TaskNum = 42,
+            Cost = double.MaxValue,
+            Description = "cosmos json serializer",
+            Status = "TBD"
         };
 
         private readonly string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""description"":""cosmos json serializer"",""status"":""TBD""}";
@@ -41,11 +41,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 Assert.IsNotNull(stream);
                 ToDoActivity result = cosmosDefaultJsonSerializer.FromStream<ToDoActivity>(stream);
                 Assert.IsNotNull(result);
-                Assert.AreEqual(this.toDoActivity.id, result.id);
-                Assert.AreEqual(this.toDoActivity.taskNum, result.taskNum);
-                Assert.AreEqual(this.toDoActivity.cost, result.cost);
-                Assert.AreEqual(this.toDoActivity.description, result.description);
-                Assert.AreEqual(this.toDoActivity.status, result.status);
+                Assert.AreEqual(this.toDoActivity.Id, result.Id);
+                Assert.AreEqual(this.toDoActivity.TaskNum, result.TaskNum);
+                Assert.AreEqual(this.toDoActivity.Cost, result.Cost);
+                Assert.AreEqual(this.toDoActivity.Description, result.Description);
+                Assert.AreEqual(this.toDoActivity.Status, result.Status);
             }
         }
 
@@ -143,11 +143,11 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             ToDoActivity toDoActivityNoDescription = new ToDoActivity()
             {
-                id = "c1d433c1-369d-430e-91e5-14e3ce588f71",
-                taskNum = 42,
-                cost = double.MaxValue,
-                description = null,
-                status = "TBD"
+                Id = "c1d433c1-369d-430e-91e5-14e3ce588f71",
+                TaskNum = 42,
+                Cost = double.MaxValue,
+                Description = null,
+                Status = "TBD"
             };
 
             string toDoActivityJson = @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""status"":""TBD""}";
@@ -175,15 +175,9 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             ResponseMessage udfResponse = this.CreateResponse();
             ResponseMessage itemResponse = this.CreateResponse();
 
-
             Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
             CosmosSerializerCore serializerCore = new CosmosSerializerCore(mockUserJsonSerializer.Object);
-            CosmosResponseFactoryInternal cosmosResponseFactory = new CosmosResponseFactoryCore(
-               serializerCore);
-
-            // Test the user specified response
-            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
-            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
+            CosmosResponseFactoryInternal cosmosResponseFactory = new CosmosResponseFactoryCore(serializerCore);
 
             // Verify all the user types use the user specified version
             ItemResponse<ToDoActivity> itemResponseFromFactory = cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponse);
@@ -251,6 +245,27 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             cosmosResponseFactory.CreateStoredProcedureResponse(storedProcedureResponse);
             cosmosResponseFactory.CreateTriggerResponse(triggerResponse);
             cosmosResponseFactory.CreateUserDefinedFunctionResponse(udfResponse);
+        }
+
+        [TestMethod]
+        public void ValidateResponseFactoryJsonSerializerWithContent()
+        {
+            ResponseMessage itemResponse = this.CreateResponseWithContent();
+
+            Mock<CosmosSerializer> mockUserJsonSerializer = new Mock<CosmosSerializer>();
+            CosmosSerializerCore serializerCore = new CosmosSerializerCore(mockUserJsonSerializer.Object);
+            CosmosResponseFactoryInternal cosmosResponseFactory = new CosmosResponseFactoryCore(serializerCore);
+
+            mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(itemResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
+
+            // Verify all the user types use the user specified version
+            ItemResponse<ToDoActivity> itemResponseFromFactory = cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponse);
+            Assert.IsNotNull(itemResponseFromFactory.Diagnostics);
+            Assert.IsNotNull(itemResponseFromFactory.Resource); 
+            Assert.AreEqual(HttpStatusCode.OK, itemResponseFromFactory.StatusCode);
+
+            // Throw if the setups were not called
+            mockUserJsonSerializer.VerifyAll();
         }
 
         [TestMethod]
@@ -339,6 +354,15 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             return cosmosResponse;
         }
 
+        private ResponseMessage CreateResponseWithContent()
+        {
+            ResponseMessage cosmosResponse = new ResponseMessage(statusCode: HttpStatusCode.OK)
+            {
+                Content = new MemoryStream(Encoding.UTF8.GetBytes(this.toDoActivityJson))
+            };
+            return cosmosResponse;
+        }
+
         private ResponseMessage CreateQueryResponse()
         {
             List<CosmosElement> cosmosElements = new List<CosmosElement>();
@@ -387,13 +411,18 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             return @"{""id"":""c1d433c1-369d-430e-91e5-14e3ce588f71"",""taskNum"":42,""cost"":1.7976931348623157E+308,""status"":""TBD""}";
         }
 
-        public class ToDoActivity
+        private class ToDoActivity
         {
-            public string id { get; set; }
-            public int taskNum { get; set; }
-            public double cost { get; set; }
-            public string description { get; set; }
-            public string status { get; set; }
+            [JsonProperty("id")]
+            public string Id { get; set; }
+            [JsonProperty("taskNum")]
+            public int TaskNum { get; set; }
+            [JsonProperty("cost")]
+            public double Cost { get; set; }
+            [JsonProperty("description")]
+            public string Description { get; set; }
+            [JsonProperty("status")]
+            public string Status { get; set; }
         }
     }
 }
