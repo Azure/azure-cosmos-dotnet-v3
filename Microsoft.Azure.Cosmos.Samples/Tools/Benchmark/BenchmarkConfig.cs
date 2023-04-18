@@ -102,7 +102,7 @@ namespace CosmosBenchmark
         public bool EnableTelemetry { get; set; }
 
         [Option(Required = false, HelpText = "Enable Distributed Tracing")]
-        public bool EnableDistributedTracing { get; set; }
+        public bool EnableDistributedTracing { get; set; } = true;
 
         [Option(Required = false, HelpText = "Client Telemetry Schedule in Seconds")]
         public int  TelemetryScheduleInSec { get; set; }
