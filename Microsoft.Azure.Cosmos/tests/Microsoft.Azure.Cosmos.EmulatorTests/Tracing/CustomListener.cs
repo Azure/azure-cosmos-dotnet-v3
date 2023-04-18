@@ -34,9 +34,18 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static ConcurrentBag<string> CollectedEvents { set; get; } = new();
 
         private string SourceType { set; get; }
-        
+
+        // Regex is used to match string 'n' against diagnosticNameSpace string
+        // which is constructed by combining first two parts of name.
+        // Eg: Azure.Cosmos.Operation where diagnosticNameSpace is Azure.Cosmos and Operation is the sourceType
         public CustomListener(string name, string eventName)
-            : this(n => Regex.Match(n, $"{name.Split(".")[0]}.{name.Split(".")[1]}").Success, name.Split(".")[2], eventName)
+            : this(n =>
+            {
+                string[] nameParts = name.Split(".");
+                string diagnosticNameSpace = $"{nameParts[0]}.{nameParts[1]}";
+                return Regex.Match(n, diagnosticNameSpace).Success;
+            }, name.Split(".")[2], eventName)
+
         {
         }
 
@@ -126,6 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             {
                                 throw new InvalidOperationException("Scope should not be stopped when calling Failed");
                             }
+                            producedDiagnosticScope.Exception = (Exception)value.Value;
                         }
                     }
                 }
