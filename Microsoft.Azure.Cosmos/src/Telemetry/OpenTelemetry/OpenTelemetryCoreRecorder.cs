@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using global::Azure.Core.Pipeline;
+    using global::Azure.Core;
 
     /// <summary>
     /// This class is used to add information in an Activity tags ref. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3058
