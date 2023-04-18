@@ -4,8 +4,6 @@
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption.Custom</AssemblyName>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption.Custom</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
-    <IsPreview>false</IsPreview>
-    
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <Version>$(CustomEncryptionVersion)</Version>
     <Company>Microsoft Corporation</Company>
