@@ -44,7 +44,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly string protocolFilter;
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly bool enableTcpConnectionEndpointRediscovery;
-        private readonly bool isCurrentReadRegion;
 
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
@@ -62,8 +61,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             CosmosHttpClient httpClient,
             IOpenConnectionsHandler openConnectionsHandler,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
-            bool enableTcpConnectionEndpointRediscovery = false,
-            bool isCurrentReadRegion = false)
+            bool enableTcpConnectionEndpointRediscovery = false)
         {
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
@@ -90,8 +88,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariableAsBool(
                 name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
                 defaultValue: false);
-
-            this.isCurrentReadRegion = isCurrentReadRegion;
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
@@ -923,10 +919,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Returns a list of <see cref="TransportAddressUri"/> needed to validate their health status. Validating
-        /// a uri is done by opening Rntbd connection to that replica, which is a costly operation by nature. Therefore
-        /// vaidating both Unhealthy and Unknown replicas at the same time could impose a high CPU utilization. To avoid
-        /// this situation, validating both Unknown and Unhealthy replicas at the same time is restricted only for the
-        /// current read region at the moment.
+        /// a uri is done by opening Rntbd connection to the backend replica, which is a costly operation by nature. Therefore
+        /// vaidating both Unhealthy and Unknown replicas at the same time could impose a high CPU utilization. To avoid this
+        /// situation, the RntbdOpenConnectionHandler has good concurrency control mechanism to open the connections gracefully/>.
         /// </summary>
         /// <param name="transportAddresses">A read only list of <see cref="TransportAddressUri"/>s.</param>
         /// <returns>A list of <see cref="TransportAddressUri"/> that needs to validate their status.</returns>
@@ -934,15 +929,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             IReadOnlyList<TransportAddressUri> transportAddresses)
         {
             return transportAddresses
-                .Where(address => this.isCurrentReadRegion ?
-                    address
+                .Where(address => address
                         .GetCurrentHealthState()
                         .GetHealthStatus() is
                             TransportAddressHealthState.HealthStatus.Unknown or
-                            TransportAddressHealthState.HealthStatus.UnhealthyPending :
-                    address
-                        .GetCurrentHealthState()
-                        .GetHealthStatus() is
                             TransportAddressHealthState.HealthStatus.UnhealthyPending);
         }
 

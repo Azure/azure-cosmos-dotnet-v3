@@ -960,9 +960,15 @@ namespace Microsoft.Azure.Cosmos
                 .ReplicaTransportAddressUris
                 .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
 
+            // Waits until a completion signal from the background task is received.
+            GatewayAddressCacheTests.WaitForManualResetEventSignal(
+                manualResetEvent: manualResetEvent,
+                shouldReset: true);
+
+            // Because the Unknown Replicas are now validated aggresively, the health status should be marked as connected.
             Assert.IsNotNull(refreshedUri);
             Assert.AreEqual(
-                expected: TransportAddressHealthState.HealthStatus.Unknown,
+                expected: TransportAddressHealthState.HealthStatus.Connected,
                 actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
 
             Assert.AreEqual(4, addressInfo.AllAddresses.Count);
@@ -1005,9 +1011,9 @@ namespace Microsoft.Azure.Cosmos
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
                 expectedExceptionCount: 0,
-                expectedMethodInvocationCount: 1,
-                expectedReceivedAddressesCount: 1,
-                expectedSuccessCount: 1);
+                expectedMethodInvocationCount: 2,
+                expectedReceivedAddressesCount: 6,
+                expectedSuccessCount: 6);
         }
 
         /// <summary>
@@ -1053,7 +1059,7 @@ namespace Microsoft.Azure.Cosmos
             FakeOpenConnectionHandler fakeOpenConnectionHandler = new (
                 failIndexesByAttempts: new Dictionary<int, HashSet<int>>()
                 {
-                    { 0, new HashSet<int>() { 0 } }
+                    { 0, new HashSet<int>() { 1 } }
                 },
                 manualResetEvent: manualResetEvent);
 
@@ -1095,9 +1101,22 @@ namespace Microsoft.Azure.Cosmos
                 .ReplicaTransportAddressUris
                 .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
 
+            // Waits until a completion signal from the background task is received.
+            GatewayAddressCacheTests.WaitForManualResetEventSignal(
+                manualResetEvent: manualResetEvent,
+                shouldReset: true);
+
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedExceptionCount: 0,
+                expectedMethodInvocationCount: 1,
+                expectedReceivedAddressesCount: 4,
+                expectedSuccessCount: 4);
+
+            // Because the Unknown Replicas are now validated aggresively, the health status should be marked as connected.
             Assert.IsNotNull(refreshedUri);
             Assert.AreEqual(
-                expected: TransportAddressHealthState.HealthStatus.Unknown,
+                expected: TransportAddressHealthState.HealthStatus.Connected,
                 actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
 
             Assert.AreEqual(4, addressInfo.AllAddresses.Count);
@@ -1141,9 +1160,9 @@ namespace Microsoft.Azure.Cosmos
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
                 expectedExceptionCount: 1,
-                expectedMethodInvocationCount: 1,
-                expectedReceivedAddressesCount: 1,
-                expectedSuccessCount: 0);
+                expectedMethodInvocationCount: 2,
+                expectedReceivedAddressesCount: 6,
+                expectedSuccessCount: 5);
 
             // A delay of 2 minute was added to make the replica unhealthy for more than one minute. This
             // will make sure the unhealthy replica gets a chance to re-validate it's health status.
@@ -1168,9 +1187,9 @@ namespace Microsoft.Azure.Cosmos
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
                 expectedExceptionCount: 1,
-                expectedMethodInvocationCount: 2,
-                expectedReceivedAddressesCount: 1,
-                expectedSuccessCount: 1);
+                expectedMethodInvocationCount: 3,
+                expectedReceivedAddressesCount: 7,
+                expectedSuccessCount: 6);
 
             addressInfo = await cache.TryGetAddressesAsync(
                 request: request,
@@ -1194,13 +1213,13 @@ namespace Microsoft.Azure.Cosmos
                 actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
 
             // This assertion makes sure that no additional calls were made to the open connection handler after
-            // since the last address refresh, because all the replicas are now either Unknown or Connected.
+            // since the last address refresh, because all the replicas at this point should be Connected.
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
                 expectedExceptionCount: 1,
-                expectedMethodInvocationCount: 2,
-                expectedReceivedAddressesCount: 1,
-                expectedSuccessCount: 1);
+                expectedMethodInvocationCount: 3,
+                expectedReceivedAddressesCount: 7,
+                expectedSuccessCount: 6);
         }
 
         /// <summary>
@@ -1474,7 +1493,7 @@ namespace Microsoft.Azure.Cosmos
             Task IOpenConnectionsHandler.TryOpenRntbdChannelsAsync(
                 IEnumerable<TransportAddressUri> addresses)
             {
-                this.totalReceivedAddressesCounter = addresses.Count();
+                this.totalReceivedAddressesCounter += addresses.Count();
                 for (int i = 0; i < addresses.Count(); i++)
                 {
                     if (this.useAttemptBasedFailingIndexs)
