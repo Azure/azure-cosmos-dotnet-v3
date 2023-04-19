@@ -49,8 +49,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             string sql = SqlTranslator.TranslateExpression(expr.Body, options);
 
             // Assert
-            // Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql); // <- THIS is the correct value, if we are able to use the custom serializer
-            Assert.AreEqual("(a[\"Value\"] IN (0, 1))", sql); // <- THIS is the current mis-behavior of the SDK
+            // Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql); // <- TODO - Desired Behavior with CustomSerializer
+            Assert.AreEqual("(a[\"Value\"] IN (0, 1))", sql); // <- Actual behavior, with ability to set custom serializor reverted
         }
 
         [TestMethod]
