@@ -102,6 +102,81 @@
           }
         ]
       }
+    },
+    {
+      "taskType": "trigger",
+      "capabilityId": "AutoMerge",
+      "subCapability": "AutoMerge",
+      "version": "1.0",
+      "config": {
+        "taskName": "PR Automerge",
+        "allowAutoMergeInstructionsWithoutLabel": false,
+        "mergeType": "squash",
+        "deleteBranches": true,
+        "removeLabelOnPush": true,
+        "label": "auto-merge",
+        "requireAllStatuses": false,
+        "requireSpecificCheckRuns": false,
+        "usePrDescriptionAsCommitMessage": false,
+        "minMinutesOpen": "60",
+        "enforceDMPAsStatus": true
+      }
+    },
+    {
+      "taskType": "scheduled",
+      "capabilityId": "ScheduledSearch",
+      "subCapability": "ScheduledSearch",
+      "version": "1.1",
+      "config": {
+        "frequency": [
+          {
+            "weekDay": 1,
+            "hours": [
+              9
+            ],
+            "timezoneOffset": -7
+          }
+        ],
+        "searchTerms": [
+          {
+            "name": "isOpen",
+            "parameters": {}
+          },
+          {
+            "name": "isIssue",
+            "parameters": {}
+          },
+          {
+            "name": "hasLabel",
+            "parameters": {
+              "label": "needs-more-information"
+            }
+          },
+          {
+            "name": "noActivitySince",
+            "parameters": {
+              "days": 14
+            }
+          },
+          {
+            "name": "noAssignees",
+            "parameters": {}
+          }
+        ],
+        "taskName": "Close inactive needs-information",
+        "actions": [
+          {
+            "name": "addReply",
+            "parameters": {
+              "comment": "${issueAuthor} this issue requires more information for the team to be able to help. In case this information is available, please add it and re-open the Issue."
+            }
+          },
+          {
+            "name": "closeIssue",
+            "parameters": {}
+          }
+        ]
+      }
     }
   ],
   "userGroups": []
