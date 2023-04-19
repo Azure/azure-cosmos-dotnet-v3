@@ -782,34 +782,18 @@ namespace Microsoft.Azure.Cosmos
             // Create a large enough buffer that URL encode can use it.
             // Increase the buffer by 3x so it can be used for the URL encoding
             int capacity = Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3;
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(capacity);
+            Span<byte> encodingBuffer = stackalloc byte[capacity];
 
-            try
+            OperationStatus status = Base64.EncodeToUtf8(hashPayLoad, encodingBuffer, out int _, out int bytesWritten);
+
+            if (status != OperationStatus.Done)
             {
-                Span<byte> encodingBuffer = rentedBuffer;
-                // This replaces the Convert.ToBase64String
-                OperationStatus status = Base64.EncodeToUtf8(
-                    hashPayLoad,
-                    encodingBuffer,
-                    out int _,
-                    out int bytesWritten);
-
-                if (status != OperationStatus.Done)
-                {
-                    throw new ArgumentException($"Authorization key payload is invalid. {status}");
-                }
-
-                return urlEncode 
-                    ? AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten)
-                    : Encoding.UTF8.GetString(encodingBuffer.Slice(0, bytesWritten));
+                throw new ArgumentException($"Authorization key payload is invalid. {status}");
             }
-            finally
-            {
-                if (rentedBuffer != null)
-                {
-                    ArrayPool<byte>.Shared.Return(rentedBuffer);
-                }
-            }
+
+            return urlEncode 
+                ? AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten)
+                : Encoding.UTF8.GetString(encodingBuffer.Slice(0, bytesWritten));
         }
 
         // This function is used by Compute
