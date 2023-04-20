@@ -51,36 +51,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 dekProperties.EncryptionKeyWrapMetadata.Value,
                 encryptionKeyStoreProvider);
 
-            ProtectedDataEncryptionKey protectedDataEncryptionKey;
+            byte[] unwrapKey = keyEncryptionKey.DecryptEncryptionKey(dekProperties.WrappedDataEncryptionKey);
+
+            // Init PlainDataEncryptionKey and then Init MDE Algorithm using PlaintextDataEncryptionKey.
+            // PlaintextDataEncryptionKey derives DataEncryptionkey to Init a Raw Root Key received via Legacy WrapProvider Unwrap result.
+            PlaintextDataEncryptionKey plaintextDataEncryptionKey;
             if (cacheTimeToLive.HasValue)
             {
                 // no caching
                 if (cacheTimeToLive.Value == TimeSpan.Zero)
                 {
-                    protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
+                    plaintextDataEncryptionKey = new PlaintextDataEncryptionKey(
                         dekProperties.Id,
-                        keyEncryptionKey,
-                        dekProperties.WrappedDataEncryptionKey);
+                        unwrapKey);
                 }
                 else
                 {
-                    protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
+                    plaintextDataEncryptionKey = PlaintextDataEncryptionKey.GetOrCreate(
                        dekProperties.Id,
-                       keyEncryptionKey,
-                       dekProperties.WrappedDataEncryptionKey);
+                       unwrapKey);
                 }
             }
             else
             {
-                protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
+                plaintextDataEncryptionKey = PlaintextDataEncryptionKey.GetOrCreate(
                        dekProperties.Id,
-                       keyEncryptionKey,
-                       dekProperties.WrappedDataEncryptionKey);
+                       unwrapKey);
             }
 
-            this.RawKey = keyEncryptionKey.DecryptEncryptionKey(dekProperties.WrappedDataEncryptionKey);
+            this.RawKey = unwrapKey;
             this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
-                protectedDataEncryptionKey,
+                plaintextDataEncryptionKey,
                 encryptionType);
         }
 
