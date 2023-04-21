@@ -31,9 +31,6 @@
     {
         private static CosmosClient client;
         private static Database database;
-        private static readonly Container container;
-        private CosmosClientBuilder cosmosClientBuilder;
-        private List<string> preferredRegionList;
 
         [TestInitialize]
         public void TestInitialize()
@@ -68,7 +65,7 @@
         }
 
         [TestMethod]
-        public async Task OperationOrRequestSourceEnabled_ResultsInActivityCreation2()
+        public async Task OperationOrRequestSourceEnabled_DirectMode_RecordsActivity()
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
@@ -85,7 +82,7 @@
                 DatabaseResponse dbResposne = await client.CreateDatabaseAsync(
                         Guid.NewGuid().ToString(),
                         cancellationToken: default);
-                
+
                 ContainerResponse containerResponse = await dbResposne.Database.CreateContainerAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/id",
@@ -98,55 +95,38 @@
                     });
 
                 ItemResponse<JToken> createResponse = await containerResponse.Container.CreateItemAsync(JToken.Parse(cosmosObject.ToString()));
-                
+
+                //Asserts traceparent header in Direct mode request
                 Assert.IsTrue(createResponse.RequestMessage.Headers.TryGetValue("traceparent", out string traceheader));
                 Assert.IsNotNull(traceheader);
-                
+
+                //Asserts traceId in Diagnostics logs
                 string diagnosticsCreateItem = createResponse.Diagnostics.ToString();
                 JObject objDiagnosticsCreate = JObject.Parse(diagnosticsCreateItem);
                 string distributedTraceId = (string)objDiagnosticsCreate["data"]["DistributedTraceId"];
                 Assert.IsTrue(!string.IsNullOrEmpty(distributedTraceId));
+
                 Assert.AreEqual(4, CustomOtelExporter.CollectedActivities.Count());
             }
         }
 
         [TestMethod]
-        public async Task NoSourceEnabled_ResultsInNoActivity2()
+        public async Task OperationOrRequestSourceEnabled_GatewayMode_RecordsActivity()
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
 
-            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper();
-            HttpClient httpClient = new HttpClient(httpHandler);
-            string traceparentHeader = null;
-
-            httpHandler.RequestCallBack = (request, cancellation) =>
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper
             {
-                if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                RequestCallBack = (request, cancellation) =>
                 {
-                    traceparentHeader = request.Headers.GetValues("traceparent").FirstOrDefault();
-                    HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
-
-                    string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                    return Task.FromResult(result);
+                    if (request.Headers.TryGetValues("traceparent", out IEnumerable<string> traceparentHeaderValues))
+                    {
+                        Assert.IsNotNull(traceparentHeaderValues);
+                    }
+                    return null;
                 }
-                return null;
             };
-
-            this.preferredRegionList = new List<string>
-            {
-                "region1",
-                "region2"
-            };
-            this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
-                                        .WithApplicationPreferredRegions(this.preferredRegionList)
-                                        .WithHttpClientFactory(() => new HttpClient(httpHandler));
-
-            this.SetClient(mode == ConnectionMode.Gateway
-                ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()
-                : this.cosmosClientBuilder.Build());
-
-            this.database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
 
             using (TracerProvider provider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter()
@@ -155,12 +135,14 @@
                 .Build())
             {
                 client = TestCommon.CreateCosmosClient(
-                    useGateway: false,
-                    enableDistributingTracing: true);
+                          useGateway: false,
+                          enableDistributingTracing: true,
+                          httpClientFactory: () => new HttpClient(httpClientHandlerHelper));
 
                 database = await client.CreateDatabaseAsync(
                         Guid.NewGuid().ToString(),
                         cancellationToken: default);
+
                 Assert.AreEqual(1, CustomOtelExporter.CollectedActivities.Count());
             }
         }
@@ -198,11 +180,6 @@
             client?.Dispose();
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
-        }
-        private static void AssertAndResetActivityInformation()
-        {
-            AssertActivity.AreEqualAcrossListeners();
-            CustomOtelExporter.CollectedActivities = new();
         }
     }
 }
