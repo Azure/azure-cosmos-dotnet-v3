@@ -1,6 +1,6 @@
 ## <a name="recommended-version"></a> Recommended version
 
-The **minimum recommended version is [3.31.0](#3.31.0)**.
+The **minimum recommended version is [3.33.0](#3.33.0)**.
 
 Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes.
 
@@ -12,6 +12,32 @@ Preview features are treated as a separate branch and will not be included in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+### <a name="3.33.0"/> [3.33.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.33.0) - 2023-04-21
+
+#### Fixed 
+- [3707](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3707) Diagnostics: Adds startDate in Summary
+- [3457](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3457) Documentation: Update Database.ReadAsync description
+- [3730](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3730) Query: Fixes System.ArgumentException when using PartitionKey.None on x86, Linux or in Optimistic Direct Execution
+- [3775](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3775) Change Feed Processor: Fixes LeaseLostException leaks on notification APIs for Renew scenarios
+- [3792](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3792) SummaryDiagnostics: Refactors Code to Remove Dependency of HttpResponseHeadersWrapper to fetch Sub Status Codes
+- [3793](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3793) Documentation: Refactors SQL API reference to NoSQL API
+- [3762](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3762) HttpClient: Adds detection of DNS changes through use of SocketsHttpHandler for .NET 6 and above
+
+#### Added
+- [3631](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3631) Upgrade Resiliency: Adds Implementation for Validating the Unhealthy Backend Replicas in Direct mode
+- [3629](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3629) Query: Adds FIRST and LAST Scalar Expressions
+- [3109](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3109) Subpartitioning: Adds support for Prefix Partition Key searches for sub partitioned containers
+- [3763](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3763) Subpartitioning: Adds APIs for public release and increase REST API version
+- [3768](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3768) Upgrade Resiliency: Refactors GatewayAddressCache to Mark TransportAddresses to Unhealthy when Connection Reset Event Occurs
+- [3803](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3803) HttpClient: Adds Properties to the Http messages if available
+- [3389](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3389) Patch: Adds Move Operation
+
+### <a name="3.33.0-preview"/> [3.33.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.33.0-preview) - 2023-04-21
+
+### Added
+
+- [Added](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3672) PriorityBasedExecution: Added PriorityLevel as a RequestOption
 
 ### <a name="3.32.3"/> [3.32.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.3) - 2023-03-30
 ### <a name="3.32.3-preview"/> [3.32.3-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.32.3-preview) - 2023-03-30
