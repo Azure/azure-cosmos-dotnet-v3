@@ -1,6 +1,6 @@
 # Build pipelines for the Azure Cosmos DB .NET SDK
 
-This repository contains 3 pipelines that are used on different scenarios.
+This repository contains 6 pipelines that are used on different scenarios.
 
 ## PR Validation
 
@@ -23,7 +23,7 @@ This pipeline executes on Azure Pipelines as [dotnet-v3-ci](https://cosmos-db-sd
 
 * [Static analysis](../templates/static-tools.yml)
 * [Run the Unit and Emulator tests](../templates/build-test.yml) -> For more information about tests, see the [CONTRIBUTING guide](../CONTRIBUTING.md#tests).
-* [Generate a Nuget package, and a Symbols package, and publish it on the `cosmosdb/csharp/<version>/` storage container](../templates/nuget-pack.yml)
+* [Generate a Nuget package, and a Symbols package, and publish it on the `cosmosdb/csharp/<version>` storage container](../templates/nuget-pack.yml) the Nuget version will be what is defined on [Directory.Build.Props](../Directory.Build.props). Template parameters: ReleasePackage = true, CleanupFolder = false, BlobVersion = `<version>`
 
 This pipeline executes on Azure Pipelines as [dotnet-v3-release](https://cosmos-db-sdk-public.visualstudio.com/cosmos-db-sdk-public/_build?definitionId=65).
 
@@ -36,8 +36,8 @@ This pipeline executes on Azure Pipelines as [dotnet-v3-release](https://cosmos-
 
 The pipeline will:
 
-* [Generate a nightly Nuget package and publish it on the `cosmosdb/csharp/nightly` storage container and delete previous contents](../templates/nuget-pack.yml)
-* [Generate a preview nightly Nuget package and publish it on the `cosmosdb/csharp/nightly-preview` storage container and delete previous contents](../templates/nuget-pack.yml)
+* [Generate a nightly Nuget package and publish it on the `cosmosdb/csharp/nightly` storage container and delete previous contents](../templates/nuget-pack.yml). Template parameters: ReleasePackage = true, CleanupFolder = true, BlobVersion = nightly.
+* [Generate a preview nightly Nuget package and publish it on the `cosmosdb/csharp/nightly-preview` storage container and delete previous contents](../templates/nuget-pack.yml). Template parameters: ReleasePackage = true, CleanupFolder = true, BlobVersion = nightly-preview.
 
 This pipeline executes on Azure Pipelines as [dotnet-v3-nightly](https://cosmos-db-sdk-public.visualstudio.com/cosmos-db-sdk-public/_build?definitionId=75).
 
