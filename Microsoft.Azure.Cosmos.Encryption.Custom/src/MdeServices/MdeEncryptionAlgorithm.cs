@@ -51,37 +51,36 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 dekProperties.EncryptionKeyWrapMetadata.Value,
                 encryptionKeyStoreProvider);
 
-            byte[] unwrapKey = keyEncryptionKey.DecryptEncryptionKey(dekProperties.WrappedDataEncryptionKey);
-
-            // Init PlainDataEncryptionKey and then Init MDE Algorithm using PlaintextDataEncryptionKey.
-            // PlaintextDataEncryptionKey derives DataEncryptionkey to Init a Raw Root Key received via Legacy WrapProvider Unwrap result.
-            PlaintextDataEncryptionKey plaintextDataEncryptionKey;
+            ProtectedDataEncryptionKey protectedDataEncryptionKey;
             if (cacheTimeToLive.HasValue)
             {
                 // no caching
                 if (cacheTimeToLive.Value == TimeSpan.Zero)
                 {
-                    plaintextDataEncryptionKey = new PlaintextDataEncryptionKey(
+                    protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
                         dekProperties.Id,
-                        unwrapKey);
+                        keyEncryptionKey,
+                        dekProperties.WrappedDataEncryptionKey);
                 }
                 else
                 {
-                    plaintextDataEncryptionKey = PlaintextDataEncryptionKey.GetOrCreate(
+                    protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
                        dekProperties.Id,
-                       unwrapKey);
+                       keyEncryptionKey,
+                       dekProperties.WrappedDataEncryptionKey);
                 }
             }
             else
             {
-                plaintextDataEncryptionKey = PlaintextDataEncryptionKey.GetOrCreate(
+                protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
                        dekProperties.Id,
-                       unwrapKey);
+                       keyEncryptionKey,
+                       dekProperties.WrappedDataEncryptionKey);
             }
 
-            this.RawKey = unwrapKey;
+            this.RawKey = protectedDataEncryptionKey.RootKeyBytes;
             this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
-                plaintextDataEncryptionKey,
+                protectedDataEncryptionKey,
                 encryptionType);
         }
 
@@ -94,11 +93,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="dataEncryptionKey"> Data Encryption Key </param>
         /// <param name="encryptionType"> Encryption type </param>
         public MdeEncryptionAlgorithm(
-            byte[] unwrapKey,
             Data.Encryption.Cryptography.DataEncryptionKey dataEncryptionKey,
             Data.Encryption.Cryptography.EncryptionType encryptionType)
         {
-            this.RawKey = unwrapKey;
+            this.RawKey = dataEncryptionKey.RootKeyBytes;
             this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                 dataEncryptionKey,
                 encryptionType);

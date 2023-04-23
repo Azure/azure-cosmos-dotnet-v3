@@ -335,7 +335,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 unwrapResult.DataEncryptionKey);
 
             return new MdeEncryptionAlgorithm(
-                unwrapResult.DataEncryptionKey,
                 plaintextDataEncryptionKey,
                 Data.Encryption.Cryptography.EncryptionType.Randomized);
         }
@@ -385,7 +384,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
                 {
-
                     DataEncryptionKey dek = this.InitMdeEncryptionAlgorithm(dekProperties);
 
                     // TTL is not used since DEK is not cached.
