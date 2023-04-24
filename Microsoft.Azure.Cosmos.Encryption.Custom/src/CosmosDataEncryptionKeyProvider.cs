@@ -167,10 +167,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <inheritdoc/>
+        public override async Task<DataEncryptionKey> FetchDataEncryptionKeyWithoutRawKeyAsync(
+            string id,
+            string encryptionAlgorithm,
+            CancellationToken cancellationToken)
+        {
+            return await this.FetchDekAsync(id, encryptionAlgorithm, cancellationToken);
+        }
+
+        /// <inheritdoc/>
         public override async Task<DataEncryptionKey> FetchDataEncryptionKeyAsync(
             string id,
             string encryptionAlgorithm,
             CancellationToken cancellationToken)
+        {
+            return await this.FetchDekAsync(id, encryptionAlgorithm, cancellationToken, true);
+
+        }
+
+        private async Task<DataEncryptionKey> FetchDekAsync(string id, string encryptionAlgorithm, CancellationToken cancellationToken, bool withRawKey = false)
         {
             DataEncryptionKeyProperties dataEncryptionKeyProperties = await this.dataEncryptionKeyContainerCore.FetchDataEncryptionKeyPropertiesAsync(
                 id,
@@ -200,7 +215,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             InMemoryRawDek inMemoryRawDek = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
                 dataEncryptionKeyProperties,
                 diagnosticsContext: CosmosDiagnosticsContext.Create(null),
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken,
+                withRawKey);
 
             return inMemoryRawDek.DataEncryptionKey;
         }
