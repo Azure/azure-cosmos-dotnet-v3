@@ -31,10 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [3762](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3762) HttpClient: Adds detection of DNS changes through use of SocketsHttpHandler for .NET 6 and above
 
 #### Added
-- [3631](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3631) Upgrade Resiliency: Adds Implementation for Validating the Unhealthy Backend Replicas in Direct mode
 - [3629](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3629) Query: Adds FIRST and LAST Scalar Expressions
 - [3109](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3109), [3763](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3763)  Subpartitioning: Adds support for Prefix Partition Key searches for sub partitioned containers, and APIs for public release and increase REST API version
-- [3768](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3768) Upgrade Resiliency: Refactors GatewayAddressCache to Mark TransportAddresses to Unhealthy when Connection Reset Event Occurs
 - [3803](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3803) HttpClient: Adds Properties to the Http messages if available
 - [3389](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3389) Patch: Adds Move Operation
 
