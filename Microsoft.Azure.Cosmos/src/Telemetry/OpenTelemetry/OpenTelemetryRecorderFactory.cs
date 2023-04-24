@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 if (scope.IsEnabled)
                 {
                     openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateOperationLevelParentActivity(
-                        scope: scope,
+                        operationScope: scope,
                         operationName: operationName,
                         containerName: containerName,
                         databaseName: databaseName,
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     DiagnosticScope requestScope = LazyScopeFactory.Value.CreateScope(name: $"{OpenTelemetryAttributeKeys.NetworkLevelPrefix}.{operationName}");
 
-                    openTelemetryRecorder = requestScope.IsEnabled ? OpenTelemetryCoreRecorder.CreateNetworkLevelParentActivity(scope: requestScope) : OpenTelemetryCoreRecorder.CreateParentActivity(operationName);
+                    openTelemetryRecorder = requestScope.IsEnabled ? OpenTelemetryCoreRecorder.CreateNetworkLevelParentActivity(networkScope: requestScope) : OpenTelemetryCoreRecorder.CreateParentActivity(operationName);
                 }
 #endif
                 trace.AddDatum("DistributedTraceId", Activity.Current?.Id);

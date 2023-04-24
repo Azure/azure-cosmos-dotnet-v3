@@ -72,24 +72,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Used for creating parent activity in scenario where there are no listeners at operation level 
         /// but they are present at network level
         /// </summary>
-        public static OpenTelemetryCoreRecorder CreateNetworkLevelParentActivity(DiagnosticScope scope)
+        public static OpenTelemetryCoreRecorder CreateNetworkLevelParentActivity(DiagnosticScope networkScope)
         {
-            return new OpenTelemetryCoreRecorder(scope);
+            return new OpenTelemetryCoreRecorder(networkScope);
         }
 
         /// <summary>
         /// Used for creating parent activity in scenario where there are no listeners at operation level and network level
         /// </summary>
-        public static OpenTelemetryCoreRecorder CreateParentActivity(string operation)
+        public static OpenTelemetryCoreRecorder CreateParentActivity(string operationName)
         {
-            return new OpenTelemetryCoreRecorder(operation);
+            return new OpenTelemetryCoreRecorder(operationName);
         }
 
         /// <summary>
         /// Used for creating parent activity in scenario where there are listeners at operation level 
         /// </summary>
         public static OpenTelemetryCoreRecorder CreateOperationLevelParentActivity(
-        DiagnosticScope scope,
+        DiagnosticScope operationScope,
         string operationName,
         string containerName,
         string databaseName,
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         CosmosClientContext clientContext, DistributedTracingOptions config)
         {
             return new OpenTelemetryCoreRecorder(
-                        scope,
+                        operationScope,
                         operationName,
                         containerName,
                         databaseName,
