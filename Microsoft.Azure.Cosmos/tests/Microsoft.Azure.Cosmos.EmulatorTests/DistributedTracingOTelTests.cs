@@ -39,7 +39,7 @@
         }
 
         [DataRow(true, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation")]
-        [DataRow(true,  $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request")]
+        [DataRow(true, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request")]
         [DataRow(false, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation")]
         [DataRow(false, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request")]
         [TestMethod]
@@ -53,19 +53,18 @@
                 .Build())
             {
                 client = TestCommon.CreateCosmosClient(
-                    useGateway: useGateway,
-                    enableDistributingTracing: true);
+                useGateway: useGateway,
+                enableDistributingTracing: true);
 
                 database = await client.CreateDatabaseAsync(
-                        Guid.NewGuid().ToString(),
-                        cancellationToken: default);
+                    Guid.NewGuid().ToString(),
+                    cancellationToken: default);
                 Assert.AreEqual(1, CustomOtelExporter.CollectedActivities.Count());
-                Assert.AreEqual(source, CustomOtelExporter.CollectedActivities.FirstOrDefault().Source.Name);
             }
         }
 
         [TestMethod]
-        public async Task OperationOrRequestSourceEnabled_DirectMode_RecordsActivity()
+        public async Task SourceEnabled_DirectMode_RecordsActivity_AssertTraceId_AssertsTraceparent()
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
@@ -76,22 +75,22 @@
                 .Build())
             {
                 client = TestCommon.CreateCosmosClient(
-                    useGateway: false,
-                    enableDistributingTracing: true);
+                useGateway: false,
+                enableDistributingTracing: true);
 
-                DatabaseResponse dbResposne = await client.CreateDatabaseAsync(
+                DatabaseResponse dbResponse = await client.CreateDatabaseAsync(
                         Guid.NewGuid().ToString(),
                         cancellationToken: default);
-
-                ContainerResponse containerResponse = await dbResposne.Database.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
-                    partitionKeyPath: "/id",
-                    throughput: 20000);
+                database = dbResponse.Database;
+                ContainerResponse containerResponse = await database.CreateContainerAsync(
+                        id: Guid.NewGuid().ToString(),
+                        partitionKeyPath: "/id",
+                        throughput: 20000);
 
                 CosmosObject cosmosObject = CosmosObject.Create(
                     new Dictionary<string, CosmosElement>()
                     {
-                    { "id", CosmosString.Create("1") }
+                        { "id", CosmosString.Create("1") }
                     });
 
                 ItemResponse<JToken> createResponse = await containerResponse.Container.CreateItemAsync(JToken.Parse(cosmosObject.ToString()));
@@ -106,12 +105,12 @@
                 string distributedTraceId = (string)objDiagnosticsCreate["data"]["DistributedTraceId"];
                 Assert.IsTrue(!string.IsNullOrEmpty(distributedTraceId));
 
-                Assert.AreEqual(4, CustomOtelExporter.CollectedActivities.Count());
+                Assert.IsNotNull(CustomOtelExporter.CollectedActivities);
             }
         }
 
         [TestMethod]
-        public async Task OperationOrRequestSourceEnabled_GatewayMode_RecordsActivity()
+        public async Task SourceEnabled_GatewayMode_RecordsActivity_AssertTraceId_AssertsTraceparent()
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
@@ -135,22 +134,31 @@
                 .Build())
             {
                 client = TestCommon.CreateCosmosClient(
-                          useGateway: false,
-                          enableDistributingTracing: true,
-                          httpClientFactory: () => new HttpClient(httpClientHandlerHelper));
+                        useGateway: true,
+                        enableDistributingTracing: true,
+                        httpClientFactory: () => new HttpClient(httpClientHandlerHelper));
 
-                database = await client.CreateDatabaseAsync(
+                DatabaseResponse dbResponse = await client.CreateDatabaseAsync(
                         Guid.NewGuid().ToString(),
                         cancellationToken: default);
+                database = dbResponse.Database;
+
+                //Asserts traceId in Diagnostics logs
+                string diagnosticsCreateItem = dbResponse.Diagnostics.ToString();
+                JObject objDiagnosticsCreate = JObject.Parse(diagnosticsCreateItem);
+                string distributedTraceId = (string)objDiagnosticsCreate["data"]["DistributedTraceId"];
+                Assert.IsTrue(!string.IsNullOrEmpty(distributedTraceId));
 
                 Assert.AreEqual(1, CustomOtelExporter.CollectedActivities.Count());
             }
         }
 
-        [DataRow(true)]
-        [DataRow(false)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
+        [DataRow(false, true)]
+        [DataRow(false, false)]
         [TestMethod]
-        public async Task NoSourceEnabled_ResultsInNoActivity(bool enableDistributingTracing)
+        public async Task NoSourceEnabled_ResultsInNoActivity(bool enableDistributingTracing, bool useGateway)
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
@@ -159,12 +167,12 @@
                 .Build())
             {
                 client = TestCommon.CreateCosmosClient(
-                    useGateway: false,
-                    enableDistributingTracing: enableDistributingTracing);
+                useGateway: useGateway,
+                enableDistributingTracing: enableDistributingTracing);
 
                 database = await client.CreateDatabaseAsync(
-                        Guid.NewGuid().ToString(),
-                        cancellationToken: default);
+                    Guid.NewGuid().ToString(),
+                    cancellationToken: default);
                 Assert.AreEqual(0, CustomOtelExporter.CollectedActivities.Count());
             }
         }

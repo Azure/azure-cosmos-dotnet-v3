@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 // Record values only when we have a valid Diagnostic Scope
                 if (scope.IsEnabled)
                 {
-                    openTelemetryRecorder = new OpenTelemetryCoreRecorder(
+                    openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateOperationLevelParentActivity(
                         scope: scope,
                         operationName: operationName,
                         containerName: containerName,
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     DiagnosticScope requestScope = LazyScopeFactory.Value.CreateScope(name: $"{OpenTelemetryAttributeKeys.NetworkLevelPrefix}.{operationName}");
 
-                    openTelemetryRecorder = requestScope.IsEnabled ? new OpenTelemetryCoreRecorder(scope: requestScope) : new OpenTelemetryCoreRecorder(operationName);
+                    openTelemetryRecorder = requestScope.IsEnabled ? OpenTelemetryCoreRecorder.CreateNetworkLevelParentActivity(scope: requestScope) : OpenTelemetryCoreRecorder.CreateParentActivity(operationName);
                 }
 #endif
                 trace.AddDatum("DistributedTraceId", Activity.Current?.Id);
