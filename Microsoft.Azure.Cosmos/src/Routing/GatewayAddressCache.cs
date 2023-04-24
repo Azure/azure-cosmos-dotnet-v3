@@ -859,7 +859,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (addressesNeedToValidateStatus.Any())
             {
                 Task openConnectionsInBackgroundTask = Task.Run(async () => await this.openConnectionsHandler.TryOpenRntbdChannelsAsync(
-                    addresses: addressesNeedToValidateStatus.ToList()));
+                    addresses: addressesNeedToValidateStatus));
             }
         }
 
