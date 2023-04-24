@@ -33,8 +33,7 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         public IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris,
                                                                       Lazy<HashSet<TransportAddressUri>> failedEndpoints,
-                                                                      bool replicaAddressValidationEnabled,
-                                                                      bool validateUnknownReplicasAggressively)
+                                                                      bool replicaAddressValidationEnabled)
         {
             if (failedEndpoints == null)
             {
@@ -46,14 +45,13 @@ namespace Microsoft.Azure.Documents
 
             // We reorder the replica set with the following rule, to avoid landing on to any unhealthy replica/s:
             // Scenario 1: When replica validation is enabled, the replicas will be reordered by the preference of
-            // Connected/Unknown > UnhealthyPending > Unhealthy.
+            // Connected > Unknown > UnhealthyPending > Unhealthy.
             // Scenario 2: When replica validation is disabled, the replicas will be reordered by the preference of
             // Connected/Unknown/UnhealthyPending > Unhealthy.
             return AddressEnumerator.ReorderReplicasByHealthStatus(
                 randomPermutation: randomPermutation,
                 lazyFailedReplicasPerRequest: failedEndpoints,
-                replicaAddressValidationEnabled: replicaAddressValidationEnabled,
-                validateUnknownReplicasAggressively: validateUnknownReplicasAggressively);
+                replicaAddressValidationEnabled: replicaAddressValidationEnabled);
         }
 
         /// <summary>
@@ -196,7 +194,7 @@ namespace Microsoft.Azure.Documents
 
         /// <summary>
         /// Reorders the replica set to prefer the healthy replicas over the unhealthy ones. When replica address validation
-        /// is enabled, the address enumerator will pick the replicas in the order of their health statuses: Connected/
+        /// is enabled, the address enumerator will pick the replicas in the order of their health statuses: Connected >
         /// Unknown > UnhealthyPending > Unhealthy. When replica address validation is disabled, the address enumerator will
         /// transition away Unknown/UnhealthyPending replicas and pick the replicas by preferring any of the  Connected/ Unknown
         /// / UnhealthyPending over the Unhealthy ones.
@@ -204,13 +202,11 @@ namespace Microsoft.Azure.Documents
         /// <param name="randomPermutation">A list containing the permutation of the replicas.</param>
         /// <param name="lazyFailedReplicasPerRequest">A lazy set containing the unhealthy replicas.</param>
         /// <param name="replicaAddressValidationEnabled">A boolean flag indicating if the replica validation is enabled.</param>
-        /// <param name="validateUnknownReplicasAggressively">A boolean flag indicating if aggressive validation of unknown replicas are enabled.</param>
         /// <returns>A list of <see cref="TransportAddressUri"/> ordered by the replica health statuses.</returns>
         private static IEnumerable<TransportAddressUri> ReorderReplicasByHealthStatus(
             IEnumerable<TransportAddressUri> randomPermutation,
             Lazy<HashSet<TransportAddressUri>> lazyFailedReplicasPerRequest,
-            bool replicaAddressValidationEnabled,
-            bool validateUnknownReplicasAggressively)
+            bool replicaAddressValidationEnabled)
         {
             HashSet<TransportAddressUri> failedReplicasPerRequest = null;
             if (lazyFailedReplicasPerRequest != null &&
@@ -230,25 +226,22 @@ namespace Microsoft.Azure.Documents
             {
                 return AddressEnumerator.ReorderAddressesWhenReplicaValidationEnabled(
                     addresses: randomPermutation,
-                    failedReplicasPerRequest: failedReplicasPerRequest,
-                    validateUnknownReplicasAggressively: validateUnknownReplicasAggressively);
+                    failedReplicasPerRequest: failedReplicasPerRequest);
             }
         }
 
         /// <summary>
         /// When replica address validation is enabled, the address enumerator will pick the replicas in the order of their health statuses:
-        /// Connected/Unknown > UnhealthyPending > Unhealthy. The open connection handler will be used to transit away unknown/unhealthy pending status.
+        /// Connected >> Unknown >> UnhealthyPending >> Unhealthy. The open connection handler will be used to transit away unknown/unhealthy pending status.
         /// But in case open connection request can not happen/ finish due to any reason, then after some extended time (for example 1 minute),
         /// the address enumerator will mark Unknown/ Unhealthy pending into Healthy category (please check details of TransportAddressUri.GetEffectiveHealthStatus())
         /// </summary>
         /// <param name="addresses">A random list containing all of the replica <see cref="TransportAddressUri"/> addresses.</param>
         /// <param name="failedReplicasPerRequest">A hash set containing the failed replica addresses.</param>
-        /// <param name="validateUnknownReplicasAggressively">A boolean flag indicating if aggressive validation of unknown replicas are enabled.</param>
         /// <returns>The reordered list of <see cref="TransportAddressUri"/>.</returns>
         private static IEnumerable<TransportAddressUri> ReorderAddressesWhenReplicaValidationEnabled(
             IEnumerable<TransportAddressUri> addresses,
-            HashSet<TransportAddressUri> failedReplicasPerRequest,
-            bool validateUnknownReplicasAggressively)
+            HashSet<TransportAddressUri> failedReplicasPerRequest)
         {
             List<TransportAddressUri> unknownReplicas = null, failedReplicas = null, pendingReplicas = null;
             foreach (TransportAddressUri transportAddressUri in addresses)
@@ -257,33 +250,21 @@ namespace Microsoft.Azure.Documents
                     addressUri: transportAddressUri,
                     failedEndpoints: failedReplicasPerRequest);
 
-                if (validateUnknownReplicasAggressively)
+                if (status == TransportAddressHealthState.HealthStatus.Connected)
                 {
-                    if (status == TransportAddressHealthState.HealthStatus.Connected)
-                    {
-                        yield return transportAddressUri;
-                    }
-                    else if (status == TransportAddressHealthState.HealthStatus.Unknown)
-                    {
-                        unknownReplicas ??= new ();
-                        unknownReplicas.Add(transportAddressUri);
-                    }
+                    yield return transportAddressUri;
                 }
-                else
+                else if (status == TransportAddressHealthState.HealthStatus.Unknown)
                 {
-                    if (status == TransportAddressHealthState.HealthStatus.Connected
-                        || status == TransportAddressHealthState.HealthStatus.Unknown)
-                    {
-                        yield return transportAddressUri;
-                    }
+                    unknownReplicas ??= new ();
+                    unknownReplicas.Add(transportAddressUri);
                 }
-
-                if (status == TransportAddressHealthState.HealthStatus.UnhealthyPending)
+                else if (status == TransportAddressHealthState.HealthStatus.UnhealthyPending)
                 {
                     pendingReplicas ??= new ();
                     pendingReplicas.Add(transportAddressUri);
                 }
-                else if (status == TransportAddressHealthState.HealthStatus.Unhealthy)
+                else
                 {
                     failedReplicas ??= new ();
                     failedReplicas.Add(transportAddressUri);

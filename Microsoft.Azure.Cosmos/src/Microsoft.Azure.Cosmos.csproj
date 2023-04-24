@@ -90,6 +90,11 @@
 			<AutoGen>True</AutoGen>
 			<DependentUpon>SystemStrings.tt</DependentUpon>
 		</Compile>
+		<Compile Update="RMResources.Designer.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>RMResources.resx</DependentUpon>
+		</Compile>
 	</ItemGroup>
 	<ItemGroup>
 		<EmbeddedResource Update="ClientResources.resx">

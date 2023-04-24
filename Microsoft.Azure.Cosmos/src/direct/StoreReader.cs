@@ -214,18 +214,13 @@ namespace Microsoft.Azure.Documents
 
             bool hasGoneException = false;
             bool hasCancellationException = false;
-            bool aggressiveValidationEnabled = entity.RequestContext.RegionName?.Equals(
-                value: entity.RequestContext.FirstPreferredReadRegion,
-                comparisonType: StringComparison.OrdinalIgnoreCase) ?? false;
-
             Exception cancellationException = null;
             Exception exceptionToThrow = null;
             SubStatusCodes subStatusCodeForException = SubStatusCodes.Unknown;
             IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator
                                                             .GetTransportAddresses(transportAddressUris: resolveApiResults,
                                                                                    failedEndpoints: entity.RequestContext.FailedEndpoints,
-                                                                                   replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled,
-                                                                                   validateUnknownReplicasAggressively: aggressiveValidationEnabled)
+                                                                                   replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled)
                                                             .GetEnumerator();
 
             // The replica health status of the transport address uri will change eventually with the motonically increasing time.
