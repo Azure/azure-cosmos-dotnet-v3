@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using EncryptionKeyWrapMetadata = Custom.EncryptionKeyWrapMetadata;
     using DataEncryptionKey = Custom.DataEncryptionKey;
     using Newtonsoft.Json.Linq;
+    using System.Buffers.Text;
 
     [TestClass]
     public class MdeCustomEncryptionTests
@@ -119,6 +120,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
             DataEncryptionKey k = await dekProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(dekProperties.Id, dekProperties.EncryptionAlgorithm, CancellationToken.None);
             Assert.IsNull(k.RawKey);
+        }
+
+        [TestMethod]
+        [Obsolete]
+        public async Task FetchDataEncryptionKeyMdeDEKAndLegacyBasedAlgorithm()
+        {
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestEncryptionKeyStoreProvider());
+            await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
+            DataEncryptionKey k = await dekProvider.FetchDataEncryptionKeyAsync(dekProperties.Id, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, CancellationToken.None);
+            Assert.IsNotNull(k.RawKey);
+        }
+
+        [TestMethod]
+        [Obsolete]
+        public async Task FetchDataEncryptionKeyLegacyDEKAndMdeBasedAlgorithm()
+        {
+            string dekId = "legacyDEK";
+            DataEncryptionKeyProperties dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
+            // Use different DEK provider to avoid (unintentional) cache impact
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(), new TestEncryptionKeyStoreProvider());
+            await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
+            DataEncryptionKey k = await dekProvider.FetchDataEncryptionKeyAsync(dekProperties.Id, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, CancellationToken.None);
+            Assert.IsNotNull(k.RawKey);
         }
 
         [TestMethod]

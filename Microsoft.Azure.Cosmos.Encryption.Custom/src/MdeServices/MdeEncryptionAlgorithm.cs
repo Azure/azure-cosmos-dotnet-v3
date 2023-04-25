@@ -54,33 +54,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (!withRawKey)
             {
-                ProtectedDataEncryptionKey protectedDataEncryptionKey;
-                if (cacheTimeToLive.HasValue)
-                {
-                    // no caching
-                    if (cacheTimeToLive.Value == TimeSpan.Zero)
-                    {
-                        protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
-                            dekProperties.Id,
-                            keyEncryptionKey,
-                            dekProperties.WrappedDataEncryptionKey);
-                    }
-                    else
-                    {
-                        protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
-                           dekProperties.Id,
-                           keyEncryptionKey,
-                           dekProperties.WrappedDataEncryptionKey);
-                    }
-                }
-                else
-                {
-                    protectedDataEncryptionKey = ProtectedDataEncryptionKey.GetOrCreate(
-                           dekProperties.Id,
-                           keyEncryptionKey,
-                           dekProperties.WrappedDataEncryptionKey);
-                }
-
+                ProtectedDataEncryptionKey protectedDataEncryptionKey = cacheTimeToLive.HasValue && cacheTimeToLive.Value == TimeSpan.Zero
+                    ? new ProtectedDataEncryptionKey(
+                        dekProperties.Id,
+                        keyEncryptionKey,
+                        dekProperties.WrappedDataEncryptionKey)
+                    : ProtectedDataEncryptionKey.GetOrCreate(
+                        dekProperties.Id,
+                        keyEncryptionKey,
+                        dekProperties.WrappedDataEncryptionKey);
                 this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                     protectedDataEncryptionKey,
                     encryptionType);
@@ -88,30 +70,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             else
             {
                 byte[] rawKey = keyEncryptionKey.DecryptEncryptionKey(dekProperties.WrappedDataEncryptionKey);
-                PlaintextDataEncryptionKey plaintextDataEncryptionKey;
-                if (cacheTimeToLive.HasValue)
-                {
-                    // no caching
-                    if (cacheTimeToLive.Value == TimeSpan.Zero)
-                    {
-                        plaintextDataEncryptionKey = new PlaintextDataEncryptionKey(
+                PlaintextDataEncryptionKey plaintextDataEncryptionKey = cacheTimeToLive.HasValue && (cacheTimeToLive.Value == TimeSpan.Zero)
+                    ? new PlaintextDataEncryptionKey(
                             dekProperties.Id,
-                            rawKey);
-                    }
-                    else
-                    {
-                        plaintextDataEncryptionKey = PlaintextDataEncryptionKey.GetOrCreate(
+                            rawKey)
+                    : PlaintextDataEncryptionKey.GetOrCreate(
                            dekProperties.Id,
                            rawKey);
-                    }
-                }
-                else
-                {
-                    plaintextDataEncryptionKey = PlaintextDataEncryptionKey.GetOrCreate(
-                           dekProperties.Id,
-                           rawKey);
-                }
-
                 this.RawKey = rawKey;
                 this.mdeAeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
                     plaintextDataEncryptionKey,
