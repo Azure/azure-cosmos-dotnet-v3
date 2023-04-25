@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     openTelemetryRecorder = requestScope.IsEnabled ? OpenTelemetryCoreRecorder.CreateNetworkLevelParentActivity(networkScope: requestScope) : OpenTelemetryCoreRecorder.CreateParentActivity(operationName);
                 }
 #endif
-                trace.AddDatum("DistributedTraceId", Activity.Current?.Id);
+                trace.AddDatum("DistributedTraceId", Activity.Current?.TraceId);
             }
             return openTelemetryRecorder;
         }

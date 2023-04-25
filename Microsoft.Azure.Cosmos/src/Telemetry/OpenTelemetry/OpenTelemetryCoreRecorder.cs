@@ -89,12 +89,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Used for creating parent activity in scenario where there are listeners at operation level 
         /// </summary>
         public static OpenTelemetryCoreRecorder CreateOperationLevelParentActivity(
-        DiagnosticScope operationScope,
-        string operationName,
-        string containerName,
-        string databaseName,
-        Documents.OperationType operationType,
-        CosmosClientContext clientContext, DistributedTracingOptions config)
+            DiagnosticScope operationScope,
+            string operationName,
+            string containerName,
+            string databaseName,
+            Documents.OperationType operationType,
+            CosmosClientContext clientContext,
+            DistributedTracingOptions config)
         {
             return new OpenTelemetryCoreRecorder(
                         operationScope,

@@ -38,54 +38,21 @@
             CustomOtelExporter.ResetData();
         }
 
-        [DataRow(true, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", OpenTelemetryAttributeKeys.OperationPrefix)]
-        [DataRow(true, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", OpenTelemetryAttributeKeys.NetworkLevelPrefix)]
-        [DataRow(false, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", OpenTelemetryAttributeKeys.OperationPrefix)]
-        [DataRow(false, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", OpenTelemetryAttributeKeys.NetworkLevelPrefix)]
+        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request")]
+        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", null)]
+        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", null)]
         [TestMethod]
-        public async Task OperationOrRequestSourceEnabled_FlagOn_ResultsInActivityCreation_AssertTraceId(bool useGateway, string source, string prefix)
+        public async Task SourceEnabled_FlagOn_DirectMode_RecordsActivity_AssertLogTraceId_AssertTraceparent(string firstSource, string secondSource)
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
+            
+            string[] sources = new string[] {firstSource, secondSource};
+            sources = sources.Where(x => x != null).ToArray();
+
             using (TracerProvider provider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter()
-                .AddSource(source)
-                .Build())
-            {
-                client = TestCommon.CreateCosmosClient(
-                useGateway: useGateway,
-                enableDistributingTracing: true);
-
-                DatabaseResponse dbResponse = await client.CreateDatabaseAsync(
-                       Guid.NewGuid().ToString(),
-                       cancellationToken: default);
-                database = dbResponse.Database;
-
-                //Assert traceId in Diagnostics logs
-                string diagnosticsCreateDB = dbResponse.Diagnostics.ToString();
-                JObject objDiagnosticsCreate = JObject.Parse(diagnosticsCreateDB);
-                string distributedTraceId = (string)objDiagnosticsCreate["data"]["DistributedTraceId"];
-                Assert.IsFalse(string.IsNullOrEmpty(distributedTraceId));
-
-                //Assert diagnostics log trace id is same as parent trace id of the activity
-                string operationName = (string)objDiagnosticsCreate["name"];
-                string traceIdCreateDB = CustomOtelExporter.CollectedActivities.Where(x => x.OperationName == $"{prefix}.{operationName}").FirstOrDefault().TraceId.ToString();
-                Assert.AreEqual(this.GetTraceId(distributedTraceId), traceIdCreateDB);
-
-                //Assert activity creation
-                Assert.IsNotNull(CustomOtelExporter.CollectedActivities);
-            }
-        }
-
-        [TestMethod]
-        public async Task SourceEnabled_FlagOn_DirectMode_RecordsActivity_AssertTraceId_AssertTraceparent()
-        {
-            AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
-            AzureCore.ActivityExtensions.ResetFeatureSwitch();
-            using (TracerProvider provider = Sdk.CreateTracerProviderBuilder()
-                .AddCustomOtelExporter()
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation")
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request")
+                .AddSource(sources)
                 .Build())
             {
                 client = TestCommon.CreateCosmosClient(
@@ -121,20 +88,29 @@
 
                 //Assert diagnostics log trace id is same as parent trace id of the activity
                 string operationName = (string)objDiagnosticsCreate["name"];
-                string traceIdCreateItem = CustomOtelExporter.CollectedActivities.Where(x => x.OperationName == $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}").FirstOrDefault().TraceId.ToString();
-                Assert.AreEqual(this.GetTraceId(distributedTraceId), traceIdCreateItem);
+                string traceIdCreateItem = CustomOtelExporter.CollectedActivities.Where(x => x.OperationName.Contains(operationName)).FirstOrDefault().TraceId.ToString();
+                Assert.AreEqual(distributedTraceId, traceIdCreateItem);
 
                 //Assert activity creation
                 Assert.IsNotNull(CustomOtelExporter.CollectedActivities);
 
+                // Assert activity created at network level have an existing parent activity
+                Activity networkLevelChildActivity = CustomOtelExporter.CollectedActivities.Where(x => x.OperationName.Contains("Request")).FirstOrDefault();
+                Assert.IsNotNull(CustomOtelExporter.CollectedActivities.Where(x => x.Id == networkLevelChildActivity.ParentId));
             }
         }
 
+        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request")]
+        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", null)]
+        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", null)]
         [TestMethod]
-        public async Task SourceEnabled_FlagOn_GatewayMode_RecordsActivity_AssertTraceId_AssertTraceparent()
+        public async Task SourceEnabled_FlagOn_GatewayMode_RecordsActivity_AssertLogTraceId_AssertTraceparent(string firstSource, string secondSource)
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
+
+            string[] sources = new string[] { firstSource, secondSource };
+            sources = sources.Where(x => x != null).ToArray();
 
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper
             {
@@ -150,14 +126,13 @@
 
             using (TracerProvider provider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter()
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation")
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request")
+                .AddSource(sources)
                 .Build())
             {
                 client = TestCommon.CreateCosmosClient(
                         useGateway: true,
-                        enableDistributingTracing: true,
-                        httpClientFactory: () => new HttpClient(httpClientHandlerHelper));
+                        customizeClientBuilder: builder => builder.WithHttpClientFactory(() => new HttpClient(httpClientHandlerHelper)),
+                        enableDistributingTracing: true);
 
                 DatabaseResponse dbResponse = await client.CreateDatabaseAsync(
                         Guid.NewGuid().ToString(),
@@ -172,8 +147,8 @@
 
                 //Assert diagnostics log trace id is same as parent trace id of the activity
                 string operationName = (string)objDiagnosticsCreate["name"];
-                string traceIdCreateDB = CustomOtelExporter.CollectedActivities.Where(x => x.OperationName == $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}").FirstOrDefault().TraceId.ToString();
-                Assert.AreEqual(this.GetTraceId(distributedTraceId), traceIdCreateDB);
+                string traceIdCreateDB = CustomOtelExporter.CollectedActivities.Where(x => x.OperationName.Contains(operationName)).FirstOrDefault().TraceId.ToString();
+                Assert.AreEqual(distributedTraceId, traceIdCreateDB);
 
                 //Assert activity creation
                 Assert.IsNotNull(CustomOtelExporter.CollectedActivities);
@@ -185,7 +160,7 @@
         [DataRow(false, false)]
         [DataRow(true, false)]
         [TestMethod]
-        public async Task NoSourceEnabled_ResultsInNoSourceParentActivityCreation_AssertTraceId(bool useGateway, bool enableDistributingTracing)
+        public async Task NoSourceEnabled_ResultsInNoSourceParentActivityCreation_AssertLogTraceId(bool useGateway, bool enableDistributingTracing)
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
@@ -234,11 +209,6 @@
             client?.Dispose();
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
-        }
-
-        private string GetTraceId(string traceParent)
-        {
-            return traceParent.Split('-')[1];
         }
     }
 }
