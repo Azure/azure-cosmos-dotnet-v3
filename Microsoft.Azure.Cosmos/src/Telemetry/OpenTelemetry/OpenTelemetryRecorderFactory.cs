@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
-    using global::Azure.Core.Pipeline;
+    using global::Azure.Core;
 
     /// <summary>
     /// This class is used to generate Activities with Azure.Cosmos.Operation Source Name
@@ -28,7 +28,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 OpenTelemetryRecorderFactory.ScopeFactory ??= new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
                         resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                        isActivityEnabled: true);
+                        isActivityEnabled: true,
+                        suppressNestedClientActivities: true);
                 
                 // If there is no source then it will return default otherwise a valid diagnostic scope
                 DiagnosticScope scope = OpenTelemetryRecorderFactory
