@@ -131,8 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static CosmosClient CreateCosmosClient(
             bool useGateway,
             Action<CosmosClientBuilder> customizeClientBuilder = null,
-            bool enableDistributingTracing = false,
-            Func<HttpClient> httpClientFactory = null)
+            bool enableDistributingTracing = false)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
 
@@ -149,10 +148,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
                 });
-            }
-            if(httpClientFactory != null)
-            {
-                cosmosClientBuilder = cosmosClientBuilder.WithHttpClientFactory(httpClientFactory);
             }
             
             return cosmosClientBuilder.Build();

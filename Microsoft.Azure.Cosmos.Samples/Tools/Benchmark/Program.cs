@@ -16,8 +16,6 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
-    using OpenTelemetry;
-    using OpenTelemetry.Trace;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
@@ -89,90 +87,84 @@ namespace CosmosBenchmark
         /// <returns>a Task object.</returns>
         private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
         {
-            using (TracerProvider provider = Sdk.CreateTracerProviderBuilder()
-               .AddConsoleExporter()
-               .AddSource($"Azure.Cosmos.Request")
-               .Build())
+            // V3 SDK client initialization
+            using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
             {
-                // V3 SDK client initialization
-                using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
+                Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
+                if (config.CleanupOnStart)
                 {
-                    Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
-                    if (config.CleanupOnStart)
-                    {
-                        await database.DeleteStreamAsync();
-                    }
-
-                    ContainerResponse containerResponse = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
-                    Container container = containerResponse;
-
-                    int? currentContainerThroughput = await container.ReadThroughputAsync();
-
-                    if (!currentContainerThroughput.HasValue)
-                    {
-                        // Container throughput is not configured. It is shared database throughput
-                        ThroughputResponse throughputResponse = await database.ReadThroughputAsync(requestOptions: null);
-                        throw new InvalidOperationException($"Using database {config.Database} with {throughputResponse.Resource.Throughput} RU/s. " +
-                            $"Container {config.Container} must have a configured throughput.");
-                    }
-
-                    Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
-                    int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
-
-                    Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
-                    Console.WriteLine();
-
-                    string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
-                    int opsPerTask = config.ItemCount / taskCount;
-
-                    // TBD: 2 clients SxS some overhead
-                    RunSummary runSummary;
-
-                    // V2 SDK client initialization
-                    using (Microsoft.Azure.Documents.Client.DocumentClient documentClient = config.CreateDocumentClient(config.Key))
-                    {
-                        Func<IBenchmarkOperation> benchmarkOperationFactory = this.GetBenchmarkFactory(
-                            config,
-                            partitionKeyPath,
-                            cosmosClient,
-                            documentClient);
-
-                        if (config.DisableCoreSdkLogging)
-                        {
-                            // Do it after client initialization (HACK)
-                            Program.ClearCoreSdkListeners();
-                        }
-
-                        IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                        runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01);
-                    }
-
-                    if (config.CleanupOnFinish)
-                    {
-                        Console.WriteLine($"Deleting Database {config.Database}");
-                        await database.DeleteStreamAsync();
-                    }
-
-                    string consistencyLevel = config.ConsistencyLevel;
-                    if (string.IsNullOrWhiteSpace(consistencyLevel))
-                    {
-                        AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
-                        consistencyLevel = accountProperties.Consistency.DefaultConsistencyLevel.ToString();
-                    }
-                    runSummary.ConsistencyLevel = consistencyLevel;
-
-
-                    if (config.PublishResults)
-                    {
-                        runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
-                        await this.PublishResults(
-                            config,
-                            runSummary,
-                            cosmosClient);
-                    }
-
-                    return runSummary;
+                    await database.DeleteStreamAsync();
                 }
+
+                ContainerResponse containerResponse = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
+                Container container = containerResponse;
+
+                int? currentContainerThroughput = await container.ReadThroughputAsync();
+
+                if (!currentContainerThroughput.HasValue)
+                {
+                    // Container throughput is not configured. It is shared database throughput
+                    ThroughputResponse throughputResponse = await database.ReadThroughputAsync(requestOptions: null);
+                    throw new InvalidOperationException($"Using database {config.Database} with {throughputResponse.Resource.Throughput} RU/s. " +
+                        $"Container {config.Container} must have a configured throughput.");
+                }
+
+                Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
+                int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
+
+                Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
+                Console.WriteLine();
+
+                string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
+                int opsPerTask = config.ItemCount / taskCount;
+
+                // TBD: 2 clients SxS some overhead
+                RunSummary runSummary;
+
+                // V2 SDK client initialization
+                using (Microsoft.Azure.Documents.Client.DocumentClient documentClient = config.CreateDocumentClient(config.Key))
+                {
+                    Func<IBenchmarkOperation> benchmarkOperationFactory = this.GetBenchmarkFactory(
+                        config,
+                        partitionKeyPath,
+                        cosmosClient,
+                        documentClient);
+
+                    if (config.DisableCoreSdkLogging)
+                    {
+                        // Do it after client initialization (HACK)
+                        Program.ClearCoreSdkListeners();
+                    }
+
+                    IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask,  0.01);
+                }
+
+                if (config.CleanupOnFinish)
+                {
+                    Console.WriteLine($"Deleting Database {config.Database}");
+                    await database.DeleteStreamAsync();
+                }
+
+                string consistencyLevel = config.ConsistencyLevel;
+                if (string.IsNullOrWhiteSpace(consistencyLevel))
+                {
+                    AccountProperties accountProperties = await cosmosClient.ReadAccountAsync();
+                    consistencyLevel = accountProperties.Consistency.DefaultConsistencyLevel.ToString();
+                }
+                runSummary.ConsistencyLevel = consistencyLevel;
+
+
+                if (config.PublishResults)
+                {
+                    runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
+                    await this.PublishResults(
+                        config, 
+                        runSummary, 
+                        cosmosClient);
+                }
+
+                return runSummary;
             }
         }
 
