@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Security.Cryptography;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         public const int DefaultMasterTokenExpiryInSeconds = 900;
         private const int MaxAadAuthorizationHeaderSize = 16 * 1024;
         private const int MaxResourceTokenAuthorizationHeaderSize = 8 * 1024;
-        private const int MaxCapacity = 524288; //0.5 MB
+        private const int MaxCapacity = 4096;
         private static readonly string AuthorizationFormatPrefixUrlEncoded = HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
                 Constants.Properties.MasterToken,
                 Constants.Properties.TokenVersion,
@@ -765,7 +766,10 @@ namespace Microsoft.Azure.Cosmos
 
                 payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(buffer, 0, length));
                 byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
-                return AuthorizationHelper.OptimizedConvertToBase64string(hashPayLoad, urlEncode);
+                using (Trace trace = Trace.GetRootTrace(nameof(GenerateAuthorizationTokenWithHashCore), TraceComponent.Authorization, TraceLevel.Info))
+                {
+                    return AuthorizationHelper.OptimizedConvertToBase64string(hashPayLoad, urlEncode, trace);
+                }
             }
             catch
             {
@@ -778,7 +782,7 @@ namespace Microsoft.Azure.Cosmos
         /// This an optimized version of doing Convert.ToBase64String(hashPayLoad) with an optional wrapping HttpUtility.UrlEncode.
         /// This avoids the over head of converting it to a string and back to a byte[].
         /// </summary>
-        private static unsafe string OptimizedConvertToBase64string(byte[] hashPayLoad, bool urlEncode)
+        private static unsafe string OptimizedConvertToBase64string(byte[] hashPayLoad, bool urlEncode, ITrace trace = null)
         {
             // Create a large enough buffer that URL encode can use it.
             // Increase the buffer by 3x so it can be used for the URL encoding
@@ -786,6 +790,7 @@ namespace Microsoft.Azure.Cosmos
             Span<byte> encodingBuffer = stackalloc byte[capacity];
             encodingBuffer.Clear();
 
+            trace.AddDatum("Maximum Capacity", capacity);
             OperationStatus status = Base64.EncodeToUtf8(hashPayLoad, encodingBuffer, out int _, out int bytesWritten);
 
             if (status != OperationStatus.Done)
