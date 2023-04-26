@@ -22,16 +22,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="3.33.0"/> [3.33.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.33.0) - 2023-04-21
 
 #### Fixed 
+- [3762](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3762) HttpClient: Adds detection of DNS changes through use of SocketsHttpHandler for .NET 6 and above
 - [3707](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3707) Diagnostics: Adds startDate in Summary
 - [3457](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3457) Documentation: Update Database.ReadAsync description
 - [3730](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3730) Query: Fixes System.ArgumentException when using PartitionKey.None on x86, Linux or in Optimistic Direct Execution
 - [3775](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3775) Change Feed Processor: Fixes LeaseLostException leaks on notification APIs for Renew scenarios
 - [3792](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3792) Diagnostics: Refactors Code to Remove Dependency of HttpResponseHeadersWrapper to fetch Sub Status Codes
 - [3793](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3793) Documentation: Refactors SQL API reference to NoSQL API
-- [3762](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3762) HttpClient: Adds detection of DNS changes through use of SocketsHttpHandler for .NET 6 and above
+- [3814](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3814) Serialization: Fixes call to CosmosSerializer.FromStream on Gateway mode when EnableContentResponseOnWrite is false. (Thanks @Baltima)
 
 #### Added
-- [3629](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3629) Query: Adds FIRST and LAST Scalar Expressions
 - [3109](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3109), [3763](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3763)  Subpartitioning: Adds support for Prefix Partition Key searches for sub partitioned containers, and APIs for public release and increase REST API version
 - [3803](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3803) HttpClient: Adds Properties to the Http messages if available
 - [3389](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3389) Patch: Adds Move Operation
