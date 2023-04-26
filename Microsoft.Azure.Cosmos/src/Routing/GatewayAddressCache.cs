@@ -549,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         }
                     }
 
-                    this.ValidateUnhealthyPendingReplicas(transportAddressUris);
+                    this.ValidateReplicaAddresses(transportAddressUris);
 
                     return mergedAddresses;
                 }
@@ -840,12 +840,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Validates the unhealthy pending replicas by attempting to open the Rntbd connection. This operation
-        /// will eventually marks the unhealthy pending replicas to healthy, if the rntbd connection attempt made was
+        /// Validates the unknown or unhealthy-pending replicas by attempting to open the Rntbd connection. This operation
+        /// will eventually marks the unknown or unhealthy-pending replicas to healthy, if the rntbd connection attempt made was
         /// successful or unhealthy otherwise.
         /// </summary>
         /// <param name="addresses">A read-only list of <see cref="TransportAddressUri"/> needs to be validated.</param>
-        private void ValidateUnhealthyPendingReplicas(
+        private void ValidateReplicaAddresses(
             IReadOnlyList<TransportAddressUri> addresses)
         {
             if (addresses == null)
@@ -853,15 +853,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(addresses));
             }
 
-            IEnumerable<TransportAddressUri> addressesNeedToValidation = addresses
-                .Where(address => address
-                    .GetCurrentHealthState()
-                    .GetHealthStatus() == TransportAddressHealthState.HealthStatus.UnhealthyPending);
+            IEnumerable<TransportAddressUri> addressesNeedToValidateStatus = this.GetAddressesNeededToValidateStatus(
+                    transportAddresses: addresses);
 
-            if (addressesNeedToValidation.Any())
+            if (addressesNeedToValidateStatus.Any())
             {
                 Task openConnectionsInBackgroundTask = Task.Run(async () => await this.openConnectionsHandler.TryOpenRntbdChannelsAsync(
-                    addresses: addressesNeedToValidation.ToList()));
+                    addresses: addressesNeedToValidateStatus));
             }
         }
 
@@ -917,6 +915,25 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             return newAddresses;
+        }
+
+        /// <summary>
+        /// Returns a list of <see cref="TransportAddressUri"/> needed to validate their health status. Validating
+        /// a uri is done by opening Rntbd connection to the backend replica, which is a costly operation by nature. Therefore
+        /// vaidating both Unhealthy and Unknown replicas at the same time could impose a high CPU utilization. To avoid this
+        /// situation, the RntbdOpenConnectionHandler has good concurrency control mechanism to open the connections gracefully/>.
+        /// </summary>
+        /// <param name="transportAddresses">A read only list of <see cref="TransportAddressUri"/>s.</param>
+        /// <returns>A list of <see cref="TransportAddressUri"/> that needs to validate their status.</returns>
+        private IEnumerable<TransportAddressUri> GetAddressesNeededToValidateStatus(
+            IReadOnlyList<TransportAddressUri> transportAddresses)
+        {
+            return transportAddresses
+                .Where(address => address
+                        .GetCurrentHealthState()
+                        .GetHealthStatus() is
+                            TransportAddressHealthState.HealthStatus.Unknown or
+                            TransportAddressHealthState.HealthStatus.UnhealthyPending);
         }
 
         protected virtual void Dispose(bool disposing)
