@@ -182,7 +182,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CancellationToken cancellationToken)
         {
             return await this.FetchDekAsync(id, encryptionAlgorithm, cancellationToken, true);
-
         }
 
         private async Task<DataEncryptionKey> FetchDekAsync(string id, string encryptionAlgorithm, CancellationToken cancellationToken, bool withRawKey = false)

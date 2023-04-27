@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     public abstract class DataEncryptionKeyProvider
     {
         /// <summary>
-        /// Retrieves the data encryption key for the given id without rawkey. RawKey will be set null.
+        /// Retrieves the data encryption key for the given id without rawkey. RawKey will be set to null.
         /// </summary>
         /// <param name="id">Identifier of the data encryption key.</param>
         /// <param name="encryptionAlgorithm">Encryption algorithm that the retrieved key will be used with.</param>
