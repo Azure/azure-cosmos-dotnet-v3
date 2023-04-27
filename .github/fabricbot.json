@@ -168,7 +168,7 @@
           {
             "name": "addReply",
             "parameters": {
-              "comment": "${issueAuthor} this issue requires more information for the team to be able to help. In case this information is available, please add it and re-open the Issue."
+              "comment": "@${issueAuthor} this issue requires more information for the team to be able to help. In case this information is available, please add it and re-open the Issue."
             }
           },
           {
