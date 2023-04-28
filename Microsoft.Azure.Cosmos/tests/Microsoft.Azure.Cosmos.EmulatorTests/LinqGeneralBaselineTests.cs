@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private static Cosmos.Database testDb;
         private static Container testContainer;
         private static Func<bool, IQueryable<Family>> getQuery;
+        private static Func<bool, IQueryable<Family>> getQueryWithIsDefinedPrefix;
 
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
@@ -36,7 +37,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             string dbName = $"{nameof(LinqGeneralBaselineTests)}-{Guid.NewGuid().ToString("N")}";
             testDb = await cosmosClient.CreateDatabaseAsync(dbName);
 
-            getQuery = LinqTestsCommon.GenerateFamilyCosmosData(testDb, out testContainer);
+            LinqTestsCommon.LinqQuerySet<FamilyV2> linqQuerySet = LinqTestsCommon.GenerateFamilyV2CosmosData(testDb, out testContainer);
+            getQuery = linqQuerySet.GetQuery;
+            getQueryWithIsDefinedPrefix = linqQuerySet.GetQueryWithIsDefinedPrefix;
         }
 
         [ClassCleanup]
@@ -48,13 +51,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
 
             cosmosClient?.Dispose();
-        }
-
-        public class Address
-        {
-            public string State;
-            public string County;
-            public string City;
         }
 
         public class GuidClass : LinqTestObject
@@ -1895,6 +1891,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestIsDefinedCheckInjection()
+        {
+
+        }
+
+        // ISSUE-TODO-2023/4/7 - Dynamic Linq cannot be honored by this flag.
+
+        [TestMethod]
         public void ValidateDynamicLinq()
         {
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -1925,7 +1929,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 Things = new Dictionary<string, string>() { { "A", "B" }, { "C", "D" } },
             };
 
-            Address address = new Address { State = "NY", County = "Manhattan", City = "NY" };
             Family family = new Family { FamilyId = "WakefieldFamily", Parents = new Parent[] { mother, father }, Children = new Child[] { child }, IsRegistered = false, Int = 3, NullableInt = 5 , Id = "WakefieldFamily"};
 
             List<Family> fList = new List<Family>();

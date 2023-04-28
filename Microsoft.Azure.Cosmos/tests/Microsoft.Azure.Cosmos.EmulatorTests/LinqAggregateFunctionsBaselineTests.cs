@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             testDb = await client.CreateDatabaseAsync(dbName);
 
             getQuery = LinqTestsCommon.GenerateSimpleCosmosData(testDb);
-            getQueryFamily = LinqTestsCommon.GenerateFamilyCosmosData(testDb, out _);
+            getQueryFamily = LinqTestsCommon.GenerateFamilyCosmosData(testDb, out _).GetQuery;
         }
 
         [ClassCleanup]

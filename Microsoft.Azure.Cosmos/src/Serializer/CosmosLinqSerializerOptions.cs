@@ -30,5 +30,10 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is CosmosPropertyNamingPolicy.Default
         /// </remarks>
         public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
+
+        /// <summary>
+        /// Indicates whether null checks should be prefixed with IS_DEFINED checks during query generation.
+        /// </summary>
+        public bool PrefixNullChecksWithIsDefined { get; set; }
     }
 }
