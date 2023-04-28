@@ -785,9 +785,8 @@ namespace Microsoft.Azure.Cosmos
         {
             // Create a large enough buffer that URL encode can use it.
             // Increase the buffer by 3x so it can be used for the URL encoding
-            int capacity = Math.Min(Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3, MaxCapacity);
-            Span<byte> encodingBuffer = stackalloc byte[capacity];
-            encodingBuffer.Clear();
+            //int capacity = Math.Min(Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3, MaxCapacity);
+            Span<byte> encodingBuffer = stackalloc byte[MaxCapacity];
 
             OperationStatus status = Base64.EncodeToUtf8(hashPayLoad, encodingBuffer, out int _, out int bytesWritten);
 
