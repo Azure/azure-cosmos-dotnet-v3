@@ -27,10 +27,9 @@ Before covering the sync-up process in detail, please follow the below steps to 
 
 ### Clone the `CosmosDB` Repo hosted in msdata
 
-- Clone the CosmosDB in the local environment, using the below git command:
-    -       git clone https://msdata.visualstudio.com/DefaultCollection/CosmosDB/_git/CosmosDB
+- Setup the CosmosDB repository in the local environment, using the [CosmosDB onboarding guide](https://eng.ms/docs/cloud-ai-platform/azure-data/azure-data-azure-databases/cosmos-db-and-postgresql/azure-cosmos-db/azure-cosmos-db-onboarding-guide/engineering/dev-getting-started/clone-and-build-repo). Please note, building the entire repository is not required for the sync-up process.
 
-- Navigate to the directory `CosmosDB` and check out the following branch, `master` using the below git commands:
+- Navigate to the clonned `CosmosDB` directory and check out the following branch, `master` using the below git commands:
     -       git pull && git checkout master
 
 ## Steps Required to Update msdata direct Repo
