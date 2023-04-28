@@ -784,8 +784,8 @@ namespace Microsoft.Azure.Cosmos
         private static unsafe string OptimizedConvertToBase64string(byte[] hashPayLoad, bool urlEncode)
         {
             //const int MaxCapacity = 4096;
-          //  int capacity = Math.Min(Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3, MaxCapacity);
-            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(MaxCapacity);
+            int capacity = Math.Min(Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 2, MaxCapacity);
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(capacity);
 
             try
             {
