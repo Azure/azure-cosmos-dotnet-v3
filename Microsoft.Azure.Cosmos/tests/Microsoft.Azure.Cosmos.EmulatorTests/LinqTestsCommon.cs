@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// </summary>
         /// <param name="queryResults"></param>
         /// <param name="dataResults"></param>
-        public static void ValidateResults(IQueryable queryResults, IQueryable dataResults)
+        public static (List<object> queryResults, List<dynamic> dataResults) GetResults(IQueryable queryResults, IQueryable dataResults)
         {
             // execution validation
             IEnumerator queryEnumerator = queryResults.GetEnumerator();
@@ -171,7 +171,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 queryResultsList.Add(queryEnumerator.Current);
             }
 
-            List<dynamic> dataResultsList = dataResults.Cast<dynamic>().ToList();
+            List<dynamic> dataResultsList = dataResults?.Cast<dynamic>()?.ToList();
+
+            return (queryResultsList, dataResultsList);
+        }
+
+        private static void ValidateResults(List<object> queryResultsList, List<dynamic> dataResultsList)
+        {
             bool resultMatched = true;
             string actualStr = null;
             string expectedStr = null;
@@ -494,28 +500,33 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return getQuery;
         }
 
-        public static LinqTestOutput ExecuteTest(LinqTestInput input)
+        public static LinqTestOutput ExecuteTest(LinqTestInput input, bool includeResults = false)
         {
             string querySqlStr = string.Empty;
             try
             {
                 Func<bool, IQueryable> compiledQuery = input.Expression.Compile();
 
-                IQueryable queryResults = compiledQuery(true);
-                querySqlStr = JObject.Parse(queryResults.ToString()).GetValue("query", StringComparison.Ordinal).ToString();
+                IQueryable query = compiledQuery(true);
+                IQueryable dataQuery = input.skipVerification ? null : compiledQuery(false);
+                (List<object> queryResults, List<dynamic> dataResults) = GetResults(query, dataQuery);
+
+                querySqlStr = JObject.Parse(query.ToString()).GetValue("query", StringComparison.Ordinal).ToString();
 
                 // we skip unordered query because the LinQ results vs actual query results are non-deterministic
                 if (!input.skipVerification)
                 {
-                    IQueryable dataResults = compiledQuery(false);
                     LinqTestsCommon.ValidateResults(queryResults, dataResults);
                 }
 
-                return new LinqTestOutput(querySqlStr);
+                string serializedResults = includeResults ?
+                    JsonConvert.SerializeObject(queryResults.Select(item => item is LinqTestObject ? item.ToString() : item), new JsonSerializerSettings { Formatting = Newtonsoft.Json.Formatting.Indented }) :
+                    null;
+                return new LinqTestOutput(querySqlStr, serializedResults, errorMsg: null);
             }
             catch (Exception e)
             {
-                return new LinqTestOutput(querySqlStr, LinqTestsCommon.BuildExceptionMessageForTest(e));
+                return new LinqTestOutput(querySqlStr, serializedResults: null, errorMsg: LinqTestsCommon.BuildExceptionMessageForTest(e));
             }
         }
 
@@ -556,13 +567,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     {
         private string json;
 
+        protected virtual string SerializeForTestBaseline()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
+
         public override string ToString()
         {
-            // simple cached serialization
-            if (this.json == null)
-            {
-                this.json = JsonConvert.SerializeObject(this);
-            }
+            this.json ??= this.SerializeForTestBaseline();
             return this.json;
         }
 
@@ -664,7 +676,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         internal static Regex newLine = new Regex("(\r\n|\r|\n)");
 
         internal string SqlQuery { get; }
-        internal string ErrorMessage { get; private set; }
+        internal string ErrorMessage { get; }
+        internal string Results { get; }
 
         private static readonly Dictionary<string, string> newlineKeywords = new Dictionary<string, string>() {
             { "SELECT", "\nSELECT" },
@@ -690,9 +703,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return msg;
         }
 
-        internal LinqTestOutput(string sqlQuery, string errorMsg = null)
+        internal LinqTestOutput(string sqlQuery, string serializedResults, string errorMsg)
         {
             this.SqlQuery = FormatSql(sqlQuery);
+            this.Results = serializedResults;
             this.ErrorMessage = errorMsg;
         }
 
@@ -740,6 +754,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             xmlWriter.WriteStartElement(nameof(this.SqlQuery));
             xmlWriter.WriteCData(this.SqlQuery);
             xmlWriter.WriteEndElement();
+            if (this.Results != null)
+            {
+                xmlWriter.WriteStartElement("Results");
+                xmlWriter.WriteCData(this.Results);
+                xmlWriter.WriteEndElement();
+            }
             if (this.ErrorMessage != null)
             {
                 xmlWriter.WriteStartElement("ErrorMessage");

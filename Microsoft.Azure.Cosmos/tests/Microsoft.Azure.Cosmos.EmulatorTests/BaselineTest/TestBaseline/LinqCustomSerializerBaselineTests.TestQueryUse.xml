@@ -1,0 +1,95 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on bool]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.Bool)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE root["Bool"]]]></SqlQuery>
+      <Results><![CDATA[[
+  "{\"Int\":0,\"string_value\":\"0\",\"Bool\":true,\"id\":\"0\",\"Pk\":\"Test\",\"NetExtensionData\":{\"NET1\":0,\"NET2\":\"0\"},\"Newtonsoft1\":0,\"Newtonsoft2\":\"0\"}",
+  "{\"Int\":2,\"string_value\":\"2\",\"Bool\":true,\"id\":\"2\",\"Pk\":\"Test\",\"NetExtensionData\":{\"NET1\":2,\"NET2\":\"2\"},\"Newtonsoft1\":2,\"Newtonsoft2\":\"2\"}",
+  "{\"Int\":4,\"string_value\":\"4\",\"Bool\":true,\"id\":\"4\",\"Pk\":\"Test\",\"NetExtensionData\":{\"NET1\":4,\"NET2\":\"4\"},\"Newtonsoft1\":4,\"Newtonsoft2\":\"4\"}"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on int]]></Description>
+      <Expression><![CDATA[query.Where(doc => ((doc.Int % 3) == 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ((root["Int"] % 3) = 0)]]></SqlQuery>
+      <Results><![CDATA[[
+  "{\"Int\":0,\"string_value\":\"0\",\"Bool\":true,\"id\":\"0\",\"Pk\":\"Test\",\"NetExtensionData\":{\"NET1\":0,\"NET2\":\"0\"},\"Newtonsoft1\":0,\"Newtonsoft2\":\"0\"}",
+  "{\"Int\":3,\"Bool\":false,\"id\":\"3\",\"Pk\":\"Test\",\"NetExtensionData\":{\"NET1\":3,\"NET2\":\"3\"},\"Newtonsoft1\":3,\"Newtonsoft2\":\"3\"}"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter on string]]></Description>
+      <Expression><![CDATA[query.Where(doc => IIF((doc.String == null), False, doc.String.Contains("0")))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ((root["string_value"] = null) ? false : CONTAINS(root["string_value"], "0"))]]></SqlQuery>
+      <Results><![CDATA[[
+  "{\"Int\":0,\"string_value\":\"0\",\"Bool\":true,\"id\":\"0\",\"Pk\":\"Test\",\"NetExtensionData\":{\"NET1\":0,\"NET2\":\"0\"},\"Newtonsoft1\":0,\"Newtonsoft2\":\"0\"}"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select newtonsoft extension data]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NewtonsoftExtensionData)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["NewtonsoftExtensionData"] 
+FROM root]]></SqlQuery>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select .NET extension data]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NetExtensionData)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["NetExtensionData"] 
+FROM root]]></SqlQuery>
+      <Results><![CDATA[[
+  {
+    "NET1": 0,
+    "NET2": "0"
+  },
+  {
+    "NET1": 1,
+    "NET2": "1"
+  },
+  {
+    "NET1": 2,
+    "NET2": "2"
+  },
+  {
+    "NET1": 3,
+    "NET2": "3"
+  },
+  {
+    "NET1": 4,
+    "NET2": "4"
+  }
+]]]></Results>
+    </Output>
+  </Result>
+</Results>
