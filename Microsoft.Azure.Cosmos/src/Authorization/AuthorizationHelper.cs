@@ -791,18 +791,12 @@ namespace Microsoft.Azure.Cosmos
 
             OperationStatus status = Base64.EncodeToUtf8(hashPayLoad, encodingBuffer, out int _, out int bytesWritten);
 
-            if (bytesWritten > MaxCapacity)
-            {
-               capacity = bytesWritten;
-               encodingBuffer = new byte[capacity];
-               status = Base64.EncodeToUtf8(hashPayLoad, encodingBuffer, out _, out bytesWritten);
-            }
             if (status != OperationStatus.Done)
             {
                 throw new ArgumentException($"Authorization key payload is invalid. {status}");
             }
 
-            return urlEncode 
+            return urlEncode
                 ? AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten)
                 : Encoding.UTF8.GetString(encodingBuffer.Slice(0, bytesWritten));
         }
