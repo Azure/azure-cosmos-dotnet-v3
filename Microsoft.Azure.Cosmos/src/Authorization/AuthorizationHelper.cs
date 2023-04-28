@@ -783,21 +783,36 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private static unsafe string OptimizedConvertToBase64string(byte[] hashPayLoad, bool urlEncode)
         {
-            // Create a large enough buffer that URL encode can use it.
-            // Increase the buffer by 3x so it can be used for the URL encoding
-            //int capacity = Math.Min(Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3, MaxCapacity);
-            Span<byte> encodingBuffer = stackalloc byte[MaxCapacity];
+            const int MaxCapacity = 4096;
+            int capacity = Math.Min(Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3, MaxCapacity);
+            byte[] rentedBuffer = ArrayPool<byte>.Shared.Rent(capacity);
 
-            OperationStatus status = Base64.EncodeToUtf8(hashPayLoad, encodingBuffer, out int _, out int bytesWritten);
-
-            if (status != OperationStatus.Done)
+            try
             {
-                throw new ArgumentException($"Authorization key payload is invalid. {status}");
-            }
+                Span<byte> encodingBuffer = rentedBuffer;
+                // This replaces the Convert.ToBase64String
+                OperationStatus status = Base64.EncodeToUtf8(
+                    hashPayLoad,
+                    encodingBuffer,
+                    out int _,
+                    out int bytesWritten);
 
-            return urlEncode
-                ? AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten)
-                : Encoding.UTF8.GetString(encodingBuffer.Slice(0, bytesWritten));
+                if (status != OperationStatus.Done)
+                {
+                    throw new ArgumentException($"Authorization key payload is invalid. {status}");
+                }
+
+                return urlEncode
+                    ? AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten)
+                    : Encoding.UTF8.GetString(encodingBuffer.Slice(0, bytesWritten));
+            }
+            finally
+            {
+                if (rentedBuffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+                }
+            }
         }
 
         // This function is used by Compute
