@@ -2,16 +2,16 @@
 
 ## Table of Contents
 
-* [Backgraound.](#backgraound)
+* [Background.](#background)
 * [Prerequisites.](#prerequisites)
 * [Steps Required to Update msdata direct Repo.](#steps-required-to-update-msdata-direct-repo)
 * [Validating the sync-up.](#validating-the-sync-up)
 * [Submit Pull Request to msdata direct.](#submit-pull-request-to-msdata-direct)
 * [Sample Pull Requests to Sync-up msdata direct.](#sample-pull-requests-to-sync-up-msdata-direct)
 
-## Backgraound
+## Background
 
-As a developer on the Cosmos SDK team, we often engage in a task, that requires code changes in both cosmos dotnet sdk v3 repository, as well as in the `msdata` cosmosdb direct codebase (aka `Microsoft.Azure.Cosmos.Direct` namespace). Therefore, sometimes it's utter challanging to visualize the code changes as a whole, and analyze the impacts. To overcome this, we have created a branch called `msdata/direct` within our cosmos dotnet sdk v3 codebase, that basically mimics the code present in `msdata` repository mentioned above. This simplifies the code changes required to be done in both the repo and also provides much better understanding on the overall impacts of the code changes.
+As a developer on the Cosmos SDK team, we often engage in a task, that requires code changes in both cosmos dotnet sdk v3 repository, as well as in the `msdata` cosmosdb direct codebase (aka `Microsoft.Azure.Cosmos.Direct` namespace). Therefore, sometimes it's utterly challenging to visualize the code changes as a whole, and analyze the impacts. To overcome this, we have created a branch called `msdata/direct` within our cosmos dotnet sdk v3 codebase, that basically mimics the code present in `msdata` repository mentioned above. This simplifies the code changes required to be done in both, provides much better understanding on the overall impacts of the code changes and gives transparency to users in terms of what is the source code for the `Microsoft.Azure.Cosmos.Direct` package.
 
 ## Prerequisites
 
@@ -45,15 +45,16 @@ The first step to sync up the `msdata/direct` repo is to create a feature branch
 
 The next step is to port the latest `master` branch code into the newly created feature branch. Please see the below git commands to perform this action:
 
-- Stay on the newly created feature branch `users/<user_name>/update_msdata_direct_<mm_dd_yyyy>` and run `git merge master`. Make sure the `master` branch is up-to-date.
-- There are likely to be conflicts during the merge. If that happens, we will need to resolve the conflicts gracfully.
+- Make sure the `master` branch is up-to-date.
+- Stay on the newly created feature branch `users/<user_name>/update_msdata_direct_<mm_dd_yyyy>` and run `git merge master`.
+- There are likely to be conflicts during the merge. If that happens, we will need to resolve the conflicts gracefully by accepting the incoming `master` branch changes.
 
 ### Pick the Required Microsoft Azure Cosmos.Direct files into `msdata/direct` repo.
 
 This is the last part for the sync-up process. Please follow the below steps to copy the required `Microsoft.Cosmos.Direct` files from msdata CosmosDB repo.
 
-- Open command prompt/windows terminal and navigate to the following directory where the cosmos v3 direct code is located, for example: `C:\stash\azure-cosmos-dotnet-v3\Microsoft.Azure.Cosmos\src\direct`.
-- Locate and edit the following line in the `msdata_sync.ps1` script with the respective location of the msdata repo: `$baseDir    = "C:\stash\CosmosDB"` 
+- Open command prompt/windows terminal and navigate to the following directory `Microsoft.Azure.Cosmos\src\direct` inside the clonned cosmos v3 repo.
+- Locate and edit the following line in the `msdata_sync.ps1` script with the respective location of the msdata repo: `$baseDir    = "<src_directory>\CosmosDB"`
 - Run the powershell script using: `.\msdata_sync.ps1`. You will notice the script started copying the required files from the msdata repo, and generating the console logs, like the below:
 
     ```
