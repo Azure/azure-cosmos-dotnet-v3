@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
 {
     using System;
+    using System.Collections.Generic;
+    using System.Threading;
     using System.Xml;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
@@ -24,6 +26,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
                 TryCatch<SqlQuery> parseQueryMonad2 = SqlQueryParser.Monadic.Parse(parseQueryMonad.Result.ToString());
                 Assert.IsTrue(parseQueryMonad2.Succeeded);
                 Assert.AreEqual(parseQueryMonad.Result, parseQueryMonad2.Result);
+            }
+
+            // Set culture to non-standard (US) to catch any parsing error
+            foreach (string culture in new List<string> { "en-EN", "fr-FR", "jp-JP" })
+            {
+                Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo(culture);
+                TryCatch<SqlQuery> parseQueryMonadCulture = SqlQueryParser.Monadic.Parse(input.Query);
+                if (parseQueryMonadCulture.Succeeded)
+                {
+                    // Addtional round trip for extra validation
+                    TryCatch<SqlQuery> parseQueryMonadCulture2 = SqlQueryParser.Monadic.Parse(parseQueryMonad.Result.ToString());
+                    Assert.IsTrue(parseQueryMonadCulture2.Succeeded);
+                    Assert.AreEqual(parseQueryMonad.Result, parseQueryMonadCulture2.Result);
+                }
             }
 
             return new SqlParserBaselineTestOutput(parseQueryMonad);
