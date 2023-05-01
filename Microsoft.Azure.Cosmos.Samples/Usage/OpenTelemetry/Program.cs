@@ -54,7 +54,6 @@
                 // Set up logging to forward logs to chosen exporter
                 using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder.AddOpenTelemetry(options =>
                     {
-                        options.IncludeScopes = true;
                         options.IncludeFormattedMessage = true;
                         options.SetResourceBuilder(resource);
                         options.AddAzureMonitorLogExporter(o => o.ConnectionString = aiConnectionString); // Set up exporter of your choice
@@ -92,6 +91,7 @@
             finally
             {
                 _traceProvider?.Dispose();
+                // Sleep is required for logging in console apps to ensure that telemetry is sent to the back-end even if application terminates.
                 await Task.Delay(5000);
 
                 Console.WriteLine("End of demo.");

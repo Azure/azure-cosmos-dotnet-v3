@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AssemblyName>Cosmos.Samples.OpenTelemetry</AssemblyName>
     <RootNamespace>Cosmos.Samples.OpenTelemetry</RootNamespace>
     <LangVersion>latest</LangVersion>
@@ -10,9 +10,9 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.0.0-beta.10" />
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.32.3-preview" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.32.0-preview" />
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.6.3" />
-    <PackageReference Include="OpenTelemetry" Version="1.5.0-alpha.2" />
+    <PackageReference Include="OpenTelemetry" Version="1.4.0" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="7.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />

@@ -46,7 +46,6 @@
 
                 // <SetUpApplicationInsights>
                 IServiceCollection services = new ServiceCollection();
-                services.AddLogging(loggingBuilder => loggingBuilder.AddFilter<ApplicationInsightsLoggerProvider>("Azure-Cosmos-Operation-Request-Diagnostics", LogLevel.Information));
                 services.AddApplicationInsightsTelemetryWorkerService((ApplicationInsightsServiceOptions options) => options.ConnectionString = aiConnectionString);
 
                 IServiceProvider serviceProvider = services.BuildServiceProvider();
@@ -71,8 +70,7 @@
             }
             finally
             {
-                // Explicitly calling Flush() followed by sleep is required for Application Insights logging in console apps.
-                // This is to ensure that even if application terminates, telemetry is sent to the back-end.
+                // Explicitly calling Flush() followed by sleep is required for Application Insights logging in console apps to ensure that telemetry is sent to the back-end even if application terminates.
                 _telemetryClient?.Flush();
                 await Task.Delay(5000);
 
