@@ -29,7 +29,7 @@ Before covering the sync-up process in detail, please follow the below steps to 
 
 - Setup the CosmosDB repository in the local environment, using the [CosmosDB onboarding guide](https://eng.ms/docs/cloud-ai-platform/azure-data/azure-data-azure-databases/cosmos-db-and-postgresql/azure-cosmos-db/azure-cosmos-db-onboarding-guide/engineering/dev-getting-started/clone-and-build-repo). Please note, building the entire repository is not required for the sync-up process.
 
-- Navigate to the clonned `CosmosDB` directory and check out the following branch, `master` using the below git commands:
+- Navigate to the cloned `CosmosDB` directory and check out the following branch, `master` using the below git commands:
     -       git pull && git checkout master
 
 ## Steps Required to Update msdata direct Repo
@@ -52,7 +52,7 @@ The next step is to port the latest `master` branch code into the newly created 
 
 This is the last part for the sync-up process. Please follow the below steps to copy the required `Microsoft.Cosmos.Direct` files from msdata CosmosDB repo.
 
-- Open command prompt/windows terminal and navigate to the following directory `Microsoft.Azure.Cosmos\src\direct` inside the clonned cosmos v3 repo.
+- Open command prompt/windows terminal and navigate to the following directory `Microsoft.Azure.Cosmos\src\direct` inside the cloned cosmos v3 repo.
 - Locate and edit the following line in the `msdata_sync.ps1` script with the respective location of the msdata repo: `$baseDir    = "<src_directory>\CosmosDB"`
 - Run the powershell script using: `.\msdata_sync.ps1`. You will notice the script started copying the required files from the msdata repo, and generating the console logs, like the below:
 
