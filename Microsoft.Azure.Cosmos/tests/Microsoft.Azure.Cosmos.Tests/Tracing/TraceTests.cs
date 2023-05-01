@@ -125,8 +125,6 @@
             storeResultProperties.Remove(nameof(storeResult.Target.Exception));
             storeResultProperties.Add("transportRequestTimeline");
             storeResultProperties.Remove(nameof(storeResult.Target.TransportRequestStats));
-            storeResultProperties.Add("ReplicaHealthStatuses");
-            storeResultProperties.Remove(nameof(storeResult.Target.ReplicaHealthStatuses));
 
             foreach (string key in jsonPropertyNames)
             {
