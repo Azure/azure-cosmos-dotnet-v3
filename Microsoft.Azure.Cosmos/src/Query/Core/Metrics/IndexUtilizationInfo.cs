@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -81,12 +82,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             if (delimitedString == null)
             {
                 result = IndexUtilizationInfo.Empty;
+                Console.WriteLine("empty");
                 return true;
             }
 
             try
             {
-                result = JsonConvert.DeserializeObject<IndexUtilizationInfo>(delimitedString, new JsonSerializerSettings()
+                string delimitedString2 = System.Web.HttpUtility.UrlDecode(delimitedString, Encoding.UTF8);
+                Console.WriteLine(delimitedString2);
+
+                result = JsonConvert.DeserializeObject<IndexUtilizationInfo>(delimitedString2, new JsonSerializerSettings()
                 {
                     // Allowing null values to be resilient to Json structure change
                     MissingMemberHandling = MissingMemberHandling.Ignore,
