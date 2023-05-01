@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             IList<string> expectedTags = new List<string>
             {
                  "az.namespace",
+                 "az.schema_url",
                  "kind",
                  "db.system",
                  "db.name",
