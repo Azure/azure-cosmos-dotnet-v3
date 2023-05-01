@@ -61,11 +61,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             List<IndexMetricsParserTestInput> inputs = new List<IndexMetricsParserTestInput>
             {
-                //new IndexMetricsParserTestInput
-                //(
-                //    description: "Input full string",
-                //    query: "SELECT 'Input full string' AS test, c.id, c.statement\r\nFROM c\r\nWHERE STARTSWITH(c.statement, 'The quick brown fox jumps over the lazy dog', false)"
-                //),
+                new IndexMetricsParserTestInput
+                (
+                    description: "Input full string",
+                    query: "SELECT 'Input full string' AS test, c.id, c.statement\r\nFROM c\r\nWHERE STARTSWITH(c.statement, 'The quick brown fox jumps over the lazy dog', false)"
+                ),
 
                 new IndexMetricsParserTestInput
                 (
