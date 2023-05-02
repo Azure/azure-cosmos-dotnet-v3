@@ -742,8 +742,8 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlScalarExpression memberExpression = ExpressionToSql.VisitScalarExpression(inputExpression.Expression, context);
             string memberName = inputExpression.Member.GetMemberName(context.linqSerializerOptions);
 
-            // If the resulting memberName is empty, then the indexer should be on the root of the object.
-            if (memberName == string.Empty)
+            // If the resulting memberName is null, then the indexer should be on the root of the object.
+            if (memberName == null)
             {
                 return memberExpression;
             }

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             JsonExtensionDataAttribute jsonExtensionDataAttribute = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(true);
             if (jsonExtensionDataAttribute != null && jsonExtensionDataAttribute.ReadData)
             {
-                return string.Empty;
+                return null;
             }
 
             // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
