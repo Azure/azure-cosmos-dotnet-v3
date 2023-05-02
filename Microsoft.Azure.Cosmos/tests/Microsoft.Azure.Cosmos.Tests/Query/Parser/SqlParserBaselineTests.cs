@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
     {
         public override SqlParserBaselineTestOutput ExecuteTest(SqlParserBaselineTestInput input)
         {
-            CultureInfo defaultCulture = CultureInfo.CurrentCulture;
+            CultureInfo defaultCulture = Thread.CurrentThread.CurrentCulture;
 
             TryCatch<SqlQuery> parseQueryMonad = SqlQueryParser.Monadic.Parse(input.Query);
             if (parseQueryMonad.Succeeded)
