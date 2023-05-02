@@ -307,7 +307,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             inputs.Add(new LinqTestInput("SelectMany array", b => getQuery(b).SelectMany(x => x.dblArray)));
 
             inputs.Add(new LinqTestInput("Select where extensiondata", b => getQuery(b).Where(p => (int)p.NewtonsoftExtensionData["age"] > 18).Select(x => new { Age = (int)x.NewtonsoftExtensionData["age"] })));
-            inputs.Add(new LinqTestInput("SelectMany where extensiondata", b => getQuery(b).Where(p => ((string[])p.NewtonsoftExtensionData["tags"]).Contains("item-1")).Select(x => (string[])x.NewtonsoftExtensionData["tags"] )));
+            inputs.Add(new LinqTestInput("Select where extensiondata contains", b => getQuery(b).Where(p => ((string[])p.NewtonsoftExtensionData["tags"]).Contains("item-1")).Select(x => (string[])x.NewtonsoftExtensionData["tags"] )));
+
+            // TODO: SelectMany does not currently work with Dictionary objects, the snapshot represents
+            // the current (broken) behavior
+            inputs.Add(new LinqTestInput("SelectMany where extensiondata contains", b => getQuery(b).Where(p => ((string[])p.NewtonsoftExtensionData["tags"]).Contains("item-1")).SelectMany(x => (object[])x.NewtonsoftExtensionData["tags"] )));
 
             this.ExecuteTestSuite(inputs);
         }

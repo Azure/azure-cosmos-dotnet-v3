@@ -180,7 +180,7 @@ WHERE (root["age"] > 18)]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[SelectMany where extensiondata]]></Description>
+      <Description><![CDATA[Select where extensiondata contains]]></Description>
       <Expression><![CDATA[query.Where(p => Convert(p.NewtonsoftExtensionData.get_Item("tags"), String[]).Contains("item-1")).Select(x => Convert(x.NewtonsoftExtensionData.get_Item("tags"), String[]))]]></Expression>
     </Input>
     <Output>
@@ -188,6 +188,16 @@ WHERE (root["age"] > 18)]]></SqlQuery>
 SELECT VALUE root["tags"] 
 FROM root 
 WHERE ARRAY_CONTAINS(root["tags"], "item-1")]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany where extensiondata contains]]></Description>
+      <Expression><![CDATA[query.Where(p => Convert(p.NewtonsoftExtensionData.get_Item("tags"), String[]).Contains("item-1")).SelectMany(x => Convert(x.NewtonsoftExtensionData.get_Item("tags"), Object[]))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expression with NodeType 'Convert' is not supported.]]></ErrorMessage>
     </Output>
   </Result>
 </Results>
