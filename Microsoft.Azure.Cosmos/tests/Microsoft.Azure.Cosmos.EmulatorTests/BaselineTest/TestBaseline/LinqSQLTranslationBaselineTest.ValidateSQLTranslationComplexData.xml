@@ -166,4 +166,28 @@ FROM root
 JOIN x0 IN root["dblArray"]]]></SqlQuery>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select where extensiondata]]></Description>
+      <Expression><![CDATA[query.Where(p => (Convert(p.NewtonsoftExtensionData.get_Item("age"), Int32) > 18)).Select(x => new AnonymousType(Age = Convert(x.NewtonsoftExtensionData.get_Item("age"), Int32)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"Age": root["age"]} 
+FROM root 
+WHERE (root["age"] > 18)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[SelectMany where extensiondata]]></Description>
+      <Expression><![CDATA[query.Where(p => Convert(p.NewtonsoftExtensionData.get_Item("tags"), String[]).Contains("item-1")).Select(x => Convert(x.NewtonsoftExtensionData.get_Item("tags"), String[]))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["tags"] 
+FROM root 
+WHERE ARRAY_CONTAINS(root["tags"], "item-1")]]></SqlQuery>
+    </Output>
+  </Result>
 </Results>

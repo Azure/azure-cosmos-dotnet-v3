@@ -79,7 +79,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             [System.Text.Json.Serialization.JsonExtensionData()]
             public Dictionary<string, System.Text.Json.JsonElement> NetExtensionData { get; set; }
-
         }
     }
 }
