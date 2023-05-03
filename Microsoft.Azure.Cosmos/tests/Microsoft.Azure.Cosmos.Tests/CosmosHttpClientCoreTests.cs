@@ -4,18 +4,20 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
     using System;
-    using System.Net.Http;
-    using System.Net;
-    using System.Threading;
-    using System.IO;
-    using System.Net.Sockets;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Net;
+    using System.Net.Http;
+    using System.Net.Security;
+    using System.Security.Cryptography;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class CosmosHttpClientCoreTests
@@ -408,6 +410,55 @@ namespace Microsoft.Azure.Cosmos.Tests
                     cancellationToken: default);
 
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+        }
+
+        [TestMethod]
+        public void CreateSocketsHttpHandlerCreatesCorrectValueType()
+        {
+            int gatewayLimit = 10;
+            IWebProxy webProxy = null;
+            Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback = (certificate2, x509Chain, sslPolicyErrors) => false;
+
+            HttpMessageHandler handler = CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(
+                gatewayLimit, 
+                webProxy, 
+                serverCertificateCustomValidationCallback);
+
+            Assert.AreEqual(Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http"), handler.GetType());
+            SocketsHttpHandler socketsHandler = (SocketsHttpHandler)handler;
+
+            Assert.IsTrue(TimeSpan.FromMinutes(5.5) >= socketsHandler.PooledConnectionLifetime);
+            Assert.IsTrue(TimeSpan.FromMinutes(5) <= socketsHandler.PooledConnectionLifetime);
+            Assert.AreEqual(webProxy, socketsHandler.Proxy);
+            Assert.AreEqual(gatewayLimit, socketsHandler.MaxConnectionsPerServer);
+
+            //Create cert for test
+            X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
+            X509Chain x509Chain = new X509Chain();
+            SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
+            Assert.IsFalse(socketsHandler.SslOptions.RemoteCertificateValidationCallback.Invoke(new object(), x509Certificate2, x509Chain, sslPolicyErrors));
+        }
+
+        [TestMethod]
+        public void CreateHttpClientHandlerCreatesCorrectValueType()
+        {
+            int gatewayLimit = 10;
+            IWebProxy webProxy = null;
+            Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback = (certificate2, x509Chain, sslPolicyErrors) => false;
+
+            HttpMessageHandler handler = CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayLimit, webProxy, serverCertificateCustomValidationCallback);
+
+            Assert.AreEqual(Type.GetType("System.Net.Http.HttpClientHandler, System.Net.Http"), handler.GetType());
+            HttpClientHandler clientHandler = (HttpClientHandler)handler;
+
+            Assert.AreEqual(webProxy, clientHandler.Proxy);
+            Assert.AreEqual(gatewayLimit, clientHandler.MaxConnectionsPerServer);
+
+            //Create cert for test
+            X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
+            X509Chain x509Chain = new X509Chain();
+            SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
+            Assert.IsFalse(clientHandler.ServerCertificateCustomValidationCallback.Invoke(new HttpRequestMessage(), x509Certificate2, x509Chain, sslPolicyErrors));
         }
 
         private class MockMessageHandler : HttpMessageHandler

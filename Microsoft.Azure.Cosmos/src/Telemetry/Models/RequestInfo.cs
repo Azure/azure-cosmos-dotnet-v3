@@ -37,8 +37,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
 
         public override int GetHashCode()
         {
-            int hash = 3;
+            int hash = this.GetHashCodeForSampler();
             hash = (hash * 7) ^ (this.Uri == null ? 0 : this.Uri.GetHashCode());
+            return hash;
+        }
+
+        public int GetHashCodeForSampler()
+        {
+            int hash = 3;
             hash = (hash * 7) ^ (this.DatabaseName == null ? 0 : this.DatabaseName.GetHashCode());
             hash = (hash * 7) ^ (this.ContainerName == null ? 0 : this.ContainerName.GetHashCode());
             hash = (hash * 7) ^ (this.Operation == null ? 0 : this.Operation.GetHashCode());
@@ -47,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             hash = (hash * 7) ^ (this.SubStatusCode.GetHashCode());
             return hash;
         }
-        
+
         public override bool Equals(object obj)
         {
             bool isequal = obj is RequestInfo payload &&
@@ -62,5 +68,26 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             return isequal;
         }
 
+        public double GetP99Latency()
+        {
+            foreach (MetricInfo metric in this.Metrics)
+            {
+                if (metric.MetricsName.Equals(ClientTelemetryOptions.RequestLatencyName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return metric.Percentiles[ClientTelemetryOptions.Percentile99];
+                }
+            }
+            return Double.MinValue; // least prioity for request info w/o latency info
+        }
+
+        public double GetSampleCount()
+        {
+            return (double)this.Metrics[0].Count;
+        }
+
+        public override string ToString()
+        {
+            return "Latency : " + this.GetP99Latency() + ", SampleCount : " + this.GetSampleCount(); 
+        }
     }
 }

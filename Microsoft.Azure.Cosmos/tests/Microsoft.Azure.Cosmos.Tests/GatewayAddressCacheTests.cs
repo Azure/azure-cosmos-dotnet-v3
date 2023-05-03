@@ -18,6 +18,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -108,8 +110,11 @@ namespace Microsoft.Azure.Cosmos
         public async Task TestGatewayAddressCacheUpdateOnConnectionResetAsync()
         {
             FakeMessageHandler messageHandler = new FakeMessageHandler();
-            HttpClient httpClient = new HttpClient(messageHandler);
-            httpClient.Timeout = TimeSpan.FromSeconds(120);
+            HttpClient httpClient = new HttpClient(messageHandler)
+            {
+                Timeout = TimeSpan.FromSeconds(120)
+            };
+
             GatewayAddressCache cache = new GatewayAddressCache(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
                 Documents.Client.Protocol.Tcp,
@@ -129,8 +134,9 @@ namespace Microsoft.Azure.Cosmos
 
             Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla.com"));
 
-            // call updateAddress
-            cache.TryRemoveAddresses(new Documents.Rntbd.ServerKey(new Uri("https://blabla.com")));
+            // Mark transport addresses to Unhealthy depcting a connection reset event.
+            ServerKey faultyServerKey = new (new Uri("https://blabla2.com"));
+            await cache.MarkAddressesToUnhealthyAsync(faultyServerKey);
 
             // check if the addresss is updated
             addresses = await cache.TryGetAddressesAsync(
@@ -140,7 +146,15 @@ namespace Microsoft.Azure.Cosmos
              false,
              CancellationToken.None);
 
-            Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla5.com"));
+            // Validate that the above transport uri with host blabla2.com has been marked Unhealthy.
+            IReadOnlyList<TransportAddressUri> transportAddressUris = addresses
+                .Get(Protocol.Tcp)?
+                .ReplicaTransportAddressUris;
+
+            TransportAddressUri transportAddressUri = transportAddressUris
+                .Single(x => x.ReplicaServerKey.Equals(faultyServerKey));
+
+            Assert.IsTrue(condition: transportAddressUri.GetCurrentHealthState().GetHealthStatus().Equals(TransportAddressHealthState.HealthStatus.Unhealthy));
         }
 
         [TestMethod]
@@ -365,10 +379,10 @@ namespace Microsoft.Azure.Cosmos
             // Assert.
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 0,
-                expectedMethodInvocationCount: 1,
-                expectedReceivedAddressesCount: 3,
-                expectedSuccessCount: 3);
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: 1,
+                expectedTotalReceivedAddressesCount: 3,
+                expectedTotalSuccessAddressesToOpenCount: 3);
         }
 
         /// <summary>
@@ -411,10 +425,10 @@ namespace Microsoft.Azure.Cosmos
             // Assert.
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 3,
-                expectedMethodInvocationCount: 1,
-                expectedReceivedAddressesCount: 3,
-                expectedSuccessCount: 0);
+                expectedTotalFailedAddressesToOpenCount: 3,
+                expectedTotalHandlerInvocationCount: 1,
+                expectedTotalReceivedAddressesCount: 3,
+                expectedTotalSuccessAddressesToOpenCount: 0);
         }
 
         /// <summary>
@@ -460,10 +474,10 @@ namespace Microsoft.Azure.Cosmos
             // Assert.
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 0,
-                expectedMethodInvocationCount: 0,
-                expectedReceivedAddressesCount: 0,
-                expectedSuccessCount: 0);
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: 0,
+                expectedTotalReceivedAddressesCount: 0,
+                expectedTotalSuccessAddressesToOpenCount: 0);
         }
 
         /// <summary>
@@ -538,10 +552,10 @@ namespace Microsoft.Azure.Cosmos
             // Assert.
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 0,
-                expectedMethodInvocationCount: 1,
-                expectedReceivedAddressesCount: 3,
-                expectedSuccessCount: 3);
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: 1,
+                expectedTotalReceivedAddressesCount: 3,
+                expectedTotalSuccessAddressesToOpenCount: 3);
         }
 
         /// <summary>
@@ -616,10 +630,10 @@ namespace Microsoft.Azure.Cosmos
             // Assert.
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 2,
-                expectedMethodInvocationCount: 1,
-                expectedReceivedAddressesCount: 3,
-                expectedSuccessCount: 1);
+                expectedTotalFailedAddressesToOpenCount: 2,
+                expectedTotalHandlerInvocationCount: 1,
+                expectedTotalReceivedAddressesCount: 3,
+                expectedTotalSuccessAddressesToOpenCount: 1);
         }
 
         /// <summary>
@@ -707,10 +721,10 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(exceptionMessage, ex.Message);
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 0,
-                expectedMethodInvocationCount: 0,
-                expectedReceivedAddressesCount: 0,
-                expectedSuccessCount: 0);
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: 0,
+                expectedTotalReceivedAddressesCount: 0,
+                expectedTotalSuccessAddressesToOpenCount: 0);
         }
 
         /// <summary>
@@ -783,10 +797,10 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(ce.Message.Contains("Could not resolve the collection"));
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 0,
-                expectedMethodInvocationCount: 0,
-                expectedReceivedAddressesCount: 0,
-                expectedSuccessCount: 0);
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: 0,
+                expectedTotalReceivedAddressesCount: 0,
+                expectedTotalSuccessAddressesToOpenCount: 0);
         }
 
         /// <summary>
@@ -865,10 +879,10 @@ namespace Microsoft.Azure.Cosmos
             // Assert.
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 0,
-                expectedMethodInvocationCount: 1,
-                expectedReceivedAddressesCount: addresses.Count,
-                expectedSuccessCount: addresses.Count);
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: 1,
+                expectedTotalReceivedAddressesCount: addresses.Count,
+                expectedTotalSuccessAddressesToOpenCount: addresses.Count);
         }
 
         /// <summary>
@@ -946,9 +960,15 @@ namespace Microsoft.Azure.Cosmos
                 .ReplicaTransportAddressUris
                 .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
 
+            // Waits until a completion signal from the background task is received.
+            GatewayAddressCacheTests.WaitForManualResetEventSignal(
+                manualResetEvent: manualResetEvent,
+                shouldReset: true);
+
+            // Because the Unknown Replicas are now validated aggresively, the health status should be marked as connected.
             Assert.IsNotNull(refreshedUri);
             Assert.AreEqual(
-                expected: TransportAddressHealthState.HealthStatus.Unknown,
+                expected: TransportAddressHealthState.HealthStatus.Connected,
                 actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
 
             Assert.AreEqual(4, addressInfo.AllAddresses.Count);
@@ -990,10 +1010,10 @@ namespace Microsoft.Azure.Cosmos
             mockHttpHandler.VerifyAll();
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 0,
-                expectedMethodInvocationCount: 1,
-                expectedReceivedAddressesCount: 1,
-                expectedSuccessCount: 1);
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: 2,
+                expectedTotalReceivedAddressesCount: 6,
+                expectedTotalSuccessAddressesToOpenCount: 6);
         }
 
         /// <summary>
@@ -1039,7 +1059,7 @@ namespace Microsoft.Azure.Cosmos
             FakeOpenConnectionHandler fakeOpenConnectionHandler = new (
                 failIndexesByAttempts: new Dictionary<int, HashSet<int>>()
                 {
-                    { 0, new HashSet<int>() { 0 } }
+                    { 0, new HashSet<int>() { 1 } }
                 },
                 manualResetEvent: manualResetEvent);
 
@@ -1081,9 +1101,22 @@ namespace Microsoft.Azure.Cosmos
                 .ReplicaTransportAddressUris
                 .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
 
+            // Waits until a completion signal from the background task is received.
+            GatewayAddressCacheTests.WaitForManualResetEventSignal(
+                manualResetEvent: manualResetEvent,
+                shouldReset: true);
+
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: 1,
+                expectedTotalReceivedAddressesCount: 4,
+                expectedTotalSuccessAddressesToOpenCount: 4);
+
+            // Because the Unknown Replicas are now validated aggresively, the health status should be marked as connected.
             Assert.IsNotNull(refreshedUri);
             Assert.AreEqual(
-                expected: TransportAddressHealthState.HealthStatus.Unknown,
+                expected: TransportAddressHealthState.HealthStatus.Connected,
                 actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
 
             Assert.AreEqual(4, addressInfo.AllAddresses.Count);
@@ -1126,10 +1159,10 @@ namespace Microsoft.Azure.Cosmos
 
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 1,
-                expectedMethodInvocationCount: 1,
-                expectedReceivedAddressesCount: 1,
-                expectedSuccessCount: 0);
+                expectedTotalFailedAddressesToOpenCount: 1,
+                expectedTotalHandlerInvocationCount: 2,
+                expectedTotalReceivedAddressesCount: 6,
+                expectedTotalSuccessAddressesToOpenCount: 5);
 
             // A delay of 2 minute was added to make the replica unhealthy for more than one minute. This
             // will make sure the unhealthy replica gets a chance to re-validate it's health status.
@@ -1153,10 +1186,10 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(4, addressInfo.AllAddresses.Count);
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 1,
-                expectedMethodInvocationCount: 2,
-                expectedReceivedAddressesCount: 1,
-                expectedSuccessCount: 1);
+                expectedTotalFailedAddressesToOpenCount: 1,
+                expectedTotalHandlerInvocationCount: 3,
+                expectedTotalReceivedAddressesCount: 7,
+                expectedTotalSuccessAddressesToOpenCount: 6);
 
             addressInfo = await cache.TryGetAddressesAsync(
                 request: request,
@@ -1180,13 +1213,13 @@ namespace Microsoft.Azure.Cosmos
                 actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
 
             // This assertion makes sure that no additional calls were made to the open connection handler after
-            // since the last address refresh, because all the replicas are now either Unknown or Connected.
+            // since the last address refresh, because all the replicas at this point should be Connected.
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 1,
-                expectedMethodInvocationCount: 2,
-                expectedReceivedAddressesCount: 1,
-                expectedSuccessCount: 1);
+                expectedTotalFailedAddressesToOpenCount: 1,
+                expectedTotalHandlerInvocationCount: 3,
+                expectedTotalReceivedAddressesCount: 7,
+                expectedTotalSuccessAddressesToOpenCount: 6);
         }
 
         /// <summary>
@@ -1276,10 +1309,10 @@ namespace Microsoft.Azure.Cosmos
             mockHttpHandler.VerifyAll();
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedExceptionCount: 0,
-                expectedMethodInvocationCount: 0,
-                expectedReceivedAddressesCount: 0,
-                expectedSuccessCount: 0);
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: 0,
+                expectedTotalReceivedAddressesCount: 0,
+                expectedTotalSuccessAddressesToOpenCount: 0);
         }
 
         /// <summary>
@@ -1306,21 +1339,21 @@ namespace Microsoft.Azure.Cosmos
         /// to match with that of the expected ones.
         /// </summary>
         /// <param name="fakeOpenConnectionHandler">An instance of the <see cref="FakeOpenConnectionHandler"/>.</param>
-        /// <param name="expectedExceptionCount">The expected exception count for the test.</param>
-        /// <param name="expectedMethodInvocationCount">The expected method invocation count for the test.</param>
-        /// <param name="expectedReceivedAddressesCount">The expected received addresses count for the test.</param>
-        /// <param name="expectedSuccessCount">The expected successful messages count for the test.</param>
+        /// <param name="expectedTotalFailedAddressesToOpenCount">The expected total addresses count that are supposed to fail while opening connection for the scenario.</param>
+        /// <param name="expectedTotalHandlerInvocationCount">The expected total open connection handler method invocation count for the scenario.</param>
+        /// <param name="expectedTotalReceivedAddressesCount">The expected total received addresses count for the scenario.</param>
+        /// <param name="expectedTotalSuccessAddressesToOpenCount">The expected total addresses count that are supposed to succeed while opening connection for the scenario.</param>
         private static void AssertOpenConnectionHandlerAttributes(
             FakeOpenConnectionHandler fakeOpenConnectionHandler,
-            int expectedExceptionCount,
-            int expectedMethodInvocationCount,
-            int expectedReceivedAddressesCount,
-            int expectedSuccessCount)
+            int expectedTotalFailedAddressesToOpenCount,
+            int expectedTotalHandlerInvocationCount,
+            int expectedTotalReceivedAddressesCount,
+            int expectedTotalSuccessAddressesToOpenCount)
         {
-            Assert.AreEqual(expectedExceptionCount, fakeOpenConnectionHandler.GetExceptionCount());
-            Assert.AreEqual(expectedMethodInvocationCount, fakeOpenConnectionHandler.GetMethodInvocationCount());
-            Assert.AreEqual(expectedReceivedAddressesCount, fakeOpenConnectionHandler.GetReceivedAddressesCount());
-            Assert.AreEqual(expectedSuccessCount, fakeOpenConnectionHandler.GetSuccessfulInvocationCount());
+            Assert.AreEqual(expectedTotalFailedAddressesToOpenCount, fakeOpenConnectionHandler.GetTotalExceptionCount());
+            Assert.AreEqual(expectedTotalHandlerInvocationCount, fakeOpenConnectionHandler.GetTotalMethodInvocationCount());
+            Assert.AreEqual(expectedTotalReceivedAddressesCount, fakeOpenConnectionHandler.GetTotalReceivedAddressesCount());
+            Assert.AreEqual(expectedTotalSuccessAddressesToOpenCount, fakeOpenConnectionHandler.GetTotalSuccessfulInvocationCount());
         }
 
         private class FakeMessageHandler : HttpMessageHandler
@@ -1437,62 +1470,57 @@ namespace Microsoft.Azure.Cosmos
                 this.manualResetEvent = manualResetEvent;
             }
 
-            public int GetSuccessfulInvocationCount()
+            public int GetTotalSuccessfulInvocationCount()
             {
                 return this.successInvocationCounter;
             }
 
-            public int GetExceptionCount()
+            public int GetTotalExceptionCount()
             {
                 return this.exceptionCounter;
             }
 
-            public int GetReceivedAddressesCount()
+            public int GetTotalReceivedAddressesCount()
             {
                 return this.totalReceivedAddressesCounter;
             }
 
-            public int GetMethodInvocationCount()
+            public int GetTotalMethodInvocationCount()
             {
                 return this.methodInvocationCounter;
             }
 
             Task IOpenConnectionsHandler.TryOpenRntbdChannelsAsync(
-                IReadOnlyList<TransportAddressUri> addresses)
+                IEnumerable<TransportAddressUri> addresses)
             {
-                this.totalReceivedAddressesCounter = addresses.Count;
-                for (int i = 0; i < addresses.Count; i++)
+                int idx = 0;
+                this.totalReceivedAddressesCounter += addresses.Count();
+                foreach (TransportAddressUri transportAddress in addresses)
                 {
                     if (this.useAttemptBasedFailingIndexs)
                     {
-                        if (this.failIndexesByAttempts.ContainsKey(i) && this.failIndexesByAttempts[i].Contains(this.methodInvocationCounter))
+                        if (this.failIndexesByAttempts.ContainsKey(idx) && this.failIndexesByAttempts[idx].Contains(this.methodInvocationCounter))
                         {
-                            this.ExecuteFailureCondition(
-                                addresses: addresses,
-                                index: i);
+                            this.ExecuteFailureCondition(transportAddress);
                         }
                         else
                         {
-                            this.ExecuteSuccessCondition(
-                                addresses: addresses,
-                                index: i);
+                            this.ExecuteSuccessCondition(transportAddress);
                         }
                     }
                     else
                     {
-                        if (this.failingIndexes.Contains(i))
+                        if (this.failingIndexes.Contains(idx))
                         {
-                            this.ExecuteFailureCondition(
-                                addresses: addresses,
-                                index: i);
+                            this.ExecuteFailureCondition(transportAddress);
                         }
                         else
                         {
-                            this.ExecuteSuccessCondition(
-                                addresses: addresses,
-                                index: i);
+                            this.ExecuteSuccessCondition(transportAddress);
                         }
                     }
+
+                    idx++;
                 }
 
                 this.methodInvocationCounter++;
@@ -1501,18 +1529,16 @@ namespace Microsoft.Azure.Cosmos
             }
 
             private void ExecuteSuccessCondition(
-                IReadOnlyList<TransportAddressUri> addresses,
-                int index)
+                TransportAddressUri address)
             {
-                addresses[index].SetConnected();
+                address.SetConnected();
                 this.successInvocationCounter++;
             }
 
             private void ExecuteFailureCondition(
-                IReadOnlyList<TransportAddressUri> addresses,
-                int index)
+                TransportAddressUri address)
             {
-                addresses[index].SetUnhealthy();
+                address.SetUnhealthy();
                 this.exceptionCounter++;
             }
         }
