@@ -10,23 +10,40 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class PatchOperationCore<T> : PatchOperation<T>
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="PatchOperationCore{T}"/> class.
-        /// </summary>
-        /// <param name="operationType">Specifies the type of Patch operation.</param>
-        /// <param name="path">Specifies the path to target location.</param>
-        /// <param name="value">Specifies the value to be used.</param>
+        /// Initializes a new instance of the <see cref="PatchOperationCore{T}"/> class.
+        /// </summary>
+        /// <param name="operationType">Specifies the type of Patch operation.</param>
+        /// <param name="path">Specifies the path to target location.</param>
+        /// <param name="value">Specifies the value to be used. In case of move operations it will be a string specifying the source
+        /// location.</param>
         public PatchOperationCore(
-            PatchOperationType operationType,
-            string path,
-            T value)
+          PatchOperationType operationType,
+          string path,
+          T value)
         {
             this.OperationType = operationType;
-            this.Path = string.IsNullOrWhiteSpace(path)
-                ? throw new ArgumentNullException(nameof(path))
-                : path;
-            this.Value = value; 
+            if (operationType == PatchOperationType.Move)
+            {
+                this.Path = string.IsNullOrWhiteSpace(path)
+                    ? throw new ArgumentNullException(nameof(path))
+                    : path;
+                if (!(value is String valueAsString))
+                {
+                    throw new ArgumentException(
+                    $"Parameter {nameof(value)} must be of type String for patch operation type {nameof(PatchOperationType.Move)}");
+                }
+                this.From = string.IsNullOrWhiteSpace(valueAsString)
+                    ? throw new ArgumentNullException(nameof(value))
+                    : valueAsString;
+            }
+            else
+            {
+                this.Path = string.IsNullOrWhiteSpace(path)
+                    ? throw new ArgumentNullException(nameof(path))
+                    : path;
+                this.Value = value;
+            }
         }
-
         public override T Value { get; }
 
         public override PatchOperationType OperationType { get; }

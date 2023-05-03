@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Diagnostics.Contracts;
+    using System.Globalization;
     using Antlr4.Runtime.Misc;
     using Antlr4.Runtime.Tree;
     using Microsoft.Azure.Cosmos.SqlObjects;
@@ -963,7 +964,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
             else
             {
-                number64 = double.Parse(text);
+                number64 = double.Parse(text, CultureInfo.InvariantCulture);
             }
 
             return number64;
