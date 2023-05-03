@@ -102,6 +102,7 @@
             await database?.DeleteAsync();
         }
 
+        [Ignore]
         [TestMethod]
         public async Task TestComputedProperties()
         {

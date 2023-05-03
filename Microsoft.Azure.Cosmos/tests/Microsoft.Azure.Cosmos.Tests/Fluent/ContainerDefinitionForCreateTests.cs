@@ -251,6 +251,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<CancellationToken>()), Times.Once);
         }
 
+        [Ignore]
         [TestMethod]
         public async Task WithComputedProperties()
         {

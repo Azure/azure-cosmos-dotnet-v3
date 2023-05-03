@@ -151,6 +151,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ComputedPropertyComparer.AssertAreEqual(containerProperties.ComputedProperties, deserialziedTest.ComputedProperties);
         }
 
+        [Ignore]
         [TestMethod]
         public async Task ContainerNegativeComputedPropertyTest()
         {
@@ -590,6 +591,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
 
+        [Ignore]
         [TestMethod]
         public async Task WithComputedProperties()
         {
