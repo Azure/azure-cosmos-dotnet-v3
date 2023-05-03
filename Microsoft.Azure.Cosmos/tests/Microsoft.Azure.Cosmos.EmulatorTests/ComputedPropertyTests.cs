@@ -400,7 +400,7 @@
             ContainerProperties containerProperties = new ContainerProperties(container?.Id ?? Guid.NewGuid().ToString(), "/id")
             {
                 IndexingPolicy = containerState.IndexingPolicy ?? new IndexingPolicy(),
-                ComputedProperties = containerState.ComputedProperties,
+                ComputedProperties = containerState.ComputedProperties ?? new Collection<ComputedProperty>(),
             };
 
             ContainerResponse response = container == null ?
