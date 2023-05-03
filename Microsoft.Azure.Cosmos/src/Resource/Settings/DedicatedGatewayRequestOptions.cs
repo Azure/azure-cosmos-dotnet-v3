@@ -23,6 +23,12 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks> 
         public TimeSpan? MaxIntegratedCacheStaleness { get; set; }
 
+        /// <summary>
+        /// Gets or sets if bypass the integrated cache or not associated with the request in the Azure CosmosDB service.
+        /// </summary>
+        /// <value>Default value is false.</value>
+        public bool? BypassIntegratedCache { get; set; }
+
         internal static void PopulateMaxIntegratedCacheStalenessOption(DedicatedGatewayRequestOptions dedicatedGatewayRequestOptions, RequestMessage request)
         {
             if (dedicatedGatewayRequestOptions?.MaxIntegratedCacheStaleness != null)
@@ -35,6 +41,11 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 request.Headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayPerRequestCacheStaleness, cacheStalenessInMilliseconds.ToString(CultureInfo.InvariantCulture));
+            }
+
+            if (dedicatedGatewayRequestOptions?.BypassIntegratedCache != null)
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayPerRequestBypassIntegratedCache, true.ToString(CultureInfo.InvariantCulture));
             }
         }
     }
