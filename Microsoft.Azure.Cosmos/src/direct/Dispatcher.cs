@@ -351,9 +351,17 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        public void CancelCall(PrepareCallResult preparedCall)
+        /// <summary>
+        /// Cancels call.
+        /// </summary>
+        /// <param name="preparedCall">Prepared call result.</param>
+        /// <param name="isReadOnly">A boolean flag indicating if the request is read only.</param>
+        public void CancelCall(
+            PrepareCallResult preparedCall,
+            bool isReadOnly)
         {
             this.ThrowIfDisposed();
+            this.connection.IncrementTransitTimeoutCounter(isReadOnly);
             CallInfo call = this.RemoveCall(preparedCall.RequestId);
             if (call != null)
             {

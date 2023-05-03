@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 callArguments.CommonArguments.SnapshotCallState(
                     out timeoutCode, out payloadSent);
                 Debug.Assert(TransportException.IsTimeout(timeoutCode));
-                this.dispatcher.CancelCall(callArguments.PreparedCall);
+                this.dispatcher.CancelCall(callArguments.PreparedCall, request.IsReadOnlyRequest);
                 Channel.HandleTaskTimeout(tasks[1], activityId);
                 Exception ex = completedTask.Exception?.InnerException;
                 DefaultTrace.TraceWarning("RNTBD call timed out on channel {0}. Error: {1}",

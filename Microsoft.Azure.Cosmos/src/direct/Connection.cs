@@ -136,6 +136,17 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static int numberOfOpenTcpConnections;
 
+        private readonly bool timeoutDetectionEnabled;
+        private readonly TimeSpan timeoutDetectionTimeLimit;
+        private readonly int timeoutDetectionOnWriteThreshold;
+        private readonly TimeSpan timeoutDetectionOnWriteTimeLimit;
+        private readonly int timeoutDetectionHighFrequencyThreshold;
+        private readonly TimeSpan timeoutDetectionHighFrequencyTimeLimit;
+        private readonly double timeoutDetectionDisableCPUThreshold;
+        private readonly SystemUtilizationReaderBase systemUtilizationReader = SystemUtilizationReaderBase.SingletonInstance;
+        private int transitTimeoutCounter;
+        private int transitTimeoutWriteCounter;
+
         public Connection(
             Uri serverUri,
             string hostNameCertificateOverride,
@@ -199,9 +210,23 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             this.memoryStreamPool = memoryStreamPool;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
+
+            this.transitTimeoutCounter = 0;
+            this.transitTimeoutWriteCounter = 0;
+
+            // TODO" To be read from the configs.
+            this.timeoutDetectionEnabled = true;
+            this.timeoutDetectionTimeLimit = TimeSpan.FromSeconds(60);
+            this.timeoutDetectionOnWriteThreshold = 1;
+            this.timeoutDetectionOnWriteTimeLimit = TimeSpan.FromSeconds(6);
+            this.timeoutDetectionHighFrequencyThreshold = 3;
+            this.timeoutDetectionHighFrequencyTimeLimit = TimeSpan.FromSeconds(10);
+            this.timeoutDetectionDisableCPUThreshold = 90;
         }
 
         public static int NumberOfOpenTcpConnections { get { return Connection.numberOfOpenTcpConnections; } }
+
+        public static int TransitTimeoutWriteCounter { get { return Connection.transitTimeoutWriteCounter; } }
 
         public BufferProvider BufferProvider { get; }
 
@@ -268,6 +293,61 @@ namespace Microsoft.Azure.Documents.Rntbd
                         this, lastSend, lastReceive, this.receiveDelayLimit, 
                         firstSendSinceLastReceive, numberOfSendsSinceLastReceive);
                     return false;
+                }
+
+                if (this.timeoutDetectionEnabled &&
+                    this.transitTimeoutCounter > 0)
+                {
+                    // Transit timeout can be a normal symptom under high CPU load.
+                    // When request timeout due to high CPU,
+                    // close the existing the connection and re-establish a new one will not help the issue but rather make it worse, return fast
+                    if (this.systemUtilizationReader.GetSystemWideCpuUsage() > this.timeoutDetectionDisableCPUThreshold)
+                    {
+                        DefaultTrace.TraceWarning(
+                            "Unhealthy RNTBD connection: Health check failed due to transit timeout detection time limit: {0}. " +
+                            "Last send attempt: {1:o}. Last send: {2:o}. " +
+                            "Tolerance {3:c}",
+                            this, lastSendAttempt, lastSend, this.sendDelayLimit);
+                        return true;
+                    }
+
+                    TimeSpan readDelay = now - lastReceive;
+
+                    // The channel will be closed if all requests are failed due to transit timeout within the time limit.
+                    // This helps to close channel faster for sparse workload.
+                    if (readDelay >= this.timeoutDetectionTimeLimit)
+                    {
+                        DefaultTrace.TraceWarning(
+                            "Unhealthy RNTBD connection: Health check failed due to transit timeout detection time limit: {0}. " +
+                            "Last send attempt: {1:o}. Last send: {2:o}. " +
+                            "Tolerance {3:c}",
+                            this, lastSendAttempt, lastSend, this.sendDelayLimit);
+                        return false;
+                    }
+
+                    // Timeout detection in high frequency.
+                    if (this.transitTimeoutCounter >= this.timeoutDetectionHighFrequencyThreshold &&
+                        readDelay >= this.timeoutDetectionTimeLimit)
+                    {
+                        DefaultTrace.TraceWarning(
+                            "Unhealthy RNTBD connection: Transit timeout high frequency threshold hit: {0}. " +
+                            "Last send attempt: {1:o}. Last send: {2:o}. " +
+                            "Tolerance {3:c}",
+                            this, lastSendAttempt, lastSend, this.sendDelayLimit);
+                        return false;
+                    }
+
+                    // Timeout detection in write operation.
+                    if (this.transitTimeoutWriteCounter >= this.timeoutDetectionOnWriteThreshold &&
+                        readDelay >= this.timeoutDetectionTimeLimit)
+                    {
+                        DefaultTrace.TraceWarning(
+                            "Unhealthy RNTBD connection: Transit timeout on write threshold hit: {0}. " +
+                            "Last send attempt: {1:o}. Last send: {2:o}. " +
+                            "Tolerance {3:c}",
+                            this, lastSendAttempt, lastSend, this.sendDelayLimit);
+                        return false;
+                    }
                 }
 
                 if (this.idleConnectionTimeout > TimeSpan.Zero)
@@ -384,6 +464,20 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.UpdateLastSendTime();
             // Do not update the last receive timestamp here. The fact that sending
             // the request succeeded means nothing until the response comes back.
+        }
+
+        /// <summary>
+        /// Increments Transit Timeout counter.
+        /// </summary>
+        /// <param name="isReadOnly">is readonly flag.</param>
+        public void IncrementTransitTimeoutCounter(
+            bool isReadOnly)
+        {
+            Interlocked.Increment(ref this.transitTimeoutCounter);
+            if (!isReadOnly)
+            {
+                Interlocked.Increment(ref this.transitTimeoutWriteCounter);
+            }
         }
 
         // This method is not thread safe. ReadResponseMetadataAsync and
