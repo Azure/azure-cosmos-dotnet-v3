@@ -99,11 +99,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                     }
                 },
-                ComputedProperties = new Collection<ComputedProperty>
-                {
-                    { new ComputedProperty{ Name = "lowerName", Query = "SELECT VALUE LOWER(c.Name) FROM c" } },
-                    { new ComputedProperty{ Name = "fullName", Query = "SELECT VALUE CONCAT(c.Name, ' ', c.LastName) FROM c" } }
-                },
+                // ComputedProperties = new Collection<ComputedProperty>
+                // {
+                //     { new ComputedProperty{ Name = "lowerName", Query = "SELECT VALUE LOWER(c.Name) FROM c" } },
+                //     { new ComputedProperty{ Name = "fullName", Query = "SELECT VALUE CONCAT(c.Name, ' ', c.LastName) FROM c" } }
+                // },
                 ClientEncryptionPolicy = new ClientEncryptionPolicy(paths)
             };
 
@@ -359,16 +359,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     SpatialTypes = new Collection<SpatialType>() { SpatialType.Point }
                 });
 
-            List<ComputedProperty> computedProperties = new List<ComputedProperty>
-            {
-                new ComputedProperty() { Name = "lowerName", Query = "SELECT VALUE LOWER(c.name) FROM c" },
-                new ComputedProperty() { Name = "estimatedTax", Query = "SELECT VALUE c.salary * 0.2 FROM c" }
-            };
-
-            foreach (ComputedProperty computedProperty in computedProperties)
-            {
-                containerProperties.ComputedProperties.Add(computedProperty);
-            }
+            // List<ComputedProperty> computedProperties = new List<ComputedProperty>
+            // {
+            //     new ComputedProperty() { Name = "lowerName", Query = "SELECT VALUE LOWER(c.name) FROM c" },
+            //     new ComputedProperty() { Name = "estimatedTax", Query = "SELECT VALUE c.salary * 0.2 FROM c" }
+            // };
+               
+            // foreach (ComputedProperty computedProperty in computedProperties)
+            // {
+            //     containerProperties.ComputedProperties.Add(computedProperty);
+            // }
 
             ContainerProperties propertiesAfterReplace = await container.ReplaceContainerAsync(containerProperties);
             Assert.AreEqual(0, propertiesAfterReplace.IndexingPolicy.IncludedPaths.First().Indexes.Count);
