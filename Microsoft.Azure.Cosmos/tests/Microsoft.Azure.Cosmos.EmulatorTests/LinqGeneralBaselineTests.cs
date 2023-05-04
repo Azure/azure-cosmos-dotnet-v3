@@ -1273,6 +1273,25 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestLambdaReuse()
+        {
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
+
+            System.Linq.Expressions.Expression<Func<Family, bool>> predicate = f => f.Int == 5;
+            inputs.Add(new LinqTestInput("Where -> Where with same predicate instance", b => getQuery(b).Where(predicate).Where(predicate)));
+            inputs.Add(new LinqTestInput("Where -> Select with same predicate instance", b => getQuery(b).Where(predicate).Select(predicate)));
+
+            System.Linq.Expressions.Expression<Func<object, bool>> predicate2 = f => f.ToString() == "a";
+            inputs.Add(new LinqTestInput("Where -> Select -> Where with same predicate instance",
+                b => getQuery(b)
+                    .Where(predicate2)
+                    .Select(c => new { Int = 10, Result = c })
+                    .Where(predicate2)));
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestThenByTranslation()
         {
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -1922,7 +1941,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 Gender = "female",
                 Grade = 1,
                 Pets = new List<Pet>() { pet, new Pet() { GivenName = "koko" } },
-                Things = new Dictionary<string, string>() { { "A", "B" }, { "C", "D" } },
+                Things = new Dictionary<string, string>() { { "A", "B" }, { "C", "D" } }
             };
 
             Address address = new Address { State = "NY", County = "Manhattan", City = "NY" };

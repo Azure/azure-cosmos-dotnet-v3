@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
-    using AzureCore = global::Azure.Core.Pipeline;
     
     [VisualStudio.TestTools.UnitTesting.TestClass]
     [TestCategory("UpdateContract")]
@@ -92,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
             EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
         }
-        
+
         [TestCleanup]
         public async Task CleanUp()
         {
@@ -1404,6 +1403,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 itemList.Add(("id" + i, new PartitionKey(i.ToString())));
             }
+
+            EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
 
             //----------------------------------------------------------------
             //  Read Many Stream
