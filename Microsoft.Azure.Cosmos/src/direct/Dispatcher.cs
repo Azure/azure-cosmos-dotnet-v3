@@ -369,6 +369,26 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        /// <summary>
+        /// Cancels call.
+        /// </summary>
+        /// <param name="isReadOnly">A boolean flag indicating if the request is read only.</param>
+        public void CompleteCall(
+            bool isReadOnly)
+        {
+            this.ThrowIfDisposed();
+
+            if (isReadOnly)
+            {
+                this.connection.UpdateLastReadTime();
+                this.connection.ResetTransitTimeout();
+            }
+            else
+            {
+                this.connection.UpdateLastWriteTime();
+            }
+        }
+
         public override string ToString()
         {
             return this.connection.ToString();

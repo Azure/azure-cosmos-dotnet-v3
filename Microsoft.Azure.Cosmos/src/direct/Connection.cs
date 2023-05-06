@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
@@ -37,7 +36,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         private const uint TcpKeepAliveTimeSocketOptionEnumValue = 3;
         private const uint DefaultSocketOptionTcpKeepAliveInterval = 1;
         private const uint DefaultSocketOptionTcpKeepAliveTime = 30;
-        private const int MinNumberOfSendsSinceLastReceiveForUnhealthyConnection = 3;
         private static readonly uint SocketOptionTcpKeepAliveInterval = GetUInt32FromEnvironmentVariableOrDefault(
             socketOptionTcpKeepAliveIntervalName,
             minValue: 1,
@@ -58,39 +56,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             new Lazy<bool>(Connection.IsKeepAliveCustomizationSupported,
                 LazyThreadSafetyMode.ExecutionAndPublication);
 
-        private static readonly byte[] healthCheckBuffer = new byte[1];
         private static readonly TimeSpan recentReceiveWindow = TimeSpan.FromSeconds(1.0);
-
-        // The connection should not declare itself unhealthy if a send was
-        // attempted very recently. As such, ignore
-        // (lastSendAttemptTime - lastSendTime) gaps lower than sendHangGracePeriod.
-        // The grace period should be large enough to accommodate slow sends.
-        // In effect, a setting of 2s requires the client to be able to send
-        // data at least at 1 MB/s for 2 MB documents.
-        private static readonly TimeSpan sendHangGracePeriod = TimeSpan.FromSeconds(2.0);
-
-        // The connection should not declare itself unhealthy if a send
-        // succeeded very recently. As such, ignore
-        // (lastSendTime - lastReceiveTime) gaps lower than receiveHangGracePeriod.
-        // The grace period should be large enough to accommodate the round trip
-        // time of the slowest server request. Assuming 1s of network RTT,
-        // a 2 MB request, a 2 MB response, a connection that can sustain
-        // 1 MB/s both ways, and a 5-second deadline at the server, 10 seconds
-        // should be enough.
-        private static readonly TimeSpan receiveHangGracePeriod = TimeSpan.FromSeconds(10.0);
 
         private readonly Uri serverUri;
         private readonly string hostNameCertificateOverride;
-
-        // The connection will declare itself unhealthy if the
-        // (lastSendTime - lastReceiveTime) gap grows beyond this value.
-        // receiveDelayLimit must be greater than receiveHangGracePeriod.
-        private readonly TimeSpan receiveDelayLimit;
-
-        // The connection will declare itself unhealthy if the
-        // (lastSendAttemptTime - lastSendTime) gap grows beyond this value.
-        // sendDelayLimit must be greater than sendHangGracePeriod.
-        private readonly TimeSpan sendDelayLimit;
 
         // Recyclable memory stream pool
         private readonly MemoryStreamPool memoryStreamPool;
@@ -136,16 +105,13 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static int numberOfOpenTcpConnections;
 
-        private readonly bool timeoutDetectionEnabled;
-        private readonly TimeSpan timeoutDetectionTimeLimit;
-        private readonly int timeoutDetectionOnWriteThreshold;
-        private readonly TimeSpan timeoutDetectionOnWriteTimeLimit;
-        private readonly int timeoutDetectionHighFrequencyThreshold;
-        private readonly TimeSpan timeoutDetectionHighFrequencyTimeLimit;
-        private readonly double timeoutDetectionDisableCPUThreshold;
-        private readonly SystemUtilizationReaderBase systemUtilizationReader = SystemUtilizationReaderBase.SingletonInstance;
+        private readonly ConnectionHealthChecker healthChecker;
+
         private int transitTimeoutCounter;
         private int transitTimeoutWriteCounter;
+
+        private DateTime lastReadTime;  // Guarded by timestampLock.
+        private DateTime lastWriteTime;  // Guarded by timestampLock.
 
         public Connection(
             Uri serverUri,
@@ -163,34 +129,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.hostNameCertificateOverride = hostNameCertificateOverride;
             this.BufferProvider = new BufferProvider();
             this.dnsResolutionFunction = dnsResolutionFunction ?? Connection.ResolveHostAsync;
-
-            if (receiveHangDetectionTime <= Connection.receiveHangGracePeriod)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(receiveHangDetectionTime),
-                    receiveHangDetectionTime,
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "{0} must be greater than {1} ({2})",
-                        nameof(receiveHangDetectionTime),
-                        nameof(Connection.receiveHangGracePeriod),
-                        Connection.receiveHangGracePeriod));
-            }
-            this.receiveDelayLimit = receiveHangDetectionTime;
-            if (sendHangDetectionTime <= Connection.sendHangGracePeriod)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(sendHangDetectionTime),
-                    sendHangDetectionTime,
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "{0} must be greater than {1} ({2})",
-                        nameof(sendHangDetectionTime),
-                        nameof(Connection.sendHangGracePeriod),
-                        Connection.sendHangGracePeriod));
-            }
-            this.sendDelayLimit = sendHangDetectionTime;
-
             this.lastSendAttemptTime = DateTime.MinValue;
             this.lastSendTime = DateTime.MinValue;
             this.lastReceiveTime = DateTime.MinValue;
@@ -210,23 +148,23 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             this.memoryStreamPool = memoryStreamPool;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
-
             this.transitTimeoutCounter = 0;
             this.transitTimeoutWriteCounter = 0;
 
-            // TODO" To be read from the configs.
-            this.timeoutDetectionEnabled = true;
-            this.timeoutDetectionTimeLimit = TimeSpan.FromSeconds(60);
-            this.timeoutDetectionOnWriteThreshold = 1;
-            this.timeoutDetectionOnWriteTimeLimit = TimeSpan.FromSeconds(6);
-            this.timeoutDetectionHighFrequencyThreshold = 3;
-            this.timeoutDetectionHighFrequencyTimeLimit = TimeSpan.FromSeconds(10);
-            this.timeoutDetectionDisableCPUThreshold = 90;
+            this.healthChecker = new (
+                sendDelayLimit: sendHangDetectionTime,
+                receiveDelayLimit: receiveHangDetectionTime,
+                timeoutDetectionEnabled: true,
+                idleConnectionTimeout: idleTimeout,
+                timeoutDetectionTimeLimit: TimeSpan.FromSeconds(60),
+                timeoutDetectionOnWriteThreshold: 1,
+                timeoutDetectionOnWriteTimeLimit: TimeSpan.FromSeconds(6),
+                timeoutDetectionHighFrequencyThreshold: 3,
+                timeoutDetectionHighFrequencyTimeLimit: TimeSpan.FromSeconds(10),
+                timeoutDetectionDisableCPUThreshold: 90);
         }
 
         public static int NumberOfOpenTcpConnections { get { return Connection.numberOfOpenTcpConnections; } }
-
-        public static int TransitTimeoutWriteCounter { get { return Connection.transitTimeoutWriteCounter; } }
 
         public BufferProvider BufferProvider { get; }
 
@@ -252,141 +190,42 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 // Assume that the connection is healthy if data was received
                 // recently.
-                if (now - lastReceive < Connection.recentReceiveWindow)
+                if (this.healthChecker.IsDataReceivedRecently(
+                    currentTime: now,
+                    lastReceiveTime: lastReceive))
                 {
                     return true;
                 }
-                // Black hole detection, part 1:
-                // Treat the connection as unhealthy if the gap between the last
-                // attempted send and the last successful send grew beyond
-                // acceptable limits, unless a send was attempted very recently.
-                // This is a sign of a hung send().
-                if ((lastSendAttempt - lastSend > this.sendDelayLimit) &&
-                    (now - lastSendAttempt > Connection.sendHangGracePeriod))
+
+                if (!this.healthChecker.ValidateBlackhole(
+                    lastSendAttempt: lastSendAttempt,
+                    lastSend: lastSend,
+                    lastReceive: lastReceive,
+                    firstSendSinceLastReceive: firstSendSinceLastReceive,
+                    numberOfSendsSinceLastReceive: numberOfSendsSinceLastReceive))
                 {
-                    DefaultTrace.TraceWarning(
-                        "Unhealthy RNTBD connection: Hung send: {0}. " +
-                        "Last send attempt: {1:o}. Last send: {2:o}. " +
-                        "Tolerance {3:c}",
-                        this, lastSendAttempt, lastSend, this.sendDelayLimit);
-                    return false;
-                }
-                // Black hole detection, part 2:
-                // Treat the connection as unhealthy if the gap between the last
-                // successful send and the last successful receive grew beyond
-                // acceptable limits, unless a send succeeded very recently and the number of
-                // outstanding receives is within reasonable limits.
-                if ((lastSend - lastReceive > this.receiveDelayLimit) &&
-                    (
-                        now - lastSend > Connection.receiveHangGracePeriod ||
-                        (
-                            numberOfSendsSinceLastReceive >= Connection.MinNumberOfSendsSinceLastReceiveForUnhealthyConnection &&
-                            firstSendSinceLastReceive != null &&
-                            now - firstSendSinceLastReceive > Connection.receiveHangGracePeriod
-                        )
-                    ))
-                {
-                    DefaultTrace.TraceWarning(
-                        "Unhealthy RNTBD connection: Replies not getting back: {0}. " +
-                        "Last send: {1:o}. Last receive: {2:o}. Tolerance: {3:c}. " + 
-                        "First send since last receieve: {4:o}. # of sends since last receive: {5}",
-                        this, lastSend, lastReceive, this.receiveDelayLimit, 
-                        firstSendSinceLastReceive, numberOfSendsSinceLastReceive);
                     return false;
                 }
 
-                if (this.timeoutDetectionEnabled &&
-                    this.transitTimeoutCounter > 0)
+                // TODO: Take snapshot of counter and dates.
+                if (!this.healthChecker.ValidateTransitTimeouts(
+                    this.transitTimeoutCounter,
+                    this.transitTimeoutWriteCounter,
+                    this.lastReadTime))
                 {
-                    // Transit timeout can be a normal symptom under high CPU load.
-                    // When request timeout due to high CPU,
-                    // close the existing the connection and re-establish a new one will not help the issue but rather make it worse, return fast
-                    if (this.systemUtilizationReader.GetSystemWideCpuUsage() > this.timeoutDetectionDisableCPUThreshold)
-                    {
-                        DefaultTrace.TraceWarning(
-                            "Unhealthy RNTBD connection: Health check failed due to transit timeout detection time limit: {0}. " +
-                            "Last send attempt: {1:o}. Last send: {2:o}. " +
-                            "Tolerance {3:c}",
-                            this, lastSendAttempt, lastSend, this.sendDelayLimit);
-                        return true;
-                    }
-
-                    TimeSpan readDelay = now - lastReceive;
-
-                    // The channel will be closed if all requests are failed due to transit timeout within the time limit.
-                    // This helps to close channel faster for sparse workload.
-                    if (readDelay >= this.timeoutDetectionTimeLimit)
-                    {
-                        DefaultTrace.TraceWarning(
-                            "Unhealthy RNTBD connection: Health check failed due to transit timeout detection time limit: {0}. " +
-                            "Last send attempt: {1:o}. Last send: {2:o}. " +
-                            "Tolerance {3:c}",
-                            this, lastSendAttempt, lastSend, this.sendDelayLimit);
-                        return false;
-                    }
-
-                    // Timeout detection in high frequency.
-                    if (this.transitTimeoutCounter >= this.timeoutDetectionHighFrequencyThreshold &&
-                        readDelay >= this.timeoutDetectionTimeLimit)
-                    {
-                        DefaultTrace.TraceWarning(
-                            "Unhealthy RNTBD connection: Transit timeout high frequency threshold hit: {0}. " +
-                            "Last send attempt: {1:o}. Last send: {2:o}. " +
-                            "Tolerance {3:c}",
-                            this, lastSendAttempt, lastSend, this.sendDelayLimit);
-                        return false;
-                    }
-
-                    // Timeout detection in write operation.
-                    if (this.transitTimeoutWriteCounter >= this.timeoutDetectionOnWriteThreshold &&
-                        readDelay >= this.timeoutDetectionTimeLimit)
-                    {
-                        DefaultTrace.TraceWarning(
-                            "Unhealthy RNTBD connection: Transit timeout on write threshold hit: {0}. " +
-                            "Last send attempt: {1:o}. Last send: {2:o}. " +
-                            "Tolerance {3:c}",
-                            this, lastSendAttempt, lastSend, this.sendDelayLimit);
-                        return false;
-                    }
+                    return false;
                 }
 
-                if (this.idleConnectionTimeout > TimeSpan.Zero)
+                if (!this.healthChecker.ValidateIdleTimeouts(
+                    lastReceive))
                 {
-                    // idle timeout is enabled
-                    if (now - lastReceive > this.idleConnectionTimeout)
-                    {
-                        return false;
-                    }
+                    return false;
                 }
 
                 // See https://aka.ms/zero-byte-send.
                 // Socket.Send is expensive. Keep this operation last in the chain
-                try
-                {
-                    Socket socket = this.tcpClient.Client;
-                    if (socket == null || !socket.Connected)
-                    {
-                        return false;
-                    }
-                    Debug.Assert(!socket.Blocking);
-                    socket.Send(Connection.healthCheckBuffer, 0, 0);
-                    return true;
-                }
-                catch (SocketException e)
-                {
-                    bool healthy = (e.SocketErrorCode == SocketError.WouldBlock);
-                    if (!healthy)
-                    {
-                        DefaultTrace.TraceWarning(
-                            "Unhealthy RNTBD connection. Socket error code: {0}",
-                            e.SocketErrorCode.ToString());
-                    }
-                    return healthy;
-                }
-                catch (ObjectDisposedException)
-                {
-                    return false;
-                }
+                return this.healthChecker.ValidateSocketConnection(
+                    socket: this.tcpClient.Client);
             }
         }
 
@@ -477,6 +316,43 @@ namespace Microsoft.Azure.Documents.Rntbd
             if (!isReadOnly)
             {
                 Interlocked.Increment(ref this.transitTimeoutWriteCounter);
+            }
+        }
+
+        /// <summary>
+        /// Reset transit timeout.
+        /// </summary>
+        public void UpdateLastReadTime()
+        {
+            Debug.Assert(!Monitor.IsEntered(this.timestampLock));
+            lock (this.timestampLock)
+            {
+                this.lastReadTime = DateTime.UtcNow;
+            }
+        }
+
+        /// <summary>
+        /// Reset transit timeout.
+        /// </summary>
+        public void UpdateLastWriteTime()
+        {
+            Debug.Assert(!Monitor.IsEntered(this.timestampLock));
+            lock (this.timestampLock)
+            {
+                this.lastWriteTime = DateTime.UtcNow;
+            }
+        }
+
+        /// <summary>
+        /// Reset transit timeout.
+        /// </summary>
+        public void ResetTransitTimeout()
+        {
+            Debug.Assert(!Monitor.IsEntered(this.timestampLock));
+            lock (this.timestampLock)
+            {
+                this.transitTimeoutCounter = 0;
+                this.transitTimeoutWriteCounter = 0;
             }
         }
 
