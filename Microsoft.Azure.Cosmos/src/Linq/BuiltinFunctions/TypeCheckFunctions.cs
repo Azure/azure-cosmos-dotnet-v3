@@ -44,6 +44,14 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         new Type[]{typeof(object)},
                     })
+                },
+                {
+                    "Like",
+                    new StringBuiltinFunctions.StringVisitLike(isNot: false)
+                },
+                {
+                    "NotLike",
+                    new StringBuiltinFunctions.StringVisitLike(isNot: true)
                 }
             };
         }

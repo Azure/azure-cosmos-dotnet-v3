@@ -157,6 +157,47 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
+        internal class StringVisitLike : SqlBuiltinFunctionVisitor
+        {
+            private readonly bool isNot;
+
+            public StringVisitLike(bool isNot)
+                : base("LIKE", false, new List<Type[]>()
+                {
+                    new Type[]{typeof(string), typeof(string)},
+                })
+            {
+                this.isNot = isNot;
+            }
+
+            protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                return null;
+            }
+
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                if (methodCallExpression.Arguments.Count < 2)
+                    return null;
+
+                SqlStringLiteral escapeSequence = null;
+                if (methodCallExpression.Arguments.Count > 2 &&
+                    methodCallExpression.Arguments[2].NodeType == ExpressionType.Constant)
+                {
+                    ConstantExpression argumentsExpressions = (ConstantExpression)methodCallExpression.Arguments[2];
+                    object stringValue = argumentsExpressions.Value;
+
+                    escapeSequence = SqlStringLiteral.Create(stringValue as string);
+                }
+
+                return SqlLikeScalarExpression.Create(
+                    expression: ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[0], context),
+                    pattern: ExpressionToSql.VisitScalarExpression(methodCallExpression.Arguments[1], context),
+                    not: this.isNot,
+                    escapeSequence: escapeSequence);
+            }
+        }
+
         private sealed class SqlStringWithComparisonVisitor : BuiltinFunctionVisitor
         {
             private static readonly IImmutableSet<StringComparison> SensitiveCaseComparisons = ImmutableHashSet.Create<StringComparison>(new[]
