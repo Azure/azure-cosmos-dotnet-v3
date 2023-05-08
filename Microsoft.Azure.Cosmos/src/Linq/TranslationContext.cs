@@ -119,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             ParameterExpression last = this.lambdaParametersStack[this.lambdaParametersStack.Count - 1];
             this.lambdaParametersStack.RemoveAt(this.lambdaParametersStack.Count - 1);
+            this.substitutions.Remove(last);
         }
 
         /// <summary>
@@ -335,6 +336,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             return null;
+        }
+
+        internal void Remove(ParameterExpression parameter)
+        {
+            this.substitutionTable.Remove(parameter);
         }
 
         public const string InputParameterName = "root";

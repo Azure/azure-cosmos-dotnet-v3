@@ -78,6 +78,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
         private ClientEncryptionPolicy clientEncryptionPolicyInternal;
 
+        [JsonProperty(PropertyName = "computedProperties", NullValueHandling = NullValueHandling.Ignore)]
+        private Collection<ComputedProperty> computedProperties;
+
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
@@ -283,6 +286,48 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 this.indexingPolicyInternal = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the collection containing <see cref="ComputedProperty"/> objects in the container.
+        /// </summary>
+        /// <value>
+        /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
+        /// </value>
+
+        /// <summary>
+        /// Gets or sets the collection containing <see cref="ComputedProperty"/> objects in the container.
+        /// </summary>
+        /// <value>
+        /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
+        /// </value>
+        [JsonIgnore]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        Collection<ComputedProperty> ComputedProperties
+        {
+            get
+            {
+                if (this.computedProperties == null)
+                {
+                    this.computedProperties = new Collection<ComputedProperty>();
+                }
+
+                return this.computedProperties;
+            }
+
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentException($"{nameof(value)}");
+                }
+
+                this.computedProperties = value;
             }
         }
 
