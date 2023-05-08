@@ -785,18 +785,12 @@ namespace Microsoft.Azure.Cosmos
         {
             // Create a large enough buffer that URL encode can use it.
             // Increase the buffer by 3x so it can be used for the URL encoding
-            int capacity = Math.Min(Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3, MaxCapacity);
-            Span<byte> encodingBuffer = stackalloc byte[capacity];
-            encodingBuffer.Clear();
+            int capacity = Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3;
+            Span<byte> encodingBuffer = capacity <= MaxCapacity ? stackalloc byte[capacity] : new byte[capacity];
 
+            encodingBuffer.Clear();
             OperationStatus status = Base64.EncodeToUtf8(hashPayLoad, encodingBuffer, out int _, out int bytesWritten);
 
-            if (bytesWritten > MaxCapacity)
-            {
-               capacity = bytesWritten;
-               encodingBuffer = new byte[capacity];
-               status = Base64.EncodeToUtf8(hashPayLoad, encodingBuffer, out _, out bytesWritten);
-            }
             if (status != OperationStatus.Done)
             {
                 throw new ArgumentException($"Authorization key payload is invalid. {status}");
