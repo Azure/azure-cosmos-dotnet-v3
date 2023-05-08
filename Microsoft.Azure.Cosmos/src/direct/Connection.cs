@@ -110,6 +110,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private int transitTimeoutCounter;
         private int transitTimeoutWriteCounter;
 
+        private readonly bool timeoutDetectionEnabled;
         private DateTime lastReadTime;  // Guarded by timestampLock.
         private DateTime lastWriteTime;  // Guarded by timestampLock.
 
@@ -148,13 +149,14 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             this.memoryStreamPool = memoryStreamPool;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
+
+            this.timeoutDetectionEnabled = true;
             this.transitTimeoutCounter = 0;
             this.transitTimeoutWriteCounter = 0;
 
             this.healthChecker = new (
                 sendDelayLimit: sendHangDetectionTime,
                 receiveDelayLimit: receiveHangDetectionTime,
-                timeoutDetectionEnabled: true,
                 idleConnectionTimeout: idleTimeout,
                 timeoutDetectionTimeLimit: TimeSpan.FromSeconds(60),
                 timeoutDetectionOnWriteThreshold: 1,
@@ -197,7 +199,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     return true;
                 }
 
-                if (!this.healthChecker.ValidateBlackhole(
+                if (this.healthChecker.IsBlackholeDetected(
+                    currentTime: now,
                     lastSendAttempt: lastSendAttempt,
                     lastSend: lastSend,
                     lastReceive: lastReceive,
@@ -207,24 +210,33 @@ namespace Microsoft.Azure.Documents.Rntbd
                     return false;
                 }
 
-                // TODO: Take snapshot of counter and dates.
-                if (!this.healthChecker.ValidateTransitTimeouts(
-                    this.transitTimeoutCounter,
-                    this.transitTimeoutWriteCounter,
-                    this.lastReadTime))
+                if (this.timeoutDetectionEnabled)
                 {
-                    return false;
+                    this.SnapshotTransitTimestamps(
+                        out DateTime lastReadTime,
+                        out int transitTimeoutCounter,
+                        out int transitTimeoutWriteCounter);
+
+                    if (this.healthChecker.IsTransitTimeoutsDetected(
+                        transitTimeoutCounter: transitTimeoutCounter,
+                        transitTimeoutWriteCounter: transitTimeoutWriteCounter,
+                        currentTime: now,
+                        lastReadTime: lastReadTime))
+                    {
+                        return false;
+                    }
                 }
 
-                if (!this.healthChecker.ValidateIdleTimeouts(
-                    lastReceive))
+                if (this.healthChecker.IsConnectionIdled(
+                    currentTime: now,
+                    lastReceive: lastReceive))
                 {
-                    return false;
+                    return true;
                 }
 
                 // See https://aka.ms/zero-byte-send.
                 // Socket.Send is expensive. Keep this operation last in the chain
-                return this.healthChecker.ValidateSocketConnection(
+                return this.healthChecker.IsSocketConnectionEstablished(
                     socket: this.tcpClient.Client);
             }
         }
@@ -775,7 +787,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             Debug.Assert(length <= payload.Length);
         }
 
-
         private async Task ReadPayloadAsync(
             MemoryStream payload,
             int length,
@@ -850,6 +861,20 @@ namespace Microsoft.Azure.Documents.Rntbd
                 firstSendSinceLastReceive = 
                     this.lastReceiveTime < this.firstSendSinceLastReceive ? this.firstSendSinceLastReceive : null;
                 numberOfSendsSinceLastReceive = this.numberOfSendsSinceLastReceive;
+            }
+        }
+
+        private void SnapshotTransitTimestamps(
+            out DateTime lastReadTime,
+            out int transitTimeoutCounter,
+            out int transitTimeoutWriteCounter)
+        {
+            Debug.Assert(!Monitor.IsEntered(this.timestampLock));
+            lock (this.timestampLock)
+            {
+                lastReadTime = this.lastReadTime;
+                transitTimeoutCounter = this.transitTimeoutCounter;
+                transitTimeoutWriteCounter = this.transitTimeoutWriteCounter;
             }
         }
 

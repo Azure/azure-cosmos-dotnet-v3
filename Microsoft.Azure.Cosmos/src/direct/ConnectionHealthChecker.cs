@@ -30,7 +30,6 @@ namespace Microsoft.Azure.Documents
         private readonly TimeSpan sendDelayLimit;
 
         private readonly TimeSpan idleConnectionTimeout;
-        private readonly bool timeoutDetectionEnabled;
         private readonly TimeSpan timeoutDetectionTimeLimit;
         private readonly int timeoutDetectionOnWriteThreshold;
         private readonly TimeSpan timeoutDetectionOnWriteTimeLimit;
@@ -66,7 +65,6 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="sendDelayLimit"></param>
         /// <param name="receiveDelayLimit"></param>
-        /// <param name="timeoutDetectionEnabled"></param>
         /// <param name="idleConnectionTimeout"></param>
         /// <param name="timeoutDetectionTimeLimit"></param>
         /// <param name="timeoutDetectionOnWriteThreshold"></param>
@@ -77,7 +75,6 @@ namespace Microsoft.Azure.Documents
         public ConnectionHealthChecker(
             TimeSpan sendDelayLimit,
             TimeSpan receiveDelayLimit,
-            bool timeoutDetectionEnabled,
             TimeSpan idleConnectionTimeout,
             TimeSpan timeoutDetectionTimeLimit,
             int timeoutDetectionOnWriteThreshold,
@@ -115,7 +112,6 @@ namespace Microsoft.Azure.Documents
             this.sendDelayLimit = sendDelayLimit;
             this.receiveDelayLimit = receiveDelayLimit;
             this.idleConnectionTimeout = idleConnectionTimeout;
-            this.timeoutDetectionEnabled = timeoutDetectionEnabled;
             this.timeoutDetectionTimeLimit = timeoutDetectionTimeLimit;
             this.timeoutDetectionOnWriteThreshold = timeoutDetectionOnWriteThreshold;
             this.timeoutDetectionOnWriteTimeLimit = timeoutDetectionOnWriteTimeLimit;
@@ -129,40 +125,35 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="transitTimeoutCounter"></param>
         /// <param name="transitTimeoutWriteCounter"></param>
+        /// <param name="currentTime"></param>
         /// <param name="lastReadTime"></param>
         /// <returns>Bool.</returns>
-        public bool ValidateTransitTimeouts(
+        public bool IsTransitTimeoutsDetected(
             int transitTimeoutCounter,
             int transitTimeoutWriteCounter,
+            DateTime currentTime,
             DateTime lastReadTime)
         {
-            DateTime now = DateTime.UtcNow;
-            if (this.timeoutDetectionEnabled &&
-                transitTimeoutCounter > 0)
+            if (transitTimeoutCounter > 0)
             {
-                // Transit timeout can be a normal symptom under high CPU load.
-                // When request timeout due to high CPU,
-                // close the existing the connection and re-establish a new one will not help the issue but rather make it worse, return fast
+                // Transit timeout can be a normal symptom under high CPU load. When request timeout due to high CPU,
+                // close the existing the connection and re-establish a new one will not help the issue but rather make it worse.
+                // Therefore, the timeout detection will be disabled in case of high cpu detection.
                 if (this.systemUtilizationReader.GetSystemWideCpuUsage() > this.timeoutDetectionDisableCPUThreshold)
                 {
-                    DefaultTrace.TraceWarning(
-                        "Unhealthy RNTBD connection: Health check failed due to transit timeout detection time limit: {0}. " +
-                        "Last send attempt: {1:o}. Last send: {2:o}. " +
-                        "Tolerance {3:c}");
-                    return true;
+                    return false;
                 }
 
-                TimeSpan readDelay = now - lastReadTime;
+                TimeSpan readDelay = currentTime - lastReadTime;
 
                 // The channel will be closed if all requests are failed due to transit timeout within the time limit.
                 // This helps to close channel faster for sparse workload.
                 if (readDelay >= this.timeoutDetectionTimeLimit)
                 {
                     DefaultTrace.TraceWarning(
-                        "Unhealthy RNTBD connection: Health check failed due to transit timeout detection time limit: {0}. " +
-                        "Last send attempt: {1:o}. Last send: {2:o}. " +
-                        "Tolerance {3:c}");
-                    return false;
+                        $"Unhealthy RNTBD connection: Health check failed due to transit timeout detection time limit. " +
+                        $"Last channel read: {lastReadTime}. Timeout detection time limit: {this.timeoutDetectionTimeLimit}. ");
+                    return true;
                 }
 
                 // Timeout detection in high frequency.
@@ -170,10 +161,10 @@ namespace Microsoft.Azure.Documents
                     readDelay >= this.timeoutDetectionHighFrequencyTimeLimit)
                 {
                     DefaultTrace.TraceWarning(
-                        "Unhealthy RNTBD connection: Transit timeout high frequency threshold hit: {0}. " +
-                        "Last send attempt: {1:o}. Last send: {2:o}. " +
-                        "Tolerance {3:c}");
-                    return false;
+                        "Unhealthy RNTBD connection: Transit timeout high frequency threshold hit. " +
+                        $"Last channel read: {lastReadTime}. Timeout counts: {transitTimeoutCounter}. " +
+                        $"Timeout detection high frequency threshold: {this.timeoutDetectionHighFrequencyThreshold}. Timeout detection high frequency time limit: {this.timeoutDetectionHighFrequencyTimeLimit}. ");
+                    return true;
                 }
 
                 // Timeout detection in write operation.
@@ -182,45 +173,46 @@ namespace Microsoft.Azure.Documents
                 {
                     DefaultTrace.TraceWarning(
                         "Unhealthy RNTBD connection: Transit timeout on write threshold hit: {0}. " +
-                        "Last send attempt: {1:o}. Last send: {2:o}. " +
-                        "Tolerance {3:c}");
-                    return false;
+                        $"Last channel read: {lastReadTime}. Write timeout counts: {transitTimeoutWriteCounter}. " +
+                        $"Timeout detection on write threshold: {this.timeoutDetectionOnWriteThreshold}. Timeout detection on write time limit: {this.timeoutDetectionOnWriteTimeLimit}. ");
+                    return true;
                 }
             }
 
-            return true;
+            return false;
         }
 
         /// <summary>
         /// blabla.
         /// </summary>
+        /// <param name="currentTime"></param>
         /// <param name="lastSendAttempt"></param>
         /// <param name="lastSend"></param>
         /// <param name="lastReceive"></param>
         /// <param name="firstSendSinceLastReceive"></param>
         /// <param name="numberOfSendsSinceLastReceive"></param>
         /// <returns>bool.</returns>
-        public bool ValidateBlackhole(
+        public bool IsBlackholeDetected(
+            DateTime currentTime,
             DateTime lastSendAttempt,
             DateTime lastSend,
             DateTime lastReceive,
             DateTime? firstSendSinceLastReceive,
             long numberOfSendsSinceLastReceive)
         {
-            DateTime now = DateTime.UtcNow;
             // Black hole detection, part 1:
             // Treat the connection as unhealthy if the gap between the last
             // attempted send and the last successful send grew beyond
             // acceptable limits, unless a send was attempted very recently.
             // This is a sign of a hung send().
             if ((lastSendAttempt - lastSend > this.sendDelayLimit) &&
-                (now - lastSendAttempt > ConnectionHealthChecker.sendHangGracePeriod))
+                (currentTime - lastSendAttempt > ConnectionHealthChecker.sendHangGracePeriod))
             {
                 DefaultTrace.TraceWarning(
                     "Unhealthy RNTBD connection: Hung send: {0}. " +
                     "Last send attempt: {1:o}. Last send: {2:o}. " +
                     "Tolerance {3:c}");
-                return false;
+                return true;
             }
 
             // Black hole detection, part 2:
@@ -230,11 +222,11 @@ namespace Microsoft.Azure.Documents
             // outstanding receives is within reasonable limits.
             if ((lastSend - lastReceive > this.receiveDelayLimit) &&
                 (
-                    now - lastSend > ConnectionHealthChecker.receiveHangGracePeriod ||
+                    currentTime - lastSend > ConnectionHealthChecker.receiveHangGracePeriod ||
                     (
                         numberOfSendsSinceLastReceive >= ConnectionHealthChecker.MinNumberOfSendsSinceLastReceiveForUnhealthyConnection &&
                         firstSendSinceLastReceive != null &&
-                        now - firstSendSinceLastReceive > ConnectionHealthChecker.receiveHangGracePeriod
+                        currentTime - firstSendSinceLastReceive > ConnectionHealthChecker.receiveHangGracePeriod
                     )
                 ))
             {
@@ -242,10 +234,10 @@ namespace Microsoft.Azure.Documents
                     "Unhealthy RNTBD connection: Replies not getting back: {0}. " +
                     "Last send: {1:o}. Last receive: {2:o}. Tolerance: {3:c}. " +
                     "First send since last receieve: {4:o}. # of sends since last receive: {5}");
-                return false;
+                return true;
             }
 
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -264,22 +256,23 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// blabla.
         /// </summary>
+        /// <param name="currentTime"></param>
         /// <param name="lastReceive"></param>
         /// <returns>A bool.</returns>
-        public bool ValidateIdleTimeouts(
+        public bool IsConnectionIdled(
+            DateTime currentTime,
             DateTime lastReceive)
         {
-            DateTime now = DateTime.UtcNow;
             if (this.idleConnectionTimeout > TimeSpan.Zero)
             {
                 // idle timeout is enabled
-                if (now - lastReceive > this.idleConnectionTimeout)
+                if (currentTime - lastReceive > this.idleConnectionTimeout)
                 {
-                    return false;
+                    return true;
                 }
             }
 
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -287,7 +280,7 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="socket"></param>
         /// <returns>A bool.</returns>
-        public bool ValidateSocketConnection(
+        public bool IsSocketConnectionEstablished(
             Socket socket)
         {
             try
