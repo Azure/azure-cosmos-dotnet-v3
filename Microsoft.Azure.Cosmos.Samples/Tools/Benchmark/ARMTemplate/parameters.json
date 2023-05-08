@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "ENDPOINT": {
+      "value": "<your-endpoint-here>"
+    },
+    "KEY": {
+      "value": "<your-key-here>"
+    },
+    "containergroupname": {
+      "value": "CosmosDBBenchmark"
+    },
+    "containername": {
+      "value": "cosmosdbsdkperf"
+    },
+    "volumename": {
+      "value": "cosmosdbsdk"
+    }
+  }
+}
