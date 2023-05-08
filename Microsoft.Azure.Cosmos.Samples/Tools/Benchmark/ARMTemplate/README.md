@@ -6,34 +6,11 @@ For the below steps, you will **need an Azure Subscription**.
 
 ## Steps
 
-### Step 1 - Download Tempalte
+### Deploy with one click
 
-You **do not need** to clone this repository, just obtain a copy of the [benchmarkTemplate](./benchmarkTemplate.json) and [parameters](./parameters.json) file.
+Just click in the Deploy to **Azure button** and it will guide you into automatically running the benchmarking.
 
-### Step 2 - Customize the YAML file
-
-The Parameters JSON file contains a list of configuration options that you need to populate for the Azure Cosmos DB account you want to execute the benchmark tests on.
-
-```json
- "ENDPOINT": {
-      "value": "<your-endpoint-here>"
-    },
-"KEY": {
-    "value": "<your-key-here>"
-},
-"THROUGHPUT": {
-    "value": "100000"
-},
-"DOCUMENTS": {
-    "value": "200000"
-},
-"PARALLELISM": {
-    "value": "-1"
-},
-"CLEANUPFINISH": {
-    "value": "false"
-}
-```
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-cosmos-dotnet-v3%2Fmaster%2FARMBenchmarking%2FMicrosoft.Azure.Cosmos.Samples%2FTools%2FBenchmark%2FARMTemplate%2FbenchmarkTemplate.json)
 
 Please populate the `ENDPOINT` and `KEY` for your Azure Cosmos DB account. You can [obtain these from the Azure Portal or through CLI](https://docs.microsoft.com/azure/cosmos-db/secure-access-to-data#master-keys).
 
@@ -41,45 +18,9 @@ Optionally you can modify the other parameters, such as the `THROUGHPUT` for the
 
 Additionally, the file lets you customize the size of the instance, which you can make as similar as possible to the instance you will be running in production to simulate results.
 
-```json
-"cpuCores": {
-      "value": "4"
-    },
-"memoryInGb": {
-    "value": "8"
-}
-```
+### The Benchmark 
 
-For a complete reference of options, please visit the [official Azure container instance ARM Template refrence](https://learn.microsoft.com/en-us/azure/templates/microsoft.containerinstance/containergroups?pivots=deployment-language-arm-template).
-
-### Step 3 - Obtain Azure CLI
-
-We'll be using [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest) to create the Azure Container Instance and execute the YAML file. Azure CLI is cross-platform.
-
-After installing the Azure CLI, you will need to [login](https://docs.microsoft.com/cli/azure/authenticate-azure-cli?view=azure-cli-latest) into the subscription you want to provision and execute the benchmark on.
-
-### Step 4 - Create Respurce Group
-
-The goal behind the benchmark is to simulate load. Ideally you want to co-locate the instance that will be executing the benchmark with your Azure Cosmos DB account, so the first step would be to **create a Resource Group** on the same location. For example, if your Azure Cosmos DB account is deployed on East US, we can use `az group create` to create this Resource Group:
-
-```bash
-$resourceGroupName = "CosmosDBBenchmark"
-az group create --name $resourceGroupName --location eastus
-```
-
-For a complete list of options see the [documentation for `az group create`](https://docs.microsoft.com/cli/azure/group?view=azure-cli-latest#az-group-create).
-
-### Step 5 - Execute the benchmark
-
-Once the Resource Group is created in the correct location, we can use the ARM template to provision the Azure Container Instance and execute the benchmark.
-
-Assuming your prompt is on the folder with the customized template file:
-
-```bash
-az deployment group create --resource-group <your-resource-group> --template-file benchmarkTemplate.json --parameters parameters.json
-```
-
-This command will start the provisioning:
+Once you create the benchmark, it will do the following:
 
 1. It will create a Linux container named `cosmosdbsdkperf` and provision an image with NET Core inside an instance with the configured CPU and RAM.
 ![Provisioned Container Instance](./arm1.png)
@@ -101,9 +42,9 @@ And the results:
 
 ![Benchmark results](./arm3.png)
 
-### Step 6 - Clean up
+### Clean up
 
-If you want to remove the Benchmark instance, you can also do so from the Azure CLI:
+If you want to remove the Benchmark instance, ypu can delete the container from the Azure Portal. You can also do so from the Azure CLI:
 
 ```bash
 az container delete -g $resourceGroupName -n cosmosdbsdkperf

@@ -9,10 +9,10 @@
       "value": "<your-key-here>"
     },
     "THROUGHPUT": {
-      "value": "100000"
+      "value": "<container-throughput>"
     },
     "DOCUMENTS": {
-      "value": "200000"
+      "value": "<number-of-documents>"
     },
     "PARALLELISM": {
       "value": "-1"

@@ -18,15 +18,13 @@
       "type": "string",
       "metadata": {
         "description": "The throughput for the container."
-      },
-      "defaultValue": "100000"
+      }
     },
     "DOCUMENTS": {
       "type": "string",
       "metadata": {
         "description": "The ammount of documents to insert."
-      },
-      "defaultValue": "200000"
+      }
     },
     "PARALLELISM": {
       "type": "string",
