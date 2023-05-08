@@ -33,6 +33,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Cosmos.IncludedPath defaultEntry = containerSettings.IndexingPolicy.IncludedPaths[0];
             Assert.AreEqual(Cosmos.IndexingPolicy.DefaultPath, defaultEntry.Path);
             Assert.AreEqual(0, defaultEntry.Indexes.Count);
+
+            Assert.IsNotNull(containerSettings.ComputedProperties);
+            Assert.AreEqual(0, containerSettings.ComputedProperties.Count);
         }
 
         [TestMethod]

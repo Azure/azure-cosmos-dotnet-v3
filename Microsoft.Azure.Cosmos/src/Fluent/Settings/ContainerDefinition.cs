@@ -4,6 +4,8 @@
 namespace Microsoft.Azure.Cosmos.Fluent
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
 
     /// <summary>
     /// Azure Cosmos container fluent definition.
@@ -18,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private IndexingPolicy indexingPolicy;
         private string timeToLivePropertyPath;
         private PartitionKeyDefinitionVersion? partitionKeyDefinitionVersion = null;
+        private Collection<ComputedProperty> computedProperties;
 
         /// <summary>
         /// Creates an instance for unit-testing
@@ -124,6 +127,28 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// <see cref="Cosmos.ComputedProperty"/> definition for Azure Cosmos container.
+        /// </summary>
+        /// <returns>An instance of <see cref="ComputedPropertiesDefinition{T}"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ComputedPropertiesDefinition<T> WithComputedProperties()
+        {
+            if (this.computedProperties != null)
+            {
+                // Overwrite
+                throw new NotSupportedException();
+            }
+
+            return new ComputedPropertiesDefinition<T>(
+                (T)this,
+                (computedProperties) => this.WithComputedProperties(computedProperties));
+        }
+
+        /// <summary>
         /// Applies the current Fluent definition and creates a container configuration.
         /// </summary>
         /// <returns>Builds the current Fluent configuration into an instance of <see cref="ContainerProperties"/>.</returns>
@@ -152,6 +177,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 containerProperties.PartitionKeyDefinitionVersion = this.partitionKeyDefinitionVersion.Value;
             }
 
+            if (this.computedProperties != null)
+            {
+                containerProperties.ComputedProperties = this.computedProperties;
+            }
+
             containerProperties.ValidateRequiredProperties();
 
             return containerProperties;
@@ -160,6 +190,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private void WithIndexingPolicy(IndexingPolicy indexingPolicy)
         {
             this.indexingPolicy = indexingPolicy;
+        }
+
+        private void WithComputedProperties(Collection<ComputedProperty> computedProperties)
+        {
+            this.computedProperties = computedProperties;
         }
     }
 }
