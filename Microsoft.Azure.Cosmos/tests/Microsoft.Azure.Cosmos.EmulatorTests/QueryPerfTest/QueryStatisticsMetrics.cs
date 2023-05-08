@@ -1,7 +1,15 @@
 ﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using System;
+
     internal class QueryStatisticsMetrics
     {
+        public string Query { get; set; }
+
+        public bool EnableOde { get; set; }
+
+        public Guid CorrelatedActivityId { get; set; }
+
         public double EndToEndTime { get; set; }
 
         public double PocoTime { get; set; }
@@ -31,6 +39,8 @@
         public double TransitTime { get; set; }
 
         public double Received { get; set; }
+
+        public double RUCharge { get; set; }
 
         public double Completed { get; set; }
 

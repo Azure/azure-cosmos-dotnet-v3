@@ -1,5 +1,6 @@
 ﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -27,6 +28,26 @@
         public void AddEndToEndTime(double totalTime)
         {
             this.queryMetrics.EndToEndTime = totalTime;
+        }
+
+        public void AddRuCharge(double ruCharge)
+        {
+            this.queryMetrics.RUCharge = ruCharge;
+        }
+
+        public void AddQuery(string query)
+        {
+            this.queryMetrics.Query = query;
+        }
+
+        public void AddCorrelatedActivityId(Guid activityId)
+        {
+            this.queryMetrics.CorrelatedActivityId = activityId;
+        }
+
+        public void AddEnableOdeFlag(bool enableOde)
+        {
+            this.queryMetrics.EnableOde = enableOde;
         }
 
         public void AddPocoTime(double time)
