@@ -38,7 +38,7 @@
     "CLEANUPFINISH": {
       "type": "string",
       "metadata": {
-        "description": "Whether to delete the contaienr after the document is run."
+        "description": "Whether to delete the contaianer after the document is run."
       },
       "defaultValue": "false"
     },
@@ -123,12 +123,13 @@
               "command": [
                 "/bin/bash",
                 "-c",
-                "[concat('cd /mnt/gitrepos/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureContainerInstances;export ENDPOINT=\"', parameters('ENDPOINT'),'\";export KEY=\"', parameters('KEY'),'\";export THROUGHPUT=\"', parameters('THROUGHPUT'),'\";export DOCUMENTS=\"', parameters('DOCUMENTS'),'\";export PARALLELISM=\"', parameters('PARALLELISM'),'\";export CLEANUPFINISH=\"', parameters('CLEANUPFINISH'),'\";chmod +x run.sh;./run.sh')]"
+                "[concat('cd /mnt/gitrepos/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/ARMTemplate;export ENDPOINT=\"', parameters('ENDPOINT'),'\";export KEY=\"', parameters('KEY'),'\";export THROUGHPUT=\"', parameters('THROUGHPUT'),'\";export DOCUMENTS=\"', parameters('DOCUMENTS'),'\";export PARALLELISM=\"', parameters('PARALLELISM'),'\";export CLEANUPFINISH=\"', parameters('CLEANUPFINISH'),'\";chmod +x run.sh;./run.sh')]"
               ]
             }
           }
         ],
         "osType": "Linux",
+        "restartPolicy": "Never",
         "ipAddress": {
           "type": "Public",
           "ports": [

@@ -8,6 +8,18 @@
     "KEY": {
       "value": "<your-key-here>"
     },
+    "THROUGHPUT": {
+      "value": "100000"
+    },
+    "DOCUMENTS": {
+      "value": "200000"
+    },
+    "PARALLELISM": {
+      "value": "-1"
+    },
+    "CLEANUPFINISH": {
+      "value": "false"
+    },
     "containergroupname": {
       "value": "CosmosDBBenchmark"
     },
@@ -16,6 +28,12 @@
     },
     "volumename": {
       "value": "cosmosdbsdk"
+    },
+    "cpuCores": {
+      "value": "4"
+    },
+    "memoryInGb": {
+      "value": "8"
     }
   }
 }
