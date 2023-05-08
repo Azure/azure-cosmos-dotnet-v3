@@ -1,6 +1,6 @@
 ﻿{
   "MasterKeyAuthorizationBenchmark.CreateSignatureGeneration;": 850,
-  "MasterKeyAuthorizationBenchmark.ReadSignatureGeneration;": 880,
+  "MasterKeyAuthorizationBenchmark.ReadSignatureGeneration;": 832,
   "MockedItemBenchmark.CreateItem;[Type=OfT]": 36356,
   "MockedItemBenchmark.CreateItem;[Type=OfTCustom]": 36362,
   "MockedItemBenchmark.CreateItem;[Type=OfTWithClientTelemetryEnabled]": 36359.5,
