@@ -1,6 +1,6 @@
 # Running benchmarks on ARM Tempaltes
 
-[ARM Templates](https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/) makes executing the Azure Cosmos DB SDK Benchmark extremely easy, with very few steps involved, and it's more cost-effective than using Virtual Machines for burst or single-use scenarios. Plus, it lets you test and evaluate performance quickly on multiple resource (CPU/RAM) configurations and across multiple Azure regions seamlessly.
+[ARM Templates](https://learn.microsoft.com/azure/azure-resource-manager/templates/) makes executing the Azure Cosmos DB SDK Benchmark extremely easy, with very few steps involved, and it's more cost-effective than using Virtual Machines for burst or single-use scenarios. Plus, it lets you test and evaluate performance quickly on multiple resource (CPU/RAM) configurations and across multiple Azure regions seamlessly.
 
 For the below steps, you will **need an Azure Subscription**.
 
@@ -35,7 +35,7 @@ The Parameters JSON file contains a list of configuration options that you need 
 }
 ```
 
-Please populate the `ENDPOINT` and `KEY` for your Azure Cosmos DB account. You can [obtain these from the Azure Portal or through CLI](https://docs.microsoft.com/azure/cosmos-db/secure-access-to-data#master-keys).
+Please populate the `ENDPOINT` and `KEY` for your Azure Cosmos DB account. You can [obtain these from the Azure Portal or through CLI](https://learn.microsoft.com/azure/cosmos-db/secure-access-to-data?tabs=using-primary-key#primary-keys).
 
 Optionally you can modify the other parameters, such as the `THROUGHPUT` for the container that will get created, the amount of `DOCUMENTS` to insert, the degree of `PARALLELISM`, and if you want the container to be deleted after the benchmark is run (`CLEANUPFINISH` `true/false`).
 
@@ -81,7 +81,7 @@ az deployment group create --resource-group <your-resource-group> --template-fil
 
 This command will start the provisioning:
 
-1. It will create a Linux container named `cosmosdbsdkperf` and provision an image with NET Core inside an instance with the configured CPU and RAM.
+1. It will create a Linux container named `cosmosdbsdkperf` and provision an image with NET 6 inside an instance with the configured CPU and RAM.
 ![Provisioned Container Instance](./arm1.png)
 2. Clone the Azure Cosmos DB SDK repository with the required files
 3. Execute the benchmark and provide output logs
