@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         public const int DefaultMasterTokenExpiryInSeconds = 900;
         private const int MaxAadAuthorizationHeaderSize = 16 * 1024;
         private const int MaxResourceTokenAuthorizationHeaderSize = 8 * 1024;
-        private const int MaxCapacity = 4096;
+        private const int MaxCapacityInBytes = 4096;
         private static readonly string AuthorizationFormatPrefixUrlEncoded = HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
                 Constants.Properties.MasterToken,
                 Constants.Properties.TokenVersion,
@@ -786,7 +786,7 @@ namespace Microsoft.Azure.Cosmos
             // Create a large enough buffer that URL encode can use it.
             // Increase the buffer by 3x so it can be used for the URL encoding
             int capacity = Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3;
-            Span<byte> encodingBuffer = capacity <= MaxCapacity ? stackalloc byte[capacity] : new byte[capacity];
+            Span<byte> encodingBuffer = capacity <= MaxCapacityInBytes ? stackalloc byte[capacity] : new byte[capacity];
 
             encodingBuffer.Clear();
             OperationStatus status = Base64.EncodeToUtf8(hashPayLoad, encodingBuffer, out int _, out int bytesWritten);
