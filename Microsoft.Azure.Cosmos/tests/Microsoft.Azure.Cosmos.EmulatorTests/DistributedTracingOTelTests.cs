@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
@@ -27,11 +31,9 @@
     using Microsoft.Azure.Cosmos.Fluent;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
-    public sealed class DistributedTracingOTelTests
+    [TestCategory("UpdateContract")]
+    public sealed class DistributedTracingOTelTests : BaseCosmosClientHelper
     {
-        private static CosmosClient client;
-        private static Database database;
-
         [TestInitialize]
         public void TestInitialize()
         {
@@ -55,15 +57,11 @@
                 .AddSource(sources)
                 .Build())
             {
-                client = TestCommon.CreateCosmosClient(
-                useGateway: false,
-                enableDistributingTracing: true);
+                await base.TestInit(
+                    useGateway: false,
+                    enableDistributingTracing: true);
 
-                DatabaseResponse dbResponse = await client.CreateDatabaseAsync(
-                        Guid.NewGuid().ToString(),
-                        cancellationToken: default);
-                database = dbResponse.Database;
-                ContainerResponse containerResponse = await database.CreateContainerAsync(
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                         id: Guid.NewGuid().ToString(),
                         partitionKeyPath: "/id",
                         throughput: 20000);
@@ -129,26 +127,27 @@
                 .AddSource(sources)
                 .Build())
             {
-                client = TestCommon.CreateCosmosClient(
-                        useGateway: true,
-                        customizeClientBuilder: builder => builder.WithHttpClientFactory(() => new HttpClient(httpClientHandlerHelper)),
-                        enableDistributingTracing: true);
+                await base.TestInit(
+                    useGateway: true,
+                    customizeClientBuilder: builder => builder.WithHttpClientFactory(() => new HttpClient(httpClientHandlerHelper)),
+                    enableDistributingTracing: true);
 
-                DatabaseResponse dbResponse = await client.CreateDatabaseAsync(
-                        Guid.NewGuid().ToString(),
-                        cancellationToken: default);
-                database = dbResponse.Database;
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                 id: Guid.NewGuid().ToString(),
+                 partitionKeyPath: "/id",
+                 throughput: 20000);
 
+                List<Activity> b = CustomOtelExporter.CollectedActivities.ToList();
                 //Assert traceId in Diagnostics logs
-                string diagnosticsCreateDB = dbResponse.Diagnostics.ToString();
-                JObject objDiagnosticsCreate = JObject.Parse(diagnosticsCreateDB);
+                string diagnosticsCreateContainer = containerResponse.Diagnostics.ToString();
+                JObject objDiagnosticsCreate = JObject.Parse(diagnosticsCreateContainer);
                 string distributedTraceId = (string)objDiagnosticsCreate["data"]["DistributedTraceId"];
                 Assert.IsFalse(string.IsNullOrEmpty(distributedTraceId));
 
                 //Assert diagnostics log trace id is same as parent trace id of the activity
                 string operationName = (string)objDiagnosticsCreate["name"];
-                string traceIdCreateDB = CustomOtelExporter.CollectedActivities.Where(x => x.OperationName.Contains(operationName)).FirstOrDefault().TraceId.ToString();
-                Assert.AreEqual(distributedTraceId, traceIdCreateDB);
+                string traceIdCreateContainer = CustomOtelExporter.CollectedActivities.Where(x => x.OperationName.Contains(operationName)).FirstOrDefault().TraceId.ToString();
+                Assert.AreEqual(distributedTraceId, traceIdCreateContainer);
 
                 //Assert activity creation
                 Assert.IsNotNull(CustomOtelExporter.CollectedActivities);
@@ -168,18 +167,18 @@
                 .AddCustomOtelExporter()
                 .Build())
             {
-                client = TestCommon.CreateCosmosClient(
-                useGateway: useGateway,
-                enableDistributingTracing: enableDistributingTracing);
-
-                DatabaseResponse dbResponse = await client.CreateDatabaseAsync(
-                       Guid.NewGuid().ToString(),
-                       cancellationToken: default);
-                database = dbResponse.Database;
+                await base.TestInit(
+                    useGateway: useGateway,
+                    enableDistributingTracing: enableDistributingTracing);
+               
+                ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                 id: Guid.NewGuid().ToString(),
+                 partitionKeyPath: "/id",
+                 throughput: 20000);
 
                 //Assert traceId in Diagnostics logs
-                string diagnosticsCreateDB = dbResponse.Diagnostics.ToString();
-                JObject objDiagnosticsCreate = JObject.Parse(diagnosticsCreateDB);
+                string diagnosticsCreateContainer = containerResponse.Diagnostics.ToString();
+                JObject objDiagnosticsCreate = JObject.Parse(diagnosticsCreateContainer);
 
                 if (enableDistributingTracing)
                 {
@@ -201,12 +200,11 @@
         [TestCleanup]
         public async Task CleanUp()
         {
-            if (database != null)
+            if (this.database != null)
             {
-                await database.DeleteStreamAsync();
+                await this.database.DeleteStreamAsync();
             }
 
-            client?.Dispose();
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
         }
