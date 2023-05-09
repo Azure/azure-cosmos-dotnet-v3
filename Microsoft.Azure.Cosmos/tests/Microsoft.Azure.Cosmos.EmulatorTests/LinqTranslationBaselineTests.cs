@@ -744,15 +744,26 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("IndexOf string w/ startIndex", b => getQuery(b).Select(doc => doc.StringField.IndexOf("str", 0))),
                 // Count
                 new LinqTestInput("Count", b => getQuery(b).Select(doc => doc.StringField.Count())),
-                // ToLower
-                new LinqTestInput("ToLower", b => getQuery(b).Select(doc => doc.StringField.ToLower())),
-                // TrimStart
-                new LinqTestInput("TrimStart", b => getQuery(b).Select(doc => doc.StringField.TrimStart())),
                 // Replace
                 new LinqTestInput("Replace char", b => getQuery(b).Select(doc => doc.StringField.Replace('c', 'a'))),
                 new LinqTestInput("Replace string", b => getQuery(b).Select(doc => doc.StringField.Replace("str", "str2"))),
+                // ToLower
+                new LinqTestInput("ToLower", b => getQuery(b).Select(doc => doc.StringField.ToLower())),
+                // Trim
+                new LinqTestInput("Trim", b => getQuery(b).Select(doc => doc.StringField.Trim())),
+                new LinqTestInput("Trim with Literal", b => getQuery(b).Select(doc => " abc ".Trim())),
+                new LinqTestInput("Trim with EmptyCharArray", b => getQuery(b).Select(doc => doc.StringField.Trim(new char[]{ }))),
+                new LinqTestInput("Trim with Literal and EmptyCharArray", b => getQuery(b).Select(doc => " abc ".Trim(new char[]{ }))),
                 // TrimEnd
                 new LinqTestInput("TrimEnd", b => getQuery(b).Select(doc => doc.StringField.TrimEnd())),
+                new LinqTestInput("TrimEnd with Literal", b => getQuery(b).Select(doc => " abc ".TrimEnd())),
+                new LinqTestInput("TrimEnd with EmptyCharArray", b => getQuery(b).Select(doc => doc.StringField.TrimEnd(new char[]{ }))),
+                new LinqTestInput("TrimEnd with Literal and EmptyCharArray", b => getQuery(b).Select(doc => " abc ".TrimEnd(new char[]{ }))),
+                // TrimStart
+                new LinqTestInput("TrimStart", b => getQuery(b).Select(doc => doc.StringField.TrimStart())),
+                new LinqTestInput("TrimStart with Literal", b => getQuery(b).Select(doc => " abc ".TrimStart())),
+                new LinqTestInput("TrimStart with EmptyCharArray", b => getQuery(b).Select(doc => doc.StringField.TrimStart(new char[]{ }))),
+                new LinqTestInput("TrimStart with Literal and EmptyCharArray", b => getQuery(b).Select(doc => " abc ".TrimStart(new char[]{ }))),
                 //StartsWith
                 new LinqTestInput("StartsWith", b => getQuery(b).Select(doc => doc.StringField.StartsWith("str"))),
                 new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField))),
