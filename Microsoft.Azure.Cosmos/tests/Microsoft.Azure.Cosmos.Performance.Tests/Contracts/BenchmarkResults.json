@@ -1,5 +1,5 @@
 ﻿{
-  "MasterKeyAuthorizationBenchmark.CreateSignatureGeneration;": 850,
+  "MasterKeyAuthorizationBenchmark.CreateSignatureGeneration;": 832,
   "MasterKeyAuthorizationBenchmark.ReadSignatureGeneration;": 832,
   "MockedItemBenchmark.CreateItem;[Type=OfT]": 36356,
   "MockedItemBenchmark.CreateItem;[Type=OfTCustom]": 36362,
