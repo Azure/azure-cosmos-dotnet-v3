@@ -23,7 +23,7 @@
     "DOCUMENTS": {
       "type": "string",
       "metadata": {
-        "description": "The ammount of documents to insert."
+        "description": "The amount of items to insert."
       }
     },
     "PARALLELISM": {
@@ -36,7 +36,7 @@
     "CLEANUPFINISH": {
       "type": "string",
       "metadata": {
-        "description": "Whether to delete the contaianer after the document is run."
+        "description": "Whether to delete the container after the benchmark is run."
       },
       "defaultValue": "false"
     },
