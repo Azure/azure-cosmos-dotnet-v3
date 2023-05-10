@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
 
     internal static class TypeSystem
     {
@@ -41,6 +42,20 @@ namespace Microsoft.Azure.Cosmos.Linq
                     if (dataMemberAttribute != null && !string.IsNullOrEmpty(dataMemberAttribute.Name))
                     {
                         memberName = dataMemberAttribute.Name;
+                    }
+                }
+                
+                if (memberName == null)
+                {
+                    // If there are neither DataContractAttribute nor JsonPropertyAttribute,
+                    // we need to check the naming strategy of the declaring type.
+                    JsonObjectAttribute jsonObjectAttribute = memberInfo.DeclaringType.GetCustomAttribute<JsonObjectAttribute>(true);
+                    if (jsonObjectAttribute != null && jsonObjectAttribute.NamingStrategyType != null)
+                    {
+                        if (Activator.CreateInstance(jsonObjectAttribute.NamingStrategyType) is NamingStrategy namingStrategy)
+                        {
+                            memberName = namingStrategy.GetPropertyName(memberInfo.Name, false);
+                        }
                     }
                 }
             }
