@@ -46,7 +46,7 @@
                     throw new ArgumentException("Please specify a valid ApplicationInsightsConnectionString in the appSettings.json");
                 }
 
-                // <SetUpOpenTelemetery>
+                // <SetUpOpenTelemetry>
                 ResourceBuilder resource = ResourceBuilder.CreateDefault().AddService(
                             serviceName: serviceName,
                             serviceVersion: "1.0.0");
@@ -69,12 +69,14 @@
                     .AddAzureMonitorTraceExporter(o => o.ConnectionString = aiConnectionString) // Set up exporter of your choice
                     .SetResourceBuilder(resource)
                     .Build();
-                // <SetUpOpenTelemetery>
+                // </SetUpOpenTelemetry>
 
+                // <EnableDistributedTracing>
                 CosmosClientOptions options = new CosmosClientOptions()
                 {
                     IsDistributedTracingEnabled = true // Defaults to true, set to false to disable
                 };
+                // </EnableDistributedTracing>
                 using (CosmosClient client = new CosmosClient(endpoint, authKey, options))
                 {
                     Console.WriteLine($"Getting container reference for {containerName}.");
