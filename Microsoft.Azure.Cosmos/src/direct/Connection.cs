@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
 
                 DateTime currentTime = DateTime.UtcNow;
-                int transitTimeoutCounter = -1, transitTimeoutWriteCounter = -1;
+                int transitTimeoutCounter = 0, transitTimeoutWriteCounter = 0;
 
                 this.SnapshotConnectionTimestamps(
                     out DateTime lastSendAttempt,

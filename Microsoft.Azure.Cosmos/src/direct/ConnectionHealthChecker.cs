@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Documents
                 currentTime: currentTime,
                 lastReceive: lastReceive))
             {
-                return true;
+                return false;
             }
 
             // See https://aka.ms/zero-byte-send.
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// blabla,
+        /// Detects transit timeouts.
         /// </summary>
         /// <param name="transitTimeoutCounter"></param>
         /// <param name="transitTimeoutWriteCounter"></param>
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// blabla.
+        /// Detects black hole.
         /// </summary>
         /// <param name="currentTime"></param>
         /// <param name="lastSendAttempt"></param>
@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// blabla.
+        /// Detects frequent data retrival.
         /// </summary>
         /// <param name="currentTime"></param>
         /// <param name="lastReceiveTime"></param>
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// blabla.
+        /// Detects Idle Timeout.
         /// </summary>
         /// <param name="currentTime"></param>
         /// <param name="lastReceive"></param>
@@ -351,7 +351,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// blabla.
+        /// Detects socket connectivity.
         /// </summary>
         /// <param name="socket"></param>
         /// <returns>A bool.</returns>
