@@ -14,8 +14,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal static class AssertActivity
     {
-        public static void IsValid(Activity activity)
+        public static void IsValidOperationActivity(Activity activity)
         {
+            if(!activity.Source.Name.Contains("Operation"))
+            {
+                return;
+            }
+            
             Assert.IsTrue(activity.OperationName == activity.DisplayName);
 
             Assert.IsFalse(string.IsNullOrEmpty(activity.GetTagItem("db.cosmosdb.connection_mode").ToString()), $"connection mode is emtpy for {activity.OperationName}");
@@ -79,11 +84,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             IList<string> exceptionsForContainerAttribute = new List<string>
             {
-                "Operation.CreateDatabaseAsync",
-                "Operation.CreateDatabaseIfNotExistsAsync",
-                "Operation.ReadAsync",
-                "Operation.DeleteAsync",
-                "Operation.DeleteStreamAsync"
+                "CreateDatabaseAsync",
+                "CreateDatabaseIfNotExistsAsync",
+                "ReadAsync",
+                "DeleteAsync",
+                "DeleteStreamAsync"
             };
             
             if ((tag.Key == OpenTelemetryAttributeKeys.ContainerName && !exceptionsForContainerAttribute.Contains(name)) ||
