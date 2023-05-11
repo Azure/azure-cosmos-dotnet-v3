@@ -222,6 +222,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             List<string> tagsWithStaticValue = new List<string>
             {
+                "az.schema_url",
                 "kind",
                 "az.namespace",
                 "db.operation",
@@ -229,15 +230,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "net.peer.name",
                 "db.cosmosdb.connection_mode",
                 "db.cosmosdb.operation_type",
-                "db.cosmosdb.regions_contacted"
+                "db.cosmosdb.regions_contacted",
+                "rntbd.sub_status_code",
+                "rntbd.status_code",
+                "rntbd.uri"
             };
             
             StringBuilder builder = new StringBuilder();
-            builder.Append("<ACTIVITY>")
+            builder.Append($"<ACTIVITY>")
                    .Append("<OPERATION>")
                    .Append(activity.OperationName)
-                   .Append("</OPERATION>");
-            
+                   .Append("</OPERATION>")
+                   .Append("<SOURCE>")
+                   .Append(activity.Source.Name)
+                   .Append("</SOURCE>");
+
             foreach (KeyValuePair<string, string> tag in activity.Tags)
             {
                 builder
