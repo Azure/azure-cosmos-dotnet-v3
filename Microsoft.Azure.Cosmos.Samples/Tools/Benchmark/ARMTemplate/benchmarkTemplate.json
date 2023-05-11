@@ -2,61 +2,64 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "ENDPOINT": {
+    "endpoint": {
       "type": "string",
       "metadata": {
         "description": "Your account endpoint"
       }
     },
-    "KEY": {
+    "key": {
       "type": "securestring",
       "metadata": {
         "description": "Your account key"
       }
     },
-    "THROUGHPUT": {
+    "throughput": {
       "type": "string",
       "metadata": {
         "description": "The throughput for the container."
       }
     },
-    "DOCUMENTS": {
+    "documents": {
       "type": "string",
       "metadata": {
         "description": "The amount of items to insert."
       }
     },
-    "PARALLELISM": {
+    "parallelism": {
       "type": "string",
       "metadata": {
         "description": "The degree of parallelism."
       },
       "defaultValue": "-1"
     },
-    "CLEANUPFINISH": {
+    "cleanUpOnFinish": {
       "type": "string",
       "metadata": {
         "description": "Whether to delete the container after the benchmark is run."
       },
       "defaultValue": "false"
     },
-    "containergroupname": {
+    "containerGroupName": {
       "type": "string",
       "metadata": {
         "description": "Name for the container group"
-      }
+      },
+      "defaultValue":  "CosmosDBBenchmark"
     },
-    "containername": {
+    "containerName": {
       "type": "string",
       "metadata": {
         "description": "Name for the container"
-      }
+      },
+      "defaultValue": "cosmosdbsdkperf"
     },
-    "volumename": {
+    "volumeName": {
       "type": "string",
       "metadata": {
         "description": "Name for the gitRepo volume"
-      }
+      },
+      "defaultValue": "cosmosdbsdk"
     },
     "port": {
       "type": "string",
@@ -90,14 +93,14 @@
   "variables": {},
   "resources": [
     {
-      "name": "[parameters('containergroupname')]",
+      "name": "[parameters('containerGroupName')]",
       "type": "Microsoft.ContainerInstance/containerGroups",
       "apiVersion": "2020-11-01",
       "location": "[parameters('location')]",
       "properties": {
         "containers": [
           {
-            "name": "[parameters('containername')]",
+            "name": "[parameters('containerName')]",
             "properties": {
               "image": "mcr.microsoft.com/dotnet/sdk:6.0",
               "ports": [
@@ -113,7 +116,7 @@
               },
               "volumeMounts": [
                 {
-                  "name": "[parameters('volumename')]",
+                  "name": "[parameters('volumeName')]",
                   "mountPath": "/mnt/gitrepos/",
                   "readOnly": false
                 }
@@ -121,7 +124,7 @@
               "command": [
                 "/bin/bash",
                 "-c",
-                "[concat('cd /mnt/gitrepos/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/ARMTemplate;export ENDPOINT=\"', parameters('ENDPOINT'),'\";export KEY=\"', parameters('KEY'),'\";export THROUGHPUT=\"', parameters('THROUGHPUT'),'\";export DOCUMENTS=\"', parameters('DOCUMENTS'),'\";export PARALLELISM=\"', parameters('PARALLELISM'),'\";export CLEANUPFINISH=\"', parameters('CLEANUPFINISH'),'\";chmod +x run.sh;./run.sh')]"
+                "[concat('cd /mnt/gitrepos/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/ARMTemplate;export ENDPOINT=\"', parameters('endpoint'),'\";export KEY=\"', parameters('key'),'\";export THROUGHPUT=\"', parameters('throughput'),'\";export DOCUMENTS=\"', parameters('documents'),'\";export PARALLELISM=\"', parameters('parallelism'),'\";export CLEANUPFINISH=\"', parameters('cleanUpOnFinish'),'\";chmod +x run.sh;./run.sh')]"
               ]
             }
           }
@@ -139,7 +142,7 @@
         },
         "volumes": [
           {
-            "name": "[parameters('volumename')]",
+            "name": "[parameters('volumeName')]",
             "gitRepo": {
               "repository": "https://github.com/Azure/azure-cosmos-dotnet-v3"
             }
