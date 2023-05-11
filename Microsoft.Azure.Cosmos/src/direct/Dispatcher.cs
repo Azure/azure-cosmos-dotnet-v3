@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         /// <summary>
-        /// Cancels call.
+        /// Completes a call.
         /// </summary>
         public void CompleteCall()
         {
