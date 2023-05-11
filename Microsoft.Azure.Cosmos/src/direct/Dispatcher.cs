@@ -625,7 +625,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        // Something to take a look to update the last read time.
         private async Task NegotiateRntbdContextAsync(ChannelOpenArguments args)
         {
             byte[] contextMessage = TransportSerialization.BuildContextRequest(
@@ -706,6 +705,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
             }
 
+            this.CompleteCall();
             args.OpenTimeline.RecordRntbdHandshakeFinishTime();
         }
 
