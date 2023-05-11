@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Debug.Assert(object.ReferenceEquals(completedTask, tasks[1]));
                 timer.CancelTimer();
 
-                this.dispatcher.CompleteCall(request.IsReadOnlyRequest);
+                this.dispatcher.CompleteCall();
                 if (completedTask.IsFaulted)
                 {
                     await completedTask;

@@ -239,11 +239,11 @@ namespace Microsoft.Azure.Documents
         /// Gets the environment variable value using the user provided key.
         /// </summary>
         /// <param name="name">A string containing the environment variable name.</param>
-        /// <param name="defaultValue">A boolean field containing the default value of the variable.</param>
-        /// <returns>The environment variable value as a boolean field.</returns>
-        internal static bool GetEnvironmentVariableAsBool(
+        /// <param name="defaultValue">A generic field containing the default value of the variable.</param>
+        /// <returns>The environment variable value as a generic field.</returns>
+        internal static T GetEnvironmentVariable<T>(
             string name,
-            bool defaultValue)
+            T defaultValue)
         {
             string environmentVariableValue = Environment.GetEnvironmentVariable(name);
 
@@ -252,13 +252,31 @@ namespace Microsoft.Azure.Documents
                 return defaultValue;
             }
 
-            if (bool.TryParse(environmentVariableValue, out bool environmentVariableBool))
+            switch (typeof(T))
             {
-                return environmentVariableBool;
+                case Type intType when intType == typeof(int):
+
+                    if (int.TryParse(environmentVariableValue, out int environmentVariableInteger))
+                    {
+                        return (T)(object)environmentVariableInteger;
+                    }
+
+                    // Value is not valid.
+                    throw new ArgumentException(message: $"{name} has an invalid integer value of: {environmentVariableValue}.");
+
+                case Type boolType when boolType == typeof(bool):
+
+                    if (bool.TryParse(environmentVariableValue, out bool environmentVariableBool))
+                    {
+                        return (T)(object)environmentVariableBool;
+                    }
+
+                    // Value is not valid.
+                    throw new ArgumentException(message: $"{name} has an invalid boolean value of: {environmentVariableValue}.");
             }
 
-            // Value is not valid.
-            throw new ArgumentException(message: $"{name} has an invalid boolean value of: {environmentVariableValue}.");
+            // Generic is not valid.
+            throw new ArgumentException(message: $"{typeof(T)} is not a valid generic.");
         }
     }
 }

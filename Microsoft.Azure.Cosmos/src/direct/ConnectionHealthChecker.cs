@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Documents
         private readonly TimeSpan sendDelayLimit;
 
         private readonly TimeSpan idleConnectionTimeout;
+
         private readonly TimeSpan timeoutDetectionTimeLimit;
         private readonly int timeoutDetectionOnWriteThreshold;
         private readonly TimeSpan timeoutDetectionOnWriteTimeLimit;
@@ -66,22 +67,12 @@ namespace Microsoft.Azure.Documents
         /// <param name="sendDelayLimit"></param>
         /// <param name="receiveDelayLimit"></param>
         /// <param name="idleConnectionTimeout"></param>
-        /// <param name="timeoutDetectionTimeLimit"></param>
-        /// <param name="timeoutDetectionOnWriteThreshold"></param>
-        /// <param name="timeoutDetectionOnWriteTimeLimit"></param>
-        /// <param name="timeoutDetectionHighFrequencyThreshold"></param>
-        /// <param name="timeoutDetectionHighFrequencyTimeLimit"></param>
-        /// <param name="timeoutDetectionDisableCPUThreshold"></param>
+        /// <param name="timeoutDetectionEnabled"></param>
         public ConnectionHealthChecker(
             TimeSpan sendDelayLimit,
             TimeSpan receiveDelayLimit,
             TimeSpan idleConnectionTimeout,
-            TimeSpan timeoutDetectionTimeLimit,
-            int timeoutDetectionOnWriteThreshold,
-            TimeSpan timeoutDetectionOnWriteTimeLimit,
-            int timeoutDetectionHighFrequencyThreshold,
-            TimeSpan timeoutDetectionHighFrequencyTimeLimit,
-            double timeoutDetectionDisableCPUThreshold)
+            bool timeoutDetectionEnabled)
         {
             if (receiveDelayLimit <= ConnectionHealthChecker.receiveHangGracePeriod)
             {
@@ -108,16 +99,100 @@ namespace Microsoft.Azure.Documents
                         ConnectionHealthChecker.sendHangGracePeriod));
             }
 
-            // TODO" To be read from the configs.
             this.sendDelayLimit = sendDelayLimit;
             this.receiveDelayLimit = receiveDelayLimit;
             this.idleConnectionTimeout = idleConnectionTimeout;
-            this.timeoutDetectionTimeLimit = timeoutDetectionTimeLimit;
-            this.timeoutDetectionOnWriteThreshold = timeoutDetectionOnWriteThreshold;
-            this.timeoutDetectionOnWriteTimeLimit = timeoutDetectionOnWriteTimeLimit;
-            this.timeoutDetectionHighFrequencyThreshold = timeoutDetectionHighFrequencyThreshold;
-            this.timeoutDetectionHighFrequencyTimeLimit = timeoutDetectionHighFrequencyTimeLimit;
-            this.timeoutDetectionDisableCPUThreshold = timeoutDetectionDisableCPUThreshold;
+
+            if (timeoutDetectionEnabled)
+            {
+                this.timeoutDetectionTimeLimit = TimeSpan.FromSeconds(
+                    Helpers.GetEnvironmentVariable(
+                        name: Constants.EnvironmentVariables.TimeoutDetectionTimeLimit,
+                        defaultValue: 60));
+                this.timeoutDetectionOnWriteThreshold = Helpers.GetEnvironmentVariable(
+                        name: Constants.EnvironmentVariables.TimeoutDetectionOnWriteThreshold,
+                        defaultValue: 1);
+                this.timeoutDetectionOnWriteTimeLimit = TimeSpan.FromSeconds(
+                    Helpers.GetEnvironmentVariable(
+                        name: Constants.EnvironmentVariables.TimeoutDetectionOnWriteTimeLimit,
+                        defaultValue: 6));
+                this.timeoutDetectionHighFrequencyThreshold = Helpers.GetEnvironmentVariable(
+                        name: Constants.EnvironmentVariables.TimeoutDetectionOnHighFrequencyThreshold,
+                        defaultValue: 3);
+                this.timeoutDetectionHighFrequencyTimeLimit = TimeSpan.FromSeconds(
+                    Helpers.GetEnvironmentVariable(
+                        name: Constants.EnvironmentVariables.TimeoutDetectionOnHighFrequencyTimeLimit,
+                        defaultValue: 10));
+                this.timeoutDetectionDisableCPUThreshold = Helpers.GetEnvironmentVariable(
+                        name: Constants.EnvironmentVariables.TimeoutDetectionDisabledOnCPUThreshold,
+                        defaultValue: 90);
+            }
+        }
+
+        /// <summary>
+        /// Is Healthy Indicator.
+        /// </summary>
+        /// <param name="currentTime"></param>
+        /// <param name="lastSendAttempt"></param>
+        /// <param name="lastSend"></param>
+        /// <param name="lastReceive"></param>
+        /// <param name="firstSendSinceLastReceive"></param>
+        /// <param name="numberOfSendsSinceLastReceive"></param>
+        /// <param name="transitTimeoutCounter"></param>
+        /// <param name="transitTimeoutWriteCounter"></param>
+        /// <param name="socket"></param>
+        /// <returns>A boolean flag.</returns>
+        public bool IsHealthy(
+            DateTime currentTime,
+            DateTime lastSendAttempt,
+            DateTime lastSend,
+            DateTime lastReceive,
+            DateTime? firstSendSinceLastReceive,
+            long numberOfSendsSinceLastReceive,
+            int transitTimeoutCounter,
+            int transitTimeoutWriteCounter,
+            Socket socket)
+        {
+            // Assume that the connection is healthy if data was received
+            // recently.
+            if (this.IsDataReceivedRecently(
+                currentTime: currentTime,
+                lastReceiveTime: lastReceive))
+            {
+                return true;
+            }
+
+            if (this.IsBlackholeDetected(
+                currentTime: currentTime,
+                lastSendAttempt: lastSendAttempt,
+                lastSend: lastSend,
+                lastReceive: lastReceive,
+                firstSendSinceLastReceive: firstSendSinceLastReceive,
+                numberOfSendsSinceLastReceive: numberOfSendsSinceLastReceive))
+            {
+                return false;
+            }
+
+            if (this.IsTransitTimeoutsDetected(
+                transitTimeoutCounter: transitTimeoutCounter,
+                transitTimeoutWriteCounter: transitTimeoutWriteCounter,
+                currentTime: currentTime,
+                lastReadTime: lastReceive))
+            {
+                return false;
+            }
+
+            if (this.IsConnectionIdled(
+                currentTime: currentTime,
+                lastReceive: lastReceive))
+            {
+                return true;
+            }
+
+            // See https://aka.ms/zero-byte-send.
+            // Socket.Send is expensive. Keep this operation last in the chain
+            return this.IsSocketConnectionEstablished(
+                socket: socket);
         }
 
         /// <summary>
@@ -128,7 +203,7 @@ namespace Microsoft.Azure.Documents
         /// <param name="currentTime"></param>
         /// <param name="lastReadTime"></param>
         /// <returns>Bool.</returns>
-        public bool IsTransitTimeoutsDetected(
+        private bool IsTransitTimeoutsDetected(
             int transitTimeoutCounter,
             int transitTimeoutWriteCounter,
             DateTime currentTime,
@@ -192,7 +267,7 @@ namespace Microsoft.Azure.Documents
         /// <param name="firstSendSinceLastReceive"></param>
         /// <param name="numberOfSendsSinceLastReceive"></param>
         /// <returns>bool.</returns>
-        public bool IsBlackholeDetected(
+        private bool IsBlackholeDetected(
             DateTime currentTime,
             DateTime lastSendAttempt,
             DateTime lastSend,
@@ -246,7 +321,7 @@ namespace Microsoft.Azure.Documents
         /// <param name="currentTime"></param>
         /// <param name="lastReceiveTime"></param>
         /// <returns>A bool.</returns>
-        public bool IsDataReceivedRecently(
+        private bool IsDataReceivedRecently(
             DateTime currentTime,
             DateTime lastReceiveTime)
         {
@@ -259,7 +334,7 @@ namespace Microsoft.Azure.Documents
         /// <param name="currentTime"></param>
         /// <param name="lastReceive"></param>
         /// <returns>A bool.</returns>
-        public bool IsConnectionIdled(
+        private bool IsConnectionIdled(
             DateTime currentTime,
             DateTime lastReceive)
         {
@@ -280,7 +355,7 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="socket"></param>
         /// <returns>A bool.</returns>
-        public bool IsSocketConnectionEstablished(
+        private bool IsSocketConnectionEstablished(
             Socket socket)
         {
             try

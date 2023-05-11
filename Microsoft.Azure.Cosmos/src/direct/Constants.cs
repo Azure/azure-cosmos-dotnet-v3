@@ -2116,7 +2116,17 @@ namespace Microsoft.Azure.Documents
 
         public static class EnvironmentVariables
         {
+            public const string SocketOptionTcpKeepAliveIntervalName = "AZURE_COSMOS_TCP_KEEPALIVE_INTERVAL_SECONDS";
+            public const string SocketOptionTcpKeepAliveTimeName = "AZURE_COSMOS_TCP_KEEPALIVE_TIME_SECONDS";
             public const string ReplicaConnectivityValidationEnabled = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
+            public const string TimeoutDetectionEnabled = "AZURE_COSMOS_TIMEOUT_DETECTION_ENABLED";
+            public const string TimeoutDetectionTimeLimit = "AZURE_COSMOS_TIMEOUT_DETECTION_TIME_LIMIT";
+            public const string TimeoutDetectionOnWriteThreshold = "AZURE_COSMOS_TIMEOUT_DETECTION_ON_WRITE_THRESHOLD";
+            public const string TimeoutDetectionOnWriteTimeLimit = "AZURE_COSMOS_TIMEOUT_DETECTION_ON_WRITE_TIME_LIMIT";
+            public const string TimeoutDetectionOnHighFrequencyThreshold = "AZURE_COSMOS_TIMEOUT_DETECTION_ON_HIGH_FREQUENCY_THRESHOLD";
+            public const string TimeoutDetectionOnHighFrequencyTimeLimit = "AZURE_COSMOS_TIMEOUT_DETECTION_ON_HIGH_FREQUENCY_TIME_LIMIT";
+            public const string TimeoutDetectionDisabledOnCPUThreshold = "AZURE_COSMOS_TIMEOUT_DETECTION_DISABLED_ON_CPU_THRESHOLD";
+
         }
     }
 }

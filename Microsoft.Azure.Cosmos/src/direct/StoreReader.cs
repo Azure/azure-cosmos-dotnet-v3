@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Documents
             this.addressEnumerator = addressEnumerator ?? throw new ArgumentNullException(nameof(addressEnumerator));
             this.sessionContainer = sessionContainer;
             this.canUseLocalLSNBasedHeaders = VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.Versions.v2018_06_18);
-            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariableAsBool(
+            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariable(
                 name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
                 defaultValue: false);
         }

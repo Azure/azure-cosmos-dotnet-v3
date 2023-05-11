@@ -361,7 +361,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             bool isReadOnly)
         {
             this.ThrowIfDisposed();
-            this.connection.IncrementTransitTimeoutCounter(isReadOnly);
+            this.connection.IncrementTransitTimeoutCounter(
+                isReadOnly: isReadOnly);
+
             CallInfo call = this.RemoveCall(preparedCall.RequestId);
             if (call != null)
             {
@@ -372,21 +374,10 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <summary>
         /// Cancels call.
         /// </summary>
-        /// <param name="isReadOnly">A boolean flag indicating if the request is read only.</param>
-        public void CompleteCall(
-            bool isReadOnly)
+        public void CompleteCall()
         {
             this.ThrowIfDisposed();
-
-            if (isReadOnly)
-            {
-                this.connection.UpdateLastReadTime();
-                this.connection.ResetTransitTimeout();
-            }
-            else
-            {
-                this.connection.UpdateLastWriteTime();
-            }
+            this.connection.ResetTransitTimeout();
         }
 
         public override string ToString()
@@ -634,6 +625,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        // Something to take a look to update the last read time.
         private async Task NegotiateRntbdContextAsync(ChannelOpenArguments args)
         {
             byte[] contextMessage = TransportSerialization.BuildContextRequest(

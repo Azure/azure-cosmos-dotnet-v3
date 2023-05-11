@@ -28,8 +28,6 @@ namespace Microsoft.Azure.Documents.Rntbd
     // mechanisms (SSL stream, connection state).
     internal sealed class Connection : IDisposable
     {
-        private const string socketOptionTcpKeepAliveIntervalName = "AZURE_COSMOS_TCP_KEEPALIVE_INTERVAL_SECONDS";
-        private const string socketOptionTcpKeepAliveTimeName = "AZURE_COSMOS_TCP_KEEPALIVE_TIME_SECONDS";
         private const int ResponseLengthByteLimit = int.MaxValue;
         private const SslProtocols TlsProtocols = SslProtocols.Tls12;
         private const uint TcpKeepAliveIntervalSocketOptionEnumValue = 17;
@@ -37,12 +35,12 @@ namespace Microsoft.Azure.Documents.Rntbd
         private const uint DefaultSocketOptionTcpKeepAliveInterval = 1;
         private const uint DefaultSocketOptionTcpKeepAliveTime = 30;
         private static readonly uint SocketOptionTcpKeepAliveInterval = GetUInt32FromEnvironmentVariableOrDefault(
-            socketOptionTcpKeepAliveIntervalName,
+            Constants.EnvironmentVariables.SocketOptionTcpKeepAliveIntervalName,
             minValue: 1,
             maxValue: 100,
             defaultValue: DefaultSocketOptionTcpKeepAliveInterval);
         private static readonly uint SocketOptionTcpKeepAliveTime = GetUInt32FromEnvironmentVariableOrDefault(
-            socketOptionTcpKeepAliveTimeName,
+            Constants.EnvironmentVariables.SocketOptionTcpKeepAliveTimeName,
             minValue: 1,
             maxValue: 100,
             defaultValue: DefaultSocketOptionTcpKeepAliveTime);
@@ -105,14 +103,11 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static int numberOfOpenTcpConnections;
 
+        private readonly bool timeoutDetectionEnabled;
         private readonly ConnectionHealthChecker healthChecker;
 
         private int transitTimeoutCounter;
         private int transitTimeoutWriteCounter;
-
-        private readonly bool timeoutDetectionEnabled;
-        private DateTime lastReadTime;  // Guarded by timestampLock.
-        private DateTime lastWriteTime;  // Guarded by timestampLock.
 
         public Connection(
             Uri serverUri,
@@ -150,7 +145,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.memoryStreamPool = memoryStreamPool;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
 
-            this.timeoutDetectionEnabled = true;
+            this.timeoutDetectionEnabled = Helpers.GetEnvironmentVariable(
+                    name: Constants.EnvironmentVariables.TimeoutDetectionEnabled,
+                    defaultValue: true);
             this.transitTimeoutCounter = 0;
             this.transitTimeoutWriteCounter = 0;
 
@@ -158,12 +155,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 sendDelayLimit: sendHangDetectionTime,
                 receiveDelayLimit: receiveHangDetectionTime,
                 idleConnectionTimeout: idleTimeout,
-                timeoutDetectionTimeLimit: TimeSpan.FromSeconds(60),
-                timeoutDetectionOnWriteThreshold: 1,
-                timeoutDetectionOnWriteTimeLimit: TimeSpan.FromSeconds(6),
-                timeoutDetectionHighFrequencyThreshold: 3,
-                timeoutDetectionHighFrequencyTimeLimit: TimeSpan.FromSeconds(10),
-                timeoutDetectionDisableCPUThreshold: 90);
+                timeoutDetectionEnabled: this.timeoutDetectionEnabled);
         }
 
         public static int NumberOfOpenTcpConnections { get { return Connection.numberOfOpenTcpConnections; } }
@@ -182,7 +174,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                     return false;
                 }
 
-                DateTime now = DateTime.UtcNow;
+                DateTime currentTime = DateTime.UtcNow;
+                int transitTimeoutCounter = -1, transitTimeoutWriteCounter = -1;
+
                 this.SnapshotConnectionTimestamps(
                     out DateTime lastSendAttempt,
                     out DateTime lastSend,
@@ -190,53 +184,22 @@ namespace Microsoft.Azure.Documents.Rntbd
                     out DateTime? firstSendSinceLastReceive,
                     out long numberOfSendsSinceLastReceive);
 
-                // Assume that the connection is healthy if data was received
-                // recently.
-                if (this.healthChecker.IsDataReceivedRecently(
-                    currentTime: now,
-                    lastReceiveTime: lastReceive))
+                if (this.timeoutDetectionEnabled)
                 {
-                    return true;
+                    this.SnapshotTransitTimeoutCounters(
+                        out transitTimeoutCounter,
+                        out transitTimeoutWriteCounter);
                 }
 
-                if (this.healthChecker.IsBlackholeDetected(
-                    currentTime: now,
+                return this.healthChecker.IsHealthy(
+                    currentTime: currentTime,
                     lastSendAttempt: lastSendAttempt,
                     lastSend: lastSend,
                     lastReceive: lastReceive,
                     firstSendSinceLastReceive: firstSendSinceLastReceive,
-                    numberOfSendsSinceLastReceive: numberOfSendsSinceLastReceive))
-                {
-                    return false;
-                }
-
-                if (this.timeoutDetectionEnabled)
-                {
-                    this.SnapshotTransitTimestamps(
-                        out DateTime lastReadTime,
-                        out int transitTimeoutCounter,
-                        out int transitTimeoutWriteCounter);
-
-                    if (this.healthChecker.IsTransitTimeoutsDetected(
-                        transitTimeoutCounter: transitTimeoutCounter,
-                        transitTimeoutWriteCounter: transitTimeoutWriteCounter,
-                        currentTime: now,
-                        lastReadTime: lastReadTime))
-                    {
-                        return false;
-                    }
-                }
-
-                if (this.healthChecker.IsConnectionIdled(
-                    currentTime: now,
-                    lastReceive: lastReceive))
-                {
-                    return true;
-                }
-
-                // See https://aka.ms/zero-byte-send.
-                // Socket.Send is expensive. Keep this operation last in the chain
-                return this.healthChecker.IsSocketConnectionEstablished(
+                    numberOfSendsSinceLastReceive: numberOfSendsSinceLastReceive,
+                    transitTimeoutCounter: transitTimeoutCounter,
+                    transitTimeoutWriteCounter: transitTimeoutWriteCounter,
                     socket: this.tcpClient.Client);
             }
         }
@@ -328,30 +291,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             if (!isReadOnly)
             {
                 Interlocked.Increment(ref this.transitTimeoutWriteCounter);
-            }
-        }
-
-        /// <summary>
-        /// Reset transit timeout.
-        /// </summary>
-        public void UpdateLastReadTime()
-        {
-            Debug.Assert(!Monitor.IsEntered(this.timestampLock));
-            lock (this.timestampLock)
-            {
-                this.lastReadTime = DateTime.UtcNow;
-            }
-        }
-
-        /// <summary>
-        /// Reset transit timeout.
-        /// </summary>
-        public void UpdateLastWriteTime()
-        {
-            Debug.Assert(!Monitor.IsEntered(this.timestampLock));
-            lock (this.timestampLock)
-            {
-                this.lastWriteTime = DateTime.UtcNow;
             }
         }
 
@@ -864,15 +803,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private void SnapshotTransitTimestamps(
-            out DateTime lastReadTime,
+        private void SnapshotTransitTimeoutCounters(
             out int transitTimeoutCounter,
             out int transitTimeoutWriteCounter)
         {
             Debug.Assert(!Monitor.IsEntered(this.timestampLock));
             lock (this.timestampLock)
             {
-                lastReadTime = this.lastReadTime;
                 transitTimeoutCounter = this.transitTimeoutCounter;
                 transitTimeoutWriteCounter = this.transitTimeoutWriteCounter;
             }

@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GatewayAddressCache.ProtocolString(this.protocol));
 
             this.openConnectionsHandler = openConnectionsHandler;
-            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariableAsBool(
+            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariable(
                 name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
                 defaultValue: false);
         }
