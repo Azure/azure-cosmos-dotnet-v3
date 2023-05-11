@@ -148,27 +148,25 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY>
-    <OPERATION>CreateItemAsync</OPERATION>
-    <SOURCE>Azure.Cosmos.Operation</SOURCE>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemAsync" displayName="CreateItemAsync">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">any value</ATTRIBUTE>
     <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">any value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="exception.stacktrace">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="exception.type">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.stacktrace">any value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.type">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-    <ATTRIBUTE key="exception.message">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.message">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT>
@@ -414,27 +412,25 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY>
-    <OPERATION>CreateItemAsync</OPERATION>
-    <SOURCE>Azure.Cosmos.Operation</SOURCE>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemAsync" displayName="CreateItemAsync">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">any value</ATTRIBUTE>
     <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">any value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="exception.stacktrace">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="exception.type">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.stacktrace">any value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.type">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-    <ATTRIBUTE key="exception.message">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.message">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT>
@@ -663,27 +659,25 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY>
-    <OPERATION>CreateItemAsync</OPERATION>
-    <SOURCE>Azure.Cosmos.Operation</SOURCE>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemAsync" displayName="CreateItemAsync">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">any value</ATTRIBUTE>
     <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">any value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="exception.stacktrace">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="exception.type">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.stacktrace">any value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.type">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-    <ATTRIBUTE key="exception.message">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.message">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT>
@@ -944,27 +938,25 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY>
-    <OPERATION>CreateItemAsync</OPERATION>
-    <SOURCE>Azure.Cosmos.Operation</SOURCE>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemAsync" displayName="CreateItemAsync">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">any value</ATTRIBUTE>
     <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">any value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="exception.stacktrace">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="exception.type">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.stacktrace">any value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.type">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-    <ATTRIBUTE key="exception.message">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.message">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT>
@@ -1289,27 +1281,25 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY>
-    <OPERATION>CreateItemAsync</OPERATION>
-    <SOURCE>Azure.Cosmos.Operation</SOURCE>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemAsync" displayName="CreateItemAsync">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">any value</ATTRIBUTE>
     <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">any value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="exception.stacktrace">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="exception.type">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.stacktrace">any value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.type">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-    <ATTRIBUTE key="exception.message">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.message">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT>
@@ -1467,27 +1457,25 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY>
-    <OPERATION>CreateItemAsync</OPERATION>
-    <SOURCE>Azure.Cosmos.Operation</SOURCE>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemAsync" displayName="CreateItemAsync">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">CreateItemAsync</ATTRIBUTE>
-    <ATTRIBUTE key="db.name">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.container">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.machine_id">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">any value</ATTRIBUTE>
     <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.client_id">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="user_agent.original">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">any value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="exception.stacktrace">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="exception.type">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.status_code">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.sub_status_code">dynamic value</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.request_charge">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.stacktrace">any value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.type">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">any value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-    <ATTRIBUTE key="exception.message">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="exception.message">any value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
   </ACTIVITY>
   <EVENT>

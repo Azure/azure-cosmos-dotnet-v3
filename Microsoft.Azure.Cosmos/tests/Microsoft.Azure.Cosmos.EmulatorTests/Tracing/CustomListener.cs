@@ -236,14 +236,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
             
             StringBuilder builder = new StringBuilder();
-            builder.Append($"<ACTIVITY>")
-                   .Append("<OPERATION>")
-                   .Append(activity.OperationName)
-                   .Append("</OPERATION>")
-                   .Append("<SOURCE>")
-                   .Append(activity.Source.Name)
-                   .Append("</SOURCE>");
-
+            builder.Append($"<ACTIVITY source='{activity.Source.Name}' operationName='{activity.OperationName}' displayName='{activity.DisplayName}'>");
             foreach (KeyValuePair<string, string> tag in activity.Tags)
             {
                 if (tagsWithStaticValue.Contains(tag.Key))
@@ -254,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 else
                 {
                     builder
-                    .Append($"<ATTRIBUTE key='{tag.Key}'>dynamic value</ATTRIBUTE>");
+                    .Append($"<ATTRIBUTE key='{tag.Key}'>any value</ATTRIBUTE>");
                 }
             }
             
@@ -262,7 +255,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             
             return builder.ToString();
         }
-        
+
+
         public List<string> GetRecordedAttributes() 
         {
             List<string> generatedActivityTagsForBaselineXmls = new();
