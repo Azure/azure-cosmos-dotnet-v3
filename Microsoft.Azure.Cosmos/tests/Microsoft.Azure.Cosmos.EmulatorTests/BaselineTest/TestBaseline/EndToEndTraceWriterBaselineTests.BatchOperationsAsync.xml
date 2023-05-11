@@ -128,11 +128,45 @@
       ]
     }
   ]
-}]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>ExecuteAsync</OPERATION><SOURCE>Azure.Cosmos.Operation</SOURCE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ExecuteAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>user_agent.original</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Batch</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<ACTIVITY><OPERATION>Request.Batch</OPERATION><SOURCE>Azure.Cosmos.Request</SOURCE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.schema_url</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>rntbd.uri</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer84/partitions/a4cb49a0-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>rntbd.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>PartitionKeyMismatch</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>rntbd.status_code</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>MultiStatus</ATTRIBUTE-VALUE></ACTIVITY>
-<EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
-</OTelActivities>
-    </Output>
+}]]></Json><OTelActivities>
+  <ACTIVITY>
+    <OPERATION>ExecuteAsync</OPERATION>
+    <SOURCE>Azure.Cosmos.Operation</SOURCE>
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">ExecuteAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Batch</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.item_count">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY>
+    <OPERATION>Request.Batch</OPERATION>
+    <SOURCE>Azure.Cosmos.Request</SOURCE>
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.uri">dynamic value</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.sub_status_code">PartitionKeyMismatch</ATTRIBUTE>
+    <ATTRIBUTE key="rntbd.status_code">MultiStatus</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT>
+    <EVENT-NAME>LatencyOverThreshold</EVENT-NAME>
+    <EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT>
+  </EVENT>
+</OTelActivities></Output>
   </Result>
 </Results>

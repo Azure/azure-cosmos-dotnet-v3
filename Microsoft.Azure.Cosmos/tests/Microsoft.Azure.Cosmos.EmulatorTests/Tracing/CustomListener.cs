@@ -232,8 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "db.cosmosdb.operation_type",
                 "db.cosmosdb.regions_contacted",
                 "rntbd.sub_status_code",
-                "rntbd.status_code",
-                "rntbd.uri"
+                "rntbd.status_code"
             };
             
             StringBuilder builder = new StringBuilder();
@@ -247,17 +246,15 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (KeyValuePair<string, string> tag in activity.Tags)
             {
-                builder
-                .Append("<ATTRIBUTE-KEY>")
-                .Append(tag.Key)
-                .Append("</ATTRIBUTE-KEY>");
-
                 if (tagsWithStaticValue.Contains(tag.Key))
                 {
                     builder
-                    .Append("<ATTRIBUTE-VALUE>")
-                    .Append(tag.Value)
-                    .Append("</ATTRIBUTE-VALUE>");
+                    .Append($"<ATTRIBUTE key='{tag.Key}'>{tag.Value}</ATTRIBUTE>");
+                }
+                else
+                {
+                    builder
+                    .Append($"<ATTRIBUTE key='{tag.Key}'>dynamic value</ATTRIBUTE>");
                 }
             }
             
