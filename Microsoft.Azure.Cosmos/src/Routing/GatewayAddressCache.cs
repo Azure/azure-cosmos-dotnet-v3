@@ -387,7 +387,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public void TryRemoveAddresses(
+        /// <summary>
+        /// Marks the <see cref="TransportAddressUri"/> to Unhealthy that matches with the faulted
+        /// server key.
+        /// </summary>
+        /// <param name="serverKey">An instance of <see cref="ServerKey"/> that contains the host and
+        /// port of the backend replica.</param>
+        public async Task MarkAddressesToUnhealthyAsync(
             ServerKey serverKey)
         {
             if (serverKey == null)
@@ -395,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(serverKey));
             }
 
-            if (this.serverPartitionAddressToPkRangeIdMap.TryRemove(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
+            if (this.serverPartitionAddressToPkRangeIdMap.TryGetValue(serverKey, out HashSet<PartitionKeyRangeIdentity> pkRangeIds))
             {
                 PartitionKeyRangeIdentity[] pkRangeIdsCopy;
                 lock (pkRangeIds)
@@ -405,36 +411,35 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 foreach (PartitionKeyRangeIdentity pkRangeId in pkRangeIdsCopy)
                 {
-                    DefaultTrace.TraceInformation("Remove addresses for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}",
-                       pkRangeId.CollectionRid,
-                       pkRangeId.PartitionKeyRangeId,
-                       this.serviceEndpoint);
-
-                    this.serverPartitionAddressCache.TryRemove(pkRangeId);
-                }
-            }
-        }
-
-        public async Task<PartitionAddressInformation> UpdateAsync(
-            PartitionKeyRangeIdentity partitionKeyRangeIdentity,
-            CancellationToken cancellationToken)
-        {
-            if (partitionKeyRangeIdentity == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKeyRangeIdentity));
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            return await this.serverPartitionAddressCache.GetAsync(
-                       key: partitionKeyRangeIdentity,
+                    // The forceRefresh flag is set to true for the callback delegate is because, if the GetAsync() from the async
+                    // non-blocking cache fails to look up the pkRangeId, then there are some inconsistency present in the cache, and it is
+                    // more safe to do a force refresh to fetch the addresses from the gateway, instead of fetching it from the cache itself.
+                    // Please note that, the chances of encountering such scenario is highly unlikely.
+                    PartitionAddressInformation addressInfo = await this.serverPartitionAddressCache.GetAsync(
+                       key: pkRangeId,
                        singleValueInitFunc: (_) => this.GetAddressesForRangeIdAsync(
                            null,
                            cachedAddresses: null,
-                           partitionKeyRangeIdentity.CollectionRid,
-                           partitionKeyRangeIdentity.PartitionKeyRangeId,
+                           pkRangeId.CollectionRid,
+                           pkRangeId.PartitionKeyRangeId,
                            forceRefresh: true),
-                       forceRefresh: (_) => true);
+                       forceRefresh: (_) => false);
+
+                    IReadOnlyList<TransportAddressUri> transportAddresses = addressInfo.Get(Protocol.Tcp)?.ReplicaTransportAddressUris;
+                    foreach (TransportAddressUri address in from TransportAddressUri transportAddress in transportAddresses
+                                                            where serverKey.Equals(transportAddress.ReplicaServerKey)
+                                                            select transportAddress)
+                    {
+                        DefaultTrace.TraceInformation("Marking a backend replica to Unhealthy for collectionRid :{0}, pkRangeId: {1}, serviceEndpoint: {2}, transportAddress: {3}",
+                           pkRangeId.CollectionRid,
+                           pkRangeId.PartitionKeyRangeId,
+                           this.serviceEndpoint,
+                           address.ToString());
+
+                        address.SetUnhealthy();
+                    }
+                }
+            }
         }
 
         private async Task<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> ResolveMasterAsync(DocumentServiceRequest request, bool forceRefresh)
@@ -544,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         }
                     }
 
-                    this.ValidateUnhealthyPendingReplicas(transportAddressUris);
+                    this.ValidateReplicaAddresses(transportAddressUris);
 
                     return mergedAddresses;
                 }
@@ -835,12 +840,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Validates the unhealthy pending replicas by attempting to open the Rntbd connection. This operation
-        /// will eventually marks the unhealthy pending replicas to healthy, if the rntbd connection attempt made was
+        /// Validates the unknown or unhealthy-pending replicas by attempting to open the Rntbd connection. This operation
+        /// will eventually marks the unknown or unhealthy-pending replicas to healthy, if the rntbd connection attempt made was
         /// successful or unhealthy otherwise.
         /// </summary>
         /// <param name="addresses">A read-only list of <see cref="TransportAddressUri"/> needs to be validated.</param>
-        private void ValidateUnhealthyPendingReplicas(
+        private void ValidateReplicaAddresses(
             IReadOnlyList<TransportAddressUri> addresses)
         {
             if (addresses == null)
@@ -848,15 +853,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(addresses));
             }
 
-            IEnumerable<TransportAddressUri> addressesNeedToValidation = addresses
-                .Where(address => address
-                    .GetCurrentHealthState()
-                    .GetHealthStatus() == TransportAddressHealthState.HealthStatus.UnhealthyPending);
+            IEnumerable<TransportAddressUri> addressesNeedToValidateStatus = this.GetAddressesNeededToValidateStatus(
+                    transportAddresses: addresses);
 
-            if (addressesNeedToValidation.Any())
+            if (addressesNeedToValidateStatus.Any())
             {
                 Task openConnectionsInBackgroundTask = Task.Run(async () => await this.openConnectionsHandler.TryOpenRntbdChannelsAsync(
-                    addresses: addressesNeedToValidation.ToList()));
+                    addresses: addressesNeedToValidateStatus));
             }
         }
 
@@ -912,6 +915,25 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             return newAddresses;
+        }
+
+        /// <summary>
+        /// Returns a list of <see cref="TransportAddressUri"/> needed to validate their health status. Validating
+        /// a uri is done by opening Rntbd connection to the backend replica, which is a costly operation by nature. Therefore
+        /// vaidating both Unhealthy and Unknown replicas at the same time could impose a high CPU utilization. To avoid this
+        /// situation, the RntbdOpenConnectionHandler has good concurrency control mechanism to open the connections gracefully/>.
+        /// </summary>
+        /// <param name="transportAddresses">A read only list of <see cref="TransportAddressUri"/>s.</param>
+        /// <returns>A list of <see cref="TransportAddressUri"/> that needs to validate their status.</returns>
+        private IEnumerable<TransportAddressUri> GetAddressesNeededToValidateStatus(
+            IReadOnlyList<TransportAddressUri> transportAddresses)
+        {
+            return transportAddresses
+                .Where(address => address
+                        .GetCurrentHealthState()
+                        .GetHealthStatus() is
+                            TransportAddressHealthState.HealthStatus.Unknown or
+                            TransportAddressHealthState.HealthStatus.UnhealthyPending);
         }
 
         protected virtual void Dispose(bool disposing)

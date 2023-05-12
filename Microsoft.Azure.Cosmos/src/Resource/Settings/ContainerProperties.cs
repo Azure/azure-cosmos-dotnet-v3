@@ -78,6 +78,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
         private ClientEncryptionPolicy clientEncryptionPolicyInternal;
 
+        [JsonProperty(PropertyName = "computedProperties", NullValueHandling = NullValueHandling.Ignore)]
+        private Collection<ComputedProperty> computedProperties;
+
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
@@ -112,14 +115,8 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
-        /// <param name="partitionKeyPaths">The path to the partition key. Example: /location</param>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-
-        ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
+        /// <param name="partitionKeyPaths">The paths of the hierarchical partition keys. Example: ["/tenantId", "/userId"]</param>
+        public ContainerProperties(string id, IReadOnlyList<string> partitionKeyPaths)
         {
             this.Id = id;
 
@@ -293,6 +290,48 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets the collection containing <see cref="ComputedProperty"/> objects in the container.
+        /// </summary>
+        /// <value>
+        /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
+        /// </value>
+
+        /// <summary>
+        /// Gets or sets the collection containing <see cref="ComputedProperty"/> objects in the container.
+        /// </summary>
+        /// <value>
+        /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
+        /// </value>
+        [JsonIgnore]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        Collection<ComputedProperty> ComputedProperties
+        {
+            get
+            {
+                if (this.computedProperties == null)
+                {
+                    this.computedProperties = new Collection<ComputedProperty>();
+                }
+
+                return this.computedProperties;
+            }
+
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentException($"{nameof(value)}");
+                }
+
+                this.computedProperties = value;
+            }
+        }
+
+        /// <summary>
         /// Gets the <see cref="ChangeFeedPolicy"/> associated with the container from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -347,12 +386,11 @@ namespace Microsoft.Azure.Cosmos
         {
             get
             {
-#if PREVIEW
                 if (this.PartitionKey?.Kind == PartitionKind.MultiHash && this.PartitionKey?.Paths.Count > 1)
                 {
-                    throw new NotImplementedException($"This MultiHash collection has more than 1 partition key path please use `PartitionKeyPaths`");
+                    throw new NotImplementedException($"This subpartitioned container has more than 1 partition key path please use `PartitionKeyPaths`");
                 }
-#endif
+
                 return this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
             }
             set
@@ -377,15 +415,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// JSON path used for containers partitioning
+        /// List of JSON paths used for containers with hierarchical partition keys
         /// </summary>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else 
-        internal
-#endif
-        IReadOnlyList<string> PartitionKeyPaths
+        public IReadOnlyList<string> PartitionKeyPaths
         {
             get => this.PartitionKey?.Paths;
             set
@@ -657,12 +690,10 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-#if PREVIEW
                 if (this.PartitionKey.Kind == Documents.PartitionKind.MultiHash && this.PartitionKeyPaths == null)
                 {
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
-#endif
 
                 List<IReadOnlyList<string>> partitionKeyPathTokensList = new List<IReadOnlyList<string>>();
                 foreach (string path in this.PartitionKey?.Paths)

@@ -1747,14 +1747,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned.");
                 }
 
-                DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
+                DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
                     dataEncryptionKeyId,
                     encryptionAlgorithm,
                     cancellationToken);
 
                 if (dek == null)
                 {
-                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync)}.");
+                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
                 }
 
                 return dek.DecryptData(cipherText);
@@ -1766,7 +1766,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 string encryptionAlgorithm,
                 CancellationToken cancellationToken = default)
             {
-                DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyAsync(
+                DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
                     dataEncryptionKeyId,
                     encryptionAlgorithm,
                     cancellationToken);
