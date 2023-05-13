@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     {
         public static void IsValidOperationActivity(Activity activity)
         {
-            if(!activity.Source.Name.Contains("Operation"))
+            if(!activity.Source.Name.EndsWith("Operation"))
             {
                 return;
             }

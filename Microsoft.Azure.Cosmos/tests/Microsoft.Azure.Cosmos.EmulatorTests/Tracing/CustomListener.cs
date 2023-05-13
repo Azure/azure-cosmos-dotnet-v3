@@ -157,13 +157,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append("<EVENT>")
-                   .Append("<EVENT-NAME>").Append(eventData.EventName).Append("</EVENT-NAME>")
-                   .Append("<EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is " +
-                   "subject to change with each request as it contains few unique id. " +
-                   "So just putting this tag with this static text to make sure event is getting generated" +
-                   " for each test.</EVENT-TEXT>")
-                   .Append("</EVENT>");
+            builder.Append($"<EVENT name='{eventData.EventName}'/>");
+            
             CustomListener.CollectedEvents.Add(builder.ToString());
         }
         
@@ -247,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 else
                 {
                     builder
-                    .Append($"<ATTRIBUTE key='{tag.Key}'>any value</ATTRIBUTE>");
+                    .Append($"<ATTRIBUTE key='{tag.Key}'>Some Value</ATTRIBUTE>");
                 }
             }
             
@@ -260,9 +255,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         public List<string> GetRecordedAttributes() 
         {
             List<string> generatedActivityTagsForBaselineXmls = new();
+            
             List<Activity> collectedActivities = new List<Activity>(CustomListener.CollectedActivities);
-
-            collectedActivities.OrderBy(act => act.OperationName);
+            collectedActivities.OrderBy(act => act.Source.Name + act.OperationName);
             
             foreach (Activity activity in collectedActivities)
             {
