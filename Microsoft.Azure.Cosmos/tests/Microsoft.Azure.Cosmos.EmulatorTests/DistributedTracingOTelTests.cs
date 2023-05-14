@@ -200,13 +200,9 @@ namespace Microsoft.Azure.Cosmos
         [TestCleanup]
         public async Task CleanUp()
         {
-            if (this.database != null)
-            {
-                await this.database.DeleteStreamAsync();
-            }
-
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
+            await base.TestCleanup();
         }
     }
 }
