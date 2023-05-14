@@ -368,28 +368,6 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[ToLower]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.StringField.ToLower())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE LOWER(root["StringField"]) 
-FROM root]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[TrimStart]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.StringField.TrimStart())]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE LTRIM(root["StringField"]) 
-FROM root]]></SqlQuery>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
       <Description><![CDATA[Replace char]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.StringField.Replace(c, a))]]></Expression>
     </Input>
@@ -412,12 +390,144 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[ToLower]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.ToLower())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LOWER(root["StringField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Trim]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Trim())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE TRIM(root["StringField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Trim with Literal]]></Description>
+      <Expression><![CDATA[query.Select(doc => " abc ".Trim())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE "abc" 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Trim with EmptyCharArray]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.Trim(new [] {}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE TRIM(root["StringField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Trim with Literal and EmptyCharArray]]></Description>
+      <Expression><![CDATA[query.Select(doc => " abc ".Trim(new [] {}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE "abc" 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[TrimEnd]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.StringField.TrimEnd())]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE RTRIM(root["StringField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TrimEnd with Literal]]></Description>
+      <Expression><![CDATA[query.Select(doc => " abc ".TrimEnd())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE " abc" 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TrimEnd with EmptyCharArray]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.TrimEnd(new [] {}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE RTRIM(root["StringField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TrimEnd with Literal and EmptyCharArray]]></Description>
+      <Expression><![CDATA[query.Select(doc => " abc ".TrimEnd(new [] {}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE " abc" 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TrimStart]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.TrimStart())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LTRIM(root["StringField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TrimStart with Literal]]></Description>
+      <Expression><![CDATA[query.Select(doc => " abc ".TrimStart())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE "abc " 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TrimStart with EmptyCharArray]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.TrimStart(new [] {}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE LTRIM(root["StringField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[TrimStart with Literal and EmptyCharArray]]></Description>
+      <Expression><![CDATA[query.Select(doc => " abc ".TrimStart(new [] {}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE "abc " 
 FROM root]]></SqlQuery>
     </Output>
   </Result>

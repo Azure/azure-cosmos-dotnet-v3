@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
@@ -98,6 +99,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                     }
                 },
+                // ComputedProperties = new Collection<ComputedProperty>
+                // {
+                //     { new ComputedProperty{ Name = "lowerName", Query = "SELECT VALUE LOWER(c.Name) FROM c" } },
+                //     { new ComputedProperty{ Name = "fullName", Query = "SELECT VALUE CONCAT(c.Name, ' ', c.LastName) FROM c" } }
+                // },
                 ClientEncryptionPolicy = new ClientEncryptionPolicy(paths)
             };
 
@@ -140,6 +146,129 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(responseProperties.ClientEncryptionPolicy.PolicyFormatVersion <= 2);
             ClientEncryptionIncludedPath clientEncryptionIncludedPath = responseProperties.ClientEncryptionPolicy.IncludedPaths.First();
             Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(clientEncryptionIncludedPath1, clientEncryptionIncludedPath));
+
+            ComputedPropertyComparer.AssertAreEqual(containerProperties.ComputedProperties, responseProperties.ComputedProperties);
+            ComputedPropertyComparer.AssertAreEqual(containerProperties.ComputedProperties, deserialziedTest.ComputedProperties);
+        }
+
+        [Ignore]
+        [TestMethod]
+        public async Task ContainerNegativeComputedPropertyTest()
+        {
+            string query = "SELECT VALUE LOWER(c.name) FROM c";
+            var variations = new[]
+            {
+                new
+                {
+                    ComputedProperties = new Collection<ComputedProperty>
+                    {
+                        new ComputedProperty {Name = "lowerName", Query = @"SELECT VALUE LOWER(c.name) FROM c"},
+                        new ComputedProperty {Name = "lowerName", Query = @"SELECT VALUE LOWER(c.lastName) FROM c"}
+                    },
+                    Error = @"""Errors"":[""Computed property name 'lowerName' cannot be used in multiple definitions.""]"
+                },
+                new
+                {
+                    ComputedProperties = new Collection<ComputedProperty>{ new ComputedProperty { Query = query } },
+                    Error = @"""Errors"":[""One of the specified inputs is invalid""]"
+                },
+                new
+                {
+                    ComputedProperties = new Collection<ComputedProperty>{ new ComputedProperty { Name = "", Query = query } },
+                    Error = @"""Errors"":[""Computed property 'name' is either empty or unspecified.""]"
+                },
+                new
+                {
+                    ComputedProperties = new Collection<ComputedProperty>{ new ComputedProperty { Name = "lowerName" } },
+                    Error = @"""Errors"":[""One of the specified inputs is invalid""]"
+                },
+                new
+                {
+                    ComputedProperties = new Collection<ComputedProperty>{ new ComputedProperty { Name = "lowerName", Query = "" } },
+                    Error = @"""Errors"":[""Computed property 'query' is either empty or unspecified.""]"
+                },
+                new
+                {
+                    ComputedProperties = new Collection<ComputedProperty>{ new ComputedProperty { Name = "id", Query = query } },
+                    Error = @"""Errors"":[""The system property name 'id' cannot be used as a computed property name.""]"
+                },
+                new
+                {
+                    ComputedProperties = new Collection<ComputedProperty>{ new ComputedProperty { Name = "spatial", Query = query } },
+                    Error = @"""Errors"":[""Computed property 'spatial' at index (0) has a spatial index. Remove the spatial index on this path.""]"
+                },
+                new
+                {
+                    ComputedProperties = new Collection<ComputedProperty>{ new ComputedProperty {Name = "lowerName", Query = @"SELECT LOWER(c.name) FROM c"} },
+                    Error = @"""Errors"":[""Required VALUE expression missing from computed property query 'SELECT LOWER(c.name) FROM c' at index (0).""]"
+                },
+                new
+                {
+                    ComputedProperties = new Collection<ComputedProperty>{ new ComputedProperty {Name = "lowerName", Query = @"SELECT LOWER(c.name) FROM r"} },
+                    Error = @"""Errors"":[""Computed property at index (0) has a malformed query: 'SELECT LOWER(c.name) FROM r' Error details: '{\""errors\"":[{\""severity\"":\""Error\"",\""code\"":2001,\""message\"":\""Identifier 'c' could not be resolved.\""}]}'""]"
+                },
+            };
+
+            IndexingPolicy indexingPolicy = new IndexingPolicy
+            {
+                SpatialIndexes = new Collection<SpatialPath>
+                {
+                    new SpatialPath
+                    {
+                        Path = "/spatial/*",
+                        SpatialTypes = new Collection<Cosmos.SpatialType>()
+                        {
+                            Cosmos.SpatialType.LineString,
+                            Cosmos.SpatialType.MultiPolygon,
+                            Cosmos.SpatialType.Point,
+                            Cosmos.SpatialType.Polygon,
+                        }
+                    }
+                }
+            };
+
+            // Create
+            foreach (var variation in variations)
+            {
+                ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/users")
+                {
+                    IndexingPolicy = indexingPolicy,
+                    GeospatialConfig = new GeospatialConfig(GeospatialType.Geography),
+                    ComputedProperties = variation.ComputedProperties
+                };
+
+                try
+                {
+                    ContainerResponse response = await this.database.CreateContainerAsync(containerProperties);
+                    Assert.Fail($@"Computed Property '{variation.ComputedProperties.Last().Name}' Query '{variation.ComputedProperties.Last().Query}' was expected to fail with error '{variation.Error}'.");
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
+                {
+                    Assert.IsTrue(ce.Message.Contains(variation.Error), $"Message expected to contain:'{variation.Error}'{Environment.NewLine}Actual Message: '{ce.Message}'");
+                }
+            }
+
+            // Replace
+            Container containerToReplace = await this.database.CreateContainerAsync(new ContainerProperties(Guid.NewGuid().ToString(), "/users"));
+            foreach (var variation in variations)
+            {
+                ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/users")
+                {
+                    IndexingPolicy = indexingPolicy,
+                    GeospatialConfig = new GeospatialConfig(GeospatialType.Geography),
+                    ComputedProperties = variation.ComputedProperties
+                };
+
+                try
+                {
+                    ContainerResponse response = await containerToReplace.ReplaceContainerAsync(containerProperties);
+                    Assert.Fail($@"Computed Property '{variation.ComputedProperties.Last().Name}' Query '{variation.ComputedProperties.Last().Query}' was expected to fail with error '{variation.Error}'.");
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
+                {
+                    Assert.IsTrue(ce.Message.Contains(variation.Error), $"Message expected to contain:'{variation.Error}'{Environment.NewLine}Actual Message: '{ce.Message}'");
+                }
+            }
         }
 
         [TestMethod]
@@ -230,6 +359,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     SpatialTypes = new Collection<SpatialType>() { SpatialType.Point }
                 });
 
+            // List<ComputedProperty> computedProperties = new List<ComputedProperty>
+            // {
+            //     new ComputedProperty() { Name = "lowerName", Query = "SELECT VALUE LOWER(c.name) FROM c" },
+            //     new ComputedProperty() { Name = "estimatedTax", Query = "SELECT VALUE c.salary * 0.2 FROM c" }
+            // };
+               
+            // foreach (ComputedProperty computedProperty in computedProperties)
+            // {
+            //     containerProperties.ComputedProperties.Add(computedProperty);
+            // }
+
             ContainerProperties propertiesAfterReplace = await container.ReplaceContainerAsync(containerProperties);
             Assert.AreEqual(0, propertiesAfterReplace.IndexingPolicy.IncludedPaths.First().Indexes.Count);
             Assert.AreEqual(1, propertiesAfterReplace.IndexingPolicy.CompositeIndexes.Count);
@@ -242,6 +382,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(1, propertiesAfterReplace.IndexingPolicy.SpatialIndexes.Count);
             Assert.AreEqual("/address/test/*", propertiesAfterReplace.IndexingPolicy.SpatialIndexes.First().Path);
+
+            ComputedPropertyComparer.AssertAreEqual(containerProperties.ComputedProperties, propertiesAfterReplace.ComputedProperties);
         }
 
         [TestMethod]
@@ -444,6 +586,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual("/composite1", containerResponse.Resource.IndexingPolicy.CompositeIndexes[0][0].Path);
             Assert.AreEqual("/composite2", containerResponse.Resource.IndexingPolicy.CompositeIndexes[0][1].Path);
             Assert.AreEqual(CompositePathSortOrder.Descending, containerResponse.Resource.IndexingPolicy.CompositeIndexes[0][1].Order);
+
+            containerResponse = await containerResponse.Container.DeleteContainerAsync();
+            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
+
+        [Ignore]
+        [TestMethod]
+        public async Task WithComputedProperties()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+
+            var definitions = new[]
+                {
+                    new { Name = "lowerName", Query = "SELECT VALUE LOWER(c.name) FROM c" },
+                    new { Name = "estimatedTax", Query = "SELECT VALUE c.salary * 0.2 FROM c" }
+                };
+            ContainerResponse containerResponse =
+                await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithComputedProperties()
+                        .WithComputedProperty(definitions[0].Name, definitions[0].Query)
+                        .WithComputedProperty(definitions[1].Name, definitions[1].Query)
+                        .Attach()
+                    .CreateAsync();
+
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.AreEqual(containerName, containerResponse.Resource.Id);
+            Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+
+            Assert.AreEqual(2, containerResponse.Resource.ComputedProperties.Count);
+            Assert.AreEqual(definitions[0].Name, containerResponse.Resource.ComputedProperties[0].Name);
+            Assert.AreEqual(definitions[0].Query, containerResponse.Resource.ComputedProperties[0].Query);
+            Assert.AreEqual(definitions[1].Name, containerResponse.Resource.ComputedProperties[1].Name);
+            Assert.AreEqual(definitions[1].Query, containerResponse.Resource.ComputedProperties[1].Query);
+
+            Container container = containerResponse;
+            containerResponse = await container.ReadContainerAsync();
+            Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
+            Assert.AreEqual(containerName, containerResponse.Resource.Id);
+            Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+
+            Assert.AreEqual(2, containerResponse.Resource.ComputedProperties.Count);
+            Assert.AreEqual(definitions[0].Name, containerResponse.Resource.ComputedProperties[0].Name);
+            Assert.AreEqual(definitions[0].Query, containerResponse.Resource.ComputedProperties[0].Query);
+            Assert.AreEqual(definitions[1].Name, containerResponse.Resource.ComputedProperties[1].Name);
+            Assert.AreEqual(definitions[1].Query, containerResponse.Resource.ComputedProperties[1].Query);
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
