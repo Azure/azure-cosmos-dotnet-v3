@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<string> generatedActivityTagsForBaselineXmls = new();
             
             List<Activity> collectedActivities = new List<Activity>(CustomListener.CollectedActivities);
-            collectedActivities.OrderBy(act => act.Source.Name + act.OperationName);
+            collectedActivities = collectedActivities.OrderBy(act => act.Source.Name + act.OperationName).ToList();
             
             foreach (Activity activity in collectedActivities)
             {
