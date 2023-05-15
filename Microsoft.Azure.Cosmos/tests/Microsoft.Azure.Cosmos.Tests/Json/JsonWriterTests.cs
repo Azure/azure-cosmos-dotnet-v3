@@ -1754,6 +1754,66 @@
         }
 
         [TestMethod]
+        [Owner("mayapainter")]
+        public void BooleanLargeArrayTest()
+        {
+            string expectedString = "[true,false,true,false,true,false,false,false,true,false,true,false,true,true,true,false,true]";
+            byte[] binaryOutput =
+            {
+                BinaryFormat,
+                JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount,
+                // length
+                17,
+                // count
+                17,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.True,
+                JsonBinaryEncoding.TypeMarker.False,
+                JsonBinaryEncoding.TypeMarker.True,
+            };
+
+            JsonToken[] tokensToWrite =
+            {
+                JsonToken.ArrayStart(),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(true),
+                JsonToken.Boolean(false),
+                JsonToken.Boolean(true),
+                JsonToken.ArrayEnd(),
+            };
+
+            this.VerifyWriter(tokensToWrite, expectedString);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
+        }
+
+        [TestMethod]
         [Owner("brchon")]
         public void StringArrayTest()
         {
@@ -1794,6 +1854,60 @@
         }
 
         [TestMethod]
+        [Owner("mayapainter")]
+        public void StringLargeArrayTest()
+        {
+            int stringCount = 20;
+
+            string expectedString = @"[";
+            for (int index = 0; index < stringCount; index++)
+            {
+                if (index == 0)
+                {
+                    expectedString += @"""Hello0""";
+                }
+                else
+                {
+                    expectedString += @",""Hello" + index + @"""";
+                }
+
+            }
+            expectedString += "]";
+
+            List<byte[]> binaryOutputBuilder = new List<byte[]>
+            {
+                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount }
+            };
+
+            List<byte[]> strings = new List<byte[]>();
+
+            for (int index = 0; index < stringCount; index++)
+            {
+                string value = "Hello" + index;
+                strings.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + value.Length) });
+                strings.Add(Encoding.UTF8.GetBytes(value));
+            }
+            byte[] stringBytes = strings.SelectMany(x => x).ToArray();
+
+            binaryOutputBuilder.Add(new byte[] { (byte)stringBytes.Length });
+            binaryOutputBuilder.Add(new byte[] { (byte)stringCount });
+            binaryOutputBuilder.Add(stringBytes);
+            byte[] binaryOutput = binaryOutputBuilder.SelectMany(x => x).ToArray();
+
+            JsonToken[] tokensToWrite = new JsonToken[stringCount + 2];
+            tokensToWrite[0] = JsonToken.ArrayStart();
+            for (int index = 1; index < stringCount + 1; index++)
+            {
+                tokensToWrite[index] = JsonToken.String("Hello" + (index - 1));
+            }
+            tokensToWrite[stringCount + 1] = JsonToken.ArrayEnd();
+
+            this.VerifyWriter(tokensToWrite, expectedString);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
+        }
+
+        [TestMethod]
         [Owner("brchon")]
         public void NullArrayTest()
         {
@@ -1817,6 +1931,51 @@
                 JsonToken.Null(),
                 JsonToken.ArrayEnd(),
             };
+
+            this.VerifyWriter(tokensToWrite, expectedString);
+            this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
+        }
+
+        [TestMethod]
+        [Owner("mayapainter")]
+        public void NullLargeArrayTest()
+        {
+            int nullCount = 300;
+
+            string expectedString = "[";
+            for (int index = 0; index < nullCount; index++)
+            {
+                expectedString += (index == 0) ? "null" : ",null";
+            }
+            expectedString += "]";
+
+            List<byte[]> binaryOutputBuilder = new List<byte[]>
+            {
+                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount },
+                // count
+                BitConverter.GetBytes((ushort)nullCount),
+                // length
+                BitConverter.GetBytes((ushort)nullCount),
+            };
+
+            byte[] elementsBytes = new byte[nullCount];
+
+            for (int index = 0; index < nullCount; index++)
+            {
+                elementsBytes[index] = JsonBinaryEncoding.TypeMarker.Null;
+            }
+
+            binaryOutputBuilder.Add(elementsBytes);
+            byte[] binaryOutput = binaryOutputBuilder.SelectMany(x => x).ToArray();
+
+            JsonToken[] tokensToWrite = new JsonToken[nullCount + 2];
+            tokensToWrite[0] = JsonToken.ArrayStart();
+            for (int index = 1; index < nullCount + 1; index++)
+            {
+                tokensToWrite[index] = JsonToken.Null();
+            }
+            tokensToWrite[nullCount + 1] = JsonToken.ArrayEnd();
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);

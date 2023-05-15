@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>Blitted bytes.</returns>
         public static PreblittedBinaryJsonScope CapturePreblittedBinaryJsonScope(Action<ITypedBinaryJsonWriter> scopeWriter)
         {
-            JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter(initialCapacity: 256, serializeCount: false, enableEncodedStrings: false);
+            JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter(initialCapacity: 256, serializeCount: false, enableEncodedStrings: false); //todo: update this, do we want to keep serialize count?
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InArrayContext);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InObjectContext);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.IsPropertyExpected);
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// This flag just determines whether you want to serialize the count, since it's optional and up to the user to make the
             /// tradeoff between O(1) .Count() operation as the cost of additional storage.
             /// </summary>
-            private readonly bool serializeCount;
+            private readonly bool serializeCountOverride;
 
             /// <summary>
             /// When a user writes an open array or object we reserve this much space for the type marker + length + count
@@ -279,8 +279,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.EnableEncodedStrings = enableEncodedStrings;
                 this.binaryWriter = new JsonBinaryMemoryWriter(initialCapacity);
                 this.bufferedContexts = new Stack<ArrayAndObjectInfo>();
-                this.serializeCount = serializeCount;
-                this.reservationSize = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength + (this.serializeCount ? JsonBinaryEncoding.OneByteCount : 0);
+                this.serializeCountOverride = serializeCount;
+                this.reservationSize = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength + (this.serializeCountOverride ? JsonBinaryEncoding.OneByteCount : 0);
                 this.sharedStrings = new List<SharedStringValue>();
                 this.sharedStringIndexes = new ReferenceStringDictionary();
                 this.stringReferenceOffsets = new List<int>();
@@ -300,13 +300,13 @@ namespace Microsoft.Azure.Cosmos.Json
             public override long CurrentLength => this.binaryWriter.Position;
 
             /// <inheritdoc />
-            public override void WriteObjectStart() => this.WriterArrayOrObjectStart(isArray: false);
+            public override void WriteObjectStart() => this.WriteArrayOrObjectStart(isArray: false);
 
             /// <inheritdoc />
             public override void WriteObjectEnd() => this.WriteArrayOrObjectEnd(isArray: false);
 
             /// <inheritdoc />
-            public override void WriteArrayStart() => this.WriterArrayOrObjectStart(isArray: true);
+            public override void WriteArrayStart() => this.WriteArrayOrObjectStart(isArray: true);
 
             /// <inheritdoc />
             public override void WriteArrayEnd() => this.WriteArrayOrObjectEnd(isArray: true);
@@ -536,7 +536,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.binaryWriter.BufferAsSpan.Slice(startPosition, this.binaryWriter.Position - startPosition).ToArray());
             }
 
-            private void WriterArrayOrObjectStart(bool isArray)
+            private void WriteArrayOrObjectStart(bool isArray)
             {
                 this.RegisterArrayOrObjectStart(isArray, this.binaryWriter.Position, valueCount: 0);
 
@@ -544,10 +544,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 // We'll adjust this as needed when writing the end of the array/object.
                 this.binaryWriter.Write((byte)0);
                 this.binaryWriter.Write((byte)0);
-                if (this.serializeCount)
-                {
-                    this.binaryWriter.Write((byte)0);
-                }
             }
 
             private void RegisterArrayOrObjectStart(bool isArray, long offset, int valueCount)
@@ -611,16 +607,25 @@ namespace Microsoft.Azure.Cosmos.Json
                     // Need to figure out how many bytes to encode the length and the count
                     if (payloadLength <= byte.MaxValue)
                     {
-                        // 1 byte length - don't need to move the buffer
+                        bool serializeCount = this.serializeCountOverride || (isArray && (count > 16));
+
+                        // 1 byte length
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.OneByteLength
-                            + (this.serializeCount ? JsonBinaryEncoding.OneByteCount : 0);
+                            + (serializeCount ? JsonBinaryEncoding.OneByteCount : 0);
+
+                        // Move the buffer forward if count is serialized
+                        if (serializeCount)
+                        {
+                            Span<byte> buffer = this.binaryWriter.BufferAsSpan;
+                            this.MoveBuffer(buffer, payloadIndex, payloadLength, typeMarkerIndex, bytesToWrite, stringStartIndex, stringReferenceStartIndex);
+                        }
 
                         // Move the cursor back
                         this.binaryWriter.Position = typeMarkerIndex;
 
                         // Write the type marker
-                        if (this.serializeCount)
+                        if (serializeCount)
                         {
                             this.binaryWriter.Write(isArray ? JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount : JsonBinaryEncoding.TypeMarker.Object1ByteLengthAndCount);
                             this.binaryWriter.Write((byte)payloadLength);
@@ -637,9 +642,11 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
                     else if (payloadLength <= ushort.MaxValue)
                     {
+                        bool serializeCount = this.serializeCountOverride || (isArray && ((count > 16) || (payloadLength > 0x1000))); // double check second term
+
                         // 2 byte length - make space for the extra byte length (and extra byte count)
                         this.binaryWriter.Write((byte)0);
-                        if (this.serializeCount)
+                        if (serializeCount)
                         {
                             this.binaryWriter.Write((byte)0);
                         }
@@ -648,14 +655,14 @@ namespace Microsoft.Azure.Cosmos.Json
                         Span<byte> buffer = this.binaryWriter.BufferAsSpan;
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.TwoByteLength
-                            + (this.serializeCount ? JsonBinaryEncoding.TwoByteCount : 0);
+                            + (serializeCount ? JsonBinaryEncoding.TwoByteCount : 0);
                         this.MoveBuffer(buffer, payloadIndex, payloadLength, typeMarkerIndex, bytesToWrite, stringStartIndex, stringReferenceStartIndex);
 
                         // Move the cursor back
                         this.binaryWriter.Position = typeMarkerIndex;
 
                         // Write the type marker
-                        if (this.serializeCount)
+                        if (serializeCount)
                         {
                             this.binaryWriter.Write(isArray ? JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount : JsonBinaryEncoding.TypeMarker.Object2ByteLengthAndCount);
                             this.binaryWriter.Write((ushort)payloadLength);
@@ -673,11 +680,12 @@ namespace Microsoft.Azure.Cosmos.Json
                     else
                     {
                         // (payloadLength <= uint.MaxValue)
+                        bool serializeCount = this.serializeCountOverride || isArray;
 
                         // 4 byte length - make space for an extra 3 byte length (and 3 byte count)
                         this.binaryWriter.Write((byte)0);
                         this.binaryWriter.Write((ushort)0);
-                        if (this.serializeCount)
+                        if (serializeCount)
                         {
                             this.binaryWriter.Write((byte)0);
                             this.binaryWriter.Write((ushort)0);
@@ -687,14 +695,14 @@ namespace Microsoft.Azure.Cosmos.Json
                         Span<byte> buffer = this.binaryWriter.BufferAsSpan;
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.FourByteLength
-                            + (this.serializeCount ? JsonBinaryEncoding.FourByteCount : 0);
+                            + (serializeCount ? JsonBinaryEncoding.FourByteCount : 0);
                         this.MoveBuffer(buffer, payloadIndex, payloadLength, typeMarkerIndex, bytesToWrite, stringStartIndex, stringReferenceStartIndex);
 
                         // Move the cursor back
                         this.binaryWriter.Position = typeMarkerIndex;
 
                         // Write the type marker
-                        if (this.serializeCount)
+                        if (serializeCount)
                         {
                             this.binaryWriter.Write(isArray ? JsonBinaryEncoding.TypeMarker.Array4ByteLengthAndCount : JsonBinaryEncoding.TypeMarker.Object4ByteLengthAndCount);
                             this.binaryWriter.Write((uint)payloadLength);
@@ -915,7 +923,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     // In order to avoid having to change the typer marker later on, we need to account for the case
                     // where the buffer might shift as a result of adjusting array/object length.
 
-                    int maxOffset = (this.JsonObjectState.CurrentDepth * 3) + (int)this.CurrentLength;
+                    int maxOffset = (this.JsonObjectState.CurrentDepth * 7) + (int)this.CurrentLength;
 
                     bool shouldAddValue = (utf8Span.Length >= 5) ||
                         ((maxOffset <= byte.MaxValue) && (utf8Span.Length >= 2)) ||
