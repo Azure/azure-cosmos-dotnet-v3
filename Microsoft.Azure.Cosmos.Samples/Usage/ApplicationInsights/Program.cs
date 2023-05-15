@@ -50,7 +50,7 @@
 
                 IServiceProvider serviceProvider = services.BuildServiceProvider();
                 _telemetryClient = serviceProvider.GetRequiredService<TelemetryClient>();
-                // <SetUpApplicationInsights>
+                // </SetUpApplicationInsights>
 
                 CosmosClientOptions options = new CosmosClientOptions()
                 {
