@@ -544,6 +544,10 @@ namespace Microsoft.Azure.Cosmos.Json
                 // We'll adjust this as needed when writing the end of the array/object.
                 this.binaryWriter.Write((byte)0);
                 this.binaryWriter.Write((byte)0);
+                if (this.serializeCountOverride)
+                {
+                    this.binaryWriter.Write((byte)0);
+                }
             }
 
             private void RegisterArrayOrObjectStart(bool isArray, long offset, int valueCount)
