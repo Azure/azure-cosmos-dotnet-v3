@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>Blitted bytes.</returns>
         public static PreblittedBinaryJsonScope CapturePreblittedBinaryJsonScope(Action<ITypedBinaryJsonWriter> scopeWriter)
         {
-            JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter(initialCapacity: 256, serializeCount: false, enableEncodedStrings: false); //todo: update this, do we want to keep serialize count?
+            JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter(initialCapacity: 256, serializeCount: false, enableEncodedStrings: false);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InArrayContext);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InObjectContext);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.IsPropertyExpected);
@@ -642,7 +642,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
                     else if (payloadLength <= ushort.MaxValue)
                     {
-                        bool serializeCount = this.serializeCountOverride || (isArray && ((count > 16) || (payloadLength > 0x1000))); // double check second term
+                        bool serializeCount = this.serializeCountOverride || (isArray && ((count > 16) || (payloadLength > 0x1000)));
 
                         // 2 byte length - make space for the extra byte length (and extra byte count)
                         this.binaryWriter.Write((byte)0);
