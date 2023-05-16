@@ -27,7 +27,12 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets if bypass the integrated cache or not associated with the request in the Azure CosmosDB service.
         /// </summary>
         /// <value>Default value is false.</value>
-        public bool? BypassIntegratedCache { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool? BypassIntegratedCache { get; set; }
 
         internal static void PopulateMaxIntegratedCacheStalenessOption(DedicatedGatewayRequestOptions dedicatedGatewayRequestOptions, RequestMessage request)
         {
