@@ -236,13 +236,6 @@
     <ATTRIBUTE key="rntbd.sub_status_code">Unknown</ATTRIBUTE>
     <ATTRIBUTE key="rntbd.status_code">OK</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="Request.Read" displayName="Request.Read">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.sub_status_code">Unknown</ATTRIBUTE>
-    <ATTRIBUTE key="rntbd.status_code">OK</ATTRIBUTE>
-  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
 </OTelActivities></Output>
   </Result>
