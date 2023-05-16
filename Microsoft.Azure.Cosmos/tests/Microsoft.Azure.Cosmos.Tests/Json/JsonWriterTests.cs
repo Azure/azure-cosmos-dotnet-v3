@@ -1953,9 +1953,9 @@
             List<byte[]> binaryOutputBuilder = new List<byte[]>
             {
                 new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount },
-                // count
-                BitConverter.GetBytes((ushort)nullCount),
                 // length
+                BitConverter.GetBytes((ushort)nullCount),
+                // count
                 BitConverter.GetBytes((ushort)nullCount),
             };
 
