@@ -16,11 +16,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
     {
         public static void IsValidOperationActivity(Activity activity)
         {
-            if(!activity.Source.Name.EndsWith("Operation"))
-            {
-                return;
-            }
-            
             Assert.IsTrue(activity.OperationName == activity.DisplayName);
 
             Assert.IsFalse(string.IsNullOrEmpty(activity.GetTagItem("db.cosmosdb.connection_mode").ToString()), $"connection mode is emtpy for {activity.OperationName}");
@@ -76,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public static void AreEqualAcrossListeners()
         {
             Assert.AreEqual(
-                JsonConvert.SerializeObject(CustomListener.CollectedActivities.OrderBy(x => x.Id)),
+                JsonConvert.SerializeObject(CustomListener.CollectedOperationActivities.OrderBy(x => x.Id)),
                 JsonConvert.SerializeObject(CustomOtelExporter.CollectedActivities.OrderBy(x => x.Id)));
         }
 

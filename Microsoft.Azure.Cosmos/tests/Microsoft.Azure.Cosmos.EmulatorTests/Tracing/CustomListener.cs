@@ -30,7 +30,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         private ConcurrentBag<IDisposable> subscriptions = new();
         private ConcurrentBag<ProducedDiagnosticScope> Scopes { get; } = new();
         
-        public static ConcurrentBag<Activity> CollectedActivities { private set; get; } = new();
+        public static ConcurrentBag<Activity> CollectedOperationActivities { private set; get; } = new();
+        public static ConcurrentBag<Activity> CollectedNetworkActivities { private set; get; } = new();
         private static ConcurrentBag<string> CollectedEvents { set; get; } = new();
 
         public CustomListener(string name, string eventName)
@@ -98,10 +99,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         if (producedDiagnosticScope.Activity.Id == Activity.Current.Id)
                         {
-                            AssertActivity.IsValidOperationActivity(producedDiagnosticScope.Activity);
+                            if (producedDiagnosticScope.Activity.Source.Name.EndsWith("Operation"))
+                            {
+                                AssertActivity.IsValidOperationActivity(producedDiagnosticScope.Activity);
+                                CustomListener.CollectedOperationActivities.Add(producedDiagnosticScope.Activity);
+                            }
+                            else if (producedDiagnosticScope.Activity.Source.Name.EndsWith("Request"))
+                            {
+                                CustomListener.CollectedNetworkActivities.Add(producedDiagnosticScope.Activity);
+                            }
                             
-                            CustomListener.CollectedActivities.Add(producedDiagnosticScope.Activity);
-
                             producedDiagnosticScope.IsCompleted = true;
                             return;
                         }
@@ -250,20 +257,30 @@ namespace Microsoft.Azure.Cosmos.Tests
             
             return builder.ToString();
         }
-
-
+        
         public List<string> GetRecordedAttributes() 
         {
             List<string> generatedActivityTagsForBaselineXmls = new();
             
-            List<Activity> collectedActivities = new List<Activity>(CustomListener.CollectedActivities);
-            collectedActivities = collectedActivities.OrderBy(act => act.Source.Name + act.OperationName + act.GetTagItem("rntbd.status_code") + act.GetTagItem("rntbd.sub_status_code")).ToList();
-            
-            foreach (Activity activity in collectedActivities)
+            List<Activity> collectedOperationActivities = new List<Activity>(CustomListener.CollectedOperationActivities);
+            foreach (Activity activity in collectedOperationActivities)
             {
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
             }
-            
+
+            List<Activity> collectedNetworkActivities = new List<Activity>(CustomListener.CollectedNetworkActivities);
+            collectedNetworkActivities = collectedNetworkActivities
+                .OrderBy(act => 
+                            act.Source.Name + 
+                            act.OperationName + 
+                            act.GetTagItem("rntbd.status_code") + 
+                            act.GetTagItem("rntbd.sub_status_code"))
+                .ToList();
+            foreach (Activity activity in collectedNetworkActivities)
+            {
+                generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
+            }
+
             List<string> outputList = new List<string>();
             if(generatedActivityTagsForBaselineXmls != null && generatedActivityTagsForBaselineXmls.Count > 0)
             {
@@ -281,7 +298,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ResetAttributes()
         {
             CustomListener.CollectedEvents = new();
-            CustomListener.CollectedActivities = new();
+            CustomListener.CollectedOperationActivities = new();
+            CustomListener.CollectedNetworkActivities = new();
         }
 
         public class ProducedDiagnosticScope
