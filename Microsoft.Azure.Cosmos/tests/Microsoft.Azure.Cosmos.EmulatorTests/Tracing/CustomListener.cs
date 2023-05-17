@@ -232,9 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "net.peer.name",
                 "db.cosmosdb.connection_mode",
                 "db.cosmosdb.operation_type",
-                "db.cosmosdb.regions_contacted",
-                "rntbd.sub_status_code",
-                "rntbd.status_code"
+                "db.cosmosdb.regions_contacted"
             };
             
             StringBuilder builder = new StringBuilder();
