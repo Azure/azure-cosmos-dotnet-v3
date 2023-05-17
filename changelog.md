@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="3.34.0"/> [3.34.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.34.0) - 2023-05-17
 
 #### Fixed 
-- [3847](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3847) PackageLicense: Removes PackageLicenseUrl and Adds PackageLicenseFile since PackageLicenseUrl is deprecated
+- [3847](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3847) PackageLicense: Replaces PackageLicenseUrl with PackageLicenseFile since PackageLicenseUrl is deprecated
 - [3832](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3832) Query: Fixes Parsing Error in SQL DOM when CultureInfo is available
 
 #### Added
