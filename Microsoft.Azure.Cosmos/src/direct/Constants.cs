@@ -273,11 +273,8 @@ namespace Microsoft.Azure.Documents
             public const string SupportedCapabilities = "supportedCapabilities";
             public const string PlacementHints = "placementHints";
             public const string IsMasterService = "isMasterService";
-            public const string CapUncapMetadata = "capUncapMetadata";
             public const string IsCappedForServer = "isCappedForServer";
-            public const string CapUncapMetadataForServer = "capUncapMetadataForServer";
             public const string IsCappedForMaster = "isCappedForMaster";
-            public const string CapUncapMetadataForMaster = "capUncapMetadataForMaster";
             public const string CapabilityResource = "capabilityResource";
             public const string DocumentType = "documentType";
             public const string SystemDatabaseAccountStoreType = "systemDatabaseAccountStoreType";
@@ -440,11 +437,6 @@ namespace Microsoft.Azure.Documents
 
             public const string EnableIndexingSchemeV2 = "enableIndexingSchemeV2";
 
-            // CapUncapMetadata
-            public const string Source = "source";
-            public const string Reason = "reason";            
-            public const string IncidentId = "incidentId";
-
             // GeospatialConfig
             public const string GeospatialType = "type";
             public const string GeospatialConfig = "geospatialConfig";
@@ -456,9 +448,6 @@ namespace Microsoft.Azure.Documents
             public const string UniqueIndexReIndexingState = "uniqueIndexReIndexingState";
             public const string LastDocumentGLSN = "lastDocumentGLSN";
             public const string UniqueIndexNameEncodingMode = "uniqueIndexNameEncodingMode";
-
-            // ReIndexer
-            public const string EnableReIndexerProgressCalc = "enableReIndexerProgressCalc";
 
             // ChangeFeed policy
             public const string ChangeFeedPolicy = "changeFeedPolicy";
@@ -604,8 +593,6 @@ namespace Microsoft.Azure.Documents
             public const string RestoreTimestampInUtc = "restoreTimestampInUtc";
             public const string RestoreSource = "restoreSource";
             public const string IsInAccountRestoreCapabilityEnabled = "isInAccountRestoreCapabilityEnabled";
-            public const string CanUndelete = "CanUndelete";
-            public const string CanUndeleteReason = "CanUndeleteReason";
 
             // Backup Hold
             public const string BackupHoldTimeInDays = "backupHoldTimeInDays";
@@ -636,9 +623,6 @@ namespace Microsoft.Azure.Documents
             public const string Message = "message";
             public const string ErrorDetails = "errorDetails";
             public const string AdditionalErrorInfo = "additionalErrorInfo";
-            
-            //CassandraErrorResource.
-            public const string Target = "target";
 
             // AddressResource
             public const string IsPrimary = "isPrimary";
@@ -696,12 +680,7 @@ namespace Microsoft.Azure.Documents
             public const string IsInBitLockerRotation = "IsInBitLockerRotation";
             public const string PrimaryBitLockerKeyVersion = "PrimaryBitLockerKeyVersion";
             public const string SecondaryBitLockerKeyVersion = "SecondaryBitLockerKeyVersion";
-            public const string BitLockerKeysSettingType = "BitLockerKeysSettingType";
             public const string BitLockerKeysRotationState = "BitLockerKeysRotationState";
-            public const string InfrastructureServices = "InfrastructureServices";
-
-            // Federation settings
-            public const string AllowReutilizationOfComputeResources = "AllowReutilizationOfComputeResources";
 
             //Deployment Constants
             public const string FabricApplicationName = "fabricApplicationName";
@@ -752,7 +731,6 @@ namespace Microsoft.Azure.Documents
             public const string ManagedServiceIdentityInfo = "managedServiceIdentityInfo";
             public const string IdentityName = "identity";
             public const string MsiSystemAssignedType = "SystemAssigned";
-            public const string MsiFirstPartyType = "FirstParty";
             public const string MsiNoneType = "None";
             public const string MsiUserAssignedType = "UserAssigned";
             public const string MsiSystemAndUserAssignedType = "SystemAssigned,UserAssigned";
@@ -845,7 +823,6 @@ namespace Microsoft.Azure.Documents
             public const string MaxCountOfSharedThroughputCollectionsEverCreated = "maxCountOfSharedThroughputCollectionsEverCreated";
             public const string OfferLastReplaceTimestamp = "offerLastReplaceTimestamp";
             public const string AutopilotSettings = "offerAutopilotSettings";
-            public const string IsOfferRestorePending = "isOfferRestorePending";
 
             public const string AutopilotTier = "tier";
             public const string AutopilotTargetTier = "targetTier";
@@ -978,13 +955,6 @@ namespace Microsoft.Azure.Documents
             public const string SupportedTimeGrainTypes = "supportedTimeGrainTypes";
             public const string SupportedAggregationTypes = "supportedAggregationTypes";
 
-            // Metric ID Mapping Dimension names (Multi-Resource Metrics)
-            public const string MicrosoftSubscriptionId = "Microsoft.subscriptionId";
-            public const string MicrosoftResourceGroupName = "Microsoft.resourceGroupName";
-            public const string MicrosoftResourceType = "Microsoft.resourceType";
-            public const string MicrosoftResourceName = "Microsoft.resourceName";
-            public const string MicrosoftResourceId = "Microsoft.resourceId";
-
             // IP Range resource
             public const string IpRangeFilter = "ipRangeFilter";
             public const string IpRules = "ipRules";
@@ -993,7 +963,6 @@ namespace Microsoft.Azure.Documents
             // Property to check if point in time restore is enabled for a global database account
             public const string PitrEnabled = "pitrEnabled";
             public const string PitrSku = "pitrSku";
-            public const string ReservedInstanceType = "reservedInstanceType";
             public const string ContinuousBackupTier = "tier";
             public const string EnablePitrMigration = "enablePITRMigration";
             public const string EnableLogstoreHeadStartSequenceVector = "enableLogStoreHeadStartSequenceVector";
@@ -1011,7 +980,6 @@ namespace Microsoft.Azure.Documents
 
             // property to enable full fidelity change feed (change feed with retention from remote+local storage).
             public const string EnableFullFidelityChangeFeed = "enableFullFidelityChangeFeed";
-            public const string EnableFFCFWithPITR = "enableFFCFWithPITR";
 
             // Enable API type check
             public const string EnableApiTypeCheck = "enableApiTypeCheck";
@@ -1027,8 +995,6 @@ namespace Microsoft.Azure.Documents
             public const string FabricUri = "fabricUri";
             public const string ResourcePartitionKey = "resourcePartitionKey";
             public const string CanaryLocationSurffix = "euap";
-            public const string IsSubscriptionRegionAccessAllowedForRegular = "isSubscriptionRegionAccessAllowedForRegular";
-            public const string IsSubscriptionRegionAccessAllowedForAz = "isSubscriptionRegionAccessAllowedForAz";
 
             // Topology Resource
             public const string Topology = "topology";
@@ -1103,9 +1069,7 @@ namespace Microsoft.Azure.Documents
             public const string QueryRanges = "queryRanges";
 
             // Arm resource type
-            public const string CosmosResourceProvider = "microsoft.documentdb";
-            public const string DatabaseAccounts = "databaseaccounts";
-            public const string CosmosArmResouceType = CosmosResourceProvider + "/" + DatabaseAccounts;
+            public const string DatabaseAccounts = "databaseAccounts";
 
             // SchemaDiscoveryPolicy
             public const string SchemaDiscoveryPolicy = "schemaDiscoveryPolicy";
@@ -1187,6 +1151,7 @@ namespace Microsoft.Azure.Documents
             public const string NspProfileProxyResources = "nspProfileProxyResources";
             public const string NspAssociationProxyResource = "nspAssociationProxyResource";
             public const string EnableNetworkSecurityPerimeter = "enableNetworkSecurityPerimeter";
+            public const string PrototypeAdditionalEndpointsForPrivateEndpoint = "prototypeAdditionalEndpointsForPrivateEndpoint";
 
             // VNET/Subnet Resource(Network Resource Provider)
             public const string IgnoreMissingVNetServiceEndpoint = "ignoreMissingVNetServiceEndpoint";
@@ -1401,7 +1366,6 @@ namespace Microsoft.Azure.Documents
             public const string IsOwnedByExternalProvider = "isOwnedByExternalProvider";
             public const string ConnectionInformation = "connectionInformation";
             public const string CrossSubRegionMigrationInProgress = "CrossSubRegionMigrationInProgress";
-            public const string AzMigrationInProgress = "AzMigrationInProgress";
 
             // Data Plane Operation Policy
             public const string DisableKeyBasedMetadataWriteAccess = "disableKeyBasedMetadataWriteAccess";
@@ -1613,20 +1577,6 @@ namespace Microsoft.Azure.Documents
             public const string Cap = "Cap";
             public const string Uncap = "Uncap";
         }
-        
-        public static class InAccountUnDeleteNotAllowedReasons
-        {
-            // Database UnDelete Failure 
-            public const string DatabaseLive = "Database already exists. Only deleted resources can be restored within same account.";
-            public const string DatabaseWithSameNameLive = "Database with same name already exist as live database.";
-
-            // Collection UnDelete Failure
-            public const string DatabaseDoesNotExist = "Could not find the database associated with the collection. Please restore the database before restoring the collection.";
-            public const string DatabaseWithSameNameExist = "Could not find the database associated with the collection. Another database with same name exist";
-            public const string CollectionLive = "Collection already exists. Only deleted resources can be restored within same account.";
-            public const string CollectionWithSamenNameLive = "Collection with same name already exist as live collection.";
-            public const string SharedCollectionNotAllowed = "Individual shared database collections restore is not supported. Please restore shared database to restore its collections that share the throughput.";
-        }
 
         public static class DocumentResourceExtendedProperties
         {
@@ -1658,7 +1608,6 @@ namespace Microsoft.Azure.Documents
             public const string Table = "table";
             public const string Keyspace = "keyspace";
             public const string LSN = "lsn";
-            public const string IsMasterResourcesDeletionPending = "isMasterResourcesDeletionPending";
         }
 
         public static class RestoreMetadataResourceProperties
@@ -1982,7 +1931,6 @@ namespace Microsoft.Azure.Documents
             public const string CollectionGLSN = "CollectionGLSN";
             public const string IsValidTimeStamp = "IsValidTimeStamp";
             public const string CollectionTS = "CollectionTS";
-            public const string CollectionInstanceId = "CollectionInstanceId";
         }
 
         public static class RestoreConstants
@@ -2031,7 +1979,6 @@ namespace Microsoft.Azure.Documents
             public const int SMSDefaultBackupIntervalInMinute = 30;
             public const int DefaultBackupRetentionInHour = 720;
             public const string ResourceGroupSuffix = "-rg";
-            public const string IsDataTransferStateStoreAccount = "IsDataTransferStateStoreAccount";
         }
 
         public static class TransportControlCommandOperations
@@ -2111,7 +2058,6 @@ namespace Microsoft.Azure.Documents
             public static string ACIS_MitigateMasterMigrationFailure = "ACIS_MitigateMasterMigrationFailure";
             public static string ACIS_MitigateServerMigrationFailure = "ACIS_MitigateServerMigrationFailure";
             public static string FederationBuildout_CanaryAccountMigration = "FederationBuildout_CanaryAccountMigration";
-            public static string USER_InPlaceAZMigration = "FederationBuildout_CanaryAccountMigration";
         }
 
         public static class EnvironmentVariables

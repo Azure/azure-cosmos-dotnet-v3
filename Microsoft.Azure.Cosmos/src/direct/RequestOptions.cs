@@ -626,7 +626,7 @@ namespace Microsoft.Azure.Documents.Client
         /// </value>
         /// <seealso cref="Microsoft.Azure.Documents.PriorityLevel"/>
         /// <seealso cref="PriorityLevel"/>
-        internal PriorityLevel? PriorityLevel { get; set; }
+        public PriorityLevel? PriorityLevel { get; set; }
 
 #if !COSMOSCLIENT
         /// <summary>

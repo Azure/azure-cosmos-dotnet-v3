@@ -97,16 +97,11 @@ namespace Microsoft.Azure.Documents
         ConfigurationNameAlreadyExists = 3207,
         PartitionkeyHashCollisionForId = 3302,
 
-        // 409: Partition migration Count mismatch conflict sub status codes
-        PartitionMigrationDocumentCountMismatchBetweenSourceAndTargetPartition = 3050,
-        PartitionMigrationDocumentCountMismatchBetweenTargetPartitionReplicas = 3051,
-
         // 503: Service Unavailable due to region being out of capacity for bindable partitions
         InsufficientBindablePartitions = 1007,
         ComputeFederationNotFound = 1012,
         OperationPaused = 9001,
         ServiceIsOffline = 9002,
-        InsufficientCapacity = 9003,
 
         //412: PreCondition Failed
         SplitIsDisabled = 2001,
@@ -124,7 +119,6 @@ namespace Microsoft.Azure.Documents
         OfferValidationFailed = 2017,
         CanNotAquireMasterPartitionAccessLock = 2018,
         CanNotAcquireInAccountRestoreInProgressLock = 2019,
-        CollectionStateChanged = 2020,
 
         //412: PreConditionFailed migration substatus codes
         PartitionMigrationCancelledForPendingUserOperation = 2006,
@@ -139,14 +133,15 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationFailedToResolvePartitionInformation = 2026,
         PartitionMigrationTopologyHasWriteRegionEmpty = 2027,
         PartitionMigrationIsDisableOnTheGlobalDatabaseAccount = 2028,
-        PartitionMigrationIsDisableOnTheRunnerAccount = 2029,
-        PartitionMigrationCanNotProceedForInactiveRegionalDatabaseAccount = 2030,
+
+        // 500: InternalServerError migration sub status codes
+        PartitionMigrationDocumentCountMismatchBetweenSourceAndTargetPartition = 3050,
+        PartitionMigrationDocumentCountMismatchBetweenTargetPartitionReplicas = 3051,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
         ConfigurationOperationCancelled = 3002,
         InvalidAccountConfiguration = 3003,
-        FederationDoesnotExistOrIsLocked = 3004,
 
         // 429: Request Rate Too Large
         PrepareTimeLimitExceeded = 3207,
@@ -171,8 +166,7 @@ namespace Microsoft.Azure.Documents
         InvalidKeyVaultKeyAndCertURI = 4011, // Indicate the Key Vault Key and Cert URI is invalid.
         CustomerKeyRotated = 4012, // Indicates the rewrapped key doesn't match with existing key.
         MissingRequestParameter = 4013, // Indicates that the incoming request has missing parameters.
-        InvalidKeyVaultSecretURI = 4014, // Indicates the Key Vault secret URI is invalid.
-        UndefinedDefaultIdentity = 4015, // Indicates that the account has an undefined default identity.
+        InvalidKeyVaultSecretURI = 4014, // Indicate the Key Vault secret URI is invalid.
 
         // Keep in sync with Microsoft.Azure.Cosmos.ServiceFramework.Security.AadAuthentication.AadSubStatusCodes
         // 401 : Unauthorized Exception (User-side errors start with 50)
@@ -216,6 +210,7 @@ namespace Microsoft.Azure.Documents
         NspInvalidEvalResult = 5311,
         NspNotInitiated = 5312,
         NspOperationNotSupported = 5313,
+
 
         // 200 OK. List feed throttled response.
         ListResourceFeedThrottled = 5500,

@@ -181,6 +181,14 @@ namespace Microsoft.Azure.Documents
                      includePrimary,
                      entity.RequestContext.ForceRefreshAddressCache);
 
+            if (!string.IsNullOrEmpty(requestedCollectionRid) && !string.IsNullOrEmpty(entity.RequestContext.ResolvedCollectionRid))
+            {
+                if (!requestedCollectionRid.Equals(entity.RequestContext.ResolvedCollectionRid))
+                {
+                    this.sessionContainer.ClearTokenByResourceId(requestedCollectionRid);
+                }
+            }
+
             ISessionToken requestSessionToken = null;
             if (useSessionToken)
             {

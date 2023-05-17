@@ -165,7 +165,8 @@ namespace Microsoft.Azure.Documents
                 RntbdTokenTypes type = (RntbdTokenTypes)reader.ReadByte();
 
                 RntbdToken token;
-                if (this.tokens[identifier] != null)
+                if (identifier < this.tokens.Length
+                    && this.tokens[identifier] != null)
                 {
                     token = this.tokens[identifier];
                 }

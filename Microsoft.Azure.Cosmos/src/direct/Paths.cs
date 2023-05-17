@@ -31,7 +31,6 @@ namespace Microsoft.Azure.Documents
         public const string Operations_ReadReplicaFromServerPartition = "readreplicafromserverpartition";
         public const string Operations_MasterInitiatedProgressCoordination = "masterinitiatedprogresscoordination";
         public const string Operations_GetAadGroups = "getaadgroups";
-        public const string Operations_XPDatabaseAccountMetaData = "xpmetadata";
         public const string Operations_MetadataCheckAccess = "metadatacheckaccess";
 
         //databases namespace off of root-------------------
@@ -71,11 +70,6 @@ namespace Microsoft.Azure.Documents
         // /dbs/{id}
         public const string DatabaseId = "dbId";
         public const string Database_Root = Databases_Root + "{" + DatabaseId + "}";
-
-        // FedURL/accounts/{id}/dbs
-        public const string FederationEndpoint_Databases_Root = FederationEndpoint_Root + "/" + Databases_Root;
-        // FedURL/accounts/{id}/dbs/{id}
-        public const string FederationEndpoint_Database_Root = FederationEndpoint_Databases_Root + "{" + DatabaseId + "}";
 
         // /dbs/{id}/users
         public const string UsersPathSegment = "users";
@@ -117,11 +111,6 @@ namespace Microsoft.Azure.Documents
         public const string CollectionId = "collId";
         public const string Collection_Root = Collections_Root + "{" + CollectionId + "}";
 
-        // FedURL/accounts/{id}/dbs/{id}/colls
-        public const string FederationEndpoint_Collections_Root = FederationEndpoint_Root + "/" + Collections_Root;
-        // FedURL/accounts/{id}/dbs/{id}/colls/{id}
-        public const string FederationEndpoint_Collection_Root = FederationEndpoint_Collections_Root + "{" + CollectionId + "}";
-
         // /dbs/{id}/colls/{id}/sprocs
         public const string StoredProceduresPathSegment = "sprocs";
         public const string StoredProcedures_Root = Collection_Root + "/" + StoredProceduresPathSegment + "/";
@@ -129,11 +118,6 @@ namespace Microsoft.Azure.Documents
         // /dbs/{id}/colls/{id}/sprocs/{id}
         public const string StoredProcedureId = "sprocId";
         public const string StoredProcedure_Root = StoredProcedures_Root + "{" + StoredProcedureId + "}";
-
-        // FedURL/accounts/{id}/dbs/{id}/colls/{id}/sprocs
-        public const string FederationEndpoint_StoredProcedures_Root = FederationEndpoint_Root + "/" + StoredProcedures_Root;
-        // FedURL/accounts/{id}/dbs/{id}/colls/{id}/sprocs/{id}
-        public const string FederationEndpoint_StoredProcedure_Root = FederationEndpoint_StoredProcedures_Root + "{" + StoredProcedureId + "}";
 
         // /dbs/{id}/colls/{id}/triggers
         public const string TriggersPathSegment = "triggers";
@@ -191,11 +175,6 @@ namespace Microsoft.Azure.Documents
         public const string AttachmentId = "attachmentId";
         public const string Attachment_Root = Attachments_Root + "{" + AttachmentId + "}";
 
-        // FedURL/accounts/{id}/dbs/{id}/colls/{id}/docs/{id}/attachments
-        public const string FederationEndpoint_Attachments_Root = FederationEndpoint_Root + "/" + Attachments_Root;
-        // FedURL/accounts/{id}/dbs/{id}/colls/{id}/docs/{id}/attachments/{id}
-        public const string FederationEndpoint_Attachment_Root = FederationEndpoint_Attachments_Root + "{" + AttachmentId + "}";
-
         // /dbs/{id}/colls/{id}/pkranges
         public const string PartitionKeyRangesPathSegment = "pkranges";
         public const string PartitionKeyRanges_Root = Collection_Root + "/" + PartitionKeyRangesPathSegment + "/";
@@ -203,9 +182,6 @@ namespace Microsoft.Azure.Documents
         // /dbs/{id}/colls/{id}/pkranges/{id}
         public const string PartitionKeyRangeId = "pkrangeId";
         public const string PartitionKeyRange_Root = PartitionKeyRanges_Root + "{" + PartitionKeyRangeId + "}";
-
-        // FedURL/accounts/{id}/dbs/{id}/colls/{id}/pkranges
-        public const string FederationEndpoint_PartitionKeyRanges_Root = FederationEndpoint_Root + "/" + PartitionKeyRanges_Root;
 
         // /dbs/{id}/colls/{id}/pkranges/{id}/presplitaction
         public const string PartitionKeyRangePreSplitSegment = "presplitaction";
@@ -259,11 +235,6 @@ namespace Microsoft.Azure.Documents
         // /offers/{id}
         public const string OfferId = "offerId";
         public const string Offer_Root = Offers_Root + "{" + OfferId + "}";
-
-        // FedURL/accounts/{id}/offers
-        public const string FederationEndpoint_Offers_Root = FederationEndpoint_Root + "/" + Offers_Root;
-        // FedURL/accounts/{id}/offers/{id}
-        public const string FederationEndpoint_Offer_Root = FederationEndpoint_Offers_Root + "{" + OfferId + "}";
 
         // /topology
         public const string TopologyPathSegment = "topology";
@@ -379,7 +350,7 @@ namespace Microsoft.Azure.Documents
         // /accounts/{id}/
         public const string AccountsPathSegment = "accounts";
         public const string AccountId = "accountId";
-        public const string FederationEndpoint_Root = Root + "/" + AccountsPathSegment + "/{" + AccountId + "}";
+        public const string FederationEndpoint_Root = Root + "/" + AccountsPathSegment + "/{" + AccountId + "}/";
 
         // /accounts/{id}/address
         public const string FederationEndpoint_Address_Root = FederationEndpoint_Root + "/" + AddressPathSegment + "/";
@@ -391,8 +362,6 @@ namespace Microsoft.Azure.Documents
         // /clientconfigs
         public const string ClientConfigPathSegment = "clientconfigs";
         public const string ClientConfig_Root = Root + ClientConfigPathSegment;
-        public const string FederationEndpoint_ClientConfig_Root = FederationEndpoint_Root + ClientConfig_Root;
-
 
         // /encryptionscopes/{id}
         public const string EncryptionScopeId = "encryptionscopeid";

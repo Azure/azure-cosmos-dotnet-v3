@@ -49,7 +49,8 @@ namespace Microsoft.Azure.Documents
             int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue, // Optional for Rntbd
             MemoryStreamPool memoryStreamPool = null,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
-            Func<string, Task<System.Net.IPAddress>> dnsResolutionFunction = null)  // optional override
+            Func<string, Task<System.Net.IPAddress>> dnsResolutionFunction = null,  // optional override
+            bool isDistributedTracingEnabled = false) // Distributed Tracing Flag
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -220,7 +221,8 @@ namespace Microsoft.Azure.Documents
                         MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
                         MemoryStreamPool = memoryStreamPool,
                         RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
-                        DnsResolutionFunction = dnsResolutionFunction
+                        DnsResolutionFunction = dnsResolutionFunction,
+                        IsDistributedTracingEnabled = isDistributedTracingEnabled
                     });
 
                 this.fallbackTransportClient = new Rntbd.TransportClient(
@@ -246,7 +248,8 @@ namespace Microsoft.Azure.Documents
                         MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount,
                         MemoryStreamPool = memoryStreamPool,
                         RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
-                        DnsResolutionFunction = dnsResolutionFunction
+                        DnsResolutionFunction = dnsResolutionFunction,
+                        IsDistributedTracingEnabled = isDistributedTracingEnabled
                     });
             }
             else

@@ -5,7 +5,7 @@
 // This File is copied from Azure.Core repo i.e. https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/src/Shared/AppContextSwitchHelper.cs
 
 #nullable enable
-
+#if NETSTANDARD2_0_OR_GREATER
 namespace Azure.Core
 {
     using System;
@@ -32,7 +32,9 @@ namespace Azure.Core
             }
             // AppContext switch wasn't used. Check the environment variable.
             string? envVar = Environment.GetEnvironmentVariable(environmentVariableName);
-            if (envVar != null && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1")))
+            if (envVar != null 
+                && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) 
+                || envVar.Equals("1", StringComparison.OrdinalIgnoreCase)))
             {
                 return true;
             }
@@ -42,3 +44,4 @@ namespace Azure.Core
         }
     }
 }
+#endif

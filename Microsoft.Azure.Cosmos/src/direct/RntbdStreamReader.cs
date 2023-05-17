@@ -80,12 +80,12 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             // if the count requested is bigger than the buffer just read directly into the target payload.
             if (count >= this.buffer.Length)
             {
-                return await this.ReadStreamAsync(payload, offset, count);
+                return await this.stream.ReadAsync(payload, offset, count);
             }
             else
             {
                 this.offset = 0;
-                this.length = await this.ReadStreamAsync(this.buffer, offset: 0, this.buffer.Length);
+                this.length = await this.stream.ReadAsync(this.buffer, offset: 0, this.buffer.Length);
                 if (this.length == 0)
                 {
                     // graceful closure.
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Rntbd
         {
             Debug.Assert(this.length == 0);
             this.offset = 0;
-            this.length = await this.ReadStreamAsync(this.buffer, offset: 0, this.buffer.Length);
+            this.length = await this.stream.ReadAsync(this.buffer, offset: 0, this.buffer.Length);
             if (this.length == 0)
             {
                 // graceful closure.
@@ -166,24 +166,6 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             {
                 throw new IOException("Error copying buffered bytes", e);
             }
-        }
-
-        /// <summary>
-        /// Helper, used to ensure we always issue a zero-byte read before a real one.
-        /// 
-        /// We do this because, as of .NET 6, all built-in streams will avoid pinning
-        /// memory for long periods of time if we follow this pattern.
-        /// 
-        /// See: https://github.com/dotnet/runtime/issues/76029
-        /// For the precipitating issue.
-        /// </summary>
-        private async Task<int> ReadStreamAsync(byte[] buffer, int offset, int count)
-        {
-            // this should not complete until we have data to read
-            await this.stream.ReadAsync(Array.Empty<byte>(), 0, 0);
-
-            // this should complete almost immediately
-            return await this.stream.ReadAsync(buffer, offset, count);
         }
     }
 }

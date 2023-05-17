@@ -4,7 +4,12 @@
 
 namespace Microsoft.Azure.Documents
 {
-    internal enum PriorityLevel
+#if COSMOSCLIENT
+    internal
+#else
+    public
+#endif
+    enum PriorityLevel
     {
         High = 1,
         Low = 2,

@@ -329,19 +329,6 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        [JsonProperty(PropertyName = Constants.SnapshotProperties.IsMasterResourcesDeletionPending)]
-        public bool? IsMasterResourcesDeletionPending
-        {
-            get
-            {
-                return base.GetValue<bool?>(Constants.SnapshotProperties.IsMasterResourcesDeletionPending, null);
-            }
-            internal set
-            {
-                base.SetValue(Constants.SnapshotProperties.IsMasterResourcesDeletionPending, value);
-            }
-        }
-
         /// <summary>
         /// Gets the list of PartitionKeyRanges.
         /// </summary>

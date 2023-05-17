@@ -32,8 +32,7 @@ namespace Microsoft.Azure.Documents.Routing
 
             writer.WriteStartArray();
 
-            IEnumerable<IPartitionKeyComponent> components = partitionKey.Components ?? Enumerable.Empty<IPartitionKeyComponent>();
-            foreach (IPartitionKeyComponent componentValue in components)
+            foreach (IPartitionKeyComponent componentValue in partitionKey.Components)
             {
                 componentValue.JsonEncode(writer);
             }

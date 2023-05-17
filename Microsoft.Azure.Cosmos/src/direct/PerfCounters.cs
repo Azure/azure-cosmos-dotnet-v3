@@ -5,13 +5,14 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Diagnostics;
-    using Microsoft.Azure.Cosmos.ServiceFramework.Core;
 
     internal sealed class PerfCounters : IDisposable
     {
-        private readonly string performanceCategory;
+        public static PerfCounters Counters = new PerfCounters("DocDB Gateway", "Counters for DocDB Gateway");
 
-        private readonly string performanceCategoryHelp;
+        private string performanceCategory;
+
+        private string performanceCategoryHelp;
 
         private PerformanceCounter frontendRequestsPerSec;
 
@@ -57,11 +58,9 @@ namespace Microsoft.Azure.Documents
 
         private PerfCounters(string category, string categoryHelp)
         {
-            this.performanceCategory = category;
-            this.performanceCategoryHelp = categoryHelp;
+            performanceCategory = category;
+            performanceCategoryHelp = categoryHelp;
         }
-
-        public static PerfCounters Counters { get; } = new PerfCounters("DocDB Gateway", "Counters for DocDB Gateway");
 
         public PerformanceCounter FrontendRequestsPerSec
         {
@@ -78,7 +77,6 @@ namespace Microsoft.Azure.Documents
                 return this.frontendActiveRequests;
             }
         }
-
         public PerformanceCounter BackendRequestsPerSec
         {
             get
@@ -232,68 +230,6 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// Creates the given performance counter category.
-        /// </summary>
-        /// <param name="category">Name of the category.</param>
-        /// <param name="categoryHelp">Help description.</param>
-        /// <param name="categoryType">Category type.</param>
-        /// <param name="counters">Counters in the category.</param>
-        /// <param name="useSystemMutex">
-        /// Indicates whether machine-wide synchronization should be used to avoid races between different entry-points attempting to create the same category.
-        /// </param>
-        /// <remarks>If the category already exists then it is checked to ensure that the given counters are present. If not, the category is recreated.</remarks>
-        internal static void CreatePerfCounterCategory(string category,
-            string categoryHelp,
-            PerformanceCounterCategoryType categoryType,
-            CounterCreationDataCollection counters,
-            bool useSystemMutex = true)
-        {
-            SystemSynchronizationScope syncScope = useSystemMutex ? SystemSynchronizationScope.CreateSynchronizationScope($"CDBPerfCategory-{category}") : default;
-
-            try
-            {
-                // If the performance counter category already exists, check if any counters have changed.
-                if (PerformanceCounterCategory.Exists(category))
-                {
-                    PerformanceCounterCategory perfCategory = new PerformanceCounterCategory(category);
-                    bool shouldReturn = true;
-                    foreach (CounterCreationData counter in counters)
-                    {
-                        try
-                        {
-                            if (!perfCategory.CounterExists(counter.CounterName))
-                            {
-                                shouldReturn = false;
-                                break;
-                            }
-                        }
-                        catch
-                        {
-                            shouldReturn = false;
-                            break;
-                        }
-                    }
-
-                    if (shouldReturn)
-                    {
-                        return;
-                    }
-                    else
-                    {
-                        PerformanceCounterCategory.Delete(category);
-                    }
-                }
-
-                // Create the category.
-                PerformanceCounterCategory.Create(category, categoryHelp, categoryType, counters);
-            }
-            finally
-            {
-                syncScope?.Dispose();
-            }
-        }
-
-        /// <summary>
         /// Creating performance counter category is a privileged operation and
         /// hence done in the WinFab service setup entrypoint that is invoked before
         /// the service is actually started.
@@ -344,80 +280,127 @@ namespace Microsoft.Azure.Documents
 
             counters.Add(new CounterCreationData("Backend Connection Open Failures Due To Syn Retransmit Timeout/sec", "Number of failures per second when connecting to a backend node which failed with WSAETIMEDOUT", PerformanceCounterType.RateOfCountsPerSecond32));
 
-            PerfCounters.CreatePerfCounterCategory(this.performanceCategory, this.performanceCategoryHelp, PerformanceCounterCategoryType.SingleInstance, counters);
+            CreatePerfCounterCategory(performanceCategory, performanceCategoryHelp, PerformanceCounterCategoryType.SingleInstance, counters);
+        }
+
+        /// 
+        /// Create a perf counter category with the provided name and creates the provided list of perf counters inside
+        /// the category.
+        ///
+        public static void CreatePerfCounterCategory(string category, string categoryHelp,
+            PerformanceCounterCategoryType categoryType,
+            CounterCreationDataCollection counters)
+        {
+            // If the performance counter category already exists, check if any counters have changed.
+            if (PerformanceCounterCategory.Exists(category))
+            {
+                PerformanceCounterCategory perfCategory = new PerformanceCounterCategory(category);
+                bool shouldReturn = true;
+                foreach (CounterCreationData counter in counters)
+                {
+                    try
+                    {
+                        if (!perfCategory.CounterExists(counter.CounterName))
+                        {
+                            shouldReturn = false;
+                            break;
+                        }
+                    }
+                    catch
+                    {
+                        shouldReturn = false;
+                        break;
+                    }
+                }
+
+                if (shouldReturn)
+                {
+                    return;
+                }
+                else
+                {
+                    PerformanceCounterCategory.Delete(category);
+                }
+            }
+
+            // Create the category.
+            PerformanceCounterCategory.Create(category, categoryHelp, categoryType, counters);
         }
 
         public void InitializePerfCounters()
         {
-            this.frontendRequestsPerSec = new PerformanceCounter(this.performanceCategory, "Frontend Requests/sec", false);
+            this.frontendRequestsPerSec = new PerformanceCounter(performanceCategory, "Frontend Requests/sec", false);
             this.frontendRequestsPerSec.RawValue = 0;
 
-            this.frontendActiveRequests = new PerformanceCounter(this.performanceCategory, "Frontend Active Requests", false);
+            this.frontendActiveRequests = new PerformanceCounter(performanceCategory, "Frontend Active Requests", false);
             this.frontendActiveRequests.RawValue = 0;
 
-            this.admissionControlledRequestsPerSec = new PerformanceCounter(this.performanceCategory, "Admission Controlled Requests/sec", false);
+            this.admissionControlledRequestsPerSec = new PerformanceCounter(performanceCategory, "Admission Controlled Requests/sec", false);
             this.admissionControlledRequestsPerSec.RawValue = 0;
 
-            this.admissionControlledRequests = new PerformanceCounter(this.performanceCategory, "Admission Controlled Requests", false);
+            this.admissionControlledRequests = new PerformanceCounter(performanceCategory, "Admission Controlled Requests", false);
             this.admissionControlledRequests.RawValue = 0;
 
-            this.backendRequestsPerSec = new PerformanceCounter(this.performanceCategory, "Backend Requests/sec", false);
+            this.backendRequestsPerSec = new PerformanceCounter(performanceCategory, "Backend Requests/sec", false);
             this.backendRequestsPerSec.RawValue = 0;
 
-            this.backendActiveRequests = new PerformanceCounter(this.performanceCategory, "Backend Active Requests", false);
+            this.backendActiveRequests = new PerformanceCounter(performanceCategory, "Backend Active Requests", false);
             this.backendActiveRequests.RawValue = 0;
 
-            this.currentFrontendConnections = new PerformanceCounter(this.performanceCategory, "Current Frontend Connections", false);
+            this.currentFrontendConnections = new PerformanceCounter(performanceCategory, "Current Frontend Connections", false);
             this.currentFrontendConnections.RawValue = 0;
 
-            this.fabricResolveServiceFailures = new PerformanceCounter(this.performanceCategory, "Fabric Resolve Service Failures", false);
+            this.fabricResolveServiceFailures = new PerformanceCounter(performanceCategory, "Fabric Resolve Service Failures", false);
             this.fabricResolveServiceFailures.RawValue = 0;
 
-            this.queryRequestsPerSec = new PerformanceCounter(this.performanceCategory, "Query Requests/sec", false);
+            this.queryRequestsPerSec = new PerformanceCounter(performanceCategory, "Query Requests/sec", false);
             this.queryRequestsPerSec.RawValue = 0;
 
-            this.triggerRequestsPerSec = new PerformanceCounter(this.performanceCategory, "Trigger Requests/sec", false);
+            this.triggerRequestsPerSec = new PerformanceCounter(performanceCategory, "Trigger Requests/sec", false);
             this.triggerRequestsPerSec.RawValue = 0;
 
-            this.procedureRequestsPerSec = new PerformanceCounter(this.performanceCategory, "Procedure Requests/sec", false);
+            this.procedureRequestsPerSec = new PerformanceCounter(performanceCategory, "Procedure Requests/sec", false);
             this.procedureRequestsPerSec.RawValue = 0;
 
-            this.averageProcedureRequestsDuration = new PerformanceCounter(this.performanceCategory, "Average Procedure Requests Duration", false);
+            this.averageProcedureRequestsDuration = new PerformanceCounter(performanceCategory, "Average Procedure Requests Duration", false);
             this.averageProcedureRequestsDuration.RawValue = 0;
 
-            this.averageProcedureRequestsDurationBase = new PerformanceCounter(this.performanceCategory, "Average Procedure Requests Duration Base", false);
+            this.averageProcedureRequestsDurationBase = new PerformanceCounter(performanceCategory, "Average Procedure Requests Duration Base", false);
             this.averageProcedureRequestsDurationBase.RawValue = 0;
 
-            this.averageQueryRequestsDuration = new PerformanceCounter(this.performanceCategory, "Average Query Requests Duration", false);
+            this.averageQueryRequestsDuration = new PerformanceCounter(performanceCategory, "Average Query Requests Duration", false);
             this.averageQueryRequestsDuration.RawValue = 0;
 
-            this.averageQueryRequestsDurationBase = new PerformanceCounter(this.performanceCategory, "Average Query Requests Duration Base", false);
+            this.averageQueryRequestsDurationBase = new PerformanceCounter(performanceCategory, "Average Query Requests Duration Base", false);
             this.averageQueryRequestsDurationBase.RawValue = 0;
 
-            this.backendConnectionOpenAverageLatency = new PerformanceCounter(this.performanceCategory, "Backend Connection Open Average Latency", false);
+            this.backendConnectionOpenAverageLatency = new PerformanceCounter(performanceCategory, "Backend Connection Open Average Latency", false);
             this.backendConnectionOpenAverageLatency.RawValue = 0;
 
-            this.backendConnectionOpenAverageLatencyBase = new PerformanceCounter(this.performanceCategory, "Backend Connection Open Average Latency Base", false);
+            this.backendConnectionOpenAverageLatencyBase = new PerformanceCounter(performanceCategory, "Backend Connection Open Average Latency Base", false);
             this.backendConnectionOpenAverageLatencyBase.RawValue = 0;
 
-            this.fabricResolveServiceAverageLatency = new PerformanceCounter(this.performanceCategory, "Fabric Resolve Service Average Latency", false);
+            this.fabricResolveServiceAverageLatency = new PerformanceCounter(performanceCategory, "Fabric Resolve Service Average Latency", false);
             this.fabricResolveServiceAverageLatency.RawValue = 0;
 
-            this.fabricResolveServiceAverageLatencyBase = new PerformanceCounter(this.performanceCategory, "Fabric Resolve Service Average Latency Base", false);
+            this.fabricResolveServiceAverageLatencyBase = new PerformanceCounter(performanceCategory, "Fabric Resolve Service Average Latency Base", false);
             this.fabricResolveServiceAverageLatencyBase.RawValue = 0;
 
-            this.routingFailures = new PerformanceCounter(this.performanceCategory, "Routing Failures", false);
+            this.routingFailures = new PerformanceCounter(performanceCategory, "Routing Failures", false);
             this.routingFailures.RawValue = 0;
 
-            this.backendConnectionOpenFailuresDueToSynRetransmitPerSecond = new PerformanceCounter(this.performanceCategory, "Backend Connection Open Failures Due To Syn Retransmit Timeout/sec", false);
+            this.backendConnectionOpenFailuresDueToSynRetransmitPerSecond = new PerformanceCounter(performanceCategory, "Backend Connection Open Failures Due To Syn Retransmit Timeout/sec", false);
             this.backendConnectionOpenFailuresDueToSynRetransmitPerSecond.RawValue = 0;
         }
 
         #region IDisposable Members
 
+        // Implement the dispose pattern.  The pattern is detailed at:
+        //
+        //  http://www.bluebytesoftware.com/blog/CategoryView,category,DesignGuideline.aspx
+        //
         public void Dispose()
         {
-#pragma warning disable SA1501
             using (this.frontendActiveRequests) { }
 
             using (this.frontendRequestsPerSec) { }
@@ -459,7 +442,6 @@ namespace Microsoft.Azure.Documents
             using (this.routingFailures) { }
 
             using (this.backendConnectionOpenFailuresDueToSynRetransmitPerSecond) { }
-#pragma warning restore SA1501
         }
 
         #endregion

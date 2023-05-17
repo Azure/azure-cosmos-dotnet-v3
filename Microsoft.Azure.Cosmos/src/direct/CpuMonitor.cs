@@ -46,7 +46,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.rwLock.EnterWriteLock();
             try
             {
-                this.ThrowIfDisposed();
                 if (this.periodicTask != null)
                 {
                     throw new InvalidOperationException("CpuMonitor already started");
@@ -81,33 +80,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             DefaultTrace.TraceInformation("CpuMonitor started");
         }
 
-        private void StopCoreUnderWriteLock(ref CancellationTokenSource cancel, ref Task backgroundTask)
-        {
-            if (this.periodicTask == null)
-            {
-                throw new InvalidOperationException("CpuMonitor not started or has been stopped or disposed already.");
-            }
-
-            cancel = this.cancellation;
-            backgroundTask = this.periodicTask;
-
-            this.cancellation = null;
-            this.currentReading = null;
-            this.periodicTask = null;
-        }
-
-        private static void StopCoreAfterReleasingWriteLock(CancellationTokenSource cancel, Task backgroundTask)
-        {
-            cancel.Cancel();
-            try
-            {
-                backgroundTask.Wait();
-            }
-            catch (AggregateException)
-            { }
-            cancel.Dispose();
-        }
-
         public void Stop()
         {
             this.ThrowIfDisposed();
@@ -116,15 +88,31 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.rwLock.EnterWriteLock();
             try
             {
-                this.ThrowIfDisposed();
-                this.StopCoreUnderWriteLock(ref cancel, ref backgroundTask);
+                if (this.periodicTask == null)
+                {
+                    throw new InvalidOperationException("CpuMonitor not started");
+                }
+
+                cancel = this.cancellation;
+                backgroundTask = this.periodicTask;
+
+                this.cancellation = null;
+                this.currentReading = null;
+                this.periodicTask = null;
             }
             finally
             {
                 this.rwLock.ExitWriteLock();
             }
 
-            StopCoreAfterReleasingWriteLock(cancel, backgroundTask);
+            cancel.Cancel();
+            try
+            {
+                backgroundTask.Wait();
+            }
+            catch (AggregateException)
+            { }
+            cancel.Dispose();
 
             DefaultTrace.TraceInformation("CpuMonitor stopped");
         }
@@ -139,7 +127,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 if (this.periodicTask == null)
                 {
-                    throw new InvalidOperationException("CpuMonitor was not started or has been stopped or disposed already.");
+                    throw new InvalidOperationException("CpuMonitor was not started");
                 }
                 return this.currentReading;
             }
@@ -151,40 +139,22 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public void Dispose()
         {
-            Interlocked.MemoryBarrier();
-            if (this.disposed)
-            {
-                return;
-            }
-
-            CancellationTokenSource cancel = null;
-            Task backgroundTask = null;
-            this.rwLock.EnterWriteLock();
+            this.ThrowIfDisposed();
+            this.rwLock.EnterReadLock();
             try
             {
-                Interlocked.MemoryBarrier();
-                if (this.disposed)
-                {
-                    return;
-                }
-
                 if (this.periodicTask != null)
                 {
-                    this.StopCoreUnderWriteLock(ref cancel, ref backgroundTask);
+                    throw new InvalidOperationException(
+                        "CpuMonitor must be stopped before Dispose");
                 }
             }
             finally
             {
-                this.MarkDisposed();
-                this.rwLock.ExitWriteLock();
+                this.rwLock.ExitReadLock();
             }
-
-            if (backgroundTask != null)
-            {
-                StopCoreAfterReleasingWriteLock(cancel, backgroundTask);
-            }
-
             this.rwLock.Dispose();
+            this.MarkDisposed();
         }
 
         private void MarkDisposed()

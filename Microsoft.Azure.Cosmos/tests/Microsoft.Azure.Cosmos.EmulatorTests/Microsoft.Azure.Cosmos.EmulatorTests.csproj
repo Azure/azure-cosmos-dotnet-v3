@@ -34,6 +34,7 @@
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.StreamPointOperationsAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.TypedPointOperationsAsync.xml" />
 	<None Remove="BaselineTest\TestBaseline\IndexMetricsParserBaselineTest.IndexUtilizationParse.xml" />
+	<None Remove="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestLambdaReuse.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestDateTimeJsonConverterTimezones.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml" />
   </ItemGroup>
@@ -281,6 +282,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestLambdaReuse.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Tracing\EndToEndTraceWriterBaselineTests.cs">

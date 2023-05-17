@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Documents
 
             // We reorder the replica set with the following rule, to avoid landing on to any unhealthy replica/s:
             // Scenario 1: When replica validation is enabled, the replicas will be reordered by the preference of
-            // Connected/Unknown > UnhealthyPending > Unhealthy.
+            // Connected > Unknown > UnhealthyPending > Unhealthy.
             // Scenario 2: When replica validation is disabled, the replicas will be reordered by the preference of
             // Connected/Unknown/UnhealthyPending > Unhealthy.
             return AddressEnumerator.ReorderReplicasByHealthStatus(
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Documents
 
         /// <summary>
         /// Reorders the replica set to prefer the healthy replicas over the unhealthy ones. When replica address validation
-        /// is enabled, the address enumerator will pick the replicas in the order of their health statuses: Connected/
+        /// is enabled, the address enumerator will pick the replicas in the order of their health statuses: Connected >
         /// Unknown > UnhealthyPending > Unhealthy. When replica address validation is disabled, the address enumerator will
         /// transition away Unknown/UnhealthyPending replicas and pick the replicas by preferring any of the  Connected/ Unknown
         /// / UnhealthyPending over the Unhealthy ones.
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Documents
 
         /// <summary>
         /// When replica address validation is enabled, the address enumerator will pick the replicas in the order of their health statuses:
-        /// Connected/Unknown > UnhealthyPending > Unhealthy. The open connection handler will be used to transit away unknown/unhealthy pending status.
+        /// Connected >> Unknown >> UnhealthyPending >> Unhealthy. The open connection handler will be used to transit away unknown/unhealthy pending status.
         /// But in case open connection request can not happen/ finish due to any reason, then after some extended time (for example 1 minute),
         /// the address enumerator will mark Unknown/ Unhealthy pending into Healthy category (please check details of TransportAddressUri.GetEffectiveHealthStatus())
         /// </summary>
@@ -243,17 +243,21 @@ namespace Microsoft.Azure.Documents
             IEnumerable<TransportAddressUri> addresses,
             HashSet<TransportAddressUri> failedReplicasPerRequest)
         {
-            List<TransportAddressUri> failedReplicas = null, pendingReplicas = null;
-            foreach(TransportAddressUri transportAddressUri in addresses)
+            List<TransportAddressUri> unknownReplicas = null, failedReplicas = null, pendingReplicas = null;
+            foreach (TransportAddressUri transportAddressUri in addresses)
             {
                 TransportAddressHealthState.HealthStatus status = AddressEnumerator.GetEffectiveStatus(
                     addressUri: transportAddressUri,
                     failedEndpoints: failedReplicasPerRequest);
 
-                if (status == TransportAddressHealthState.HealthStatus.Connected ||
-                    status == TransportAddressHealthState.HealthStatus.Unknown)
+                if (status == TransportAddressHealthState.HealthStatus.Connected)
                 {
                     yield return transportAddressUri;
+                }
+                else if (status == TransportAddressHealthState.HealthStatus.Unknown)
+                {
+                    unknownReplicas ??= new ();
+                    unknownReplicas.Add(transportAddressUri);
                 }
                 else if (status == TransportAddressHealthState.HealthStatus.UnhealthyPending)
                 {
@@ -267,6 +271,14 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
+            if (unknownReplicas != null)
+            {
+                foreach (TransportAddressUri transportAddressUri in unknownReplicas)
+                {
+                    yield return transportAddressUri;
+                }
+            }
+
             if (pendingReplicas != null)
             {
                 foreach (TransportAddressUri transportAddressUri in pendingReplicas)
@@ -275,7 +287,7 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            if(failedReplicas != null)
+            if (failedReplicas != null)
             {
                 foreach (TransportAddressUri transportAddressUri in failedReplicas)
                 {
