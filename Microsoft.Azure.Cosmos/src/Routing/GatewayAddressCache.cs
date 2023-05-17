@@ -550,9 +550,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
 
                     this.ValidateReplicaAddresses(transportAddressUris);
+                    this.CaptureTransportAddressUriHealthStates(
+                        partitionAddressInformation: mergedAddresses,
+                        transportAddressUris: transportAddressUris);
 
                     return mergedAddresses;
                 }
+
+                this.CaptureTransportAddressUriHealthStates(
+                    partitionAddressInformation: result.Item2,
+                    transportAddressUris: result.Item2.Get(Protocol.Tcp)?.ReplicaTransportAddressUris);
 
                 return result.Item2;
             }
@@ -934,6 +941,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                         .GetHealthStatus() is
                             TransportAddressHealthState.HealthStatus.Unknown or
                             TransportAddressHealthState.HealthStatus.UnhealthyPending);
+        }
+
+        /// <summary>
+        /// The replica health status of the transport address uri will change eventually with the motonically increasing time.
+        /// However, the purpose of this method is to capture the health status snapshot at this moment.
+        /// </summary>
+        /// <param name="partitionAddressInformation">An instance of <see cref="PartitionAddressInformation"/>.</param>
+        /// <param name="transportAddressUris">A read-only list of <see cref="TransportAddressUri"/>.</param>
+        private void CaptureTransportAddressUriHealthStates(
+            PartitionAddressInformation partitionAddressInformation,
+            IReadOnlyList<TransportAddressUri> transportAddressUris)
+        {
+            partitionAddressInformation
+                .Get(Protocol.Tcp)?
+                .SetTransportAddressUrisHealthState(
+                    replicaHealthStates: transportAddressUris.Select(x => x.GetCurrentHealthState().GetHealthStatusDiagnosticString()).ToList());
         }
 
         protected virtual void Dispose(bool disposing)

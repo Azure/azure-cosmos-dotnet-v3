@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Documents
             this.protocol = protocol;
         }
 
-        public async Task<IReadOnlyList<TransportAddressUri>> ResolveAllTransportAddressUriAsync(
+        public async Task<(IReadOnlyList<TransportAddressUri>, IReadOnlyList<string>)> ResolveAllTransportAddressUriAsync(
             DocumentServiceRequest request,
             bool includePrimary,
             bool forceRefresh)
@@ -30,8 +30,8 @@ namespace Microsoft.Azure.Documents
             PerProtocolPartitionAddressInformation partitionPerProtocolAddress = await this.ResolveAddressesAsync(request, forceRefresh);
 
             return includePrimary
-                ? partitionPerProtocolAddress.ReplicaTransportAddressUris
-                : partitionPerProtocolAddress.NonPrimaryReplicaTransportAddressUris;
+                ? (partitionPerProtocolAddress.ReplicaTransportAddressUris, partitionPerProtocolAddress.ReplicaTransportAddressUrisHealthState)
+                : (partitionPerProtocolAddress.NonPrimaryReplicaTransportAddressUris, partitionPerProtocolAddress.ReplicaTransportAddressUrisHealthState);
         }
 
         public async Task<TransportAddressUri> ResolvePrimaryTransportAddressUriAsync(
