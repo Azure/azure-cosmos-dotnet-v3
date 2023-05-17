@@ -15,19 +15,6 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// Gets or sets the <see cref="InstanceId"/> after triggering the InAccount Restore as part of RestoreParameters
-        /// </summary>
-        /// <value>
-        /// A valid value should have unique InstanceId in restore parameters.
-        /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.InstanceId)]
-        public string InstanceId
-        {
-            get { return base.GetValue<string>(Constants.Properties.InstanceId); }
-            set { base.SetValue(Constants.Properties.InstanceId, value); }
-        }
-
-        /// <summary>
         /// Gets or sets the <see cref="RestoreTimestampInUtc"/> for triggering the InAccount Restore as part of RestoreParameters
         /// </summary>
         /// <value>
@@ -70,8 +57,7 @@ namespace Microsoft.Azure.Documents
         internal override void Validate()
         {
             base.Validate();
-
-            if (this.RestoreTimestampInUtc == default)
+            if (this.RestoreTimestampInUtc == null)
             {
                 throw new BadRequestException($"{Constants.Properties.RestoreTimestampInUtc} is a required input for in account restore request");
             }

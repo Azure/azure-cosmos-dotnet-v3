@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Documents
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class CloneableStream : Stream, ICloneable
     {
@@ -43,7 +42,7 @@ namespace Microsoft.Azure.Documents
 
         public CloneableStream(MemoryStream internalStream, bool allowUnsafeDataAccess = true)
         {
-            this.internalStream = CloneableStream.ConvertToExportableMemoryStream(internalStream);
+            this.internalStream = internalStream;
             this.allowUnsafeDataAccess = allowUnsafeDataAccess;
         }
 
@@ -213,8 +212,6 @@ namespace Microsoft.Azure.Documents
         protected override void Dispose(bool disposing)
         {
             this.internalStream.Dispose();
-
-            base.Dispose(disposing);
         }
 
         public void WriteTo(Stream target)
@@ -244,36 +241,5 @@ namespace Microsoft.Azure.Documents
         {
             return this.internalStream.CopyToAsync(destination, bufferSize, cancellationToken);
         }
-
-#if NETFX45 || NETSTANDARD15 || NETSTANDARD16
-        private static MemoryStream ConvertToExportableMemoryStream(MemoryStream mediaStream)
-        {
-            // This code path does not change now so we can assume that we always get exportable MemoryStream from existing clients
-            return mediaStream;
-        }
-#else
-        private static MemoryStream ConvertToExportableMemoryStream(MemoryStream mediaStream)
-        {
-            if (mediaStream != null)
-            {
-                if (!(mediaStream is ICloneable || mediaStream.TryGetBuffer(out _)))
-                {
-                    MemoryStream exportableMemoryStream;
-                    int length = (int)mediaStream.Length;
-                    long mediaStreamPosition = mediaStream.Position;
-                    byte[] buffer = new byte[length];
-                    mediaStream.Read(buffer, offset: 0, count: length);
-                    exportableMemoryStream = new(buffer, index: 0, count: length, writable: false, publiclyVisible: true);                            
-                    mediaStream.Position = mediaStreamPosition;
-                    mediaStream = exportableMemoryStream;
-
-                    // We could not dispose original stream as the application might still be using it
-                    DefaultTrace.TraceWarning("Change the code to prevent the need for convertion into exportable MemoryStream by using streams with publicly visible buffers");
-                }
-            }
-
-            return mediaStream;
-        }
-#endif
     }
 }

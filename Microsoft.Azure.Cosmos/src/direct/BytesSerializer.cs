@@ -53,8 +53,6 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             return new ReadOnlyMemory<byte>(stringBuffer, 0, length);
         }
 
-        internal int GetPosition() => this.position;
-
         /// <remarks>
         /// Separate out getting the size of GUID into a separate method to keep unsafe contexts isolated.
         /// </remarks>

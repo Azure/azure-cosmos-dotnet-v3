@@ -15,9 +15,9 @@ namespace Microsoft.Azure.Documents
     /// TArg1: Perform force refresh.
     /// TArg2: TimeSpan for completing the work in the callback
     /// </summary>
-    internal sealed class GoneAndRetryWithRetryPolicy :
-        IRetryPolicy<bool>,
-        IRetryPolicy<Tuple<bool, bool, TimeSpan>>,
+    internal sealed class GoneAndRetryWithRetryPolicy : 
+        IRetryPolicy<bool>, 
+        IRetryPolicy<Tuple<bool, bool, TimeSpan>>, 
         IRetryPolicy<Tuple<bool, bool, TimeSpan, int, int, TimeSpan>>
     {
         private const int defaultWaitTimeInSeconds = 30;
@@ -47,9 +47,9 @@ namespace Microsoft.Azure.Documents
         private DocumentServiceRequest request;
 
         public GoneAndRetryWithRetryPolicy(
-            DocumentServiceRequest request = null,
-            int? waitTimeInSecondsOverride = null,
-            TimeSpan minBackoffForRegionReroute = default(TimeSpan),
+            DocumentServiceRequest request = null, 
+            int? waitTimeInSecondsOverride = null, 
+            TimeSpan minBackoffForRegionReroute = default(TimeSpan), 
             bool detectConnectivityIssues = false)
         {
             if (waitTimeInSecondsOverride.HasValue)
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Documents
             {
                 this.waitTimeInSeconds = GoneAndRetryWithRetryPolicy.defaultWaitTimeInSeconds;
             }
-
+            
             this.request = request;
             this.detectConnectivityIssues = detectConnectivityIssues;
             this.minBackoffForRegionReroute = minBackoffForRegionReroute;
@@ -134,9 +134,8 @@ namespace Microsoft.Azure.Documents
         /// <param name="exception">Exception thrown by callback</param>
         /// <param name="cancellationToken"></param>
         /// <returns>Is the retry helper should retry</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1305:Specify IFormatProvider", Justification = "Roslyn Baseline 12/12/2022 16:40")]
         Task<ShouldRetryResult<Tuple<bool, bool, TimeSpan, int, int, TimeSpan>>> IRetryPolicy<Tuple<bool, bool, TimeSpan, int, int, TimeSpan>>.ShouldRetryAsync(
-            Exception exception,
+            Exception exception, 
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -222,10 +221,10 @@ namespace Microsoft.Azure.Documents
 
                                 exceptionToThrow = new ServiceUnavailableException(
                                     string.Format(
-                                        RMResources.ClientUnavailable,
-                                        this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count,
+                                        RMResources.ClientUnavailable, 
+                                        this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count, 
                                         this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count == 0 ?
-                                            1 : this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count),
+                                            1 : this.request.RequestContext.ClientRequestStatistics.RegionsContacted.Count), 
                                     exception,
                                     exceptionSubStatus);
                             }
@@ -289,7 +288,7 @@ namespace Microsoft.Azure.Documents
                 }
                 else
                 {
-                    DefaultTrace.TraceCritical("Received unexpected invalid collection exception, request should be non-null. {0}", exception.ToStringWithData());
+                    DefaultTrace.TraceCritical("Received unexpected invalid collection exception, request should be non-null.", exception.ToStringWithData());
                     return Task.FromResult(ShouldRetryResult<Tuple<bool, bool, TimeSpan, int, int, TimeSpan>>.NoRetry(new InternalServerErrorException(exception)));
                 }
                 // prevent the caller from refreshing fabric caches.
@@ -309,14 +308,14 @@ namespace Microsoft.Azure.Documents
             }
 
             DefaultTrace.TraceWarning(
-                "GoneAndRetryWithRetryPolicy Received exception, will retry, attempt: {0}, regionRerouteAttempt: {1}, backoffTime: {2}, Timeout: {3}, Exception: {4}",
-                this.attemptCount,
-                this.regionRerouteAttemptCount,
-                backoffTime,
+                "GoneAndRetryWithRetryPolicy Received exception, will retry, attempt: {0}, regionRerouteAttempt: {1}, backoffTime: {2}, Timeout: {3}, Exception: {4}", 
+                this.attemptCount, 
+                this.regionRerouteAttemptCount, 
+                backoffTime, 
                 timeout,
                 exception.ToStringWithData());
             return Task.FromResult(ShouldRetryResult<Tuple<bool, bool, TimeSpan, int, int, TimeSpan>>.RetryAfter(
-                backoffTime,
+                backoffTime, 
                 Tuple.Create(forceRefreshAddressCache, true, timeout, currentAttemptCount, this.regionRerouteAttemptCount, backoffTime)));
         }
 

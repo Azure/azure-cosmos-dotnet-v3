@@ -51,14 +51,12 @@ namespace Microsoft.Azure.Documents
             }
 
             // Stamp the activity ID if present. Exception throwers can override this if need be.
-#pragma warning disable CS8073 // Result of ActivityId (Guid) compared to null here is always true. Fixing the condition can cause unexpected behavior.
             if ((Trace.CorrelationManager.ActivityId != null) &&
                 (this.responseHeaders.Get(HttpConstants.HttpHeaders.ActivityId) == null))
             {
                 this.responseHeaders.Set(HttpConstants.HttpHeaders.ActivityId,
                                          Trace.CorrelationManager.ActivityId.ToString());
             }
-#pragma warning restore CS8073 // Result of ActivityId (Guid) compared to null here is always true. Fixing the condition can cause unexpected behavior.
 
             this.LSN = -1;
             this.PartitionKeyRangeId = null;
@@ -108,13 +106,11 @@ namespace Microsoft.Azure.Documents
             }
 
             // Stamp the ambient activity ID (if present) over the server's response ActivityId (if present).
-#pragma warning disable CS8073 // Result of ActivityId (Guid) compared to null here is always true. Fixing the condition can cause unexpected behavior.
             if (Trace.CorrelationManager.ActivityId != null)
             {
                 this.responseHeaders.Set(HttpConstants.HttpHeaders.ActivityId,
                                          Trace.CorrelationManager.ActivityId.ToString());
             }
-#pragma warning restore CS8073 // Result of ActivityId (Guid) compared to null here is always true. Fixing the condition can cause unexpected behavior.
 
             this.RequestUri = requestUri;
             this.LSN = -1;
@@ -170,13 +166,11 @@ namespace Microsoft.Azure.Documents
             }
 
             // Stamp the ambient activity ID (if present) over the server's response ActivityId (if present).
-#pragma warning disable CS8073 // Result of ActivityId (Guid) compared to null here is always true. Fixing the condition can cause unexpected behavior.
             if (Trace.CorrelationManager.ActivityId != null)
             {
                 this.responseHeaders.Set(HttpConstants.HttpHeaders.ActivityId,
                                          Trace.CorrelationManager.ActivityId.ToString());
             }
-#pragma warning restore CS8073 // Result of ActivityId (Guid) compared to null here is always true. Fixing the condition can cause unexpected behavior.
 
             this.RequestUri = requestUri;
             this.LSN = -1;

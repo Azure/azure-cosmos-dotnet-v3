@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Documents.Rntbd
     using Trace = Microsoft.Azure.Documents.Trace;
 #endif
 
+    using ResponsePool = RntbdConstants.RntbdEntityPool<RntbdConstants.Response, RntbdConstants.ResponseIdentifiers>;
+
     // Dispatcher encapsulates the state and logic needed to dispatch multiple requests through
     // a single connection.
     internal sealed class Dispatcher : IDisposable
@@ -694,13 +696,14 @@ namespace Microsoft.Azure.Documents.Rntbd
             CancellationToken cancellationToken = this.cancellation.Token;
             ChannelCommonArguments args = new ChannelCommonArguments(
                 Guid.Empty, TransportErrorCode.ReceiveTimeout, true);
+            ResponsePool.EntityOwner response = default;
             Connection.ResponseMetadata responseMd = null;
             try
             {
-                bool hasTransportErrors = false;
-                while (!hasTransportErrors && !cancellationToken.IsCancellationRequested)
+                while (!cancellationToken.IsCancellationRequested)
                 {
                     args.ActivityId = Guid.Empty;
+                    response = ResponsePool.Instance.Get();
                     responseMd = await this.connection.ReadResponseMetadataAsync(args);
                     ArraySegment<byte> metadata = responseMd.Metadata;
 
@@ -709,38 +712,35 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                     args.ActivityId = header.ActivityId;
                     BytesDeserializer deserializer = new BytesDeserializer(metadata.Array, metadata.Count);
+                    Debug.Assert(response.Entity != null);
+                    response.Entity.ParseFrom(ref deserializer);
 
                     MemoryStream bodyStream = null;
-                    if (HeadersTransportSerialization.TryParseMandatoryResponseHeaders(ref deserializer, out bool payloadPresent, out uint transportRequestId))
+                    if (response.Entity.payloadPresent.value.valueByte != (byte) 0x00)
                     {
-                        if (payloadPresent)
-                        {
-                            bodyStream = await this.connection.ReadResponseBodyAsync(args);
-                        }
-                        this.DispatchRntbdResponse(responseMd, header, bodyStream, metadata.Array, metadata.Count, transportRequestId);
-                    }
-                    else
-                    {
-                        hasTransportErrors = true;
-                        this.DispatchChannelFailureException(TransportExceptions.GetInternalServerErrorException(this.serverUri, RMResources.MissingRequiredHeader));
+                        bodyStream = await this.connection.ReadResponseBodyAsync(args);
                     }
 
+                    this.DispatchRntbdResponse(responseMd, response, header, bodyStream);
                     responseMd = null;
                 }
                 this.DispatchCancellation();
             }
             catch (OperationCanceledException)
             {
+                response.Dispose();
                 responseMd?.Dispose();
                 this.DispatchCancellation();
             }
             catch (ObjectDisposedException)
             {
+                response.Dispose();
                 responseMd?.Dispose();
                 this.DispatchCancellation();
             }
             catch (Exception e)
             {
+                response.Dispose();
                 responseMd?.Dispose();
                 this.DispatchChannelFailureException(e);
             }
@@ -769,13 +769,22 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private void DispatchRntbdResponse(
             Connection.ResponseMetadata responseMd,
+            ResponsePool.EntityOwner rntbdResponse,
             TransportSerialization.RntbdHeader responseHeader,
-            MemoryStream responseBody,
-            byte[] metadata,
-            int metadataLength,
-            uint transportRequestId)
+            MemoryStream responseBody)
         {
-            CallInfo call = this.RemoveCall(transportRequestId);
+            if (!rntbdResponse.Entity.transportRequestID.isPresent ||
+                (rntbdResponse.Entity.transportRequestID.GetTokenType() != RntbdTokenTypes.ULong))
+            {
+                responseBody?.Dispose();
+                rntbdResponse.Dispose();
+                responseMd.Dispose();
+                throw TransportExceptions.GetInternalServerErrorException(
+                    this.serverUri,
+                    RMResources.ServerResponseTransportRequestIdMissingError);
+            }
+
+            CallInfo call = this.RemoveCall(rntbdResponse.Entity.transportRequestID.value.valueULong);
             if (call != null)
             {
                 Debug.Assert(this.serverProperties != null);
@@ -783,12 +792,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                 call.TransportRequestStats.RecordState(TransportRequestStats.RequestStage.Received);
                 call.TransportRequestStats.ResponseMetadataSizeInBytes = responseMd.Metadata.Count;
                 call.TransportRequestStats.ResponseBodySizeInBytes = responseBody?.Length;
-                call.SetResponse(responseMd, responseHeader, responseBody, this.serverProperties.Version, metadata, metadataLength);
+                call.SetResponse(responseMd, rntbdResponse, responseHeader, responseBody, this.serverProperties.Version);
             }
             else
             {
                 responseBody?.Dispose();
                 responseMd.Dispose();
+                rntbdResponse.Dispose();
             }
         }
 
@@ -949,11 +959,10 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             public void SetResponse(
                 Connection.ResponseMetadata responseMd,
+                ResponsePool.EntityOwner rntbdResponse,
                 TransportSerialization.RntbdHeader responseHeader,
                 MemoryStream responseBody,
-                string serverVersion,
-                byte[] metadata,
-                int metadataLength)
+                string serverVersion)
             {
                 this.ThrowIfDisposed();
                 // Call SetResult asynchronously. Otherwise, the tasks awaiting on
@@ -972,13 +981,12 @@ namespace Microsoft.Azure.Documents.Rntbd
                         Trace.CorrelationManager.ActivityId = this.activityId;
                         try
                         {
-                            BytesDeserializer bytesDeserializer = new BytesDeserializer(metadata, metadataLength);
                             StoreResponse storeResponse = TransportSerialization.MakeStoreResponse(
                                 responseHeader.Status,
                                 responseHeader.ActivityId,
+                                rntbdResponse.Entity,
                                 responseBody,
-                                serverVersion,
-                                ref bytesDeserializer);
+                                serverVersion);
                             this.completion.SetResult(storeResponse);
                         }
                         catch (Exception e)
@@ -988,6 +996,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         }
                         finally
                         {
+                            rntbdResponse.Dispose();
                             responseMd.Dispose();
                         }
                     });

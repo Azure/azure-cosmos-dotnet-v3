@@ -541,14 +541,10 @@ namespace Microsoft.Azure.Documents
                 case OperationType.MasterInitiatedProgressCoordination:
                 case OperationType.MetadataCheckAccess:
                 case OperationType.CreateSystemSnapshot:
-                case OperationType.CreateRidRangeResources:
                 case OperationType.GetAadGroups:
                 case OperationType.UpdateFailoverPriorityList:
                 case OperationType.GetStorageAccountSas:
                 case OperationType.GetBatchCustomerManagedKeyStatus:
-                case OperationType.UpdatePartitionThroughput:
-                case OperationType.XPDatabaseAccountMetaData:
-                case OperationType.Truncate:
                     return HttpConstants.HttpMethods.Post;
 
                 case OperationType.EnsureSnapshotOperation:

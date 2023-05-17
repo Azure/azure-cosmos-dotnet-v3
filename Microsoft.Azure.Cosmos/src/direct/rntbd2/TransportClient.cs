@@ -11,7 +11,9 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-
+#if NETSTANDARD2_0_OR_GREATER
+    using Microsoft.Azure.Documents.Telemetry;
+#endif
 #if NETSTANDARD15 || NETSTANDARD16
     using Trace = Microsoft.Azure.Documents.Trace;
 #endif
@@ -27,11 +29,11 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
         private static TransportPerformanceCounters transportPerformanceCounters = new TransportPerformanceCounters();
 
-        private readonly TimerPool timerPool;
-        private readonly TimerPool idleTimerPool;
+        private readonly TimerPool TimerPool;
+        private readonly TimerPool IdleTimerPool;
         private readonly ChannelDictionary channelDictionary;
         private bool disposed = false;
-
+        private bool isDistributedTracingEnabled;
         #region RNTBD Transition
 
         // Transitional state while migrating SDK users from the old RNTBD stack
@@ -40,7 +42,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         // Guarded by disableRntbdChannelLock
         private bool disableRntbdChannel = false;
 
-        #endregion
+#endregion
 
         public TransportClient(Options clientOptions)
         {
@@ -59,22 +61,24 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.PortPoolBindAttempts);
             }
 
-            this.timerPool = new TimerPool((int)clientOptions.TimerPoolResolution.TotalSeconds);
+            this.TimerPool = new TimerPool((int)clientOptions.TimerPoolResolution.TotalSeconds);
             if (clientOptions.IdleTimeout > TimeSpan.Zero)
             {
-                this.idleTimerPool = new TimerPool(minSupportedTimerDelayInSeconds: 30);
+                this.IdleTimerPool = new TimerPool(minSupportedTimerDelayInSeconds: 30);
             }
             else
             {
-                this.idleTimerPool = null;
+                this.IdleTimerPool = null;
             }
+
+            this.isDistributedTracingEnabled = clientOptions.IsDistributedTracingEnabled;
 
             this.channelDictionary = new ChannelDictionary(
                 new ChannelProperties(
                     clientOptions.UserAgent,
                     clientOptions.CertificateHostNameOverride,
                     clientOptions.ConnectionStateListener,
-                    this.timerPool,
+                    this.TimerPool,
                     clientOptions.RequestTimeout,
                     clientOptions.OpenTimeout,
                     clientOptions.LocalRegionOpenTimeout,
@@ -87,7 +91,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     clientOptions.ReceiveHangDetectionTime,
                     clientOptions.SendHangDetectionTime,
                     clientOptions.IdleTimeout,
-                    this.idleTimerPool,
+                    this.IdleTimerPool,
                     clientOptions.CallerId,
                     clientOptions.EnableChannelMultiplexing,
                     clientOptions.MemoryStreamPool,
@@ -121,6 +125,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             string operation = "Unknown operation";
             DateTime requestStartTime = DateTime.UtcNow;
             int transportResponseStatusCode = (int)TransportResponseStatusCode.Success;
+#if NETSTANDARD2_0_OR_GREATER
+            using OpenTelemetryRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(this.isDistributedTracingEnabled, request);
+#endif
             try
             {
                 TransportClient.IncrementCounters();
@@ -138,6 +145,10 @@ namespace Microsoft.Azure.Documents.Rntbd
                     resourceOperation, activityId, transportRequestStats);
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
                 storeResponse.TransportRequestStats = transportRequestStats;
+
+#if NETSTANDARD2_0_OR_GREATER
+                recorder?.Record(physicalAddress.Uri, storeResponse: storeResponse);
+#endif
             }
             catch (TransportException ex)
             {
@@ -165,6 +176,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 // TransportException directly, don't allow TransportException
                 // to escape, and wrap it in an expected DocumentClientException
                 // instead. Tracked in backlog item 303368.
+
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
                 transportResponseStatusCode = (int) ex.ErrorCode;
                 ex.RequestStartTime = requestStartTime;
@@ -182,24 +194,41 @@ namespace Microsoft.Azure.Documents.Rntbd
                 if (request.IsReadOnlyRequest)
                 {
                     DefaultTrace.TraceInformation("Converting to Gone (read-only request)");
-                    throw TransportExceptions.GetGoneException(
+                    GoneException goneExcepetion = TransportExceptions.GetGoneException(
                         physicalAddress.Uri, activityId, ex, transportRequestStats);
+#if NETSTANDARD2_0_OR_GREATER
+                    recorder?.Record(physicalAddress.Uri, documentClientException: goneExcepetion);
+#endif
+                    throw goneExcepetion;
                 }
                 if (!ex.UserRequestSent)
                 {
                     DefaultTrace.TraceInformation("Converting to Gone (write request, not sent)");
-                    throw TransportExceptions.GetGoneException(
+                    GoneException goneExcepetion = TransportExceptions.GetGoneException(
                         physicalAddress.Uri, activityId, ex, transportRequestStats);
+#if NETSTANDARD2_0_OR_GREATER
+                    recorder?.Record(physicalAddress.Uri, documentClientException: goneExcepetion);
+#endif
+                    throw goneExcepetion;
                 }
                 if (TransportException.IsTimeout(ex.ErrorCode))
                 {
                     DefaultTrace.TraceInformation("Converting to RequestTimeout");
-                    throw TransportExceptions.GetRequestTimeoutException(
+                    RequestTimeoutException requestTimeoutException = TransportExceptions.GetRequestTimeoutException(
                         physicalAddress.Uri, activityId, ex, transportRequestStats);
+#if NETSTANDARD2_0_OR_GREATER
+                    recorder?.Record(physicalAddress.Uri, documentClientException: requestTimeoutException);
+#endif
+                    throw requestTimeoutException;
                 }
                 DefaultTrace.TraceInformation("Converting to ServiceUnavailable");
-                throw TransportExceptions.GetServiceUnavailableException(
+                ServiceUnavailableException serviceUnavailableException = TransportExceptions.GetServiceUnavailableException(
                     physicalAddress.Uri, activityId, ex, transportRequestStats);
+#if NETSTANDARD2_0_OR_GREATER
+                recorder?.Record(physicalAddress.Uri, documentClientException: serviceUnavailableException);
+#endif
+                throw serviceUnavailableException;
+
             }
             catch (DocumentClientException ex)
             {
@@ -209,6 +238,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                     physicalAddress, ex);
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
                 ex.TransportRequestStats = transportRequestStats;
+#if NETSTANDARD2_0_OR_GREATER
+                recorder?.Record(physicalAddress.Uri, documentClientException: ex);
+#endif
                 throw;
             }
             catch (Exception ex)
@@ -217,6 +249,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                 DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                     "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
                     physicalAddress, ex);
+#if NETSTANDARD2_0_OR_GREATER
+                recorder?.Record(physicalAddress.Uri, exception: ex);
+#endif
                 throw;
             }
             finally
@@ -237,12 +272,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.disposed = true;
             this.channelDictionary.Dispose();
 
-            if (this.idleTimerPool != null)
+            if (this.IdleTimerPool != null)
             {
-                this.idleTimerPool.Dispose();
+                this.IdleTimerPool.Dispose();
             }
 
-            this.timerPool.Dispose();
+            this.TimerPool.Dispose();
 
             base.Dispose();
 
@@ -297,7 +332,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 activityId: activityId);
         }
 
-        #region RNTBD Transition
+#region RNTBD Transition
 
         public event Action OnDisableRntbdChannel;
 
@@ -355,7 +390,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 TaskScheduler.Current);
         }
 
-        #endregion
+#endregion
 
         public sealed class Options
         {
@@ -463,6 +498,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             /// Override for DNS resolution callbacks for RNTBD connections.
             /// </summary>
             public Func<string, Task<System.Net.IPAddress>> DnsResolutionFunction { get; internal set; }
+            
+            /// <summary>
+            /// Flag for distributed tracing 
+            /// </summary>
+            public bool IsDistributedTracingEnabled { get; set; }
 
             public override string ToString()
             {
@@ -502,6 +542,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 s.AppendLine(this.MemoryStreamPool != null ? bool.TrueString : bool.FalseString);
                 s.Append("  Use_CustomDnsResolution: ");
                 s.AppendLine(this.DnsResolutionFunction != null ? bool.TrueString : bool.FalseString);
+                s.Append("  IsDistributedTracingEnabled: ");
+                s.AppendLine(this.IsDistributedTracingEnabled.ToString());
                 return s.ToString();
             }
 
