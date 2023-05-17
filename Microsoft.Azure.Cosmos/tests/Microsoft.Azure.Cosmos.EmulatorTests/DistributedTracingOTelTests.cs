@@ -34,9 +34,12 @@ namespace Microsoft.Azure.Cosmos
     [TestCategory("UpdateContract")]
     public sealed class DistributedTracingOTelTests : BaseCosmosClientHelper
     {
+        private CosmosClientBuilder cosmosClientBuilder;
         [TestInitialize]
-        public void TestInitialize()
+        public async Task TestInitialize()
         {
+            await base.TestInit();
+            this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
             CustomOtelExporter.ResetData();
         }
 
@@ -57,9 +60,11 @@ namespace Microsoft.Azure.Cosmos
                 .AddSource(sources)
                 .Build())
             {
-                await base.TestInit(
-                    useGateway: false,
-                    enableDistributingTracing: true);
+                this.cosmosClientBuilder = this.cosmosClientBuilder
+                                            .WithDistributedTracing(true);
+                this.SetClient(this.cosmosClientBuilder.WithConnectionModeDirect().Build());
+
+                this.database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
 
                 ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                         id: Guid.NewGuid().ToString(),
@@ -127,11 +132,12 @@ namespace Microsoft.Azure.Cosmos
                 .AddSource(sources)
                 .Build())
             {
-                await base.TestInit(
-                    useGateway: true,
-                    customizeClientBuilder: builder => builder.WithHttpClientFactory(() => new HttpClient(httpClientHandlerHelper)),
-                    enableDistributingTracing: true);
+                this.cosmosClientBuilder = this.cosmosClientBuilder
+                                            .WithHttpClientFactory(() => new HttpClient(httpClientHandlerHelper))
+                                            .WithDistributedTracing(true);
+                this.SetClient(this.cosmosClientBuilder.WithConnectionModeGateway().Build());
 
+                this.database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
                 ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                  id: Guid.NewGuid().ToString(),
                  partitionKeyPath: "/id",
@@ -167,10 +173,14 @@ namespace Microsoft.Azure.Cosmos
                 .AddCustomOtelExporter()
                 .Build())
             {
-                await base.TestInit(
-                    useGateway: useGateway,
-                    enableDistributingTracing: enableDistributingTracing);
-               
+                this.cosmosClientBuilder = this.cosmosClientBuilder
+                                           .WithDistributedTracing(enableDistributingTracing);
+                this.SetClient(useGateway
+                ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()
+                : this.cosmosClientBuilder.Build());
+
+                this.database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
+
                 ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                  id: Guid.NewGuid().ToString(),
                  partitionKeyPath: "/id",
