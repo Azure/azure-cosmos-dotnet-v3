@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             foreach (Activity activity in batch)
             {
-                AssertActivity.IsValid(activity);
+                AssertActivity.IsValidOperationActivity(activity);
                 
                 CollectedActivities.Add(activity);
             }
