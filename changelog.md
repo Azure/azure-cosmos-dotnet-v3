@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed 
 - [3847](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3847) PackageLicense: Replaces PackageLicenseUrl with PackageLicenseFile since PackageLicenseUrl is deprecated
-- [3832](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3832) Query: Fixes Parsing Error in SQL DOM when CultureInfo is available
+- [3832](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3832) Query: Format exception when using culture and partitionKey, difference between Windows and Linux
 
 #### Added
 <<<<<<< HEAD
