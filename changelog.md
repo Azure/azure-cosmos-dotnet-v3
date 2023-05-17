@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [3832](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3832) Query: Fixes Parsing Error in SQL DOM when CultureInfo is available
 
 #### Added
-- [3854](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3854) Full Fidelity Change Feed: Adds LatestVersion to ChangeFeedMode
+- [3854](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3854) Change Feed: Adds LatestVersion to ChangeFeedMode
 - [3840](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3840) Connection: Adds code to sneak peek rntbd health check improvements
 - [3833](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3833) Query: Adds TRIM string system function support in LINQ
 - [3826](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3826) Query: Adds support for Lambda expression reuse in LINQ
