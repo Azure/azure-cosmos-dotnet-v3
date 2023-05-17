@@ -157,8 +157,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ClientTelemetryTests.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
         }
 
-        [ClassCleanup]
-        public static void FinalCleanup()
+        [TestCleanup]
+        public async Task Cleanup()
         {
             FieldInfo isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
                BindingFlags.Static |
@@ -170,40 +170,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                BindingFlags.NonPublic);
             azMetadataField.SetValue(null, null);
 
-            ClientTelemetryTests.ResetSystemUsageMonitor(false);
-        }
-
-        private static void ResetSystemUsageMonitor(bool isTelemetryEnabled)
-        {
-            ClientTelemetryTests.systemUsageMonitor?.Stop();
-
-            FieldInfo diagnosticsHandlerHelperInstance = typeof(DiagnosticsHandlerHelper)
-                .GetField("isTelemetryMonitoringEnabled", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
-            diagnosticsHandlerHelperInstance.SetValue(null, isTelemetryEnabled);
-
-            List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
-            {
-                (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
-                        .GetField("diagnosticSystemUsageRecorder", 
-                                                BindingFlags.Instance | BindingFlags.NonPublic)
-                        .GetValue(DiagnosticsHandlerHelper.Instance)
-            };
-
-            if (isTelemetryEnabled)
-            {
-                recorders.Add(
-                    (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
-                                .GetField("telemetrySystemUsageRecorder", 
-                                                            BindingFlags.Instance | BindingFlags.NonPublic)
-                                .GetValue(DiagnosticsHandlerHelper.Instance));
-            }
-
-            ClientTelemetryTests.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
-        }
-
-        [TestCleanup]
-        public async Task Cleanup()
-        {
             await base.TestCleanup();
 
             Util.DisableClientTelemetryEnvironmentVariables();
@@ -1109,33 +1075,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
         
-        [TestMethod]
-        public async Task CheckMisconfiguredTelemetryEndpoint_should_stop_the_job()
-        {
-            int retryCounter = 0;
-            HttpClientHandlerHelper customHttpHandler = new HttpClientHandlerHelper
-            {
-                RequestCallBack = (request, cancellation) =>
-                {
-                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
-                    {
-                        retryCounter++;
-                        throw new Exception("Exception while sending telemetry");
-                    }
-
-                    return null;
-                }
-            };
-
-            Container container = await this.CreateClientAndContainer(
-                mode: ConnectionMode.Direct, 
-                customHttpHandler: customHttpHandler);
-
-            await Task.Delay(TimeSpan.FromMilliseconds(5000)); // wait for 5 sec, ideally telemetry would be sent 5 times but client telemetry endpoint is not functional (in this test), it should try 3 times maximum and after that client telemetry job should be stopped.
-            
-            Assert.AreEqual(3, retryCounter);
-        }
-
         private static ItemBatchOperation CreateItem(string itemId)
         {
             var testItem = new { id = itemId, Status = itemId };

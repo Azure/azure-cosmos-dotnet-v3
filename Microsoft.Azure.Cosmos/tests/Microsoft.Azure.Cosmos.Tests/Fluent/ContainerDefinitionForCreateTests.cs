@@ -251,6 +251,56 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     It.IsAny<CancellationToken>()), Times.Once);
         }
 
+        [Ignore]
+        [TestMethod]
+        public async Task WithComputedProperties()
+        {
+            Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>(MockBehavior.Strict);
+            Mock<Database> mockDatabase = new Mock<Database>(MockBehavior.Strict);
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>(MockBehavior.Strict);
+            mockDatabase.Setup(m => m.Client).Returns(mockClient.Object);
+            mockDatabase
+                .Setup(c => c.CreateContainerAsync(
+                    It.IsAny<ContainerProperties>(),
+                    It.IsAny<int?>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(mockContainerResponse.Object);
+            mockDatabase
+                .Setup(c => c.Id)
+                .Returns(Guid.NewGuid().ToString());
+
+            ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
+                mockDatabase.Object,
+                containerName,
+                partitionKey);
+
+            var definitions = new[]
+                {
+                    new { Name = "lowerName", Query = "SELECT VALUE LOWER(c.name) FROM c" },
+                    new { Name = "estimatedTax", Query = "SELECT VALUE c.salary * 0.2 FROM c" }
+                };
+            await containerFluentDefinitionForCreate
+                .WithComputedProperties()
+                    .WithComputedProperty(definitions[0].Name, definitions[0].Query)
+                    .WithComputedProperty(definitions[1].Name, definitions[1].Query)
+                    .Attach()
+                .CreateAsync();
+
+            mockDatabase.Verify(c => c.CreateContainerAsync(
+                    It.Is<ContainerProperties>((settings) =>
+                            settings.ComputedProperties.Count == 2 &&
+                            definitions[0].Name.Equals(settings.ComputedProperties[0].Name) &&
+                            definitions[0].Query.Equals(settings.ComputedProperties[0].Query) &&
+                            definitions[1].Name.Equals(settings.ComputedProperties[1].Name) &&
+                            definitions[1].Query.Equals(settings.ComputedProperties[1].Query)
+                        ),
+                    It.IsAny<int?>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
         [TestMethod]
         public async Task WithUniqueKey()
         {

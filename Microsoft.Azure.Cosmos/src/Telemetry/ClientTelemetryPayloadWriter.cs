@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ClientTelemetryProperties properties,
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
-            ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot,
+            IReadOnlyList<RequestInfo> sampledRequestInfo,
             Func<string, Task> callback)
         {
             if (properties == null)
@@ -46,11 +46,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
                     payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
                     payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
-
+                    
                     string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
                     string requestChargeMetrics = JsonConvert.SerializeObject(payloadForRequestCharge);
-                    
-                    if (lengthNow + latencyMetrics.Length + requestChargeMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+
+                    int thisSectionLength = latencyMetrics.Length + requestChargeMetrics.Length;
+                    if (lengthNow + thisSectionLength > ClientTelemetryOptions.PayloadSizeThreshold)
                     {
                         writer.WriteEndArray();
                         writer.WriteEndObject();
@@ -98,21 +99,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             }
 
-            if (requestInfoSnapshot?.Any() == true)
+            if (sampledRequestInfo?.Any() == true)
             {
                 writer.WritePropertyName("requestInfo");
                 writer.WriteStartArray();
                 
-                foreach (KeyValuePair<RequestInfo, LongConcurrentHistogram> entry in requestInfoSnapshot)
+                foreach (RequestInfo entry in sampledRequestInfo)
                 {
                     long lengthNow = stringBuilder.Length;
-                    
-                    MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                    metricInfo.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
-
-                    RequestInfo payloadForLatency = entry.Key;
-                    payloadForLatency.Metrics.Add(metricInfo);
-                    string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
+                  
+                    string latencyMetrics = JsonConvert.SerializeObject(entry);
 
                     if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
                     {
