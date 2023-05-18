@@ -183,8 +183,7 @@
             {
                 textWriter.WriteLine();
                 textWriter.WriteLine(PrintQueryMetrics);
-                textWriter.Write(string.Format("\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\"", "Query", "ODE", "RUCharge", "BackendTime",
-                                            "TransitTime", "ClientTime", "EndToEndTime"));
+                textWriter.Write("\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\"", "Query", "ODE", "RUCharge", "BackendTime", "TransitTime", "ClientTime", "EndToEndTime");
                 textWriter.WriteLine();
                 double totalClientTime = 0;
                 double totalBackendTime = 0;
@@ -243,7 +242,7 @@
             {
                 textWriter.WriteLine();
                 textWriter.WriteLine(PrintQueryMetrics);
-                textWriter.Write(string.Format("\"{0}\",\"{1}\",\"{2}\",\"{3}\"", "Query", "ODE", "RUCharge", "EndToEndTime"));
+                textWriter.Write("\"{0}\",\"{1}\",\"{2}\",\"{3}\"", "Query", "ODE", "RUCharge", "EndToEndTime");
                 textWriter.WriteLine();
 
                 string prevQuery = "";

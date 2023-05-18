@@ -53,9 +53,9 @@
             };
 
             this.cosmosClient = new CosmosClient(this.endpoint, this.authKey, clientOptions);
-            //await this.CreateDatabaseAsync();
-            //await this.CreateContainerAsync();
-            //await this.AddItemsToContainerAsync();
+            await this.CreateDatabaseAsync();
+            await this.CreateContainerAsync();
+            await this.AddItemsToContainerAsync();
             await this.RunAsync();
         }
 
@@ -128,8 +128,8 @@
             MetricsSerializer metricsSerializer = new MetricsSerializer();
             this.database = this.cosmosClient.GetDatabase(this.cosmosDatabaseId);
             this.container = this.database.GetContainer(this.containerId);
-            string highPrepTimeSumQuery = this.CreateHighPrepTimeSumQuery();
-            string highPrepTimeConditionalQuery = this.CreateHighPrepTimeConditionalQuery();
+            string highPrepTimeSumQuery = CreateHighPrepTimeSumQuery();
+            string highPrepTimeConditionalQuery = CreateHighPrepTimeConditionalQuery();
 
             Console.WriteLine(this.RawDataPath);
 
@@ -325,7 +325,7 @@
             Assert.AreEqual(queryInput.ExpectedResultCount, totalDocumentCount);
         }
 
-        private string CreateHighPrepTimeSumQuery()
+        private static string CreateHighPrepTimeSumQuery()
         {
             int exprCount = 9999;
             StringBuilder sb = new StringBuilder();
@@ -338,7 +338,7 @@
             return sb.Append(" = " + exprCount + " ORDER BY r.id ASC").ToString();
         }
 
-        private string CreateHighPrepTimeConditionalQuery()
+        private static string CreateHighPrepTimeConditionalQuery()
         {
             int exprCount = 999;
             StringBuilder sb = new StringBuilder();
@@ -352,7 +352,7 @@
                     sb.Append(" OR ");
                 }
 
-                sb.Append("(r.userDefinedId > " + nIdx + " AND r.city = " + "'" + cityOptions[nIdx % cityOptions.Length] + "')");
+                sb.Append($"r.userDefinedId > {nIdx} AND r.city = '{cityOptions[nIdx % cityOptions.Length]}'");
             }
 
             return sb.ToString();
