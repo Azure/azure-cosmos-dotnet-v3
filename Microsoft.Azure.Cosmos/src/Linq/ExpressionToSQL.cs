@@ -522,10 +522,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                 // so we check both attributes and apply the same precedence rules
                 // JsonConverterAttribute doesn't allow duplicates so it's safe to
                 // use FirstOrDefault()
-                CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.Where(ca => ca.AttributeType == typeof(JsonConverterAttribute)).FirstOrDefault();
-                CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().Where(ca => ca.AttributeType == typeof(JsonConverterAttribute)).FirstOrDefault();
+                CustomAttributeData memberAttribute = memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(JsonConverterAttribute));
+                CustomAttributeData typeAttribute = memberType.GetsCustomAttributes().FirstOrDefault(ca => ca.AttributeType == typeof(JsonConverterAttribute));
 
                 CustomAttributeData converterAttribute = memberAttribute ?? typeAttribute;
+                bool isSystemTextJsonConverter = false;
+
+                if (converterAttribute == null)
+                {
+                    CustomAttributeData stjMemberAttribute = memberExpression.Member.CustomAttributes.FirstOrDefault(ca => ca.AttributeType == typeof(System.Text.Json.Serialization.JsonConverterAttribute));
+                    CustomAttributeData stjTypeAttribute = memberType.GetsCustomAttributes().FirstOrDefault(ca => ca.AttributeType == typeof(System.Text.Json.Serialization.JsonConverterAttribute));
+
+                    converterAttribute = stjMemberAttribute ?? stjTypeAttribute;
+                    isSystemTextJsonConverter = converterAttribute != null;
+                }
+
                 if (converterAttribute != null)
                 {
                     Debug.Assert(converterAttribute.ConstructorArguments.Count > 0);
@@ -560,7 +571,18 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                         if (converterType.GetConstructor(Type.EmptyTypes) != null)
                         {
-                            serializedValue = JsonConvert.SerializeObject(value, (JsonConverter)Activator.CreateInstance(converterType));
+                            if (!isSystemTextJsonConverter)
+                            {
+                                serializedValue = JsonConvert.SerializeObject(value, (JsonConverter)Activator.CreateInstance(converterType));
+                            }
+                            else
+                            {
+                                System.Text.Json.JsonSerializerOptions options = new ()
+                                {
+                                    Converters = { (System.Text.Json.Serialization.JsonConverter)Activator.CreateInstance(converterType) }
+                                };
+                                serializedValue = System.Text.Json.JsonSerializer.Serialize(value, value.GetType(), options);
+                            }
                         }
                         else
                         {

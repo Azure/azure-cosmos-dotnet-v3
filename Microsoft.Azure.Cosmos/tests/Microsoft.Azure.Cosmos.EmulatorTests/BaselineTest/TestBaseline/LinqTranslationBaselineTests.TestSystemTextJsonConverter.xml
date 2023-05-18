@@ -1,0 +1,14 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[SystemTextJsonConverter comparison filter]]></Description>
+      <Expression><![CDATA[query.Where(doc => (Convert(doc.StjEnum, Int32) == 2))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["StjEnum"] = "Two")]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

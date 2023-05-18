@@ -2,7 +2,7 @@
   <Result>
     <Input>
       <Description><![CDATA[New]]></Description>
-      <Expression><![CDATA[query.Select(doc => new Datum2(doc.JsonProperty, doc.DataMember, doc.Default, doc.JsonPropertyAndDataMember))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => new Datum2(doc.JsonProperty, doc.DataMember, doc.Default, doc.JsonPropertyAndDataMember, doc.DataMemberAndJsonPropertyName, doc.JsonPropertyName))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>

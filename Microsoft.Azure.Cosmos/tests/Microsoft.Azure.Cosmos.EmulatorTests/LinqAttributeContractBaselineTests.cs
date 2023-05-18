@@ -88,6 +88,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 obj.JsonPropertyAndDataMember = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.DataMember = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.Default = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
+                obj.DataMemberAndJsonPropertyName = random.NextDouble() < 0.3 ? "Hello" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 return obj;
             };
             getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataFunc, Records, testCollection);
@@ -135,6 +136,18 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             [JsonProperty(PropertyName = "jsonPropertyHasHigherPriority")]
             [DataMember(Name = "thanDataMember")]
             public string JsonPropertyAndDataMember;
+
+            [DataMember(Name = "dataMemberHasHigherPriority")]
+            [System.Text.Json.Serialization.JsonPropertyName("thanJsonPropertyName")]
+            public string DataMemberAndJsonPropertyName;
+
+            /// <summary>
+            /// When generating test data, we can't actually serialize a type with both newtonsoft and System.Text.Json
+            /// so we'll just ignore the property since we can't validate it anyway
+            /// </summary>
+            [System.Text.Json.Serialization.JsonPropertyName("jsonPropertyName")]
+            [JsonIgnore]
+            public string JsonPropertyName;
         }
 
         /// <summary>
@@ -155,12 +168,21 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             [DataMember(Name = "thanDataMember2")]
             public string JsonPropertyAndDataMember;
 
-            public Datum2(string jsonProperty, string dataMember, string defaultMember, string jsonPropertyAndDataMember)
+            [DataMember(Name = "dataMemberHasHigherPriority2")]
+            [System.Text.Json.Serialization.JsonPropertyName("thanJsonPropertyName2")]
+            public string DataMemberAndJsonPropertyName;
+
+            [System.Text.Json.Serialization.JsonPropertyName("jsonPropertyName2")]
+            public string JsonPropertyName;
+
+            public Datum2(string jsonProperty, string dataMember, string defaultMember, string jsonPropertyAndDataMember, string dataMemberAndJsonPropertyName, string jsonPropertyName)
             {
                 this.JsonProperty = jsonProperty;
                 this.DataMember = dataMember;
                 this.Default = defaultMember;
                 this.JsonPropertyAndDataMember = jsonPropertyAndDataMember;
+                this.DataMemberAndJsonPropertyName = dataMemberAndJsonPropertyName;
+                this.JsonPropertyName = jsonPropertyName;
             }
         }
 
@@ -177,6 +199,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Assert.AreEqual("dataMember", TypeSystem.GetMemberName(typeof(Datum).GetMember("DataMember").First()));
             Assert.AreEqual("Default", TypeSystem.GetMemberName(typeof(Datum).GetMember("Default").First()));
             Assert.AreEqual("jsonPropertyHasHigherPriority", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonPropertyAndDataMember").First()));
+            Assert.AreEqual("dataMemberHasHigherPriority", TypeSystem.GetMemberName(typeof(Datum).GetMember("DataMemberAndJsonPropertyName").First()));
+            Assert.AreEqual("jsonPropertyName", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonPropertyName").First()));
         }
 
         /// <summary>
@@ -190,6 +214,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("Filter by DataMember", b => getQuery(b).Where(doc => doc.DataMember == "Hello")));
             inputs.Add(new LinqTestInput("Filter by Default", b => getQuery(b).Where(doc => doc.Default == "Hello")));
             inputs.Add(new LinqTestInput("Filter by JsonPropertyAndDataMember", b => getQuery(b).Where(doc => doc.JsonPropertyAndDataMember == "Hello")));
+            inputs.Add(new LinqTestInput("Filter by DataMemberAndJsonPropertyName", b => getQuery(b).Where(doc => doc.DataMemberAndJsonPropertyName == "Hello")));
+            // Can't verify this one, since it's serialized with newtonsoft.json and the query uses STJ for this property. End result is that the query returns no results since
+            // the name specificed on JsonPropertyName doesn't exist on the serialized document because newtonsoft.json doesn't know about it.
+            inputs.Add(new LinqTestInput("Filter by JsonPropertyName", b => getQuery(b).Where(doc => doc.JsonPropertyName == "Hello"), skipVerification: true));
             this.ExecuteTestSuite(inputs);
         }
 
@@ -204,6 +232,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("Select DataMember", b => getQuery(b).Select(doc => doc.DataMember)));
             inputs.Add(new LinqTestInput("Select Default", b => getQuery(b).Select(doc => doc.Default)));
             inputs.Add(new LinqTestInput("Select JsonPropertyAndDataMember", b => getQuery(b).Select(doc => doc.JsonPropertyAndDataMember)));
+            inputs.Add(new LinqTestInput("Select DataMemberAndJsonPropertyName", b => getQuery(b).Select(doc => doc.DataMemberAndJsonPropertyName)));
+            // Can't verify this one, since it's serialized with newtonsoft.json and the query uses STJ for this property. End result is that the query returns no results since
+            // the name specificed on JsonPropertyName doesn't exist on the serialized document because newtonsoft.json doesn't know about it.
+            inputs.Add(new LinqTestInput("Select JsonPropertyName", b => getQuery(b).Select(doc => doc.JsonPropertyName), skipVerification: true));
             this.ExecuteTestSuite(inputs);
         }
 
@@ -222,6 +254,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("OrderByDescending Default", b => getQuery(b).OrderByDescending(doc => doc.Default)));
             inputs.Add(new LinqTestInput("OrderBy JsonPropertyAndDataMember", b => getQuery(b).OrderBy(doc => doc.JsonPropertyAndDataMember)));
             inputs.Add(new LinqTestInput("OrderByDescending JsonPropertyAndDataMember", b => getQuery(b).OrderByDescending(doc => doc.JsonPropertyAndDataMember)));
+            inputs.Add(new LinqTestInput("OrderBy DataMemberAndJsonPropertyName", b => getQuery(b).OrderBy(doc => doc.DataMemberAndJsonPropertyName)));
+            inputs.Add(new LinqTestInput("OrderByDescending DataMemberAndJsonPropertyName", b => getQuery(b).OrderByDescending(doc => doc.DataMemberAndJsonPropertyName)));
+            inputs.Add(new LinqTestInput("OrderBy JsonPropertyName", b => getQuery(b).OrderBy(doc => doc.JsonPropertyName)));
+            inputs.Add(new LinqTestInput("OrderByDescending JsonPropertyName", b => getQuery(b).OrderByDescending(doc => doc.JsonPropertyName)));
             this.ExecuteTestSuite(inputs);
         }
 
@@ -238,7 +274,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     DataMember = doc.DataMember,
                     Default = doc.Default,
                     JsonProperty = doc.JsonProperty,
-                    JsonPropertyAndDataMember = doc.JsonPropertyAndDataMember
+                    JsonPropertyAndDataMember = doc.JsonPropertyAndDataMember,
+                    DataMemberAndJsonPropertyName = doc.DataMemberAndJsonPropertyName,
+                    JsonPropertyName = doc.JsonPropertyName
                 })));
             this.ExecuteTestSuite(inputs);
         }
@@ -250,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestNewAttributeContract()
         {
             var inputs = new List<LinqTestInput>();
-            inputs.Add(new LinqTestInput("New", b => getQuery(b).Select(doc => new Datum2(doc.JsonProperty, doc.DataMember, doc.Default, doc.JsonPropertyAndDataMember))));
+            inputs.Add(new LinqTestInput("New", b => getQuery(b).Select(doc => new Datum2(doc.JsonProperty, doc.DataMember, doc.Default, doc.JsonPropertyAndDataMember, doc.DataMemberAndJsonPropertyName, doc.JsonPropertyName))));
             this.ExecuteTestSuite(inputs);
         }
 

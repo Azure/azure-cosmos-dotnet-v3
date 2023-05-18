@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
+    using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqTranslationBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
@@ -144,6 +145,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             [JsonConverter(typeof(DateJsonConverter))]
             public DateTime IsoDateOnly;
+
+            [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+            public TestEnum2 StjEnum { get; set; }
 
             // This field should serialize as ISO Date
             // as this is the default DateTimeConverter
@@ -387,6 +391,28 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Default (ISO) = filter", b => getQuery(b).Where(doc => doc.DefaultTime == new DateTime(2016, 9, 13, 0, 0, 0))),
                 new LinqTestInput("Default (ISO) > filter", b => getQuery(b).Where(doc => doc.DefaultTime > new DateTime(2016, 9, 13, 0, 0, 0))),
                 new LinqTestInput("Default (ISO) < filter", b => getQuery(b).Where(doc => doc.DefaultTime < new DateTime(2016, 9, 13, 0, 0, 0)))
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestSystemTextJsonConverter()
+        {
+            const int Records = 10;
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
+                DataObject obj = new DataObject();
+                obj.StjEnum = TestEnum2.Two;
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
+                return obj;
+            };
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // Skip verification because we are using Newtonsoft.Json serializer and it serializes StjEnum as a number rather than a string
+                new LinqTestInput("SystemTextJsonConverter comparison filter", b => getQuery(b).Where(doc => doc.StjEnum == TestEnum2.Two), skipVerification: true),
             };
             this.ExecuteTestSuite(inputs);
         }

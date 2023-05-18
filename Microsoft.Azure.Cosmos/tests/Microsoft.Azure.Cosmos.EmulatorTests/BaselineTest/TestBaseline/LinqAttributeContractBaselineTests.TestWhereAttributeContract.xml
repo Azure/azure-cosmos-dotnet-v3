@@ -47,4 +47,28 @@ FROM root
 WHERE (root["jsonPropertyHasHigherPriority"] = "Hello")]]></SqlQuery>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter by DataMemberAndJsonPropertyName]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.DataMemberAndJsonPropertyName == "Hello"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["dataMemberHasHigherPriority"] = "Hello")]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter by JsonPropertyName]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.JsonPropertyName == "Hello"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["jsonPropertyName"] = "Hello")]]></SqlQuery>
+    </Output>
+  </Result>
 </Results>

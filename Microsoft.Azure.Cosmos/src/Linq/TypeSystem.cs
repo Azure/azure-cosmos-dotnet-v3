@@ -47,6 +47,15 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (memberName == null)
             {
+                System.Text.Json.Serialization.JsonPropertyNameAttribute jsonPropertyNameAttribute = memberInfo.GetCustomAttribute<System.Text.Json.Serialization.JsonPropertyNameAttribute>(true);
+                if (!string.IsNullOrEmpty(jsonPropertyNameAttribute?.Name))
+                {
+                    memberName = jsonPropertyNameAttribute.Name;
+                }
+            }
+
+            if (memberName == null)
+            {
                 memberName = memberInfo.Name;
             }
 
