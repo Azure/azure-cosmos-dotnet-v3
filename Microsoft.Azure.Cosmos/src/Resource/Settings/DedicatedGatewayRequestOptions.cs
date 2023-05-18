@@ -25,8 +25,31 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets or sets if bypass the integrated cache or not associated with the request in the Azure CosmosDB service.
+        /// When set this value to true, the request will not be served from the integrated cache, and the response will not be cached either.
         /// </summary>
         /// <value>Default value is false.</value>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// DedicatedGatewayRequestOptions dedicatedGatewayRequestOptions = new DedicatedGatewayRequestOptions
+        /// {
+        ///     BypassIntegratedCache = true
+        /// };
+        /// 
+        /// // For ItemRequestOptions
+        /// ItemRequestOptions requestOptions = new ItemRequestOptions
+        /// {
+        ///     DedicatedGatewayRequestOptions = dedicatedGatewayRequestOptions
+        /// };
+        /// 
+        /// // For QueryRequestOptions
+        /// QueryRequestOptions requestOptions = new QueryRequestOptions
+        /// {
+        ///     DedicatedGatewayRequestOptions = dedicatedGatewayRequestOptions
+        /// };
+        /// ]]>
+        /// </code>
+        /// </example>
 #if PREVIEW
         public
 #else
@@ -47,8 +70,11 @@ namespace Microsoft.Azure.Cosmos
 
                 request.Headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayPerRequestCacheStaleness, cacheStalenessInMilliseconds.ToString(CultureInfo.InvariantCulture));
             }
+        }
 
-            if (dedicatedGatewayRequestOptions?.BypassIntegratedCache != null)
+        internal static void PopulateBypassIntegratedCacheOption(DedicatedGatewayRequestOptions dedicatedGatewayRequestOptions, RequestMessage request)
+        {
+            if (dedicatedGatewayRequestOptions != null && dedicatedGatewayRequestOptions.BypassIntegratedCache.HasValue && dedicatedGatewayRequestOptions.BypassIntegratedCache.Value)
             {
                 request.Headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayPerRequestBypassIntegratedCache, true.ToString(CultureInfo.InvariantCulture));
             }
