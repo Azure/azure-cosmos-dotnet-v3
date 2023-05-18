@@ -186,36 +186,32 @@ flowchart LR
     ConsistencyWriter --> TCPClient
 
 ```
-## Open Telemetry (Private Preview)
+## Distributed Tracing (Preview)
+
+For detail about usage of this feature, please see the [Azure Cosmos DB SDK observability]()
 
 ```mermaid
 flowchart TD
-    OperationRequest[Operation Request] --> ClientContextCore
-    GeneratedActivity --> |Request goes for Processing|HandlerPipeline(Handler Pipeline)
+    classDef orange fill:#f96
+    classDef blue fill:#6fa8dc
     subgraph ClientContextCore
-        OTelScopeFactory --> CheckSourceName{is source name is Azure.Cosmos.Operation?} 
-        CheckSourceName --> |Yes| CreateActivity(Start Activity Using DiagnosticScope) 
-        --> Preloaddata(Load containerName, databaseName, operationType)
-        --> ConnectionModeforkind{Gateway Mode/Direct Mode?}
-        ConnectionModeforkind -- Direct --> SetInternalKind(Set activity Kind as Internal) 
-        ConnectionModeforkind -- Gateway --> SetClientKind(Set activity Kind as Client)
-        SetInternalKind --> GeneratedActivity(Activity Initiated)
-        SetClientKind --> GeneratedActivity
-        HandlerPipeline --> CheckLatencyThreshold{is high latency?}
-        CheckLatencyThreshold -- Yes --> GenerateEvent(Generate Event With Request Diagnostics) --> StopActivity
+        OpenTelemetryRecorderFactory --> CheckFeatureFlag{isDistributedTracing Enabled?} 
+        CheckFeatureFlag --> |Yes| CreateActivity(Start an Activity or Child activity with specific kind Using DiagnosticScope<br> and preloaded attributes like containerName, databaseName, operationType) 
+        CreateActivity --> HandlerPipeline
+        GetResponse --> TriggerDispose(Trigger Dispose of Disagnostic Scope)
+        TriggerDispose --> CheckLatencyThreshold{Is high latency/errored response?}
+        CheckLatencyThreshold -- Yes --> GenerateTraceEvent(Generate <i>Warning</i> or <i>Error</i> Trace Event With Request Diagnostics) --> StopActivity
         CheckLatencyThreshold -- No --> StopActivity
+        StopActivity --> SendResponse(Send Response to Caller):::blue
     end
-    CheckSourceName --> |No| HandlerPipeline 
-    HandlerPipeline --> ConnectionMode{Gateway Mode/Direct Mode?}
-    subgraph DirectPackage["Direct Implementation (part of Direct package)"]
-        subgraph TCPImpl[TCP Implementation]
-            GenerateActivity(Generate Activity with Source Name )
-        end
-        DRetryAndLogic(Retry/Failover/Replica selection etc Business Logic) --> TCPImpl --> |RNTBD|BackendService(Back End Service)
+    OperationRequest[Operation Request]:::blue --> ClientContextCore
+    subgraph Application
+     OperationCall(User Application):::orange
     end
-    subgraph GatewayCode[Gateway Implementation]
-        GRetryAndLogic(Retry Logic) --> |HTTP|GatewayCall(Gateway Service)
-    end
-    ConnectionMode -- "Direct(Request Process on client Machine)" --> DirectPackage
-    ConnectionMode -- Gateway --> GatewayCode
+    OperationCall(User Application):::orange --> OperationRequest
+    CheckFeatureFlag --> |No| HandlerPipeline 
+    HandlerPipeline --> OtherLogic(Goes through TCP/HTTP calls <br> based on Connection Mode):::blue
+    OtherLogic --> GetResponse(Get Response for the request)
+    SendResponse --> OperationCall
+
 ```
