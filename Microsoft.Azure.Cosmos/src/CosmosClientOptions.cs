@@ -72,6 +72,8 @@ namespace Microsoft.Azure.Cosmos
         private IWebProxy webProxy;
         private Func<HttpClient> httpClientFactory;
         private string applicationName;
+        private string applicationRegion;
+        private IReadOnlyList<string> applicationPreferredRegions;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -154,7 +156,11 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
-        public string ApplicationRegion { get; set; }
+        public string ApplicationRegion
+        {
+            get => this.applicationRegion;
+            set => this.applicationRegion = RegionNameMapping.GetCosmosDBRegionName(value);
+        }
 
         /// <summary>
         /// Gets and sets the preferred regions for geo-replicated database accounts in the Azure Cosmos DB service. 
@@ -189,7 +195,11 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
-        public IReadOnlyList<string> ApplicationPreferredRegions { get; set; }
+        public IReadOnlyList<string> ApplicationPreferredRegions
+        {
+            get => this.applicationPreferredRegions;
+            set => this.applicationPreferredRegions = value?.Select(RegionNameMapping.GetCosmosDBRegionName).ToList();
+        }
 
         /// <summary>
         /// Get or set the maximum number of concurrent connections allowed for the target

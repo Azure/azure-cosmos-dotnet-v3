@@ -540,6 +540,74 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void VerifyRegionNameFormatConversionForApplicationRegion()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            cosmosClientOptions.ApplicationRegion = "westus2";
+            Assert.AreEqual(Regions.WestUS2, cosmosClientOptions.ApplicationRegion);
+        }
+
+        [TestMethod]
+        public void VerifyRegionNameFormatConversionBypassForApplicationRegion()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            
+            // No conversion for expected format.
+            cosmosClientOptions.ApplicationRegion = Regions.AustraliaCentral2;
+            Assert.AreEqual(Regions.AustraliaCentral2, cosmosClientOptions.ApplicationRegion);
+
+            // Ignore unknown values.
+            cosmosClientOptions.ApplicationRegion = null;
+            Assert.IsNull(cosmosClientOptions.ApplicationRegion);
+
+            cosmosClientOptions.ApplicationRegion = string.Empty;
+            Assert.AreEqual(string.Empty, cosmosClientOptions.ApplicationRegion);
+
+            cosmosClientOptions.ApplicationRegion = "Invalid region";
+            Assert.AreEqual("Invalid region", cosmosClientOptions.ApplicationRegion);
+        }
+
+        [TestMethod]
+        public void VerifyRegionNameFormatConversionForApplicationPreferredRegions()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            cosmosClientOptions.ApplicationPreferredRegions = new List<string> {"westus2", "usdodcentral", Regions.ChinaNorth3};
+            Assert.AreEqual(Regions.WestUS2, cosmosClientOptions.ApplicationPreferredRegions[0]);
+            Assert.AreEqual(Regions.USDoDCentral, cosmosClientOptions.ApplicationPreferredRegions[1]);
+            Assert.AreEqual(Regions.ChinaNorth3, cosmosClientOptions.ApplicationPreferredRegions[2]);
+        }
+
+        [TestMethod]
+        public void VerifyRegionNameFormatConversionBypassForInvalidApplicationPreferredRegions()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+
+            // List is null
+            cosmosClientOptions.ApplicationPreferredRegions = null;
+            Assert.IsNull(cosmosClientOptions.ApplicationRegion);
+
+            // List is empty
+            cosmosClientOptions.ApplicationPreferredRegions = new List<string>();
+            Assert.AreEqual(0, cosmosClientOptions.ApplicationPreferredRegions.Count);
+
+            // List contains valid and invalid values
+            cosmosClientOptions.ApplicationPreferredRegions = new List<string>
+            {
+                null,
+                string.Empty,
+                Regions.JioIndiaCentral,
+                "westus2",
+                "Invalid region"
+            };
+
+            Assert.IsNull(cosmosClientOptions.ApplicationPreferredRegions[0]);
+            Assert.AreEqual(string.Empty, cosmosClientOptions.ApplicationPreferredRegions[1]);
+            Assert.AreEqual(Regions.JioIndiaCentral, cosmosClientOptions.ApplicationPreferredRegions[2]);
+            Assert.AreEqual(Regions.WestUS2, cosmosClientOptions.ApplicationPreferredRegions[3]);
+            Assert.AreEqual("Invalid region", cosmosClientOptions.ApplicationPreferredRegions[4]);
+        }
+
+        [TestMethod]
         public void InvalidApplicationNameCatchTest()
         {
 
