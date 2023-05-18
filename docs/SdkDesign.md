@@ -186,3 +186,36 @@ flowchart LR
     ConsistencyWriter --> TCPClient
 
 ```
+## Open Telemetry (Private Preview)
+
+```mermaid
+flowchart TD
+    OperationRequest[Operation Request] --> ClientContextCore
+    GeneratedActivity --> |Request goes for Processing|HandlerPipeline(Handler Pipeline)
+    subgraph ClientContextCore
+        OTelScopeFactory --> CheckSourceName{is source name is Azure.Cosmos.Operation?} 
+        CheckSourceName --> |Yes| CreateActivity(Start Activity Using DiagnosticScope) 
+        --> Preloaddata(Load containerName, databaseName, operationType)
+        --> ConnectionModeforkind{Gateway Mode/Direct Mode?}
+        ConnectionModeforkind -- Direct --> SetInternalKind(Set activity Kind as Internal) 
+        ConnectionModeforkind -- Gateway --> SetClientKind(Set activity Kind as Client)
+        SetInternalKind --> GeneratedActivity(Activity Initiated)
+        SetClientKind --> GeneratedActivity
+        HandlerPipeline --> CheckLatencyThreshold{is high latency?}
+        CheckLatencyThreshold -- Yes --> GenerateEvent(Generate Event With Request Diagnostics) --> StopActivity
+        CheckLatencyThreshold -- No --> StopActivity
+    end
+    CheckSourceName --> |No| HandlerPipeline 
+    HandlerPipeline --> ConnectionMode{Gateway Mode/Direct Mode?}
+    subgraph DirectPackage["Direct Implementation (part of Direct package)"]
+        subgraph TCPImpl[TCP Implementation]
+            GenerateActivity(Generate Activity with Source Name )
+        end
+        DRetryAndLogic(Retry/Failover/Replica selection etc Business Logic) --> TCPImpl --> |RNTBD|BackendService(Back End Service)
+    end
+    subgraph GatewayCode[Gateway Implementation]
+        GRetryAndLogic(Retry Logic) --> |HTTP|GatewayCall(Gateway Service)
+    end
+    ConnectionMode -- "Direct(Request Process on client Machine)" --> DirectPackage
+    ConnectionMode -- Gateway --> GatewayCode
+```
