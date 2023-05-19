@@ -16,6 +16,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public double cost { get; set; }
         public string description { get; set; }
         public string pk { get; set; }
+
+        public string pk0 { get; set; }
+        public string pk1 { get; set; }
+        public string pk2 { get; set; }
         public string CamelCase { get; set; }
         public int? nullableInt { get; set; }
 
@@ -75,6 +79,46 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             return createdList;
+        }
+        public static ToDoActivity CreateRandomToDoActivityMultiHashed(
+            List<string> pks = null,
+            string id = null,
+            bool randomTaskNumber = false)
+        {
+            if(pks.Count == 0)
+            {
+                pks.Add("TBD-0-" + Guid.NewGuid().ToString());
+                pks.Add("TBD-1-" + Guid.NewGuid().ToString());
+                pks.Add("TBD-2-" + Guid.NewGuid().ToString());
+            }
+            if (id == null)
+            {
+                id = Guid.NewGuid().ToString();
+            }
+
+            int taskNum = 42;
+            if (randomTaskNumber)
+            {
+                taskNum = Random.Shared.Next();
+            }
+
+            return new ToDoActivity()
+            {
+                id = id,
+                description = "CreateRandomToDoActivityMultiHashed",
+                pk0 = pks[0],
+                pk1 = pks[1],
+                pk2 = pks[2],
+                taskNum = taskNum,
+                cost = double.MaxValue,
+                CamelCase = "camelCase",
+                children = new ToDoActivity[]
+                { new ToDoActivity { id = "child1", taskNum = 30 },
+                  new ToDoActivity { id = "child2", taskNum = 40}
+                },
+                valid = true,
+                nullableInt = null
+            };
         }
 
         public static ToDoActivity CreateRandomToDoActivity(

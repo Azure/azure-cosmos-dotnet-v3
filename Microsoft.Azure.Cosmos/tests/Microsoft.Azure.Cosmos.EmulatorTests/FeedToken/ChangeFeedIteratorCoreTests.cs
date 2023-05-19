@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     public class ChangeFeedIteratorCoreTests : BaseCosmosClientHelper
     {
         private static readonly string PartitionKey = "/pk";
+        private static readonly List<string> PartitionKeyPaths = new List<string> { "/pk0", "/pk1", "/pk2" };
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -43,6 +44,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         {
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: ChangeFeedIteratorCoreTests.PartitionKey),
+                throughput: 20000,
+                cancellationToken: this.cancellationToken);
+
+            return (ContainerInternal)response;
+        }
+
+        private async Task<ContainerInternal> InitializeLargeMultiHashedContainerAsync()
+        {
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: ChangeFeedIteratorCoreTests.PartitionKeyPaths),
                 throughput: 20000,
                 cancellationToken: this.cancellationToken);
 
@@ -1202,7 +1213,38 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             Assert.IsNotNull(jsonToken["Summary"]["GatewayCalls"], "'GatewayCalls' is not found in diagnostics. UseGateMode is set to false.");
         }
+        private async Task<IList<ToDoActivity>> CreateRandomItemsForMultihashedContainer(ContainerInternal container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
+        {
+            Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
 
+            List<ToDoActivity> createdList = new List<ToDoActivity>();
+            for (int i = 0; i < pkCount; i++)
+            {
+                string pk0 = "TBD-0";
+                string pk1 = "TBD-1";
+                string pk2 = "TBD-2";
+
+                if (randomPartitionKey)
+                {
+                    pk0 += Guid.NewGuid().ToString();
+                    pk0 += Guid.NewGuid().ToString();
+                    pk0 += Guid.NewGuid().ToString();
+                }
+
+                List<string> pks = new List<string> { pk0, pk1, pk2 };
+
+                for (int j = 0; j < perPKItemCount; j++)
+                {
+                    ToDoActivity temp = ToDoActivity.CreateRandomToDoActivityMultiHashed(pks: pks);
+
+                    createdList.Add(temp);
+
+                    await container.CreateItemAsync<ToDoActivity>(item: temp);
+                }
+            }
+
+            return createdList;
+        }
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerInternal container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);

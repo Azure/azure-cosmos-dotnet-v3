@@ -36,6 +36,46 @@
         }
 
         [TestMethod]
+        public async Task REMOVEME()
+        {
+            string ConnectionString = "";
+            string DatabaseName = "LeaderboardsData";
+            string ContainerId = "DataContainer4";
+
+            Console.WriteLine($"{DateTime.Now}:Starting ChangeFeedPullReader");
+
+            //Container container = CreateDatabaseAndContainerAsync(ConnectionString, DatabaseName, AutoscaleMaxThroughput, ContainerId).Result;
+            CosmosClient cosmosClient = new CosmosClient(ConnectionString);
+            Cosmos.Database database = cosmosClient.GetDatabase(DatabaseName);
+            Cosmos.Container container = database.GetContainer(ContainerId);
+
+            Cosmos.PartitionKey shardPartitionKey = new PartitionKeyBuilder().Add($"shard0").Build();
+            FeedRange shardFeedRange = FeedRange.FromPartitionKey(shardPartitionKey);
+
+            FeedIterator<dynamic> iteratorForShard = container.GetChangeFeedIterator<dynamic>(ChangeFeedStartFrom.Beginning(shardFeedRange), ChangeFeedMode.Incremental, new ChangeFeedRequestOptions() { PageSizeHint = 10 });
+            int abc = 0;
+            // Read all changes for documents for the shard.
+            while (iteratorForShard.HasMoreResults)
+            {
+                Console.Out.WriteLine("Before read" + abc.ToString());
+                // Consume all changes for documents for the shard.
+                FeedResponse<dynamic> response = await iteratorForShard.ReadNextAsync(); // BUG: Code gets stuck here!
+                Console.Out.WriteLine("After read" + abc.ToString());
+
+                Console.WriteLine($"Response Status: {response.StatusCode} Request Charge: {response.RequestCharge}");
+
+                if (response.StatusCode == HttpStatusCode.NotModified)
+                {
+                    Console.WriteLine($"No new changes" + abc.ToString());
+                    await Task.Delay(TimeSpan.FromSeconds(5));
+                }
+                abc++;
+            }
+
+            Console.WriteLine($"{DateTime.Now}:Exiting ChangeFeedPullReader.");
+        }
+
+        [TestMethod]
         public async Task MultiHashCreateDocumentTest()
         {
             Cosmos.PartitionKey pKey;
