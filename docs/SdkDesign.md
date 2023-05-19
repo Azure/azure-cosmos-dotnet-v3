@@ -195,7 +195,7 @@ flowchart TD
     classDef orange fill:#f96
     classDef blue fill:#6fa8dc
     subgraph ClientContextCore
-        OpenTelemetryRecorderFactory --> CheckFeatureFlag{isDistributedTracing Enabled?} 
+        OpenTelemetryRecorderFactory --> CheckFeatureFlag{<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/3727d4d738cfc24aa372b578fd8ca482a5bc2f3f/Microsoft.Azure.Cosmos/src/Fluent/CosmosClientBuilder.cs#L436'>isDistributedTracing</a> Enabled?} 
         CheckFeatureFlag --> |Yes| CreateActivity(Start an Activity or Child activity with specific kind Using DiagnosticScope<br> and preloaded attributes like containerName, databaseName, operationType) 
         CreateActivity --> HandlerPipeline
         GetResponse --> TriggerDispose(Trigger Dispose of Disagnostic Scope)
