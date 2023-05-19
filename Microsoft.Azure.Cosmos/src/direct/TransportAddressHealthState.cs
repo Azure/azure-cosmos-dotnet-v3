@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Documents
             this.lastUnknownTimestamp = lastUnknownTimestamp;
             this.lastUnhealthyPendingTimestamp = lastUnhealthyPendingTimestamp;
             this.lastUnhealthyTimestamp = lastUnhealthyTimestamp;
-            this.healthStatusDiagnosticString = $"{transportUri}:{healthStatus}";
+            this.healthStatusDiagnosticString = $"{transportUri.Port}:{healthStatus}";
 
             List<string> healthStatusList = new ()
             {
