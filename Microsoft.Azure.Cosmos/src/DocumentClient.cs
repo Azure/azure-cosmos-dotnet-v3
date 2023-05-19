@@ -1295,7 +1295,14 @@ namespace Microsoft.Azure.Cosmos
                 // Dispose only if this store client factory was created and is owned by this instance of document client, otherwise just release the reference
                 if (this.isStoreClientFactoryCreatedInternally)
                 {
-                    this.storeClientFactory.Dispose();
+                    try
+                    {
+                        this.storeClientFactory.Dispose();
+                    }
+                    catch (Exception exception)
+                    {
+                        DefaultTrace.TraceWarning($"Exception {exception} thrown during dispose of IStoreClientFactory, this could happen if there are inflight request during the dispose of client");
+                    }
                 }
 
                 this.storeClientFactory = null;
