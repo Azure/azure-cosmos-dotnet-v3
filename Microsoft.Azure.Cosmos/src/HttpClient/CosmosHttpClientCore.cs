@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -307,12 +308,16 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(createRequestMessageAsync));
             }
 
-            return this.SendHttpHelperAsync(
-                createRequestMessageAsync,
-                resourceType,
-                timeoutPolicy,
-                clientSideRequestStatistics,
-                cancellationToken);
+            using (ITrace trace = Trace.GetRootTrace(nameof(SendHttpAsync), TraceComponent.Transport, TraceLevel.Info))
+            {
+                return this.SendHttpHelperAsync(
+                    createRequestMessageAsync,
+                    resourceType,
+                    timeoutPolicy,
+                    clientSideRequestStatistics,
+                    cancellationToken,
+                    trace);
+            }
         }
 
         private async Task<HttpResponseMessage> SendHttpHelperAsync(
@@ -320,7 +325,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            ITrace trace)
         {
             DateTime startDateTimeUtc = DateTime.UtcNow;
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.GetTimeoutEnumerator();
@@ -387,6 +393,7 @@ namespace Microsoft.Azure.Cosmos
                                     
                                     if (timeoutPolicy.ShouldThrow503OnTimeout)
                                     {
+                                        trace.AddDatum("Client Side Request Stats", clientSideRequestStatistics);
                                         throw CosmosExceptionFactory.CreateServiceUnavailableException(
                                             message: message,
                                             headers: new Headers()
@@ -394,6 +401,7 @@ namespace Microsoft.Azure.Cosmos
                                                 ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
                                                 SubStatusCode = SubStatusCodes.TransportGenerated503
                                             },
+                                            trace: trace,
                                             innerException: e);
                                     }
 

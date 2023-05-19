@@ -301,6 +301,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                         CosmosException cosmosException = (CosmosException)e;
                         Assert.AreEqual(cosmosException.StatusCode, System.Net.HttpStatusCode.ServiceUnavailable);
                         Assert.AreEqual((int)cosmosException.SubStatusCode,(int)SubStatusCodes.TransportGenerated503);
+
+                        Assert.IsNotNull(cosmosException.Trace);
+                        Assert.AreNotEqual(cosmosException.Trace.Data.Count, 0);
                     }
                 }
 
