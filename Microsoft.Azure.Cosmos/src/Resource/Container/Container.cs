@@ -1342,6 +1342,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="partitionKey">The partition key for all items in the batch.</param>
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
+        /// <remarks>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/concepts-limits#per-request-limits">Limits on TransactionalBatch requests</seealso>
+        /// </remarks>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
         /// <summary>
