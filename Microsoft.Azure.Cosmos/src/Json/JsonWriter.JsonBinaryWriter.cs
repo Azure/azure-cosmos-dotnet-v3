@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>Blitted bytes.</returns>
         public static PreblittedBinaryJsonScope CapturePreblittedBinaryJsonScope(Action<ITypedBinaryJsonWriter> scopeWriter)
         {
-            JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter(initialCapacity: 256, serializeCount: false, enableEncodedStrings: false);
+            JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter(initialCapacity: 256, enableEncodedStrings: false);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InArrayContext);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InObjectContext);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.IsPropertyExpected);
@@ -244,13 +244,6 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly Stack<ArrayAndObjectInfo> bufferedContexts;
 
             /// <summary>
-            /// With binary encoding json elements like arrays and object are prefixed with a length in bytes and optionally a count.
-            /// This flag just determines whether you want to serialize the count, since it's optional and up to the user to make the
-            /// tradeoff between O(1) .Count() operation as the cost of additional storage.
-            /// </summary>
-            private readonly bool serializeCountOverride;
-
-            /// <summary>
             /// When a user writes an open array or object we reserve this much space for the type marker + length + count
             /// And correct it later when they write a close array or object.
             /// </summary>
@@ -269,18 +262,15 @@ namespace Microsoft.Azure.Cosmos.Json
             /// Initializes a new instance of the JsonBinaryWriter class.
             /// </summary>
             /// <param name="initialCapacity">The initial capacity to avoid intermediary allocations.</param>
-            /// <param name="serializeCount">Whether to serialize the count for object and array typemarkers.</param>
             /// <param name="enableEncodedStrings">enable reference string encoding</param>
             public JsonBinaryWriter(
                 int initialCapacity,
-                bool serializeCount,
                 bool enableEncodedStrings)
             {
                 this.EnableEncodedStrings = enableEncodedStrings;
                 this.binaryWriter = new JsonBinaryMemoryWriter(initialCapacity);
                 this.bufferedContexts = new Stack<ArrayAndObjectInfo>();
-                this.serializeCountOverride = serializeCount;
-                this.reservationSize = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength + (this.serializeCountOverride ? JsonBinaryEncoding.OneByteCount : 0);
+                this.reservationSize = JsonBinaryEncoding.TypeMarkerLength + JsonBinaryEncoding.OneByteLength;
                 this.sharedStrings = new List<SharedStringValue>();
                 this.sharedStringIndexes = new ReferenceStringDictionary();
                 this.stringReferenceOffsets = new List<int>();
@@ -544,10 +534,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 // We'll adjust this as needed when writing the end of the array/object.
                 this.binaryWriter.Write((byte)0);
                 this.binaryWriter.Write((byte)0);
-                if (this.serializeCountOverride)
-                {
-                    this.binaryWriter.Write((byte)0);
-                }
             }
 
             private void RegisterArrayOrObjectStart(bool isArray, long offset, int valueCount)
@@ -611,19 +597,14 @@ namespace Microsoft.Azure.Cosmos.Json
                     // Need to figure out how many bytes to encode the length and the count
                     if (payloadLength <= byte.MaxValue)
                     {
-                        bool serializeCount = this.serializeCountOverride || (isArray && (count > 16));
+                        bool serializeCount = isArray && (count > 16);
 
-                        // 1 byte length
+                        // 1 byte length - move the buffer forward
+                        Span<byte> buffer = this.binaryWriter.BufferAsSpan;
                         int bytesToWrite = JsonBinaryEncoding.TypeMarkerLength
                             + JsonBinaryEncoding.OneByteLength
-                            + (serializeCount ? JsonBinaryEncoding.OneByteCount : 0);
-
-                        // Move the buffer forward if count is serialized
-                        if (serializeCount)
-                        {
-                            Span<byte> buffer = this.binaryWriter.BufferAsSpan;
-                            this.MoveBuffer(buffer, payloadIndex, payloadLength, typeMarkerIndex, bytesToWrite, stringStartIndex, stringReferenceStartIndex);
-                        }
+                            + (serializeCount ? JsonBinaryEncoding.OneByteCount : 0); 
+                        this.MoveBuffer(buffer, payloadIndex, payloadLength, typeMarkerIndex, bytesToWrite, stringStartIndex, stringReferenceStartIndex);
 
                         // Move the cursor back
                         this.binaryWriter.Position = typeMarkerIndex;
@@ -646,7 +627,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
                     else if (payloadLength <= ushort.MaxValue)
                     {
-                        bool serializeCount = this.serializeCountOverride || (isArray && ((count > 16) || (payloadLength > 0x1000)));
+                        bool serializeCount = isArray && ((count > 16) || (payloadLength > 0x1000));
 
                         // 2 byte length - make space for the extra byte length (and extra byte count)
                         this.binaryWriter.Write((byte)0);
@@ -684,7 +665,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     else
                     {
                         // (payloadLength <= uint.MaxValue)
-                        bool serializeCount = this.serializeCountOverride || isArray;
+                        bool serializeCount = isArray;
 
                         // 4 byte length - make space for an extra 3 byte length (and 3 byte count)
                         this.binaryWriter.Write((byte)0);

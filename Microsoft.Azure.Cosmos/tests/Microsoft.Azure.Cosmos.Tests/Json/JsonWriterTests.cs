@@ -16,7 +16,7 @@
 
         #region Literals
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TrueTest()
         {
             string expectedString = "true";
@@ -37,7 +37,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void FalseTest()
         {
             string expectedString = "false";
@@ -58,7 +58,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NullTest()
         {
             string expectedString = "null";
@@ -80,7 +80,7 @@
         #endregion
         #region Numbers
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void IntegerTest()
         {
             string expectedString = "1337";
@@ -103,7 +103,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void DoubleTest()
         {
             string expectedString = "1337.1337";
@@ -126,7 +126,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NaNTest()
         {
             string expectedString = "\"NaN\"";
@@ -149,7 +149,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void PositiveInfinityTest()
         {
             string expectedString = "\"Infinity\"";
@@ -172,7 +172,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NegativeInfinityTest()
         {
             string expectedString = "\"-Infinity\"";
@@ -195,7 +195,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NegativeNumberTest()
         {
             string expectedString = "-1337.1337";
@@ -218,7 +218,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberWithScientificNotationTest()
         {
             string expectedString = "6.02252E+23";
@@ -241,7 +241,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberRegressionTest()
         {
             // regression test - the value 0.00085647800000000004 was being incorrectly rejected
@@ -267,7 +267,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberPrecisionTest()
         {
             string expectedString = "[2.7620553993338772e+018,2.7620553993338778e+018]";
@@ -303,7 +303,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void LargeNumbersTest()
         {
             string expectedString = @"[1,-1,10,-10,14997460357411200,14997460357411000,1499746035741101,1499746035741109,-14997460357411200,-14997460357411000,-1499746035741101,-1499746035741109,1499746035741128,1499752659822592,1499752939110661,1499753827614475,1499970126403840,1499970590815128,1499970842400644,1499971371510025,1499972760675685,1499972969962006,1499973086735836,1499973302072392,1499976826748983]";
@@ -343,7 +343,7 @@
         #endregion
         #region String
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmptyStringTest()
         {
             string expectedString = "\"\"";
@@ -364,7 +364,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void StringTest()
         {
             string expectedString = "\"Hello World\"";
@@ -387,7 +387,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void SystemStringTest()
         {
             int systemStringId = 0;
@@ -418,7 +418,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void DateTimeStringsTest()
         {
             {
@@ -633,7 +633,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void HexStringsTest()
         {
             {
@@ -719,7 +719,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void CompressedStringsTest()
         {
             {
@@ -933,7 +933,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void GuidStringsTest()
         {
             {
@@ -1325,7 +1325,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ReferenceStringsTest()
         {
             {
@@ -1600,7 +1600,7 @@
         #endregion
         #region Array
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmptyArrayTest()
         {
             string expectedString = "[]";
@@ -1622,7 +1622,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void SingleItemArrayTest()
         {
             string expectedString = "[true]";
@@ -1646,7 +1646,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void IntArrayTest()
         {
             string expectedString = "[-2,-1,0,1,2]";
@@ -1686,7 +1686,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberArrayTest()
         {
             string expectedString = "[15,22,0.1,-0.073,7.70001E+91]";
@@ -1726,7 +1726,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void BooleanArrayTest()
         {
             string expectedString = "[true,false]";
@@ -1814,7 +1814,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void StringArrayTest()
         {
             string expectedString = @"[""Hello"",""World"",""Bye""]";
@@ -1908,7 +1908,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NullArrayTest()
         {
             string expectedString = "[null,null,null]";
@@ -1983,7 +1983,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ObjectArrayTest()
         {
             string expectedString = "[{},{}]";
@@ -2013,7 +2013,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void AllPrimitiveArrayTest()
         {
             string expectedString = "[0,0,-1,-1.1,1,2,\"hello\",null,true,false]";
@@ -2064,7 +2064,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NestedArrayTest()
         {
             string expectedString = "[[],[]]";
@@ -2094,7 +2094,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void StrangeNumberArrayTest()
         {
             string expectedString = @"[
@@ -2153,7 +2153,7 @@
         #endregion Array
         #region Escaping
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EscapeCharacterTest()
         {
             /// <summary>
@@ -2185,7 +2185,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UnicodeEscapeTest()
         {
             // You don't have to escape a regular unicode character
@@ -2201,7 +2201,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TwoAdjacentUnicodeCharactersTest()
         {
             // 2 unicode escape characters that are not surrogate pairs
@@ -2218,7 +2218,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UnicodeTest()
         {
             // You don't have to escape a regular unicode character
@@ -2242,7 +2242,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmojiUTF32Test()
         {
             // You don't have to escape a regular unicode character
@@ -2266,7 +2266,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ControlCharacterTests()
         {
             HashSet<char> escapeCharacters = new HashSet<char> { '\b', '\f', '\n', '\r', '\t', '\\', '"', '/' };
@@ -2291,7 +2291,7 @@
         #endregion
         #region Objects
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmptyObjectTest()
         {
             string expectedString = "{}";
@@ -2313,7 +2313,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void SimpleObjectTest()
         {
             string expectedString = "{\"GlossDiv\":10,\"title\": \"example glossary\" }";
@@ -2381,7 +2381,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void AllPrimitivesObjectTest()
         {
             string expectedString = @"{
@@ -2584,7 +2584,7 @@
         #endregion
         #region Exceptions
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ArrayNotStartedTest()
         {
             JsonToken[] tokensToWrite =
@@ -2597,7 +2597,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ObjectNotStartedTest()
         {
             JsonToken[] tokensToWrite =
@@ -2610,7 +2610,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void PropertyArrayOrObjectNotStartedTest()
         {
             JsonToken[] tokensToWrite =
@@ -2625,7 +2625,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void MissingPropertyTest()
         {
             JsonToken[] tokensToWrite =
@@ -2640,7 +2640,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void PropertyAlreadyAddedTest()
         {
             string duplicateFieldName = "This property is added twice";
@@ -2660,7 +2660,7 @@
         #endregion
         #region ExtendedTypes
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int8Test()
         {
             sbyte[] values = new sbyte[] { sbyte.MinValue, sbyte.MinValue + 1, -1, 0, 1, sbyte.MaxValue, sbyte.MaxValue - 1 };
@@ -2690,7 +2690,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int16Test()
         {
             short[] values = new short[] { short.MinValue, short.MinValue + 1, -1, 0, 1, short.MaxValue, short.MaxValue - 1 };
@@ -2720,7 +2720,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int32Test()
         {
             int[] values = new int[] { int.MinValue, int.MinValue + 1, -1, 0, 1, int.MaxValue, int.MaxValue - 1 };
@@ -2750,7 +2750,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int64Test()
         {
             long[] values = new long[] { long.MinValue, long.MinValue + 1, -1, 0, 1, long.MaxValue, long.MaxValue - 1 };
@@ -2780,7 +2780,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UInt32Test()
         {
             uint[] values = new uint[] { uint.MinValue, uint.MinValue + 1, 0, 1, uint.MaxValue, uint.MaxValue - 1 };
@@ -2810,7 +2810,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Float32Test()
         {
             float[] values = new float[] { float.MinValue, float.MinValue + 1, 0, 1, float.MaxValue, float.MaxValue - 1 };
@@ -2840,7 +2840,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Float64Test()
         {
             double[] values = new double[] { double.MinValue, double.MinValue + 1, 0, 1, double.MaxValue, double.MaxValue - 1 };
@@ -2870,7 +2870,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void GuidTest()
         {
             Guid[] values = new Guid[] { Guid.Empty, Guid.NewGuid() };
@@ -2900,7 +2900,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void BinaryTest()
         {
             {
