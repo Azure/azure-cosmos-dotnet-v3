@@ -188,7 +188,7 @@ flowchart LR
 ```
 ## Distributed Tracing (Preview)
 
-For detail about usage of this feature, please see the [Azure Cosmos DB SDK observability]()
+For detail about usage of this feature, please see the [Azure Cosmos DB SDK observability](https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/sdk-observability?tabs=dotnet)
 
 ```mermaid
 flowchart TD
