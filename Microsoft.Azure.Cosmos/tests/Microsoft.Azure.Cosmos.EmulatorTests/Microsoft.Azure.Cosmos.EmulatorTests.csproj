@@ -288,6 +288,11 @@
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestLambdaReuse.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <Compile Update="Tracing\EndToEndTraceWriterBaselineTests.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Compile>
