@@ -766,7 +766,6 @@ namespace Microsoft.Azure.Cosmos
 
                 payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(buffer, 0, length));
                 byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
-                using (Trace trace = Trace.GetRootTrace(nameof(GenerateAuthorizationTokenWithHashCore), TraceComponent.Authorization, TraceLevel.Info))
                 
                 return AuthorizationHelper.OptimizedConvertToBase64string(hashPayLoad, urlEncode);
             }
