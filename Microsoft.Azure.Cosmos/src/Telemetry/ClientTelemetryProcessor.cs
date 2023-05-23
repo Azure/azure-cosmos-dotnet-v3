@@ -114,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                     ResourceType.Telemetry,
                                                     HttpTimeoutPolicyNoRetry.Instance,
                                                     null,
+                                                    null,
                                                     cancellationToken);
 
                 if (!response.IsSuccessStatusCode)

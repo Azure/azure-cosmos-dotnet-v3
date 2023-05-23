@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         public abstract Task<HttpResponseMessage> SendHttpAsync(
@@ -30,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         protected abstract void Dispose(bool disposing);

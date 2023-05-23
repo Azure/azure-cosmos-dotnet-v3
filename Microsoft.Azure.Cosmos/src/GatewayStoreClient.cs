@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -78,6 +79,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             return this.httpClient.SendHttpAsync(
@@ -85,6 +87,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: resourceType,
                 timeoutPolicy: timeoutPolicy,
                 clientSideRequestStatistics: clientSideRequestStatistics,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -354,6 +357,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request),
                 request.RequestContext.ClientRequestStatistics,
+                trace: null,
                 cancellationToken);
         }
     }

@@ -865,21 +865,27 @@ namespace Microsoft.Azure.Cosmos
             HttpMessageHandler mockMessageHandler = new MockMessageHandler(sendFunc);
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(mockMessageHandler),
                                                                                     DocumentClientEventSource.Instance);
-            Tracing.TraceData.ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new Tracing.TraceData.ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary());
+            
+            using(ITrace trace = Tracing.Trace.GetRootTrace(nameof(GatewayStatsDurationTest)))
+            {
 
-            await cosmosHttpClient.SendHttpAsync(() => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, "http://someuri.com")),
-                                                  ResourceType.Document,
-                                                  HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
-                                                  clientSideRequestStatistics,
-                                                  CancellationToken.None);
+                Tracing.TraceData.ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new Tracing.TraceData.ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
 
-            Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 2);
-            // The duration is calculated using date times which can cause the duration to be slightly off. This allows for up to 15 Ms of variance.
-            // https://stackoverflow.com/questions/2143140/c-sharp-datetime-now-precision#:~:text=The%20precision%20is%20related%20to,35%2D40%20ms%20accuracy
-            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].Duration.TotalMilliseconds >= 985, $"First request did was not delayed by at least 1 second. {JsonConvert.SerializeObject(clientSideRequestStatistics.HttpResponseStatisticsList[0])}");
-            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[1].Duration.TotalMilliseconds >= 985, $"Second request did was not delayed by at least 1 second. {JsonConvert.SerializeObject(clientSideRequestStatistics.HttpResponseStatisticsList[1])}");
-            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].RequestStartTime < 
-                          clientSideRequestStatistics.HttpResponseStatisticsList[1].RequestStartTime);
+                await cosmosHttpClient.SendHttpAsync(() => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, "http://someuri.com")),
+                                                      ResourceType.Document,
+                                                      HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
+                                                      clientSideRequestStatistics,
+                                                      trace,
+                                                      CancellationToken.None);
+
+                Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 2);
+                // The duration is calculated using date times which can cause the duration to be slightly off. This allows for up to 15 Ms of variance.
+                // https://stackoverflow.com/questions/2143140/c-sharp-datetime-now-precision#:~:text=The%20precision%20is%20related%20to,35%2D40%20ms%20accuracy
+                Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].Duration.TotalMilliseconds >= 985, $"First request did was not delayed by at least 1 second. {JsonConvert.SerializeObject(clientSideRequestStatistics.HttpResponseStatisticsList[0])}");
+                Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[1].Duration.TotalMilliseconds >= 985, $"Second request did was not delayed by at least 1 second. {JsonConvert.SerializeObject(clientSideRequestStatistics.HttpResponseStatisticsList[1])}");
+                Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].RequestStartTime <
+                              clientSideRequestStatistics.HttpResponseStatisticsList[1].RequestStartTime);
+            }
         }
 
         [TestMethod]

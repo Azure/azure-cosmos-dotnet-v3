@@ -855,6 +855,7 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<ResourceType>(),
                     It.IsAny<HttpTimeoutPolicy>(),
                     It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception("Some random error occurred."))
                 .ReturnsAsync(responseMessage);

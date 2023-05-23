@@ -81,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                     resourceType: ResourceType.Telemetry,
                                     timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
                                     clientSideRequestStatistics: null,
+                                    trace: null,
                                     cancellationToken: default);
 
                 azMetadata = await VmMetadataApiHandler.ProcessResponseAsync(response);

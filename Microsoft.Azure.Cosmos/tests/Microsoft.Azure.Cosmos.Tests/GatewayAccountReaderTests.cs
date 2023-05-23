@@ -57,15 +57,21 @@ namespace Microsoft.Azure.Cosmos
                 receivedResponseEventArgs: null);
 
             Assert.IsNotNull(httpClient);
-            HttpResponseMessage response = await httpClient.GetAsync(
-                uri: new Uri("https://localhost"),
-                additionalHeaders: new RequestNameValueCollection(),
-                resourceType: ResourceType.Document,
-                timeoutPolicy: HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
-                clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
-                cancellationToken: default);
 
-            Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
+            using (ITrace trace = Trace.GetRootTrace(nameof(DocumentClient_BuildHttpClientFactory_WithHandler)))
+            {
+                IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
+                HttpResponseMessage response = await httpClient.GetAsync(
+                    uri: new Uri("https://localhost"),
+                    additionalHeaders: new RequestNameValueCollection(),
+                    resourceType: ResourceType.Document,
+                    timeoutPolicy: HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
+                    clientSideRequestStatistics: stats,
+                    trace: trace,
+                    cancellationToken: default);
+
+                Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);
+            }
         }
 
         [TestMethod]

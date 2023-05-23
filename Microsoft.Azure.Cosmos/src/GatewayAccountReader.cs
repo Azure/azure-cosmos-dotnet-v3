@@ -59,6 +59,7 @@ namespace Microsoft.Azure.Cosmos
                         resourceType: ResourceType.DatabaseAccount,
                         timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
                         clientSideRequestStatistics: stats,
+                        trace: trace,
                         cancellationToken: default))
                     using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                     {

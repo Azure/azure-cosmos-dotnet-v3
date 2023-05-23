@@ -262,6 +262,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (uri == null)
@@ -293,6 +294,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 timeoutPolicy,
                 clientSideRequestStatistics,
+                trace,
                 cancellationToken);
         }
 
@@ -301,6 +303,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (createRequestMessageAsync == null)
@@ -308,16 +311,13 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(createRequestMessageAsync));
             }
 
-            using (ITrace trace = Trace.GetRootTrace(nameof(SendHttpAsync), TraceComponent.Transport, TraceLevel.Info))
-            {
-                return this.SendHttpHelperAsync(
-                    createRequestMessageAsync,
-                    resourceType,
-                    timeoutPolicy,
-                    clientSideRequestStatistics,
-                    cancellationToken,
-                    trace);
-            }
+            return this.SendHttpHelperAsync(
+                createRequestMessageAsync,
+                resourceType,
+                timeoutPolicy,
+                clientSideRequestStatistics,
+                trace,
+                cancellationToken);
         }
 
         private async Task<HttpResponseMessage> SendHttpHelperAsync(
@@ -325,8 +325,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken,
-            ITrace trace)
+            ITrace trace,
+            CancellationToken cancellationToken)
         {
             DateTime startDateTimeUtc = DateTime.UtcNow;
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.GetTimeoutEnumerator();
@@ -393,7 +393,6 @@ namespace Microsoft.Azure.Cosmos
                                     
                                     if (timeoutPolicy.ShouldThrow503OnTimeout)
                                     {
-                                        trace.AddDatum("Client Side Request Stats", clientSideRequestStatistics);
                                         throw CosmosExceptionFactory.CreateServiceUnavailableException(
                                             message: message,
                                             headers: new Headers()
