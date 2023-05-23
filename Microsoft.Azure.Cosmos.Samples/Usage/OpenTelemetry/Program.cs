@@ -11,12 +11,6 @@
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Configuration;
     using Azure.Monitor.OpenTelemetry.Exporter;
-    using Microsoft.Extensions.DependencyInjection.Extensions;
-    using Azure.Core.Diagnostics;
-    using System.Diagnostics.Tracing;
-    using System.Threading;
-    using Microsoft.Extensions.Hosting;
-    using Microsoft.Extensions.DependencyInjection;
 
     internal class Program
     {
@@ -58,16 +52,16 @@
                             serviceVersion: "1.0.0");
 
                 // Set up logging to forward logs to chosen exporter
-                using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder
-                        .AddOpenTelemetry(options =>
-                            {
-                                options.IncludeFormattedMessage = true;
-                                options.SetResourceBuilder(resource);
-                                options.AddAzureMonitorLogExporter(o => o.ConnectionString = aiConnectionString); // Set up exporter of your choice
-                            })
-                        .Services
-                            .AddHostedService<LogForwardingService>()
-                            .TryAddSingleton<AzureEventSourceLogForwarder>());
+                using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder.AddOpenTelemetry(options =>
+                    {
+                        options.IncludeFormattedMessage = true;
+                        options.SetResourceBuilder(resource);
+                        options.AddAzureMonitorLogExporter(o => o.ConnectionString = aiConnectionString); // Set up exporter of your choice
+                    })
+                   .AddFilter(level => level == LogLevel.Error));
+                
+                AzureEventSourceLogForwarder logforwader = new AzureEventSourceLogForwarder(loggerFactory);
+                logforwader.Start();
 
                 // Configure OpenTelemetry trace provider
                 AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
@@ -83,6 +77,7 @@
                 {
                     IsDistributedTracingEnabled = true // Defaults to true, set to false to disable
                 };
+                
                 // </EnableDistributedTracing>
                 using (CosmosClient client = new CosmosClient(endpoint, authKey, options))
                 {
@@ -95,6 +90,7 @@
 
                     await Program.RunCrudDemo(container);
                 }
+
             }
             finally
             {
@@ -124,14 +120,13 @@
 
             try
             {
-                await container.ReadItemAsync<Item>($"some random Id", new PartitionKey("0"));
-                Console.WriteLine($"Read document with id: some random Id");
+                await container.ReadItemAsync<Item>($"random key", new PartitionKey($"random partition"));
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"Failed to read document with id: 'some random Id' with exception: {ex}");
+                Console.WriteLine($"Exception: {ex}");
             }
-
+            
             for (int i = 1; i <= 5; i++)
             {
                 await container.ReplaceItemAsync(new Item { Id = $"{i}", Status = "updated" }, $"{i}", new PartitionKey($"{i}"));
@@ -152,32 +147,5 @@
         public string Id { get; set; }
 
         public string Status { get; set; }
-    }
-
-    internal class LogForwardingService : IHostedService
-    {
-        private static readonly Task Completed = Task.CompletedTask;
-        
-        private readonly AzureEventSourceLogForwarder _forwarder;
-        
-        public LogForwardingService(ILoggerFactory loggerFactory)
-        {
-            Console.WriteLine($"Initiating {nameof(LogForwardingService)}.");
-            this._forwarder = new AzureEventSourceLogForwarder(loggerFactory);
-        }
-        
-        public Task StartAsync(CancellationToken cancellationToken)
-        {
-            Console.WriteLine($"Starting {nameof(LogForwardingService)}.");
-            this._forwarder.Start();
-            return Completed;
-        }
-        
-        public Task StopAsync(CancellationToken cancellationToken)
-        {
-            Console.WriteLine($"Stopping {nameof(LogForwardingService)}.");
-            this._forwarder.Dispose();
-            return Completed;
-        }
     }
 }
