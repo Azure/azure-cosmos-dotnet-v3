@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal static class AssertActivity
     {
-        public static void IsValid(Activity activity)
+        public static void IsValidOperationActivity(Activity activity)
         {
             Assert.IsTrue(activity.OperationName == activity.DisplayName);
 
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public static void AreEqualAcrossListeners()
         {
             Assert.AreEqual(
-                JsonConvert.SerializeObject(CustomListener.CollectedActivities.OrderBy(x => x.Id)),
+                JsonConvert.SerializeObject(CustomListener.CollectedOperationActivities.OrderBy(x => x.Id)),
                 JsonConvert.SerializeObject(CustomOtelExporter.CollectedActivities.OrderBy(x => x.Id)));
         }
 
@@ -79,11 +79,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             IList<string> exceptionsForContainerAttribute = new List<string>
             {
-                "Operation.CreateDatabaseAsync",
-                "Operation.CreateDatabaseIfNotExistsAsync",
-                "Operation.ReadAsync",
-                "Operation.DeleteAsync",
-                "Operation.DeleteStreamAsync"
+                "CreateDatabaseAsync",
+                "CreateDatabaseIfNotExistsAsync",
+                "ReadAsync",
+                "DeleteAsync",
+                "DeleteStreamAsync"
             };
             
             if ((tag.Key == OpenTelemetryAttributeKeys.ContainerName && !exceptionsForContainerAttribute.Contains(name)) ||

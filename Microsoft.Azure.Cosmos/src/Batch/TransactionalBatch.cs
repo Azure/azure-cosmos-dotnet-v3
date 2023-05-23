@@ -107,7 +107,9 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
-    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/concepts-limits">Limits on TransactionalBatch requests</seealso>
+    /// <remarks>
+    /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/concepts-limits#per-request-limits">Limits on TransactionalBatch requests</seealso>
+    /// </remarks>
     public abstract class TransactionalBatch
     {
         /// <summary>
@@ -244,6 +246,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This API only throws on client side exceptions. This is to increase performance and prevent the overhead of throwing exceptions.
         /// Use <see cref="TransactionalBatchResponse.IsSuccessStatusCode"/> on the response returned to ensure that the transactional batch succeeded.
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/concepts-limits#per-request-limits">Limits on TransactionalBatch requests</seealso>
         /// </remarks>
         public abstract Task<TransactionalBatchResponse> ExecuteAsync(
             CancellationToken cancellationToken = default);
@@ -275,6 +278,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This API only throws on client side exceptions. This is to increase performance and prevent the overhead of throwing exceptions.
         /// Use <see cref="TransactionalBatchResponse.IsSuccessStatusCode"/> on the response returned to ensure that the transactional batch succeeded.
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/concepts-limits#per-request-limits">Limits on TransactionalBatch requests</seealso>
         /// </remarks>
         public abstract Task<TransactionalBatchResponse> ExecuteAsync(
            TransactionalBatchRequestOptions requestOptions,
