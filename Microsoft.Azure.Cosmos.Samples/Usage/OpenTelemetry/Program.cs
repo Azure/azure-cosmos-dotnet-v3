@@ -52,14 +52,16 @@
                             serviceVersion: "1.0.0");
 
                 // Set up logging to forward logs to chosen exporter
-                using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder.AddOpenTelemetry(options =>
-                    {
-                        options.IncludeFormattedMessage = true;
-                        options.SetResourceBuilder(resource);
-                        options.AddAzureMonitorLogExporter(o => o.ConnectionString = aiConnectionString); // Set up exporter of your choice
-                    })
-                   .AddFilter(level => level == LogLevel.Error));
-                
+                using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder
+                                                                                        .AddConfiguration(configuration)
+                                                                                        .AddOpenTelemetry(options =>
+                                                                                            {
+                                                                                                options.IncludeFormattedMessage = true;
+                                                                                                options.SetResourceBuilder(resource);
+                                                                                                options.AddAzureMonitorLogExporter(o => o.ConnectionString = aiConnectionString); // Set up exporter of your choice
+                                                                                            }));
+                /*.AddFilter(level => level == LogLevel.Error)*/
+
                 AzureEventSourceLogForwarder logforwader = new AzureEventSourceLogForwarder(loggerFactory);
                 logforwader.Start();
 
