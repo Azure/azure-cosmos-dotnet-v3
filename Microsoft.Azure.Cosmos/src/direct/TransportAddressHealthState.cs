@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Documents
             this.lastUnknownTimestamp = lastUnknownTimestamp;
             this.lastUnhealthyPendingTimestamp = lastUnhealthyPendingTimestamp;
             this.lastUnhealthyTimestamp = lastUnhealthyTimestamp;
-            this.healthStatusDiagnosticString = $"{transportUri.Port}:{healthStatus}";
+            this.healthStatusDiagnosticString = $"(port: {transportUri.Port} | status: {healthStatus} | lkt: {this.GetLastKnownTimestampByHealthStatus(healthStatus)})";
 
             List<string> healthStatusList = new ()
             {
@@ -118,6 +118,7 @@ namespace Microsoft.Azure.Documents
                 HealthStatus.Unhealthy => this.lastUnhealthyTimestamp,
                 HealthStatus.UnhealthyPending => this.lastUnhealthyPendingTimestamp,
                 HealthStatus.Unknown => this.lastUnknownTimestamp,
+                HealthStatus.Connected => DateTime.UtcNow,
                 _ => throw new ArgumentException(
                     message: $"Unsupported Health Status: {healthStatus}"),
             };
