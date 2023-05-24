@@ -2,22 +2,22 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "ENDPOINT": {
+    "endpoint": {
       "value": "<your-endpoint-here>"
     },
-    "KEY": {
+    "key": {
       "value": "<your-key-here>"
     },
-    "THROUGHPUT": {
+    "throughput": {
       "value": "<container-throughput>"
     },
-    "DOCUMENTS": {
+    "documents": {
       "value": "<number-of-documents>"
     },
-    "PARALLELISM": {
+    "parallelism": {
       "value": "-1"
     },
-    "CLEANUPFINISH": {
+    "cleanUpOnFinish": {
       "value": "false"
     },
     "containergroupname": {
