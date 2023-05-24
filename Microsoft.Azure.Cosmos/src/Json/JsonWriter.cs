@@ -58,7 +58,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 JsonSerializationFormat.Text => new JsonTextWriter(initalCapacity),
                 JsonSerializationFormat.Binary => new JsonBinaryWriter(
                     initialCapacity: initalCapacity,
-                    serializeCount: false,
                     enableEncodedStrings: enableEncodedStrings),
                 _ => throw new ArgumentException(
                         string.Format(
