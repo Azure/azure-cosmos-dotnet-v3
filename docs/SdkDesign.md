@@ -186,3 +186,32 @@ flowchart LR
     ConsistencyWriter --> TCPClient
 
 ```
+## Distributed Tracing (Preview)
+
+For detail about usage of this feature, please see the [Azure Cosmos DB SDK observability](https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/sdk-observability?tabs=dotnet)
+
+```mermaid
+flowchart TD
+    classDef orange fill:#f96
+    classDef blue fill:#6fa8dc
+    subgraph ClientContextCore
+        OpenTelemetryRecorderFactory --> CheckFeatureFlag{<a href='https://github.com/Azure/azure-cosmos-dotnet-v3/blob/3727d4d738cfc24aa372b578fd8ca482a5bc2f3f/Microsoft.Azure.Cosmos/src/Fluent/CosmosClientBuilder.cs#L436'>isDistributedTracing</a> Enabled?} 
+        CheckFeatureFlag --> |Yes| CreateActivity(Start an Activity or Child activity with specific kind Using DiagnosticScope<br> and preloaded attributes like containerName, databaseName, operationType) 
+        CreateActivity --> HandlerPipeline
+        GetResponse --> TriggerDispose(Trigger Dispose of Disagnostic Scope)
+        TriggerDispose --> CheckLatencyThreshold{Is high latency/errored response?}
+        CheckLatencyThreshold -- Yes --> GenerateTraceEvent(Generate <i>Warning</i> or <i>Error</i> Trace Event With Request Diagnostics) --> StopActivity
+        CheckLatencyThreshold -- No --> StopActivity
+        StopActivity --> SendResponse(Send Response to Caller):::blue
+    end
+    OperationRequest[Operation Request]:::blue --> ClientContextCore
+    subgraph Application
+     OperationCall(User Application):::orange
+    end
+    OperationCall(User Application):::orange --> OperationRequest
+    CheckFeatureFlag --> |No| HandlerPipeline 
+    HandlerPipeline --> OtherLogic(Goes through TCP/HTTP calls <br> based on Connection Mode):::blue
+    OtherLogic --> GetResponse(Get Response for the request)
+    SendResponse --> OperationCall
+
+```
