@@ -248,6 +248,257 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         }
 
         [TestMethod]
+        public async Task TestRoutingForPrefixedPartitionKeyQueriesAsync()
+        {
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
+            {
+                Kind = PartitionKind.MultiHash,
+                Paths = new Collection<string>() { "/path1", "/path2", "/path3" },
+                Version = PartitionKeyDefinitionVersion.V2
+            };
+
+            // Case 1: Query with 1 prefix path, split at 1st level. Should route to only one partition.
+            {
+                List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>()
+                {
+                     new PartitionKeyRange()
+                        {
+                            Id = "0",
+                            MinInclusive = string.Empty,
+                            MaxExclusive = "07E4D14180A45153F00B44907886F856" //Seattle
+                        },
+                     new PartitionKeyRange()
+                        {
+                            Id = "1",
+                            MinInclusive = "07E4D14180A45153F00B44907886F856", //Seattle
+                            MaxExclusive = "FF"
+                        },
+                };
+                await PrefixPartitionKeyTestRunnerAsync(
+                    partitionKeyDefinition,
+                    new PartitionKeyBuilder().Add("Microsoft").Build(),
+                    ///$"SELECT VALUE r.id from r where r.path1 = \"Microsoft\"",
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 1; //Routes to only one pkRange.
+                    },
+                    partitionKeyRanges);
+            }
+
+            //Case 2: Query with 1 prefix path value which is split at 2nd level. Should route to two partitions.
+            //Case 3: Query with 2 prefix path values which is split at 2nd level. Should route to one partition.
+            {
+                List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>()
+                {
+                     new PartitionKeyRange()
+                        {
+                            Id = "0",
+                            MinInclusive = string.Empty,
+                            MaxExclusive = "07E4D14180A45153F00B44907886F85622E342F38A486A088463DFF7838A5963" //[Seattle, Redmond]
+                        },
+                     new PartitionKeyRange()
+                        {
+                            Id = "1",
+                            MinInclusive = "07E4D14180A45153F00B44907886F85622E342F38A486A088463DFF7838A5963", //[Seattle, Redmond]
+                            MaxExclusive = "FF"
+                        },
+                };
+                await PrefixPartitionKeyTestRunnerAsync(
+                    partitionKeyDefinition,
+                    new PartitionKeyBuilder().Add("seattle").Build(),
+                    //$"SELECT VALUE r.id from r where r.path1 = \"seattle\"",
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 2; //Since data is split at pkey [seattle, redmond], it should route to two pkRange.
+                    },
+                    partitionKeyRanges);
+                await PrefixPartitionKeyTestRunnerAsync(
+                    partitionKeyDefinition,
+                    new PartitionKeyBuilder().Add("seattle").Add("redmond").Build(),
+                    //$"SELECT VALUE r.id from r where r.path1 = \"seattle\" and r.path2 =\"redmond\"",
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 1; //Since data is split at pkey [seattle, redmond], this query should route to one pkRange
+                    },
+                    partitionKeyRanges);
+            }
+
+            //Case 4: Query with 2 prefix path values split at the 3rd level. Should route to 2 paritions.
+            //Case 5: Query with 1 prefix path value split at 3rd level. Should route to 2 partitions.
+            {
+                List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>()
+                {
+                     new PartitionKeyRange()
+                        {
+                            Id = "0",
+                            MinInclusive = string.Empty,
+                            MaxExclusive = "07E4D14180A45153F00B44907886F85622E342F38A486A088463DFF7838A59630EF2E2D82460884AF0F6440BE4F726A8"//[seattle, redmond, 5.12312419050912359123]
+                        },
+                     new PartitionKeyRange()
+                        {
+                            Id = "1",
+                            MinInclusive = "07E4D14180A45153F00B44907886F85622E342F38A486A088463DFF7838A59630EF2E2D82460884AF0F6440BE4F726A8", //[seattle, redmond, 5.12312419050912359123]
+                            MaxExclusive = "FF"
+                        },
+                };
+                await PrefixPartitionKeyTestRunnerAsync(
+                    partitionKeyDefinition,
+                    new PartitionKeyBuilder().Add("seattle").Add("redmond").Build(),
+                    //$"SELECT VALUE r.id from r where r.path1 = \"seattle\" and r.path2 =\"redmond\"",
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 2; //Since data is split at pkey [seattle, redmond, 5.12312419050912359123], it should route to two pkRange.
+                    },
+                    partitionKeyRanges);
+                await PrefixPartitionKeyTestRunnerAsync(
+                   partitionKeyDefinition,
+                   new PartitionKeyBuilder().Add("seattle").Add("redmond").Add(5.12312419050912359123).Build(),
+                   //$"SELECT VALUE r.id from r where r.path1 = \"seattle\" and r.path2 =\"redmond\" and r.path3 =5.12312419050912359123",
+                   epkRanges =>
+                   {
+                       return epkRanges.Count == 1;
+                   },
+                   partitionKeyRanges);
+                await PrefixPartitionKeyTestRunnerAsync(
+                    partitionKeyDefinition,
+                    new PartitionKeyBuilder().Add("seattle").Build(),
+                    //$"SELECT VALUE r.id from r where r.path1 = \"seattle\"",
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 2;
+                    },
+                    partitionKeyRanges);
+            }
+
+            //Case 6: Query with 1 prefix path value split succesively at 2nd and then at the 3rd level. Should route to 3 partitions.
+            {
+                List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>()
+                {
+                     new PartitionKeyRange()
+                        {
+                            Id = "0",
+                            MinInclusive = string.Empty,
+                            MaxExclusive = "07E4D14180A45153F00B44907886F85622E342F38A486A088463DFF7838A5963" //[seattle, redmond]
+                        },
+                     new PartitionKeyRange()
+                        {
+                            Id = "1",
+                            MinInclusive = "07E4D14180A45153F00B44907886F85622E342F38A486A088463DFF7838A5963", //[seattle, redmond]
+                            MaxExclusive = "07E4D14180A45153F00B44907886F85622E342F38A486A088463DFF7838A59630EF2E2D82460884AF0F6440BE4F726A8" //[seattle, redmond, 5.12312419050912359123]
+                        },
+                     new PartitionKeyRange()
+                        {
+                            Id = "2",
+                            MinInclusive = "07E4D14180A45153F00B44907886F85622E342F38A486A088463DFF7838A59630EF2E2D82460884AF0F6440BE4F726A8", //[seattle, redmond, 5.12312419050912359123]
+                            MaxExclusive = "FF"
+                        },
+                };
+                await PrefixPartitionKeyTestRunnerAsync(
+                    partitionKeyDefinition,
+                    new PartitionKeyBuilder().Add("seattle").Build(),
+                    //$"SELECT VALUE r.id from r where r.path1 = \"seattle\"",
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 3;
+                    },
+                    partitionKeyRanges);
+            }
+
+            //Case 7: Query with 1 prefix path value split succesively at 1st, 2nd and then at the 3rd level. Should route to 3 partitions.
+            //Case 8: Query with 2 prefix path value split succesively at 1st, 2nd and then at the 3rd level. Should route to 2 partitions.
+            //Case 9: Query with fully specfied pkey, split succesively at 1st, 2nd and then at the 3rd level. Should route to 1 partitions.
+            {
+                List<PartitionKeyRange> partitionKeyRanges = new List<PartitionKeyRange>()
+                {
+                     new PartitionKeyRange()
+                        {
+                            Id = "0",
+                            MinInclusive = string.Empty,
+                            MaxExclusive = "07E4D14180A45153F00B44907886F856" //[seattle]
+                        },
+                     new PartitionKeyRange()
+                        {
+                            Id = "1",
+                            MinInclusive = "07E4D14180A45153F00B44907886F856", //[seattle]
+                            MaxExclusive = "07E4D14180A45153F00B44907886F85622E342F38A486A088463DFF7838A5963" //[seattle, redmond]
+                        },
+                     new PartitionKeyRange()
+                        {
+                            Id = "2",
+                            MinInclusive = "07E4D14180A45153F00B44907886F85622E342F38A486A088463DFF7838A5963", //[seattle, redmond]
+                            MaxExclusive = "07E4D14180A45153F00B44907886F85622E342F38A486A088463DFF7838A59630EF2E2D82460884AF0F6440BE4F726A8"//[seattle, redmond, 5.12312419050912359123]
+                        },
+                     new PartitionKeyRange()
+                        {
+                            Id = "3",
+                            MinInclusive = "07E4D14180A45153F00B44907886F85622E342F38A486A088463DFF7838A59630EF2E2D82460884AF0F6440BE4F726A8", //[seattle, redmond, 5.12312419050912359123]
+                            MaxExclusive = "FF"
+                        },
+                };
+                await PrefixPartitionKeyTestRunnerAsync(
+                    partitionKeyDefinition,
+                    new PartitionKeyBuilder().Add("seattle").Build(),
+                    //$"SELECT VALUE r.id from r where r.path1 = \"seattle\"",
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 3; //Routes tp three pkRanges
+                    },
+                    partitionKeyRanges);
+                await PrefixPartitionKeyTestRunnerAsync(
+                    partitionKeyDefinition,
+                    new PartitionKeyBuilder().Add("seattle").Add("redmond").Build(),
+                    //$"SELECT VALUE r.id from r where r.path1 = \"seattle\" and r.path2 = \"redmond\"",
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 2;  //Routes to two pkRanges.
+                    },
+                    partitionKeyRanges);
+                await PrefixPartitionKeyTestRunnerAsync(
+                   partitionKeyDefinition,
+                   new PartitionKeyBuilder().Add("seattle").Add("redmond").Add("98052").Build(),
+                   //$"SELECT VALUE r.id from r where r.path1 = \"seattle\" and r.path2 = \"redmond\" and r.path3 = \"98052\"",
+                   epkRanges =>
+                   {
+                       Assert.AreEqual(epkRanges.Count, 1);
+
+                       return epkRanges.Count == 1; //Routes to only one pkRanges.
+                   },
+                   partitionKeyRanges);
+            }
+        }
+
+        private static async Task PrefixPartitionKeyTestRunnerAsync(
+                PartitionKeyDefinition partitionKeyDefinition,
+                Cosmos.PartitionKey partitionKey,
+                Predicate<HashSet<PartitionKeyRange>> validator,
+                List<PartitionKeyRange> partitionKeyRanges)
+        {
+            IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> rangesAndServiceIdentity = partitionKeyRanges
+                .Select(range => Tuple.Create(range, (ServiceIdentity)null));
+            string collectionRid = string.Empty;
+            CollectionRoutingMap routingMap =
+                CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                    rangesAndServiceIdentity,
+                    collectionRid);
+
+            RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
+            
+            HashSet<PartitionKeyRange> resolvedPKRanges = new HashSet<PartitionKeyRange>();
+            FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(partitionKey);
+            List<Range<string>> effectiveRanges = await feedRangePartitionKey.GetEffectiveRangesAsync(routingMapProvider, null, partitionKeyDefinition, null);
+            foreach (Range<string> range in effectiveRanges)
+            {
+                resolvedPKRanges.UnionWith(await routingMapProvider.TryGetOverlappingRangesAsync(
+                    collectionRid,
+                    range,
+                    NoOpTrace.Singleton));
+
+            }
+
+            Assert.IsTrue(validator(resolvedPKRanges));
+        }
+
+        [TestMethod]
         public void TestCrossPartitionAggregateQueries()
         {
             PartitionRoutingHelperTestCase[] testcases = new[]
