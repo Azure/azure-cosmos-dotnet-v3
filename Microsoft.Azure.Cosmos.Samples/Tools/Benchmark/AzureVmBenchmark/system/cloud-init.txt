@@ -1,17 +1,20 @@
 #cloud-config
 package_upgrade: true
 packages:
-  - apt-transport-https
-  - dotnet-sdk-3.1
-  - dotnet-runtime-3.1
   - git
   - python3.10
   - azure-cli
-  - jq
 
 runcmd:
   - wget https://aka.ms/downloadazcopy-v10-linux
   - tar -xvf downloadazcopy-v10-linux
   - sudo cp ./azcopy_linux_amd64_*/azcopy /usr/bin/
   - wget https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb
+  - wget https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb
   - sudo dpkg -i packages-microsoft-prod.deb
+  - sudo apt update
+  - sudo apt install apt-transport-https -y
+  - sudo apt install dotnet-sdk-3.1 -y
+  - sudo apt install dotnet-runtime-3.1
+  - sudo apt-get install git
+  - git clone https://github.com/Azure/azure-cosmos-dotnet-v3.git
