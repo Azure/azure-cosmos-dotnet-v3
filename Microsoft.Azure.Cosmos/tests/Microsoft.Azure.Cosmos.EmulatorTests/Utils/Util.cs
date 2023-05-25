@@ -548,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Open Telemetry Listener
             Util.OTelTracerProvider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter() // use any exporter here
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}")
+                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation")
                 .Build();
 
             // Custom Listener
