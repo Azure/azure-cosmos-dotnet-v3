@@ -60,6 +60,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Only dispose if the caller set a custom client
             this.cosmosClient?.Dispose();
+
+            this.cosmosClient = null;
         }
 
         public CosmosClient GetClient()
