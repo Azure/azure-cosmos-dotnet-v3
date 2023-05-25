@@ -11,6 +11,6 @@ runcmd:
   - sudo dpkg -i packages-microsoft-prod.deb
   - sudo apt update
   - sudo apt install apt-transport-https -y
-  - sudo apt install dotnet-sdk-3.1 -y
-  - sudo apt install dotnet-runtime-3.1
+  - sudo apt install dotnet-sdk-6.0 -y
+  - sudo apt install dotnet-runtime-6.0
   - sudo apt-get install git
