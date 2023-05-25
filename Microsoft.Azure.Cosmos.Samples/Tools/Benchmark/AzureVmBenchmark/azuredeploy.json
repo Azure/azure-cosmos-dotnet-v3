@@ -4,7 +4,7 @@
     "parameters": {
         "projectName": {
             "type": "string",
-            "defaultValue": "Benchmarking-dotnet-SDK",
+            "defaultValue": "BenchmarkingDotnetSDK",
             "metadata": {
                 "description": "Specifies a name for generating resource names."
             }
