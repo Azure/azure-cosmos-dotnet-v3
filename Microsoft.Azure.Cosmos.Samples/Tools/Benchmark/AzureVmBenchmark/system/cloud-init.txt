@@ -1,7 +1,10 @@
 #cloud-config
 package_upgrade: true
 packages:
-  - maven
+  - apt-transport-https
+  - dotnet-sdk-3.1
+  - dotnet-runtime-3.1
+  - git
   - python3.10
   - azure-cli
   - jq
@@ -10,3 +13,5 @@ runcmd:
   - wget https://aka.ms/downloadazcopy-v10-linux
   - tar -xvf downloadazcopy-v10-linux
   - sudo cp ./azcopy_linux_amd64_*/azcopy /usr/bin/
+  - wget https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb
+  - sudo dpkg -i packages-microsoft-prod.deb

@@ -387,7 +387,7 @@
                     "computerName": "[concat(variables('vmName'),copyIndex(1))]",
                     "adminUsername": "[parameters('adminUsername')]",
                     "adminPassword": "[parameters('adminPassword')]",
-                    "customData": "[base64(concat('#include\n',variables('cloudInitScriptUrl')))]",
+                    // "customData": "[base64(concat('#include\n',variables('cloudInitScriptUrl')))]",
                     "linuxConfiguration": {
                         "disablePasswordAuthentication": false,
                         "provisionVMAgent": true,
