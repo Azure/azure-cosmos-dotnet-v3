@@ -1,0 +1,454 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "projectName": {
+            "type": "string",
+            "defaultValue": "Benchmarking-dotnet-SDK",
+            "metadata": {
+                "description": "Specifies a name for generating resource names."
+            }
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Specifies the location for all resources."
+            }
+        },
+        "adminUsername": {
+            "type": "string",
+            "defaultValue": "benchmarking",
+            "metadata": {
+                "description": "Specifies a username for the Virtual Machine."
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Specifies a password for the Virtual Machine."
+            }
+        },
+        "vmSize": {
+            "type": "string",
+            "defaultValue": "Standard_D2s_v3",
+            "metadata": {
+                "description": "Specifies a Virtual Machine size"
+            }
+        },
+        "vNetName": {
+            "type": "string",
+            "defaultValue": "[concat(parameters('projectName'), '-vnet')]",
+            "metadata": {
+                "description": "Specifies a Virtual Network name"
+            }
+        },
+        "vNetAddressPrefixes": {
+            "type": "string",
+            "defaultValue": "10.2.0.0/16",
+            "metadata": {
+                "description": "Specifies a Virtual Network Address Prefix"
+            }
+        },
+        "vNetSubnetName": {
+            "type": "string",
+            "defaultValue": "default",
+            "metadata": {
+                "description": "Specifies a Virtual Network Subnet name"
+            }
+        },
+        "vNetSubnetAddressPrefix": {
+            "type": "string",
+            "defaultValue": "10.2.0.0/24",
+            "metadata": {
+                "description": "Specifies a Virtual Network Subnet Address Prefix "
+            }
+        },
+
+        "resultsStorageConnectionString": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies a connection string of the storage account where results will be avaialble"
+            }
+        },
+        "cosmosURI": {
+            "type": "string",
+            "metadata": {
+                "description": "Specifies the URI of the Cosmos DB account"
+            }
+        },
+        "cosmosKey": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Specifies the key for the Cosmos DB account"
+            }
+        },
+        "vmCount": {
+            "type": "int",
+            "defaultValue": 1,
+            "metadata": {
+                "description": "Specifies the number of Virtual Machines that will part of the test bench"
+            }
+        },
+        "workloadType": {
+            "type": "string",
+            "defaultValue": "workloadc",
+            "metadata": {
+                "description": "Specifies the workload"
+            }
+        },
+        "threads": {
+            "type": "int",
+            "defaultValue": 1,
+            "metadata": {
+                "description": "Specifies the threads per client"
+            }
+        },
+        "targetOperationsPerSecond": {
+            "type": "int",
+            "defaultValue": -1,
+            "metadata": {
+                "description": "Specifies the maximum number of operations per second"
+            }
+        },
+        "benchmarkingToolsRepoName": {
+            "type": "string",
+            "defaultValue": "Azure/azure-cosmos-dotnet-v3",
+            "metadata": {
+                "description": "Specifies the GitHub Url for YCSB source code repository"
+            }
+        },
+        "benchmarkingToolsBranchName": {
+            "type": "string",
+            "defaultValue": "main",
+            "metadata": {
+                "description": "Specifies the GitHub branch for YCSB source code repository"
+            }
+        },
+        "guidValue": {
+            "type": "string",
+            "defaultValue": "[newGuid()]"
+        },
+        "useGateway": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Specifies if the gateway connectivity mode should be used. The default value 'flase' indicates direct connectivity mode"
+            }
+        },
+        "diagnosticsLatencyThresholdInMS": {
+            "type": "int",
+            "defaultValue": -1
+        },
+        "readproportion": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Specifies read operation percentage from 0 to 1"
+            }
+        },
+        "updateproportion": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Specifies update operation percentage from 0 to 1"
+            }
+        },
+        "scanproportion": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Specifies scan operation percentage from 0 to 1"
+            }
+        },
+        "insertproportion": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Specifies insert operation percentage from 0 to 1"
+            }
+        },
+        "writeOnlyOperation": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Specifies writeOnlyOperation true or false, if true it will override the workload and run 100% write, transaction wont fail on single error unlike load phase"
+            }
+        },
+        "requestdistribution": {
+            "type": "string",
+            "defaultValue": "uniform",
+            "metadata": {
+                "description": "Specifies request distribution"
+            }
+        },
+        "insertorder": {
+            "type": "string",
+            "defaultValue": "hashed",
+            "metadata": {
+                "description": "Specifies insert data in ordered or hashed manner"
+            }
+        },
+        "includeExceptionStackInLog": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Specifies includeExceptionStackInLog true or false, it will print the complete exception trace on error"
+            }
+        },
+        "fieldcount": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Specifies field count in the item"
+            }
+        },
+        "skipLoadPhase": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Specifies skipLoadPhase true or false, if set true load phase will not trigger before the transaction phase"
+            }
+        },
+        "appInsightConnectionString": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Specifies application insight connection string for live monitering"
+            }
+        },
+        "ycsbDatabaseBindingName": {
+            "type": "string",
+            "defaultValue": "azurecosmos",
+            "metadata": {
+                "description": "Specifies YCSB database binding name"
+            }
+        },
+        "preferredRegionList": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Specifies a comma separated preferred region list."
+            }
+        }
+    },
+    "variables": {
+        "vmName": "[concat(parameters('projectName'), '-vm')]",
+        "publicIPAddressName": "[concat(parameters('projectName'), '-ip')]",
+        "networkInterfaceName": "[concat(parameters('projectName'), '-nic')]",
+        "networkSecurityGroupName": "[concat(parameters('projectName'), '-nsg')]",
+        "benchmarkingToolsURL": "[ concat('https://github.com/',parameters('benchmarkingToolsRepoName'),'.git')]",
+        "cloudInitScriptUrl": "[concat('https://raw.githubusercontent.com/',parameters('benchmarkingToolsRepoName'),'/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/system/cloud-init.txt')]",
+        "vmScriptExtensionScriptUrl": "[concat('https://raw.githubusercontent.com/',parameters('benchmarkingToolsRepoName'),'/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/scripts/execute.sh')]",
+        "customScriptUrl": "[concat('https://raw.githubusercontent.com/',parameters('benchmarkingToolsRepoName'),'/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/scripts/custom-script.sh')]",
+        "vmScriptExtensionScriptName": "execute.sh"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-11-01",
+            "name": "[variables('networkSecurityGroupName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2020-11-01",
+            "name": "[concat(variables('publicIPAddressName'),copyIndex(1))]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Basic",
+                "tier": "Regional"
+            },
+            "properties": {
+                "publicIPAddressVersion": "IPv4",
+                "publicIPAllocationMethod": "Dynamic",
+                "idleTimeoutInMinutes": 4
+            },
+            "copy": {
+                "name": "publicIPcopy",
+                "count": "[parameters('vmCount')]"
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('vNetName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('vNetAddressPrefixes')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('vNetSubnetName')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('vNetSubnetAddressPrefix')]",
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    }
+                ],
+                "enableDdosProtection": false
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2020-11-01",
+            "name": "[concat(parameters('vNetName'), '/',parameters('vNetSubnetName'))]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vNetName'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+            ],
+            "properties": {
+                "addressPrefix": "[parameters('vNetSubnetAddressPrefix')]",
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled",
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2020-11-01",
+            "name": "[concat(variables('networkInterfaceName'),copyIndex(1))]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('publicIPAddressName'),copyIndex(1)))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vNetName'), parameters('vNetSubnetName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAddress": "10.0.0.4",
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('publicIPAddressName'),copyIndex(1)))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vNetName'), parameters('vNetSubnetName'))]"
+                            },
+                            "primary": true,
+                            "privateIPAddressVersion": "IPv4"
+                        }
+                    }
+                ],
+                "enableAcceleratedNetworking": true,
+                "enableIPForwarding": false
+            },
+            "copy": {
+                "name": "networkInterfacecopy",
+                "count": "[parameters('vmCount')]"
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2021-11-01",
+            "name": "[concat(variables('vmName'),copyIndex(1))]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('networkInterfaceName'),copyIndex(1)))]"
+            ],
+            "tags": {
+                "azsecpack": "prod",
+                "platformsettings.host_environment.service.platform_optedin_for_rootcerts": "true"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "canonical",
+                        "offer": "0001-com-ubuntu-server-focal",
+                        "sku": "20_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Linux",
+                        "name": "[concat(variables('vmName'),copyIndex(1),'_OsDisk')]",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "storageAccountType": "Premium_LRS"
+                        },
+                        "deleteOption": "Delete",
+                        "diskSizeGB": 30
+                    }
+                },
+                "osProfile": {
+                    "computerName": "[concat(variables('vmName'),copyIndex(1))]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "customData": "[base64(concat('#include\n',variables('cloudInitScriptUrl')))]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false,
+                        "provisionVMAgent": true,
+                        "patchSettings": {
+                            "patchMode": "ImageDefault",
+                            "assessmentMode": "ImageDefault"
+                        }
+                    },
+                    "allowExtensionOperations": true
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('networkInterfaceName'),copyIndex(1)))]",
+                            "properties": {
+                                "deleteOption": "Delete"
+                            }
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true
+                    }
+                }
+            },
+            "copy": {
+                "name": "vmcopy",
+                "count": "[parameters('vmCount')]"
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "apiVersion": "2019-03-01",
+            "name": "[concat(variables('vmName'),copyIndex(1),'/CustomScript')]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', concat(variables('vmName'),copyIndex(1)))]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Azure.Extensions",
+                "type": "CustomScript",
+                "typeHandlerVersion": "2.1",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                },
+                "protectedSettings": {
+                    "commandToExecute": "[concat('DB_BINDING_NAME=',parameters('ycsbDatabaseBindingName'),' ','ADMIN_USER_NAME=',parameters('adminUsername'),' ','BENCHMARKING_TOOLS_URL=',variables('benchmarkingToolsURL'),' ','BENCHMARKING_TOOLS_BRANCH_NAME=',parameters('benchmarkingToolsBranchName'),' ','YCSB_GIT_REPO_URL=',variables('ycsbGitHubRepoUrl'),' ','GUID=',parameters('guidValue'),' ','YCSB_GIT_BRANCH_NAME=',parameters('ycsbGitHubBranchName'),' ','TARGET_OPERATIONS_PER_SECOND=',parameters('targetOperationsPerSecond'),' ','THREAD_COUNT=',parameters('threads'),' ','YCSB_OPERATION_COUNT=',parameters('ycsbOperationCount'), ' ','WORKLOAD_TYPE=',parameters('workloadType'),' ','VM_NAME=',variables('vmName'),copyIndex(1), ' ','RESULT_STORAGE_CONNECTION_STRING=','\"',parameters('resultsStorageConnectionString'),'\"',' ','COSMOS_URI=','\"',parameters('cosmosURI'),'\"', ' ','COSMOS_KEY=',parameters('cosmosKey'), ' ','VM_COUNT=',parameters('vmCount'), ' ','USE_GATEWAY=',parameters('useGateway'), ' ','DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS=',parameters('diagnosticsLatencyThresholdInMS'), ' ','YCSB_RECORD_COUNT=',parameters('ycsbRecordCount'), ' ','WRITE_ONLY_OPERATION=',parameters('writeOnlyOperation'), ' ','READ_PROPORTION=',parameters('readproportion'), ' ','SCAN_PROPORTION=',parameters('scanproportion'), ' ','UPDATE_PROPORTION=',parameters('updateproportion'), ' ','INSERT_PROPORTION=',parameters('insertproportion'), ' ','REQUEST_DISTRIBUTION=',parameters('requestdistribution'), ' ','INSERT_ORDER=',parameters('insertorder'), ' ','CUSTOM_SCRIPT_URL=',variables('customScriptUrl'), ' ','MACHINE_INDEX=',copyIndex(1), ' ','INCLUDE_EXCEPTION_STACK=',parameters('includeExceptionStackInLog'), ' ','FIELD_COUNT=',parameters('fieldcount'), ' ','SKIP_LOAD_PHASE=',parameters('skipLoadPhase'), ' ','PREFERRED_REGION_LIST=','\"',parameters('preferredRegionList'),'\"',' ','APP_INSIGHT_CONN_STR=','\"',parameters('appInsightConnectionString'),'\"',' ', 'bash ',variables('vmScriptExtensionScriptName'))]",
+                    "fileUris": [ "[concat(variables('vmScriptExtensionScriptURL'))]" ]
+                }
+            },
+            "copy": {
+                "name": "vmextensioncopy",
+                "count": "[parameters('vmCount')]"
+            }
+        }
+    ],
+    "outputs": {
+        "results": {
+            "type": "string",
+            "value": "The Benchmarking job has been triggered successfully. Please check the storage account you provided for Job Status and Results. The jobs status will be available in a storage table within a few minutes and results will be available once the job finishes."
+        }
+    }
+}
