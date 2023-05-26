@@ -6473,10 +6473,8 @@ namespace Microsoft.Azure.Cosmos
                     return request;
                 }
 
-                AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(
-                    CreateRequestMessage,
-                    clientSideRequestStatistics: null,
-                    trace: null);
+                AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(CreateRequestMessage,
+                                                                                               clientSideRequestStatistics: null);
                 this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
 
                 if (this.queryPartitionProvider.IsValueCreated)

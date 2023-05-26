@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual async Task<AccountProperties> GetDatabaseAccountAsync(
             Func<ValueTask<HttpRequestMessage>> requestMessage,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            ITrace trace,
+            ITrace trace = null,
             CancellationToken cancellationToken = default)
         {
             AccountProperties databaseAccount = null;
