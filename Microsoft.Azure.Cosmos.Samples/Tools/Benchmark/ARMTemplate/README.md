@@ -10,7 +10,7 @@ For the below steps, you will **need an Azure Subscription**.
 
 Just click in the **Deploy to Azure button** and it will guide you into automatically configuring, deploying, and running the benchmark.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-cosmos-dotnet-v3%2Fmaster%2FARMBenchmarking%2FMicrosoft.Azure.Cosmos.Samples%2FTools%2FBenchmark%2FARMTemplate%2FbenchmarkTemplate.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-cosmos-dotnet-v3%2Fmaster%2FMicrosoft.Azure.Cosmos.Samples%2FTools%2FBenchmark%2FARMTemplate%2FbenchmarkTemplate.json)
 
 Please populate the `endpoint` and `key` for your Azure Cosmos DB account. You can [obtain these from the Azure Portal or through CLI](https://learn.microsoft.com/azure/cosmos-db/secure-access-to-data?tabs=using-primary-key#primary-keys).
 
