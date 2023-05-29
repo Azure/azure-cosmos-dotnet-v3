@@ -47,9 +47,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="systemUsageHistory"></param>
         /// <param name="isDirectConnectionMode"></param>
+        /// <param name="config"></param>
         private static List<SystemInfo> RecordSystemUsage(
                 SystemUsageHistory systemUsageHistory, 
-                bool isDirectConnectionMode)
+                bool isDirectConnectionMode,
+                ClientTelemetryConfig config)
         {
             if (systemUsageHistory.Values == null)
             {
@@ -60,16 +62,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             
             List<SystemInfo> systemInfoCollection = new List<SystemInfo>(6)
             {
-                TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values),
-                TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values),
-                TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values),
-                TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values),
+                TelemetrySystemUsage.GetCpuInfo(systemUsageHistory.Values, config),
+                TelemetrySystemUsage.GetMemoryRemainingInfo(systemUsageHistory.Values, config),
+                TelemetrySystemUsage.GetAvailableThreadsInfo(systemUsageHistory.Values, config),
+                TelemetrySystemUsage.GetThreadWaitIntervalInMs(systemUsageHistory.Values, config),
                 TelemetrySystemUsage.GetThreadStarvationSignalCount(systemUsageHistory.Values)
             }; // Reset System Information
 
             if (isDirectConnectionMode)
             {
-                systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values));
+                systemInfoCollection.Add(TelemetrySystemUsage.GetTcpConnectionCount(systemUsageHistory.Values, config));
             }
 
             return systemInfoCollection;
@@ -78,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Record CPU and memory usage which will be sent as part of telemetry information
         /// </summary>
-        internal static List<SystemInfo> RecordSystemUtilization(DiagnosticsHandlerHelper helper, bool isDirectMode)
+        internal static List<SystemInfo> RecordSystemUtilization(DiagnosticsHandlerHelper helper, bool isDirectMode, ClientTelemetryConfig config)
         {
             try
             {
@@ -90,7 +92,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     return ClientTelemetryHelper.RecordSystemUsage(
                         systemUsageHistory: systemUsageHistory,
-                        isDirectConnectionMode: isDirectMode);
+                        isDirectConnectionMode: isDirectMode,
+                        config: config);
                 }
                 else
                 {

@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private bool IsAllowed(RequestMessage request)
         { 
-            return ClientTelemetryOptions.AllowedResourceTypes.Equals(request.ResourceType);
+            return this.telemetry.Configuration.AllowedResourceTypes.Equals(request.ResourceType);
         }
 
         /// <summary>

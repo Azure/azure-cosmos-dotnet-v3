@@ -26,6 +26,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     [TestClass]
     public class ClientTelemetryTests
     {
+        private readonly ClientTelemetryConfig clientTelemetryConfig = new ClientTelemetryConfig();
+
         [TestCleanup]
         public void Cleanup()
         {
@@ -127,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         public async Task CheckIfPayloadIsDividedCorrectlyAsync(int expectedOperationInfoSize, int expectedCacheRefreshInfoSize, int expectedRequestInfoSize)
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
-            ClientTelemetryOptions.PayloadSizeThreshold = 1024 * 15; //15 Kb
+            this.clientTelemetryConfig.ClientTelemetryServiceConfig.PayloadSizeThreshold = 1024 * 15; //15 Kb
 
             string data = File.ReadAllText("Telemetry/ClientTelemetryPayloadWithoutMetrics.json", Encoding.UTF8);
             ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
@@ -146,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 (request, cancellationToken) =>
                 {
                     string payloadJson = request.Content.ReadAsStringAsync().Result;
-                    Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.PayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
+                    Assert.IsTrue(payloadJson.Length <= this.clientTelemetryConfig.ClientTelemetryServiceConfig.PayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
 
                     ClientTelemetryProperties propertiesToSend = JsonConvert.DeserializeObject<ClientTelemetryProperties>(payloadJson);
 
@@ -160,7 +162,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             
             ClientTelemetryProcessor processor = new ClientTelemetryProcessor(
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object))),
-                Mock.Of<AuthorizationTokenProvider>());
+                Mock.Of<AuthorizationTokenProvider>(),
+                new ClientTelemetryConfig());
 
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
                 = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> ();
@@ -180,12 +183,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
                 LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                             ClientTelemetryOptions.RequestLatencyMax,
-                                                            ClientTelemetryOptions.RequestLatencyPrecision);
+                                                            this.clientTelemetryConfig.MetricsPrecisions.RequestLatencyPrecision);
                 latency.RecordValue(10);
 
                 LongConcurrentHistogram requestcharge = new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                             ClientTelemetryOptions.RequestChargeMax,
-                                                            ClientTelemetryOptions.RequestChargePrecision);
+                                                            this.clientTelemetryConfig.MetricsPrecisions.RequestChargePrecision);
                 requestcharge.RecordValue(11);
 
                 operationInfoSnapshot.TryAdd(opeInfo, (latency, requestcharge));
@@ -208,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
                 LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                             ClientTelemetryOptions.RequestLatencyMax,
-                                                            ClientTelemetryOptions.RequestLatencyPrecision);
+                                                            this.clientTelemetryConfig.MetricsPrecisions.RequestLatencyPrecision);
                 latency.RecordValue(10);
 
                 cacheRefreshInfoSnapshot.TryAdd(crInfo, latency);
@@ -232,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
                 LongConcurrentHistogram histogram = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
-                                                        ClientTelemetryOptions.RequestLatencyPrecision);
+                                                        this.clientTelemetryConfig.MetricsPrecisions.RequestLatencyPrecision);
                 histogram.RecordValue(TimeSpan.FromMinutes(1).Ticks);
                 
                 metricInfo.SetAggregators(histogram, ClientTelemetryOptions.TicksToMsFactor);
@@ -246,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 operationInfoSnapshot,
                 cacheRefreshInfoSnapshot,
                 requestInfoList, 
-                new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut).Token);
+                new CancellationTokenSource(this.clientTelemetryConfig.ClientTelemetryProcessorTimeOut).Token);
 
             Assert.AreEqual(expectedOperationInfoSize, actualOperationInfoSize, "Operation Info is not correct");
             Assert.AreEqual(expectedCacheRefreshInfoSize, actualCacheRefreshInfoSize, "Cache Refresh Info is not correct");
@@ -272,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 (request, cancellationToken) =>
                 {
                     string payloadJson = request.Content.ReadAsStringAsync().Result;
-                    Assert.IsTrue(payloadJson.Length <= ClientTelemetryOptions.PayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
+                    Assert.IsTrue(payloadJson.Length <= this.clientTelemetryConfig.ClientTelemetryServiceConfig.PayloadSizeThreshold, "Payload Size is " + payloadJson.Length);
 
                     ClientTelemetryProperties propertiesToSend = JsonConvert.DeserializeObject<ClientTelemetryProperties>(payloadJson);
 
@@ -283,7 +286,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             ClientTelemetryProcessor processor = new ClientTelemetryProcessor(
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object))),
-                Mock.Of<AuthorizationTokenProvider>());
+                Mock.Of<AuthorizationTokenProvider>(),
+                this.clientTelemetryConfig);
             
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
                 = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
@@ -302,12 +306,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
                 LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                             ClientTelemetryOptions.RequestLatencyMax,
-                                                            ClientTelemetryOptions.RequestLatencyPrecision);
+                                                            this.clientTelemetryConfig.MetricsPrecisions.RequestLatencyPrecision);
                 latency.RecordValue(10);
 
                 LongConcurrentHistogram requestcharge = new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                             ClientTelemetryOptions.RequestChargeMax,
-                                                            ClientTelemetryOptions.RequestChargePrecision);
+                                                            this.clientTelemetryConfig.MetricsPrecisions.RequestChargePrecision);
                 requestcharge.RecordValue(11);
 
                 operationInfoSnapshot.TryAdd(opeInfo, (latency, requestcharge));
@@ -330,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
                 LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                             ClientTelemetryOptions.RequestLatencyMax,
-                                                            ClientTelemetryOptions.RequestLatencyPrecision);
+                                                            this.clientTelemetryConfig.MetricsPrecisions.RequestLatencyPrecision);
                 latency.RecordValue(10);
 
                 cacheRefreshInfoSnapshot.TryAdd(crInfo, latency);

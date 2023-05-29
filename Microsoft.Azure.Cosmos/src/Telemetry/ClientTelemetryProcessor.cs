@@ -23,11 +23,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         
         private readonly AuthorizationTokenProvider tokenProvider;
         private readonly CosmosHttpClient httpClient;
-            
-        internal ClientTelemetryProcessor(CosmosHttpClient httpClient, AuthorizationTokenProvider tokenProvider)
+        private readonly ClientTelemetryConfig configuration;
+
+        internal ClientTelemetryProcessor(CosmosHttpClient httpClient, AuthorizationTokenProvider tokenProvider, ClientTelemetryConfig configuration)
         {
             this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             this.tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
+            this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
         /// <summary>
@@ -48,7 +50,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     operationInfoSnapshot: operationInfoSnapshot,
                     cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                     sampledRequestInfo: requestInfoSnapshot,
-                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken));
+                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken),
+                    this.configuration);
             }
             catch (Exception ex)
             {

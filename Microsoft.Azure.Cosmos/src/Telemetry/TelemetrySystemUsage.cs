@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents.Rntbd;
@@ -19,12 +20,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Collecting CPU usage information and aggregating that data using Histogram
         /// </summary>
         /// <param name="systemUsageCollection"></param>
+        /// <param name="config"></param>
         /// <returns>SystemInfo</returns>
-        public static SystemInfo GetCpuInfo(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
+        public static SystemInfo GetCpuInfo(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection, ClientTelemetryConfig config)
         {
             LongConcurrentHistogram histogram = new LongConcurrentHistogram(ClientTelemetryOptions.CpuMin,
                                                         ClientTelemetryOptions.CpuMax,
-                                                        ClientTelemetryOptions.CpuPrecision);
+                                                        config.MetricsPrecisions.CpuPrecision);
 
             SystemInfo systemInfo = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
             foreach (SystemUsageLoad load in systemUsageCollection)
@@ -53,12 +55,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Collecting Memory Remaining information and aggregating that data using Histogram
         /// </summary>
         /// <param name="systemUsageCollection"></param>
+        /// <param name="config"></param>
         /// <returns>SystemInfo</returns>
-        public static SystemInfo GetMemoryRemainingInfo(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
+        public static SystemInfo GetMemoryRemainingInfo(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection, ClientTelemetryConfig config)
         {
             LongConcurrentHistogram histogram = new LongConcurrentHistogram(ClientTelemetryOptions.MemoryMin,
                                                         ClientTelemetryOptions.MemoryMax,
-                                                        ClientTelemetryOptions.MemoryPrecision);
+                                                        config.MetricsPrecisions.MemoryPrecision);
 
             SystemInfo systemInfo = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
             foreach (SystemUsageLoad load in systemUsageCollection)
@@ -82,12 +85,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Collecting Available Thread information and aggregating that data using Histogram
         /// </summary>
         /// <param name="systemUsageCollection"></param>
+        /// <param name="config"></param>
         /// <returns>SystemInfo</returns>
-        public static SystemInfo GetAvailableThreadsInfo(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
+        public static SystemInfo GetAvailableThreadsInfo(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection, ClientTelemetryConfig config)
         {
             LongConcurrentHistogram histogram = new LongConcurrentHistogram(ClientTelemetryOptions.AvailableThreadsMin,
                                                         ClientTelemetryOptions.AvailableThreadsMax,
-                                                        ClientTelemetryOptions.AvailableThreadsPrecision);
+                                                        config.MetricsPrecisions.AvailableThreadsPrecision);
 
             SystemInfo systemInfo = new SystemInfo(ClientTelemetryOptions.AvailableThreadsName, ClientTelemetryOptions.AvailableThreadsUnit);
             foreach (SystemUsageLoad load in systemUsageCollection)
@@ -136,12 +140,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Collecting Thread Wait Interval in Millisecond and aggregating using Histogram
         /// </summary>
         /// <param name="systemUsageCollection"></param>
+        /// <param name="config"></param>
         /// <returns>SystemInfo</returns>
-        public static SystemInfo GetThreadWaitIntervalInMs(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
+        public static SystemInfo GetThreadWaitIntervalInMs(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection, ClientTelemetryConfig config)
         {
             LongConcurrentHistogram histogram = new LongConcurrentHistogram(ClientTelemetryOptions.ThreadWaitIntervalInMsMin,
                                                         ClientTelemetryOptions.ThreadWaitIntervalInMsMax,
-                                                        ClientTelemetryOptions.ThreadWaitIntervalInMsPrecision);
+                                                        config.MetricsPrecisions.ThreadWaitIntervalInMsPrecision);
 
             SystemInfo systemInfo = new SystemInfo(ClientTelemetryOptions.ThreadWaitIntervalInMsName, ClientTelemetryOptions.ThreadWaitIntervalInMsUnit);
             foreach (SystemUsageLoad load in systemUsageCollection)
@@ -165,12 +170,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Collecting TCP Connection Count and aggregating using Histogram
         /// </summary>
         /// <param name="systemUsageCollection"></param>
+        /// <param name="config"></param>
         /// <returns>SystemInfo</returns>
-        public static SystemInfo GetTcpConnectionCount(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection)
+        public static SystemInfo GetTcpConnectionCount(IReadOnlyCollection<SystemUsageLoad> systemUsageCollection, ClientTelemetryConfig config)
         {
             LongConcurrentHistogram histogram = new LongConcurrentHistogram(ClientTelemetryOptions.NumberOfTcpConnectionMin,
                                                         ClientTelemetryOptions.NumberOfTcpConnectionMax,
-                                                        ClientTelemetryOptions.NumberOfTcpConnectionPrecision);
+                                                        config.MetricsPrecisions.NumberOfTcpConnectionPrecision);
 
             SystemInfo systemInfo = new SystemInfo(ClientTelemetryOptions.NumberOfTcpConnectionName, ClientTelemetryOptions.NumberOfTcpConnectionUnit);
             foreach (SystemUsageLoad load in systemUsageCollection)

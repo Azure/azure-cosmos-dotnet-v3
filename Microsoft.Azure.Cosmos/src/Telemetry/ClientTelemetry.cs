@@ -38,6 +38,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly GlobalEndpointManager globalEndpointManager;
 
+        internal readonly ClientTelemetryConfig Configuration;
+
         private Task telemetryTask;
 
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
@@ -65,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="diagnosticsHelper"></param>
         /// <param name="preferredRegions"></param>
         /// <param name="globalEndpointManager"></param>
+        /// <param name="configuration"></param>
         /// <returns>ClientTelemetry</returns>
         public static ClientTelemetry CreateAndStartBackgroundTelemetry(
             string clientId,
@@ -74,7 +77,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper,
             IReadOnlyList<string> preferredRegions,
-            GlobalEndpointManager globalEndpointManager)
+            GlobalEndpointManager globalEndpointManager,
+            ClientTelemetryConfig configuration)
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
 
@@ -86,7 +90,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 authorizationTokenProvider,
                 diagnosticsHelper,
                 preferredRegions,
-                globalEndpointManager);
+                globalEndpointManager,
+                configuration);
 
             clientTelemetry.StartObserverTask();
 
@@ -101,12 +106,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper,
             IReadOnlyList<string> preferredRegions,
-            GlobalEndpointManager globalEndpointManager)
+            GlobalEndpointManager globalEndpointManager,
+            ClientTelemetryConfig configuration)
         {
             this.diagnosticsHelper = diagnosticsHelper ?? throw new ArgumentNullException(nameof(diagnosticsHelper));
+            this.Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             this.globalEndpointManager = globalEndpointManager;
-            
-            this.processor = new ClientTelemetryProcessor(httpClient, authorizationTokenProvider);
+
+            this.processor = new ClientTelemetryProcessor(httpClient, authorizationTokenProvider, configuration);
 
             this.clientTelemetryInfo = new ClientTelemetryProperties(
                 clientId: clientId, 
@@ -116,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 preferredRegions: preferredRegions,
                 aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
 
-            this.networkDataRecorder = new NetworkDataRecorder();
+            this.networkDataRecorder = new NetworkDataRecorder(configuration);
             this.cancellationTokenSource = new CancellationTokenSource();
         }
 
@@ -159,7 +166,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
 
                     this.clientTelemetryInfo.SystemInfo = ClientTelemetryHelper.RecordSystemUtilization(this.diagnosticsHelper,
-                        this.clientTelemetryInfo.IsDirectConnectionMode);
+                        this.clientTelemetryInfo.IsDirectConnectionMode,
+                        this.Configuration);
 
                     // Take the copy for further processing i.e. serializing and dividing into chunks
                     ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
@@ -172,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     try
                     {
-                        CancellationTokenSource cancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
+                        CancellationTokenSource cancellationToken = new CancellationTokenSource(this.Configuration.ClientTelemetryProcessorTimeOut);
                         Task processorTask = Task.Run(() => this.processor
                                                                     .ProcessAndSendAsync(
                                                                             clientTelemetryInfo: this.clientTelemetryInfo,
@@ -183,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                         // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service
                         // Not disposing this task. If we dispose a client then, telemetry job(telemetryTask) should stop but processor task(processorTask) should make best effort to finish the job in background.
-                        _ = ClientTelemetry.RunProcessorTaskAsync(this.clientTelemetryInfo.DateTimeUtc, processorTask, ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
+                        _ = ClientTelemetry.RunProcessorTaskAsync(this.clientTelemetryInfo.DateTimeUtc, processorTask, this.Configuration.ClientTelemetryProcessorTimeOut);
 
                     }
                     catch (Exception ex)
@@ -266,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             LongConcurrentHistogram latency = this.cacheRefreshInfoMap
                     .GetOrAdd(payloadKey, new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
-                                                        ClientTelemetryOptions.RequestLatencyPrecision));
+                                                        this.Configuration.MetricsPrecisions.RequestLatencyPrecision));
             try
             {
                 latency.RecordValue(requestLatency.Value.Ticks);
@@ -330,10 +338,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
-                                                        ClientTelemetryOptions.RequestLatencyPrecision),
+                                                        this.Configuration.MetricsPrecisions.RequestLatencyPrecision),
                             requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                         ClientTelemetryOptions.RequestChargeMax,
-                                                        ClientTelemetryOptions.RequestChargePrecision)));
+                                                        this.Configuration.MetricsPrecisions.RequestChargePrecision)));
             try
             {
                 latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);

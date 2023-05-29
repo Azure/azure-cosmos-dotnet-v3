@@ -10,9 +10,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
 
     internal class ClientTelemetryConfig
     {
-        internal MetricsPrecision precisions { get; set; } = new MetricsPrecision();
-        internal NetworkTelemetryConfig networkTelemetryConfig { get; set; }
-        internal ClientTelemetryServiceConfig clientTelemetryServiceConfig { get; set; }
+        internal MetricsPrecision MetricsPrecisions { get; set; } = new MetricsPrecision();
+        internal NetworkTelemetryConfig NetworkTelemetryConfig { get; set; } = new NetworkTelemetryConfig();
+        internal ClientTelemetryServiceConfig ClientTelemetryServiceConfig { get; set; } = new ClientTelemetryServiceConfig();
         
         internal ResourceType AllowedResourceTypes { get; set; } = ResourceType.Document;
         internal TimeSpan ClientTelemetryProcessorTimeOut { get; set; } = TimeSpan.FromMinutes(5);

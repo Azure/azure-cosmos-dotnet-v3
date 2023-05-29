@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
@@ -16,10 +14,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     [TestClass]
     public class DataSamplerTests
     {
+        private readonly ClientTelemetryConfig clientTelemetryConfig = new ClientTelemetryConfig();
+
         [TestMethod]
         public void TestNetworkRequestSamplerForThreshold()
         {
-            int numberOfElementsInEachGroup = ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold;
+            int numberOfElementsInEachGroup = this.clientTelemetryConfig.NetworkTelemetryConfig.NetworkRequestsSampleSizeThreshold;
             int numberOfGroups = 5;
                
             List<RequestInfo> requestInfoList = new List<RequestInfo>();
@@ -54,10 +54,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 requestInfoList.Add(requestInfo);
             }
             
-            List<RequestInfo> sampleDataByLatency = DataSampler.OrderAndSample(requestInfoList, DataLatencyComparer.Instance);
+            List<RequestInfo> sampleDataByLatency = DataSampler.OrderAndSample(requestInfoList, DataLatencyComparer.Instance, this.clientTelemetryConfig.NetworkTelemetryConfig);
             Assert.AreEqual(numberOfGroups * numberOfElementsInEachGroup, sampleDataByLatency.Count);
 
-            List<RequestInfo> sampleDataBySampleCount = DataSampler.OrderAndSample(requestInfoList, DataSampleCountComparer.Instance);
+            List<RequestInfo> sampleDataBySampleCount = DataSampler.OrderAndSample(requestInfoList, DataSampleCountComparer.Instance, this.clientTelemetryConfig.NetworkTelemetryConfig);
             Assert.AreEqual(numberOfGroups * numberOfElementsInEachGroup, sampleDataBySampleCount.Count);
         }
 
@@ -66,14 +66,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         {
             List<RequestInfo> requestInfoList = new List<RequestInfo>();
 
-            Assert.AreEqual(0, DataSampler.OrderAndSample(requestInfoList, DataSampleCountComparer.Instance).Count);
-            Assert.AreEqual(0, DataSampler.OrderAndSample(requestInfoList, DataLatencyComparer.Instance).Count);
+            Assert.AreEqual(0, DataSampler.OrderAndSample(requestInfoList, DataSampleCountComparer.Instance, this.clientTelemetryConfig.NetworkTelemetryConfig).Count);
+            Assert.AreEqual(0, DataSampler.OrderAndSample(requestInfoList, DataLatencyComparer.Instance, this.clientTelemetryConfig.NetworkTelemetryConfig).Count);
         }
 
         [TestMethod]
         public void TestNetworkRequestSamplerForLessThanThresholdSize()
         {
-            int numberOfElementsInEachGroup = ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold;
             int numberOfGroups = 3;
 
             List<RequestInfo> requestInfoList = new List<RequestInfo>();
@@ -108,10 +107,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 requestInfoList.Add(requestInfo);
             }
 
-            List<RequestInfo> sampleDataByLatency = DataSampler.OrderAndSample(requestInfoList, DataLatencyComparer.Instance);
+            List<RequestInfo> sampleDataByLatency = DataSampler.OrderAndSample(requestInfoList, DataLatencyComparer.Instance, this.clientTelemetryConfig.NetworkTelemetryConfig);
             Assert.AreEqual(10, sampleDataByLatency.Count);
 
-            List<RequestInfo> sampleDataBySampleCount = DataSampler.OrderAndSample(requestInfoList, DataSampleCountComparer.Instance);
+            List<RequestInfo> sampleDataBySampleCount = DataSampler.OrderAndSample(requestInfoList, DataSampleCountComparer.Instance, this.clientTelemetryConfig.NetworkTelemetryConfig);
             Assert.AreEqual(10, sampleDataBySampleCount.Count);
         }
 

@@ -6,10 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Security.AccessControl;
-    using System.Text;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
@@ -19,10 +15,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     [TestClass]
     public class NetworkDataRecorderTest
     {
+        private readonly ClientTelemetryConfig clientTelemetryConfig = new ClientTelemetryConfig();
+
         [TestMethod]
         public void TestRecordWithErroredAndHighLatencyRequests()
         {
-            NetworkDataRecorder recorder = new NetworkDataRecorder();
+            NetworkDataRecorder recorder = new NetworkDataRecorder(this.clientTelemetryConfig);
 
             List<StoreResponseStatistics> stats = new List<StoreResponseStatistics>()
             {
@@ -79,14 +77,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         [DataRow(200, 0, 6, true)]
         public void CheckEligibleStatistics(int statusCode, int subStatusCode, int latencyInMs, bool expectedFlag)
         {
-            Assert.AreEqual(expectedFlag, NetworkDataRecorderTest.IsEligible(statusCode, subStatusCode, TimeSpan.FromMilliseconds(latencyInMs)));
+            Assert.AreEqual(expectedFlag, NetworkDataRecorderTest.IsEligible(statusCode, subStatusCode, TimeSpan.FromMilliseconds(latencyInMs), this.clientTelemetryConfig));
         }
 
-        private static bool IsEligible(int statusCode, int subStatusCode, TimeSpan latencyInMs)
+        private static bool IsEligible(int statusCode, int subStatusCode, TimeSpan latencyInMs, ClientTelemetryConfig config)
         {
+            NetworkDataRecorder recorder = new NetworkDataRecorder(config);
             return
-                NetworkDataRecorder.IsStatusCodeNotExcluded(statusCode, subStatusCode) &&
-                    (NetworkDataRecorder.IsUserOrServerError(statusCode) || NetworkDataRecorder.IsHighLatency(latencyInMs.TotalMilliseconds));
+                recorder.IsStatusCodeNotExcluded(statusCode, subStatusCode) &&
+                    (NetworkDataRecorder.IsUserOrServerError(statusCode) || recorder.IsHighLatency(latencyInMs.TotalMilliseconds));
         }
     }
 }

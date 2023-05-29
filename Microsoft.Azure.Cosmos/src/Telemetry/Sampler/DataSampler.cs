@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal sealed class DataSampler
     {
-        public static List<RequestInfo> OrderAndSample(List<RequestInfo> requestInfoList, IComparer<RequestInfo> comparer)
+        public static List<RequestInfo> OrderAndSample(List<RequestInfo> requestInfoList, IComparer<RequestInfo> comparer, NetworkTelemetryConfig config)
         {
             // It will store final result
             List<RequestInfo> sampledData = new List<RequestInfo>(capacity: requestInfoList.Count);
@@ -45,12 +45,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             // If list is greater than threshold then sort it and get top N objects otherwise add list as it is
             foreach (List<RequestInfo> sampledRequestInfo in sampledRawData.Values)
             {
-                if (sampledRequestInfo.Count > ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold)
+                if (sampledRequestInfo.Count > config.NetworkRequestsSampleSizeThreshold)
                 {
                     sampledRequestInfo.Sort(comparer);
                     sampledData.AddRange(sampledRequestInfo.GetRange(
                         index: 0,
-                        count: ClientTelemetryOptions.NetworkRequestsSampleSizeThreshold));
+                        count: config.NetworkRequestsSampleSizeThreshold));
                 }
                 else
                 {

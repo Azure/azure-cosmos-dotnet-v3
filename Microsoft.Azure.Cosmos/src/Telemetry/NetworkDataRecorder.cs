@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Threading;
@@ -13,23 +14,30 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal class NetworkDataRecorder
     {
+        private readonly ClientTelemetryConfig configuration;
+
         private ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> RequestInfoHighLatencyBucket 
             = new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>();
         private ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> RequestInfoErrorBucket
             = new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>();
 
+        public NetworkDataRecorder(ClientTelemetryConfig configuration)
+        {
+            this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        }
+
         public void Record(List<StoreResponseStatistics> storeResponseStatistics, string databaseId, string containerId)
         {
             foreach (StoreResponseStatistics storeStatistics in storeResponseStatistics)
             {
-                if (NetworkDataRecorder.IsStatusCodeNotExcluded((int)storeStatistics.StoreResult.StatusCode, (int)storeStatistics.StoreResult.SubStatusCode))
+                if (this.IsStatusCodeNotExcluded((int)storeStatistics.StoreResult.StatusCode, (int)storeStatistics.StoreResult.SubStatusCode))
                 {
                     if (NetworkDataRecorder.IsUserOrServerError((int)storeStatistics.StoreResult.StatusCode))
                     {
                         RequestInfo requestInfo = this.CreateRequestInfo(storeStatistics, databaseId, containerId);
                         LongConcurrentHistogram latencyHist = this.RequestInfoErrorBucket.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                                   ClientTelemetryOptions.RequestLatencyMax,
-                                                                  ClientTelemetryOptions.RequestLatencyPrecision));
+                                                                  this.configuration.MetricsPrecisions.RequestLatencyPrecision));
                         latencyHist.RecordValue(storeStatistics.RequestLatency.Ticks);
 
                     }
@@ -38,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         RequestInfo requestInfo = this.CreateRequestInfo(storeStatistics, databaseId, containerId);
                         LongConcurrentHistogram latencyHist = this.RequestInfoHighLatencyBucket.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                                   ClientTelemetryOptions.RequestLatencyMax,
-                                                                  ClientTelemetryOptions.RequestLatencyPrecision));
+                                                                  this.configuration.MetricsPrecisions.RequestLatencyPrecision));
                         latencyHist.RecordValue(storeStatistics.RequestLatency.Ticks);
                     }
                 }
@@ -62,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 allRequests.Add(payloadForLatency);
             }
             
-            requestInfoList.AddRange(DataSampler.OrderAndSample(allRequests, DataSampleCountComparer.Instance));
+            requestInfoList.AddRange(DataSampler.OrderAndSample(allRequests, DataSampleCountComparer.Instance, this.configuration.NetworkTelemetryConfig));
         }
         
         internal void GetHighLatencyRequests(List<RequestInfo> requestInfoList)
@@ -77,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 metricInfo.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
 
                 // Don't record if p99 latency is less than threshold
-                if (!NetworkDataRecorder.IsHighLatency(metricInfo.Percentiles[ClientTelemetryOptions.Percentile99]))
+                if (!this.IsHighLatency(metricInfo.Percentiles[ClientTelemetryOptions.Percentile99]))
                 {
                     continue;
                 }
@@ -88,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 allRequests.Add(payloadForLatency);
             }
 
-            requestInfoList.AddRange(DataSampler.OrderAndSample(allRequests, DataLatencyComparer.Instance));
+            requestInfoList.AddRange(DataSampler.OrderAndSample(allRequests, DataLatencyComparer.Instance, this.configuration.NetworkTelemetryConfig));
         }
 
         internal RequestInfo CreateRequestInfo(StoreResponseStatistics storeResponseStatistic, string databaseId, string containerId)
@@ -115,10 +123,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return requestInfoList;
         }
 
-        internal static bool IsHighLatency(double latency)
+        internal bool IsHighLatency(double latency)
         {
             return
-                latency >= ClientTelemetryOptions.NetworkLatencyThreshold.TotalMilliseconds;
+                latency >= this.configuration.NetworkTelemetryConfig.NetworkLatencyThreshold.TotalMilliseconds;
         }
 
         /// <summary>
@@ -131,9 +139,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return statusCode >= 400 && statusCode <= 599;
         }
 
-        internal static bool IsStatusCodeNotExcluded(int statusCode, int subStatusCode)
+        internal bool IsStatusCodeNotExcluded(int statusCode, int subStatusCode)
         {
-            return !(ClientTelemetryOptions.ExcludedStatusCodes.Contains(statusCode) && subStatusCode == 0);
+            return !(this.configuration.NetworkTelemetryConfig.ExcludedStatusCodes.Contains(statusCode) && subStatusCode == 0);
         }
     }
 }

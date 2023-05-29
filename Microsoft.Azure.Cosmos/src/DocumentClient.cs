@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -1058,7 +1059,8 @@ namespace Microsoft.Azure.Cosmos
                         authorizationTokenProvider: this.cosmosAuthorization,
                         diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
                         preferredRegions: this.ConnectionPolicy.PreferredLocations,
-                        globalEndpointManager: this.GlobalEndpointManager);
+                        globalEndpointManager: this.GlobalEndpointManager,
+                        configuration: new ClientTelemetryConfig());
 
                     DefaultTrace.TraceInformation("Client Telemetry Enabled.");
                 }
