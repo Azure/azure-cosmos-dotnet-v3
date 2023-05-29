@@ -83,6 +83,31 @@
                 "description": "Specifies the key for the Cosmos DB account"
             }
         },
+        "throughput": {
+            "type": "int",
+            "metadata": {
+                "description": "Specifies Collection throughput use"
+            }
+        },
+        "documents": {
+            "type": "int",
+            "metadata": {
+                "description": "Specifies the number of documents to insert"
+            }
+        },
+        "parallelism": {
+            "type": "int",
+            "metadata": {
+                "description": "Specifies the degree of parallelism"
+            }
+        },
+        "cleanupfinish": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Clean-up after run"
+            }
+        },
         "vmCount": {
             "type": "int",
             "defaultValue": 1,
@@ -435,7 +460,7 @@
                 "settings": {
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat('DB_BINDING_NAME=',parameters('ycsbDatabaseBindingName'),' ','ADMIN_USER_NAME=',parameters('adminUsername'),' ','BENCHMARKING_TOOLS_URL=',variables('benchmarkingToolsURL'),' ','BENCHMARKING_TOOLS_BRANCH_NAME=',parameters('benchmarkingToolsBranchName'),' ','GUID=',parameters('guidValue'),' ','TARGET_OPERATIONS_PER_SECOND=',parameters('targetOperationsPerSecond'),' ','THREAD_COUNT=',parameters('threads'),' ','WORKLOAD_TYPE=',parameters('workloadType'),' ','VM_NAME=',variables('vmName'),copyIndex(1), ' ','RESULT_STORAGE_CONNECTION_STRING=','\"',parameters('resultsStorageConnectionString'),'\"',' ','COSMOS_URI=','\"',parameters('cosmosURI'),'\"', ' ','COSMOS_KEY=',parameters('cosmosKey'), ' ','VM_COUNT=',parameters('vmCount'), ' ','USE_GATEWAY=',parameters('useGateway'), ' ','DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS=',parameters('diagnosticsLatencyThresholdInMS'), ' ','WRITE_ONLY_OPERATION=',parameters('writeOnlyOperation'), ' ','READ_PROPORTION=',parameters('readproportion'), ' ','SCAN_PROPORTION=',parameters('scanproportion'), ' ','UPDATE_PROPORTION=',parameters('updateproportion'), ' ','INSERT_PROPORTION=',parameters('insertproportion'), ' ','REQUEST_DISTRIBUTION=',parameters('requestdistribution'), ' ','INSERT_ORDER=',parameters('insertorder'), ' ','CUSTOM_SCRIPT_URL=',variables('customScriptUrl'), ' ','MACHINE_INDEX=',copyIndex(1), ' ','INCLUDE_EXCEPTION_STACK=',parameters('includeExceptionStackInLog'), ' ','FIELD_COUNT=',parameters('fieldcount'), ' ','SKIP_LOAD_PHASE=',parameters('skipLoadPhase'), ' ','PREFERRED_REGION_LIST=','\"',parameters('preferredRegionList'),'\"',' ','APP_INSIGHT_CONN_STR=','\"',parameters('appInsightConnectionString'),'\"',' ', 'bash ',variables('vmScriptExtensionScriptName'))]",
+                    "commandToExecute": "[concat('DB_BINDING_NAME=',parameters('ycsbDatabaseBindingName'),' ','ADMIN_USER_NAME=',parameters('adminUsername'),' ','BENCHMARKING_TOOLS_URL=',variables('benchmarkingToolsURL'),' ','BENCHMARKING_TOOLS_BRANCH_NAME=',parameters('benchmarkingToolsBranchName'),' ','GUID=',parameters('guidValue'),' ','TARGET_OPERATIONS_PER_SECOND=',parameters('targetOperationsPerSecond'),' ','THREAD_COUNT=',parameters('threads'),' ','WORKLOAD_TYPE=',parameters('workloadType'),' ','VM_NAME=',variables('vmName'),copyIndex(1), ' ','RESULT_STORAGE_CONNECTION_STRING=','\"',parameters('resultsStorageConnectionString'),'\"',' ','COSMOS_URI=','\"',parameters('cosmosURI'),'\"', ' ', 'COSMOS_KEY=',parameters('cosmosKey'), ' ', 'THROUGHPUT=',parameters('throughput'), ' ', 'DOCUMENTS=',parameters('documents'), ' ','PARALLELISM=',parameters('parallelism'), ' ','CLEANUPFINISH=',parameters('cleanupfinish'), ' ','VM_COUNT=',parameters('vmCount'), ' ','USE_GATEWAY=',parameters('useGateway'), ' ','DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS=',parameters('diagnosticsLatencyThresholdInMS'), ' ','WRITE_ONLY_OPERATION=',parameters('writeOnlyOperation'), ' ','READ_PROPORTION=',parameters('readproportion'), ' ','SCAN_PROPORTION=',parameters('scanproportion'), ' ','UPDATE_PROPORTION=',parameters('updateproportion'), ' ','INSERT_PROPORTION=',parameters('insertproportion'), ' ','REQUEST_DISTRIBUTION=',parameters('requestdistribution'), ' ','INSERT_ORDER=',parameters('insertorder'), ' ','CUSTOM_SCRIPT_URL=',variables('customScriptUrl'), ' ','MACHINE_INDEX=',copyIndex(1), ' ','INCLUDE_EXCEPTION_STACK=',parameters('includeExceptionStackInLog'), ' ','FIELD_COUNT=',parameters('fieldcount'), ' ','SKIP_LOAD_PHASE=',parameters('skipLoadPhase'), ' ','PREFERRED_REGION_LIST=','\"',parameters('preferredRegionList'),'\"',' ','APP_INSIGHT_CONN_STR=','\"',parameters('appInsightConnectionString'),'\"',' ', 'bash ',variables('vmScriptExtensionScriptName'))]",
                     "fileUris": [ "[concat(variables('vmScriptExtensionScriptURL'))]" ]
                 }
             },

@@ -27,6 +27,6 @@ echo "########## Build benckmark tool ##########"
 dotnet build --configuration Release -p:"OSSProjectRef=true;ShouldUnsetParentConfigurationAndPlatform=false"
 
 echo "########## Run benchmark ##########"
-nohup dotnet run -c Release -e $COSMOS_URI -k $COSMOS_KEY -t 400 -n 2000 --pl 1 \
---cleanuponfinish false -w InsertV2BenchmarkOperation \
+nohup dotnet run -c Release -e $COSMOS_URI -k $COSMOS_KEY -t $THROUGHPUT -n $DOCUMENTS --pl $PARALLELISM \
+--cleanuponfinish $CLEANUPFINISH -w InsertV2BenchmarkOperation \
 > "/home/${ADMIN_USER_NAME}/agent.out" 2> "/home/${ADMIN_USER_NAME}/agent.err" &
