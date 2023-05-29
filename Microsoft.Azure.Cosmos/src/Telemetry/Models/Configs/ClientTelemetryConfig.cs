@@ -10,34 +10,34 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
 
     internal class ClientTelemetryConfig
     {
-        internal int AggregationIntervalInSeconds { get; set; } = 600;
+        internal int AggregationIntervalInSeconds { get; } = 600;
 
-        internal MetricsPrecision MetricsPrecisions { get; set; } = new MetricsPrecision();
-        internal NetworkTelemetryConfig NetworkTelemetryConfig { get; set; } = new NetworkTelemetryConfig();
-        internal ClientTelemetryServiceConfig ClientTelemetryServiceConfig { get; set; } = new ClientTelemetryServiceConfig();
+        internal MetricsPrecision MetricsPrecisions { get; } = new MetricsPrecision();
+        internal NetworkTelemetryConfig NetworkTelemetryConfig { get; } = new NetworkTelemetryConfig();
+        internal ClientTelemetryServiceConfig ClientTelemetryServiceConfig { get; } = new ClientTelemetryServiceConfig();
         
-        internal ResourceType AllowedResourceTypes { get; set; } = ResourceType.Document;
-        internal TimeSpan ClientTelemetryProcessorTimeOut { get; set; } = TimeSpan.FromMinutes(5);
+        internal ResourceType AllowedResourceTypes { get; } = ResourceType.Document;
+        internal TimeSpan ClientTelemetryProcessorTimeOut { get; } = TimeSpan.FromMinutes(5);
     }
 
     internal class MetricsPrecision
     {
-        internal int RequestLatencyPrecision { get; set; } = 4;
-        internal int RequestChargePrecision { get; set; } = 2;
-        internal int CpuPrecision { get; set; } = 2;
-        internal int MemoryPrecision { get; set; } = 2;
-        internal int AvailableThreadsPrecision { get; set; } = 2;
-        internal int ThreadWaitIntervalInMsPrecision { get; set; } = 2;
-        internal int NumberOfTcpConnectionPrecision { get; set; } = 2;
+        internal int RequestLatencyPrecision { get; } = 4;
+        internal int RequestChargePrecision { get; } = 2;
+        internal int CpuPrecision { get; } = 2;
+        internal int MemoryPrecision { get; } = 2;
+        internal int AvailableThreadsPrecision { get; } = 2;
+        internal int ThreadWaitIntervalInMsPrecision { get; } = 2;
+        internal int NumberOfTcpConnectionPrecision { get; } = 2;
     }
 
     internal class NetworkTelemetryConfig
     {
         // Why 5 sec? As of now, if any network request is taking more than 5 millisecond sec, we will consider it slow request this value can be revisited in future
-        internal TimeSpan NetworkLatencyThreshold { get; set; } = TimeSpan.FromMilliseconds(5);
-        internal int NetworkRequestsSampleSizeThreshold { get; set; } = 10;
-        internal int NetworkTelemetrySampleSize { get; set; } = 200;
-        internal List<int> ExcludedStatusCodes { get; set; } = new List<int> { 404, 409, 412 };
+        internal TimeSpan NetworkLatencyThreshold { get; } = TimeSpan.FromMilliseconds(5);
+        internal int NetworkRequestsSampleSizeThreshold { get; } = 10;
+        internal int NetworkTelemetrySampleSize { get; } = 200;
+        internal List<int> ExcludedStatusCodes { get; } = new List<int> { 404, 409, 412 };
     }
 
     internal class ClientTelemetryServiceConfig

@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (scheduledTimeSpan.Equals(TimeSpan.Zero))
             {
-                double scheduledTimeInSeconds = ClientTelemetryOptions.DefaultTimeStampInSeconds;
+                double scheduledTimeInSeconds = config.AggregationIntervalInSeconds;
                 try
                 {
                     scheduledTimeInSeconds = ConfigurationManager
