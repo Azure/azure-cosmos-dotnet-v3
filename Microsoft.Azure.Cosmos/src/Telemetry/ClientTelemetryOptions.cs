@@ -86,7 +86,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private static string environmentName;
         private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;
-        internal const double DefaultTimeStampInSeconds = 600;
         private static Uri clientTelemetryEndpoint;
         
         internal static bool IsClientTelemetryEnabled()
@@ -100,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return isTelemetryEnabled;
         }
 
-        internal static TimeSpan GetScheduledTimeSpan()
+        internal static TimeSpan GetScheduledTimeSpan(ClientTelemetryConfig config)
         {
             if (scheduledTimeSpan.Equals(TimeSpan.Zero))
             {
@@ -110,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     scheduledTimeInSeconds = ConfigurationManager
                                                     .GetEnvironmentVariable<double>(
                                                            ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds,
-                                                           ClientTelemetryOptions.DefaultTimeStampInSeconds);
+                                                           config.AggregationIntervalInSeconds);
 
                     if (scheduledTimeInSeconds <= 0)
                     {

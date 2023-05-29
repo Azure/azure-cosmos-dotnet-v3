@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
+        private readonly TimeSpan observingWindow;
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly ClientTelemetryProcessor processor;
@@ -115,13 +115,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             this.processor = new ClientTelemetryProcessor(httpClient, authorizationTokenProvider, configuration);
 
+            this.observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan(configuration);
+
             this.clientTelemetryInfo = new ClientTelemetryProperties(
                 clientId: clientId, 
                 processId: HashingExtension.ComputeHash(System.Diagnostics.Process.GetCurrentProcess().ProcessName), 
                 userAgent: userAgent, 
                 connectionMode: connectionMode,
                 preferredRegions: preferredRegions,
-                aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
+                aggregationIntervalInSec: (int)this.observingWindow.TotalSeconds);
 
             this.networkDataRecorder = new NetworkDataRecorder(configuration);
             this.cancellationTokenSource = new CancellationTokenSource();
@@ -143,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
-            DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : {0}", observingWindow);
+            DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : {0}", this.observingWindow);
 
             try
             {
@@ -155,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
                     }
 
-                    await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
+                    await Task.Delay(this.observingWindow, this.cancellationTokenSource.Token);
 
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
                     this.clientTelemetryInfo.MachineId = VmMetadataApiHandler.GetMachineId();
