@@ -34,3 +34,71 @@ flowchart TD
     SendResponse --> OperationCall
 
 ```
+
+
+## Client Telemetry (Private Preview)
+
+### Inroduction
+It is a feature which you can opt in by setting environment variables. By opting-in this feature, SDK will start sending aggregated telemetry data every 10 minutes to Microsoft.
+Retention Period of telemetry data is 7 days.
+
+We collect following information as part of this telemetry:
+1. Cache Latencies : Right now, it covers only Collection Cache
+2. Client System Usage during an Operation :
+    a) CPU usage
+    b) Memory Usage
+    c) Thread Starvation
+    d) Network Connections Opened (only TCP Connections)
+3. Operation Latencies and Request Units.
+4. Network Request Latencies. (Sampled to, top 10 slowest to a replica)
+
+#### Note: We don't collect any PII data as part of this feature. Right now, it is not self opt in, you need to contact us for more information.
+
+### Components
+
+**Telemetry Job:** This is a backgroud task which collects the data and send it to client telemetry service every 10 minutes.
+
+**Collectors:** It is basically internal collection which keeps the data, sent during an operation. Right now, there are 3 kind of collectors we have i.e 
+* _Operational Data Collector_: It keeps all the Operation level latencies and Request Units.
+* _Network Data Collectors_: It keeps all metrics related to network or TCP calls. It has its own Sampler which sample in only slowest TCP calls for a particulat replica.
+* _Cache Data Collector_: It keeps all the Cache Call latencies. Right now, only collection cache is implemented.
+
+**Get VM Information**: It makes Azure Instance Metadata call. If Customer is not on Azure VM, we won't have this information and customer will a warning with exception in the Trace Logs.
+
+**Processor**: Processor resposibility is to get all the data and divide it into small chunks (< 2MB) and send each chunk to client telemetry service.
+
+```mermaid
+flowchart TD
+    subgraph TelemetryJob[Telemetry Background Job]
+        subgraph Storage[In Memory Storage or Collectors]
+            subgraph NetworkDataCollector[Network Data Collector]
+                TcpDatapoint(Network Request Datapoint) --> NetworkHistogram[(Histogram)]
+                DataSampler(Sampler)
+            end
+            subgraph DataCollector[Operational Data Collector]
+                OpsDatapoint(Operation Datapoint) --> OperationHistogram[(Histogram)]
+            end
+            subgraph CacheCollector[Cache Data Collector]
+                CacheDatapoint(Cache Request Datapoint) --> CacheHistogram[(Histogram)]
+            end
+        end
+        subgraph TelemetryTask[Telemetry Task Every 10 min]
+            CacheAccountInfo(Cached Account Properties) --> VMInfo
+            VMInfo(Get VM Information) --> CollectSystemUsage
+            CollectSystemUsage(Record System Usage Information) --> GetDataFromCollector
+        end
+        subgraph Processor
+            GetDataFromCollector(Fetch Data from Collectors) --> Serializer
+            Serializer(Serialize and divide the Payload) --> SendCTOverHTTP(Send Data over HTTP to Service)
+        end
+        Storage --> |Get Aggregated data|GetDataFromCollector
+    end
+```
+
+### Benefits
+Enabling this feature provides numerous benefits. The telemetry data collected will allow us to proactively identify and address potential issues before they impact your consumers. This results in a superior support experience and ensures that most issues are resolved before they even arise. In short, customers with this feature enabled can expect a smoother and more reliable experience.
+
+### Impact of this feature enabled
+* _Latency_: Customer should not see any impact on latency.
+* _Total RPS_: It depends on the infrastructure on which application using SDK is hosted and other factors but on a fully packed Azure Machine and making just point operations, impact should not be more than 10%.
+* _Any other impact_: Collector needs around 18MB of in-memory storage to hold the data and this storage is always constant (it means it doesn't grow, no matter how much data we have)
