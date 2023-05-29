@@ -14,7 +14,6 @@ echo "##########BENCHMARKING_TOOLS_URL###########: $BENCHMARKING_TOOLS_URL"
 export OSSProjectRef=True
 export DOTNET_CLI_HOME=/temp
 export RESULTS_PK="runs-summary" #For test runs use different one
-export PL=18
 
 #Cloning Test Bench Repo
 echo "########## Cloning Test Bench repository ##########"
@@ -27,4 +26,6 @@ echo "########## Build benckmark tool ##########"
 dotnet build --configuration Release -p:"OSSProjectRef=true;ShouldUnsetParentConfigurationAndPlatform=false"
 
 echo "########## Run benchmark ##########"
-nohup echo $CLEANUPFINISH && dotnet run -c Release -e $COSMOS_URI -k $COSMOS_KEY -t $THROUGHPUT -n $DOCUMENTS --pl $PARALLELISM --cleanuponfinish $CLEANUPFINISH -w InsertV2BenchmarkOperation > "/home/${ADMIN_USER_NAME}/agent.out" 2> "/home/${ADMIN_USER_NAME}/agent.err" &
+nohup dotnet run -c Release -e ${COSMOS_URI} -k $COSMOS_KEY -t $THROUGHPUT -n $DOCUMENTS --pl $PARALLELISM \
+-w InsertV2BenchmarkOperation \
+> "/home/${ADMIN_USER_NAME}/agent.out" 2> "/home/${ADMIN_USER_NAME}/agent.err" &
