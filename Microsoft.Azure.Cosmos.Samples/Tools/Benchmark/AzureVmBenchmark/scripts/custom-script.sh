@@ -28,5 +28,5 @@ dotnet build --configuration Release -p:"OSSProjectRef=true;ShouldUnsetParentCon
 
 echo "########## Run benchmark ##########"
 nohup dotnet run -c Release -e ${COSMOS_URI} -k ${COSMOS_KEY} -t ${THROUGHPUT} -n ${DOCUMENTS} --pl ${PARALLELISM} \
---cleanuponfinish ${CLEANUPFINISH} --publishresults true --tracefailures -w InsertV2BenchmarkOperation \
+--cleanuponfinish ${CLEANUPFINISH} --publishresults true --resultscontainer BenchmarkResult --tracefailures -w InsertV2BenchmarkOperation \
 > "/home/${ADMIN_USER_NAME}/agent.out" 2> "/home/${ADMIN_USER_NAME}/agent.err" &
