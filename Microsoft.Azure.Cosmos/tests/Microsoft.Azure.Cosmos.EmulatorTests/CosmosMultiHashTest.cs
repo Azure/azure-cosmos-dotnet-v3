@@ -33,7 +33,7 @@
         {
             await this.database.DeleteAsync();
             this.client.Dispose();
-        }       
+        }
 
         [TestMethod]
         public async Task MultiHashCreateDocumentTest()

@@ -311,63 +311,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 {
                     SetTestInjectionPipelineType(inputParameters, Passthrough);
 
-                    if (containerQueryProperties.PartitionKeyDefinition.Kind == Documents.PartitionKind.MultiHash 
-                        && inputParameters.InitialFeedRange.GetType() == typeof(FeedRangePartitionKey))
-                    {
-                        FeedRangePartitionKey frpk = (FeedRangePartitionKey)inputParameters.InitialFeedRange;
-                        Documents.Routing.Range<string> range = frpk.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(containerQueryProperties.PartitionKeyDefinition);
-
-                        List<FeedRangeEpk> feedRanges = new List<FeedRangeEpk>();
-                        int count = 0;
-                        foreach (Documents.PartitionKeyRange partitionKeyRange in targetRanges)
-                        {
-                            if (count == 0)
-                            {
-                                feedRanges.Add(new FeedRangeEpk(
-                                new Documents.Routing.Range<string>(
-                                min: range.Min,
-                                max: partitionKeyRange.MaxExclusive,
-                                isMinInclusive: true,
-                                isMaxInclusive: false)));
-                            }
-                            else if (count == targetRanges.Count - 1)
-                            {
-                                feedRanges.Add(new FeedRangeEpk(
-                                new Documents.Routing.Range<string>(
-                                min: partitionKeyRange.MinInclusive,
-                                max: range.Max,
-                                isMinInclusive: true,
-                                isMaxInclusive: false)));
-                            }
-                            else
-                            {
-                                feedRanges.Add(new FeedRangeEpk(
-                                new Documents.Routing.Range<string>(
-                                min: partitionKeyRange.MinInclusive,
-                                max: partitionKeyRange.MaxExclusive,
-                                isMinInclusive: true,
-                                isMaxInclusive: false)));
-                            }
-
-                            count++;
-                        }
-
-                        tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
-                        documentContainer,
-                        inputParameters,
-                        feedRanges,
-                        cancellationToken);
-
-                    }
-                    else 
-                    {
-                        tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
+                    tryCreatePipelineStage = CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
                         documentContainer,
                         inputParameters,
                         targetRanges,
                         cancellationToken);
-                    }
-                    
                 }
                 else
                 {

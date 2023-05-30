@@ -24,40 +24,23 @@ namespace Microsoft.Azure.Cosmos
             this.PartitionKey = partitionKey;
         }
 
-        internal override async Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
+        internal override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             ITrace trace)
         {
-            if (partitionKeyDefinition.Kind == PartitionKind.MultiHash)
-            {
-                Documents.Routing.Range<string> range = this.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(partitionKeyDefinition);
-                IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
-                    containerRid,
-                    range,
-                    trace,
-                    forceRefresh: false);
-                List<Documents.Routing.Range<string>> effectiveRanges = new List<Documents.Routing.Range<string>>();
-
-                foreach (PartitionKeyRange overlappingRange in overlappingRanges)
+            return Task.FromResult(
+                new List<Documents.Routing.Range<string>>
                 {
-                    effectiveRanges.Add(new Documents.Routing.Range<string>(overlappingRange.MinInclusive, overlappingRange.MaxExclusive, true, false));
-                }
-
-                return effectiveRanges;
-            }
-            
-            return new List<Documents.Routing.Range<string>> 
-            {
-                Documents.Routing.Range<string>.GetPointRange(
-                    this.PartitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition))
-            };
-
-            //return new List<Documents.Routing.Range<string>>
-            //{
-            //    PartitionKey.InternalKey.GetEffectivePartitionKeyRange(partitionKeyDefinition, new Documents.Routing.Range<PartitionKeyInternal>(this.PartitionKey.InternalKey, this.PartitionKey.InternalKey))
-            //};
+                    Documents.Routing.PartitionKeyInternal.GetEffectivePartitionKeyRange(
+                        partitionKeyDefinition,
+                        new Documents.Routing.Range<Documents.Routing.PartitionKeyInternal>(
+                            this.PartitionKey.InternalKey,
+                            this.PartitionKey.InternalKey,
+                            true,
+                            true))
+                });
         }
 
         internal override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(

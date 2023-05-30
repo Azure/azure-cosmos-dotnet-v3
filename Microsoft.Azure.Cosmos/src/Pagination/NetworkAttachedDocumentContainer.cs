@@ -128,47 +128,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     forceRefresh: false,
                     trace);
 
-                if (containerProperties.PartitionKey.Kind == PartitionKind.MultiHash && feedRange.GetType() == typeof(FeedRangePartitionKey))
-                {
-                    FeedRangePartitionKey frpk = (FeedRangePartitionKey)feedRange;
-                    Documents.Routing.Range<string> range = frpk.PartitionKey.InternalKey.GetEPKRangeForPrefixPartitionKey(containerProperties.PartitionKey);
-
-                    List<FeedRangeEpk> feedRanges = new List<FeedRangeEpk>();
-                    int count = 0;
-                    foreach (PartitionKeyRange partitionKeyRange in overlappingRanges)
-                    {
-                        //First and last range must incude the min and max value for the original EPK range
-                        if (count == 0)
-                        {                      
-                            feedRanges.Add(new FeedRangeEpk(
-                            new Documents.Routing.Range<string>(
-                            min: range.Min,
-                            max: partitionKeyRange.MaxExclusive,
-                            isMinInclusive: true,
-                            isMaxInclusive: false)));
-                        }
-                        else if (count == overlappingRanges.Count - 1)
-                        {
-                            feedRanges.Add(new FeedRangeEpk(
-                            new Documents.Routing.Range<string>(
-                            min: partitionKeyRange.MinInclusive,
-                            max: range.Max,
-                            isMinInclusive: true,
-                            isMaxInclusive: false)));
-                        }
-                        else
-                        {
-                            feedRanges.Add(new FeedRangeEpk(
-                            new Documents.Routing.Range<string>(
-                            min: partitionKeyRange.MinInclusive,
-                            max: partitionKeyRange.MaxExclusive,
-                            isMinInclusive: true,
-                            isMaxInclusive: false)));
-                        }                        
-                        count++;
-                    }
-                    return TryCatch<List<FeedRangeEpk>>.FromResult(feedRanges);
-                }
                 return TryCatch<List<FeedRangeEpk>>.FromResult(
                     overlappingRanges.Select(range => new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
