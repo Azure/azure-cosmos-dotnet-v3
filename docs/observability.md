@@ -35,37 +35,35 @@ flowchart TD
 
 ```
 
-
 ## Client Telemetry (Private Preview)
 
 ### Inroduction
-It is a feature which you can opt in by setting environment variables. By opting-in this feature, SDK will start sending aggregated telemetry data every 10 minutes to Microsoft.
-Retention Period of telemetry data is 7 days.
+It is a feature which can be opted-in by setting environment variables. By opting-in this feature, SDK will start sending aggregated telemetry data every 10 minutes to Microsoft.
 
-We collect following information as part of this telemetry:
-1. Cache Latencies : Right now, it covers only Collection Cache
-2. Client System Usage during an Operation :
-    a) CPU usage
-    b) Memory Usage
-    c) Thread Starvation
-    d) Network Connections Opened (only TCP Connections)
-3. Operation Latencies and Request Units.
-4. Network Request Latencies. (Sampled to, top 10 slowest to a replica)
+We collect following information as part of this:
+1. Cache Latencies : Right now, it covers only ```Collection Cache```
+2. Client System Usage (during an operation) :
+    * CPU usage
+    * Memory Usage
+    * Thread Starvation
+    * Network Connections Opened (only TCP Connections)
+3. Operation Latencies and Request Units (RUs).
+4. Network Request Latencies. (sampled to, top 10 slowest to a replica)
 
 #### Note: We don't collect any PII data as part of this feature. Right now, it is not self opt in, you need to contact us for more information.
 
 ### Components
 
-**Telemetry Job:** This is a backgroud task which collects the data and send it to client telemetry service every 10 minutes.
+**Telemetry Job:** This is a background task which collects the data and send it to a microsoft service every 10 minutes.
 
-**Collectors:** It is basically internal collection which keeps the data, sent during an operation. Right now, there are 3 kind of collectors we have i.e 
-* _Operational Data Collector_: It keeps all the Operation level latencies and Request Units.
-* _Network Data Collectors_: It keeps all metrics related to network or TCP calls. It has its own Sampler which sample in only slowest TCP calls for a particulat replica.
-* _Cache Data Collector_: It keeps all the Cache Call latencies. Right now, only collection cache is implemented.
+**Collectors:** It is basically, in-memory storage which keeps the telemetry data, collected during an operation. Right now, there are 3 kind of collectors we have i.e 
+* _Operational Data Collector_: It keeps operation level latencies and request units.
+* _Network Data Collectors_: It keeps all the metrics related to network or TCP calls. It has its own Sampler which sample-in only slowest TCP calls for a particular replica.
+* _Cache Data Collector_: It keeps all the cache call latencies. Right now, only ```collection cache``` is covered.
 
-**Get VM Information**: It makes Azure Instance Metadata call. If Customer is not on Azure VM, we won't have this information and customer will a warning with exception in the Trace Logs.
+**Get VM Information**: It makes [Azure Instance Metadata](https://learn.microsoft.com/azure/virtual-machines/instance-metadata-service?tabs=windows) call. If customer is not on Azure VM, we won't have this information and customer will see a warning with exception in the Trace Logs (if enabled).
 
-**Processor**: Processor resposibility is to get all the data and divide it into small chunks (< 2MB) and send each chunk to client telemetry service.
+**Processor**: Its resposibility is to get all the data and divide it into small chunks (<2MB) and send each chunk to the microsoft service.
 
 ```mermaid
 flowchart TD
