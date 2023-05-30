@@ -366,6 +366,7 @@ namespace Microsoft.Azure.Cosmos
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
                             datum.RecordHttpException(requestMessage, e, resourceType, requestStartTime);
+                            trace = datum.Trace;
                         }
                         bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
 
