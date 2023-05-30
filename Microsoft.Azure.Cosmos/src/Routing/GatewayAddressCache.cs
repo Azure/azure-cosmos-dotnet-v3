@@ -613,7 +613,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                     resourceType: resourceType,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
                     clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
-                    trace: trace,
                     cancellationToken: default))
                 {
                     DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
@@ -695,7 +694,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                     resourceType: ResourceType.Document,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
                     clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
-                    trace: trace,
                     cancellationToken: default))
                 {
                     DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);

@@ -96,7 +96,6 @@ namespace Microsoft.Azure.Cosmos
         public virtual async Task<AccountProperties> GetDatabaseAccountAsync(
             Func<ValueTask<HttpRequestMessage>> requestMessage,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            ITrace trace = null,
             CancellationToken cancellationToken = default)
         {
             AccountProperties databaseAccount = null;
@@ -107,7 +106,6 @@ namespace Microsoft.Azure.Cosmos
                 ResourceType.DatabaseAccount,
                 HttpTimeoutPolicyControlPlaneRead.Instance,
                 clientSideRequestStatistics,
-                trace,
                 cancellationToken))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))

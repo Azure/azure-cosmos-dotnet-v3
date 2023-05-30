@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
 
             using (ITrace trace = Trace.GetRootTrace("Account Read", TraceComponent.Transport, TraceLevel.Info))
             {
-                IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
+                IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
 
                 try
                 {
@@ -59,7 +59,6 @@ namespace Microsoft.Azure.Cosmos
                         resourceType: ResourceType.DatabaseAccount,
                         timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
                         clientSideRequestStatistics: stats,
-                        trace: trace,
                         cancellationToken: default))
                     using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                     {

@@ -48,8 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new ValueTask<HttpRequestMessage>(httpRequestMessage),
                     ResourceType.Collection,
                     timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                    new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary),
-                    trace,
+                    new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                     default);
 
                 Assert.AreEqual(httpRequestMessage, responseMessage.RequestMessage);
@@ -122,8 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: currentTimeoutPolicy.Key,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary),
-                        trace: trace,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                         cancellationToken: default);
 
                     Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
@@ -193,8 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                     resourceType: ResourceType.Collection,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary),
-                    trace: trace,
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                     cancellationToken: default);
 
                 Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
@@ -235,8 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                     resourceType: ResourceType.Collection,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
-                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary),
-                    trace: trace,
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                     cancellationToken: default);
 
                 Assert.AreEqual(HttpStatusCode.RequestTimeout, responseMessage.StatusCode, "Should be a request timeout");
@@ -268,8 +264,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary),
-                        trace: trace,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                         cancellationToken: default);
                 }
             }
@@ -309,8 +304,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             result: new HttpRequestMessage(method, new Uri("http://localhost"))),
                             resourceType: resourceType,
                             timeoutPolicy: timeoutPolicy,
-                            clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary),
-                            trace: trace,
+                            clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                             cancellationToken: default);
                     }
                 }
@@ -376,8 +370,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary),
-                        trace: trace,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                         cancellationToken: default);
                 }
             }
@@ -437,8 +430,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"))),
                         resourceType: ResourceType.Document,
                         timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary),
-                        trace: trace,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                         cancellationToken: default);
 
                 Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);

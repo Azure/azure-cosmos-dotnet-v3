@@ -869,13 +869,12 @@ namespace Microsoft.Azure.Cosmos
             using(ITrace trace = Tracing.Trace.GetRootTrace(nameof(GatewayStatsDurationTest)))
             {
 
-                Tracing.TraceData.ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new Tracing.TraceData.ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
+                Tracing.TraceData.ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new Tracing.TraceData.ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
 
                 await cosmosHttpClient.SendHttpAsync(() => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, "http://someuri.com")),
                                                       ResourceType.Document,
                                                       HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout,
                                                       clientSideRequestStatistics,
-                                                      trace,
                                                       CancellationToken.None);
 
                 Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 2);

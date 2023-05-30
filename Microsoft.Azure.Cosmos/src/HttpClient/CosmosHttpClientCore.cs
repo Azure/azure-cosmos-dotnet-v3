@@ -262,7 +262,6 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (uri == null)
@@ -294,7 +293,6 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 timeoutPolicy,
                 clientSideRequestStatistics,
-                trace,
                 cancellationToken);
         }
 
@@ -303,7 +301,6 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (createRequestMessageAsync == null)
@@ -316,7 +313,6 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 timeoutPolicy,
                 clientSideRequestStatistics,
-                trace,
                 cancellationToken);
         }
 
@@ -325,7 +321,6 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            ITrace trace,
             CancellationToken cancellationToken)
         {
             DateTime startDateTimeUtc = DateTime.UtcNow;
@@ -367,6 +362,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (Exception e)
                     {
+                        ITrace trace = NoOpTrace.Singleton;
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
                             datum.RecordHttpException(requestMessage, e, resourceType, requestStartTime);

@@ -79,7 +79,6 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             return this.httpClient.SendHttpAsync(
@@ -87,7 +86,6 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: resourceType,
                 timeoutPolicy: timeoutPolicy,
                 clientSideRequestStatistics: clientSideRequestStatistics,
-                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -357,7 +355,6 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request),
                 request.RequestContext.ClientRequestStatistics,
-                trace: null,
                 cancellationToken);
         }
     }
