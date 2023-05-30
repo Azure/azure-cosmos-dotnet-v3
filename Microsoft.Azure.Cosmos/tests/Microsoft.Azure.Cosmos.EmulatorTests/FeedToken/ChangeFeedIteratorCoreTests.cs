@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             return (ContainerInternal)response;
         }
-      
+
         /// <summary>
         /// Test to verify that StartFromBeginning works as expected by inserting 25 items, reading them all, then taking the last continuationtoken, 
         /// inserting another 25, and verifying that the iterator continues from the saved token and reads the second 25 for a total of 50 documents.

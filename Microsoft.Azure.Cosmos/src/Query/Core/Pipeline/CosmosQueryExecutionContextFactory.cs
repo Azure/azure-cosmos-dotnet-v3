@@ -522,26 +522,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }
 
-        private static TryCatch<IQueryPipelineStage> TryCreatePassthroughQueryExecutionContext(
-            DocumentContainer documentContainer,
-            InputParameters inputParameters,
-            List<FeedRangeEpk> targetRanges,
-            CancellationToken cancellationToken)
-        {
-            // Return a parallel context, since we still want to be able to handle splits and concurrency / buffering.
-            return ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                documentContainer: documentContainer,
-                sqlQuerySpec: inputParameters.SqlQuerySpec,
-                targetRanges: targetRanges,
-                queryPaginationOptions: new QueryPaginationOptions(
-                    pageSizeHint: inputParameters.MaxItemCount),
-                partitionKey: inputParameters.PartitionKey,
-                prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
-                maxConcurrency: inputParameters.MaxConcurrency,
-                cancellationToken: cancellationToken,
-                continuationToken: inputParameters.InitialUserContinuationToken);
-        }
-
         private static TryCatch<IQueryPipelineStage> TryCreateSpecializedDocumentQueryExecutionContext(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,

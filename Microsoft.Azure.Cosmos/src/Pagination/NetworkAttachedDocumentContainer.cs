@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -127,7 +126,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     feedRange,
                     forceRefresh: false,
                     trace);
-
                 return TryCatch<List<FeedRangeEpk>>.FromResult(
                     overlappingRanges.Select(range => new FeedRangeEpk(
                         new Documents.Routing.Range<string>(

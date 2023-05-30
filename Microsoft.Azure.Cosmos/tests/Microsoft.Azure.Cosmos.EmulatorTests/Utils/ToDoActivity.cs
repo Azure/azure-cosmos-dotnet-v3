@@ -16,10 +16,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public double cost { get; set; }
         public string description { get; set; }
         public string pk { get; set; }
-
-        public string pk0 { get; set; }
-        public string pk1 { get; set; }
-        public string pk2 { get; set; }
         public string CamelCase { get; set; }
         public int? nullableInt { get; set; }
 
