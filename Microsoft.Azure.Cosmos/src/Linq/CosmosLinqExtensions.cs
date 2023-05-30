@@ -21,6 +21,44 @@ namespace Microsoft.Azure.Cosmos.Linq
     public static class CosmosLinqExtensions
     {
         /// <summary>
+        /// Returns a Boolean value indicating if the type of the specified expression is an array.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>Returns true if the type of the specified expression is an array; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var isArrayQuery = documents.Where(document => document.Names.IsArray());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool IsArray(this object obj)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a Boolean value indicating if the type of the specified expression is a boolean.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>Returns true if the type of the specified expression is a boolean; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var isBoolQuery = documents.Where(document => document.IsRegistered.IsBool());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool IsBool(this object obj)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
         /// Determines if a certain property is defined or not.
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
         /// There's no implementation provided in the client library.
@@ -52,8 +90,46 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// var isNullQuery = documents.Where(document => document.Name.IsNull());
         /// ]]>
         /// </code>
-        /// </example>s>
+        /// </example>
         public static bool IsNull(this object obj)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a Boolean value indicating if the type of the specified expression is a number.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>Returns true if the type of the specified expression is a number; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var isNumberQuery = documents.Where(document => document.Age.IsNumber());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool IsNumber(this object obj)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a Boolean value indicating if the type of the specified expression is an object.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>Returns true if the type of the specified expression is an object; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var isObjectQuery = documents.Where(document => document.Address.IsObject());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool IsObject(this object obj)
         {
             throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
@@ -74,8 +150,27 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// var isPrimitiveQuery = documents.Where(document => document.Name.IsPrimitive());
         /// ]]>
         /// </code>
-        /// </example>s>
+        /// </example>
         public static bool IsPrimitive(this object obj)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a Boolean value indicating if the type of the specified expression is a string.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>Returns true if the type of the specified expression is a string; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var isStringQuery = documents.Where(document => document.Name.IsString());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool IsString(this object obj)
         {
             throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
@@ -186,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <code language="c#">
         /// <![CDATA[
         /// IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
-        /// using (FeedIterator setIterator = linqQueryable.Where(item => (item.taskNum < 100)).ToFeedIterator()
+        /// using (FeedIterator setIterator = linqQueryable.Where(item => (item.taskNum < 100)).ToStreamIterator())
         /// ]]>
         /// </code>
         /// </example>

@@ -23,29 +23,15 @@ jobs:
       arguments: '-p:Optimize=true -p:IsPreview=true --configuration Release'
       versioningScheme: OFF
 
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@3
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
     displayName: 'BinSkim'
     inputs:
-        toolVersion:        Latest
-        InputType:          Basic
-        Function:           analyze
-        AnalyzeTarget:      $(Build.SourcesDirectory)\Microsoft.Azure.Cosmos\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.Client.dll
-        AnalyzeConfigPath:  default
+        AnalyzeTargetGlob:  $(Build.SourcesDirectory)\Microsoft.Azure.Cosmos\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.Client.dll
         AnalyzeRecurse:     true
         AnalyzeVerbose:     true
         AnalyzeHashes:      false
         AnalyzeStatistics:  false
         AnalyzeEnvironment: false
-
-  #Analyze source code for type of content and target types to help determine which tools to run
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-autoapplicability.AutoApplicability@1
-    displayName: 'AutoApplicability'
-    inputs:
-      VerboseWriter: true
-      ExternalRelease: true
-      InternalRelease: true
-      IsService: true
-      IsSoftware: true
 
   # Analyze source and build output text files for credentials
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
@@ -58,21 +44,18 @@ jobs:
       verboseOutput: false
 
   # Scan text elements including code, code comments, and content/web pages, for sensitive terms based on legal, cultural, or geopolitical reasons
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@1
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@2
     displayName: 'PoliCheck'
     inputs:
       targetType: F
+      optionsFC: 0
 
   # AntiMalware scan
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@3
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@4
     displayName: 'AntiMalware'
     continueOnError: true # signature refresh failing resulting in tasks failures
     inputs:
       EnableServices: true
-
-  # Run checks for recently discovered vulnerabilities which are not yet incorporated to another tool
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-vulnerabilityassessment.VulnerabilityAssessment@0
-    displayName: 'Vulnerability Assessment'
 
   - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
     displayName: 'Component Governance Detection' #https://docs.opensource.microsoft.com/tools/cg.html
@@ -81,11 +64,16 @@ jobs:
       failOnAlert: true
 
   # Publish Analysis Results (position after all tools ran)
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@2
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@3
     displayName: 'Publish Security Analysis Logs'
 
   # The Post-Analysis build task will analyze the log files produced by the tools, and introduce a build break
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@1
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@2
     displayName: 'Post Analysis'
     inputs:
-      AllTools: true
+      GdnBreakFast: true
+      GdnBreakAllTools: false
+      GdnBreakGdnToolCredScan: true
+      GdnBreakGdnToolBinSkim: true
+      GdnBreakGdnToolPoliCheck: true
+      GdnBreakGdnToolPoliCheckSeverity: Error

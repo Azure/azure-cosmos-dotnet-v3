@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
-    using global::Azure.Core.Pipeline;
+    using global::Azure.Core;
 
     /// <summary>
     /// This class is used to generate Activities with Azure.Cosmos.Operation Source Name
@@ -26,14 +26,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (clientContext is { ClientOptions.IsDistributedTracingEnabled: true })
             {
-                OpenTelemetryRecorderFactory.ScopeFactory ??= new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
+                OpenTelemetryRecorderFactory.ScopeFactory ??= new DiagnosticScopeFactory(clientNamespace: $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.{OpenTelemetryAttributeKeys.OperationPrefix}",
                         resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                        isActivityEnabled: true);
+                        isActivityEnabled: true,
+                        suppressNestedClientActivities: true);
                 
                 // If there is no source then it will return default otherwise a valid diagnostic scope
                 DiagnosticScope scope = OpenTelemetryRecorderFactory
                     .ScopeFactory
-                    .CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
+                    .CreateScope(name: operationName,
                                  kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
 
                 // Record values only when we have a valid Diagnostic Scope

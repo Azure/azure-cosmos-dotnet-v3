@@ -4,6 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
+    using System;
+    using System.Collections.Generic;
     using System.Data;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -11,62 +13,72 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class ValidationHelpersTest
     {
         [TestMethod]
-        [DataRow(true, ConsistencyLevel.Eventual, ConsistencyLevel.Strong)]
-        [DataRow(true, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.Strong)]
-        [DataRow(false, ConsistencyLevel.Eventual, ConsistencyLevel.BoundedStaleness)]
-        [DataRow(false, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.BoundedStaleness)]
-        [DataRow(false, ConsistencyLevel.Session, ConsistencyLevel.Strong)]
-        [DataRow(false, ConsistencyLevel.BoundedStaleness, ConsistencyLevel.Strong)]
-        public void TestIsValidConsistencyLevelOverwrite(bool isValidConsistencyLevelOverwrite,
-            ConsistencyLevel backendConsistencyLevel,
-            ConsistencyLevel desiredConsistencyLevel)
+        [DataRow(true)]
+        [DataRow(false)]
+        public void TestIsValidConsistencyLevelOverwrite_AllCombinations(
+            bool isValidConsistencyLevelOverwrite)
         {
-            bool result = ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistencyLevel,
-                desiredConsistencyLevel,
-                true,
-                Documents.OperationType.Read,
-                Documents.ResourceType.Document);
+            ConsistencyLevel[] allConsistencies = Enum.GetValues<ConsistencyLevel>();
 
-            Assert.AreEqual(isValidConsistencyLevelOverwrite, result);
+            // All overrides when target is 'Strong' are VALID
+            ConsistencyLevel desiredConsistencyLevel = ConsistencyLevel.Strong;
+            foreach (ConsistencyLevel backendConsistencyLevel in allConsistencies)
+            {
+                if (backendConsistencyLevel == desiredConsistencyLevel)
+                {
+                    continue;
+                }
+                
+                foreach (KeyValuePair<Documents.OperationType, bool> entry in ValidationHelpersTest.GetPerOperationExpectations())
+                {
+                    bool result = ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistencyLevel,
+                        desiredConsistencyLevel,
+                        isValidConsistencyLevelOverwrite,
+                        (Documents.OperationType)entry.Key,
+                        Documents.ResourceType.Document);
+
+                    Assert.AreEqual(isValidConsistencyLevelOverwrite && entry.Value, result,
+                        $"({isValidConsistencyLevelOverwrite}, {backendConsistencyLevel}, {desiredConsistencyLevel}) ({entry.Key}, {entry.Value})");
+                }
+            }
         }
 
         [TestMethod]
-        [DataRow(false, ConsistencyLevel.Eventual, ConsistencyLevel.Strong)]
-        [DataRow(false, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.Strong)]
-        public void TestIsValidConsistencyLevelOverwrite_OnlyWhenSpecifyingExplicitOverwrite(bool isValidConsistencyLevelOverwrite,
+        [DataRow(ConsistencyLevel.Eventual, ConsistencyLevel.BoundedStaleness)]
+        [DataRow(ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.BoundedStaleness)]
+        [DataRow(ConsistencyLevel.Session, ConsistencyLevel.BoundedStaleness)]
+        public void TestIsValidConsistencyLevelOverwrite_BoundedPromotionsRejected(
             ConsistencyLevel backendConsistencyLevel,
             ConsistencyLevel desiredConsistencyLevel)
         {
-            bool result = ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistencyLevel,
-                desiredConsistencyLevel,
-                false,
-                Documents.OperationType.Read,
-                Documents.ResourceType.Document);
+            foreach (KeyValuePair<Documents.OperationType, bool> entry in ValidationHelpersTest.GetPerOperationExpectations())
+            {
+                bool result = ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistencyLevel,
+                    desiredConsistencyLevel,
+                    true,
+                    (Documents.OperationType)entry.Key,
+                    Documents.ResourceType.Document);
 
-            Assert.AreEqual(isValidConsistencyLevelOverwrite, result);
+                Assert.AreEqual(false, result,
+                    $"({backendConsistencyLevel}, {desiredConsistencyLevel}) ({entry.Key}, {entry.Value})");
+            }
         }
 
-        [TestMethod]
-        [DataRow(true, ConsistencyLevel.Eventual, ConsistencyLevel.Strong, Documents.OperationType.Read)]
-        [DataRow(true, ConsistencyLevel.Eventual, ConsistencyLevel.Strong, Documents.OperationType.ReadFeed)]
-        [DataRow(true, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.Strong, Documents.OperationType.Query)]
-        [DataRow(true, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.Strong, Documents.OperationType.SqlQuery)]
-        [DataRow(false, ConsistencyLevel.Eventual, ConsistencyLevel.Strong, Documents.OperationType.QueryPlan)]
-        [DataRow(false, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.Strong, Documents.OperationType.Create)]
-        [DataRow(false, ConsistencyLevel.ConsistentPrefix, ConsistencyLevel.Strong, Documents.OperationType.Batch)]
-        public void TestIsValidConsistencyLevelOverwrite_OnlyAllowedForCertainOperationTypes(
-            bool isValidConsistencyLevelOverwrite,
-            ConsistencyLevel backendConsistencyLevel,
-            ConsistencyLevel desiredConsistencyLevel,
-            dynamic operationType)
+        private static Dictionary<Documents.OperationType, bool> GetPerOperationExpectations()
         {
-            bool result = ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistencyLevel,
-                desiredConsistencyLevel,
-                true,
-                (Documents.OperationType) operationType,
-                Documents.ResourceType.Document);
+            Dictionary<Documents.OperationType, bool> perOperationOverride = new Dictionary<Documents.OperationType, bool>();
 
-            Assert.AreEqual(isValidConsistencyLevelOverwrite, result);
+            foreach (Documents.OperationType operationType in Enum.GetValues<Documents.OperationType>())
+            {
+                perOperationOverride.Add(
+                        operationType,
+                        Documents.OperationTypeExtensions.IsReadOperation(operationType)
+                            && operationType != Documents.OperationType.Head
+                            && operationType != Documents.OperationType.HeadFeed
+                            && operationType != Documents.OperationType.QueryPlan);
+            }
+
+            return perOperationOverride;
         }
     }
 }
