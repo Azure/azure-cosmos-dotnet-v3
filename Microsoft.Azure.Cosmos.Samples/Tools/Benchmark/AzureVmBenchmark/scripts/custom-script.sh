@@ -27,6 +27,7 @@ echo "########## Build benckmark tool ##########"
 dotnet build --configuration Release -p:"OSSProjectRef=true;ShouldUnsetParentConfigurationAndPlatform=false"
 
 echo "########## Run benchmark ##########"
-nohup dotnet run -c Release -e ${COSMOS_URI} -k ${COSMOS_KEY} -t ${THROUGHPUT} -n ${DOCUMENTS} --pl ${PARALLELISM} --publishresults true --resultscontainer ${RESULTS_CONTAINER} --resultspartitionkeyvalue "pk" \
+nohup dotnet run -c Release -e ${COSMOS_URI} -k ${COSMOS_KEY} -t ${THROUGHPUT} -n ${DOCUMENTS} --pl ${PARALLELISM} \
+--publishresults true --resultscontainer ${RESULTS_CONTAINER} --resultspartitionkeyvalue "pk" \
 --commitid "commitid" --commitdate "$(date '+%Y-%m-%d')" --committime "$(date '+%H:%M:%SZ')" -w InsertV2BenchmarkOperation \
 > "/home/${ADMIN_USER_NAME}/agent.out" 2> "/home/${ADMIN_USER_NAME}/agent.err" &
