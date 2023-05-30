@@ -307,10 +307,20 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedMode get_Incremental();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.ChangeFeedMode get_LatestVersion()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedMode get_LatestVersion();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.ChangeFeedMode Incremental": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedMode Incremental;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.ChangeFeedMode get_Incremental();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedMode LatestVersion": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedMode LatestVersion;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.ChangeFeedMode get_LatestVersion();IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -6670,6 +6680,11 @@
           "Attributes": [],
           "MethodInfo": "System.String GermanyWestCentral;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String ItalyNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ItalyNorth;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String JapanEast": {
           "Type": "Field",
           "Attributes": [],
@@ -6699,6 +6714,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String KoreaSouth;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String MalaysiaSouth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String MalaysiaSouth;IsInitOnly:False;IsStatic:True;"
         },
         "System.String NorthCentralUS": {
           "Type": "Field",
