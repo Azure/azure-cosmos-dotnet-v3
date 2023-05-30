@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             ClientTelemetryProcessor processor = new ClientTelemetryProcessor(
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object))),
                 Mock.Of<AuthorizationTokenProvider>(),
-                new ClientTelemetryConfig());
+                this.clientTelemetryConfig);
 
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
                 = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> ();
@@ -344,6 +344,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             {
                 CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
                 await Task.Delay(1000, cts.Token); // Making this task wait to ensure that processir is taking more time.
+
                 await processor.ProcessAndSendAsync(clientTelemetryProperties,
                                                     operationInfoSnapshot,
                                                     cacheRefreshInfoSnapshot,
