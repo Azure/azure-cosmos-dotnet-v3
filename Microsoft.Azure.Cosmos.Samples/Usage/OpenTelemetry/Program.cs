@@ -25,8 +25,8 @@
             try
             {
                 IConfigurationRoot configuration = new ConfigurationBuilder()
-                            .AddJsonFile("AppSettings.json")
-                            .Build();
+                                                            .AddJsonFile("AppSettings.json")
+                                                            .Build();
 
                 string endpoint = configuration["CosmosDBEndPointUrl"];
                 if (string.IsNullOrEmpty(endpoint))
@@ -52,15 +52,16 @@
                             serviceVersion: "1.0.0");
 
                 // Set up logging to forward logs to chosen exporter
-                using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder
-                                                                                        .AddConfiguration(configuration)
-                                                                                        .AddOpenTelemetry(options =>
-                                                                                            {
-                                                                                                options.IncludeFormattedMessage = true;
-                                                                                                options.SetResourceBuilder(resource);
-                                                                                                options.AddAzureMonitorLogExporter(o => o.ConnectionString = aiConnectionString); // Set up exporter of your choice
-                                                                                            }));
-                /*.AddFilter(level => level == LogLevel.Error)*/
+                using ILoggerFactory loggerFactory 
+                    = LoggerFactory.Create(builder => builder
+                                                        .AddConfiguration(configuration.GetSection("Logging"))
+                                                        .AddOpenTelemetry(options =>
+                                                            {
+                                                                options.IncludeFormattedMessage = true;
+                                                                options.SetResourceBuilder(resource);
+                                                                options.AddAzureMonitorLogExporter(o => o.ConnectionString = aiConnectionString); // Set up exporter of your choice
+                                                            }));
+                /*.AddFilter(level => level == LogLevel.Error) // Filter  is irrespective of event type or event name*/
 
                 AzureEventSourceLogForwarder logforwader = new AzureEventSourceLogForwarder(loggerFactory);
                 logforwader.Start();
@@ -92,7 +93,6 @@
 
                     await Program.RunCrudDemo(container);
                 }
-
             }
             finally
             {
