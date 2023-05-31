@@ -41,7 +41,7 @@ flowchart TD
 It is a feature which can be opted-in by setting environment variables. By opting-in this feature, SDK will start sending aggregated telemetry data every 10 minutes to Microsoft.
 
 We collect following information as part of this:
-1. Cache Latencies : Right now, it covers only ```Collection Cache```
+1. Cache Latencies : Right now, it covers only Collection Cache
 2. Client System Usage (during an operation) :
     * CPU usage
     * Memory Usage
@@ -50,20 +50,20 @@ We collect following information as part of this:
 3. Operation Latencies and Request Units (RUs).
 4. Network Request Latencies. (sampled to, top 10 slowest to a replica)
 
-#### Note: We don't collect any PII data as part of this feature. Right now, it is not self opt in, you need to contact us for more information.
+> Note: We don't collect any PII data as part of this feature. Right now, it is not self opt in, you need to contact us for more information.
 
 ### Components
 
-**Telemetry Job:** This is a background task which collects the data and send it to a microsoft service every 10 minutes.
+**Telemetry Job:** This is a background task which collects the data and send it to a Microsoft service every 10 minutes.
 
 **Collectors:** It is basically, in-memory storage which keeps the telemetry data, collected during an operation. Right now, there are 3 kind of collectors we have i.e 
 * _Operational Data Collector_: It keeps operation level latencies and request units.
-* _Network Data Collectors_: It keeps all the metrics related to network or TCP calls. It has its own Sampler which sample-in only slowest TCP calls for a particular replica.
+* _Network Data Collector_: It keeps all the metrics related to network or TCP calls. It has its own Sampler which sample-in only slowest TCP calls for a particular replica.
 * _Cache Data Collector_: It keeps all the cache call latencies. Right now, only ```collection cache``` is covered.
 
 **Get VM Information**: It makes [Azure Instance Metadata](https://learn.microsoft.com/azure/virtual-machines/instance-metadata-service?tabs=windows) call. If customer is not on Azure VM, we won't have this information and customer will see a warning with exception in the Trace Logs (if enabled).
 
-**Processor**: Its resposibility is to get all the data and divide it into small chunks (<2MB) and send each chunk to the microsoft service.
+**Processor**: Its resposibility is to get all the data and divide it into small chunks (<2MB) and send each chunk to the Microsoft service.
 
 ```mermaid
 flowchart TD
