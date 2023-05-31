@@ -6644,6 +6644,11 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
+                Documents.Telemetry.DistributedTracingOptions distributedTracingOptions = new ()
+                {
+                    IsDistributedTracingEnabled = this.isDistributedTracingEnabled
+                };
+
                 StoreClientFactory newClientFactory = new StoreClientFactory(
                     this.ConnectionPolicy.ConnectionProtocol,
                     (int)this.ConnectionPolicy.RequestTimeout.TotalSeconds,
@@ -6667,7 +6672,7 @@ namespace Microsoft.Azure.Cosmos
                     addressResolver: this.AddressResolver,
                     rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
-                    isDistributedTracingEnabled: this.isDistributedTracingEnabled);
+                    distributedTracingOptions: distributedTracingOptions);
 
                 if (this.transportClientHandlerFactory != null)
                 {
