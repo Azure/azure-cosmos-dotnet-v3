@@ -320,6 +320,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         Assert.AreEqual((int)cosmosException.SubStatusCode,(int)SubStatusCodes.TransportGenerated503);
 
                         Assert.IsNotNull(cosmosException.Trace);
+                        Assert.AreNotEqual(cosmosException.Trace, NoOpTrace.Singleton);
                     }
                 }
 
