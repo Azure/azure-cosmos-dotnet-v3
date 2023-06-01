@@ -250,7 +250,7 @@
                     enableOptimisticDirectExecution: true,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution)
             };
-
+            
             List<DirectExecutionTestCase> multiPartitionContainerTestCases = new List<DirectExecutionTestCase>()
             {
                 // Simple query (requiresDist = false)
