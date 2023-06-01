@@ -37,7 +37,7 @@ flowchart TD
 
 ## Client Telemetry (Private Preview)
 
-### Inroduction
+### Introduction
 It is a feature which can be opted-in by setting environment variables. By opting-in this feature, SDK will start sending aggregated telemetry data every 10 minutes to Microsoft.
 
 We collect following information as part of this:
@@ -54,12 +54,12 @@ We collect following information as part of this:
 
 ### Components
 
-**Telemetry Job:** This is a background task which collects the data and send it to a Microsoft service every 10 minutes.
+**Telemetry Job:** Background task which collects the data and sends it to a Microsoft service every 10 minutes.
 
-**Collectors:** It is basically, in-memory storage which keeps the telemetry data, collected during an operation. Right now, there are 3 kind of collectors we have i.e 
+**Collectors:** In-memory storage which keeps the telemetry data collected during an operation. There are 3 types of collectors including:
 * _Operational Data Collector_: It keeps operation level latencies and request units.
 * _Network Data Collector_: It keeps all the metrics related to network or TCP calls. It has its own Sampler which sample-in only slowest TCP calls for a particular replica.
-* _Cache Data Collector_: It keeps all the cache call latencies. Right now, only ```collection cache``` is covered.
+* _Cache Data Collector_: It keeps all the cache call latencies. Right now, only collection cache is covered.
 
 **Get VM Information**: It makes [Azure Instance Metadata](https://learn.microsoft.com/azure/virtual-machines/instance-metadata-service?tabs=windows) call. If customer is not on Azure VM, we won't have this information and customer will see a warning with exception in the Trace Logs (if enabled).
 
@@ -98,5 +98,5 @@ Enabling this feature provides numerous benefits. The telemetry data collected w
 
 ### Impact of this feature enabled
 * _Latency_: Customer should not see any impact on latency.
-* _Total RPS_: It depends on the infrastructure on which application using SDK is hosted and other factors but on a fully packed Azure Machine and making just point operations, impact should not be more than 10%.
+* _Total RPS_: It depends on the infrastructure the application using SDK is hosted on among other factors. On a fully packed Azure Machine where the SDK is using point operations, impact should not be more than 10%.
 * _Any other impact_: Collector needs around 18MB of in-memory storage to hold the data and this storage is always constant (it means it doesn't grow, no matter how much data we have)
