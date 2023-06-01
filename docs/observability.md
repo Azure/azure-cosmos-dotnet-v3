@@ -52,6 +52,10 @@ We collect following information as part of this:
 
 > Note: We don't collect any PII data as part of this feature. Right now, it is not self opt in, you need to contact us for more information.
 
+### Limitations
+1. AAD Support is not available
+2. Since you need to set environment variable, so this feature will be enabled machinewide only right now.
+
 ### Components
 
 **Telemetry Job:** Background task which collects the data and sends it to a Microsoft service every 10 minutes.
