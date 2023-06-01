@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
 
             using (ITrace trace = Trace.GetRootTrace("Account Read", TraceComponent.Transport, TraceLevel.Info))
             {
-                IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
+                IClientSideRequestStatistics stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
 
                 try
                 {
