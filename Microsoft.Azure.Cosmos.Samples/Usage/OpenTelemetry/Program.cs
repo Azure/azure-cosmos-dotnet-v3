@@ -124,9 +124,9 @@
             {
                 await container.ReadItemAsync<Item>($"random key", new PartitionKey($"random partition"));
             }
-            catch(Exception ex)
+            catch(Exception)
             {
-                Console.WriteLine($"Exception: {ex}");
+                Console.WriteLine("Generate exception by reading an invalid key");
             }
             
             for (int i = 1; i <= 5; i++)
