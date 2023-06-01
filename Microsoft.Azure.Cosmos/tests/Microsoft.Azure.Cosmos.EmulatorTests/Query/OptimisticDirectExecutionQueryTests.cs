@@ -21,7 +21,7 @@
         private static class PageSizeOptions
         {
             public static readonly int[] NonGroupByAndNoContinuationTokenPageSizeOptions = { -1, 10 };
-            public static readonly int[] NonGroupByWithContinuationTokenPageSizeOptions = { 1, 2, 5 };
+            public static readonly int[] NonGroupByWithContinuationTokenPageSizeOptions = { 1, 2 };
             public static readonly int[] GroupByPageSizeOptions = { -1 };
             public static readonly int[] PageSize100 = { 100 };
         }
@@ -61,13 +61,16 @@
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                
+                //TODO: Update expectedPipelineType to OptimisticDirectExecution when there is a new release of the emulator
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
                     expectedResult: first7Integers,
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
                     expectedResult: first7Integers,
@@ -75,13 +78,15 @@
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                
+                //TODO: Update expectedPipelineType to OptimisticDirectExecution when there is a new release of the emulator
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
                     expectedResult: first7Integers,
                     partitionKey: null,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
                 
                 // DISTINCT with ORDER BY (requiresDist = true)
                 CreateInput(
@@ -153,13 +158,16 @@
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+
+                //TODO: Update expectedPipelineType to OptimisticDirectExecution when there is a new release of the emulator
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
                     expectedResult: first5Integers,
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
                     expectedResult: first5Integers,
@@ -167,13 +175,15 @@
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+
+                //TODO: Update expectedPipelineType to OptimisticDirectExecution when there is a new release of the emulator
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
                     expectedResult: first5Integers,
                     partitionKey: null,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
 
                 // TOP with ORDER BY (requiresDist = false)
                 CreateInput(
@@ -183,13 +193,16 @@
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                
+                //TODO: Update expectedPipelineType to OptimisticDirectExecution when there is a new release of the emulator
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
                     expectedResult: first5Integers,
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
                     expectedResult: first5Integers,
@@ -197,13 +210,15 @@
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                
+                //TODO: Update expectedPipelineType to OptimisticDirectExecution when there is a new release of the emulator
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
                     expectedResult: first5Integers,
                     partitionKey: null,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
 
                 // OFFSET LIMIT with WHERE and BETWEEN (requiresDist = false)
                 CreateInput(
@@ -246,13 +261,16 @@
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                
+                //TODO: Update expectedPipelineType to OptimisticDirectExecution when there is a new release of the emulator
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
                     expectedResult: first7Integers,
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
                     expectedResult: first7Integers,
@@ -306,13 +324,16 @@
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+
+                //TODO: Update expectedPipelineType to OptimisticDirectExecution when there is a new release of the emulator
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
                     expectedResult: first5Integers,
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r",
                     expectedResult: first5Integers,
@@ -336,13 +357,16 @@
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                
+                //TODO: Update expectedPipelineType to OptimisticDirectExecution when there is a new release of the emulator
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
                     expectedResult: first5Integers,
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
                 CreateInput(
                     query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
                     expectedResult: first5Integers,
@@ -443,27 +467,34 @@
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.PageSize100,
                     expectedPipelineType: TestInjections.PipelineType.Passthrough),
+                
+                //TODO: Update expectedPipelineType to OptimisticDirectExecution when there is a new release of the emulator
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r",
                     expectedResult: first400Integers,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
+                //TODO: Update expectedPipelineType to OptimisticDirectExecution when there is a new release of the emulator
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} ASC",
                     expectedResult: first400Integers,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
+                //TODO: Update expectedPipelineType to OptimisticDirectExecution when there is a new release of the emulator
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
                     expectedResult: first400IntegersReversed,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.OptimisticDirectExecution),
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
                     expectedResult: new List<int> { 1 },

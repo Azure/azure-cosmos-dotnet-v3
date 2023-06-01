@@ -72,9 +72,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     if (this.continuationToken != null)
                     {
                         this.Current.Result.AdditionalHeaders.TryGetValue(HttpConstants.HttpHeaders.RequiresDistribution, out string requiresDistributionHeaderValue);
-                        Debug.Assert(!string.IsNullOrEmpty(requiresDistributionHeaderValue), "OptimisticDirectExecuteQueryPipelineStage Assert!", "Missing requiresDistribution flag in backend response for OptimisticDirectExecute request");
 
-                        bool requiresDistribution = bool.Parse(requiresDistributionHeaderValue);
+                        bool requiresDistribution = true;
+                        if (requiresDistributionHeaderValue != null)
+                        {
+                            requiresDistribution = bool.Parse(requiresDistributionHeaderValue);
+                        }
+
                         if (this.previousRequiresDistribution.HasValue && this.previousRequiresDistribution != requiresDistribution)
                         {
                             // We should never enter this if statement as requiresDistribution flag can never switch mid execution.
@@ -249,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 TryCatch<FeedRangeState<QueryState>> monadicExtractState;
                 if (continuationToken == null)
                 {
-                    FeedRangeState<QueryState> getState = new(targetRange, (QueryState)null);
+                    FeedRangeState<QueryState> getState = new (targetRange, (QueryState)null);
                     monadicExtractState = TryCatch<FeedRangeState<QueryState>>.FromResult(getState);
                 }
                 else
