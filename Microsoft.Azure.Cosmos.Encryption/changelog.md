@@ -6,9 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="2.0.2"/> [2.0.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.2) - 2023-06-01
 
 #### Added
-- [#3874](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3874) Adds support for Microsoft.Azure.Cosmos till 3.34.0.
+- [#3874](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3874) Adds support for Microsoft.Azure.Cosmos up to 3.34.0.
 
-### <a name="2.0.2-preview"/> [2.0.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.2) - 2023-06-01
+### <a name="2.0.2-preview"/> [2.0.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/2.0.2-preview) - 2023-06-01
 
 #### Added
 - [#3874](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3874) Adds support for Microsoft.Azure.Cosmos 3.34.0-preview.
