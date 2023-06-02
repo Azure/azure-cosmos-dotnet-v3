@@ -48,7 +48,7 @@
         [TestMethod]
         public void DuplicateContactedReplicasTests()
         {
-            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary());
+            ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(DuplicateContactedReplicasTests)));
             clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress1.com")));
             clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
             clientSideRequestStatisticsTraceDatum.ContactedReplicas.Add(new TransportAddressUri(new Uri("http://storephysicaladdress2.com")));
@@ -89,7 +89,7 @@
         [TestMethod]
         public void VerifyIClientSideRequestStatisticsNullTests()
         {
-            IClientSideRequestStatistics clientSideRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new Cosmos.Tracing.TraceSummary());
+            IClientSideRequestStatistics clientSideRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(VerifyIClientSideRequestStatisticsNullTests)));
             Assert.IsNotNull(clientSideRequestStatistics.ContactedReplicas);
             Assert.IsNotNull(clientSideRequestStatistics.FailedReplicas);
             Assert.IsNotNull(clientSideRequestStatistics.RegionsContacted);
@@ -101,7 +101,7 @@
         {
             using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new Cosmos.Tracing.TraceSummary());
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(ConcurrentUpdateTestHelper)));
 
             Task backgroundTask = Task.Run(() => backgroundUpdater(datum, cancellationTokenSource.Token));
 
