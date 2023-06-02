@@ -244,7 +244,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "net.peer.name",
                 "db.cosmosdb.connection_mode",
                 "db.cosmosdb.operation_type",
-                "db.cosmosdb.regions_contacted"
+                "db.cosmosdb.regions_contacted",
+                "tcp.uri",
+                "tcp.sub_status_code",
+                "tcp.status_code"
             };
             
             StringBuilder builder = new StringBuilder();

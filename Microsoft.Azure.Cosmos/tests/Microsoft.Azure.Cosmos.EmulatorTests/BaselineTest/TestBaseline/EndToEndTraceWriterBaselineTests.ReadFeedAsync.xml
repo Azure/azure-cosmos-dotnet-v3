@@ -643,30 +643,30 @@
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer2/partitions/a4cb494e-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer20/partitions/a4cb4960-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer24/partitions/a4cb4964-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer23/partitions/a4cb4963-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -1338,30 +1338,30 @@
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer2/partitions/a4cb494e-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer20/partitions/a4cb4960-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer24/partitions/a4cb4964-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer23/partitions/a4cb4963-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -2014,30 +2014,30 @@
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer2/partitions/a4cb494e-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer20/partitions/a4cb4960-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer24/partitions/a4cb4964-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer23/partitions/a4cb4963-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -2710,30 +2710,30 @@
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer2/partitions/a4cb494e-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer20/partitions/a4cb4960-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer24/partitions/a4cb4964-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="ReadFeed Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer23/partitions/a4cb4963-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
