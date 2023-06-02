@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
 
                     request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
-                    request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
+                    request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
                     if (clientSideRequestStatistics == null)
                     {
                         childTrace.AddDatum("Client Side Request Stats", request.RequestContext.ClientRequestStatistics);
