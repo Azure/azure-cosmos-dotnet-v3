@@ -71,11 +71,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                     }));
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
-                    Guid.NewGuid().ToString(),
+                    "databaseName",
                     cancellationToken: default);
 
             EndToEndTraceWriterBaselineTests.container = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
+                    id: "containerName",
                     partitionKeyPath: "/id",
                     throughput: 20000);
 

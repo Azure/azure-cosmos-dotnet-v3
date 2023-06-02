@@ -242,6 +242,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "db.operation",
                 "db.system",
                 "net.peer.name",
+                "db.name",
+                "db.cosmosdb.container",
                 "db.cosmosdb.connection_mode",
                 "db.cosmosdb.operation_type",
                 "db.cosmosdb.regions_contacted",
