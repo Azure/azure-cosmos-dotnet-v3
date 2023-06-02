@@ -20,8 +20,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             if (string.Equals(activity.Source.Name, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", StringComparison.OrdinalIgnoreCase))
             {
-                Assert.IsTrue(activity.OperationName == activity.DisplayName);
-
                 Assert.IsFalse(string.IsNullOrEmpty(activity.GetTagItem("db.cosmosdb.connection_mode").ToString()), $"connection mode is emtpy for {activity.OperationName}");
 
                 if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Gateway.ToString())

@@ -110,7 +110,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="DeleteAsync" displayName="DeleteAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="DeleteAsync" displayName="DeleteAsync .47c929a9-2c26-42cc-99ad-740b6fd715af">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">DeleteAsync</ATTRIBUTE>
@@ -133,7 +133,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateDatabaseAsync" displayName="CreateDatabaseAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateDatabaseAsync" displayName="CreateDatabaseAsync .47c929a9-2c26-42cc-99ad-740b6fd715af">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">CreateDatabaseAsync</ATTRIBUTE>
@@ -256,7 +256,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="DeleteAsync" displayName="DeleteAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="DeleteAsync" displayName="DeleteAsync .2b353cb3-8635-4d9a-a9bd-2c8c081a0e2b">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">DeleteAsync</ATTRIBUTE>
@@ -279,7 +279,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateDatabaseAsync" displayName="CreateDatabaseAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateDatabaseAsync" displayName="CreateDatabaseAsync .2b353cb3-8635-4d9a-a9bd-2c8c081a0e2b">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">CreateDatabaseAsync</ATTRIBUTE>

@@ -967,7 +967,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Change Feed Iterator Read Next Async</ATTRIBUTE>
@@ -990,7 +990,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Change Feed Iterator Read Next Async</ATTRIBUTE>
@@ -1013,7 +1013,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Change Feed Iterator Read Next Async</ATTRIBUTE>
@@ -1036,7 +1036,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Change Feed Iterator Read Next Async</ATTRIBUTE>
@@ -1059,7 +1059,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Change Feed Iterator Read Next Async</ATTRIBUTE>
@@ -1761,7 +1761,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
@@ -1784,7 +1784,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
@@ -1807,7 +1807,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
@@ -1830,7 +1830,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
@@ -1853,7 +1853,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
@@ -2536,7 +2536,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Change Feed Iterator Read Next Async</ATTRIBUTE>
@@ -2559,7 +2559,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Change Feed Iterator Read Next Async</ATTRIBUTE>
@@ -2582,7 +2582,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Change Feed Iterator Read Next Async</ATTRIBUTE>
@@ -2605,7 +2605,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Change Feed Iterator Read Next Async</ATTRIBUTE>
@@ -2628,7 +2628,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Iterator Read Next Async" displayName="Change Feed Iterator Read Next Async c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Change Feed Iterator Read Next Async</ATTRIBUTE>
@@ -3331,7 +3331,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
@@ -3354,7 +3354,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
@@ -3377,7 +3377,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
@@ -3400,7 +3400,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
@@ -3423,7 +3423,7 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Typed FeedIterator ReadNextAsync" displayName="Typed FeedIterator ReadNextAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Typed FeedIterator ReadNextAsync</ATTRIBUTE>
@@ -3780,7 +3780,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Estimator Read Next Async" displayName="Change Feed Estimator Read Next Async">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="Change Feed Estimator Read Next Async" displayName="Change Feed Estimator Read Next Async c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">Change Feed Estimator Read Next Async</ATTRIBUTE>

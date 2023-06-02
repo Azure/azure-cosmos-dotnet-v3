@@ -92,7 +92,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemStreamAsync" displayName="CreateItemStreamAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemStreamAsync" displayName="CreateItemStreamAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">CreateItemStreamAsync</ATTRIBUTE>
@@ -212,7 +212,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="ReadItemStreamAsync" displayName="ReadItemStreamAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="ReadItemStreamAsync" displayName="ReadItemStreamAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">ReadItemStreamAsync</ATTRIBUTE>
@@ -340,7 +340,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="ReplaceItemStreamAsync" displayName="ReplaceItemStreamAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="ReplaceItemStreamAsync" displayName="ReplaceItemStreamAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">ReplaceItemStreamAsync</ATTRIBUTE>
@@ -463,7 +463,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="DeleteItemStreamAsync" displayName="DeleteItemStreamAsync">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="DeleteItemStreamAsync" displayName="DeleteItemStreamAsync c2af5c4b-cf01-4afe-9146-4324fcf18cc8.f8bd2433-ad7e-4dd7-968b-6b0328717db7">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">DeleteItemStreamAsync</ATTRIBUTE>
