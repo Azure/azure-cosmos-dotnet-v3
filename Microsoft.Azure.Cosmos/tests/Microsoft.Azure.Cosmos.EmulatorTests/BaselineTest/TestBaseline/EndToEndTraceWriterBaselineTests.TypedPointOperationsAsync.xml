@@ -138,7 +138,7 @@
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Create Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer2/partitions/a4cb494e-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
     <ATTRIBUTE key="tcp.status_code">201</ATTRIBUTE>
   </ACTIVITY>
@@ -263,7 +263,7 @@
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Read Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer2/partitions/a4cb494e-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
     <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
@@ -401,7 +401,7 @@
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Replace Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer2/partitions/a4cb494e-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
     <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
@@ -528,7 +528,7 @@
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Delete Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer2/partitions/a4cb494e-38c8-11e6-8106-8cdcd42c33be/replicas/1p/</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
     <ATTRIBUTE key="tcp.status_code">204</ATTRIBUTE>
   </ACTIVITY>

@@ -51,13 +51,6 @@
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] FetchDataEncryptionKeyWithoutRawKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyWithoutRawKeyAsync>))]": {
-          "Type": "Method",
-          "Attributes": [
-            "AsyncStateMachineAttribute"
-          ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] FetchDataEncryptionKeyWithoutRawKeyAsync(System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
           "Type": "Constructor",
           "Attributes": [
@@ -405,13 +398,6 @@
               ],
               "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] FetchDataEncryptionKeyWithoutRawKeyAsync(System.String, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.Custom.CosmosDataEncryptionKeyProvider+<FetchDataEncryptionKeyWithoutRawKeyAsync>))]": {
-              "Type": "Method",
-              "Attributes": [
-                "AsyncStateMachineAttribute"
-              ],
-              "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] FetchDataEncryptionKeyWithoutRawKeyAsync(System.String, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
             "Void .ctor(Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapProvider, Microsoft.Data.Encryption.Cryptography.EncryptionKeyStoreProvider, System.Nullable`1[System.TimeSpan])[System.ObsoleteAttribute(\"Please use the constructor with EncryptionKeyStoreProvider only.\")]": {
               "Type": "Constructor",
               "Attributes": [
@@ -440,11 +426,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] FetchDataEncryptionKeyAsync(System.String, System.String, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] FetchDataEncryptionKeyWithoutRawKeyAsync(System.String, System.String, System.Threading.CancellationToken)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey] FetchDataEncryptionKeyWithoutRawKeyAsync(System.String, System.String, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
