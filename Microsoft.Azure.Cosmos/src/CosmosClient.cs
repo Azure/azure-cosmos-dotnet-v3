@@ -94,11 +94,7 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     /// <remarks>
     /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls, 
-    /// except the initialization cases when the SDK warms up the caches and connections before the first call to the service is made 
-    /// (<see cref="CosmosClient.CreateAndInitializeAsync(string, Azure.AzureKeyCredential, System.Collections.Generic.IReadOnlyList{ValueTuple{string, string}}, CosmosClientOptions, System.Threading.CancellationToken)"/>, 
-    /// <see cref="CosmosClient.CreateAndInitializeAsync(string, Azure.Core.TokenCredential, System.Collections.Generic.IReadOnlyList{ValueTuple{string, string}}, CosmosClientOptions, System.Threading.CancellationToken)"/>, 
-    /// <see cref="CosmosClient.CreateAndInitializeAsync(string, string, System.Collections.Generic.IReadOnlyList{ValueTuple{string, string}}, CosmosClientOptions, System.Threading.CancellationToken)"/>, 
-    /// <see cref="CosmosClient.CreateAndInitializeAsync(string, System.Collections.Generic.IReadOnlyList{ValueTuple{string, string}}, CosmosClientOptions, System.Threading.CancellationToken)"/>).
+    /// except the initialization cases when the SDK warms up the caches and connections before the first call to the service is made (CosmosClient.CreateAndInitializeAsync calls).
     /// </remarks>
     /// <seealso cref="CosmosClientOptions"/>
     /// <seealso cref="Fluent.CosmosClientBuilder"/>
