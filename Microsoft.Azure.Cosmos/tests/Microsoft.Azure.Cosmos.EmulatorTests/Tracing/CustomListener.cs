@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
             }
 
-          /*  List<Activity> collectedNetworkActivities = new List<Activity>(CustomListener.CollectedNetworkActivities);
+            List<Activity> collectedNetworkActivities = new List<Activity>(CustomListener.CollectedNetworkActivities);
             collectedNetworkActivities = collectedNetworkActivities
                 .OrderBy(act => 
                             act.Source.Name + 
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (Activity activity in collectedNetworkActivities)
             {
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
-            }*/
+            }
 
             List<string> outputList = new List<string>();
             if(generatedActivityTagsForBaselineXmls != null && generatedActivityTagsForBaselineXmls.Count > 0)
