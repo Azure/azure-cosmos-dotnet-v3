@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             SpecializedDocumentQueryExecution,
         }
 
-        private const string optimisticDirectExecutionToken = "OptimisticDirectExecutionToken";
+        private const string OptimisticDirectExecutionToken = "OptimisticDirectExecutionToken";
         private readonly FallbackQueryPipelineStageFactory queryPipelineStageFactory;
         private TryCatch<IQueryPipelineStage> inner;
         private CosmosElement continuationToken;
@@ -71,12 +71,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                     this.continuationToken = this.Current.Succeeded ? this.Current.Result.State?.Value : null;
                     if (this.continuationToken != null)
                     {
-                        this.Current.Result.AdditionalHeaders.TryGetValue(HttpConstants.HttpHeaders.RequiresDistribution, out string requiresDistributionHeaderValue);
-
-                        bool requiresDistribution = true;
-                        if (requiresDistributionHeaderValue != null)
+                        bool requiresDistribution;
+                        if (this.Current.Result.AdditionalHeaders.TryGetValue(HttpConstants.HttpHeaders.RequiresDistribution, out string requiresDistributionHeaderValue))
                         {
                             requiresDistribution = bool.Parse(requiresDistributionHeaderValue);
+                        }
+                        else
+                        {
+                            requiresDistribution = true;
                         }
 
                         if (this.previousRequiresDistribution.HasValue && this.previousRequiresDistribution != requiresDistribution)
@@ -110,15 +112,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         private CosmosElement TryUnwrapContinuationToken()
         {
-            if (this.continuationToken != null)
-            {
-                CosmosObject cosmosObject = this.continuationToken as CosmosObject;
-                CosmosElement backendContinuationToken = cosmosObject[optimisticDirectExecutionToken];
-                Debug.Assert(backendContinuationToken != null);
-                return CosmosArray.Create(backendContinuationToken);
-            }
+            if (this.continuationToken == null) return null;
 
-            return null;
+            CosmosObject cosmosObject = this.continuationToken as CosmosObject;
+            CosmosElement backendContinuationToken = cosmosObject[OptimisticDirectExecutionToken];
+            Debug.Assert(backendContinuationToken != null);
+
+            return CosmosArray.Create(backendContinuationToken);
         }
 
         private async Task<bool> SwitchToFallbackPipelineAsync(bool useContinuation, ITrace trace)
@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             return TryCatch<IQueryPipelineStage>.FromResult(odePipelineStageMonadicCreate);
         }
 
-        private class OptimisticDirectExecutionQueryPipelineImpl : IQueryPipelineStage
+        private sealed class OptimisticDirectExecutionQueryPipelineImpl : IQueryPipelineStage
         {
             private readonly QueryPartitionRangePageAsyncEnumerator queryPartitionRangePageAsyncEnumerator;
 
