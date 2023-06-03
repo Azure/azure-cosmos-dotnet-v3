@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
                         if (requiresDistribution)
                         {
-                            success = await this.SwitchToFallbackPipelineAsync(useContinuation: false, trace);
+                            success = await this.SwitchToFallbackPipelineAsync(continuationToken: null, trace);
                         }
 
                         this.previousRequiresDistribution = requiresDistribution;
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
                 }
                 else if (isPartitionSplitException)
                 {
-                    success = await this.SwitchToFallbackPipelineAsync(useContinuation: true, trace);
+                    success = await this.SwitchToFallbackPipelineAsync(continuationToken: this.continuationToken, trace);
                 }
             }
 
@@ -110,22 +110,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
             this.inner.Try(pipelineStage => pipelineStage.SetCancellationToken(cancellationToken));
         }
 
-        private CosmosElement TryUnwrapContinuationToken()
+        private static CosmosElement TryUnwrapContinuationToken(CosmosElement continuationToken)
         {
-            if (this.continuationToken == null) return null;
+            if (continuationToken == null) return null;
 
-            CosmosObject cosmosObject = this.continuationToken as CosmosObject;
+            CosmosObject cosmosObject = continuationToken as CosmosObject;
             CosmosElement backendContinuationToken = cosmosObject[OptimisticDirectExecutionToken];
             Debug.Assert(backendContinuationToken != null);
 
             return CosmosArray.Create(backendContinuationToken);
         }
 
-        private async Task<bool> SwitchToFallbackPipelineAsync(bool useContinuation, ITrace trace)
+        private async Task<bool> SwitchToFallbackPipelineAsync(CosmosElement continuationToken, ITrace trace)
         {
             Debug.Assert(this.executionState == ExecutionState.OptimisticDirectExecution, "OptimisticDirectExecuteQueryPipelineStage Assert!", "Only OptimisticDirectExecute pipeline can create this fallback pipeline");
             this.executionState = ExecutionState.SpecializedDocumentQueryExecution;
-            this.inner = await this.queryPipelineStageFactory(useContinuation ? this.TryUnwrapContinuationToken() : null);
+            this.inner = continuationToken != null
+                ? await this.queryPipelineStageFactory(TryUnwrapContinuationToken(continuationToken))
+                : await this.queryPipelineStageFactory(null);
 
             if (this.inner.Failed)
             {
