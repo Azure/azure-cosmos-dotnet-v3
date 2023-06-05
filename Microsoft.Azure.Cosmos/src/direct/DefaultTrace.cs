@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
     {
         public static readonly Guid ProviderId = new Guid("{B30ABF1C-6A50-4F2B-85C4-61823ED6CF24}");
 
-        private static readonly TraceSource TraceSourceInternal;
+        private static TraceSource TraceSourceInternal;
 
         private static bool IsListenerAdded;
 
@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
         public static TraceSource TraceSource
         {
             get { return DefaultTrace.TraceSourceInternal; }
+            set { DefaultTrace.TraceSourceInternal = value; }
         }
 
         /// <summary>

@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Documents
             this.addressEnumerator = addressEnumerator ?? throw new ArgumentNullException(nameof(addressEnumerator));
             this.sessionContainer = sessionContainer;
             this.canUseLocalLSNBasedHeaders = VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.Versions.v2018_06_18);
-            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariableAsBool(
+            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariable(
                 name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
                 defaultValue: false);
         }
@@ -176,18 +176,10 @@ namespace Microsoft.Azure.Documents
 
             string requestedCollectionRid = entity.RequestContext.ResolvedCollectionRid;
 
-            IReadOnlyList<TransportAddressUri> resolveApiResults = await this.addressSelector.ResolveAllTransportAddressUriAsync(
+            (IReadOnlyList<TransportAddressUri> resolveApiResults, IReadOnlyList<string> replicaHealthStatuses) = await this.addressSelector.ResolveAllTransportAddressUriAsync(
                      entity,
                      includePrimary,
                      entity.RequestContext.ForceRefreshAddressCache);
-
-            if (!string.IsNullOrEmpty(requestedCollectionRid) && !string.IsNullOrEmpty(entity.RequestContext.ResolvedCollectionRid))
-            {
-                if (!requestedCollectionRid.Equals(entity.RequestContext.ResolvedCollectionRid))
-                {
-                    this.sessionContainer.ClearTokenByResourceId(requestedCollectionRid);
-                }
-            }
 
             ISessionToken requestSessionToken = null;
             if (useSessionToken)
@@ -225,17 +217,11 @@ namespace Microsoft.Azure.Documents
             Exception cancellationException = null;
             Exception exceptionToThrow = null;
             SubStatusCodes subStatusCodeForException = SubStatusCodes.Unknown;
-            IEnumerable<TransportAddressUri> transportAddresses = this.addressEnumerator
+            IEnumerator<TransportAddressUri> uriEnumerator = this.addressEnumerator
                                                             .GetTransportAddresses(transportAddressUris: resolveApiResults,
                                                                                    failedEndpoints: entity.RequestContext.FailedEndpoints,
-                                                                                   replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled);
-
-            // The replica health status of the transport address uri will change eventually with the motonically increasing time.
-            // However, the purpose of this list is to capture the health status snapshot at this moment.
-            IEnumerable<string> replicaHealthStatuses = transportAddresses
-                .Select(x => x.GetCurrentHealthState().GetHealthStatusDiagnosticString());
-
-            IEnumerator<TransportAddressUri> uriEnumerator = transportAddresses.GetEnumerator();
+                                                                                   replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled)
+                                                            .GetEnumerator();
 
             // Loop until we have the read quorum number of valid responses or if we have read all the replicas
             while (replicasToRead > 0 && uriEnumerator.MoveNext())

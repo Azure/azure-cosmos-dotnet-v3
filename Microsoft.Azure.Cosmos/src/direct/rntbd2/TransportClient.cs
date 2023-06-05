@@ -11,9 +11,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-#if NETSTANDARD2_0_OR_GREATER
     using Microsoft.Azure.Documents.Telemetry;
-#endif
 #if NETSTANDARD15 || NETSTANDARD16
     using Trace = Microsoft.Azure.Documents.Trace;
 #endif
@@ -33,7 +31,9 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly TimerPool IdleTimerPool;
         private readonly ChannelDictionary channelDictionary;
         private bool disposed = false;
-        private bool isDistributedTracingEnabled;
+
+        private readonly DistributedTracingOptions DistributedTracingOptions;
+
         #region RNTBD Transition
 
         // Transitional state while migrating SDK users from the old RNTBD stack
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.IdleTimerPool = null;
             }
 
-            this.isDistributedTracingEnabled = clientOptions.IsDistributedTracingEnabled;
+            this.DistributedTracingOptions = clientOptions.DistributedTracingOptions;
 
             this.channelDictionary = new ChannelDictionary(
                 new ChannelProperties(
@@ -112,7 +112,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             DocumentServiceRequest request)
         {
             this.ThrowIfDisposed();
-
             Guid activityId = Trace.CorrelationManager.ActivityId;
 
             if (!request.IsBodySeekableClonableAndCountable)
@@ -125,15 +124,17 @@ namespace Microsoft.Azure.Documents.Rntbd
             string operation = "Unknown operation";
             DateTime requestStartTime = DateTime.UtcNow;
             int transportResponseStatusCode = (int)TransportResponseStatusCode.Success;
+
 #if NETSTANDARD2_0_OR_GREATER
-            using OpenTelemetryRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(this.isDistributedTracingEnabled, request);
+            using OpenTelemetryRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(
+                                                                                    options: this.DistributedTracingOptions,
+                                                                                    request: request);
 #endif
             try
             {
                 TransportClient.IncrementCounters();
 
                 operation = "GetChannel";
-
                 // Treat all retries as out of region request for open timeout. This is to prevent too many retries because of the shorter time duration.
                 bool localRegionRequest = request.RequestContext.IsRetry ? false : request.RequestContext.LocalRegionRequest;
                 IChannel channel = this.channelDictionary.GetChannel(physicalAddress.Uri, localRegionRequest);
@@ -262,7 +263,23 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.RaiseProtocolDowngradeRequest(storeResponse);
             }
 
-            TransportClient.ThrowServerException(request.ResourceAddress, storeResponse, physicalAddress.Uri, activityId, request);
+            try
+            {
+                TransportClient.ThrowServerException(request.ResourceAddress, storeResponse, physicalAddress.Uri, activityId, request);
+            }
+#if NETSTANDARD2_0_OR_GREATER
+            catch (DocumentClientException exception) 
+            {
+                recorder?.Record(physicalAddress.Uri, documentClientException: exception);
+                throw;
+            }
+#else
+            catch (DocumentClientException)
+            {
+                throw;
+            }
+#endif
+
             return storeResponse;
         }
 
@@ -416,6 +433,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.EnableChannelMultiplexing = false;
                 this.MaxConcurrentOpeningConnectionCount = ushort.MaxValue;
                 this.DnsResolutionFunction = null;
+                this.DistributedTracingOptions = null;
             }
 
             public TimeSpan RequestTimeout { get; private set; }
@@ -498,11 +516,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             /// Override for DNS resolution callbacks for RNTBD connections.
             /// </summary>
             public Func<string, Task<System.Net.IPAddress>> DnsResolutionFunction { get; internal set; }
-            
+
             /// <summary>
-            /// Flag for distributed tracing 
+            /// Distributed Tracing Options
             /// </summary>
-            public bool IsDistributedTracingEnabled { get; set; }
+            public DistributedTracingOptions DistributedTracingOptions { get; set; }
 
             public override string ToString()
             {
@@ -543,7 +561,11 @@ namespace Microsoft.Azure.Documents.Rntbd
                 s.Append("  Use_CustomDnsResolution: ");
                 s.AppendLine(this.DnsResolutionFunction != null ? bool.TrueString : bool.FalseString);
                 s.Append("  IsDistributedTracingEnabled: ");
-                s.AppendLine(this.IsDistributedTracingEnabled.ToString());
+#if NETSTANDARD2_0_OR_GREATER
+                s.AppendLine(this.DistributedTracingOptions?.IsDistributedTracingEnabled.ToString());
+#else
+                s.AppendLine("false");
+#endif
                 return s.ToString();
             }
 

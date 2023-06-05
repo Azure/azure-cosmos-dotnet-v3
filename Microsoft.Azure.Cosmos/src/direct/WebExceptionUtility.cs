@@ -2,6 +2,7 @@
 {
     using System;
     using System.Net;
+    using System.Net.Sockets;
 
     internal static class WebExceptionUtility
     {
@@ -24,19 +25,23 @@
 
         private static bool IsWebExceptionRetriableInternal(Exception ex)
         {
-            WebException webEx = ex as WebException;
-            if (webEx == null)
+            if (ex is WebException webEx)
             {
-                return false;
+                return
+                    webEx.Status == WebExceptionStatus.ConnectFailure ||
+                    webEx.Status == WebExceptionStatus.NameResolutionFailure ||
+                    webEx.Status == WebExceptionStatus.ProxyNameResolutionFailure ||
+                    webEx.Status == WebExceptionStatus.SecureChannelFailure ||
+                    webEx.Status == WebExceptionStatus.TrustFailure;
             }
 
-            if (webEx.Status == WebExceptionStatus.ConnectFailure ||
-                webEx.Status == WebExceptionStatus.NameResolutionFailure ||
-                webEx.Status == WebExceptionStatus.ProxyNameResolutionFailure ||
-                webEx.Status == WebExceptionStatus.SecureChannelFailure ||
-                webEx.Status == WebExceptionStatus.TrustFailure)
+            if (ex is SocketException socketEx)
             {
-                return true;
+                return
+                    socketEx.SocketErrorCode == SocketError.HostNotFound ||
+                    socketEx.SocketErrorCode == SocketError.TimedOut ||
+                    socketEx.SocketErrorCode == SocketError.TryAgain ||
+                    socketEx.SocketErrorCode == SocketError.NoData;
             }
 
             return false;

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Documents
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.Telemetry;
 
     internal sealed class StoreClientFactory : IStoreClientFactory
     {
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.Documents
             MemoryStreamPool memoryStreamPool = null,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
             Func<string, Task<System.Net.IPAddress>> dnsResolutionFunction = null,  // optional override
-            bool isDistributedTracingEnabled = false) // Distributed Tracing Flag
+            DistributedTracingOptions distributedTracingOptions = null) // Distributed Tracing Configuration
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -222,7 +223,7 @@ namespace Microsoft.Azure.Documents
                         MemoryStreamPool = memoryStreamPool,
                         RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
                         DnsResolutionFunction = dnsResolutionFunction,
-                        IsDistributedTracingEnabled = isDistributedTracingEnabled
+                        DistributedTracingOptions = distributedTracingOptions
                     });
 
                 this.fallbackTransportClient = new Rntbd.TransportClient(
@@ -249,7 +250,7 @@ namespace Microsoft.Azure.Documents
                         MemoryStreamPool = memoryStreamPool,
                         RemoteCertificateValidationCallback = remoteCertificateValidationCallback,
                         DnsResolutionFunction = dnsResolutionFunction,
-                        IsDistributedTracingEnabled = isDistributedTracingEnabled
+                        DistributedTracingOptions = distributedTracingOptions
                     });
             }
             else

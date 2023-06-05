@@ -116,6 +116,7 @@ namespace Microsoft.Azure.Documents
         private Collection<MaterializedViews> materializedViews;
         private EncryptionScopeMetadata encryptionScopeMetadata;
         private InAccountRestoreParameters restoreParameters;
+        private byte uniqueIndexNameEncodingMode;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentCollection"/> class for the Azure Cosmos DB service.
@@ -269,6 +270,12 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Gets the UniqueIndexNameEncodingMode associated with the collection from the Azure Cosmos DB service. 
+        /// </summary>
+        /// <value>
+        /// UniqueIndexNameEncodingMode of collection, i.e., either Concatenated (1) or Hashed (2)
+        /// </value>
         [JsonProperty(PropertyName = Constants.Properties.UniqueIndexNameEncodingMode)]
         internal byte UniqueIndexNameEncodingMode
         {
@@ -278,6 +285,11 @@ namespace Microsoft.Azure.Documents
             }
             set
             {
+                if(value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "UniqueIndexNameEncodingMode"));
+                }
+                this.uniqueIndexNameEncodingMode = value;
                 this.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, value);
             }
         }
@@ -1068,6 +1080,11 @@ namespace Microsoft.Azure.Documents
             {
                 this.encryptionScopeMetadata.OnSave();
                 base.SetObject<EncryptionScopeMetadata>(Constants.EncryptionScopeProperties.EncryptionScope, this.encryptionScopeMetadata);
+            }
+
+            if(this.uniqueIndexNameEncodingMode != 0)
+            { 
+                base.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, this.uniqueIndexNameEncodingMode);
             }
         }
     }

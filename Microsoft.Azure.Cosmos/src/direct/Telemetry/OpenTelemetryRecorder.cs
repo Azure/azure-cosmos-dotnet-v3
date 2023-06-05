@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Documents.Telemetry
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -14,12 +15,15 @@ namespace Microsoft.Azure.Documents.Telemetry
     /// </summary>
     internal class OpenTelemetryRecorder : IDisposable
     {
-        private const string CosmosDb = "cosmosdb";
         private const string DateTimeFormat = "yyyy-MM-dd'T'HH:mm:ssZZ";
         private readonly DiagnosticScope scope;
+        private DistributedTracingOptions options;
+        private DocumentServiceRequest request;
 
-        public OpenTelemetryRecorder(DiagnosticScope scope)
+        public OpenTelemetryRecorder(DiagnosticScope scope, DocumentServiceRequest request, DistributedTracingOptions options)
         {
+            this.request = request;
+            this.options = options;
             this.scope = scope;
             this.scope.Start();
         }
@@ -31,13 +35,13 @@ namespace Microsoft.Azure.Documents.Telemetry
         {
             try
             {
-                this.scope.AddAttribute("rntbd.uri", addressUri);
+                this.scope.AddAttribute("tcp.uri", addressUri);
 
                 if (exception == null && documentClientException == null)
                 {
                     //record activity
-                    this.scope.AddAttribute("rntbd.sub_status_code", storeResponse.SubStatusCode);
-                    this.scope.AddAttribute("rntbd.status_code", storeResponse.StatusCode);
+                    this.scope.AddAttribute("tcp.sub_status_code", (int)storeResponse.SubStatusCode);
+                    this.scope.AddAttribute("tcp.status_code", (int)storeResponse.StatusCode);
                 }
                 else
                 {   
@@ -47,14 +51,18 @@ namespace Microsoft.Azure.Documents.Telemetry
                         this.scope.AddAttribute("exception.type", exception.GetType().FullName);
                         this.scope.AddAttribute("exception.timestamp", DateTimeOffset.Now.ToString(DateTimeFormat, CultureInfo.InvariantCulture));
                         this.scope.AddAttribute("exception.message", exception.Message);
+
+                        this.scope.Failed(exception);
                     }
                     else if (documentClientException != null)
                     {
-                        this.scope.AddAttribute("rntbd.status_code", documentClientException.StatusCode);
-                        this.scope.AddAttribute("rntbd.sub_status_code", documentClientException.GetSubStatus());
+                        this.scope.AddAttribute("tcp.status_code", (int)documentClientException.StatusCode);
+                        this.scope.AddAttribute("tcp.sub_status_code", (int)documentClientException.GetSubStatus());
                         this.scope.AddAttribute("exception.type", documentClientException.GetType().FullName);
                         this.scope.AddAttribute("exception.timestamp", DateTimeOffset.Now.ToString(DateTimeFormat, CultureInfo.InvariantCulture));
                         this.scope.AddAttribute("exception.message", documentClientException.Message);
+
+                        this.scope.Failed(documentClientException);
                     }
                 }
             }

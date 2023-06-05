@@ -10,5 +10,6 @@ namespace Microsoft.Azure.Documents
     {
         None = 0,
         PartitionMerge = 1 << 0,
+        ChangeFeedWithStartTimePostMerge = 1 << 1
     }
 }

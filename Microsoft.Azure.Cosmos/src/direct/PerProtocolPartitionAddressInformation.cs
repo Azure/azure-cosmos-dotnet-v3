@@ -39,32 +39,43 @@ namespace Microsoft.Azure.Documents
             // PrimaryReplicaTransportAddressUri. This means that unlike the prior implementation, there will be
             // a same object shared across all of the primary and non-primary replica lists and any changes in
             // one of the object will be reflected across.
-            List<Tuple<AddressInformation, TransportAddressUri>> transportAddressesDictionary = new ();
+            List<string> transportUriHealthStates = new();
+            List<TransportAddressUri> transportAddressUris = new(), nonPrimaryTransportAddressUris = new();
             foreach (AddressInformation addressInfo in this.ReplicaAddresses)
             {
-                Tuple<AddressInformation, TransportAddressUri> transportAddressTuple = Tuple.Create(
-                    item1: addressInfo,
-                    item2: new TransportAddressUri(
-                        addressUri: new Uri(
-                            uriString: addressInfo.PhysicalUri)));
+                TransportAddressUri transportAddressUri = new (new Uri (addressInfo.PhysicalUri));
 
-                transportAddressesDictionary.Add(transportAddressTuple);
-                if(addressInfo.IsPrimary && !addressInfo.PhysicalUri.Contains('['))
+                transportAddressUris.Add(transportAddressUri);
+
+                if (addressInfo.IsPrimary && !addressInfo.PhysicalUri.Contains('['))
                 {
-                    this.PrimaryReplicaTransportAddressUri = transportAddressTuple.Item2;
+                    this.PrimaryReplicaTransportAddressUri = transportAddressUri;
                 }
+                else
+                {
+                    nonPrimaryTransportAddressUris.Add(transportAddressUri);
+                }
+
+                transportUriHealthStates.Add(transportAddressUri
+                    .GetCurrentHealthState()
+                    .GetHealthStatusDiagnosticString());
             }
 
-            this.ReplicaTransportAddressUris = transportAddressesDictionary
-                                                    .Select(x => x.Item2)
-                                                    .ToList();
-
-            this.NonPrimaryReplicaTransportAddressUris = transportAddressesDictionary
-                                                            .Where(x => !x.Item1.IsPrimary)
-                                                            .Select(x => x.Item2)
-                                                            .ToList();
-
             this.Protocol = protocol;
+            this.ReplicaTransportAddressUris = transportAddressUris.AsReadOnly();
+            this.ReplicaTransportAddressUrisHealthState = transportUriHealthStates.AsReadOnly();
+            this.NonPrimaryReplicaTransportAddressUris = nonPrimaryTransportAddressUris.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Sets the health state of the transport address uris. This is invoked by the
+        /// GatewayAddressCache to capture and cache the health state of the transport address uris.
+        /// </summary>
+        /// <param name="replicaHealthStates">A read only list of strings, representing the current health state of the replicas.</param>
+        public void SetTransportAddressUrisHealthState(
+            IReadOnlyList<string> replicaHealthStates)
+        {
+            this.ReplicaTransportAddressUrisHealthState = replicaHealthStates;
         }
 
         public TransportAddressUri GetPrimaryAddressUri(DocumentServiceRequest request)
@@ -101,6 +112,8 @@ namespace Microsoft.Azure.Documents
         public IReadOnlyList<Uri> ReplicaUris { get; }
 
         public IReadOnlyList<TransportAddressUri> ReplicaTransportAddressUris { get; }
+
+        public IReadOnlyList<string> ReplicaTransportAddressUrisHealthState { get; private set; }
 
         public Uri PrimaryReplicaUri => this.PrimaryReplicaTransportAddressUri?.Uri;
 

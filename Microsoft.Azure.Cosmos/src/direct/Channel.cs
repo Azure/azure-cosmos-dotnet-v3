@@ -109,6 +109,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        private Guid ConnectionCorrelationId { get => this.dispatcher.ConnectionCorrelationId; }
+
         private void Initialize()
         {
             this.ThrowIfDisposed();
@@ -152,8 +154,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 transportRequestStats.RequestWaitingForConnectionInitialization = true;
                 DefaultTrace.TraceInformation(
-                    "Awaiting RNTBD channel initialization. Request URI: {0}",
-                    physicalAddress);
+                    "[RNTBD Channel {0}] Awaiting RNTBD channel initialization. Request URI: {1}",
+                    this.ConnectionCorrelationId, physicalAddress);
                 await this.initializationTask;
             }
             else
@@ -183,7 +185,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             catch (Exception e)
             {
                 DefaultTrace.TraceError(
-                    "Failed to serialize request. Assuming malformed request payload: {0}", e);
+                    "[RNTBD Channel {0}] Failed to serialize request. Assuming malformed request payload: {1}", this.ConnectionCorrelationId, e);
                 DocumentClientException clientException = new BadRequestException(e);
                 clientException.Headers.Add(
                     HttpConstants.HttpHeaders.RequestValidationFailure, "1");
@@ -205,11 +207,11 @@ namespace Microsoft.Azure.Documents.Rntbd
                 callArguments.CommonArguments.SnapshotCallState(
                     out timeoutCode, out payloadSent);
                 Debug.Assert(TransportException.IsTimeout(timeoutCode));
-                this.dispatcher.CancelCall(callArguments.PreparedCall);
-                Channel.HandleTaskTimeout(tasks[1], activityId);
+                this.dispatcher.CancelCallAndNotifyConnectionOnTimeoutEvent(callArguments.PreparedCall, request.IsReadOnlyRequest);
+                Channel.HandleTaskTimeout(tasks[1], activityId, this.ConnectionCorrelationId);
                 Exception ex = completedTask.Exception?.InnerException;
-                DefaultTrace.TraceWarning("RNTBD call timed out on channel {0}. Error: {1}",
-                    this, timeoutCode);
+                DefaultTrace.TraceWarning("[RNTBD Channel {0}] RNTBD call timed out on channel {1}. Error: {2}",
+                    this.ConnectionCorrelationId, this, timeoutCode);
                 Debug.Assert(callArguments.CommonArguments.UserPayload);
                 throw new TransportException(
                     timeoutCode, ex, activityId, physicalAddress.Uri, this.ToString(),
@@ -221,6 +223,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Debug.Assert(object.ReferenceEquals(completedTask, tasks[1]));
                 timer.CancelTimer();
 
+                this.dispatcher.NotifyConnectionOnSuccessEvent();
                 if (completedTask.IsFaulted)
                 {
                     await completedTask;
@@ -261,7 +264,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             this.ThrowIfDisposed();
             this.disposed = true;
-            DefaultTrace.TraceInformation("Disposing RNTBD Channel {0}", this);
+            DefaultTrace.TraceInformation("[RNTBD Channel {0}] Disposing RNTBD Channel {1}", this.ConnectionCorrelationId, this);
 
             Task initTask = null;
             this.stateLock.EnterWriteLock();
@@ -286,8 +289,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                 catch (Exception e)
                 {
                     DefaultTrace.TraceWarning(
-                        "{0} initialization failed. Consuming the task " +
-                        "exception in {1}. Server URI: {2}. Exception: {3}",
+                        "[RNTBD Channel {0}] {1} initialization failed. Consuming the task " +
+                        "exception in {2}. Server URI: {3}. Exception: {4}",
+                        this.ConnectionCorrelationId,
                         nameof(Channel),
                         nameof(IDisposable.Dispose),
                         this.serverUri,
@@ -348,7 +352,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         out timeoutCode, out payloadSent);
                     Debug.Assert(TransportException.IsTimeout(timeoutCode));
                     DefaultTrace.TraceWarning(
-                        "RNTBD waiting to open timed out on channel {0}. Error: {1}", this, timeoutCode);
+                        "[RNTBD Channel {0}] RNTBD waiting to open timed out on channel {1}. Error: {2}", this.ConnectionCorrelationId, this, timeoutCode);
                     throw new TransportException(
                         timeoutCode, null, this.openArguments.CommonArguments.ActivityId,
                         this.serverUri, this.ToString(),
@@ -386,11 +390,12 @@ namespace Microsoft.Azure.Documents.Rntbd
                         Debug.Assert(TransportException.IsTimeout(timeoutCode));
                         Channel.HandleTaskTimeout(
                             tasks[1],
-                            this.openArguments.CommonArguments.ActivityId);
+                            this.openArguments.CommonArguments.ActivityId,
+                            this.ConnectionCorrelationId);
                         Exception ex = completedTask.Exception?.InnerException;
                         DefaultTrace.TraceWarning(
-                            "RNTBD open timed out on channel {0}. Error: {1}", this,
-                            timeoutCode);
+                            "[RNTBD Channel {0}] RNTBD open timed out on channel {1}. Error: {2}",
+                            this.ConnectionCorrelationId, this, timeoutCode);
                         Debug.Assert(!this.openArguments.CommonArguments.UserPayload);
                         throw new TransportException(
                             timeoutCode, ex, this.openArguments.CommonArguments.ActivityId,
@@ -421,8 +426,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     HttpConstants.HttpHeaders.ActivityId,
                     this.openArguments.CommonArguments.ActivityId.ToString());
                 DefaultTrace.TraceWarning(
-                    "Channel.InitializeAsync failed. Channel: {0}. DocumentClientException: {1}",
-                    this, e);
+                    "[RNTBD Channel {0}] Channel.InitializeAsync failed. Channel: {1}. DocumentClientException: {2}",
+                    this.ConnectionCorrelationId, this, e);
 
                 throw;
             }
@@ -431,8 +436,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.FinishInitialization(State.Closed);
 
                 DefaultTrace.TraceWarning(
-                    "Channel.InitializeAsync failed. Channel: {0}. TransportException: {1}",
-                    this, e);
+                    "[RNTBD Channel {0}] Channel.InitializeAsync failed. Channel: {1}. TransportException: {2}",
+                    this.ConnectionCorrelationId, this, e);
 
                 throw;
             }
@@ -441,9 +446,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.FinishInitialization(State.Closed);
 
                 DefaultTrace.TraceWarning(
-                    "Channel.InitializeAsync failed. Wrapping exception in " +
-                    "TransportException. Channel: {0}. Inner exception: {1}",
-                    this, e);
+                    "[RNTBD Channel {0}] Channel.InitializeAsync failed. Wrapping exception in " +
+                    "TransportException. Channel: {1}. Inner exception: {2}",
+                    this.ConnectionCorrelationId, this, e);
 
                 Debug.Assert(!this.openArguments.CommonArguments.UserPayload);
                 throw new TransportException(
@@ -498,8 +503,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                     Debug.Assert(this.serverUri != null);
                     Debug.Assert(completedTask.Exception != null);
                     DefaultTrace.TraceWarning(
-                        "{0} initialization failed. Consuming the task " +
-                        "exception asynchronously. Server URI: {1}. Exception: {2}",
+                        "[RNTBD Channel {0}] {1} initialization failed. Consuming the task " +
+                        "exception asynchronously. Server URI: {2}. Exception: {3}",
+                        this.ConnectionCorrelationId,
                         nameof(Channel),
                         this.serverUri,
                         completedTask.Exception.InnerException?.Message);
@@ -508,7 +514,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static void HandleTaskTimeout(Task runawayTask, Guid activityId)
+        private static void HandleTaskTimeout(Task runawayTask, Guid activityId, Guid connectionCorrelationId)
         {
             Task ignored = runawayTask.ContinueWith(task =>
             {
@@ -517,8 +523,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Debug.Assert(task.Exception != null);
                 Exception e = task.Exception.InnerException;
                 DefaultTrace.TraceInformation(
-                    "Timed out task completed. Activity ID = {0}. HRESULT = {1:X}. Exception: {2}",
-                    activityId, e.HResult, e);
+                    "[RNTBD Channel {0}] Timed out task completed. Activity ID = {1}. HRESULT = {2:X}. Exception: {3}",
+                    connectionCorrelationId, activityId, e.HResult, e);
             },
             TaskContinuationOptions.OnlyOnFaulted);
         }

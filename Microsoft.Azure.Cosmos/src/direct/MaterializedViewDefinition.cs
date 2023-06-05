@@ -66,13 +66,28 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        // This property is used for identifying the collection as cold storage tier collection
+        [JsonProperty(PropertyName = Constants.Properties.MaterializedViewContainerType, NullValueHandling = NullValueHandling.Ignore)]
+        public string ContainerType
+        {
+            get
+            {
+                return base.GetValue<string>(Constants.Properties.MaterializedViewContainerType);
+            }
+            set
+            {
+                this.SetValue(Constants.Properties.MaterializedViewContainerType, value);
+            }
+        }
+
         public object Clone()
         {
             MaterializedViewDefinition cloned = new MaterializedViewDefinition()
             {
                 SourceCollectionRid = this.SourceCollectionRid,
                 Definition = this.Definition,
-                ApiSpecificDefinition = this.ApiSpecificDefinition
+                ApiSpecificDefinition = this.ApiSpecificDefinition,
+                ContainerType = this.ContainerType
             };
             return cloned;
         }

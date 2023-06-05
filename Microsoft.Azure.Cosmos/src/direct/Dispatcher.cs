@@ -21,8 +21,6 @@ namespace Microsoft.Azure.Documents.Rntbd
     using Trace = Microsoft.Azure.Documents.Trace;
 #endif
 
-    using ResponsePool = RntbdConstants.RntbdEntityPool<RntbdConstants.Response, RntbdConstants.ResponseIdentifiers>;
-
     // Dispatcher encapsulates the state and logic needed to dispatch multiple requests through
     // a single connection.
     internal sealed class Dispatcher : IDisposable
@@ -65,6 +63,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly object connectionLock = new object();
         private PooledTimer idleTimer; // Guarded by connectionLock
         private Task idleTimerTask;  // Guarded by connectionLock
+
+        public Guid ConnectionCorrelationId { get => this.connection.ConnectionCorrelationId; }
 
         public Dispatcher(
             Uri serverUri,
@@ -145,8 +145,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     // Connection.Healthy shouldn't be called while the connection is being disposed, or after.
                     // To avoid additional locking, handle the exception here and store the outcome.
                     DefaultTrace.TraceWarning(
-                        "RNTBD Dispatcher {0}: ObjectDisposedException from Connection.Healthy",
-                        this);
+                        "[RNTBD Dispatcher {0}] {1} ObjectDisposedException from Connection.Healthy",
+                        this.ConnectionCorrelationId, this);
                     healthy = false;
                 }
 
@@ -201,9 +201,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                         Debug.Assert(this.serverUri != null);
                         Debug.Assert(completedTask.Exception != null);
                         DefaultTrace.TraceWarning(
-                            "RNTBD Dispatcher.ReceiveLoopAsync failed. Consuming the task " +
-                            "exception asynchronously. Dispatcher: {0}. Exception: {1}",
-                            this, completedTask.Exception?.InnerException);
+                            "[RNTBD Dispatcher {0}] Dispatcher.ReceiveLoopAsync failed. Consuming the task " +
+                            "exception asynchronously. Dispatcher: {1}. Exception: {2}",
+                            this.ConnectionCorrelationId, this, completedTask.Exception?.InnerException);
                     },
                     default(CancellationToken),
                     TaskContinuationOptions.OnlyOnFaulted,
@@ -291,6 +291,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             // The current task scheduler must be used for correctness and to
             // track per tenant physical charges for the compute gateway.
             using (CallInfo callInfo = new CallInfo(
+                this.ConnectionCorrelationId,
                 args.CommonArguments.ActivityId,
                 args.PreparedCall.Uri,
                 TaskScheduler.Current,
@@ -353,14 +354,35 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        public void CancelCall(PrepareCallResult preparedCall)
+        /// <summary>
+        /// Cancels a Rntbd call and notifies the connection by incrementing the transit timeout counters.
+        /// </summary>
+        /// <param name="preparedCall">An instance of <see cref="PrepareCallResult"/> containing the call result.</param>
+        /// <param name="isReadOnly">A boolean flag indicating if the request is read only.</param>
+        public void CancelCallAndNotifyConnectionOnTimeoutEvent(
+            PrepareCallResult preparedCall,
+            bool isReadOnly)
         {
             this.ThrowIfDisposed();
+            this.connection.NotifyConnectionStatus(
+                isCompleted: true,
+                isReadRequest: isReadOnly);
+
             CallInfo call = this.RemoveCall(preparedCall.RequestId);
             if (call != null)
             {
                 call.Cancel();
             }
+        }
+
+        /// <summary>
+        /// Notifies the connection on a successful event, by resetting the transit timeout counters.
+        /// </summary>
+        public void NotifyConnectionOnSuccessEvent()
+        {
+            this.ThrowIfDisposed();
+            this.connection.NotifyConnectionStatus(
+                isCompleted: true);
         }
 
         public override string ToString()
@@ -373,7 +395,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.ThrowIfDisposed();
             this.disposed = true;
 
-            DefaultTrace.TraceInformation("Disposing RNTBD Dispatcher {0}", this);
+            DefaultTrace.TraceInformation("[RNTBD Dispatcher {0}] Disposing RNTBD Dispatcher {1}", this.ConnectionCorrelationId, this);
 
             Task idleTimerTaskCopy = null;
             Debug.Assert(!Monitor.IsEntered(this.connectionLock));
@@ -397,12 +419,12 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             this.WaitTask(receiveTaskCopy, "receive loop");
 
-            DefaultTrace.TraceInformation("RNTBD Dispatcher {0} is disposed", this);
+            DefaultTrace.TraceInformation("[RNTBD Dispatcher {0}] RNTBD Dispatcher {1} is disposed", this.ConnectionCorrelationId, this);
         }
 
         private void StartIdleTimer()
         {
-            DefaultTrace.TraceInformation("RNTBD idle connection monitor: Timer is starting...");
+            DefaultTrace.TraceInformation("[RNTBD Dispatcher {0}] RNTBD idle connection monitor: Timer is starting...", this.ConnectionCorrelationId);
 
             TimeSpan timeToIdle = TimeSpan.MinValue;
             bool scheduled = false;
@@ -416,7 +438,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     if (!active)
                     {
                         // This would be rather unexpected.
-                        DefaultTrace.TraceCritical("RNTBD Dispatcher {0}: New connection already idle.", this);
+                        DefaultTrace.TraceCritical("[RNTBD Dispatcher {0}][{1}] New connection already idle.", this.ConnectionCorrelationId, this);
                         return;
                     }
 
@@ -429,12 +451,12 @@ namespace Microsoft.Azure.Documents.Rntbd
                 if (scheduled)
                 {
                     DefaultTrace.TraceInformation(
-                        "RNTBD idle connection monitor {0}: Timer is scheduled to fire {1} seconds later at {2}.",
-                        this, timeToIdle.TotalSeconds, DateTime.UtcNow + timeToIdle);
+                        "[RNTBD Dispatcher {0}] RNTBD idle connection monitor {1}: Timer is scheduled to fire {2} seconds later at {3}.",
+                        this.ConnectionCorrelationId, this, timeToIdle.TotalSeconds, DateTime.UtcNow + timeToIdle);
                 }
                 else
                 {
-                    DefaultTrace.TraceInformation("RNTBD idle connection monitor {0}: Timer is not scheduled.", this);
+                    DefaultTrace.TraceInformation("[RNTBD Dispatcher {0}] RNTBD idle connection monitor {1}: Timer is not scheduled.", this.ConnectionCorrelationId, this);
                 }
             }
         }
@@ -466,8 +488,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     if (this.calls.Count > 0)
                     {
                         DefaultTrace.TraceCritical(
-                            "RNTBD Dispatcher {0}: Looks idle but still has {1} pending requests",
-                            this, this.calls.Count);
+                            "[RNTBD Dispatcher {0}][{1}] Looks idle but still has {2} pending requests",
+                            this.ConnectionCorrelationId, this, this.calls.Count);
                         active = true;
                     }
                     else
@@ -502,8 +524,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 failedTask =>
                 {
                     DefaultTrace.TraceWarning(
-                        "RNTBD Dispatcher {0} idle timer callback failed: {1}",
-                        this, failedTask.Exception?.InnerException);
+                        "[RNTBD Dispatcher {0}][{1}] Idle timer callback failed: {2}",
+                        this.ConnectionCorrelationId, this, failedTask.Exception?.InnerException);
                 },
                 TaskContinuationOptions.OnlyOnFaulted);
         }
@@ -529,8 +551,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             catch (AggregateException e)
             {
                 DefaultTrace.TraceWarning(
-                    "RNTBD Dispatcher {0}: Registered cancellation callbacks failed: {1}",
-                    this, e);
+                    "[RNTBD Dispatcher {0}][{1}] Registered cancellation callbacks failed: {2}",
+                    this.ConnectionCorrelationId, this, e);
                 // Deliberately ignoring the exception.
             }
         }
@@ -591,8 +613,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             catch (Exception e)
             {
                 DefaultTrace.TraceWarning(
-                    "RNTBD Dispatcher {0}: Parallel task failed: {1}. Exception: {2}",
-                    this, description, e);
+                    "[RNTBD Dispatcher {0}][{1}] Parallel task failed: {2}. Exception: {3}",
+                    this.ConnectionCorrelationId, this, description, e);
                 // Intentionally swallowing the exception. The caller can't
                 // do anything useful with it.
             }
@@ -688,6 +710,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
             }
 
+            this.NotifyConnectionOnSuccessEvent();
             args.OpenTimeline.RecordRntbdHandshakeFinishTime();
         }
 
@@ -696,14 +719,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             CancellationToken cancellationToken = this.cancellation.Token;
             ChannelCommonArguments args = new ChannelCommonArguments(
                 Guid.Empty, TransportErrorCode.ReceiveTimeout, true);
-            ResponsePool.EntityOwner response = default;
             Connection.ResponseMetadata responseMd = null;
             try
             {
-                while (!cancellationToken.IsCancellationRequested)
+                bool hasTransportErrors = false;
+                while (!hasTransportErrors && !cancellationToken.IsCancellationRequested)
                 {
                     args.ActivityId = Guid.Empty;
-                    response = ResponsePool.Instance.Get();
                     responseMd = await this.connection.ReadResponseMetadataAsync(args);
                     ArraySegment<byte> metadata = responseMd.Metadata;
 
@@ -712,35 +734,38 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                     args.ActivityId = header.ActivityId;
                     BytesDeserializer deserializer = new BytesDeserializer(metadata.Array, metadata.Count);
-                    Debug.Assert(response.Entity != null);
-                    response.Entity.ParseFrom(ref deserializer);
 
                     MemoryStream bodyStream = null;
-                    if (response.Entity.payloadPresent.value.valueByte != (byte) 0x00)
+                    if (HeadersTransportSerialization.TryParseMandatoryResponseHeaders(ref deserializer, out bool payloadPresent, out uint transportRequestId))
                     {
-                        bodyStream = await this.connection.ReadResponseBodyAsync(args);
+                        if (payloadPresent)
+                        {
+                            bodyStream = await this.connection.ReadResponseBodyAsync(args);
+                        }
+                        this.DispatchRntbdResponse(responseMd, header, bodyStream, metadata.Array, metadata.Count, transportRequestId);
+                    }
+                    else
+                    {
+                        hasTransportErrors = true;
+                        this.DispatchChannelFailureException(TransportExceptions.GetInternalServerErrorException(this.serverUri, RMResources.MissingRequiredHeader));
                     }
 
-                    this.DispatchRntbdResponse(responseMd, response, header, bodyStream);
                     responseMd = null;
                 }
                 this.DispatchCancellation();
             }
             catch (OperationCanceledException)
             {
-                response.Dispose();
                 responseMd?.Dispose();
                 this.DispatchCancellation();
             }
             catch (ObjectDisposedException)
             {
-                response.Dispose();
                 responseMd?.Dispose();
                 this.DispatchCancellation();
             }
             catch (Exception e)
             {
-                response.Dispose();
                 responseMd?.Dispose();
                 this.DispatchChannelFailureException(e);
             }
@@ -769,22 +794,13 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private void DispatchRntbdResponse(
             Connection.ResponseMetadata responseMd,
-            ResponsePool.EntityOwner rntbdResponse,
             TransportSerialization.RntbdHeader responseHeader,
-            MemoryStream responseBody)
+            MemoryStream responseBody,
+            byte[] metadata,
+            int metadataLength,
+            uint transportRequestId)
         {
-            if (!rntbdResponse.Entity.transportRequestID.isPresent ||
-                (rntbdResponse.Entity.transportRequestID.GetTokenType() != RntbdTokenTypes.ULong))
-            {
-                responseBody?.Dispose();
-                rntbdResponse.Dispose();
-                responseMd.Dispose();
-                throw TransportExceptions.GetInternalServerErrorException(
-                    this.serverUri,
-                    RMResources.ServerResponseTransportRequestIdMissingError);
-            }
-
-            CallInfo call = this.RemoveCall(rntbdResponse.Entity.transportRequestID.value.valueULong);
+            CallInfo call = this.RemoveCall(transportRequestId);
             if (call != null)
             {
                 Debug.Assert(this.serverProperties != null);
@@ -792,13 +808,12 @@ namespace Microsoft.Azure.Documents.Rntbd
                 call.TransportRequestStats.RecordState(TransportRequestStats.RequestStage.Received);
                 call.TransportRequestStats.ResponseMetadataSizeInBytes = responseMd.Metadata.Count;
                 call.TransportRequestStats.ResponseBodySizeInBytes = responseBody?.Length;
-                call.SetResponse(responseMd, rntbdResponse, responseHeader, responseBody, this.serverProperties.Version);
+                call.SetResponse(responseMd, responseHeader, responseBody, this.serverProperties.Version, metadata, metadataLength);
             }
             else
             {
                 responseBody?.Dispose();
                 responseMd.Dispose();
-                rntbdResponse.Dispose();
             }
         }
 
@@ -829,7 +844,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 // TransportException.
                 // In other cases, it may be reasonable to handle additional exception types here.
                 DefaultTrace.TraceWarning(
-                    "Not a TransportException. Will not raise the connection state change event: {0}", ex);
+                    "[RNTBD Dispatcher {0}] Not a TransportException. Will not raise the connection state change event: {1}",
+                    this.ConnectionCorrelationId, ex);
                 return;
             }
 
@@ -847,8 +863,8 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 default:
                     DefaultTrace.TraceWarning(
-                        "Will not raise the connection state change event for TransportException error code {0}. Exception: {1}",
-                        transportException.ErrorCode.ToString(), transportException.Message);
+                        "[RNTBD Dispatcher {0}] Will not raise the connection state change event for TransportException error code {1}. Exception: {2}",
+                        this.ConnectionCorrelationId, transportException.ErrorCode.ToString(), transportException.Message);
                     return;
             }
             IConnectionStateListener connectionStateListener = this.connectionStateListener;
@@ -859,10 +875,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 connectionStateListener.OnConnectionEvent(connectionEvent, exceptionTime, serverKey);
             });
-            t.ContinueWith(failedTask =>
+
+            t.ContinueWith(static (failedTask, connectionIdObject) =>
             {
-                DefaultTrace.TraceError("OnConnectionEvent callback failed: {0}", failedTask.Exception?.InnerException);
-            }, TaskContinuationOptions.OnlyOnFaulted);
+                DefaultTrace.TraceError("[RNTBD Dispatcher {0}] OnConnectionEvent callback failed: {1}", connectionIdObject, failedTask.Exception?.InnerException);
+            }, this.ConnectionCorrelationId, TaskContinuationOptions.OnlyOnFaulted);
         }
 
         private void DispatchCancellation()
@@ -918,6 +935,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             private readonly SemaphoreSlim sendComplete =
                 new SemaphoreSlim(0);
 
+            private readonly Guid connectionCorrelationId;
             private readonly Guid activityId;
             private readonly Uri uri;
             private readonly TaskScheduler scheduler;
@@ -928,13 +946,15 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             public TransportRequestStats TransportRequestStats { get; }
 
-            public CallInfo(Guid activityId, Uri uri, TaskScheduler scheduler, TransportRequestStats transportRequestStats)
+            public CallInfo(Guid connectionCorrelationId, Guid activityId, Uri uri, TaskScheduler scheduler, TransportRequestStats transportRequestStats)
             {
+                Debug.Assert(connectionCorrelationId != Guid.Empty);
                 Debug.Assert(activityId != Guid.Empty);
                 Debug.Assert(uri != null);
                 Debug.Assert(scheduler != null);
                 Debug.Assert(transportRequestStats != null);
 
+                this.connectionCorrelationId = connectionCorrelationId;
                 this.activityId = activityId;
                 this.uri = uri;
                 this.scheduler = scheduler;
@@ -959,10 +979,11 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             public void SetResponse(
                 Connection.ResponseMetadata responseMd,
-                ResponsePool.EntityOwner rntbdResponse,
                 TransportSerialization.RntbdHeader responseHeader,
                 MemoryStream responseBody,
-                string serverVersion)
+                string serverVersion,
+                byte[] metadata,
+                int metadataLength)
             {
                 this.ThrowIfDisposed();
                 // Call SetResult asynchronously. Otherwise, the tasks awaiting on
@@ -981,12 +1002,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                         Trace.CorrelationManager.ActivityId = this.activityId;
                         try
                         {
+                            BytesDeserializer bytesDeserializer = new BytesDeserializer(metadata, metadataLength);
                             StoreResponse storeResponse = TransportSerialization.MakeStoreResponse(
                                 responseHeader.Status,
                                 responseHeader.ActivityId,
-                                rntbdResponse.Entity,
                                 responseBody,
-                                serverVersion);
+                                serverVersion,
+                                ref bytesDeserializer);
                             this.completion.SetResult(storeResponse);
                         }
                         catch (Exception e)
@@ -996,7 +1018,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                         }
                         finally
                         {
-                            rntbdResponse.Dispose();
                             responseMd.Dispose();
                         }
                     });
@@ -1067,13 +1088,14 @@ namespace Microsoft.Azure.Documents.Rntbd
                     CancellationToken.None,
                     TaskCreationOptions.DenyChildAttach,
                     this.scheduler).ContinueWith(
-                    failedTask =>
+                    static (failedTask, connectionIdObject) =>
                     {
                         DefaultTrace.TraceError(
-                            "Unexpected: Rntbd asynchronous completion " +
+                            "[RNTBD Dispatcher.CallInfo {0}] Unexpected: Rntbd asynchronous completion " +
                             "call failed. Consuming the task exception asynchronously. " +
-                            "Exception: {0}", failedTask.Exception?.InnerException);
+                            "Exception: {1}", connectionIdObject, failedTask.Exception?.InnerException);
                     },
+                    this.connectionCorrelationId,
                     TaskContinuationOptions.OnlyOnFaulted);
             }
 
@@ -1084,13 +1106,14 @@ namespace Microsoft.Azure.Documents.Rntbd
                     CancellationToken.None,
                     TaskCreationOptions.DenyChildAttach,
                     this.scheduler).Unwrap().ContinueWith(
-                    failedTask =>
+                    static (failedTask, connectionIdObject) =>
                     {
                         DefaultTrace.TraceError(
-                            "Unexpected: Rntbd asynchronous completion " +
+                            "[RNTBD Dispatcher.CallInfo {0}] Unexpected: Rntbd asynchronous completion " +
                             "call failed. Consuming the task exception asynchronously. " +
-                            "Exception: {0}", failedTask.Exception?.InnerException);
+                            "Exception: {1}", connectionIdObject, failedTask.Exception?.InnerException);
                     },
+                    this.connectionCorrelationId,
                     TaskContinuationOptions.OnlyOnFaulted);
             }
 
