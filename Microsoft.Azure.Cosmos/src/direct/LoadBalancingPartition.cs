@@ -208,15 +208,36 @@ namespace Microsoft.Azure.Documents.Rntbd
         internal Task OpenChannelAsync(Guid activityId)
         {
             this.capacityLock.EnterWriteLock();
-            try
+            if (this.capacity < this.maxCapacity)
             {
-                return this.OpenChannelAndIncrementCapacity(
-                    activityId: activityId,
-                    waitForBackgroundInitializationComplete: true);
+                try
+                {
+                    return this.OpenChannelAndIncrementCapacity(
+                        activityId: activityId,
+                        waitForBackgroundInitializationComplete: true);
+                }
+                finally
+                {
+                    this.capacityLock.ExitWriteLock();
+                }
             }
-            finally
+            else
             {
+                string errorMessage = $"Failed to open channels to server {this.serverUri} because the current channel capacity {this.capacity} has exceeded the maaximum channel capacity limit: {this.maxCapacity}";
                 this.capacityLock.ExitWriteLock();
+
+                DefaultTrace.TraceWarning(
+                    message: errorMessage);
+
+                // Converting the error into transport exception.
+                throw new TransportException(
+                    errorCode: TransportErrorCode.ChannelOpenFailed,
+                    innerException: new Exception(errorMessage),
+                    activityId: activityId,
+                    requestUri: this.serverUri,
+                    this.ToString(),
+                    userPayload: false,
+                    payloadSent: false);
             }
         }
 
