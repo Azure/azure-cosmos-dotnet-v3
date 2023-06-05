@@ -1014,6 +1014,50 @@ namespace Microsoft.Azure.Documents.Routing
             string maxEPK = minEPK + PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
             return new Range<string>(minEPK, maxEPK, true, false);
         }
+
+        private static bool IsPartiallySpecifiedPartitionKeyRange(
+            PartitionKeyDefinition partitionKeyDefinition,
+            Range<PartitionKeyInternal> internalRange)
+        {
+            //To be a prefixed key, it has to be MultiHash containers with >1 partition key paths.
+            if (partitionKeyDefinition.Kind != PartitionKind.MultiHash ||
+                partitionKeyDefinition.Paths.Count <= 1)
+            {
+                return false;
+            }
+
+            //Prefixed key should not be fully specified
+            //Min and Max PartitionKeyValue, should be the same value.
+            //We do not expect internalRange.Min and Max to have different values
+            if (internalRange.Min.Components.Count == partitionKeyDefinition.Paths.Count ||
+                internalRange.Max.Components.Count == partitionKeyDefinition.Paths.Count ||
+                !internalRange.Min.Equals(internalRange.Max))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public static Range<string> GetEffectivePartitionKeyRange(
+            PartitionKeyDefinition partitionKeyDefinition,
+            Range<PartitionKeyInternal> range)
+        {
+            if (range == null)
+            {
+                throw new ArgumentNullException(nameof(range));
+            }
+
+            string minEPK = range.Min.GetEffectivePartitionKeyString(partitionKeyDefinition, false);
+            string maxEPK = range.Max.GetEffectivePartitionKeyString(partitionKeyDefinition, false);
+
+            if (PartitionKeyInternal.IsPartiallySpecifiedPartitionKeyRange(partitionKeyDefinition, range))
+            {
+                maxEPK = maxEPK + PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey;
+            }
+
+            return new Range<string>(minEPK, maxEPK, range.IsMinInclusive, range.IsMaxInclusive);
+        }
     }
 
 }

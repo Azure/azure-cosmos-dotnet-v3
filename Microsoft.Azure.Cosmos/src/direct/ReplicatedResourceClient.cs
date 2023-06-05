@@ -139,17 +139,12 @@ namespace Microsoft.Azure.Documents
         }
         #endregion
 
-        public Task<StoreResponse> InvokeAsync(DocumentServiceRequest request, Func<DocumentServiceRequest, Task> prepareRequestAsyncDelegate = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<StoreResponse> InvokeAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default(CancellationToken))
         {
             Func<GoneAndRetryRequestRetryPolicyContext, Task<StoreResponse>> funcDelegate = async (GoneAndRetryRequestRetryPolicyContext contextArguments) =>
             {
-                if (prepareRequestAsyncDelegate != null)
-                {
-                    await prepareRequestAsyncDelegate(request);
-                }
-
                 request.Headers[HttpConstants.HttpHeaders.ClientRetryAttemptCount] = contextArguments.ClientRetryCount.ToString(CultureInfo.InvariantCulture);
-                request.Headers[HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest] = contextArguments.RemainingTimeInMsOnClientRequest.TotalMilliseconds.ToString();
+                request.Headers[HttpConstants.HttpHeaders.RemainingTimeInMsOnClientRequest] = contextArguments.RemainingTimeInMsOnClientRequest.TotalMilliseconds.ToString(CultureInfo.InvariantCulture);
 
                 return await this.InvokeAsync(
                     request,
@@ -188,11 +183,6 @@ namespace Microsoft.Azure.Documents
                 {
                     DocumentServiceRequest requestClone = freshRequest.Clone();
                     requestClone.RequestContext.ClientRequestStatistics = sharedStatistics;
-
-                    if (prepareRequestAsyncDelegate != null)
-                    {
-                        await prepareRequestAsyncDelegate(requestClone);
-                    }
 
                     DefaultTrace.TraceInformation("Executing inBackoffAlternateCallbackMethod on regionIndex {0}", retryContext.RegionRerouteAttemptCount);
                     requestClone.RequestContext.RouteToLocation(

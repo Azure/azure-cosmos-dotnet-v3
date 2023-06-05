@@ -29,22 +29,19 @@ namespace Microsoft.Azure.Documents.Rntbd
     // mechanisms (SSL stream, connection state).
     internal sealed class Connection : IDisposable
     {
-        private const string socketOptionTcpKeepAliveIntervalName = "AZURE_COSMOS_TCP_KEEPALIVE_INTERVAL_SECONDS";
-        private const string socketOptionTcpKeepAliveTimeName = "AZURE_COSMOS_TCP_KEEPALIVE_TIME_SECONDS";
         private const int ResponseLengthByteLimit = int.MaxValue;
         private const SslProtocols TlsProtocols = SslProtocols.Tls12;
         private const uint TcpKeepAliveIntervalSocketOptionEnumValue = 17;
         private const uint TcpKeepAliveTimeSocketOptionEnumValue = 3;
         private const uint DefaultSocketOptionTcpKeepAliveInterval = 1;
         private const uint DefaultSocketOptionTcpKeepAliveTime = 30;
-        private const int MinNumberOfSendsSinceLastReceiveForUnhealthyConnection = 3;
         private static readonly uint SocketOptionTcpKeepAliveInterval = GetUInt32FromEnvironmentVariableOrDefault(
-            socketOptionTcpKeepAliveIntervalName,
+            Constants.EnvironmentVariables.SocketOptionTcpKeepAliveIntervalName,
             minValue: 1,
             maxValue: 100,
             defaultValue: DefaultSocketOptionTcpKeepAliveInterval);
         private static readonly uint SocketOptionTcpKeepAliveTime = GetUInt32FromEnvironmentVariableOrDefault(
-            socketOptionTcpKeepAliveTimeName,
+            Constants.EnvironmentVariables.SocketOptionTcpKeepAliveTimeName,
             minValue: 1,
             maxValue: 100,
             defaultValue: DefaultSocketOptionTcpKeepAliveTime);
@@ -58,39 +55,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             new Lazy<bool>(Connection.IsKeepAliveCustomizationSupported,
                 LazyThreadSafetyMode.ExecutionAndPublication);
 
-        private static readonly byte[] healthCheckBuffer = new byte[1];
         private static readonly TimeSpan recentReceiveWindow = TimeSpan.FromSeconds(1.0);
 
-        // The connection should not declare itself unhealthy if a send was
-        // attempted very recently. As such, ignore
-        // (lastSendAttemptTime - lastSendTime) gaps lower than sendHangGracePeriod.
-        // The grace period should be large enough to accommodate slow sends.
-        // In effect, a setting of 2s requires the client to be able to send
-        // data at least at 1 MB/s for 2 MB documents.
-        private static readonly TimeSpan sendHangGracePeriod = TimeSpan.FromSeconds(2.0);
-
-        // The connection should not declare itself unhealthy if a send
-        // succeeded very recently. As such, ignore
-        // (lastSendTime - lastReceiveTime) gaps lower than receiveHangGracePeriod.
-        // The grace period should be large enough to accommodate the round trip
-        // time of the slowest server request. Assuming 1s of network RTT,
-        // a 2 MB request, a 2 MB response, a connection that can sustain
-        // 1 MB/s both ways, and a 5-second deadline at the server, 10 seconds
-        // should be enough.
-        private static readonly TimeSpan receiveHangGracePeriod = TimeSpan.FromSeconds(10.0);
-
+        private readonly Guid connectionCorrelationId;
         private readonly Uri serverUri;
         private readonly string hostNameCertificateOverride;
-
-        // The connection will declare itself unhealthy if the
-        // (lastSendTime - lastReceiveTime) gap grows beyond this value.
-        // receiveDelayLimit must be greater than receiveHangGracePeriod.
-        private readonly TimeSpan receiveDelayLimit;
-
-        // The connection will declare itself unhealthy if the
-        // (lastSendAttemptTime - lastSendTime) gap grows beyond this value.
-        // sendDelayLimit must be greater than sendHangGracePeriod.
-        private readonly TimeSpan sendDelayLimit;
 
         // Recyclable memory stream pool
         private readonly MemoryStreamPool memoryStreamPool;
@@ -133,8 +102,12 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private readonly object nameLock = new object();  // Acquired after timestampLock.
         private string name;  // Guarded by nameLock.
-
         private static int numberOfOpenTcpConnections;
+
+        /// <summary>
+        /// An instance of <see cref="ConnectionHealthChecker"/> to check the health of the connection.
+        /// </summary>
+        private readonly ConnectionHealthChecker healthChecker;
 
         public Connection(
             Uri serverUri,
@@ -148,38 +121,11 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             Debug.Assert(serverUri.PathAndQuery.Equals("/", StringComparison.Ordinal), serverUri.AbsoluteUri,
                 "The server URI must not specify a path and query");
+            this.connectionCorrelationId = Guid.NewGuid();
             this.serverUri = serverUri;
             this.hostNameCertificateOverride = hostNameCertificateOverride;
             this.BufferProvider = new BufferProvider();
             this.dnsResolutionFunction = dnsResolutionFunction ?? Connection.ResolveHostAsync;
-
-            if (receiveHangDetectionTime <= Connection.receiveHangGracePeriod)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(receiveHangDetectionTime),
-                    receiveHangDetectionTime,
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "{0} must be greater than {1} ({2})",
-                        nameof(receiveHangDetectionTime),
-                        nameof(Connection.receiveHangGracePeriod),
-                        Connection.receiveHangGracePeriod));
-            }
-            this.receiveDelayLimit = receiveHangDetectionTime;
-            if (sendHangDetectionTime <= Connection.sendHangGracePeriod)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(sendHangDetectionTime),
-                    sendHangDetectionTime,
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "{0} must be greater than {1} ({2})",
-                        nameof(sendHangDetectionTime),
-                        nameof(Connection.sendHangGracePeriod),
-                        Connection.sendHangGracePeriod));
-            }
-            this.sendDelayLimit = sendHangDetectionTime;
-
             this.lastSendAttemptTime = DateTime.MinValue;
             this.lastSendTime = DateTime.MinValue;
             this.lastReceiveTime = DateTime.MinValue;
@@ -199,6 +145,11 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             this.memoryStreamPool = memoryStreamPool;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
+
+            this.healthChecker = new (
+                sendDelayLimit: sendHangDetectionTime,
+                receiveDelayLimit: receiveHangDetectionTime,
+                idleConnectionTimeout: idleTimeout);
         }
 
         public static int NumberOfOpenTcpConnections { get { return Connection.numberOfOpenTcpConnections; } }
@@ -217,7 +168,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     return false;
                 }
 
-                DateTime now = DateTime.UtcNow;
                 this.SnapshotConnectionTimestamps(
                     out DateTime lastSendAttempt,
                     out DateTime lastSend,
@@ -225,92 +175,20 @@ namespace Microsoft.Azure.Documents.Rntbd
                     out DateTime? firstSendSinceLastReceive,
                     out long numberOfSendsSinceLastReceive);
 
-                // Assume that the connection is healthy if data was received
-                // recently.
-                if (now - lastReceive < Connection.recentReceiveWindow)
-                {
-                    return true;
-                }
-                // Black hole detection, part 1:
-                // Treat the connection as unhealthy if the gap between the last
-                // attempted send and the last successful send grew beyond
-                // acceptable limits, unless a send was attempted very recently.
-                // This is a sign of a hung send().
-                if ((lastSendAttempt - lastSend > this.sendDelayLimit) &&
-                    (now - lastSendAttempt > Connection.sendHangGracePeriod))
-                {
-                    DefaultTrace.TraceWarning(
-                        "Unhealthy RNTBD connection: Hung send: {0}. " +
-                        "Last send attempt: {1:o}. Last send: {2:o}. " +
-                        "Tolerance {3:c}",
-                        this, lastSendAttempt, lastSend, this.sendDelayLimit);
-                    return false;
-                }
-                // Black hole detection, part 2:
-                // Treat the connection as unhealthy if the gap between the last
-                // successful send and the last successful receive grew beyond
-                // acceptable limits, unless a send succeeded very recently and the number of
-                // outstanding receives is within reasonable limits.
-                if ((lastSend - lastReceive > this.receiveDelayLimit) &&
-                    (
-                        now - lastSend > Connection.receiveHangGracePeriod ||
-                        (
-                            numberOfSendsSinceLastReceive >= Connection.MinNumberOfSendsSinceLastReceiveForUnhealthyConnection &&
-                            firstSendSinceLastReceive != null &&
-                            now - firstSendSinceLastReceive > Connection.receiveHangGracePeriod
-                        )
-                    ))
-                {
-                    DefaultTrace.TraceWarning(
-                        "Unhealthy RNTBD connection: Replies not getting back: {0}. " +
-                        "Last send: {1:o}. Last receive: {2:o}. Tolerance: {3:c}. " + 
-                        "First send since last receieve: {4:o}. # of sends since last receive: {5}",
-                        this, lastSend, lastReceive, this.receiveDelayLimit, 
-                        firstSendSinceLastReceive, numberOfSendsSinceLastReceive);
-                    return false;
-                }
-
-                if (this.idleConnectionTimeout > TimeSpan.Zero)
-                {
-                    // idle timeout is enabled
-                    if (now - lastReceive > this.idleConnectionTimeout)
-                    {
-                        return false;
-                    }
-                }
-
-                // See https://aka.ms/zero-byte-send.
-                // Socket.Send is expensive. Keep this operation last in the chain
-                try
-                {
-                    Socket socket = this.tcpClient.Client;
-                    if (socket == null || !socket.Connected)
-                    {
-                        return false;
-                    }
-                    Debug.Assert(!socket.Blocking);
-                    socket.Send(Connection.healthCheckBuffer, 0, 0);
-                    return true;
-                }
-                catch (SocketException e)
-                {
-                    bool healthy = (e.SocketErrorCode == SocketError.WouldBlock);
-                    if (!healthy)
-                    {
-                        DefaultTrace.TraceWarning(
-                            "Unhealthy RNTBD connection. Socket error code: {0}",
-                            e.SocketErrorCode.ToString());
-                    }
-                    return healthy;
-                }
-                catch (ObjectDisposedException)
-                {
-                    return false;
-                }
+                return this.healthChecker.IsHealthy(
+                    currentTime: DateTime.UtcNow,
+                    lastSendAttempt: lastSendAttempt,
+                    lastSend: lastSend,
+                    lastReceive: lastReceive,
+                    firstSendSinceLastReceive: firstSendSinceLastReceive,
+                    numberOfSendsSinceLastReceive: numberOfSendsSinceLastReceive,
+                    socket: this.tcpClient.Client);
             }
         }
 
         public bool Disposed { get { return this.disposed; } }
+
+        public Guid ConnectionCorrelationId {  get => this.connectionCorrelationId; }
 
         public sealed class ResponseMetadata : IDisposable
         {
@@ -403,8 +281,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             if (totalLength > Connection.ResponseLengthByteLimit)
             {
                 header.Dispose();
-                DefaultTrace.TraceCritical("RNTBD header length says {0} but expected at most {1} bytes. Connection: {2}",
-                    totalLength, Connection.ResponseLengthByteLimit, this);
+                DefaultTrace.TraceCritical("[RNTBD Connection {0}] RNTBD header length says {1} but expected at most {2} bytes. Connection: {3}",
+                    this.connectionCorrelationId, totalLength, Connection.ResponseLengthByteLimit, this);
                 throw TransportExceptions.GetInternalServerErrorException(
                     this.serverUri,
                     string.Format(
@@ -416,8 +294,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             if (totalLength < metadataHeaderLength)
             {
                 DefaultTrace.TraceCritical(
-                    "Invalid RNTBD header length {0} bytes. Expected at least {1} bytes. Connection: {2}",
-                    totalLength, metadataHeaderLength, this);
+                    "[RNTBD Connection {0}] Invalid RNTBD header length {1} bytes. Expected at least {2} bytes. Connection: {3}",
+                    this.connectionCorrelationId, totalLength, metadataHeaderLength, this);
                 throw TransportExceptions.GetInternalServerErrorException(
                     this.serverUri,
                     string.Format(
@@ -448,7 +326,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             // response size.
             if (length > Connection.ResponseLengthByteLimit)
             {
-                DefaultTrace.TraceCritical("Invalid RNTBD response body length {0} bytes. Connection: {1}", length, this);
+                DefaultTrace.TraceCritical("[RNTBD Connection {0}] Invalid RNTBD response body length {1} bytes. Connection: {2}", this.connectionCorrelationId, length, this);
                 throw TransportExceptions.GetInternalServerErrorException(
                     this.serverUri,
                     string.Format(
@@ -490,7 +368,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 Debug.Assert(this.tcpClient.Client != null);
                 DefaultTrace.TraceInformation(
-                    "Disposing RNTBD connection {0} -> {1} to server {2}. {3}",
+                    "[RNTBD Connection {0}] Disposing RNTBD connection {1} -> {2} to server {3}. {4}",
+                    this.connectionCorrelationId,
                     this.localEndPoint,
                     this.remoteEndPoint,
                     this.serverUri, connectionTimestampsText);
@@ -507,8 +386,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             else
             {
                 DefaultTrace.TraceInformation(
-                    "Disposing unused RNTBD connection to server {0}. {1}",
-                    this.serverUri, connectionTimestampsText);
+                    "[RNTBD Connection {0}] Disposing unused RNTBD connection to server {1}. {2}",
+                    this.connectionCorrelationId, this.serverUri, connectionTimestampsText);
             }
 
             if (this.tcpClient != null)
@@ -566,6 +445,20 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Notify the connection health status by updating the transit timeout counters.
+        /// </summary>
+        /// <param name="isCompleted">A boolean flag indicating if the request is completed successfully.</param>
+        /// <param name="isReadRequest">An optional boolean flag indicating if the current operation is read-only in nature.</param>
+        internal void NotifyConnectionStatus(
+            bool isCompleted,
+            bool isReadRequest = false)
+        {
+            this.healthChecker.UpdateTransitTimeoutCounters(
+                isCompleted,
+                isReadRequest);
         }
 
         #region Test hook.
@@ -642,15 +535,15 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 this.UpdateLastSendAttemptTime();
 
-                DefaultTrace.TraceInformation("Port reuse mode: {0}. Connection: {1}", args.PortReuseMode, this);
+                DefaultTrace.TraceInformation("[RNTBD Connection {0}] Port reuse mode: {1}. Connection: {2}", this.connectionCorrelationId, args.PortReuseMode, this);
                 switch (args.PortReuseMode)
                 {
                     case PortReuseMode.ReuseUnicastPort:
-                        tcpClient = await Connection.ConnectUnicastPortAsync(this.serverUri, address);
+                        tcpClient = await Connection.ConnectUnicastPortAsync(this.serverUri, address, this.connectionCorrelationId);
                         break;
 
                     case PortReuseMode.PrivatePortPool:
-                        Tuple<TcpClient, bool> result = await Connection.ConnectUserPortAsync(this.serverUri, address, args.PortPool, this.ToString());
+                        Tuple<TcpClient, bool> result = await Connection.ConnectUserPortAsync(this.serverUri, address, args.PortPool, this.ToString(), this.connectionCorrelationId);
                         tcpClient = result.Item1;
                         bool portPoolUsed = result.Item2;
                         if (portPoolUsed)
@@ -660,7 +553,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         }
                         else
                         {
-                            DefaultTrace.TraceInformation("PrivatePortPool: Configured but actually not used. Connection: {0}", this);
+                            DefaultTrace.TraceInformation("[RNTBD Connection {0}] PrivatePortPool: Configured but actually not used. Connection: {1}", this.connectionCorrelationId, this);
                         }
 
                         break;
@@ -676,8 +569,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.UpdateLastReceiveTime();
                 args.OpenTimeline.RecordConnectFinishTime();
 
-                DefaultTrace.TraceInformation("RNTBD connection established {0} -> {1}",
-                    tcpClient.Client.LocalEndPoint, tcpClient.Client.RemoteEndPoint);
+                DefaultTrace.TraceInformation("[RNTBD Connection {0}] RNTBD connection established {1} -> {2}",
+                    this.connectionCorrelationId, tcpClient.Client.LocalEndPoint, tcpClient.Client.RemoteEndPoint);
                 TransportClient.GetTransportPerformanceCounters().IncrementRntbdConnectionEstablishedCount();
                 string newName = string.Format(
                     CultureInfo.InvariantCulture,
@@ -707,8 +600,8 @@ namespace Microsoft.Azure.Documents.Rntbd
 #endif
 
                 DefaultTrace.TraceInformation(
-                    "Connection.OpenSocketAsync failed. Converting to TransportException. " +
-                    "Connection: {0}. Inner exception: {1}", this, ex);
+                    "[RNTBD Connection {0}] Connection.OpenSocketAsync failed. Converting to TransportException. " +
+                    "Connection: {1}. Inner exception: {2}", this.connectionCorrelationId, this, ex);
                 Debug.Assert(errorCode != TransportErrorCode.Unknown);
                 Debug.Assert(!args.CommonArguments.UserPayload);
                 Debug.Assert(!args.CommonArguments.PayloadSent);
@@ -754,14 +647,14 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.stream = sslStream;
                 this.streamReader = new RntbdStreamReader(this.stream);
                 Debug.Assert(this.tcpClient != null);
-                DefaultTrace.TraceInformation("RNTBD SSL handshake complete {0} -> {1}",
-                    this.localEndPoint, this.remoteEndPoint);
+                DefaultTrace.TraceInformation("[RNTBD Connection {0}] SSL handshake complete {1} -> {2}",
+                    this.connectionCorrelationId, this.localEndPoint, this.remoteEndPoint);
             }
             catch (Exception ex)
             {
                 DefaultTrace.TraceInformation(
-                    "Connection.NegotiateSslAsync failed. Converting to TransportException. " +
-                    "Connection: {0}. Inner exception: {1}", this, ex);
+                    "[RNTBD Connection {0}] Connection.NegotiateSslAsync failed. Converting to TransportException. " +
+                    "Connection: {1}. Inner exception: {2}", this.connectionCorrelationId, this, ex);
                 Debug.Assert(!args.CommonArguments.UserPayload);
                 Debug.Assert(!args.CommonArguments.PayloadSent);
                 throw new TransportException(
@@ -841,7 +734,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         private void TraceAndThrowReceiveFailedException(IOException e, string type, ChannelCommonArguments args)
         {
             DefaultTrace.TraceError(
-                "Hit IOException {0} with HResult {1} while reading {2} on connection {3}. {4}",
+                "[RNTBD Connection {0}] Hit IOException {1} with HResult {2} while reading {3} on connection {4}. {5}",
+                this.connectionCorrelationId,
                 e.Message,
                 e.HResult,
                 type,
@@ -855,15 +749,23 @@ namespace Microsoft.Azure.Documents.Rntbd
         private void TraceAndThrowEndOfStream(string type, ChannelCommonArguments args)
         {
             DefaultTrace.TraceError(
-                        "Reached end of stream. Read 0 bytes while reading {0} " +
-                        "on connection {1}. {2}",
-                        type, this, this.GetConnectionTimestampsText());
+                        "[RNTBD Connection {0}] Reached end of stream. Read 0 bytes while reading {1} " +
+                        "on connection {2}. {3}",
+                        this.connectionCorrelationId, type, this, this.GetConnectionTimestampsText());
             throw new TransportException(
                 TransportErrorCode.ReceiveStreamClosed, null,
                 args.ActivityId, this.serverUri, this.ToString(),
                 args.UserPayload, true);
         }
 
+        /// <summary>
+        /// Helper method to snapshot the connection timestamps.
+        /// </summary>
+        /// <param name="lastSendAttempt">A <see cref="DateTime"/> field containing the last send attempt time.</param>
+        /// <param name="lastSend">A <see cref="DateTime"/> field containing the last send time.</param>
+        /// <param name="lastReceive">A <see cref="DateTime"/> field containing the last receive time.</param>
+        /// <param name="firstSendSinceLastReceive">A <see cref="DateTime"/> field containing the first send since last receive time.</param>
+        /// <param name="numberOfSendsSinceLastReceive">A long integer field containing the number of sends since last receive time.</param>
         private void SnapshotConnectionTimestamps(
             out DateTime lastSendAttempt,
             out DateTime lastSend,
@@ -932,16 +834,16 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private static async Task<TcpClient> ConnectUnicastPortAsync(Uri serverUri, IPAddress resolvedAddress)
+        private static async Task<TcpClient> ConnectUnicastPortAsync(Uri serverUri, IPAddress resolvedAddress, Guid connectionCorrelationId)
         {
             TcpClient tcpClient = new TcpClient(resolvedAddress.AddressFamily);
 
-            Connection.SetCommonSocketOptions(tcpClient.Client);
+            Connection.SetCommonSocketOptions(tcpClient.Client, connectionCorrelationId);
 
-            Connection.SetReuseUnicastPort(tcpClient.Client);
+            Connection.SetReuseUnicastPort(tcpClient.Client, connectionCorrelationId);
 
-            DefaultTrace.TraceInformation("RNTBD: {0} connecting to {1} (address {2})",
-                nameof(ConnectUnicastPortAsync), serverUri, resolvedAddress);
+            DefaultTrace.TraceInformation("[RNTBD Connection {0}] {1} connecting to {2} (address {3})",
+                connectionCorrelationId, nameof(ConnectUnicastPortAsync), serverUri, resolvedAddress);
 
             await tcpClient.ConnectAsync(resolvedAddress, serverUri.Port);
 
@@ -949,13 +851,13 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         private static async Task<Tuple<TcpClient, bool>> ConnectReuseAddrAsync(
-            Uri serverUri, IPAddress address, ushort candidatePort)
+            Uri serverUri, IPAddress address, ushort candidatePort, Guid connectionCorrelationId)
         {
             TcpClient candidateClient = new TcpClient(address.AddressFamily);
             TcpClient client = null;
             try
             {
-                Connection.SetCommonSocketOptions(candidateClient.Client);
+                Connection.SetCommonSocketOptions(candidateClient.Client, connectionCorrelationId);
 
                 candidateClient.Client.SetSocketOption(
                     SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
@@ -980,8 +882,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
 
                 DefaultTrace.TraceInformation(
-                    "RNTBD: {0} binding local endpoint {1}",
-                    nameof(ConnectReuseAddrAsync), bindEndpoint);
+                    "[RNTBD Connection {0}] RNTBD: {1} binding local endpoint {2}",
+                    connectionCorrelationId, nameof(ConnectReuseAddrAsync), bindEndpoint);
 
                 try
                 {
@@ -1001,8 +903,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     }
                 }
 
-                DefaultTrace.TraceInformation("RNTBD: {0} connecting to {1} (address {2})",
-                    nameof(ConnectReuseAddrAsync), serverUri, address);
+                DefaultTrace.TraceInformation("[RNTBD Connection {0}] {1} connecting to {2} (address {3})",
+                    connectionCorrelationId, nameof(ConnectReuseAddrAsync), serverUri, address);
 
                 try
                 {
@@ -1036,7 +938,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         private static async Task<Tuple<TcpClient, bool>> ConnectUserPortAsync(
-            Uri serverUri, IPAddress address, UserPortPool portPool, string connectionName)
+            Uri serverUri, IPAddress address, UserPortPool portPool, string connectionName, Guid connectionCorrelationId)
         {
             ushort[] candidatePorts = portPool.GetCandidatePorts(address.AddressFamily);
             if (candidatePorts != null)
@@ -1046,7 +948,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     Debug.Assert(candidatePort != 0);
                     Tuple<TcpClient, bool> result =
                         await Connection.ConnectReuseAddrAsync(
-                            serverUri, address, candidatePort);
+                            serverUri, address, candidatePort, connectionCorrelationId);
                     TcpClient portReuseClient = result.Item1;
                     bool portUsable = result.Item2;
                     if (portReuseClient != null)
@@ -1063,10 +965,10 @@ namespace Microsoft.Azure.Documents.Rntbd
                     }
                 }
 
-                DefaultTrace.TraceInformation("PrivatePortPool: All {0} candidate ports have been tried but none connects. Connection: {1}", candidatePorts.Length, connectionName);
+                DefaultTrace.TraceInformation("[RNTBD Connection {0}] PrivatePortPool: All {1} candidate ports have been tried but none connects. Connection: {2}", connectionCorrelationId, candidatePorts.Length, connectionName);
             }
 
-            Tuple<TcpClient, bool> wildcardResult = await Connection.ConnectReuseAddrAsync(serverUri, address, 0);
+            Tuple<TcpClient, bool> wildcardResult = await Connection.ConnectReuseAddrAsync(serverUri, address, 0, connectionCorrelationId);
             TcpClient wildcardClient = wildcardResult.Item1;
             if (wildcardClient != null)
             {
@@ -1077,9 +979,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             DefaultTrace.TraceInformation(
-                "PrivatePortPool: Not enough reusable ports in the system or pool. Have to connect unicast port. Pool status: {0}. Connection: {1}",
-                portPool.DumpStatus(), connectionName);
-            return Tuple.Create(await Connection.ConnectUnicastPortAsync(serverUri, address), false);
+                "[RNTBD Connection {0}] PrivatePortPool: Not enough reusable ports in the system or pool. Have to connect unicast port. Pool status: {1}. Connection: {2}",
+                connectionCorrelationId, portPool.DumpStatus(), connectionName);
+            return Tuple.Create(await Connection.ConnectUnicastPortAsync(serverUri, address, connectionCorrelationId), false);
         }
 
         internal static async Task<IPAddress> ResolveHostAsync(string hostName)
@@ -1093,13 +995,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             return serverAddresses[addressIndex];
         }
 
-        private static void SetCommonSocketOptions(Socket clientSocket)
+        private static void SetCommonSocketOptions(Socket clientSocket, Guid connectionCorrelationId)
         {
             clientSocket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.NoDelay, true);
-            Connection.EnableTcpKeepAlive(clientSocket);
+            Connection.EnableTcpKeepAlive(clientSocket, connectionCorrelationId);
         }
 
-        private static void EnableTcpKeepAlive(Socket clientSocket)
+        private static void EnableTcpKeepAlive(Socket clientSocket, Guid connectionCorrelationId)
         {
             clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
@@ -1117,7 +1019,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceWarning("IOControl(KeepAliveValues) failed: {0}", e);
+                    DefaultTrace.TraceWarning("[RNTBD Connection {0}] IOControl(KeepAliveValues) failed: {1}", connectionCorrelationId, e);
                     // Ignore the exception.
                 }
             }
@@ -1195,7 +1097,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             return keepAliveConfig;
         }
 
-        private static void SetReuseUnicastPort(Socket clientSocket)
+        private static void SetReuseUnicastPort(Socket clientSocket, Guid connectionCorrelationId)
         {
 #if !NETSTANDARD15 && !NETSTANDARD16
             // This code should use RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
@@ -1212,7 +1114,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceWarning("SetSocketOption(Socket, ReuseUnicastPort) failed: {0}", e);
+                    DefaultTrace.TraceWarning("[RNTBD Connection {0}] SetSocketOption(Socket, ReuseUnicastPort) failed: {1}", connectionCorrelationId, e);
                     // Ignore the exception.
                 }
             }

@@ -6,54 +6,58 @@ namespace Microsoft.Azure.Documents.Telemetry
 {
     using System;
     using System.Diagnostics;
-    using System.Threading;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using static Microsoft.Azure.Documents.RntbdConstants;
 
     /// <summary>
     /// This class is used to generate Activities with Azure.Cosmos.Operation Source Name
     /// </summary>
     internal static class OpenTelemetryRecorderFactory
     {
-        
-        private const string NetworkLevelPrefix = "Request";
-        private const string DiagnosticNamespace = "Azure.Cosmos";
-        private const string ResourceProviderNamespace = "Microsoft.DocumentDB";
-        private const string traceParent = "traceparent";
         /// <summary>
         /// Singleton to make sure we only have one instance of the DiagnosticScopeFactory and pattern matching of listener happens only once
         /// </summary>
         private static readonly Lazy<DiagnosticScopeFactory> LazyScopeFactory = new Lazy<DiagnosticScopeFactory>(
             valueFactory: () => new DiagnosticScopeFactory(
-                           clientNamespace: DiagnosticNamespace,
-                           resourceProviderNamespace: ResourceProviderNamespace,
+                           clientNamespace: $"{DistributedTracingOptions.DiagnosticNamespace}.{DistributedTracingOptions.NetworkLevelPrefix}",
+                           resourceProviderNamespace: DistributedTracingOptions.ResourceProviderNamespace,
                            isActivityEnabled: true,
                            suppressNestedClientActivities: false),
            isThreadSafe: true);
-        public static OpenTelemetryRecorder CreateRecorder(bool IsDistributedTracingEnabled, DocumentServiceRequest request)
+
+        public static OpenTelemetryRecorder CreateRecorder(DistributedTracingOptions options, 
+            DocumentServiceRequest request)
         {
-            if (IsDistributedTracingEnabled)
+            OpenTelemetryRecorder openTelemetryRecorder = default;
+
+            if (options?.IsDistributedTracingEnabled ?? false)
             {
                 try
                 {
-                    DiagnosticScope scope = LazyScopeFactory.Value.CreateScope(name: $"{NetworkLevelPrefix}.{request.OperationType}", kind: DiagnosticScope.ActivityKind.Client);
+                    string operationType = request.OperationType.ToOperationTypeString();
+
+                    DiagnosticScope scope = LazyScopeFactory.Value.CreateScope(
+                        name: "RequestAsync", 
+                        kind: DiagnosticScope.ActivityKind.Client);
+
+                    scope.SetDisplayName(operationType + " " + request.ResourceType.ToResourceTypeString());
 
                     // Record values only when we have a valid Diagnostic Scope
                     if (scope.IsEnabled)
                     {
-                        OpenTelemetryRecorder openTelemetryRecorder = new OpenTelemetryRecorder(scope: scope);
-                        request.Headers.Set(traceParent, Activity.Current?.Id);
-                        return openTelemetryRecorder;
+                        openTelemetryRecorder = new OpenTelemetryRecorder(scope: scope, 
+                            request: request, 
+                            options: options);
                     }
-                    request.Headers.Set(traceParent, Activity.Current?.Id);
+                    options.Propagator?.Inject(Activity.Current, request.Headers);
                 }
                 catch(Exception ex)
                 {
                     DefaultTrace.TraceWarning("Error with distributed tracing {0}", ex.ToString());
                 }
             }
-            return default;
+
+            return openTelemetryRecorder;
         }
     }
 }

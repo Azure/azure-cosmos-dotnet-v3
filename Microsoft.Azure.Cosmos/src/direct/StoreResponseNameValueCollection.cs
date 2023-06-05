@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Documents.Collections
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Linq;
+    using System.Threading;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -22,7 +23,9 @@ namespace Microsoft.Azure.Documents.Collections
     internal class StoreResponseNameValueCollection : INameValueCollection, IEnumerable<KeyValuePair<string, string>> 
     {
         private static readonly StringComparer DefaultStringComparer = StringComparer.OrdinalIgnoreCase;
-        private readonly Lazy<Dictionary<string, string>> lazyNotCommonHeaders;
+
+        // this is null if it's never been added to, and is created in a thread safe manner via GetOrCreateLazyHeaders()
+        private Dictionary<string, string> lazyNotCommonHeaders;
 
         // The INameValueCollection interface is expected to be a replacement for NameValueCollection across the projects.
         // However, there are a few public API with NameValueCollection as return type, e.g. DocumentServiceResponse.ResponseHeaders and
@@ -42,6 +45,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string AppliedPolicyElementId { get; set; }
         public string BackendRequestDurationMilliseconds { get; set; }
         public string ByokEncryptionProgress { get; set; }
+        public string CapacityType { get; set; }
         public string ChangeFeedInfo { get; set; }
         public string CollectionIndexTransformationProgress { get; set; }
         public string CollectionLazyIndexingProgress { get; set; }
@@ -61,8 +65,11 @@ namespace Microsoft.Azure.Documents.Collections
         public string ETag { get; set; }
         public string GlobalCommittedLSN { get; set; }
         public string HasTentativeWrites { get; set; }
+        public string HighestTentativeWriteLLSN { get; set; }
         public string IndexingDirective { get; set; }
         public string IndexUtilization { get; set; }
+        public string InstantScaleUpValue { get; set; }
+        public string IsOfferRestorePending { get; set; }
         public string IsRUPerMinuteUsed { get; set; }
         public string ItemCount { get; set; }
         public string ItemLocalLSN { get; set; }
@@ -74,6 +81,8 @@ namespace Microsoft.Azure.Documents.Collections
         public string MaxContentLength { get; set; }
         public string MaxResourceQuota { get; set; }
         public string MergeProgressBlocked { get; set; }
+        public string MinGLSNForDocumentOperations { get; set; }
+        public string MinGLSNForTombstoneOperations { get; set; }
         public string MinimumRUsForOffer { get; set; }
         public string NumberOfReadRegions { get; set; }
         public string OfferReplacePending { get; set; }
@@ -94,6 +103,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string ReplicatorLSNToLLSNDelta { get; set; }
         public string RequestCharge { get; set; }
         public string RequestValidationFailure { get; set; }
+        public string RequiresDistribution { get; set; }
         public string ResourceId { get; set; }
         public string RestoreState { get; set; }
         public string RetryAfterInMilliseconds { get; set; }
@@ -114,13 +124,12 @@ namespace Microsoft.Azure.Documents.Collections
         public string XPRole { get; set; }
 
         public StoreResponseNameValueCollection()
-            : this(new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>(StoreResponseNameValueCollection.DefaultStringComparer)))
         {
         }
 
-        private StoreResponseNameValueCollection(Lazy<Dictionary<string, string>> notCommonHeaders)
+        private StoreResponseNameValueCollection(Dictionary<string, string> lazyNotCommonHeaders)
         {
-            this.lazyNotCommonHeaders = notCommonHeaders ?? throw new ArgumentNullException(nameof(notCommonHeaders));
+            this.lazyNotCommonHeaders = lazyNotCommonHeaders;
         }
 
         public string this[string key]
@@ -149,9 +158,9 @@ namespace Microsoft.Azure.Documents.Collections
 
         public void Clear()
         {
-            if (this.lazyNotCommonHeaders.IsValueCreated)
+            if (this.lazyNotCommonHeaders != null)
             {
-                this.lazyNotCommonHeaders.Value.Clear();
+                this.lazyNotCommonHeaders.Clear();
             }
 
             this.AadAppliedRoleAssignmentId = null;
@@ -160,6 +169,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.AppliedPolicyElementId = null;
             this.BackendRequestDurationMilliseconds = null;
             this.ByokEncryptionProgress = null;
+            this.CapacityType = null;
             this.ChangeFeedInfo = null;
             this.CollectionIndexTransformationProgress = null;
             this.CollectionLazyIndexingProgress = null;
@@ -179,8 +189,11 @@ namespace Microsoft.Azure.Documents.Collections
             this.ETag = null;
             this.GlobalCommittedLSN = null;
             this.HasTentativeWrites = null;
+            this.HighestTentativeWriteLLSN = null;
             this.IndexingDirective = null;
             this.IndexUtilization = null;
+            this.InstantScaleUpValue = null;
+            this.IsOfferRestorePending = null;
             this.IsRUPerMinuteUsed = null;
             this.ItemCount = null;
             this.ItemLocalLSN = null;
@@ -192,6 +205,8 @@ namespace Microsoft.Azure.Documents.Collections
             this.MaxContentLength = null;
             this.MaxResourceQuota = null;
             this.MergeProgressBlocked = null;
+            this.MinGLSNForDocumentOperations = null;
+            this.MinGLSNForTombstoneOperations = null;
             this.MinimumRUsForOffer = null;
             this.NumberOfReadRegions = null;
             this.OfferReplacePending = null;
@@ -212,6 +227,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.ReplicatorLSNToLLSNDelta = null;
             this.RequestCharge = null;
             this.RequestValidationFailure = null;
+            this.RequiresDistribution = null;
             this.ResourceId = null;
             this.RestoreState = null;
             this.RetryAfterInMilliseconds = null;
@@ -235,13 +251,10 @@ namespace Microsoft.Azure.Documents.Collections
 
         public INameValueCollection Clone()
         {
-            Lazy<Dictionary<string, string>> cloneNotCommonHeaders = new Lazy<Dictionary<string, string>>(() => new Dictionary<string, string>(StoreResponseNameValueCollection.DefaultStringComparer));
-            if (this.lazyNotCommonHeaders.IsValueCreated)
+            Dictionary<string, string> cloneNotCommonHeaders = null;
+            if (this.lazyNotCommonHeaders != null)
             {
-                foreach (KeyValuePair<string, string> notCommonHeader in this.lazyNotCommonHeaders.Value)
-                {
-                    cloneNotCommonHeaders.Value[notCommonHeader.Key] = notCommonHeader.Value;
-                }
+                cloneNotCommonHeaders = new Dictionary<string, string>(this.lazyNotCommonHeaders, StoreResponseNameValueCollection.DefaultStringComparer);
             }
 
             StoreResponseNameValueCollection cloneHeaders = new StoreResponseNameValueCollection(cloneNotCommonHeaders)
@@ -252,6 +265,7 @@ namespace Microsoft.Azure.Documents.Collections
                 AppliedPolicyElementId = this.AppliedPolicyElementId,
                 BackendRequestDurationMilliseconds = this.BackendRequestDurationMilliseconds,
                 ByokEncryptionProgress = this.ByokEncryptionProgress,
+                CapacityType = this.CapacityType,
                 ChangeFeedInfo = this.ChangeFeedInfo,
                 CollectionIndexTransformationProgress = this.CollectionIndexTransformationProgress,
                 CollectionLazyIndexingProgress = this.CollectionLazyIndexingProgress,
@@ -271,8 +285,11 @@ namespace Microsoft.Azure.Documents.Collections
                 ETag = this.ETag,
                 GlobalCommittedLSN = this.GlobalCommittedLSN,
                 HasTentativeWrites = this.HasTentativeWrites,
+                HighestTentativeWriteLLSN = this.HighestTentativeWriteLLSN,
                 IndexingDirective = this.IndexingDirective,
                 IndexUtilization = this.IndexUtilization,
+                InstantScaleUpValue = this.InstantScaleUpValue,
+                IsOfferRestorePending = this.IsOfferRestorePending,
                 IsRUPerMinuteUsed = this.IsRUPerMinuteUsed,
                 ItemCount = this.ItemCount,
                 ItemLocalLSN = this.ItemLocalLSN,
@@ -284,6 +301,8 @@ namespace Microsoft.Azure.Documents.Collections
                 MaxContentLength = this.MaxContentLength,
                 MaxResourceQuota = this.MaxResourceQuota,
                 MergeProgressBlocked = this.MergeProgressBlocked,
+                MinGLSNForDocumentOperations = this.MinGLSNForDocumentOperations,
+                MinGLSNForTombstoneOperations = this.MinGLSNForTombstoneOperations,
                 MinimumRUsForOffer = this.MinimumRUsForOffer,
                 NumberOfReadRegions = this.NumberOfReadRegions,
                 OfferReplacePending = this.OfferReplacePending,
@@ -304,6 +323,7 @@ namespace Microsoft.Azure.Documents.Collections
                 ReplicatorLSNToLLSNDelta = this.ReplicatorLSNToLLSNDelta,
                 RequestCharge = this.RequestCharge,
                 RequestValidationFailure = this.RequestValidationFailure,
+                RequiresDistribution = this.RequiresDistribution,
                 ResourceId = this.ResourceId,
                 RestoreState = this.RestoreState,
                 RetryAfterInMilliseconds = this.RetryAfterInMilliseconds,
@@ -643,10 +663,38 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.MaxContentLength, this.MaxContentLength);
             }
-
-            if (this.lazyNotCommonHeaders.IsValueCreated)
+            if (this.IsOfferRestorePending != null)
             {
-                foreach (KeyValuePair<string, string> kvp in this.lazyNotCommonHeaders.Value)
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.IsOfferRestorePending, this.IsOfferRestorePending);
+            }
+            if (this.InstantScaleUpValue != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.InstantScaleUpValue, this.InstantScaleUpValue);
+            }
+            if (this.RequiresDistribution != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.RequiresDistribution, this.RequiresDistribution);
+            }
+            if (this.CapacityType != null)
+            {
+                yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.CapacityType, this.CapacityType);
+            }
+            if (this.MinGLSNForTombstoneOperations != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.MinGLSNForTombstoneOperations, this.MinGLSNForTombstoneOperations);
+            }
+            if (this.MinGLSNForDocumentOperations != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.MinGLSNForDocumentOperations, this.MinGLSNForDocumentOperations);
+            }
+            if (this.HighestTentativeWriteLLSN != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.HighestTentativeWriteLLSN, this.HighestTentativeWriteLLSN);
+            }
+
+            if (this.lazyNotCommonHeaders != null)
+            {
+                foreach (KeyValuePair<string, string> kvp in this.lazyNotCommonHeaders)
                 {
                     yield return kvp;
                 }
@@ -970,10 +1018,38 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return HttpConstants.HttpHeaders.MaxContentLength;
             }
-
-            if(this.lazyNotCommonHeaders.IsValueCreated)
+            if (this.IsOfferRestorePending != null)
             {
-                foreach (string key in this.lazyNotCommonHeaders.Value.Keys)
+                yield return HttpConstants.HttpHeaders.IsOfferRestorePending;
+            }
+            if (this.InstantScaleUpValue != null)
+            {
+                yield return HttpConstants.HttpHeaders.InstantScaleUpValue;
+            }
+            if (this.RequiresDistribution != null)
+            {
+                yield return WFConstants.BackendHeaders.RequiresDistribution;
+            }
+            if (this.CapacityType != null)
+            {
+                yield return HttpConstants.HttpHeaders.CapacityType;
+            }
+            if (this.MinGLSNForTombstoneOperations != null)
+            {
+                yield return WFConstants.BackendHeaders.MinGLSNForTombstoneOperations;
+            }
+            if (this.MinGLSNForDocumentOperations != null)
+            {
+                yield return WFConstants.BackendHeaders.MinGLSNForDocumentOperations;
+            }
+            if (this.HighestTentativeWriteLLSN != null)
+            {
+                yield return WFConstants.BackendHeaders.HighestTentativeWriteLLSN;
+            }
+
+            if (this.lazyNotCommonHeaders != null)
+            {
+                foreach (string key in this.lazyNotCommonHeaders.Keys)
                 {
                     yield return key;
                 }
@@ -1296,9 +1372,37 @@ namespace Microsoft.Azure.Documents.Collections
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.MaxContentLength, this.MaxContentLength);
                         }
-                        if(this.lazyNotCommonHeaders.IsValueCreated)
+                        if (this.IsOfferRestorePending != null)
                         {
-                            foreach (KeyValuePair<string, string> keyValuePair in this.lazyNotCommonHeaders.Value)
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.IsOfferRestorePending, this.IsOfferRestorePending);
+                        }
+                        if (this.InstantScaleUpValue != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.InstantScaleUpValue, this.InstantScaleUpValue);
+                        }
+                        if (this.RequiresDistribution != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.RequiresDistribution, this.RequiresDistribution);
+                        }
+                        if (this.CapacityType != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.CapacityType, this.CapacityType);
+                        }
+                        if (this.MinGLSNForTombstoneOperations != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.MinGLSNForTombstoneOperations, this.MinGLSNForTombstoneOperations);
+                        }
+                        if (this.MinGLSNForDocumentOperations != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.MinGLSNForDocumentOperations, this.MinGLSNForDocumentOperations);
+                        }
+                        if (this.HighestTentativeWriteLLSN != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.HighestTentativeWriteLLSN, this.HighestTentativeWriteLLSN);
+                        }
+                        if(this.lazyNotCommonHeaders != null)
+                        {
+                            foreach (KeyValuePair<string, string> keyValuePair in this.lazyNotCommonHeaders)
                             {
                                 this.nameValueCollection.Add(keyValuePair.Key, keyValuePair.Value);
                             }
@@ -1593,6 +1697,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.TransportRequestID;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CapacityType, key))
+                    {
+                        return this.CapacityType;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.CurrentWriteQuorum, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.CurrentWriteQuorum;
@@ -1606,6 +1714,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(HttpConstants.HttpHeaders.TransportRequestID, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.TransportRequestID;
+                    }
+
+                    if (string.Equals(HttpConstants.HttpHeaders.CapacityType, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.CapacityType;
                     }
 
                     break;
@@ -1630,6 +1743,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.MinimumRUsForOffer;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsOfferRestorePending, key))
+                    {
+                        return this.IsOfferRestorePending;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.LastStateChangeUtc, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.LastStateChangeUtc;
@@ -1653,6 +1770,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.MinimumRUsForOffer, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.MinimumRUsForOffer;
+                    }
+
+                    if (string.Equals(HttpConstants.HttpHeaders.IsOfferRestorePending, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.IsOfferRestorePending;
                     }
 
                     break;
@@ -1709,6 +1831,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.QuorumAckedLocalLSN;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MinGLSNForDocumentOperations, key))
+                    {
+                        return this.MinGLSNForDocumentOperations;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.CurrentReplicaSetSize, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.CurrentReplicaSetSize;
@@ -1729,6 +1855,11 @@ namespace Microsoft.Azure.Documents.Collections
                         return this.QuorumAckedLocalLSN;
                     }
 
+                    if (string.Equals(WFConstants.BackendHeaders.MinGLSNForDocumentOperations, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.MinGLSNForDocumentOperations;
+                    }
+
                     break;
                 case 30:
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.ReIndexerProgress, key))
@@ -1739,6 +1870,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.MaxContentLength;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MinGLSNForTombstoneOperations, key))
+                    {
+                        return this.MinGLSNForTombstoneOperations;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.ReIndexerProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.ReIndexerProgress;
@@ -1747,6 +1882,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(HttpConstants.HttpHeaders.MaxContentLength, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.MaxContentLength;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.MinGLSNForTombstoneOperations, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.MinGLSNForTombstoneOperations;
                     }
 
                     break;
@@ -1824,6 +1964,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.HasTentativeWrites;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.InstantScaleUpValue, key))
+                    {
+                        return this.InstantScaleUpValue;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.LogResults, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.LogResults;
@@ -1832,6 +1976,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.HasTentativeWrites, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.HasTentativeWrites;
+                    }
+
+                    if (string.Equals(HttpConstants.HttpHeaders.InstantScaleUpValue, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.InstantScaleUpValue;
                     }
 
                     break;
@@ -1935,6 +2084,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.TentativeStoreChecksum;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.RequiresDistribution, key))
+                    {
+                        return this.RequiresDistribution;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.VectorClockLocalProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.VectorClockLocalProgress;
@@ -1950,11 +2103,25 @@ namespace Microsoft.Azure.Documents.Collections
                         return this.TentativeStoreChecksum;
                     }
 
+                    if (string.Equals(WFConstants.BackendHeaders.RequiresDistribution, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.RequiresDistribution;
+                    }
+
                     break;
                 case 40:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.HighestTentativeWriteLLSN, key))
+                    {
+                        return this.HighestTentativeWriteLLSN;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.SoftMaxAllowedThroughput, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.SoftMaxAllowedThroughput;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.HighestTentativeWriteLLSN, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.HighestTentativeWriteLLSN;
                     }
 
                     break;
@@ -2024,8 +2191,7 @@ namespace Microsoft.Azure.Documents.Collections
                     break;
             }
 
-            if (this.lazyNotCommonHeaders.IsValueCreated
-                && this.lazyNotCommonHeaders.Value.TryGetValue(key, out string value))
+            if (this.lazyNotCommonHeaders?.TryGetValue(key, out string value) ?? false)
             {
                 return value;
             }
@@ -2620,6 +2786,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.TransportRequestID = value;
                         return;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.CapacityType, key))
+                    {
+                        if (throwIfAlreadyExists && this.CapacityType != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.CapacityType = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.CurrentWriteQuorum, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.CurrentWriteQuorum != null)
@@ -2648,6 +2824,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.TransportRequestID = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.CapacityType, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.CapacityType != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.CapacityType = value;
                         return;
                     }
                     break;
@@ -2702,6 +2888,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.MinimumRUsForOffer = value;
                         return;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.IsOfferRestorePending, key))
+                    {
+                        if (throwIfAlreadyExists && this.IsOfferRestorePending != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.IsOfferRestorePending = value;
+                        return;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.LastStateChangeUtc, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.LastStateChangeUtc != null)
@@ -2750,6 +2946,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.MinimumRUsForOffer = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.IsOfferRestorePending, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.IsOfferRestorePending != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.IsOfferRestorePending = value;
                         return;
                     }
                     break;
@@ -2868,6 +3074,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.QuorumAckedLocalLSN = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MinGLSNForDocumentOperations, key))
+                    {
+                        if (throwIfAlreadyExists && this.MinGLSNForDocumentOperations != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MinGLSNForDocumentOperations = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.CurrentReplicaSetSize, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.CurrentReplicaSetSize != null)
@@ -2908,6 +3124,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.QuorumAckedLocalLSN = value;
                         return;
                     }
+                    if (string.Equals(WFConstants.BackendHeaders.MinGLSNForDocumentOperations, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.MinGLSNForDocumentOperations != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MinGLSNForDocumentOperations = value;
+                        return;
+                    }
                     break;
                 case 30:
                     if (object.ReferenceEquals(WFConstants.BackendHeaders.ReIndexerProgress, key))
@@ -2930,6 +3156,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.MaxContentLength = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.MinGLSNForTombstoneOperations, key))
+                    {
+                        if (throwIfAlreadyExists && this.MinGLSNForTombstoneOperations != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MinGLSNForTombstoneOperations = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.ReIndexerProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.ReIndexerProgress != null)
@@ -2948,6 +3184,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.MaxContentLength = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.MinGLSNForTombstoneOperations, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.MinGLSNForTombstoneOperations != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.MinGLSNForTombstoneOperations = value;
                         return;
                     }
                     break;
@@ -3108,6 +3354,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.HasTentativeWrites = value;
                         return;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.InstantScaleUpValue, key))
+                    {
+                        if (throwIfAlreadyExists && this.InstantScaleUpValue != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.InstantScaleUpValue = value;
+                        return;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.LogResults, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.LogResults != null)
@@ -3126,6 +3382,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.HasTentativeWrites = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.InstantScaleUpValue, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.InstantScaleUpValue != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.InstantScaleUpValue = value;
                         return;
                     }
                     break;
@@ -3346,6 +3612,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.TentativeStoreChecksum = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.RequiresDistribution, key))
+                    {
+                        if (throwIfAlreadyExists && this.RequiresDistribution != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.RequiresDistribution = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.VectorClockLocalProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.VectorClockLocalProgress != null)
@@ -3376,8 +3652,28 @@ namespace Microsoft.Azure.Documents.Collections
                         this.TentativeStoreChecksum = value;
                         return;
                     }
+                    if (string.Equals(WFConstants.BackendHeaders.RequiresDistribution, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.RequiresDistribution != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.RequiresDistribution = value;
+                        return;
+                    }
                     break;
                 case 40:
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.HighestTentativeWriteLLSN, key))
+                    {
+                        if (throwIfAlreadyExists && this.HighestTentativeWriteLLSN != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.HighestTentativeWriteLLSN = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.SoftMaxAllowedThroughput, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.SoftMaxAllowedThroughput != null)
@@ -3386,6 +3682,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.SoftMaxAllowedThroughput = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.HighestTentativeWriteLLSN, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.HighestTentativeWriteLLSN != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.HighestTentativeWriteLLSN = value;
                         return;
                     }
                     break;
@@ -3509,22 +3815,41 @@ namespace Microsoft.Azure.Documents.Collections
 
             if (throwIfAlreadyExists)
             {
-                this.lazyNotCommonHeaders.Value.Add(key, value);
+                this.GetOrCreateLazyHeaders().Add(key, value);
             }
             else
             {
                 if (value == null)
                 {
-                    if (this.lazyNotCommonHeaders.IsValueCreated)
+                    // don't create lazyNotCommonHeaders if it doesn't already exist
+
+                    if (this.lazyNotCommonHeaders != null)
                     {
-                        this.lazyNotCommonHeaders.Value.Remove(key);
+                        this.lazyNotCommonHeaders.Remove(key);
                     }
                 }
                 else
                 {
-                    this.lazyNotCommonHeaders.Value[key] = value;
+                    this.GetOrCreateLazyHeaders()[key] = value;
                 }
             }
+        }
+
+        private Dictionary<string, string> GetOrCreateLazyHeaders()
+        {
+            Dictionary<string, string> lazyHeaders = this.lazyNotCommonHeaders;
+
+            if (lazyHeaders == null)
+            {
+               // risk over allocating, but everyone will get the same dictionary in the end
+               Dictionary<string, string> newDict = new Dictionary<string, string>(StoreResponseNameValueCollection.DefaultStringComparer);
+               
+               // Either swap newDict in (getting back the old null) or obtain the Dictionary some other thread swapped in
+               // (and then we drop newDict on the floor).
+               lazyHeaders = Interlocked.CompareExchange(ref this.lazyNotCommonHeaders, newDict, null) ?? newDict;
+            }
+
+            return lazyHeaders;
         }
     }
 }

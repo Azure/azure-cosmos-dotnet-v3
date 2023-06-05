@@ -108,17 +108,17 @@ namespace Microsoft.Azure.Documents
         #endregion
 
         /// <inheritdoc/>>
-        public Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, IRetryPolicy retryPolicy = null, Func<DocumentServiceRequest, Task> prepareRequestAsyncDelegate = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, IRetryPolicy retryPolicy = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return this.ProcessMessageAsync(request, cancellationToken, retryPolicy, prepareRequestAsyncDelegate);
+            return this.ProcessMessageAsync(request, cancellationToken, retryPolicy);
         }
 
         // Decides what to execute based on the ResourceOperation property of the DocumentServiceRequest argument
-        public async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken, IRetryPolicy retryPolicy = null, Func < DocumentServiceRequest, Task> prepareRequestAsyncDelegate = null)
+        public async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken, IRetryPolicy retryPolicy = null)
         {
             if (request == null)
             {
-                throw new ArgumentNullException("request");
+                throw new ArgumentNullException(nameof(request));
             }
 
             await request.EnsureBufferedBodyAsync();
@@ -127,8 +127,8 @@ namespace Microsoft.Azure.Documents
             try
             {
                 storeResponse = retryPolicy != null
-                    ? await BackoffRetryUtility<StoreResponse>.ExecuteAsync(() => this.replicatedResourceClient.InvokeAsync(request, prepareRequestAsyncDelegate, cancellationToken), retryPolicy, cancellationToken)
-                    : await this.replicatedResourceClient.InvokeAsync(request, prepareRequestAsyncDelegate, cancellationToken);
+                    ? await BackoffRetryUtility<StoreResponse>.ExecuteAsync(() => this.replicatedResourceClient.InvokeAsync(request, cancellationToken), retryPolicy, cancellationToken)
+                    : await this.replicatedResourceClient.InvokeAsync(request, cancellationToken);
             }
             catch (DocumentClientException exception)
             {

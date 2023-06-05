@@ -22,7 +22,16 @@ namespace Microsoft.Azure.Documents
             this.protocol = protocol;
         }
 
-        public async Task<IReadOnlyList<TransportAddressUri>> ResolveAllTransportAddressUriAsync(
+        /// <summary>
+        /// Resolves the transport address uris from the given request and returns them along with their health statuses.
+        /// Note that the returned transport address uris are not ordered by their health status and the two lists could
+        /// have a completely random ordering while returning the addresses.
+        /// </summary>
+        /// <param name="request">An instance of <see cref="DocumentServiceRequest"/> containing the request payload.</param>
+        /// <param name="includePrimary">A boolean flag indicating if the primary replica needed to be included while resolving the addresses.</param>
+        /// <param name="forceRefresh">A boolean flag indicating if force refresh was requested.</param>
+        /// <returns></returns>
+        public async Task<(IReadOnlyList<TransportAddressUri>, IReadOnlyList<string>)> ResolveAllTransportAddressUriAsync(
             DocumentServiceRequest request,
             bool includePrimary,
             bool forceRefresh)
@@ -30,8 +39,8 @@ namespace Microsoft.Azure.Documents
             PerProtocolPartitionAddressInformation partitionPerProtocolAddress = await this.ResolveAddressesAsync(request, forceRefresh);
 
             return includePrimary
-                ? partitionPerProtocolAddress.ReplicaTransportAddressUris
-                : partitionPerProtocolAddress.NonPrimaryReplicaTransportAddressUris;
+                ? (partitionPerProtocolAddress.ReplicaTransportAddressUris, partitionPerProtocolAddress.ReplicaTransportAddressUrisHealthState)
+                : (partitionPerProtocolAddress.NonPrimaryReplicaTransportAddressUris, partitionPerProtocolAddress.ReplicaTransportAddressUrisHealthState);
         }
 
         public async Task<TransportAddressUri> ResolvePrimaryTransportAddressUriAsync(

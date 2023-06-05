@@ -58,7 +58,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Content Include="..\..\ThirdPartyNotice.txt" Link="ThirdPartyNotice.txt" />
+		<None Include="..\..\ThirdPartyNotice.txt" Pack="true" PackagePath="" Visible="false" Link="ThirdPartyNotice.txt" />
 	</ItemGroup>
 
 	<ItemGroup>

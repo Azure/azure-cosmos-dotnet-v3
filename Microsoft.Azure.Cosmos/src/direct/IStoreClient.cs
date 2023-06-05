@@ -19,13 +19,11 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="request">A instance of <see cref="DocumentServiceRequest"/> holding the request payload.</param>
         /// <param name="retryPolicy">An instance of <see cref="IRetryPolicy"/> defining the retry policy.</param>
-        /// <param name="prepareRequestAsyncDelegate">A callback delegate to be invoked at a later point of time.</param>
         /// <param name="cancellationToken">An Instance of the <see cref="CancellationToken"/>.</param>
         /// <returns>A task of <see cref="DocumentServiceResponse"/> containing the response body.</returns>
         Task<DocumentServiceResponse> ProcessMessageAsync(
             DocumentServiceRequest request,
             IRetryPolicy retryPolicy = null,
-            Func<DocumentServiceRequest, Task> prepareRequestAsyncDelegate = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>

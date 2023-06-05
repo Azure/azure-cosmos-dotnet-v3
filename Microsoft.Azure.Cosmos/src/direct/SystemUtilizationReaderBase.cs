@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using System.Threading;
@@ -11,6 +12,8 @@ namespace Microsoft.Azure.Documents.Rntbd
 
     internal abstract class SystemUtilizationReaderBase
     {
+        private float cachedCpuUtilization = Single.NaN;
+        private long lastCpuUsageReadTimeTicks = DateTime.MinValue.Ticks;
         private static readonly Lazy<SystemUtilizationReaderBase> singletonInstance = new Lazy<SystemUtilizationReaderBase>(
             SystemUtilizationReaderBase.Create,
             LazyThreadSafetyMode.ExecutionAndPublication);
@@ -39,6 +42,36 @@ namespace Microsoft.Azure.Documents.Rntbd
         internal static void ApplySingletonOverride(SystemUtilizationReaderBase readerOverride)
         {
             singletonOverride = readerOverride;
+        }
+
+        /// <summary>
+        /// Caches the CPU utilization for an user defined eviction time period and evicts the cache atomically based on
+        /// the eviction time period.
+        /// </summary>
+        /// <param name="cacheEvictionTimeInSeconds">A <see cref="TimeSpan"/> containing the cache eviction time in seconds.</param>
+        /// <returns>A float value containing the cached cpu usage.</returns>
+        public float GetSystemWideCpuUsageCached(
+            TimeSpan cacheEvictionTimeInSeconds)
+        {
+            long snapshotTimestampTicks = Volatile.Read(ref this.lastCpuUsageReadTimeTicks);
+            long currentTimestampTicks = Stopwatch.GetTimestamp();
+            long delta = currentTimestampTicks - snapshotTimestampTicks;
+
+            if (delta >= cacheEvictionTimeInSeconds.Ticks)
+            {
+                long updatedLastCpuUsageReadTimeTicks = Interlocked.CompareExchange(
+                    location1: ref this.lastCpuUsageReadTimeTicks,
+                    value: currentTimestampTicks,
+                    comparand: snapshotTimestampTicks);
+
+                // This means that the value was not updated by any other thread and the compare exchange operation was atomically successful.
+                if (updatedLastCpuUsageReadTimeTicks == snapshotTimestampTicks)
+                {
+                    Volatile.Write(ref this.cachedCpuUtilization, this.GetSystemWideCpuUsage());
+                }
+            }
+
+            return Volatile.Read(ref this.cachedCpuUtilization);
         }
 
         [SuppressMessage(
