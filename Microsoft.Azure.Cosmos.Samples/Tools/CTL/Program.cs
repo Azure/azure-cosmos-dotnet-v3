@@ -14,7 +14,6 @@ namespace CosmosCTL
     using App.Metrics.Gauge;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
-    using Microsoft.Azure.Cosmos.Telemetry;
 
     public sealed class Program
     {
@@ -40,7 +39,14 @@ namespace CosmosCTL
                     EnableTraceSourcesToConsole();
                 }
 
-                using CosmosClient client = config.CreateCosmosClient();
+                logger.LogInformation($"Cosmos client initialization cache warm-up: {config.InitializeClientAndWarmupCaches}.");
+
+                List<(string, string)> containers = new List<(string, string)>
+                { (config.Database, config.Collection)};
+
+                using CosmosClient client = config.InitializeClientAndWarmupCaches
+                    ? await config.CreateCosmosClientAndWarmupCachesAsync(containers: containers)
+                    : config.CreateCosmosClient();
 
                 string loggingContextIdentifier = $"{config.WorkloadType}{config.LogginContext}";
                 using (logger.BeginScope(loggingContextIdentifier))
@@ -154,6 +160,7 @@ namespace CosmosCTL
 
         private static void SetEnvironmentVariables(CTLConfig config)
         {
+            // Environment.SetEnvironmentVariable("AZURE_COSMOS_REPLICA_VALIDATION_ENABLED", "True");
             // Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, config.TelemetryEndpoint);
             // Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, config.TelemetryScheduleInSeconds);
         }
