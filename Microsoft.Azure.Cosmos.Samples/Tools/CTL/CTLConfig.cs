@@ -7,6 +7,7 @@ namespace CosmosCTL
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading.Tasks;
     using CommandLine;
     using CommandLine.Text;
     using Microsoft.Azure.Cosmos;
@@ -115,6 +116,9 @@ namespace CosmosCTL
         [Option("ctl_enable_console_logging", Required = false, HelpText = "Enables console logging.")]
         public bool? EnableConsoleLogging { get; set; } = false;
 
+        [Option("ctl_initialize_client_and_warmup_caches", Required = false, HelpText = "Initialize and warms up cosmos client.")]
+        public bool InitializeClientAndWarmupCaches { get; set; } = false;
+
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
 
@@ -163,6 +167,38 @@ namespace CosmosCTL
                         this.EndPoint,
                         this.Key,
                         clientOptions);
+        }
+
+        internal async Task<CosmosClient> CreateCosmosClientAndWarmupCachesAsync(
+            List<(string, string)> containers)
+        {
+            CosmosClientOptions clientOptions = new()
+            {
+                ApplicationName = CTLConfig.UserAgentSuffix,
+            };
+
+            if (this.UseGatewayMode)
+            {
+                clientOptions.ConnectionMode = ConnectionMode.Gateway;
+            }
+
+            if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
+            {
+                if (Enum.TryParse(this.ConsistencyLevel, out ConsistencyLevel consistencyLevel))
+                {
+                    clientOptions.ConsistencyLevel = consistencyLevel;
+                }
+                else
+                {
+                    throw new ArgumentException($"Cannot parse consistency {this.ConsistencyLevel}", nameof(this.ConsistencyLevel));
+                }
+            }
+
+            return await CosmosClient.CreateAndInitializeAsync(
+                this.EndPoint,
+                this.Key,
+                containers,
+                clientOptions);
         }
 
         private static void HandleParseError(

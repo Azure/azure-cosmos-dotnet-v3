@@ -13,7 +13,6 @@ namespace CosmosCTL
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Extensions.Logging;
 
     internal static class Utils
@@ -173,12 +172,6 @@ namespace CosmosCTL
             CTLConfig config,
             CosmosDiagnostics cosmosDiagnostics)
         {
-
-            if (timerContextLatency > config.DiagnosticsThresholdDurationAsTimespan)
-            {
-                logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request took more than latency threshold {config.DiagnosticsThresholdDuration}, diagnostics: {cosmosDiagnostics}");
-            }
-
             CosmosDiagnostics diagnostics = null;
             if (Utils.ShouldPrintDiagnostics(config, cosmosDiagnostics))
             {
