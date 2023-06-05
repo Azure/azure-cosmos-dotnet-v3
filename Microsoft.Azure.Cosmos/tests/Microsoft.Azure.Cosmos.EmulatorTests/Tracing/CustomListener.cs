@@ -287,8 +287,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .OrderBy(act => 
                             act.Source.Name + 
                             act.OperationName + 
-                            act.GetTagItem("rntbd.status_code") + 
-                            act.GetTagItem("rntbd.sub_status_code"))
+                            act.GetTagItem("tcp.status_code") + 
+                            act.GetTagItem("tcp.sub_status_code"))
                 .ToList();
             foreach (Activity activity in collectedNetworkActivities)
             {
