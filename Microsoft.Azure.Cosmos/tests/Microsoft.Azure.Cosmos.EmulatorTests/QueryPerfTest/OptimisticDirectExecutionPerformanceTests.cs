@@ -15,91 +15,89 @@
     {
         private const string RawDataFileName = "OptimisticDirectExecutionPerformanceTestsRawData.csv";
         private const string DiagnosticsDataFileName = "OptimisticDirectExecutionPerformanceTestsAggregatedData.csv";
-        private const string TransportKeyValue = "Client Side Request Stats";
-        private const string TransportNodeName = "Microsoft.Azure.Documents.ServerStoreModel Transport Request";
         private readonly string RawDataPath = Path.GetFullPath(RawDataFileName);
         private readonly string AggregateDataPath = Path.GetFullPath(DiagnosticsDataFileName);
-
-        private readonly QueryStatisticsDatumVisitor queryStatisticsDatumVisitor;
-        private readonly string endpoint;
-        private readonly string authKey;
-        private readonly string cosmosDatabaseId;
-        private readonly string containerId;
-        private readonly PartitionKey partitionKeyValue;
-        private readonly int numberOfIterations;
-        private readonly int warmupIterations;
-        private CosmosClient cosmosClient;
-        private Database database;
-        private Container container;
-
-        public OptimisticDirectExecutionPerformanceTests()
-        {
-            this.queryStatisticsDatumVisitor = new();
-            this.endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
-            this.authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
-            this.cosmosDatabaseId = Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.CosmosDatabaseId"];
-            this.containerId = Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.ContainerId"];
-            this.numberOfIterations = int.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.NumberOfIterations"]);
-            this.warmupIterations = int.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.WarmupIterations"]);
-            this.partitionKeyValue = new PartitionKey("Andersen");
-        }
+        private static readonly QueryStatisticsDatumVisitor queryStatisticsDatumVisitor = new QueryStatisticsDatumVisitor();
+        private static readonly string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
+        private static readonly string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
+        private static readonly string cosmosDatabaseId = Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.CosmosDatabaseId"];
+        private static readonly string containerId = Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.ContainerId"];
+        private static readonly PartitionKey partitionKeyValue = new PartitionKey("Andersen");
+        private static readonly int numberOfIterations = int.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.NumberOfIterations"]);
+        private static readonly int warmupIterations = int.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.WarmupIterations"]);
 
         [TestMethod]
-        public async Task PerformanceTestSetup()
+        public async Task OptimisticDirectExecutionPerformanceTest()
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
             };
 
-            this.cosmosClient = new CosmosClient(this.endpoint, this.authKey, clientOptions);
-            await this.CreateDatabaseAsync();
-            await this.CreateContainerAsync();
-            await this.AddItemsToContainerAsync();
-            await this.RunAsync();
+            CosmosClient cosmosClient = new CosmosClient(endpoint, authKey, clientOptions);
+            (Database database, Container container) = await this.TestInitialize(cosmosClient);
+            await this.RunAsync(container);
+            await this.TestCleanup(database);
         }
 
-        private async Task CreateDatabaseAsync()
+        private async Task<(Database, Container)> TestInitialize(CosmosClient cosmosClient)
+        {
+            Database database = await this.CreateDatabaseAsync(cosmosClient);
+            Container container = await this.CreateContainerAsync(database);
+            await this.AddItemsToContainerAsync(container);
+
+            if (File.Exists(this.RawDataPath))
+            {
+                File.Delete(this.RawDataPath);
+            }
+
+            if (File.Exists(this.AggregateDataPath))
+            {
+                File.Delete(this.AggregateDataPath);
+            }
+
+            return (database, container);
+        }
+
+        private async Task<Database> CreateDatabaseAsync(CosmosClient cosmosClient)
         {
             // Create a new database
-            this.database = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(this.cosmosDatabaseId);
-            Console.WriteLine("Created Database: {0}\n", this.database.Id);
+            return await cosmosClient.CreateDatabaseIfNotExistsAsync(cosmosDatabaseId);
         }
 
-        private async Task CreateContainerAsync()
+        private async Task<Container> CreateContainerAsync(Database database)
         {
-            this.container = await this.database.CreateContainerIfNotExistsAsync(this.containerId, partitionKeyPath: "/name");
-            Console.WriteLine("Created Container: {0}\n", this.container.Id);
+            return await database.CreateContainerIfNotExistsAsync(containerId, partitionKeyPath: "/name");
         }
 
-        private async Task AddItemsToContainerAsync()
+        private async Task AddItemsToContainerAsync(Container container)
         {
-            Random random = new Random();
+            int totalItems = 5000;
             string[] cityOptions = new string[] { "Seattle", "Chicago", "NYC", "SF" };
 
             // Create a family object for the Andersen family
-            foreach (int i in Enumerable.Range(0, 5000))
+            foreach (int i in Enumerable.Range(0, totalItems))
             {
-                int numberOfRecipeints = random.Next(1, 4);
-                List<RecipientList> recipientList = new List<RecipientList>();
+                int numberOfRecipeints = cityOptions.Length;
+                List<RecipientList> recipientList = new List<RecipientList>(numberOfRecipeints);
 
                 for (int j = 0; j < numberOfRecipeints; j++)
                 {
-                    RecipientList store = new RecipientList()
+                    RecipientList recipient = new RecipientList()
                     {
                         Name = "John",
-                        City = cityOptions[random.Next(0, cityOptions.Length)],
+                        City = cityOptions[j],
                     };
 
-                    recipientList.Add(store);
+                    recipientList.Add(recipient);
                 }
 
                 States andersenFamily = new States
                 {
                     Id = i.ToString(),
-                    Name = "Andersen",
-                    City = cityOptions[random.Next(0, cityOptions.Length)],
-                    PostalCode = random.Next(0, 1000).ToString(),
+                    Name = i < (totalItems/2) ? "Andersen" : "Smith",
+                    City = cityOptions[i%cityOptions.Length],
+                    PostalCode = (i * 10).ToString(),
                     Region = "Northwest",
                     UserDefinedID = i % 10,
                     RecipientList = recipientList
@@ -108,61 +106,46 @@
                 try
                 {
                     // Read the item to see if it exists.
-                    ItemResponse<States> andersenFamilyResponse = await this.container.ReadItemAsync<States>(andersenFamily.Id, new PartitionKey("Andersen"));
+                    ItemResponse<States> andersenFamilyResponse = await container.ReadItemAsync<States>(andersenFamily.Id, new PartitionKey(andersenFamily.Name));
                     Console.WriteLine("Item in database with id: {0} already exists\n", andersenFamilyResponse.Resource.Id);
                 }
                 catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
                 {
                     // Create an item in the container representing the Andersen family. Note we provide the value of the partition key for this item, which is "Andersen"
-                    ItemResponse<States> andersenFamilyResponse = await this.container.CreateItemAsync<States>(andersenFamily, new PartitionKey("Andersen"));
+                    ItemResponse<States> andersenFamilyResponse = await container.CreateItemAsync<States>(andersenFamily, new PartitionKey(andersenFamily.Name));
 
                     // Note that after creating the item, we can access the body of the item with the Resource property off the ItemResponse. We can also access the RequestCharge property to see the amount of RUs consumed on this request.
                     Console.WriteLine("Created item in database with id: {0} Operation consumed {1} RUs.\n", andersenFamilyResponse.Resource.Id, andersenFamilyResponse.RequestCharge);
                 }
-
             }
         }
         
-        private async Task RunAsync()
+        private async Task RunAsync(Container container)
         {
             MetricsSerializer metricsSerializer = new MetricsSerializer();
-            this.database = this.cosmosClient.GetDatabase(this.cosmosDatabaseId);
-            this.container = this.database.GetContainer(this.containerId);
             string highPrepTimeSumQuery = CreateHighPrepTimeSumQuery();
             string highPrepTimeConditionalQuery = CreateHighPrepTimeConditionalQuery();
-
-            Console.WriteLine(this.RawDataPath);
-
-            if (File.Exists(this.RawDataPath))
-            {
-                File.Delete(this.RawDataPath);
-            } 
-            
-            if(File.Exists(this.AggregateDataPath)) 
-            {
-                File.Delete(this.AggregateDataPath);
-            }
 
             List<DirectExecutionTestCase> odeTestCases = new List<DirectExecutionTestCase>()
             {
                 //Simple Query
-                CreateInput("SELECT * FROM c", this.partitionKeyValue, false, -1, 5000),
-                CreateInput("SELECT * FROM c", this.partitionKeyValue, true, -1, 5000),
+                CreateInput("SELECT * FROM c", partitionKeyValue, false, -1, 2500),
+                CreateInput("SELECT * FROM c", partitionKeyValue, true, -1, 2500),
 
                 //TOP
-                CreateInput("SELECT TOP 1000 c.id FROM c", this.partitionKeyValue, false, -1, 1000),
-                CreateInput("SELECT TOP 1000 c.id FROM c", this.partitionKeyValue, true, -1, 1000),
+                CreateInput("SELECT TOP 1000 c.id FROM c", partitionKeyValue, false, -1, 1000),
+                CreateInput("SELECT TOP 1000 c.id FROM c", partitionKeyValue, true, -1, 1000),
                 
                 //Filter
-                CreateInput("SELECT c.id FROM c WHERE c.city IN ('Seattle', 'NYC')", this.partitionKeyValue, false, -1, 2557),
-                CreateInput("SELECT c.id FROM c WHERE c.city IN ('Seattle', 'NYC')", this.partitionKeyValue, true, -1, 2557),
+                CreateInput("SELECT c.id FROM c WHERE c.city IN ('Seattle', 'NYC')", partitionKeyValue, false, -1, 1250),
+                CreateInput("SELECT c.id FROM c WHERE c.city IN ('Seattle', 'NYC')", partitionKeyValue, true, -1, 1250),
                 
                 //DISTINCT + Filter
-                CreateInput("SELECT DISTINCT c.userDefinedId FROM c WHERE c.userDefinedId BETWEEN 0 AND 5 OFFSET 1 LIMIT 3", this.partitionKeyValue, false, -1, 3),
-                CreateInput("SELECT DISTINCT c.userDefinedId FROM c WHERE c.userDefinedId BETWEEN 0 AND 5 OFFSET 1 LIMIT 3", this.partitionKeyValue, true, -1, 3),
+                CreateInput("SELECT DISTINCT c.userDefinedId FROM c WHERE c.userDefinedId BETWEEN 0 AND 5 OFFSET 1 LIMIT 3", partitionKeyValue, false, -1, 3),
+                CreateInput("SELECT DISTINCT c.userDefinedId FROM c WHERE c.userDefinedId BETWEEN 0 AND 5 OFFSET 1 LIMIT 3", partitionKeyValue, true, -1, 3),
                 
-                CreateInput("SELECT DISTINCT c.city FROM c WHERE STARTSWITH(c.city, 'S')", this.partitionKeyValue, false, -1, 2),
-                CreateInput("SELECT DISTINCT c.city FROM c WHERE STARTSWITH(c.city, 'S')", this.partitionKeyValue, true, -1, 2),
+                CreateInput("SELECT DISTINCT c.city FROM c WHERE STARTSWITH(c.city, 'S')", partitionKeyValue, false, -1, 2),
+                CreateInput("SELECT DISTINCT c.city FROM c WHERE STARTSWITH(c.city, 'S')", partitionKeyValue, true, -1, 2),
 
                 //JOIN
                 CreateInput("SELECT root.id " +
@@ -172,7 +155,7 @@
                 "JOIN root.id c " +
                 "WHERE root.id = '1' OR a.id in (1,2,3,4,5,6,7,8,9,10) " +
                 "OR b.id in (1,2,3,4,5,6,7,8,9,10) " +
-                "OR c.id in (1,2,3,4,5,6,7,8,9,10)", this.partitionKeyValue, false, -1, 1),
+                "OR c.id in (1,2,3,4,5,6,7,8,9,10)", partitionKeyValue, false, -1, 1),
                 CreateInput("SELECT root.id " +
                 "FROM root " +
                 "JOIN root.id a " +
@@ -180,76 +163,76 @@
                 "JOIN root.id c " +
                 "WHERE root.id = '1' OR a.id in (1,2,3,4,5,6,7,8,9,10) " +
                 "OR b.id in (1,2,3,4,5,6,7,8,9,10) " +
-                "OR c.id in (1,2,3,4,5,6,7,8,9,10)", this.partitionKeyValue, true, -1, 1),
+                "OR c.id in (1,2,3,4,5,6,7,8,9,10)", partitionKeyValue, true, -1, 1),
 
                 //High Prep Time
-                CreateInput(highPrepTimeSumQuery, this.partitionKeyValue, false, -1, 5000),
-                CreateInput(highPrepTimeSumQuery, this.partitionKeyValue, true, -1, 5000),
+                CreateInput(highPrepTimeSumQuery, partitionKeyValue, false, -1, 2500),
+                CreateInput(highPrepTimeSumQuery, partitionKeyValue, true, -1, 2500),
 
-                CreateInput(highPrepTimeConditionalQuery, this.partitionKeyValue, false, -1, 3770),
-                CreateInput(highPrepTimeConditionalQuery, this.partitionKeyValue, true, -1, 3770),
+                CreateInput(highPrepTimeConditionalQuery, partitionKeyValue, false, -1, 1750),
+                CreateInput(highPrepTimeConditionalQuery, partitionKeyValue, true, -1, 1750),
 
                 //Order By
-                CreateInput("SELECT * FROM c ORDER BY c.userDefinedId DESC", this.partitionKeyValue, false, -1, 5000),
-                CreateInput("SELECT * FROM c ORDER BY c.userDefinedId DESC", this.partitionKeyValue, true, -1, 5000),
+                CreateInput("SELECT * FROM c ORDER BY c.userDefinedId DESC", partitionKeyValue, false, -1, 2500),
+                CreateInput("SELECT * FROM c ORDER BY c.userDefinedId DESC", partitionKeyValue, true, -1, 2500),
 
-                CreateInput("SELECT c.id FROM c ORDER BY c.postalcode DESC", this.partitionKeyValue, false, -1, 5000),
-                CreateInput("SELECT c.id FROM c ORDER BY c.postalcode DESC", this.partitionKeyValue, true, -1, 5000),
+                CreateInput("SELECT c.id FROM c ORDER BY c.postalcode DESC", partitionKeyValue, false, -1, 2500),
+                CreateInput("SELECT c.id FROM c ORDER BY c.postalcode DESC", partitionKeyValue, true, -1, 2500),
 
                 //Order By + TOP
-                CreateInput("SELECT TOP 5 c.id FROM c ORDER BY c.userDefinedId", this.partitionKeyValue, false, -1, 5),
-                CreateInput("SELECT TOP 5 c.id FROM c ORDER BY c.userDefinedId", this.partitionKeyValue, true, -1, 5),
+                CreateInput("SELECT TOP 5 c.id FROM c ORDER BY c.userDefinedId", partitionKeyValue, false, -1, 5),
+                CreateInput("SELECT TOP 5 c.id FROM c ORDER BY c.userDefinedId", partitionKeyValue, true, -1, 5),
 
                 //Order By + DISTINCT
-                CreateInput("SELECT DISTINCT c.id FROM c ORDER BY c.city DESC", this.partitionKeyValue, false, -1, 5000),
-                CreateInput("SELECT DISTINCT c.id FROM c ORDER BY c.city DESC", this.partitionKeyValue, true, -1, 5000),
+                CreateInput("SELECT DISTINCT c.id FROM c ORDER BY c.city DESC", partitionKeyValue, false, -1, 2500),
+                CreateInput("SELECT DISTINCT c.id FROM c ORDER BY c.city DESC", partitionKeyValue, true, -1, 2500),
 
                 //Order By + DISTINCT + Filter
-                CreateInput("SELECT DISTINCT c.userDefinedId FROM c WHERE c.userDefinedId > 5 ORDER BY c.userDefinedId", this.partitionKeyValue, false, -1, 4),
-                CreateInput("SELECT DISTINCT c.userDefinedId FROM c WHERE c.userDefinedId > 5 ORDER BY c.userDefinedId", this.partitionKeyValue, true, -1, 4),
+                CreateInput("SELECT DISTINCT c.userDefinedId FROM c WHERE c.userDefinedId > 5 ORDER BY c.userDefinedId", partitionKeyValue, false, -1, 4),
+                CreateInput("SELECT DISTINCT c.userDefinedId FROM c WHERE c.userDefinedId > 5 ORDER BY c.userDefinedId", partitionKeyValue, true, -1, 4),
 
-                CreateInput("SELECT DISTINCT c.userDefinedId FROM c WHERE c.userDefinedId BETWEEN 0 AND 5 ORDER BY c.id DESC", this.partitionKeyValue, false, -1, 6),
-                CreateInput("SELECT DISTINCT c.userDefinedId FROM c WHERE c.userDefinedId BETWEEN 0 AND 5 ORDER BY c.id DESC", this.partitionKeyValue, true, -1, 6),
+                CreateInput("SELECT DISTINCT c.userDefinedId FROM c WHERE c.userDefinedId BETWEEN 0 AND 5 ORDER BY c.id DESC", partitionKeyValue, false, -1, 6),
+                CreateInput("SELECT DISTINCT c.userDefinedId FROM c WHERE c.userDefinedId BETWEEN 0 AND 5 ORDER BY c.id DESC", partitionKeyValue, true, -1, 6),
 
                 //Group By
-                CreateInput("SELECT c.postalcode FROM c GROUP BY c.postalcode", this.partitionKeyValue, false, -1, 996),
-                CreateInput("SELECT c.postalcode FROM c GROUP BY c.postalcode", this.partitionKeyValue, true, -1, 996),
+                CreateInput("SELECT c.postalcode FROM c GROUP BY c.postalcode", partitionKeyValue, false, -1, 2500),
+                CreateInput("SELECT c.postalcode FROM c GROUP BY c.postalcode", partitionKeyValue, true, -1, 2500),
 
-                CreateInput("SELECT Count(1) AS count, Sum(ARRAY_LENGTH(c.recipientList)) AS sum FROM c WHERE c.city IN ('Seattle', 'SF') GROUP BY c.city", this.partitionKeyValue, false, -1, 2),
-                CreateInput("SELECT Count(1) AS count, Sum(ARRAY_LENGTH(c.recipientList)) AS sum FROM c WHERE c.city IN ('Seattle', 'SF') GROUP BY c.city", this.partitionKeyValue, true, -1, 2),
+                CreateInput("SELECT Count(1) AS count, Sum(ARRAY_LENGTH(c.recipientList)) AS sum FROM c WHERE c.city IN ('Seattle', 'SF') GROUP BY c.city", partitionKeyValue, false, -1, 2),
+                CreateInput("SELECT Count(1) AS count, Sum(ARRAY_LENGTH(c.recipientList)) AS sum FROM c WHERE c.city IN ('Seattle', 'SF') GROUP BY c.city", partitionKeyValue, true, -1, 2),
 
-                CreateInput("SELECT c.city, AVG(ARRAY_LENGTH(c.recipientList)) FROM c GROUP BY c.city", this.partitionKeyValue, false, -1, 4),
-                CreateInput("SELECT c.city, AVG(ARRAY_LENGTH(c.recipientList)) FROM c GROUP BY c.city", this.partitionKeyValue, true, -1, 4),
+                CreateInput("SELECT c.city, AVG(ARRAY_LENGTH(c.recipientList)) FROM c GROUP BY c.city", partitionKeyValue, false, -1, 4),
+                CreateInput("SELECT c.city, AVG(ARRAY_LENGTH(c.recipientList)) FROM c GROUP BY c.city", partitionKeyValue, true, -1, 4),
 
                 //Group By + OFFSET
-                CreateInput("SELECT c.id FROM c GROUP BY c.id OFFSET 5 LIMIT 3", this.partitionKeyValue, false, -1, 3),
-                CreateInput("SELECT c.id FROM c GROUP BY c.id OFFSET 5 LIMIT 3", this.partitionKeyValue, true, -1, 3),
+                CreateInput("SELECT c.id FROM c GROUP BY c.id OFFSET 5 LIMIT 3", partitionKeyValue, false, -1, 3),
+                CreateInput("SELECT c.id FROM c GROUP BY c.id OFFSET 5 LIMIT 3", partitionKeyValue, true, -1, 3),
 
                 //Group By + TOP
-                CreateInput("SELECT TOP 25 c.id FROM c GROUP BY c.id", this.partitionKeyValue, false, -1, 25),
-                CreateInput("SELECT TOP 25 c.id FROM c GROUP BY c.id", this.partitionKeyValue, true, -1, 25),
+                CreateInput("SELECT TOP 25 c.id FROM c GROUP BY c.id", partitionKeyValue, false, -1, 25),
+                CreateInput("SELECT TOP 25 c.id FROM c GROUP BY c.id", partitionKeyValue, true, -1, 25),
 
                 //Group By + DISTINCT
-                CreateInput("SELECT DISTINCT c.id FROM c GROUP BY c.id", this.partitionKeyValue, false, -1, 5000),
-                CreateInput("SELECT DISTINCT c.id FROM c GROUP BY c.id", this.partitionKeyValue, true, -1, 5000),
+                CreateInput("SELECT DISTINCT c.id FROM c GROUP BY c.id", partitionKeyValue, false, -1, 2500),
+                CreateInput("SELECT DISTINCT c.id FROM c GROUP BY c.id", partitionKeyValue, true, -1, 2500),
 
-                CreateInput("SELECT DISTINCT c.postalcode FROM c GROUP BY c.postalcode", this.partitionKeyValue, false, -1, 996),
-                CreateInput("SELECT DISTINCT c.postalcode FROM c GROUP BY c.postalcode", this.partitionKeyValue, true, -1, 996),
+                CreateInput("SELECT DISTINCT c.postalcode FROM c GROUP BY c.postalcode", partitionKeyValue, false, -1, 2500),
+                CreateInput("SELECT DISTINCT c.postalcode FROM c GROUP BY c.postalcode", partitionKeyValue, true, -1, 2500),
             };
 
             foreach (DirectExecutionTestCase testCase in odeTestCases)
             {
-                await this.RunQueryAsync(this.container, testCase);
+                await this.RunQueryAsync(container, testCase);
             }
 
             using (StreamWriter writer = new StreamWriter(new FileStream(this.RawDataPath, FileMode.Append, FileAccess.Write)))
             {
-                metricsSerializer.ODESerialization(writer, this.queryStatisticsDatumVisitor, this.numberOfIterations, true);
+                metricsSerializer.OdeSerialization(writer, queryStatisticsDatumVisitor, numberOfIterations, rawData: true);
             }
 
             using (StreamWriter writer = new StreamWriter(new FileStream(this.AggregateDataPath, FileMode.Append, FileAccess.Write)))
             {
-                metricsSerializer.ODESerialization(writer, this.queryStatisticsDatumVisitor, this.numberOfIterations, false);
+                metricsSerializer.OdeSerialization(writer, queryStatisticsDatumVisitor, numberOfIterations, rawData: false);
             }
         }
 
@@ -262,23 +245,30 @@
                 PartitionKey = queryInput.PartitionKey,
             };
 
-            for (int i = 0; i < this.numberOfIterations; i++)
+            for (int i = 0; i < numberOfIterations + warmupIterations; i++)
             {
-                bool isWarmUpIteration = false;
-                if (i < this.warmupIterations)
-                {
-                    isWarmUpIteration = true;
-                }
+                bool isWarmUpIteration = i < warmupIterations;
                 using (FeedIterator<States> iterator = container.GetItemQueryIterator<States>(
                         queryText: queryInput.Query,
                         requestOptions: requestOptions))
                 {
-                    await this.GetIteratorResponse(iterator, queryInput, isWarmUpIteration);
+                    if (isWarmUpIteration)
+                    {
+                        while (iterator.HasMoreResults)
+                        {
+                            await iterator.ReadNextAsync();
+                        }
+                    }
+                    else
+                    {
+                        await this.GetIteratorResponse(iterator, queryInput);
+                    }
+                    
                 }
             }
         }
 
-        private async Task GetIteratorResponse<T>(FeedIterator<T> feedIterator, DirectExecutionTestCase queryInput, bool isWarmUpIteration)
+        private async Task GetIteratorResponse<T>(FeedIterator<T> feedIterator, DirectExecutionTestCase queryInput)
         {
             MetricsAccumulator metricsAccumulator = new MetricsAccumulator();
             Documents.ValueStopwatch totalTime = new Documents.ValueStopwatch();
@@ -289,35 +279,28 @@
 
             while (feedIterator.HasMoreResults)
             {
-                if (!isWarmUpIteration)
+                totalTime.Start();
+                response = await feedIterator.ReadNextAsync();
+                getTraceTime.Start();
+                if (response.RequestCharge != 0)
                 {
-                    totalTime.Start();
-                    response = await feedIterator.ReadNextAsync();
-                    getTraceTime.Start();
-                    if (response.RequestCharge != 0)
-                    {
-                        metricsAccumulator.ReadFromTrace(response, this.queryStatisticsDatumVisitor);
-                    }
-
-                    getTraceTime.Stop();
-                    totalTime.Stop();
-                    if (response.RequestCharge != 0)
-                    {
-                        this.queryStatisticsDatumVisitor.AddQuery(queryInput.Query);
-                        this.queryStatisticsDatumVisitor.AddEnableOdeFlag(queryInput.EnableOptimisticDirectExecution);
-                        this.queryStatisticsDatumVisitor.AddCorrelatedActivityId(correlatedActivityId);
-                        this.queryStatisticsDatumVisitor.AddRuCharge(response.RequestCharge);
-                        this.queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds);
-                        this.queryStatisticsDatumVisitor.PopulateMetrics();
-                    }
-
-                    totalTime.Reset();
-                    getTraceTime.Reset();
+                    metricsAccumulator.ReadFromTrace(response, queryStatisticsDatumVisitor);
                 }
-                else
+
+                getTraceTime.Stop();
+                totalTime.Stop();
+                if (response.RequestCharge != 0)
                 {
-                    response = await feedIterator.ReadNextAsync();
+                    queryStatisticsDatumVisitor.AddQuery(queryInput.Query);
+                    queryStatisticsDatumVisitor.AddEnableOdeFlag(queryInput.EnableOptimisticDirectExecution);
+                    queryStatisticsDatumVisitor.AddCorrelatedActivityId(correlatedActivityId);
+                    queryStatisticsDatumVisitor.AddRuCharge(response.RequestCharge);
+                    queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds);
+                    queryStatisticsDatumVisitor.PopulateMetrics();
                 }
+
+                totalTime.Reset();
+                getTraceTime.Reset();
 
                 totalDocumentCount += response.Count;
             }
@@ -356,6 +339,11 @@
             }
 
             return sb.ToString();
+        }
+
+        private async Task TestCleanup(Database database)
+        {
+            await database.DeleteAsync();
         }
 
         private static DirectExecutionTestCase CreateInput(
