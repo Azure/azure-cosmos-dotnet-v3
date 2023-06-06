@@ -117,7 +117,10 @@ namespace CosmosCTL
         public bool? EnableConsoleLogging { get; set; } = false;
 
         [Option("ctl_initialize_client_and_warmup_caches", Required = false, HelpText = "Initialize and warms up cosmos client.")]
-        public bool InitializeClientAndWarmupCaches { get; set; } = false;
+        public bool? InitializeClientAndWarmupCaches { get; set; } = false;
+
+        [Option("ctl_enable_replica_validation", Required = false, HelpText = "Enables replica validation feature.")]
+        public bool? EnableReplicaValidation { get; set; } = false;
 
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
