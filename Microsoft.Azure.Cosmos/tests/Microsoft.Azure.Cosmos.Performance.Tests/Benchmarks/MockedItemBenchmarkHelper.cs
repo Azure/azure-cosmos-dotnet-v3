@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using System;
     using System.IO;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Newtonsoft.Json;
 
     /// <summary>

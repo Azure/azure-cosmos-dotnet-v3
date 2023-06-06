@@ -1,7 +1,6 @@
 ﻿namespace Microsoft.Azure.Cosmos.Benchmarks
 {
     using System;
-    using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;

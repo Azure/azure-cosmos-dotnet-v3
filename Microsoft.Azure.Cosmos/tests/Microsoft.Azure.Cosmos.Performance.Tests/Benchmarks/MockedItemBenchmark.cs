@@ -6,8 +6,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
-    using BenchmarkDotNet.Columns;
-    using BenchmarkDotNet.Configs;
 
     public enum ScenarioType
     {

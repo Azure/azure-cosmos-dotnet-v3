@@ -3,10 +3,6 @@
     using System;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Documents;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
 
     [MemoryDiagnoser]
     public class DateTimeAllocationsBenchmark

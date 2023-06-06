@@ -5,11 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Threading.Tasks;
-    using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos;
 
     public class MockedItemStreamBenchmark : IItemBenchmark
