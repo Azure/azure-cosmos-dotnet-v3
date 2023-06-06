@@ -64,6 +64,8 @@ namespace Microsoft.Azure.Cosmos
             //Assert traceparent header in Direct mode request
             Assert.IsTrue(createResponse.RequestMessage.Headers.TryGetValue("traceparent", out string traceheader));
             Assert.IsNotNull(traceheader);
+            string[] traceheaderParts = traceheader.Split('-');
+            string traceheaderId = traceheaderParts[1];
 
             //Assert traceId in Diagnostics logs
             string diagnosticsCreateItem = createResponse.Diagnostics.ToString();
@@ -78,7 +80,11 @@ namespace Microsoft.Azure.Cosmos
                                                             .FirstOrDefault()
                                                             .TraceId
                                                             .ToString();
+            //Assert created activity traceId and diagnosticsLog traceId
             Assert.AreEqual(distributedTraceId, traceIdCreateItem);
+
+            //Assert requestHeader trace id and and diagnosticsLog traceId
+            Assert.AreEqual(distributedTraceId, traceheaderId);
 
             //Assert activity creation
             Assert.IsNotNull(CustomOtelExporter.CollectedActivities);
