@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using System.Net.Http;
+    using System.ComponentModel;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
     public sealed class DistributedTracingOTelTests : BaseCosmosClientHelper
@@ -30,12 +31,12 @@ namespace Microsoft.Azure.Cosmos
             AzureCore.ActivityExtensions.ResetFeatureSwitch();
         }
 
-        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request")]
-        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", null)]
-        [TestMethod]
-        public async Task SourceEnabled_FlagOn_DirectMode_RecordsActivity_AssertLogTraceId_AssertTraceparent(string firstSource, string secondSource)
+        [DataTestMethod]
+        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", DisplayName = "DirectMode and DistributedFlag On: Asserts activity creation at operation and network level with Diagnostic TraceId being added to logs")]
+        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", null, DisplayName = "DirectMode and DistributedFlag On: Asserts activity creation at operation level with Diagnostic TraceId being added to logs")]
+        public async Task SourceEnabled_FlagOn_DirectMode_RecordsActivity_AssertLogTraceId_AssertTraceparent(string operationLevelSource, string networkLevelSource)
         {
-            string[] sources = new string[] {firstSource, secondSource};
+            string[] sources = new string[] { operationLevelSource, networkLevelSource };
             sources = sources.Where(x => x != null).ToArray();
 
             using TracerProvider provider = Sdk.CreateTracerProviderBuilder()
@@ -89,20 +90,23 @@ namespace Microsoft.Azure.Cosmos
             //Assert activity creation
             Assert.IsNotNull(CustomOtelExporter.CollectedActivities);
 
-            // Assert activity created at network level have an existing parent activity
-            Activity networkLevelChildActivity = CustomOtelExporter.CollectedActivities
-                                                                        .Where(x => x.OperationName.Contains("Request"))
-                                                                        .FirstOrDefault();
-            Assert.IsNotNull(CustomOtelExporter.CollectedActivities
-                                                    .Where(x => x.Id == networkLevelChildActivity.ParentId));
+            if (networkLevelSource != null)
+            {
+                // Assert activity created at network level have an existing parent activity
+                Activity networkLevelChildActivity = CustomOtelExporter.CollectedActivities
+                                                                            .Where(x => x.OperationName.Contains("Request"))
+                                                                            .FirstOrDefault();
+                Assert.IsNotNull(CustomOtelExporter.CollectedActivities
+                                                        .Where(x => x.Id == networkLevelChildActivity.ParentId));
+            }
         }
 
-        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request")]
-        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", null)]
-        [TestMethod]
-        public async Task SourceEnabled_FlagOn_GatewayMode_RecordsActivity_AssertLogTraceId_AssertTraceparent(string firstSource, string secondSource)
+        [DataTestMethod]
+        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", DisplayName = "GatewayMode and DistributedFlag On: Asserts activity creation at operation and network level with Diagnostic TraceId being added to logs")]
+        [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", null, DisplayName = "GatewayMode and DistributedFlag On: Asserts activity creation at operation level with Diagnostic TraceId being added to logs")]
+        public async Task SourceEnabled_FlagOn_GatewayMode_RecordsActivity_AssertLogTraceId_AssertTraceparent(string operationLevelSource, string networkLevelSource)
         {
-            string[] sources = new string[] { firstSource, secondSource };
+            string[] sources = new string[] { operationLevelSource, networkLevelSource };
             sources = sources.Where(x => x != null).ToArray();
 
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper
@@ -153,16 +157,18 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(CustomOtelExporter.CollectedActivities);
         }
 
-        [DataRow(false, true)]
-        [DataRow(true, true)]
-        [DataRow(false, false)]
-        [DataRow(true, false)]
-        [TestMethod]
-        public async Task NoSourceEnabled_ResultsInNoSourceParentActivityCreation_AssertLogTraceId(bool useGateway, bool enableDistributingTracing)
+        [DataTestMethod]
+        [DataRow(false, true, "random.source.name", DisplayName = "DirectMode, DistributedFlag On, Random/No Source:Asserts no activity creation")]
+        [DataRow(true, true, "random.source.name", DisplayName = "GatewayMode, DistributedFlag On, Random/No Source:Asserts no activity creation")]
+        [DataRow(false, false, "random.source.name", DisplayName = "DirectMode, DistributedFlag Off, Random/No Source:Asserts no activity creation")]
+        [DataRow(true, false, "random.source.name", DisplayName = "GatewayMode, DistributedFlag Off, Random/No Source:Asserts no activity creation")]
+        [DataRow(false, false, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", DisplayName = "DirectMode, DistributedFlag Off, OperationLevel Source:Asserts no activity creation")]
+        [DataRow(true, false, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", DisplayName = "GatewayMode, DistributedFlag Off, OperationLevel Source:Asserts no activity creation")]
+        public async Task NoSourceEnabled_ResultsInNoSourceParentActivityCreation_AssertLogTraceId(bool useGateway, bool enableDistributingTracing, string source)
         {
             using TracerProvider provider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter()
-                .AddSource("random.source.name")
+                .AddSource(source)
                 .Build();
 
             if (useGateway)
