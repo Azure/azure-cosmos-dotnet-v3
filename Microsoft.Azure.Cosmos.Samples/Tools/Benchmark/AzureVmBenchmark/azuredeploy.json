@@ -275,27 +275,8 @@
             "location": "[resourceGroup().location]",
             "properties": {
                 "accountType": "Standard_LRS"
-            },
-            "resources": [
-                {
-                "type": "blobServices/containers",
-                "name": "default",
-                "apiVersion": "2019-06-01",
-                "dependsOn": [
-                    "[parameters('storageAccountName')]"
-                ],
-                "properties": {
-                    "publicAccess": "None"
-                }
-                }
-            ],
-            "outputs": {
-                "connectionString": {
-                "type": "string",
-                "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(parameters('storageAccountName'), '2019-06-01').keys[0].value)]"
-                }
             }
-            },
+        },
         {
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2020-11-01",
