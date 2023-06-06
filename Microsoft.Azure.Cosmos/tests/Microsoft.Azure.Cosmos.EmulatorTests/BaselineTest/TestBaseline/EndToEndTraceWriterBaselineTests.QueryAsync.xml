@@ -685,27 +685,6 @@
     <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
     <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -1418,27 +1397,6 @@
     <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
     <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -2124,27 +2082,6 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -2858,27 +2795,6 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -3667,27 +3583,6 @@
     <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
     <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -4382,27 +4277,6 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -5125,27 +4999,6 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
-  </ACTIVITY>
-  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
-    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
-    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
-    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Query Document">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>

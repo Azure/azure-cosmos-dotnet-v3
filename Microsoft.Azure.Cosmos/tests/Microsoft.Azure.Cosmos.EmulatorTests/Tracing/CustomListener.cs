@@ -282,15 +282,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
             }
 
-            List<Activity> collectedNetworkActivities = new List<Activity>(CustomListener.CollectedNetworkActivities);
-            collectedNetworkActivities = collectedNetworkActivities
+            HashSet<Activity> collectedNetworkActivities = new HashSet<Activity>(CustomListener.CollectedNetworkActivities, new NetworkActivityComparer());
+            List<Activity> orderedUniqueNetworkActivities = collectedNetworkActivities
                 .OrderBy(act => 
                             act.Source.Name + 
                             act.OperationName + 
                             act.GetTagItem("tcp.status_code") + 
                             act.GetTagItem("tcp.sub_status_code"))
                 .ToList();
-            foreach (Activity activity in collectedNetworkActivities)
+            foreach (Activity activity in orderedUniqueNetworkActivities)
             {
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
             }
@@ -349,5 +349,22 @@ namespace Microsoft.Azure.Cosmos.Tests
             public string Traceparent { get; set; }
             public string Tracestate { get; set; }
         }
+
+        public class NetworkActivityComparer : IEqualityComparer<Activity>
+        {
+            public bool Equals(Activity x, Activity y)
+            {
+                string xData = x.Source.Name + x.OperationName + x.GetTagItem("tcp.status_code") + x.GetTagItem("tcp.sub_status_code");
+                string yData = y.Source.Name + y.OperationName + y.GetTagItem("tcp.status_code") + y.GetTagItem("tcp.sub_status_code");
+
+                return xData.Equals(yData, StringComparison.OrdinalIgnoreCase);
+            }
+
+            public int GetHashCode(Activity obj)
+            {
+                return (obj.Source.Name + obj.OperationName + obj.GetTagItem("tcp.status_code") + obj.GetTagItem("tcp.sub_status_code")).GetHashCode() ;
+            }
+        }
+
     }
 }
