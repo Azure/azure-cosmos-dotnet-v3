@@ -144,7 +144,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             bool matched = baselineText.Equals(outputText);
             if (!matched)
             {
-                Debug.WriteLine("Expected: {0}, Actual: {1}", baselineText, outputText);
+                Console.WriteLine("Expected: {0}", baselineText);
+                Console.WriteLine("Actual: {0}", outputText);
             }
 
             Assert.IsTrue(
