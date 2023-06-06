@@ -7,12 +7,20 @@ namespace CosmosBenchmark
     using System;
     using System.Diagnostics;
     using System.Threading.Tasks;
+    using App.Metrics;
+    using App.Metrics.Counter;
+    using App.Metrics.Logging;
+    using App.Metrics.Timer;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Logging;
 
     internal class SerialOperationExecutor : IExecutor
     {
         private readonly IBenchmarkOperation operation;
         private readonly string executorId;
+
+        // TODO: Move to config.
+        private const string LoggingContextIdentifier = "CosmosDBBenchmarkLoggingContext";
 
         public SerialOperationExecutor(
             string executorId,
@@ -34,9 +42,31 @@ namespace CosmosBenchmark
                 int iterationCount,
                 bool isWarmup,
                 bool traceFailures,
-                Action completionCallback)
+                Action completionCallback,
+                ILogger logger,
+                IMetrics metrics)
         {
-            Trace.TraceInformation($"Executor {this.executorId} started");
+            logger.LogInformation($"Executor {this.executorId} started");
+
+            logger.LogInformation("Initializing counters and metrics.");
+            CounterOptions readSuccessMeter = new CounterOptions { Name = "#Read Successful Operations", Context = LoggingContextIdentifier };
+            CounterOptions readFailureMeter = new CounterOptions { Name = "#Read Unsuccessful Operations", Context = LoggingContextIdentifier };
+            CounterOptions writeSuccessMeter = new CounterOptions { Name = "#Write Successful Operations", Context = LoggingContextIdentifier };
+            CounterOptions writeFailureMeter = new CounterOptions { Name = "#Write Unsuccessful Operations", Context = LoggingContextIdentifier };
+            CounterOptions querySuccessMeter = new CounterOptions { Name = "#Query Successful Operations", Context = LoggingContextIdentifier };
+            CounterOptions queryFailureMeter = new CounterOptions { Name = "#Query Unsuccessful Operations", Context = LoggingContextIdentifier };
+
+            TimerOptions readLatencyTimer = new()
+            {
+                Name = "Read latency",
+                MeasurementUnit = Unit.Requests,
+                DurationUnit = TimeUnit.Milliseconds,
+                RateUnit = TimeUnit.Seconds,
+                Context = LoggingContextIdentifier,
+
+                // TODO: Pass config.
+                Reservoir = () => ReservoirProvider.GetReservoir(new BenchmarkConfig())
+            };
 
             try
             {
@@ -51,9 +81,17 @@ namespace CosmosBenchmark
                                 () => operationResult.Value,
                                 disableTelemetry: isWarmup))
                     {
+
                         try
                         {
-                            operationResult = await this.operation.ExecuteOnceAsync();
+                            using (TimerContext timerContext = metrics.Measure.Timer.Time(readLatencyTimer))
+                            {
+                                operationResult = await this.operation.ExecuteOnceAsync();
+                            }
+
+                            // TODO: Move to operation implementation.
+                            // if (this.operation.GetType() == typeof(ReadTExistsV3BenchmarkOperation))
+                            metrics.Measure.Counter.Increment(readSuccessMeter);
 
                             // Success case
                             this.SuccessOperationCount++;

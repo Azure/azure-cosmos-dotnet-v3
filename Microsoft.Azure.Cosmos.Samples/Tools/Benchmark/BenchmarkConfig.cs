@@ -11,6 +11,7 @@ namespace CosmosBenchmark
     using CommandLine;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
+    using static CosmosBenchmark.ReservoirProvider;
 
     public class BenchmarkConfig
     {
@@ -122,6 +123,21 @@ namespace CosmosBenchmark
 
         [Option(Required = false, HelpText = "Container to publish results to")]
         public string ResultsContainer { get; set; } = "runsummary";
+
+        [Option(Required = false, HelpText = "Indicates whether to write metrics to console.")]
+        public bool WriteMetricsToConsole { get; set; }
+
+        [Option(Required = false, HelpText = "Application Insights instrumentation key")]
+        public string AppInsightsInstrumentationKey { get; set; }
+
+        [Option(Required = false, HelpText = "Reporting interval in seconds")]
+        public int ReportingIntervalInSeconds { get; set; }
+
+        [Option(Required = false, HelpText = "Defines the reservoir type. Valid values are: Uniform, SlidingWindow and ExponentialDecay. The default value is SlidingWindow.")]
+        public ReservoirTypes ReservoirType { get; set; } = ReservoirTypes.SlidingWindow;
+
+        [Option(Required = false, HelpText = "The reservoir sample size.")]
+        public int ReservoirSampleSize { get; set; } = 1028;
 
         internal int GetTaskCount(int containerThroughput)
         {

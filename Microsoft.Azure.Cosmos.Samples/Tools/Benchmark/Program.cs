@@ -12,9 +12,14 @@ namespace CosmosBenchmark
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using App.Metrics;
+    using App.Metrics.Formatters.Json;
+    using App.Metrics.Scheduling;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
@@ -28,6 +33,11 @@ namespace CosmosBenchmark
         /// <param name="args">command line arguments.</param>
         public static async Task Main(string[] args)
         {
+            using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder
+                .AddConsole());
+
+            ILogger logger = loggerFactory.CreateLogger<Program>();
+
             try
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
@@ -45,7 +55,16 @@ namespace CosmosBenchmark
 
                 Program program = new Program();
 
-                RunSummary runSummary = await program.ExecuteAsync(config);
+                IMetricsRoot metrics = ConfigureReporting(config, logger);
+
+                AppMetricsTaskScheduler scheduler = new AppMetricsTaskScheduler(
+                    TimeSpan.FromSeconds(3),
+                    async () => await Task.WhenAll(metrics.ReportRunner.RunAllAsync()));
+                scheduler.Start();
+
+                RunSummary runSummary = await program.ExecuteAsync(config, logger, metrics);
+
+                await Task.WhenAll(metrics.ReportRunner.RunAllAsync());
             }
             finally
             {
@@ -56,6 +75,31 @@ namespace CosmosBenchmark
                     Console.ReadLine();
                 }
             }
+        }
+
+        private static IMetricsRoot ConfigureReporting(
+            BenchmarkConfig config,
+            ILogger logger)
+        {
+
+            if (config.WriteMetricsToConsole)
+            {
+                return new MetricsBuilder()
+                    .Report.ToConsole(
+                        options =>
+                        {
+                            options.FlushInterval = TimeSpan.FromSeconds(config.ReportingIntervalInSeconds);
+                            options.MetricsOutputFormatter = new MetricsJsonOutputFormatter();
+                        })
+                    .Build();
+            }
+
+            string connectionString = $"InstrumentationKey={config.AppInsightsInstrumentationKey}";
+            MetricsOptions metricsOptions = new MetricsOptions();
+            return new MetricsBuilder()
+                .Configuration.Configure(metricsOptions)
+                .Report.ToApplicationInsights(connectionString)
+                .Build();
         }
 
         private static async Task AddAzureInfoToRunSummary()
@@ -85,7 +129,7 @@ namespace CosmosBenchmark
         /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, ILogger logger, IMetrics metrics)
         {
             // V3 SDK client initialization
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
@@ -137,7 +181,7 @@ namespace CosmosBenchmark
                     }
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask,  0.01);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask,  0.01, logger, metrics);
                 }
 
                 if (config.CleanupOnFinish)
