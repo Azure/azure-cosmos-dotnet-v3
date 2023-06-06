@@ -44,7 +44,7 @@ namespace CosmosCTL
                 List<(string, string)> containers = new List<(string, string)>
                 { (config.Database, config.Collection)};
 
-                using CosmosClient client = config.InitializeClientAndWarmupCaches
+                using CosmosClient client = config.InitializeClientAndWarmupCaches.Value
                     ? await config.CreateCosmosClientAndWarmupCachesAsync(containers: containers)
                     : config.CreateCosmosClient();
 
@@ -160,7 +160,14 @@ namespace CosmosCTL
 
         private static void SetEnvironmentVariables(CTLConfig config)
         {
-            // Environment.SetEnvironmentVariable("AZURE_COSMOS_REPLICA_VALIDATION_ENABLED", "True");
+            if (config.EnableReplicaValidation.Value)
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_REPLICA_VALIDATION_ENABLED", "True");
+            }
+            else
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_REPLICA_VALIDATION_ENABLED", "False");
+            }
             // Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, config.TelemetryEndpoint);
             // Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, config.TelemetryScheduleInSeconds);
         }
