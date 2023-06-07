@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal abstract class QueryTV3BenchmarkOperation : IBenchmarkOperation
+    internal abstract class QueryTV3BenchmarkOperation : QueryBenchmarkBase, IBenchmarkOperation
     {
         protected readonly Container container;
         protected readonly Dictionary<string, object> sampleJObject;

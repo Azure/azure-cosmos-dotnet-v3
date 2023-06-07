@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ReadStreamExistsV3BenchmarkOperation : IBenchmarkOperation
+    internal class ReadStreamExistsV3BenchmarkOperation : ReadBenchmarkBase, IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;

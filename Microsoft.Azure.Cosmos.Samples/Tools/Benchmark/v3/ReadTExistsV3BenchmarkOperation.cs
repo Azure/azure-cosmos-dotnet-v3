@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
 
-    internal class ReadTExistsV3BenchmarkOperation : IBenchmarkOperation
+    internal class ReadTExistsV3BenchmarkOperation : ReadBenchmarkBase, IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;

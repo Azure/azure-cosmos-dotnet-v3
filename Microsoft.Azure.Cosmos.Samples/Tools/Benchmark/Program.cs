@@ -42,7 +42,7 @@ namespace CosmosBenchmark
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
                 await Program.AddAzureInfoToRunSummary();
-                
+
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
                 if (config.EnableLatencyPercentiles)
@@ -61,6 +61,9 @@ namespace CosmosBenchmark
                     TimeSpan.FromSeconds(3),
                     async () => await Task.WhenAll(metrics.ReportRunner.RunAllAsync()));
                 scheduler.Start();
+
+                // TODO: Temporary solution. Remove after adding DI.
+                BenchmarkConfigProvider.CurrentBenchmarkConfig = config;
 
                 RunSummary runSummary = await program.ExecuteAsync(config, logger, metrics);
 
@@ -119,7 +122,7 @@ namespace CosmosBenchmark
                 RunSummary.Location = jObject["compute"]["location"].ToString();
                 Console.WriteLine($"Azure VM Location:{RunSummary.Location}");
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine("Failed to get Azure VM info:" + e.ToString());
             }
@@ -174,14 +177,17 @@ namespace CosmosBenchmark
                         cosmosClient,
                         documentClient);
 
+
                     if (config.DisableCoreSdkLogging)
                     {
                         // Do it after client initialization (HACK)
                         Program.ClearCoreSdkListeners();
                     }
 
-                    IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask,  0.01, logger, metrics);
+                    IMetricsCollector metricsCollector = this.GetMetricsCollector(config);
+
+                    IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory, metricsCollector);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, logger, metrics);
                 }
 
                 if (config.CleanupOnFinish)
@@ -203,8 +209,8 @@ namespace CosmosBenchmark
                 {
                     runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
                     await this.PublishResults(
-                        config, 
-                        runSummary, 
+                        config,
+                        runSummary,
                         cosmosClient);
                 }
 
@@ -213,8 +219,8 @@ namespace CosmosBenchmark
         }
 
         private async Task PublishResults(
-            BenchmarkConfig config, 
-            RunSummary runSummary, 
+            BenchmarkConfig config,
+            RunSummary runSummary,
             CosmosClient benchmarkClient)
         {
             if (string.IsNullOrEmpty(config.ResultsEndpoint))
@@ -288,6 +294,38 @@ namespace CosmosBenchmark
             return () => (IBenchmarkOperation)ci.Invoke(ctorArguments);
         }
 
+        private IMetricsCollector GetMetricsCollector(BenchmarkConfig config)
+        {
+            Type metricsCollectorType = typeof(IMetricsCollector);
+
+            var availableBenchmarks = typeof(Program).Assembly.GetTypes()
+                .Where(p => metricsCollectorType.IsAssignableFrom(p))
+                .ToArray();
+
+            IEnumerable<Type> res = availableBenchmarks
+                .Where(e => e.Name.Equals(config.WorkloadType, StringComparison.OrdinalIgnoreCase) || e.Name.Equals(config.WorkloadType + "BenchmarkOperation", StringComparison.OrdinalIgnoreCase));
+
+            if (res.Count() != 1)
+            {
+                throw new NotImplementedException($"Unsupported workload type {config.WorkloadType}. Available ones are " +
+                    string.Join(", \r\n", availableBenchmarks.Select(e => e.Name)));
+            }
+
+            Type metricsCollectorTypeName = res.Single();
+
+            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+            var ci = metricsCollectorTypeName
+                .BaseType
+                .GetConstructors(flags)
+                .Where(constructor => constructor.GetParameters().Length == 0)
+                .First();
+
+            var metricsCollector = (IMetricsCollector)ci.Invoke(null);
+
+
+            return metricsCollector;
+        }
+
         private static Type[] AvailableBenchmarks()
         {
             Type benchmarkType = typeof(IBenchmarkOperation);
@@ -310,8 +348,8 @@ namespace CosmosBenchmark
             {
                 return await container.ReadContainerAsync();
             }
-            catch(CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            { 
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
                 // Show user cost of running this test
                 double estimatedCostPerMonth = 0.06 * options.Throughput;
                 double estimatedCostPerHour = estimatedCostPerMonth / (24 * 30);

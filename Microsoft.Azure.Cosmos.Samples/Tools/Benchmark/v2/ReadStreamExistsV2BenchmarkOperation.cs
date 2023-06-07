@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
-    internal class ReadStreamExistsV2BenchmarkOperation : IBenchmarkOperation
+    internal class ReadStreamExistsV2BenchmarkOperation : ReadBenchmarkBase, IBenchmarkOperation
     {
         private readonly string partitionKeyPath;
         private readonly Dictionary<string, object> sampleJObject;

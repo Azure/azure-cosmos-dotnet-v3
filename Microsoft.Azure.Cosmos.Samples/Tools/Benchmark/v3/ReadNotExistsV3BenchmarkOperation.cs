@@ -9,7 +9,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ReadNotExistsV3BenchmarkOperation : IBenchmarkOperation
+    internal class ReadNotExistsV3BenchmarkOperation : ReadBenchmarkBase, IBenchmarkOperation
     {
         private readonly Container container;
 

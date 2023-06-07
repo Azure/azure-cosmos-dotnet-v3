@@ -10,7 +10,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
-    internal class InsertV2BenchmarkOperation : IBenchmarkOperation
+    internal class InsertV2BenchmarkOperation : InsertBenchmarkBase, IBenchmarkOperation
     {
         private readonly DocumentClient documentClient;
         private readonly Uri containerUri;

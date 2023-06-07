@@ -20,12 +20,15 @@ namespace CosmosBenchmark
     {
         private readonly Func<IBenchmarkOperation> benchmarkOperation;
 
+        private readonly IMetricsCollector metricsCollector;
+
         private volatile int pendingExecutorCount;
 
         public ParallelExecutionStrategy(
-            Func<IBenchmarkOperation> benchmarkOperation)
+            Func<IBenchmarkOperation> benchmarkOperation, IMetricsCollector metricsCollector)
         {
             this.benchmarkOperation = benchmarkOperation;
+            this.metricsCollector = metricsCollector;
         }
 
         public async Task<RunSummary> ExecuteAsync(
@@ -38,7 +41,8 @@ namespace CosmosBenchmark
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
                         executorId: "Warmup",
-                        benchmarkOperation: this.benchmarkOperation());
+                        benchmarkOperation: this.benchmarkOperation(),
+                        metricsCollector);
             await warmupExecutor.ExecuteAsync(
                     (int)(serialExecutorIterationCount * warmupFraction),
                     isWarmup: true,
@@ -52,7 +56,8 @@ namespace CosmosBenchmark
             {
                 executors[i] = new SerialOperationExecutor(
                             executorId: i.ToString(),
-                            benchmarkOperation: this.benchmarkOperation());
+                            benchmarkOperation: this.benchmarkOperation(),
+                            metricsCollector);
             }
 
             this.pendingExecutorCount = serialExecutorConcurrency;

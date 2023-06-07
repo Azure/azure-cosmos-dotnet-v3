@@ -13,7 +13,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json.Linq;
 
-    internal class ReadTExistsV2BenchmarkOperation : IBenchmarkOperation
+    internal class ReadTExistsV2BenchmarkOperation : ReadBenchmarkBase, IBenchmarkOperation
     {
         private readonly string partitionKeyPath;
         private readonly Dictionary<string, object> sampleJObject;

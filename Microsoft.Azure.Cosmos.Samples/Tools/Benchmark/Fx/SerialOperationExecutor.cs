@@ -17,6 +17,9 @@ namespace CosmosBenchmark
     internal class SerialOperationExecutor : IExecutor
     {
         private readonly IBenchmarkOperation operation;
+
+        private readonly IMetricsCollector metricsCollector;
+
         private readonly string executorId;
 
         // TODO: Move to config.
@@ -24,13 +27,16 @@ namespace CosmosBenchmark
 
         public SerialOperationExecutor(
             string executorId,
-            IBenchmarkOperation benchmarkOperation)
+            IBenchmarkOperation benchmarkOperation,
+            IMetricsCollector metricsCollector)
         {
             this.executorId = executorId;
             this.operation = benchmarkOperation;
 
             this.SuccessOperationCount = 0;
             this.FailedOperationCount = 0;
+
+            this.metricsCollector = metricsCollector;
         }
 
         public int SuccessOperationCount { get; private set; }
@@ -49,24 +55,8 @@ namespace CosmosBenchmark
             logger.LogInformation($"Executor {this.executorId} started");
 
             logger.LogInformation("Initializing counters and metrics.");
-            CounterOptions readSuccessMeter = new CounterOptions { Name = "#Read Successful Operations", Context = LoggingContextIdentifier };
-            CounterOptions readFailureMeter = new CounterOptions { Name = "#Read Unsuccessful Operations", Context = LoggingContextIdentifier };
-            CounterOptions writeSuccessMeter = new CounterOptions { Name = "#Write Successful Operations", Context = LoggingContextIdentifier };
-            CounterOptions writeFailureMeter = new CounterOptions { Name = "#Write Unsuccessful Operations", Context = LoggingContextIdentifier };
-            CounterOptions querySuccessMeter = new CounterOptions { Name = "#Query Successful Operations", Context = LoggingContextIdentifier };
-            CounterOptions queryFailureMeter = new CounterOptions { Name = "#Query Unsuccessful Operations", Context = LoggingContextIdentifier };
 
-            TimerOptions readLatencyTimer = new()
-            {
-                Name = "Read latency",
-                MeasurementUnit = Unit.Requests,
-                DurationUnit = TimeUnit.Milliseconds,
-                RateUnit = TimeUnit.Seconds,
-                Context = LoggingContextIdentifier,
-
-                // TODO: Pass config.
-                Reservoir = () => ReservoirProvider.GetReservoir(new BenchmarkConfig())
-            };
+            var metricsContext = new MetricsContext(operation.GetType().Name, BenchmarkConfigProvider.CurrentBenchmarkConfig);
 
             try
             {
@@ -84,14 +74,12 @@ namespace CosmosBenchmark
 
                         try
                         {
-                            using (TimerContext timerContext = metrics.Measure.Timer.Time(readLatencyTimer))
+                            using (TimerContext timerContext = metrics.Measure.Timer.Time(metricsContext.LatencyTimer))
                             {
-                                operationResult = await this.operation.ExecuteOnceAsync();
+                                operationResult = await operation.ExecuteOnceAsync();
                             }
 
-                            // TODO: Move to operation implementation.
-                            // if (this.operation.GetType() == typeof(ReadTExistsV3BenchmarkOperation))
-                            metrics.Measure.Counter.Increment(readSuccessMeter);
+                            metricsCollector.CollectMetricsOnSuccess(metricsContext, metrics);
 
                             // Success case
                             this.SuccessOperationCount++;
@@ -108,6 +96,8 @@ namespace CosmosBenchmark
                             {
                                 Console.WriteLine(ex.ToString());
                             }
+
+                            metricsCollector.CollectMetricsOnFailure(metricsContext, metrics);
 
                             // failure case
                             this.FailedOperationCount++;
