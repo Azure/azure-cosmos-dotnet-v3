@@ -190,6 +190,11 @@ namespace Microsoft.Azure.Documents.Rntbd
                 throw clientException;
             }
 
+            callArguments.FaultInjectionRequestContext = request.FaultInjectionRequestContext;
+            callArguments.OperationType = request.OperationType;
+            callArguments.ResourceType = request.ResourceType;
+            callArguments.ResolvedCollectionRid = request.RequestContext.ResolvedCollectionRid;
+            callArguments.RequestHeaders = request.Headers;
             PooledTimer timer = this.timerPool.GetPooledTimer(this.requestTimeoutSeconds);
             Task[] tasks = new Task[2];
             tasks[0] = timer.StartTimerAsync();

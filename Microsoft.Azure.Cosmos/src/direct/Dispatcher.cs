@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using Microsoft.Azure.Cosmos.Core.Trace;
 #if COSMOSCLIENT
     using Microsoft.Azure.Cosmos.Rntbd;
+    using Microsoft.Azure.Documents.FaultInjection;
 #endif
 
 #if NETSTANDARD15 || NETSTANDARD16
@@ -66,6 +67,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         private PooledTimer idleTimer; // Guarded by connectionLock
         private Task idleTimerTask;  // Guarded by connectionLock
 
+        private readonly RntbdServerErrorInjector serverErrorInjector;
+
         public Dispatcher(
             Uri serverUri,
             UserAgentContainer userAgent,
@@ -78,7 +81,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             bool enableChannelMultiplexing,
             MemoryStreamPool memoryStreamPool,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback,
-            Func<string, Task<IPAddress>> dnsResolutionFunction)
+            Func<string, Task<IPAddress>> dnsResolutionFunction,
+            RntbdServerErrorInjector serverErrorInjector)
         {
             this.connection = new Connection(
                 serverUri, hostNameCertificateOverride,
@@ -92,6 +96,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.serverUri = serverUri;
             this.idleTimerPool = idleTimerPool;
             this.enableChannelMultiplexing = enableChannelMultiplexing;
+            this.serverErrorInjector = serverErrorInjector;
         }
 
         #region Test hook.
@@ -289,7 +294,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             this.ThrowIfDisposed();
             // The current task scheduler must be used for correctness and to
-            // track per tenant physical charges for the compute gateway.
+            // track per tenant physical charges for the compute gateway. 
             using (CallInfo callInfo = new CallInfo(
                 args.CommonArguments.ActivityId,
                 args.PreparedCall.Uri,
@@ -314,6 +319,22 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
                 try
                 {
+                    if (this.serverErrorInjector != null)
+                    {
+                        if (this.serverErrorInjector.InjectRntbdServerResponseError(args, transportRequestStats))
+                        {
+                            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
+                            if (transportRequestStats.FaultInjectionServerErrorType == FaultInjectionServerErrorType.TIMEOUT)
+                            {
+                                callInfo.SendFailed();
+                                throw transportRequestStats.FaultInjectionException;
+                            }
+                            else
+                            {
+                                return Task.FromResult(transportRequestStats.FaultInjectionStoreResponse).Result;
+                            }                                                      
+                        }
+                    }
                     try
                     {
                         await this.connection.WriteRequestAsync(

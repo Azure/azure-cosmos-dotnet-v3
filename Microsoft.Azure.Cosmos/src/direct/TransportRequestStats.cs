@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Documents
 {
+    using Microsoft.Azure.Documents.FaultInjection;
     using System;
     using System.Diagnostics;
     using System.Globalization;
@@ -56,6 +57,11 @@ namespace Microsoft.Azure.Documents
         public DateTime? ConnectionLastSendAttemptTime { get; set; }
         public DateTime? ConnectionLastSendTime { get; set; }
         public DateTime? ConnectionLastReceiveTime { get; set; }
+
+        //Fault Injection 
+        public Exception FaultInjectionException { get; set; }
+        public FaultInjectionServerErrorType FaultInjectionServerErrorType { get; set; }
+        public StoreResponse FaultInjectionStoreResponse { get; set; }
 
         public void RecordState(RequestStage requestStage)
         {

@@ -229,6 +229,24 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 innerException);
         }
 
+        internal static CosmosException CreateRetryWithException(
+            string message,
+            Headers headers,
+            string stackTrace = default,
+            ITrace trace = default,
+            Error error = default,
+            Exception innerException = default)
+        {
+            return CosmosExceptionFactory.Create(
+                (HttpStatusCode)StatusCodes.RetryWith,
+                message,
+                stackTrace,
+                headers,
+                trace,
+                error,
+                innerException);
+        }
+
         internal static CosmosException CreateNotFoundException(
             string message,
             Headers headers,
@@ -239,6 +257,24 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
         {
             return CosmosExceptionFactory.Create(
                 HttpStatusCode.NotFound,
+                message,
+                stackTrace,
+                headers,
+                trace,
+                error,
+                innerException);
+        }
+
+        internal static CosmosException CreateGoneException(
+            string message,
+            Headers headers,
+            string stackTrace = default,
+            ITrace trace = default,
+            Error error = default,
+            Exception innerException = default)
+        {
+            return CosmosExceptionFactory.Create(
+                HttpStatusCode.Gone,
                 message,
                 stackTrace,
                 headers,

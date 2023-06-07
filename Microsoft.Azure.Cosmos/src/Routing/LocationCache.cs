@@ -81,6 +81,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 #endif
         }
 
+        public Uri GetDefaultEndpoint()
+        {
+            return this.defaultEndpoint;
+        }
+
         /// <summary>
         /// Gets list of read endpoints ordered by
         /// 1. Preferred location
@@ -282,6 +287,26 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             request.RequestContext.RouteToLocation(locationEndpointToRoute);
             return locationEndpointToRoute;
+        }
+
+        public Uri ResolveFaultInjectionEndpoint(string region, bool writeOnly)
+        {
+            if (writeOnly)
+            {
+                if (this.locationInfo.AvailableWriteEndpointByLocation.TryGetValue(region, out Uri faultInjectionEndpoint))
+                {
+                    return faultInjectionEndpoint;
+                }
+            }
+            else
+            {
+                if (this.locationInfo.AvailableReadEndpointByLocation.TryGetValue(region, out Uri faultInjectionEndpoint))
+                {
+                    return faultInjectionEndpoint;
+                }
+            }
+
+            throw new ArgumentException($"Cannot find service endpoint for region: {region}");
         }
 
         public bool ShouldRefreshEndpoints(out bool canRefreshInBackground)

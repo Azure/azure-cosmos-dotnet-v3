@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Documents
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     //This is core Transport/Connection agnostic request to DocumentService.
@@ -75,6 +76,7 @@ namespace Microsoft.Azure.Documents
 
             this.RequestAuthorizationTokenType = authorizationTokenType;
             this.RequestContext = new DocumentServiceRequestContext();
+            this.FaultInjectionRequestContext = new FaultInjectionRequestContext();
 
             if (!string.IsNullOrEmpty(this.Headers[WFConstants.BackendHeaders.PartitionKeyRangeId]))
             {
@@ -108,6 +110,7 @@ namespace Microsoft.Azure.Documents
             this.Headers = headers ?? new DictionaryNameValueCollection();
             this.RequestAuthorizationTokenType = authorizationTokenType;
             this.RequestContext = new DocumentServiceRequestContext();
+            this.FaultInjectionRequestContext = new FaultInjectionRequestContext();
 
             // for address, no parsing is needed.
             if (resourceType == ResourceType.Address
@@ -178,7 +181,6 @@ namespace Microsoft.Azure.Documents
             this.Body = body;
             this.Headers = headers ?? new DictionaryNameValueCollection();
             this.RequestAuthorizationTokenType = authorizationTokenType;
-            this.RequestContext = new DocumentServiceRequestContext();
 
             // for address, no parsing is needed.
             if (resourceType == ResourceType.Address
@@ -332,6 +334,8 @@ namespace Microsoft.Azure.Documents
         public string ResourceId { get; set; }
 
         public DocumentServiceRequestContext RequestContext { get; set; }
+
+        public FaultInjectionRequestContext FaultInjectionRequestContext { get; set; }
 
         /// <summary>
         /// Normalized resourcePath, for both Name based and Rid based.
@@ -1061,6 +1065,7 @@ namespace Microsoft.Azure.Documents
                ResourceId = this.ResourceId,
                RequestAuthorizationTokenType = this.RequestAuthorizationTokenType,
                RequestContext = this.RequestContext.Clone(),
+               FaultInjectionRequestContext = new FaultInjectionRequestContext(this.FaultInjectionRequestContext),
                PartitionKeyRangeIdentity = this.PartitionKeyRangeIdentity,
                UseGatewayMode = this.UseGatewayMode,
                QueryString  = this.QueryString,
