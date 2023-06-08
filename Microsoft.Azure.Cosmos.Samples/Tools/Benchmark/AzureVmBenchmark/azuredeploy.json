@@ -169,7 +169,7 @@
         },
         "diagnosticsLatencyThresholdInMS": {
             "type": "int",
-            "defaultValue": -1
+            "defaultValue": 500
         },
         "readproportion": {
             "type": "string",
