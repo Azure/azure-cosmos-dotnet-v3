@@ -54,12 +54,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             string resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
-            Guid clientQueryCorrelationId,
             FeedRange feedRange,
             QueryRequestOptions requestOptions,
+            AdditionalRequestHeaders additionalRequestHeaders,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            bool isContinuationExpected,
             int pageSize,
             ITrace trace,
             CancellationToken cancellationToken);

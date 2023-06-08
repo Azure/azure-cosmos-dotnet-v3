@@ -30,7 +30,9 @@ namespace CosmosBenchmark
             BenchmarkConfig benchmarkConfig,
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
-            double warmupFraction)
+            double warmupFraction,
+            ILogger logger,
+            IMetrics metrics)
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
                         executorId: "Warmup",
@@ -145,6 +147,8 @@ namespace CosmosBenchmark
                     runSummary.Top80PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.8 * summaryCounters.Length)).Average(), 0);
                     runSummary.Top90PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.9 * summaryCounters.Length)).Average(), 0);
                     runSummary.Top95PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.95 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top95PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.999 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top95PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.9999 * summaryCounters.Length)).Average(), 0);
                     runSummary.Top99PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.99 * summaryCounters.Length)).Average(), 0);
                     runSummary.AverageRps = Math.Round(summaryCounters.Average(), 0);
 
@@ -154,6 +158,8 @@ namespace CosmosBenchmark
                     runSummary.Top95PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(95);
                     runSummary.Top98PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(98);
                     runSummary.Top99PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(99);
+                    runSummary.Top999PercentLatencyInMs = TelemetrySpan.GetLatencyQuantile(0.999);
+                    runSummary.Top9999PercentLatencyInMs = TelemetrySpan.GetLatencyQuantile(0.9999);
                     runSummary.MaxLatencyInMs = TelemetrySpan.GetLatencyPercentile(100);
 
                     string summary = JsonConvert.SerializeObject(runSummary);

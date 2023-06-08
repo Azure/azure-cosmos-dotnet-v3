@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -361,9 +362,11 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (Exception e)
                     {
+                        ITrace trace = NoOpTrace.Singleton;
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
                             datum.RecordHttpException(requestMessage, e, resourceType, requestStartTime);
+                            trace = datum.Trace;
                         }
                         bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
 
@@ -394,6 +397,7 @@ namespace Microsoft.Azure.Cosmos
                                                 ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
                                                 SubStatusCode = SubStatusCodes.TransportGenerated503
                                             },
+                                            trace: trace,
                                             innerException: e);
                                     }
 

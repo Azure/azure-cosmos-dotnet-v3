@@ -13,9 +13,14 @@ namespace CosmosBenchmark
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using App.Metrics;
+    using App.Metrics.Formatters.Json;
+    using App.Metrics.Scheduling;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json.Linq;
     using Azure.Storage.Blobs;
     using Container = Microsoft.Azure.Cosmos.Container;
@@ -32,6 +37,11 @@ namespace CosmosBenchmark
         /// <param name="args">command line arguments.</param>
         public static async Task Main(string[] args)
         {
+            using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder
+                .AddConsole());
+
+            ILogger logger = loggerFactory.CreateLogger<Program>();
+
             try
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
@@ -42,8 +52,8 @@ namespace CosmosBenchmark
 
                 string BlobName = $"{Environment.MachineName}-BenchmarkDiagnostics.out";
 
-                FileLogger logger = new FileLogger(BlobName);
-                logger.EnableEvents(BenchmarkLatencyEventSource.Instance, EventLevel.Informational);
+                FileLogger fileLogger = new FileLogger(BlobName);
+                fileLogger.EnableEvents(BenchmarkLatencyEventSource.Instance, EventLevel.Informational);
 
                 BenchmarkLatencyEventSource eventSource = BenchmarkLatencyEventSource.Instance;
                 if (config.EnableLatencyPercentiles)
@@ -76,7 +86,9 @@ namespace CosmosBenchmark
             }
         }
 
-        public static BlobContainerClient GetBlobServiceClient(BenchmarkConfig config)
+        private static IMetricsRoot ConfigureReporting(
+            BenchmarkConfig config,
+            ILogger logger)
         {
             MetricsBuilder metricsBuilder = new MetricsBuilder();
             if (config.AppInsightsInstrumentationKey.Trim().Length > 0)
@@ -95,6 +107,13 @@ namespace CosmosBenchmark
                         options.FlushInterval = TimeSpan.FromSeconds(config.MetricsReportingIntervalInSec);
                         options.MetricsOutputFormatter = new MetricsJsonOutputFormatter();
                     });
+            }
+
+            return metricsBuilder.Build();
+        }
+
+        public static BlobContainerClient GetBlobServiceClient(BenchmarkConfig config)
+        {
             BlobContainerClient blobContainerClient = new BlobContainerClient(config.ResultsStorageConnectionString, "diagnostics"); // todo add date
             blobContainerClient.CreateIfNotExists();
             return blobContainerClient;
@@ -109,7 +128,6 @@ namespace CosmosBenchmark
                 this.logFilePath = filePath;
             }
 
-            return metricsBuilder.Build();
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
                 using (StreamWriter writer = new StreamWriter(this.logFilePath, true))
@@ -145,7 +163,7 @@ namespace CosmosBenchmark
         /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, ILogger logger, IMetrics metrics)
         {
             // V3 SDK client initialization
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
@@ -193,6 +211,7 @@ namespace CosmosBenchmark
                         partitionKeyPath,
                         cosmosClient,
                         documentClient);
+
 
                     if (config.DisableCoreSdkLogging)
                     {

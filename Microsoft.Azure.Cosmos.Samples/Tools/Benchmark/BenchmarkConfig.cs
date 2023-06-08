@@ -11,6 +11,7 @@ namespace CosmosBenchmark
     using CommandLine;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
+    using static CosmosBenchmark.ReservoirProvider;
 
     public class BenchmarkConfig
     {
@@ -128,7 +129,10 @@ namespace CosmosBenchmark
         
         [Option(Required = false, HelpText = "Request latency threshold for capturing diagnostic data")]
         public int LatencyDiagnosticThreshold { get; set; } = 500;
-
+        
+        [Option(Required = false, HelpText = "Blob storage account connection string")]
+        [JsonIgnore]
+        public string ResultsStorageConnectionString { get; set; }
         [Option(Required = false, HelpText = "Application Insights instrumentation key")]
         public string AppInsightsInstrumentationKey { get; set; }
 

@@ -6,6 +6,8 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Threading.Tasks;
+    using App.Metrics;
+    using Microsoft.Extensions.Logging;
 
     internal interface IExecutor
     {

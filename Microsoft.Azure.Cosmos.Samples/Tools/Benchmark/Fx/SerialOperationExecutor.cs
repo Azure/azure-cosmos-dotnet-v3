@@ -7,11 +7,19 @@ namespace CosmosBenchmark
     using System;
     using System.Diagnostics;
     using System.Threading.Tasks;
+    using App.Metrics;
+    using App.Metrics.Counter;
+    using App.Metrics.Logging;
+    using App.Metrics.Timer;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Logging;
 
     internal class SerialOperationExecutor : IExecutor
     {
         private readonly IBenchmarkOperation operation;
+
+        private readonly IMetricsCollector metricsCollector;
+
         private readonly string executorId;
 
         public SerialOperationExecutor(
