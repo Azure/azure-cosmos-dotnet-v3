@@ -22,24 +22,19 @@ namespace CosmosBenchmark
 
         private readonly string executorId;
 
-        // TODO: Move to config.
-        private const string LoggingContextIdentifier = "CosmosDBBenchmarkLoggingContext";
-
         public SerialOperationExecutor(
             string executorId,
-            IBenchmarkOperation benchmarkOperation,
-            IMetricsCollector metricsCollector)
+            IBenchmarkOperation benchmarkOperation)
         {
             this.executorId = executorId;
             this.operation = benchmarkOperation;
 
             this.SuccessOperationCount = 0;
             this.FailedOperationCount = 0;
-
-            this.metricsCollector = metricsCollector;
         }
 
         public int SuccessOperationCount { get; private set; }
+
         public int FailedOperationCount { get; private set; }
 
         public double TotalRuCharges { get; private set; }
@@ -50,13 +45,15 @@ namespace CosmosBenchmark
                 bool traceFailures,
                 Action completionCallback,
                 ILogger logger,
-                IMetrics metrics)
+                IMetrics metrics,
+                BenchmarkConfig benchmarkConfig)
         {
             logger.LogInformation($"Executor {this.executorId} started");
 
             logger.LogInformation("Initializing counters and metrics.");
 
-            var metricsContext = new MetricsContext(operation.GetType().Name, BenchmarkConfigProvider.CurrentBenchmarkConfig);
+            MetricsContext metricsContext = new MetricsContext(benchmarkConfig);
+            IMetricsCollector metricsCollector = MetricsCollectorProvider.GetMetricsCollector(this.operation, metricsContext, metrics);
 
             try
             {
@@ -71,15 +68,14 @@ namespace CosmosBenchmark
                                 () => operationResult.Value,
                                 disableTelemetry: isWarmup))
                     {
-
                         try
                         {
-                            using (TimerContext timerContext = metrics.Measure.Timer.Time(metricsContext.LatencyTimer))
+                            using (TimerContext timerContext = metricsCollector.GetTimer())
                             {
-                                operationResult = await operation.ExecuteOnceAsync();
+                                operationResult = await this.operation.ExecuteOnceAsync();
                             }
 
-                            metricsCollector.CollectMetricsOnSuccess(metricsContext, metrics);
+                            metricsCollector.CollectMetricsOnSuccess();
 
                             // Success case
                             this.SuccessOperationCount++;
@@ -97,7 +93,7 @@ namespace CosmosBenchmark
                                 Console.WriteLine(ex.ToString());
                             }
 
-                            metricsCollector.CollectMetricsOnFailure(metricsContext, metrics);
+                            metricsCollector.CollectMetricsOnFailure();
 
                             // failure case
                             this.FailedOperationCount++;

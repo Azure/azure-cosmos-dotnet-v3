@@ -58,16 +58,11 @@ namespace CosmosBenchmark
                 IMetricsRoot metrics = ConfigureReporting(config, logger);
 
                 AppMetricsTaskScheduler scheduler = new AppMetricsTaskScheduler(
-                    TimeSpan.FromSeconds(3),
+                    TimeSpan.FromSeconds(config.MetricsReportingIntervalInSec),
                     async () => await Task.WhenAll(metrics.ReportRunner.RunAllAsync()));
                 scheduler.Start();
 
-                // TODO: Temporary solution. Remove after adding DI.
-                BenchmarkConfigProvider.CurrentBenchmarkConfig = config;
-
                 RunSummary runSummary = await program.ExecuteAsync(config, logger, metrics);
-
-                await Task.WhenAll(metrics.ReportRunner.RunAllAsync());
             }
             finally
             {
@@ -84,25 +79,26 @@ namespace CosmosBenchmark
             BenchmarkConfig config,
             ILogger logger)
         {
-
-            if (config.WriteMetricsToConsole)
+            MetricsBuilder metricsBuilder = new MetricsBuilder();
+            if (config.AppInsightsInstrumentationKey.Trim().Length > 0)
             {
-                return new MetricsBuilder()
-                    .Report.ToConsole(
-                        options =>
-                        {
-                            options.FlushInterval = TimeSpan.FromSeconds(config.ReportingIntervalInSeconds);
-                            options.MetricsOutputFormatter = new MetricsJsonOutputFormatter();
-                        })
-                    .Build();
+                string connectionString = $"InstrumentationKey={config.AppInsightsInstrumentationKey}";
+                MetricsOptions metricsOptions = new MetricsOptions();
+                metricsBuilder
+                    .Configuration.Configure(metricsOptions)
+                    .Report.ToApplicationInsights(connectionString);
+            }
+            else
+            {
+                metricsBuilder.Report.ToConsole(
+                    options =>
+                    {
+                        options.FlushInterval = TimeSpan.FromSeconds(config.MetricsReportingIntervalInSec);
+                        options.MetricsOutputFormatter = new MetricsJsonOutputFormatter();
+                    });
             }
 
-            string connectionString = $"InstrumentationKey={config.AppInsightsInstrumentationKey}";
-            MetricsOptions metricsOptions = new MetricsOptions();
-            return new MetricsBuilder()
-                .Configuration.Configure(metricsOptions)
-                .Report.ToApplicationInsights(connectionString)
-                .Build();
+            return metricsBuilder.Build();
         }
 
         private static async Task AddAzureInfoToRunSummary()
@@ -184,9 +180,7 @@ namespace CosmosBenchmark
                         Program.ClearCoreSdkListeners();
                     }
 
-                    IMetricsCollector metricsCollector = this.GetMetricsCollector(config);
-
-                    IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory, metricsCollector);
+                    IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
                     runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, logger, metrics);
                 }
 
@@ -292,38 +286,6 @@ namespace CosmosBenchmark
             }
 
             return () => (IBenchmarkOperation)ci.Invoke(ctorArguments);
-        }
-
-        private IMetricsCollector GetMetricsCollector(BenchmarkConfig config)
-        {
-            Type metricsCollectorType = typeof(IMetricsCollector);
-
-            var availableBenchmarks = typeof(Program).Assembly.GetTypes()
-                .Where(p => metricsCollectorType.IsAssignableFrom(p))
-                .ToArray();
-
-            IEnumerable<Type> res = availableBenchmarks
-                .Where(e => e.Name.Equals(config.WorkloadType, StringComparison.OrdinalIgnoreCase) || e.Name.Equals(config.WorkloadType + "BenchmarkOperation", StringComparison.OrdinalIgnoreCase));
-
-            if (res.Count() != 1)
-            {
-                throw new NotImplementedException($"Unsupported workload type {config.WorkloadType}. Available ones are " +
-                    string.Join(", \r\n", availableBenchmarks.Select(e => e.Name)));
-            }
-
-            Type metricsCollectorTypeName = res.Single();
-
-            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
-            var ci = metricsCollectorTypeName
-                .BaseType
-                .GetConstructors(flags)
-                .Where(constructor => constructor.GetParameters().Length == 0)
-                .First();
-
-            var metricsCollector = (IMetricsCollector)ci.Invoke(null);
-
-
-            return metricsCollector;
         }
 
         private static Type[] AvailableBenchmarks()

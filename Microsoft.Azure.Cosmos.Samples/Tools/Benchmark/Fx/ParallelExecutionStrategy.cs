@@ -11,8 +11,6 @@ namespace CosmosBenchmark
     using System.Threading;
     using System.Threading.Tasks;
     using App.Metrics;
-    using Microsoft.ApplicationInsights;
-    using Microsoft.ApplicationInsights.Extensibility;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
 
@@ -20,15 +18,12 @@ namespace CosmosBenchmark
     {
         private readonly Func<IBenchmarkOperation> benchmarkOperation;
 
-        private readonly IMetricsCollector metricsCollector;
-
         private volatile int pendingExecutorCount;
 
         public ParallelExecutionStrategy(
-            Func<IBenchmarkOperation> benchmarkOperation, IMetricsCollector metricsCollector)
+            Func<IBenchmarkOperation> benchmarkOperation)
         {
             this.benchmarkOperation = benchmarkOperation;
-            this.metricsCollector = metricsCollector;
         }
 
         public async Task<RunSummary> ExecuteAsync(
@@ -41,23 +36,22 @@ namespace CosmosBenchmark
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
                         executorId: "Warmup",
-                        benchmarkOperation: this.benchmarkOperation(),
-                        metricsCollector);
+                        benchmarkOperation: this.benchmarkOperation());
             await warmupExecutor.ExecuteAsync(
                     (int)(serialExecutorIterationCount * warmupFraction),
                     isWarmup: true,
                     traceFailures: benchmarkConfig.TraceFailures,
                     completionCallback: () => { },
                     logger,
-                    metrics);
+                    metrics,
+                    benchmarkConfig);
 
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
             for (int i = 0; i < serialExecutorConcurrency; i++)
             {
                 executors[i] = new SerialOperationExecutor(
                             executorId: i.ToString(),
-                            benchmarkOperation: this.benchmarkOperation(),
-                            metricsCollector);
+                            benchmarkOperation: this.benchmarkOperation());
             }
 
             this.pendingExecutorCount = serialExecutorConcurrency;
@@ -69,17 +63,20 @@ namespace CosmosBenchmark
                         traceFailures: benchmarkConfig.TraceFailures,
                         completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount),
                         logger,
-                        metrics);
+                        metrics,
+                        benchmarkConfig);
             }
 
             return await this.LogOutputStats(
                 benchmarkConfig, 
-                executors);
+                executors,
+                metrics);
         }
 
         private async Task<RunSummary> LogOutputStats(
             BenchmarkConfig benchmarkConfig,
-            IExecutor[] executors)
+            IExecutor[] executors,
+            IMetrics metrics)
         {
             const int outputLoopDelayInSeconds = 1;
             IList<int> perLoopCounters = new List<int>();
@@ -117,16 +114,6 @@ namespace CosmosBenchmark
                 perLoopCounters.Add((int)diff.Rps());
 
                 await Task.Delay(TimeSpan.FromSeconds(outputLoopDelayInSeconds));
-
-                Console.WriteLine("P50: " + TelemetrySpan.GetLatencyPercentile(50));
-                Console.WriteLine("P75: " + TelemetrySpan.GetLatencyPercentile(75));
-                Console.WriteLine("P90: " + TelemetrySpan.GetLatencyPercentile(90));
-                Console.WriteLine("P95: " + TelemetrySpan.GetLatencyPercentile(95));
-                Console.WriteLine("P98: " + TelemetrySpan.GetLatencyPercentile(98));
-                Console.WriteLine("P99: " + TelemetrySpan.GetLatencyPercentile(99));
-                Console.WriteLine("P999: " + TelemetrySpan.GetLatencyQuantile(0.999));
-                Console.WriteLine("P9999: " + TelemetrySpan.GetLatencyQuantile(0.9999));
-                Console.WriteLine("P100: " + TelemetrySpan.GetLatencyPercentile(100));
             }
             while (!isLastIterationCompleted);
 

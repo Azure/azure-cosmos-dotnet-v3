@@ -21,6 +21,7 @@ namespace CosmosBenchmark
                 bool traceFailures,
                 Action completionCallback,
                 ILogger logger,
-                IMetrics metrics);
+                IMetrics metrics,
+                BenchmarkConfig benchmarkConfig);
     }
 }

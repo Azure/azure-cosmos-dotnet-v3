@@ -4,14 +4,7 @@
 
 namespace CosmosBenchmark
 {
-    using App.Metrics.Timer;
-
-    public interface IMetricsCollector
+    internal abstract class ReadBenchmarkOperation : BenchmarkOperation
     {
-        TimerContext GetTimer();
-
-        void CollectMetricsOnSuccess();
-
-        void CollectMetricsOnFailure();
     }
 }

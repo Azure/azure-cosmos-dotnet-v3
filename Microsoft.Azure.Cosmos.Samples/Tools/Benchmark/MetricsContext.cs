@@ -10,7 +10,9 @@ namespace CosmosBenchmark
 
     public class MetricsContext
     {
-        public string ContextId { get; }
+        public CounterOptions QuerySuccessMeter { get; }
+
+        public CounterOptions QueryFailureMeter { get; }
 
         public CounterOptions ReadSuccessMeter { get; }
 
@@ -20,30 +22,50 @@ namespace CosmosBenchmark
 
         public CounterOptions WriteFailureMeter { get; }
 
-        public CounterOptions QuerySuccessMeter { get; }
+        public TimerOptions QueryLatencyTimer { get; }
 
-        public CounterOptions QueryFailureMeter { get; }
+        public TimerOptions ReadLatencyTimer { get; }
 
-        public TimerOptions LatencyTimer { get; }
+        public TimerOptions InsertLatencyTimer { get; }
 
-        public MetricsContext(string contextId, BenchmarkConfig benchmarkConfig)
+        public MetricsContext(BenchmarkConfig benchmarkConfig)
         {
-            ContextId = contextId;
+            this.QuerySuccessMeter = new CounterOptions { Name = "#Query Successful Operations", Context = benchmarkConfig.LoggingContextIdentifier };
+            this.QueryFailureMeter = new CounterOptions { Name = "#Query Unsuccessful Operations", Context = benchmarkConfig.LoggingContextIdentifier };
 
-            ReadSuccessMeter = new CounterOptions { Name = "#Read Successful Operations", Context = ContextId };
-            ReadFailureMeter = new CounterOptions { Name = "#Read Unsuccessful Operations", Context = ContextId };
-            WriteSuccessMeter = new CounterOptions { Name = "#Write Successful Operations", Context = ContextId };
-            WriteFailureMeter = new CounterOptions { Name = "#Write Unsuccessful Operations", Context = ContextId };
-            QuerySuccessMeter = new CounterOptions { Name = "#Query Successful Operations", Context = ContextId };
-            QueryFailureMeter = new CounterOptions { Name = "#Query Unsuccessful Operations", Context = ContextId };
+            this.ReadSuccessMeter = new CounterOptions { Name = "#Read Successful Operations", Context = benchmarkConfig.LoggingContextIdentifier };
+            this.ReadFailureMeter = new CounterOptions { Name = "#Read Unsuccessful Operations", Context = benchmarkConfig.LoggingContextIdentifier };
 
-            LatencyTimer = new()
+            this.WriteSuccessMeter = new CounterOptions { Name = "#Insert Successful Operations", Context = benchmarkConfig.LoggingContextIdentifier };
+            this.WriteFailureMeter = new CounterOptions { Name = "#Insert Unsuccessful Operations", Context = benchmarkConfig.LoggingContextIdentifier };
+
+            this.QueryLatencyTimer = new()
             {
-                Name = "Latency",
+                Name = "Query latency",
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
-                Context = ContextId,
+                Context = benchmarkConfig.LoggingContextIdentifier,
+                Reservoir = () => ReservoirProvider.GetReservoir(benchmarkConfig)
+            };
+
+            this.ReadLatencyTimer = new()
+            {
+                Name = "Read latency",
+                MeasurementUnit = Unit.Requests,
+                DurationUnit = TimeUnit.Milliseconds,
+                RateUnit = TimeUnit.Seconds,
+                Context = benchmarkConfig.LoggingContextIdentifier,
+                Reservoir = () => ReservoirProvider.GetReservoir(benchmarkConfig)
+            };
+
+            this.InsertLatencyTimer = new()
+            {
+                Name = "Insert latency",
+                MeasurementUnit = Unit.Requests,
+                DurationUnit = TimeUnit.Milliseconds,
+                RateUnit = TimeUnit.Seconds,
+                Context = benchmarkConfig.LoggingContextIdentifier,
                 Reservoir = () => ReservoirProvider.GetReservoir(benchmarkConfig)
             };
         }
