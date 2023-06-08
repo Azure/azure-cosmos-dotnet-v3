@@ -35,7 +35,7 @@ flowchart TD
 
 ```
 
-## Client Telemetry (Private Preview)
+## Send telemetry from SDK to service (Private Preview)
 
 ### Introduction
 SDK sends aggregated telemetry data every 10 minutes to Microsoft. We collect following information as part of this feature:
@@ -95,10 +95,10 @@ flowchart TD
 ```
 
 ### Benefits
-Enabling this feature provides numerous benefits. The telemetry data collected will allow us to proactively identify and address potential issues before they impact your consumers. This results in a superior support experience and ensures that most issues are resolved before they even arise. In short, customers with this feature enabled can expect a smoother and more reliable experience.
+Enabling this feature provides numerous benefits. The telemetry data collected will allow us to identify and address potential issues. This results in a superior support experience and ensures that some issues can even be resolved before they impact your application. In short, customers with this feature enabled can expect a smoother and more reliable experience.
 
 ### Impact of this feature enabled
 * _Latency_: Customer should not see any impact on latency.
-* _Total RPS_: It depends on the infrastructure the application using SDK is hosted on among other factors. On a fully packed Azure Machine (100% CPU usage) where the SDK is using point operations, impact should not be more than 10%.
+* _Total RPS_: It depends on the infrastructure the application using SDK is hosted on among other factors but the impact should not exceed 10%.
 * _Any other impact_: Collector needs around 18MB of in-memory storage to hold the data and this storage is always constant (it means it doesn't grow, no matter how much data we have)
 * Benchmark Numbers: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/Contracts/BenchmarkResults.json
