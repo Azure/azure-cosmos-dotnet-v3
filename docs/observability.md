@@ -38,7 +38,7 @@ flowchart TD
 ## Client Telemetry (Private Preview)
 
 ### Introduction
-It is a feature which can be opted-in by setting environment variables. By opting-in this feature, SDK will start sending aggregated telemetry data every 10 minutes to Microsoft.
+SDK sends aggregated telemetry data every 10 minutes to Microsoft.
 
 We collect following information as part of this:
 1. Cache Latencies : Right now, it covers only Collection Cache
@@ -50,7 +50,7 @@ We collect following information as part of this:
 3. Operation Latencies and Request Units (RUs).
 4. Network Request Latencies. (sampled to, top 10 slowest to a replica)
 
-> Note: We don't collect any PII data as part of this feature. Right now, it is not self opt in, you need to contact us for more information.
+> Note: We don't collect any PII data as part of this feature.
 
 ### Limitations
 1. AAD Support is not available
@@ -102,5 +102,6 @@ Enabling this feature provides numerous benefits. The telemetry data collected w
 
 ### Impact of this feature enabled
 * _Latency_: Customer should not see any impact on latency.
-* _Total RPS_: It depends on the infrastructure the application using SDK is hosted on among other factors. On a fully packed Azure Machine where the SDK is using point operations, impact should not be more than 10%.
+* _Total RPS_: It depends on the infrastructure the application using SDK is hosted on among other factors. On a fully packed Azure Machine (100% CPU usage) where the SDK is using point operations, impact should not be more than 10%.
 * _Any other impact_: Collector needs around 18MB of in-memory storage to hold the data and this storage is always constant (it means it doesn't grow, no matter how much data we have)
+* Benchmark Numbers: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/Contracts/BenchmarkResults.json
