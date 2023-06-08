@@ -7,6 +7,7 @@ namespace CosmosBenchmark
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.Tracing;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -16,12 +17,16 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
+    using Azure.Storage.Blobs;
+    using Container = Microsoft.Azure.Cosmos.Container;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
     /// </summary>
     public sealed class Program
     {
+        private const string BlobName = $"BenchmarkDiagnostics.out";
+
         /// <summary>
         /// Main method for the sample.
         /// </summary>
@@ -32,9 +37,15 @@ namespace CosmosBenchmark
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
                 await Program.AddAzureInfoToRunSummary();
-                
+
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
+
+
+                FileLogger logger = new FileLogger(BlobName);
+                logger.EnableEvents(BenchmarkLatencyEventSource.Instance, EventLevel.Informational);
+
+                BenchmarkLatencyEventSource eventSource = BenchmarkLatencyEventSource.Instance;
                 if (config.EnableLatencyPercentiles)
                 {
                     TelemetrySpan.IncludePercentile = true;
@@ -58,6 +69,30 @@ namespace CosmosBenchmark
             }
         }
 
+        public static BlobContainerClient GetBlobServiceClient(BenchmarkConfig config)
+        {
+            BlobContainerClient blobContainerClient = new BlobContainerClient(config.ResultsStorageConnectionString, "diagnostics"); // todo add date
+            blobContainerClient.CreateIfNotExists();
+            return blobContainerClient;
+        }
+
+        public class FileLogger : EventListener
+        {
+            private readonly string logFilePath;
+
+            public FileLogger(string filePath)
+            {
+                this.logFilePath = filePath;
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                using (StreamWriter writer = new StreamWriter(this.logFilePath, true))
+                {
+                    writer.WriteLine($"{eventData.Payload[2]} | {eventData.Payload[3]}");
+                }
+            }
+        }
         private static async Task AddAzureInfoToRunSummary()
         {
             using HttpClient httpClient = new HttpClient();
@@ -75,7 +110,7 @@ namespace CosmosBenchmark
                 RunSummary.Location = jObject["compute"]["location"].ToString();
                 Console.WriteLine($"Azure VM Location:{RunSummary.Location}");
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine("Failed to get Azure VM info:" + e.ToString());
             }
@@ -109,6 +144,10 @@ namespace CosmosBenchmark
                         $"Container {config.Container} must have a configured throughput.");
                 }
 
+                Container resultContainer = await GetResultContainer(config, cosmosClient);
+
+                BenchmarkProgress benchmarkProgressItem = await CreateBenchmarkProgressItem(resultContainer);
+
                 Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
                 int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
 
@@ -137,7 +176,7 @@ namespace CosmosBenchmark
                     }
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask,  0.01);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01);
                 }
 
                 if (config.CleanupOnFinish)
@@ -155,12 +194,13 @@ namespace CosmosBenchmark
                 runSummary.ConsistencyLevel = consistencyLevel;
 
 
+                BenchmarkProgress benchmarkProgress = await CompleteBenchmarkProgressStatus(benchmarkProgressItem, resultContainer);
                 if (config.PublishResults)
                 {
                     runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
                     await this.PublishResults(
-                        config, 
-                        runSummary, 
+                        config,
+                        runSummary,
                         cosmosClient);
                 }
 
@@ -169,8 +209,8 @@ namespace CosmosBenchmark
         }
 
         private async Task PublishResults(
-            BenchmarkConfig config, 
-            RunSummary runSummary, 
+            BenchmarkConfig config,
+            RunSummary runSummary,
             CosmosClient benchmarkClient)
         {
             if (string.IsNullOrEmpty(config.ResultsEndpoint))
@@ -179,7 +219,7 @@ namespace CosmosBenchmark
                     databaseId: config.ResultsDatabase ?? config.Database,
                     containerId: config.ResultsContainer);
 
-                await resultContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));
+                await resultContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.id));
             }
             else
             {
@@ -187,6 +227,27 @@ namespace CosmosBenchmark
                 Container resultContainer = cosmosClient.GetContainer(config.ResultsDatabase, config.ResultsContainer);
                 await resultContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));
             }
+
+            if (!string.IsNullOrEmpty(config.ResultsStorageConnectionString))
+            {
+                UploadDiagnostcs(config);
+            }
+        }
+
+        public static void UploadDiagnostcs(BenchmarkConfig config)
+        {
+            try
+            {
+                // TODO Add logs here
+                BlobContainerClient blobContainerClient = GetBlobServiceClient(config);
+                BlobClient blobClient = blobContainerClient.GetBlobClient(BlobName);
+                blobClient.Upload(BlobName, overwrite: true);
+
+            }catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            
         }
 
         private Func<IBenchmarkOperation> GetBenchmarkFactory(
@@ -266,8 +327,8 @@ namespace CosmosBenchmark
             {
                 return await container.ReadContainerAsync();
             }
-            catch(CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            { 
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
                 // Show user cost of running this test
                 double estimatedCostPerMonth = 0.06 * options.Throughput;
                 double estimatedCostPerHour = estimatedCostPerMonth / (24 * 30);
@@ -278,6 +339,37 @@ namespace CosmosBenchmark
                 string partitionKeyPath = options.PartitionKeyPath;
                 return await database.CreateContainerAsync(options.Container, partitionKeyPath, options.Throughput);
             }
+        }
+
+        private static async Task<BenchmarkProgress> CreateBenchmarkProgressItem(Container resultContainer)
+        {
+            BenchmarkProgress benchmarkProgress = new BenchmarkProgress
+            {
+                id = Environment.MachineName,
+                MachineName = Environment.MachineName,
+                JobStatus = "STARTED",
+                JobStartTime = DateTime.Now
+            };
+
+            ItemResponse<BenchmarkProgress> itemResponse = await resultContainer.UpsertItemAsync(
+                benchmarkProgress, new PartitionKey(benchmarkProgress.id));
+
+            return itemResponse.Resource;
+        }
+
+        public static async Task<BenchmarkProgress> CompleteBenchmarkProgressStatus(BenchmarkProgress benchmarkProgress, Container resultContainer)
+        {
+            benchmarkProgress.JobStatus = "COMPLETE";
+            benchmarkProgress.JobEndTime = DateTime.Now;
+            ItemResponse<BenchmarkProgress> itemResponse = await resultContainer.UpsertItemAsync(benchmarkProgress);
+            return itemResponse.Resource;
+        }
+
+        private static async Task<Container> GetResultContainer(BenchmarkConfig config, CosmosClient cosmosClient)
+        {
+            Database database = cosmosClient.GetDatabase(config.ResultsDatabase ?? config.Database);
+            ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(id: config.ResultsContainer, partitionKeyPath: "/id");
+            return containerResponse.Container;
         }
 
         private static void ClearCoreSdkListeners()
