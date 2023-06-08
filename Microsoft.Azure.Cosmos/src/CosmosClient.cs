@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <remarks>
-    /// The returned not-initialized reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls, 
+    /// The returned not-initialized reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls
     /// </remarks>
     /// <seealso cref="CosmosClientOptions"/>
     /// <seealso cref="Fluent.CosmosClientBuilder"/>
