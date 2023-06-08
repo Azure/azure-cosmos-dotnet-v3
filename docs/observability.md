@@ -38,9 +38,7 @@ flowchart TD
 ## Client Telemetry (Private Preview)
 
 ### Introduction
-SDK sends aggregated telemetry data every 10 minutes to Microsoft.
-
-We collect following information as part of this:
+SDK sends aggregated telemetry data every 10 minutes to Microsoft. We collect following information as part of this feature:
 1. Cache Latencies : Right now, it covers only Collection Cache
 2. Client System Usage (during an operation) :
     * CPU usage
@@ -53,8 +51,7 @@ We collect following information as part of this:
 > Note: We don't collect any PII data as part of this feature.
 
 ### Limitations
-1. AAD Support is not available
-2. Since you need to set environment variable, so this feature will be enabled machinewide only right now.
+1. AAD Support is not available.
 
 ### Components
 
