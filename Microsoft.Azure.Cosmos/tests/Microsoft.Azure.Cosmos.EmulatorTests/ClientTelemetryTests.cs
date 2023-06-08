@@ -44,6 +44,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassInitialize]
         public static void ClassInitialize(TestContext _)
         {
+            foreach (DictionaryEntry e in System.Environment.GetEnvironmentVariables())
+            {
+                Console.WriteLine(e.Key + ":" + e.Value);
+            }
+
             SystemUsageMonitor oldSystemUsageMonitor = (SystemUsageMonitor)typeof(DiagnosticsHandlerHelper)
                 .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.Instance);
             oldSystemUsageMonitor.Stop();
@@ -117,9 +122,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { ClientTelemetryOptions.ThreadWaitIntervalInMsName, ClientTelemetryOptions.ThreadWaitIntervalInMsUnit }
             };
 
-            this.cosmosClientBuilder = new CosmosClientBuilder(connectionString: Environment.GetEnvironmentVariable("COSMOS.DB_CONNECTION_STRING"))
-                .WithCustomSerializer(new CosmosJsonDotNetSerializer())
-                .WithApplicationPreferredRegions(this.preferredRegionList);
+            string connectionString = Environment.GetEnvironmentVariable("COSMOS.DB_CONNECTION_STRING");
+            this.cosmosClientBuilder = new CosmosClientBuilder(connectionString: connectionString)
+                                                .WithCustomSerializer(new CosmosJsonDotNetSerializer())
+                                                .WithApplicationPreferredRegions(this.preferredRegionList);
         }
 
         private static void ResetSystemUsageMonitor(bool isTelemetryEnabled)
