@@ -93,8 +93,7 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <remarks>
-    /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls, 
-    /// except the initialization cases when the SDK warms up the caches and connections before the first call to the service is made (CosmosClient.CreateAndInitializeAsync calls).
+    /// The returned not-initialized reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls, 
     /// </remarks>
     /// <seealso cref="CosmosClientOptions"/>
     /// <seealso cref="Fluent.CosmosClientBuilder"/>
