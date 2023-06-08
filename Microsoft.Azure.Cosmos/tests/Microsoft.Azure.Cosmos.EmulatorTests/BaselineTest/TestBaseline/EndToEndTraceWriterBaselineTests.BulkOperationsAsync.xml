@@ -35,8 +35,6 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -71,8 +69,7 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -386,6 +383,13 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -434,8 +438,6 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -464,8 +466,7 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -766,6 +767,13 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -814,8 +822,6 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -844,8 +850,7 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -1146,6 +1151,13 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -1194,8 +1206,6 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -1224,8 +1234,7 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -1526,6 +1535,13 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -1574,8 +1590,6 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -1604,8 +1618,7 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -1906,6 +1919,13 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -1954,8 +1974,6 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -1984,8 +2002,7 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -2286,6 +2303,13 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -2334,8 +2358,6 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -2364,8 +2386,7 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -2666,6 +2687,13 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -2714,8 +2742,6 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -2744,8 +2770,7 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -3046,6 +3071,13 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -3094,8 +3126,6 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -3124,8 +3154,7 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -3426,6 +3455,13 @@
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -3474,8 +3510,6 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
-    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
@@ -3504,8 +3538,7 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -3805,6 +3838,13 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Batch Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="LatencyOverThreshold" />
   <EVENT name="LatencyOverThreshold" />
@@ -3869,8 +3909,6 @@
 └── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
-    │       Redacted To Not Change The Baselines From Run To Run
-    │       [DistributedTraceId]
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
@@ -4046,8 +4084,7 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
-    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
