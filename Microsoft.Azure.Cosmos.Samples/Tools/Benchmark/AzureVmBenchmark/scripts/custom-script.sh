@@ -18,7 +18,7 @@ export PL=18
 
 #Cloning Test Bench Repo
 echo "########## Cloning Test Bench repository ##########"
-git clone https://github.com/Azure/azure-cosmos-dotnet-v3.git
+git clone -b ${BENCHMARKING_TOOLS_BRANCH_NAME} https://github.com/Azure/azure-cosmos-dotnet-v3.git
 
 # Build Benchmark Project
 cd 'azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark'
