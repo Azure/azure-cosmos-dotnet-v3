@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using System.Collections;
 
     [TestClass]
     [TestCategory("ClientTelemetry")]
@@ -53,8 +54,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestInitialize()
         {
-            Util.EnableClientTelemetryEnvironmentVariables();
-            
             this.actualInfo = new List<ClientTelemetryProperties>();
 
             this.httpHandler = new HttpClientHandlerHelper
@@ -164,8 +163,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             azMetadataField.SetValue(null, null);
 
             await base.TestCleanup();
-
-            Util.DisableClientTelemetryEnvironmentVariables();
         }
 
         [ClassCleanup]
@@ -1090,6 +1087,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             else
             {
                 handlerHelper = customHttpHandler;
+            }
+
+            foreach (DictionaryEntry e in System.Environment.GetEnvironmentVariables())
+            {
+                Console.WriteLine(e.Key + ":" + e.Value);
             }
 
             this.cosmosClientBuilder = this.cosmosClientBuilder
