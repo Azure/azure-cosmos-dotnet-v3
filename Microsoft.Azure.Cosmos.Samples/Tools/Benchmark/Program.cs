@@ -87,7 +87,6 @@ namespace CosmosBenchmark
 
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
-                Console.WriteLine($"caught event with latency = {eventData.Payload[2]}");
                 using (StreamWriter writer = new StreamWriter(this.logFilePath, true))
                 {
                     writer.WriteLine($"{eventData.Payload[2]} | {eventData.Payload[3]}");

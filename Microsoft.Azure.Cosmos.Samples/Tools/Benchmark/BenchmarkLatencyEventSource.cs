@@ -39,7 +39,6 @@ namespace CosmosBenchmark
             Func<string> lazyDiagnostics,
             int latencyThreshold)
         {
-            Console.WriteLine($"{this.IsEnabled()} - {durationInMs} > {latencyThreshold}");
             if (durationInMs > latencyThreshold
                 && this.IsEnabled())
             {
