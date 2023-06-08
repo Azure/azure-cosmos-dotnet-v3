@@ -123,7 +123,7 @@
         },
         "workloadType": {
             "type": "string",
-            "defaultValue": "workloadc",
+            "defaultValue": "ReadTExistsV3BenchmarkOperation",
             "metadata": {
                 "description": "Specifies the workload"
             }
