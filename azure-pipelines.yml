@@ -33,17 +33,17 @@ jobs:
     ReleasePackage: false
     OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/Release/Microsoft.Azure.Cosmos'
 
-- template:  templates/build-ctl.yml
-  parameters:
-    BuildConfiguration: Release
-    Arguments: $(ReleaseArguments)
-    VmImage: $(VmImage)
+# - template:  templates/build-ctl.yml
+#   parameters:
+#     BuildConfiguration: Release
+#     Arguments: $(ReleaseArguments)
+#     VmImage: $(VmImage)
 
-- template:  templates/build-samples.yml
-  parameters:
-    BuildConfiguration: Release
-    Arguments: $(ReleaseArguments)
-    VmImage: $(VmImage)
+# - template:  templates/build-samples.yml
+#   parameters:
+#     BuildConfiguration: Release
+#     Arguments: $(ReleaseArguments)
+#     VmImage: $(VmImage)
 
 - template:  templates/build-test.yml
   parameters:
@@ -51,20 +51,20 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
 
-- template:  templates/build-internal.yml
-  parameters:
-    BuildConfiguration: Release
-    Arguments: $(ReleaseArguments)
-    VmImage:  $(VmImage)
+# - template:  templates/build-internal.yml
+#   parameters:
+#     BuildConfiguration: Release
+#     Arguments: $(ReleaseArguments)
+#     VmImage:  $(VmImage)
 
-- template:  templates/build-preview.yml
-  parameters:
-    BuildConfiguration: Release
-    Arguments: $(ReleaseArguments)
-    VmImage:  $(VmImage)
+# - template:  templates/build-preview.yml
+#   parameters:
+#     BuildConfiguration: Release
+#     Arguments: $(ReleaseArguments)
+#     VmImage:  $(VmImage)
 
-- template:  templates/build-benchmark.yml
-  parameters:
-    BuildConfiguration: Release
-    Arguments: $(ReleaseArguments)
-    VmImage:  $(VmImage)
+# - template:  templates/build-benchmark.yml
+#   parameters:
+#     BuildConfiguration: Release
+#     Arguments: $(ReleaseArguments)
+#     VmImage:  $(VmImage)
