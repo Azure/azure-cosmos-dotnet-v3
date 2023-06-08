@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
-    internal class ReadStreamExistsV2BenchmarkOperation : IBenchmarkOperation
+    internal class ReadStreamExistsV2BenchmarkOperation : ReadBenchmarkOperation
     {
         private readonly string partitionKeyPath;
         private readonly Dictionary<string, object> sampleJObject;
@@ -41,7 +41,7 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
-        public async Task<OperationResult> ExecuteOnceAsync()
+        public override async Task<OperationResult> ExecuteOnceAsync()
         {
             Uri itemUri = UriFactory.CreateDocumentUri(this.databsaeName, this.containerName, this.nextExecutionItemId);
             ResourceResponse<Document> itemResponse = await this.documentClient.ReadDocumentAsync(
@@ -61,7 +61,7 @@ namespace CosmosBenchmark
             };
         }
 
-        public async Task PrepareAsync()
+        public override async Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))

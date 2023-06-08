@@ -10,6 +10,8 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using App.Metrics;
+    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
 
     internal class ParallelExecutionStrategy : IExecutionStrategy
@@ -34,11 +36,13 @@ namespace CosmosBenchmark
                         executorId: "Warmup",
                         benchmarkOperation: this.benchmarkOperation());
             await warmupExecutor.ExecuteAsync(
-                    benchmarkConfig,
                     (int)(serialExecutorIterationCount * warmupFraction),
                     isWarmup: true,
                     traceFailures: benchmarkConfig.TraceFailures,
-                    completionCallback: () => { });
+                    completionCallback: () => { },
+                    logger,
+                    metrics,
+                    benchmarkConfig);
 
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
             for (int i = 0; i < serialExecutorConcurrency; i++)
@@ -52,21 +56,25 @@ namespace CosmosBenchmark
             for (int i = 0; i < serialExecutorConcurrency; i++)
             {
                 _ = executors[i].ExecuteAsync(
-                        benchmarkConfig,
                         iterationCount: serialExecutorIterationCount,
                         isWarmup: false,
                         traceFailures: benchmarkConfig.TraceFailures,
-                        completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
+                        completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount),
+                        logger,
+                        metrics,
+                        benchmarkConfig);
             }
 
             return await this.LogOutputStats(
                 benchmarkConfig, 
-                executors);
+                executors,
+                metrics);
         }
 
         private async Task<RunSummary> LogOutputStats(
             BenchmarkConfig benchmarkConfig,
-            IExecutor[] executors)
+            IExecutor[] executors,
+            IMetrics metrics)
         {
             const int outputLoopDelayInSeconds = 1;
             IList<int> perLoopCounters = new List<int>();

@@ -56,7 +56,14 @@ namespace CosmosBenchmark
 
                 Program program = new Program();
 
-                RunSummary runSummary = await program.ExecuteAsync(config);
+                IMetricsRoot metrics = ConfigureReporting(config, logger);
+
+                AppMetricsTaskScheduler scheduler = new AppMetricsTaskScheduler(
+                    TimeSpan.FromSeconds(config.MetricsReportingIntervalInSec),
+                    async () => await Task.WhenAll(metrics.ReportRunner.RunAllAsync()));
+                scheduler.Start();
+
+                RunSummary runSummary = await program.ExecuteAsync(config, logger, metrics);
             }
             finally
             {
@@ -71,6 +78,23 @@ namespace CosmosBenchmark
 
         public static BlobContainerClient GetBlobServiceClient(BenchmarkConfig config)
         {
+            MetricsBuilder metricsBuilder = new MetricsBuilder();
+            if (config.AppInsightsInstrumentationKey.Trim().Length > 0)
+            {
+                string connectionString = $"InstrumentationKey={config.AppInsightsInstrumentationKey}";
+                MetricsOptions metricsOptions = new MetricsOptions();
+                metricsBuilder
+                    .Configuration.Configure(metricsOptions)
+                    .Report.ToApplicationInsights(connectionString);
+            }
+            else
+            {
+                metricsBuilder.Report.ToConsole(
+                    options =>
+                    {
+                        options.FlushInterval = TimeSpan.FromSeconds(config.MetricsReportingIntervalInSec);
+                        options.MetricsOutputFormatter = new MetricsJsonOutputFormatter();
+                    });
             BlobContainerClient blobContainerClient = new BlobContainerClient(config.ResultsStorageConnectionString, "diagnostics"); // todo add date
             blobContainerClient.CreateIfNotExists();
             return blobContainerClient;
@@ -85,6 +109,7 @@ namespace CosmosBenchmark
                 this.logFilePath = filePath;
             }
 
+            return metricsBuilder.Build();
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
                 using (StreamWriter writer = new StreamWriter(this.logFilePath, true))
@@ -176,7 +201,7 @@ namespace CosmosBenchmark
                     }
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, logger, metrics);
                 }
 
                 if (config.CleanupOnFinish)
