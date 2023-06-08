@@ -238,7 +238,7 @@ namespace CosmosBenchmark
         {
             try
             {
-                // TODO Add logs here
+                Console.WriteLine("Uploading diagnostics");
                 BlobContainerClient blobContainerClient = GetBlobServiceClient(config);
                 BlobClient blobClient = blobContainerClient.GetBlobClient(BlobName);
                 blobClient.Upload(BlobName, overwrite: true);
