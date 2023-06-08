@@ -238,6 +238,8 @@ namespace CosmosBenchmark
         {
             try
             {
+                string BlobName = $"{Environment.MachineName}-BenchmarkDiagnostics.out";
+
                 Console.WriteLine("Uploading diagnostics");
                 BlobContainerClient blobContainerClient = GetBlobServiceClient(config);
                 BlobClient blobClient = blobContainerClient.GetBlobClient(BlobName);
