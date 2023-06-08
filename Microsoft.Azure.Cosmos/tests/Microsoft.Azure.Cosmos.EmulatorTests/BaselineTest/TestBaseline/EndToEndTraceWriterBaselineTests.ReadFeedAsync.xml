@@ -24,6 +24,8 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │       [DistributedTraceId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
     │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -64,6 +66,8 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │       [DistributedTraceId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
     │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -89,6 +93,8 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │       [DistributedTraceId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
     │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -113,6 +119,8 @@
     └── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
+        │       Redacted To Not Change The Baselines From Run To Run
+        │       [DistributedTraceId]
         │       Redacted To Not Change The Baselines From Run To Run
         │   )
         └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -146,7 +154,8 @@
       "name": "FeedIterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -301,7 +310,8 @@
       "name": "FeedIterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -380,7 +390,8 @@
       "name": "FeedIterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -459,7 +470,8 @@
       "name": "FeedIterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -666,6 +678,8 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │       [DistributedTraceId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -707,6 +721,8 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │       [DistributedTraceId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -733,6 +749,8 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │       [DistributedTraceId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -758,6 +776,8 @@
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
+        │       Redacted To Not Change The Baselines From Run To Run
+        │       [DistributedTraceId]
         │       Redacted To Not Change The Baselines From Run To Run
         │   )
         ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -792,7 +812,8 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -951,7 +972,8 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -1034,7 +1056,8 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -1117,7 +1140,8 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -1329,6 +1353,8 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │       [DistributedTraceId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
     │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -1369,6 +1395,8 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │       [DistributedTraceId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
     │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -1394,6 +1422,8 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │       [DistributedTraceId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
     │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -1418,6 +1448,8 @@
     └── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
+        │       Redacted To Not Change The Baselines From Run To Run
+        │       [DistributedTraceId]
         │       Redacted To Not Change The Baselines From Run To Run
         │   )
         └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -1451,7 +1483,8 @@
       "name": "FeedIterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -1606,7 +1639,8 @@
       "name": "FeedIterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -1685,7 +1719,8 @@
       "name": "FeedIterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -1764,7 +1799,8 @@
       "name": "FeedIterator Read Next Async",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -1972,6 +2008,8 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │       [DistributedTraceId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -2013,6 +2051,8 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │       [DistributedTraceId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -2039,6 +2079,8 @@
     │   │   (
     │   │       [Client Configuration]
     │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │       [DistributedTraceId]
+    │   │       Redacted To Not Change The Baselines From Run To Run
     │   │   )
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
@@ -2064,6 +2106,8 @@
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
         │   (
         │       [Client Configuration]
+        │       Redacted To Not Change The Baselines From Run To Run
+        │       [DistributedTraceId]
         │       Redacted To Not Change The Baselines From Run To Run
         │   )
         ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  00:00:00:000  0.00 milliseconds  
@@ -2098,7 +2142,8 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -2257,7 +2302,8 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -2340,7 +2386,8 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
@@ -2423,7 +2470,8 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "duration in milliseconds": 0,
       "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+        "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
       },
       "children": [
         {
