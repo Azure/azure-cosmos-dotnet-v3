@@ -34,6 +34,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static ConcurrentBag<Activity> CollectedNetworkActivities { private set; get; } = new();
         private static ConcurrentBag<string> CollectedEvents { set; get; } = new();
 
+        private static List<EventSource> EventSources { set; get; } = new();
+
         public CustomListener(string name, string eventName)
             : this(n => Regex.Match(n, name).Success, eventName)
         {
@@ -43,6 +45,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             this.sourceNameFilter = filter;
             this.eventName = eventName;
+
+            foreach (EventSource eventSource in EventSources)
+            {
+                this.OnEventSourceCreated(eventSource);
+            }
             
             DiagnosticListener.AllListeners.Subscribe(this);
         }
@@ -152,6 +159,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
+            if(this.eventName == null)
+            {
+                EventSources.Add(eventSource);
+            }
+
             if (eventSource != null && eventSource.Name.Equals(this.eventName))
             {
                 this.EnableEvents(eventSource, EventLevel.Informational); // Enable information level events
