@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { ClientTelemetryOptions.ThreadWaitIntervalInMsName, ClientTelemetryOptions.ThreadWaitIntervalInMsUnit }
             };
 
-            string connectionString = Environment.GetEnvironmentVariable("COSMOS.COSMOSDB_CONNECTION_STRING");
+            string connectionString = Environment.GetEnvironmentVariable("COSMOS.DB_CONNECTION_STRING");
             this.cosmosClientBuilder = new CosmosClientBuilder(connectionString: connectionString)
                                                 .WithCustomSerializer(new CosmosJsonDotNetSerializer())
                                                 .WithApplicationPreferredRegions(this.preferredRegionList);
