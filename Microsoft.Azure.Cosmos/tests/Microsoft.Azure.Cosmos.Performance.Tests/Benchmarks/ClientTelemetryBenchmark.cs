@@ -5,14 +5,29 @@
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
+    using System.Collections.Generic;
+    using System.Net.Http;
     using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
+    /// <summary>
+    /// Generates Benchmarks for different components of client telemetry.
+    /// </summary>
     [MemoryDiagnoser]
-    internal class ClientTelemetryBenchmark
+    public class ClientTelemetryBenchmark
     {
+        private readonly ITrace trace = null;
+        private readonly CosmosDiagnostics diagnostics = null;
+
+        public ClientTelemetryBenchmark()
+        {
+            this.trace = this.CreateTestTraceTree();
+            this.diagnostics = new Diagnostics.CosmosTraceDiagnostics(this.CreateTestTraceTree());
+        }
+
         private ITrace CreateTestTraceTree()
         {
             ITrace trace;
@@ -44,14 +59,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         }
 
         [Benchmark]
+        [BenchmarkCategory("ClientTelemetry")]
         public void RecordOperationTelemetryTest()
         {
-            ITrace trace = this.CreateTestTraceTree()
-            CosmosDiagnostics diagnostics = new Diagnostics.CosmosTraceDiagnostics(this.CreateTestTraceTree());
-
             ClientTelemetry telemetry = new ClientTelemetry();
+
+            Console.WriteLine(this.diagnostics.ToString());
             telemetry.CollectOperationInfo(
-                diagnostics, 
+                this.diagnostics, 
                 System.Net.HttpStatusCode.OK, 
                 10, 
                 "ContainerId", 
@@ -59,13 +74,65 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 Documents.OperationType.Read, 
                 Documents.ResourceType.Document, 
                 ConsistencyLevel.Session.ToString(), 10, 
-                Documents.SubStatusCodes.Unknown, trace);
+                Documents.SubStatusCodes.Unknown, 
+                this.trace);
+        }
+
+
+        [Benchmark]
+        [BenchmarkCategory("ClientTelemetry")]
+        public void RunningTelemetryJobTest()
+        {
+            ClientTelemetry.CreateAndStartBackgroundTelemetry("clientid", CosmosHttpClientCore.CreateHttpClientHandler(1, null, null), "userAgent", ConnectionMode.Direct, null, DiagnosticsHandlerHelper.Instance, new List<string>(), null);
+            ClientTelemetry telemetry = new ClientTelemetry();
+
+            Console.WriteLine(this.diagnostics.ToString());
+            telemetry.CollectOperationInfo(
+                this.diagnostics,
+                System.Net.HttpStatusCode.OK,
+                10,
+                "ContainerId",
+                "DatabaseId",
+                Documents.OperationType.Read,
+                Documents.ResourceType.Document,
+                ConsistencyLevel.Session.ToString(), 10,
+                Documents.SubStatusCodes.Unknown,
+                this.trace);
         }
 
         [Benchmark]
-        public void RunningABackgroundJob()
+        [BenchmarkCategory("ClientTelemetry")]
+        public void ClientTelemetryProcessorTest()
         {
+            ClientTelemetry.CreateAndStartBackgroundTelemetry("clientid", CosmosHttpClientCore.CreateHttpClientHandler(1, null, null), "userAgent", ConnectionMode.Direct, null, DiagnosticsHandlerHelper.Instance, new List<string>(), null);
+            ClientTelemetry telemetry = new ClientTelemetry();
+
+            Console.WriteLine(this.diagnostics.ToString());
+            telemetry.CollectOperationInfo(
+                this.diagnostics,
+                System.Net.HttpStatusCode.OK,
+                10,
+                "ContainerId",
+                "DatabaseId",
+                Documents.OperationType.Read,
+                Documents.ResourceType.Document,
+                ConsistencyLevel.Session.ToString(), 10,
+                Documents.SubStatusCodes.Unknown,
+                this.trace);
         }
 
+        [Benchmark]
+        [BenchmarkCategory("ClientTelemetry")]
+        public void HistogramRecordTest()
+        {
+
+        }
+
+        [Benchmark]
+        [BenchmarkCategory("ClientTelemetry")]
+        public void HistogramRecordFetchTest()
+        {
+
+        }
     }
 }

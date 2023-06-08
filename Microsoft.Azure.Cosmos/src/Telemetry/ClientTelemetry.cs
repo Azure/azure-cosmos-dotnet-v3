@@ -51,6 +51,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         internal ClientTelemetry()
         {
+            this.networkDataRecorder = new NetworkDataRecorder();
+
             this.cancellationTokenSource = new CancellationTokenSource();
         }
 
