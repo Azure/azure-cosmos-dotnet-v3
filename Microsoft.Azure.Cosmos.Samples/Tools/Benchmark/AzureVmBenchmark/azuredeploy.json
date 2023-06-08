@@ -101,13 +101,6 @@
                 "description": "Specifies the degree of parallelism"
             }
         },
-        "cleanupfinish": {
-            "type": "bool",
-            "defaultValue": false,
-            "metadata": {
-                "description": "Clean-up after run"
-            }
-        },
         "resultsContainer": {
             "type": "string",
             "metadata": {
@@ -128,20 +121,6 @@
                 "description": "Specifies the workload"
             }
         },
-        "threads": {
-            "type": "int",
-            "defaultValue": 1,
-            "metadata": {
-                "description": "Specifies the threads per client"
-            }
-        },
-        "targetOperationsPerSecond": {
-            "type": "int",
-            "defaultValue": -1,
-            "metadata": {
-                "description": "Specifies the maximum number of operations per second"
-            }
-        },
         "benchmarkingToolsRepoName": {
             "type": "string",
             "defaultValue": "Azure/azure-cosmos-dotnet-v3",
@@ -160,99 +139,15 @@
             "type": "string",
             "defaultValue": "[newGuid()]"
         },
-        "useGateway": {
-            "type": "bool",
-            "defaultValue": false,
-            "metadata": {
-                "description": "Specifies if the gateway connectivity mode should be used. The default value 'flase' indicates direct connectivity mode"
-            }
-        },
         "diagnosticsLatencyThresholdInMS": {
             "type": "int",
             "defaultValue": 500
-        },
-        "readproportion": {
-            "type": "string",
-            "defaultValue": "",
-            "metadata": {
-                "description": "Specifies read operation percentage from 0 to 1"
-            }
-        },
-        "updateproportion": {
-            "type": "string",
-            "defaultValue": "",
-            "metadata": {
-                "description": "Specifies update operation percentage from 0 to 1"
-            }
-        },
-        "scanproportion": {
-            "type": "string",
-            "defaultValue": "",
-            "metadata": {
-                "description": "Specifies scan operation percentage from 0 to 1"
-            }
-        },
-        "insertproportion": {
-            "type": "string",
-            "defaultValue": "",
-            "metadata": {
-                "description": "Specifies insert operation percentage from 0 to 1"
-            }
-        },
-        "writeOnlyOperation": {
-            "type": "bool",
-            "defaultValue": false,
-            "metadata": {
-                "description": "Specifies writeOnlyOperation true or false, if true it will override the workload and run 100% write, transaction wont fail on single error unlike load phase"
-            }
-        },
-        "requestdistribution": {
-            "type": "string",
-            "defaultValue": "uniform",
-            "metadata": {
-                "description": "Specifies request distribution"
-            }
-        },
-        "insertorder": {
-            "type": "string",
-            "defaultValue": "hashed",
-            "metadata": {
-                "description": "Specifies insert data in ordered or hashed manner"
-            }
-        },
-        "includeExceptionStackInLog": {
-            "type": "bool",
-            "defaultValue": false,
-            "metadata": {
-                "description": "Specifies includeExceptionStackInLog true or false, it will print the complete exception trace on error"
-            }
-        },
-        "fieldcount": {
-            "type": "string",
-            "defaultValue": "",
-            "metadata": {
-                "description": "Specifies field count in the item"
-            }
-        },
-        "skipLoadPhase": {
-            "type": "bool",
-            "defaultValue": false,
-            "metadata": {
-                "description": "Specifies skipLoadPhase true or false, if set true load phase will not trigger before the transaction phase"
-            }
         },
         "appInsightConnectionString": {
             "type": "string",
             "defaultValue": "",
             "metadata": {
                 "description": "Specifies application insight connection string for live monitering"
-            }
-        },
-        "ycsbDatabaseBindingName": {
-            "type": "string",
-            "defaultValue": "azurecosmos",
-            "metadata": {
-                "description": "Specifies YCSB database binding name"
             }
         },
         "preferredRegionList": {
@@ -466,7 +361,7 @@
                 "settings": {
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat('DB_BINDING_NAME=',parameters('ycsbDatabaseBindingName'),' ','ADMIN_USER_NAME=',parameters('adminUsername'),' ','BENCHMARKING_TOOLS_URL=',variables('benchmarkingToolsURL'),' ','BENCHMARKING_TOOLS_BRANCH_NAME=',parameters('benchmarkingToolsBranchName'),' ','GUID=',parameters('guidValue'),' ','TARGET_OPERATIONS_PER_SECOND=',parameters('targetOperationsPerSecond'),' ','THREAD_COUNT=',parameters('threads'),' ','WORKLOAD_TYPE=',parameters('workloadType'),' ','VM_NAME=',variables('vmName'),copyIndex(1), ' ','RESULT_STORAGE_CONNECTION_STRING=','\"',parameters('resultsStorageConnectionString'),'\"',' ','COSMOS_URI=','\"',parameters('cosmosURI'),'\"', ' ', 'COSMOS_KEY=',parameters('cosmosKey'), ' ', 'THROUGHPUT=',parameters('throughput'), ' ', 'DOCUMENTS=',parameters('documents'), ' ','PARALLELISM=',parameters('parallelism'), ' ','CLEANUPFINISH=',parameters('cleanupfinish'), ' ','RESULTS_CONTAINER=',parameters('resultsContainer'), ' ','VM_COUNT=',parameters('vmCount'), ' ','USE_GATEWAY=',parameters('useGateway'), ' ','DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS=',parameters('diagnosticsLatencyThresholdInMS'), ' ','WRITE_ONLY_OPERATION=',parameters('writeOnlyOperation'), ' ','READ_PROPORTION=',parameters('readproportion'), ' ','SCAN_PROPORTION=',parameters('scanproportion'), ' ','UPDATE_PROPORTION=',parameters('updateproportion'), ' ','INSERT_PROPORTION=',parameters('insertproportion'), ' ','REQUEST_DISTRIBUTION=',parameters('requestdistribution'), ' ','INSERT_ORDER=',parameters('insertorder'), ' ','CUSTOM_SCRIPT_URL=',variables('customScriptUrl'), ' ','MACHINE_INDEX=',copyIndex(1), ' ','INCLUDE_EXCEPTION_STACK=',parameters('includeExceptionStackInLog'), ' ','FIELD_COUNT=',parameters('fieldcount'), ' ','SKIP_LOAD_PHASE=',parameters('skipLoadPhase'), ' ','PREFERRED_REGION_LIST=','\"',parameters('preferredRegionList'),'\"',' ','APP_INSIGHT_CONN_STR=','\"',parameters('appInsightConnectionString'),'\"',' ', 'bash ',variables('vmScriptExtensionScriptName'))]",
+                    "commandToExecute": "[concat('ADMIN_USER_NAME=',parameters('adminUsername'),' ','BENCHMARKING_TOOLS_URL=',variables('benchmarkingToolsURL'),' ','BENCHMARKING_TOOLS_BRANCH_NAME=',parameters('benchmarkingToolsBranchName'),' ','GUID=',parameters('guidValue'),' ','WORKLOAD_TYPE=',parameters('workloadType'),' ','VM_NAME=',variables('vmName'),copyIndex(1), ' ','RESULT_STORAGE_CONNECTION_STRING=','\"',parameters('resultsStorageConnectionString'),'\"',' ','COSMOS_URI=','\"',parameters('cosmosURI'),'\"', ' ', 'COSMOS_KEY=',parameters('cosmosKey'), ' ', 'THROUGHPUT=',parameters('throughput'), ' ', 'DOCUMENTS=',parameters('documents'), ' ','PARALLELISM=',parameters('parallelism'), ' ','RESULTS_CONTAINER=',parameters('resultsContainer'), ' ','VM_COUNT=',parameters('vmCount'), ' ','DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS=',parameters('diagnosticsLatencyThresholdInMS'), ' ','CUSTOM_SCRIPT_URL=',variables('customScriptUrl'), ' ','MACHINE_INDEX=',copyIndex(1), ' ','PREFERRED_REGION_LIST=','\"',parameters('preferredRegionList'),'\"',' ','APP_INSIGHT_CONN_STR=','\"',parameters('appInsightConnectionString'),'\"',' ', 'bash ',variables('vmScriptExtensionScriptName'))]",
                     "fileUris": [ "[concat(variables('vmScriptExtensionScriptURL'))]" ]
                 }
             },
