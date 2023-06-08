@@ -44,6 +44,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassInitialize]
         public static void ClassInitialize(TestContext _)
         {
+            foreach (DictionaryEntry e in System.Environment.GetEnvironmentVariables())
+            {
+                Console.WriteLine(e.Key + ":" + e.Value);
+            } 
             SystemUsageMonitor oldSystemUsageMonitor = (SystemUsageMonitor)typeof(DiagnosticsHandlerHelper)
                 .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.Instance);
             oldSystemUsageMonitor.Stop();
@@ -1087,11 +1091,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             else
             {
                 handlerHelper = customHttpHandler;
-            }
-
-            foreach (DictionaryEntry e in System.Environment.GetEnvironmentVariables())
-            {
-                Console.WriteLine(e.Key + ":" + e.Value);
             }
 
             this.cosmosClientBuilder = this.cosmosClientBuilder
