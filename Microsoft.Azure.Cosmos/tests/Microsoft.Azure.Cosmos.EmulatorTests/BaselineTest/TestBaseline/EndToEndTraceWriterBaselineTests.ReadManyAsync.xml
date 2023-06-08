@@ -545,7 +545,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="ReadManyItemsStreamAsync" displayName="ReadManyItemsStreamAsync containerName.databaseName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="ReadManyItemsStreamAsync" displayName="ReadManyItemsStreamAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">ReadManyItemsStreamAsync</ATTRIBUTE>
@@ -1136,7 +1136,7 @@
     }
   ]
 }]]></Json><OTelActivities>
-  <ACTIVITY source="Azure.Cosmos.Operation" operationName="ReadManyItemsAsync" displayName="ReadManyItemsAsync containerName.databaseName">
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="ReadManyItemsAsync" displayName="ReadManyItemsAsync containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
     <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
     <ATTRIBUTE key="db.operation">ReadManyItemsAsync</ATTRIBUTE>
