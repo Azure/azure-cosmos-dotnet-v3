@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using System.Collections;
+    using global::Azure.Core;
 
     [TestClass]
     [TestCategory("ClientTelemetry")]
@@ -78,8 +79,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ResponseIntercepter = (response) =>
                 {
-                    Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-
+                    if (response.RequestMessage.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    {
+                        Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                    }
                     return Task.FromResult(response);
                 }
             };
@@ -101,16 +104,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ResponseIntercepter = (response) =>
                 {
-                    Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-
+                    if (response.RequestMessage.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    {
+                        Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                    }
                     return Task.FromResult(response);
                 }
             };
 
             this.preferredRegionList = new List<string>
             {
-                "region1",
-                "region2"
+                Regions.EastUS,
+                Regions.WestUS2
             };
 
             this.expectedMetricNameUnitMap = new Dictionary<string, string>()
@@ -724,7 +729,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             httpHandler.ResponseIntercepter = (response) =>
             {
-                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                if (response.RequestMessage.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                {
+                    Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                }
 
                 return Task.FromResult(response);
             };
@@ -1011,8 +1019,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
                 Assert.IsNotNull(telemetryInfo.DateTimeUtc, "Timestamp is null");
                 Assert.AreEqual(2, telemetryInfo.PreferredRegions.Count);
-                Assert.AreEqual("region1", telemetryInfo.PreferredRegions[0]);
-                Assert.AreEqual("region2", telemetryInfo.PreferredRegions[1]);
+                Assert.AreEqual(Regions.EastUS, telemetryInfo.PreferredRegions[0]);
+                Assert.AreEqual(Regions.WestUS2, telemetryInfo.PreferredRegions[1]);
                 Assert.AreEqual(1, telemetryInfo.AggregationIntervalInSec);
                 Assert.IsNull(telemetryInfo.AcceleratedNetworking);
                 Assert.IsNotNull(telemetryInfo.ClientId);
