@@ -44,12 +44,12 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableLowPrecisionOrderBy { get; set; }
 
         /// <summary>
-        /// Gets or sets the option for customers to opt in for direct (optimistic) execution of the query..
+        /// Gets or sets the option for customers to opt in for direct (optimistic) execution of the query.
         /// </summary>
         /// <value>
         /// Direct (optimistic) execution offers improved performance for several kinds of queries such as a single partition streaming query.
         /// </value>
-        internal bool EnableOptimisticDirectExecution { get; set; }
+        public bool EnableOptimisticDirectExecution { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum number of items that can be buffered client side during 
@@ -264,6 +264,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);
+            DedicatedGatewayRequestOptions.PopulateBypassIntegratedCacheOption(this.DedicatedGatewayRequestOptions, request);
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
 

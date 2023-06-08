@@ -25,8 +25,8 @@
             try
             {
                 IConfigurationRoot configuration = new ConfigurationBuilder()
-                            .AddJsonFile("AppSettings.json")
-                            .Build();
+                                                            .AddJsonFile("AppSettings.json")
+                                                            .Build();
 
                 string endpoint = configuration["CosmosDBEndPointUrl"];
                 if (string.IsNullOrEmpty(endpoint))
@@ -52,12 +52,16 @@
                             serviceVersion: "1.0.0");
 
                 // Set up logging to forward logs to chosen exporter
-                using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder.AddOpenTelemetry(options =>
-                    {
-                        options.IncludeFormattedMessage = true;
-                        options.SetResourceBuilder(resource);
-                        options.AddAzureMonitorLogExporter(o => o.ConnectionString = aiConnectionString); // Set up exporter of your choice
-                    }));
+                using ILoggerFactory loggerFactory 
+                    = LoggerFactory.Create(builder => builder
+                                                        .AddConfiguration(configuration.GetSection("Logging"))
+                                                        .AddOpenTelemetry(options =>
+                                                            {
+                                                                options.IncludeFormattedMessage = true;
+                                                                options.SetResourceBuilder(resource);
+                                                                options.AddAzureMonitorLogExporter(o => o.ConnectionString = aiConnectionString); // Set up exporter of your choice
+                                                            }));
+                /*.AddFilter(level => level == LogLevel.Error) // Filter  is irrespective of event type or event name*/
 
                 AzureEventSourceLogForwarder logforwader = new AzureEventSourceLogForwarder(loggerFactory);
                 logforwader.Start();
@@ -76,6 +80,7 @@
                 {
                     IsDistributedTracingEnabled = true // Defaults to true, set to false to disable
                 };
+                
                 // </EnableDistributedTracing>
                 using (CosmosClient client = new CosmosClient(endpoint, authKey, options))
                 {
@@ -88,7 +93,6 @@
 
                     await Program.RunCrudDemo(container);
                 }
-
             }
             finally
             {
@@ -116,6 +120,15 @@
                 Console.WriteLine($"Read document with id: {i}");
             }
 
+            try
+            {
+                await container.ReadItemAsync<Item>($"random key", new PartitionKey($"random partition"));
+            }
+            catch(Exception)
+            {
+                Console.WriteLine("Generate exception by reading an invalid key");
+            }
+            
             for (int i = 1; i <= 5; i++)
             {
                 await container.ReplaceItemAsync(new Item { Id = $"{i}", Status = "updated" }, $"{i}", new PartitionKey($"{i}"));

@@ -167,9 +167,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         /// <summary>
         /// A method to create the cosmos client
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
+        /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls.
         /// </remarks>
         /// <returns>An instance of <see cref="CosmosClient"/>.</returns>
         public CosmosClient Build()
@@ -191,6 +195,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         /// <summary>
         /// A method to create the cosmos client and initialize the provided containers.
+        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
+        /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
@@ -214,9 +223,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         /// <summary>
         /// A method to create the cosmos client
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
+        /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls.
         /// </remarks>
         internal virtual CosmosClient Build(DocumentClient documentClient)
         {

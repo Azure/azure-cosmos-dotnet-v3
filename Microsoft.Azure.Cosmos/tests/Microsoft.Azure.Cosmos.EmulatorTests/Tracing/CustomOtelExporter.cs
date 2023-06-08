@@ -18,11 +18,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
     {
         private readonly string _name;
 
-        public static List<Activity> CollectedActivities = new List<Activity>();
+        public static List<Activity> CollectedActivities;
         
         public CustomOtelExporter(string name = "CustomOtelExporter")
         {
             this._name = name;
+            CollectedActivities = new List<Activity>();
         }
 
         public override ExportResult Export(in Batch<Activity> batch)
