@@ -25,7 +25,6 @@ namespace CosmosBenchmark
     /// </summary>
     public sealed class Program
     {
-        private const string BlobName = $"BenchmarkDiagnostics.out";
 
         /// <summary>
         /// Main method for the sample.
@@ -41,6 +40,7 @@ namespace CosmosBenchmark
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
 
+                string BlobName = $"{Environment.MachineName}-BenchmarkDiagnostics.out";
 
                 FileLogger logger = new FileLogger(BlobName);
                 logger.EnableEvents(BenchmarkLatencyEventSource.Instance, EventLevel.Informational);
