@@ -19,8 +19,9 @@ namespace CosmosBenchmark
         private Stopwatch stopwatch;
         private Func<OperationResult> lazyOperationResult;
         private bool disableTelemetry;
+        private BenchmarkConfig benchmarkConfig;
 
-        public static IDisposable StartNew(
+        public static IDisposable StartNew(BenchmarkConfig benchmarkConfig,
             Func<OperationResult> lazyOperationResult,
             bool disableTelemetry)
         {
@@ -33,7 +34,8 @@ namespace CosmosBenchmark
             {
                 stopwatch = Stopwatch.StartNew(),
                 lazyOperationResult = lazyOperationResult,
-                disableTelemetry = disableTelemetry
+                disableTelemetry = disableTelemetry,
+                benchmarkConfig = benchmarkConfig
             };
         }
 
@@ -53,7 +55,8 @@ namespace CosmosBenchmark
                     operationResult.DatabseName,
                     operationResult.ContainerName,
                     (int)this.stopwatch.ElapsedMilliseconds,
-                    operationResult.LazyDiagnostics);
+                    operationResult.LazyDiagnostics, 
+                    this.benchmarkConfig.LatencyDiagnosticThreshold);
             }
         }
 

@@ -31,6 +31,7 @@ namespace CosmosBenchmark
         public double TotalRuCharges { get; private set; }
 
         public async Task ExecuteAsync(
+                BenchmarkConfig benchmarkConfig,
                 int iterationCount,
                 bool isWarmup,
                 bool traceFailures,
@@ -48,6 +49,7 @@ namespace CosmosBenchmark
                     await this.operation.PrepareAsync();
 
                     using (IDisposable telemetrySpan = TelemetrySpan.StartNew(
+                                benchmarkConfig,
                                 () => operationResult.Value,
                                 disableTelemetry: isWarmup))
                     {

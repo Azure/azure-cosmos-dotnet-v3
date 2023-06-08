@@ -33,5 +33,6 @@ echo "########## Run benchmark ##########"
 nohup dotnet run -c Release -e ${COSMOS_URI} -k ${COSMOS_KEY} -t ${THROUGHPUT} -n ${DOCUMENTS} --pl ${PARALLELISM} \
 --publishresults true --resultscontainer ${RESULTS_CONTAINER} --resultspartitionkeyvalue "pk" \
 --resultsstorageconnectionstring ${RESULT_STORAGE_CONNECTION_STRING} \
+--LatencyDiagnosticThreshold ${RESULT_STORAGE_CONNECTION_STRING} \
 --commitid "commitid" --commitdate "$(date '+%Y-%m-%d')" --committime "$(date '+%H:%M:%SZ')" -w InsertV2BenchmarkOperation \
 > "/home/${ADMIN_USER_NAME}/agent.out" 2> "/home/${ADMIN_USER_NAME}/agent.err" &

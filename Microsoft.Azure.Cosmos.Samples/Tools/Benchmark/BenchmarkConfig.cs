@@ -122,6 +122,9 @@ namespace CosmosBenchmark
 
         [Option(Required = false, HelpText = "Container to publish results to")]
         public string ResultsContainer { get; set; } = "runsummary";
+        
+        [Option(Required = false, HelpText = "Request latency threshold for capturing diagnostic data")]
+        public int LatencyDiagnosticThreshold { get; set; } = 500;
 
         [Option(Required = false, HelpText = "Blob storage account connection string")]
         [JsonIgnore]
