@@ -36,10 +36,10 @@ namespace Microsoft.Azure.Cosmos
                     Documents.Routing.PartitionKeyInternal.GetEffectivePartitionKeyRange(
                         partitionKeyDefinition,
                         new Documents.Routing.Range<Documents.Routing.PartitionKeyInternal>(
-                            this.PartitionKey.InternalKey,
-                            this.PartitionKey.InternalKey,
-                            true,
-                            true))
+                            min: this.PartitionKey.InternalKey,
+                            max: this.PartitionKey.InternalKey,
+                            isMinInclusive: true,
+                            isMaxInclusive: true))
                 });
         }
 
