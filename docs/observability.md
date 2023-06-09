@@ -39,7 +39,7 @@ flowchart TD
 
 ### Introduction
 When opted-in CosmosDB SDK collects below aggregated telemetry data every 10 minutes to Azure CosmosDB service. 
-1. Operation(Point operations and Query APIs) Latencies and Request Units (RUs).
+1. Operation(Point, Stream, Batch and Query APIs) Latencies and Request Units (RUs).
 2. Metadata caches (ex: CollectionCache) miss statistics
 3. Host Resource Usage: (during an operation) :
     * CPU usage
