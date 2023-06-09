@@ -46,7 +46,7 @@ When opted-in CosmosDB SDK collects below aggregated telemetry data every 10 min
     * Thread Starvation
     * Network Connections Opened (only TCP Connections)
 3. Operation Latencies and Request Units (RUs).
-4. Network Request Latencies. (sampled to, top 10 slowest to a replica)
+4. TOP 10 slower network interactions
 
 > Note: We don't collect any PII data as part of this feature.
 
