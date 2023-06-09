@@ -10,6 +10,8 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using App.Metrics;
+    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
 
     internal class ParallelExecutionStrategy : IExecutionStrategy
@@ -28,7 +30,9 @@ namespace CosmosBenchmark
             BenchmarkConfig benchmarkConfig,
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
-            double warmupFraction)
+            double warmupFraction,
+            ILogger logger,
+            IMetrics metrics)
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
                         executorId: "Warmup",
@@ -37,7 +41,10 @@ namespace CosmosBenchmark
                     (int)(serialExecutorIterationCount * warmupFraction),
                     isWarmup: true,
                     traceFailures: benchmarkConfig.TraceFailures,
-                    completionCallback: () => { });
+                    completionCallback: () => { },
+                    logger,
+                    metrics,
+                    benchmarkConfig);
 
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
             for (int i = 0; i < serialExecutorConcurrency; i++)
@@ -54,17 +61,22 @@ namespace CosmosBenchmark
                         iterationCount: serialExecutorIterationCount,
                         isWarmup: false,
                         traceFailures: benchmarkConfig.TraceFailures,
-                        completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount));
+                        completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount),
+                        logger,
+                        metrics,
+                        benchmarkConfig);
             }
 
             return await this.LogOutputStats(
                 benchmarkConfig, 
-                executors);
+                executors,
+                metrics);
         }
 
         private async Task<RunSummary> LogOutputStats(
             BenchmarkConfig benchmarkConfig,
-            IExecutor[] executors)
+            IExecutor[] executors,
+            IMetrics metrics)
         {
             const int outputLoopDelayInSeconds = 1;
             IList<int> perLoopCounters = new List<int>();
@@ -135,6 +147,8 @@ namespace CosmosBenchmark
                     runSummary.Top80PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.8 * summaryCounters.Length)).Average(), 0);
                     runSummary.Top90PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.9 * summaryCounters.Length)).Average(), 0);
                     runSummary.Top95PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.95 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top95PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.999 * summaryCounters.Length)).Average(), 0);
+                    runSummary.Top95PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.9999 * summaryCounters.Length)).Average(), 0);
                     runSummary.Top99PercentAverageRps = Math.Round(summaryCounters.Take((int)(0.99 * summaryCounters.Length)).Average(), 0);
                     runSummary.AverageRps = Math.Round(summaryCounters.Average(), 0);
 
@@ -144,6 +158,8 @@ namespace CosmosBenchmark
                     runSummary.Top95PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(95);
                     runSummary.Top98PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(98);
                     runSummary.Top99PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(99);
+                    runSummary.Top999PercentLatencyInMs = TelemetrySpan.GetLatencyQuantile(0.999);
+                    runSummary.Top9999PercentLatencyInMs = TelemetrySpan.GetLatencyQuantile(0.9999);
                     runSummary.MaxLatencyInMs = TelemetrySpan.GetLatencyPercentile(100);
 
                     string summary = JsonConvert.SerializeObject(runSummary);

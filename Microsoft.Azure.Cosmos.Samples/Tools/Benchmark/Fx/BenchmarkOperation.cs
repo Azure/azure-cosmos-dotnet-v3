@@ -6,10 +6,10 @@ namespace CosmosBenchmark
 {
     using System.Threading.Tasks;
 
-    internal interface IBenchmarkOperation
+    internal abstract class BenchmarkOperation : IBenchmarkOperation
     {
-        Task<OperationResult> ExecuteOnceAsync();
+        public abstract Task<OperationResult> ExecuteOnceAsync();
 
-        Task PrepareAsync();
+        public abstract Task PrepareAsync();
     }
 }

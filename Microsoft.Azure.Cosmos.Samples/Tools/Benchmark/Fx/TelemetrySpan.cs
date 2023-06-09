@@ -79,6 +79,16 @@ namespace CosmosBenchmark
             return MathNet.Numerics.Statistics.Statistics.Percentile(latencyHistogram.Take(latencyIndex + 1), percentile);
         }
 
+        internal static double? GetLatencyQuantile(double quantile)
+        {
+            if (latencyHistogram == null)
+            {
+                return null;
+            }
+
+            return MathNet.Numerics.Statistics.Statistics.Quantile(latencyHistogram.Take(latencyIndex + 1), quantile);
+        }
+
         private class NoOpDisposable : IDisposable
         {
             public static readonly NoOpDisposable Instance = new NoOpDisposable();

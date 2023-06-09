@@ -10,7 +10,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
-    internal class InsertV2BenchmarkOperation : IBenchmarkOperation
+    internal class InsertV2BenchmarkOperation : InsertBenchmarkOperation
     {
         private readonly DocumentClient documentClient;
         private readonly Uri containerUri;
@@ -38,7 +38,7 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
-        public async Task<OperationResult> ExecuteOnceAsync()
+        public override async Task<OperationResult> ExecuteOnceAsync()
         {
             ResourceResponse<Document> itemResponse = await this.documentClient.CreateDocumentAsync(
                     this.containerUri,
@@ -58,7 +58,7 @@ namespace CosmosBenchmark
             };
         }
 
-        public Task PrepareAsync()
+        public override Task PrepareAsync()
         {
             string newPartitionKey = Guid.NewGuid().ToString();
 
