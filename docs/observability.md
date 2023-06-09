@@ -39,7 +39,7 @@ flowchart TD
 
 ### Introduction
 When opted-in CosmosDB SDK collects below aggregated telemetry data every 10 minutes to Azure CosmosDB service. 
-1. Cache Latencies : Right now, it covers only Collection Cache
+1. Metadata caches (ex: CollectionCache) miss statistics
 2. Client System Usage (during an operation) :
     * CPU usage
     * Memory Usage
