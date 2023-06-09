@@ -68,7 +68,7 @@ When opted-in CosmosDB SDK collects below aggregated telemetry data every 10 min
 - Non-Azure VM, <Call out that auto generated GUID will be used>
 
 
-**Processor**: Its resposibility is to get all the data and divide it into small chunks (<2MB) and send each chunk to the Microsoft service.
+**Processor**: Its responsibility is to get all the data and divide it into small chunks (<2MB) and send each chunk to the Azure CosmosDB service.
 
 ```mermaid
 flowchart TD
