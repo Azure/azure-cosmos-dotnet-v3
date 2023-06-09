@@ -39,19 +39,19 @@ flowchart TD
 
 ### Introduction
 When opted-in CosmosDB SDK collects below aggregated telemetry data every 10 minutes to Azure CosmosDB service. 
-1. Operation(CRUD APIs) Latencies and Request Units (RUs).
+1. Operation(Point, Stream, Batch and Query APIs) Latencies and Request Units (RUs).
 2. Metadata caches (ex: CollectionCache) miss statistics
-3. Client System Usage (during an operation) :
+3. Host Resource Usage: (during an operation) :
     * CPU usage
     * Memory Usage
     * Thread Starvation
     * Network Connections Opened (only TCP Connections)
-4. TOP 10 slower network interactions
+4. TOP 10 slowest network interactions per endpoint
 
 > Note: We don't collect any PII data as part of this feature.
 
 ### Benefits
-Enabling this feature provides numerous benefits. The telemetry data collected will allow us to identify and address potential issues. This results in a superior support experience and ensures that some issues can even be resolved before they impact your application. In short, customers with this feature enabled can expect a smoother and more reliable experience.
+Enabling this feature provides numerous benefits. The telemetry data collected will allow us to identify and address potential issues. This results in a superior support experience and ensures that some issues can even be resolved before they impact your application. In short, customers with this feature enabled can expect a smoother and more reliable support experience.
 
 ### Impact of this feature enabled
 * _Latency_: Customer should not see any impact on latency.
