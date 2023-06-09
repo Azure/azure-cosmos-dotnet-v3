@@ -100,6 +100,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
                         }
                     }
+                    else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri))
+                    {
+                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.NotFound);
+                        return Task.FromResult(result);
+                    }
                     return null;
                 },
                 ResponseIntercepter = (response) =>
@@ -723,7 +728,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     return Task.FromResult(result);
                 }
-
                 return null;
             };
 
@@ -1030,24 +1034,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsFalse(telemetryInfo.UserAgent.Contains("userAgentSuffix"), "Useragent should not have suffix appended"); // Useragent should not contain useragentsuffix as it can have PII
                 Assert.IsNotNull(telemetryInfo.ConnectionMode);
 
-                if(!string.IsNullOrEmpty(telemetryInfo.MachineId))
+                if (!string.IsNullOrEmpty(telemetryInfo.MachineId))
                 {
                     machineId.Add(telemetryInfo.MachineId);
                 }
             }
 
-            if(isAzureInstance.HasValue)
+            if (isAzureInstance.HasValue)
             {
                 if (isAzureInstance.Value)
                 {
-                    Assert.AreEqual($"{VmMetadataApiHandler.VmIdPrefix}{"d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd"}", machineId.First(), $"Generated Machine id is : {machineId.First()}");
+                    Assert.IsTrue(machineId.First().StartsWith(VmMetadataApiHandler.VmIdPrefix), $"Generated Machine id is : {machineId.First()}");
                 }
                 else
                 {
-                    Assert.AreNotEqual($"{VmMetadataApiHandler.VmIdPrefix}{"d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd"}", machineId.First(), $"Generated Machine id is : {machineId.First()}");
-                    Assert.AreEqual(1, machineId.Count, $"Multiple Machine Id has been generated i.e {JsonConvert.SerializeObject(machineId)}");
+                    Assert.IsTrue(machineId.First().StartsWith(VmMetadataApiHandler.HashedMachineNamePrefix), $"Generated Machine id is : {machineId.First()}");
                 }
             }
+
+            Assert.AreEqual(1, machineId.Count, $"Multiple Machine Id has been generated i.e {JsonConvert.SerializeObject(machineId)}");
         }
 
 
@@ -1085,7 +1090,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task<Container> CreateClientAndContainer(ConnectionMode mode,
             Microsoft.Azure.Cosmos.ConsistencyLevel? consistency = null,
             bool isLargeContainer = false,
-            bool isAzureInstance = false,
+            bool isAzureInstance = true,
             HttpClientHandlerHelper customHttpHandler = null)
         {
             if (consistency.HasValue)
