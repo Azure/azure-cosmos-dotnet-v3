@@ -12,9 +12,14 @@ namespace CosmosBenchmark
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using App.Metrics;
+    using App.Metrics.Formatters.Json;
+    using App.Metrics.Scheduling;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
@@ -28,11 +33,16 @@ namespace CosmosBenchmark
         /// <param name="args">command line arguments.</param>
         public static async Task Main(string[] args)
         {
+            using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder
+                .AddConsole());
+
+            ILogger logger = loggerFactory.CreateLogger<Program>();
+
             try
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
                 await Program.AddAzureInfoToRunSummary();
-                
+
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
                 if (config.EnableLatencyPercentiles)
@@ -45,7 +55,14 @@ namespace CosmosBenchmark
 
                 Program program = new Program();
 
-                RunSummary runSummary = await program.ExecuteAsync(config);
+                IMetricsRoot metrics = ConfigureReporting(config, logger);
+
+                AppMetricsTaskScheduler scheduler = new AppMetricsTaskScheduler(
+                    TimeSpan.FromSeconds(config.MetricsReportingIntervalInSec),
+                    async () => await Task.WhenAll(metrics.ReportRunner.RunAllAsync()));
+                scheduler.Start();
+
+                RunSummary runSummary = await program.ExecuteAsync(config, logger, metrics);
             }
             finally
             {
@@ -56,6 +73,32 @@ namespace CosmosBenchmark
                     Console.ReadLine();
                 }
             }
+        }
+
+        private static IMetricsRoot ConfigureReporting(
+            BenchmarkConfig config,
+            ILogger logger)
+        {
+            MetricsBuilder metricsBuilder = new MetricsBuilder();
+            if (config.AppInsightsInstrumentationKey.Trim().Length > 0)
+            {
+                string connectionString = $"InstrumentationKey={config.AppInsightsInstrumentationKey}";
+                MetricsOptions metricsOptions = new MetricsOptions();
+                metricsBuilder
+                    .Configuration.Configure(metricsOptions)
+                    .Report.ToApplicationInsights(connectionString);
+            }
+            else
+            {
+                metricsBuilder.Report.ToConsole(
+                    options =>
+                    {
+                        options.FlushInterval = TimeSpan.FromSeconds(config.MetricsReportingIntervalInSec);
+                        options.MetricsOutputFormatter = new MetricsJsonOutputFormatter();
+                    });
+            }
+
+            return metricsBuilder.Build();
         }
 
         private static async Task AddAzureInfoToRunSummary()
@@ -75,7 +118,7 @@ namespace CosmosBenchmark
                 RunSummary.Location = jObject["compute"]["location"].ToString();
                 Console.WriteLine($"Azure VM Location:{RunSummary.Location}");
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine("Failed to get Azure VM info:" + e.ToString());
             }
@@ -85,7 +128,7 @@ namespace CosmosBenchmark
         /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, ILogger logger, IMetrics metrics)
         {
             // V3 SDK client initialization
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
@@ -130,6 +173,7 @@ namespace CosmosBenchmark
                         cosmosClient,
                         documentClient);
 
+
                     if (config.DisableCoreSdkLogging)
                     {
                         // Do it after client initialization (HACK)
@@ -137,7 +181,7 @@ namespace CosmosBenchmark
                     }
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask,  0.01);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, logger, metrics);
                 }
 
                 if (config.CleanupOnFinish)
@@ -159,8 +203,8 @@ namespace CosmosBenchmark
                 {
                     runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
                     await this.PublishResults(
-                        config, 
-                        runSummary, 
+                        config,
+                        runSummary,
                         cosmosClient);
                 }
 
@@ -169,8 +213,8 @@ namespace CosmosBenchmark
         }
 
         private async Task PublishResults(
-            BenchmarkConfig config, 
-            RunSummary runSummary, 
+            BenchmarkConfig config,
+            RunSummary runSummary,
             CosmosClient benchmarkClient)
         {
             if (string.IsNullOrEmpty(config.ResultsEndpoint))
@@ -266,8 +310,8 @@ namespace CosmosBenchmark
             {
                 return await container.ReadContainerAsync();
             }
-            catch(CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            { 
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
                 // Show user cost of running this test
                 double estimatedCostPerMonth = 0.06 * options.Throughput;
                 double estimatedCostPerHour = estimatedCostPerMonth / (24 * 30);

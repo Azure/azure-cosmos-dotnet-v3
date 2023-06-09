@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
-    internal class ReadNotExistsV2BenchmarkOperation : IBenchmarkOperation
+    internal class ReadNotExistsV2BenchmarkOperation : ReadBenchmarkOperation
     {
         private readonly string databsaeName;
         private readonly string containerName;
@@ -37,7 +37,7 @@ namespace CosmosBenchmark
             this.containerName = containerName;
         }
 
-        public async Task<OperationResult> ExecuteOnceAsync()
+        public override async Task<OperationResult> ExecuteOnceAsync()
         {
             Uri itemUri = UriFactory.CreateDocumentUri(this.databsaeName, this.containerName, this.nextExecutionItemId);
 
@@ -67,7 +67,7 @@ namespace CosmosBenchmark
             }
         }
 
-        public Task PrepareAsync()
+        public override Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))
