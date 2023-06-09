@@ -46,7 +46,7 @@ When opted-in CosmosDB SDK collects below aggregated telemetry data every 10 min
     * Memory Usage
     * Thread Starvation
     * Network Connections Opened (only TCP Connections)
-4. TOP 10 slower network interactions per endpoint
+4. TOP 10 slowest network interactions per endpoint
 
 > Note: We don't collect any PII data as part of this feature.
 
