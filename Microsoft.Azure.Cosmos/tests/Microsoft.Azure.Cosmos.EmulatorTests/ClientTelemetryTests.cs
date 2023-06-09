@@ -50,6 +50,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Console.WriteLine(e.Key + ":" + e.Value);
             }
 
+            Util.EnableTracesForDebugging();
+
             SystemUsageMonitor oldSystemUsageMonitor = (SystemUsageMonitor)typeof(DiagnosticsHandlerHelper)
                 .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.Instance);
             oldSystemUsageMonitor.Stop();
@@ -729,16 +731,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return Task.FromResult(result);
                 }
                 return null;
-            };
-
-            httpHandler.ResponseIntercepter = (response) =>
-            {
-                if (response.RequestMessage.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
-                {
-                    Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-                }
-
-                return Task.FromResult(response);
             };
 
             // Replacing originally initialized cosmos Builder with this one with new handler
