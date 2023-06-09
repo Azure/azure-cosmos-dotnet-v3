@@ -62,7 +62,11 @@ When opted-in CosmosDB SDK collects below aggregated telemetry data every 10 min
 * _Network Data Collector_: It keeps all the metrics related to network or TCP calls. It has its own Sampler which sample-in only slowest TCP calls for a particular replica.
 * _Cache Data Collector_: It keeps all the cache call latencies. Right now, only collection cache is covered.
 
-**Get VM Information**: It makes [Azure Instance Metadata](https://learn.microsoft.com/azure/virtual-machines/instance-metadata-service?tabs=windows) call. If customer is not on Azure VM, we won't have this information and customer will see a warning with exception in the Trace Logs (if enabled).
+**Get VM Information**: 
+
+- Azure VM: [Azure Instance Metadata](https://learn.microsoft.com/azure/virtual-machines/instance-metadata-service?tabs=windows) call. 
+- Non-Azure VM, <Call out that auto generated GUID will be used>
+
 
 **Processor**: Its resposibility is to get all the data and divide it into small chunks (<2MB) and send each chunk to the Microsoft service.
 
