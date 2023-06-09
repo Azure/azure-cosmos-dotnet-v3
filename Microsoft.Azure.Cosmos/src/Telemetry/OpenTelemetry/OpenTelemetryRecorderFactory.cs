@@ -51,6 +51,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 // Record values only when we have a valid Diagnostic Scope
                 if (scope.IsEnabled)
                 {
+                    scope.SetDisplayName($"{operationName} {containerName}");
+
                     openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateOperationLevelParentActivity(
                         operationScope: scope,
                         operationName: operationName,
