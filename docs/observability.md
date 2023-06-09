@@ -38,7 +38,7 @@ flowchart TD
 ## Send telemetry from SDK to service (Private Preview)
 
 ### Introduction
-SDK sends aggregated telemetry data every 10 minutes to Microsoft. We collect following information as part of this feature:
+When opted-in CosmosDB SDK collects below aggregated telemetry data every 10 minutes to Azure CosmosDB service. 
 1. Cache Latencies : Right now, it covers only Collection Cache
 2. Client System Usage (during an operation) :
     * CPU usage
