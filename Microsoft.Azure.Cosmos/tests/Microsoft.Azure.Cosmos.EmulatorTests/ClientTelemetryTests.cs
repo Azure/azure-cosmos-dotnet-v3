@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using System.Collections;
-    using global::Azure.Core;
 
     [TestClass]
     [TestCategory("ClientTelemetry")]
@@ -45,6 +43,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassInitialize]
         public static void ClassInitialize(TestContext _)
         {
+            Util.EnableTracesForDebugging();
+
             SystemUsageMonitor oldSystemUsageMonitor = (SystemUsageMonitor)typeof(DiagnosticsHandlerHelper)
                 .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.Instance);
             oldSystemUsageMonitor.Stop();
@@ -55,13 +55,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestInitialize()
         {
-            foreach (DictionaryEntry e in System.Environment.GetEnvironmentVariables())
-            {
-                Console.WriteLine(e.Key + ":" + e.Value);
-            }
-
-            Util.EnableTracesForDebugging();
-
             this.actualInfo = new List<ClientTelemetryProperties>();
 
             this.httpHandler = new HttpClientHandlerHelper
@@ -969,7 +962,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (expectedOperationRecordCountMap != null)
             {
-                    Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({actualOperationRecordCountMap}) for operation does not match with expected record i.e. ({expectedOperationRecordCountMap})");
+                    Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({string.Join(", ", actualOperationRecordCountMap)}) for operation does not match with expected record i.e. ({string.Join(", ", expectedOperationRecordCountMap)})");
             }
         }
 
@@ -1091,16 +1084,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     .WithConsistencyLevel(consistency.Value);
             }
 
-            HttpClientHandlerHelper handlerHelper;
-            if (customHttpHandler == null)
-            {
-                handlerHelper = isAzureInstance ? this.httpHandler : this.httpHandlerForNonAzureInstance;
-            } 
-            else
-            {
-                handlerHelper = customHttpHandler;
-            }
-
+            HttpClientHandlerHelper handlerHelper = customHttpHandler ?? (isAzureInstance ? this.httpHandler : this.httpHandlerForNonAzureInstance);
             this.cosmosClientBuilder = this.cosmosClientBuilder
                 .WithHttpClientFactory(() => new HttpClient(handlerHelper))
                 .WithApplicationName("userAgentSuffix");

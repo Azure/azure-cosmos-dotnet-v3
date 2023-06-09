@@ -231,7 +231,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: --filter "TestCategory=ClientTelemetry" --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: --filter "TestCategory=ClientTelemetry" --verbosity normal --configuration DEBUG /p:OS=${{ parameters.OS }}
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
