@@ -39,23 +39,29 @@ flowchart TD
 
 ### Introduction
 When opted-in CosmosDB SDK collects below aggregated telemetry data every 10 minutes to Azure CosmosDB service. 
-1. Metadata caches (ex: CollectionCache) miss statistics
-2. Client System Usage (during an operation) :
+1. Operation(CRUD APIs) Latencies and Request Units (RUs).
+2. Metadata caches (ex: CollectionCache) miss statistics
+3. Client System Usage (during an operation) :
     * CPU usage
     * Memory Usage
     * Thread Starvation
     * Network Connections Opened (only TCP Connections)
-3. Operation Latencies and Request Units (RUs).
 4. TOP 10 slower network interactions
 
 > Note: We don't collect any PII data as part of this feature.
 
-### Limitations
-1. AAD Support is not available.
+### Benefits
+Enabling this feature provides numerous benefits. The telemetry data collected will allow us to identify and address potential issues. This results in a superior support experience and ensures that some issues can even be resolved before they impact your application. In short, customers with this feature enabled can expect a smoother and more reliable experience.
+
+### Impact of this feature enabled
+* _Latency_: Customer should not see any impact on latency.
+* _Total RPS_: It depends on the infrastructure the application using SDK is hosted on among other factors but the impact should not exceed 10%.
+* _Any other impact_: Collector needs around 18MB of in-memory storage to hold the data and this storage is always constant (it means it doesn't grow, no matter how much data we have)
+* Benchmark Numbers: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/Contracts/BenchmarkResults.json
 
 ### Components
 
-**Telemetry Job:** Background task which collects the data and sends it to a Microsoft service every 10 minutes.
+**Telemetry Job:** Background task which collects the data and sends it to a Azure CosmosDB service every 10 minutes.
 
 **Collectors:** In-memory storage which keeps the telemetry data collected during an operation. There are 3 types of collectors including:
 * _Operational Data Collector_: It keeps operation level latencies and request units.
@@ -65,8 +71,7 @@ When opted-in CosmosDB SDK collects below aggregated telemetry data every 10 min
 **Get VM Information**: 
 
 - Azure VM: [Azure Instance Metadata](https://learn.microsoft.com/azure/virtual-machines/instance-metadata-service?tabs=windows) call. 
-- Non-Azure VM, <Call out that auto generated GUID will be used>
-
+- Non-Azure VM: We don't collect any other information except VMID which will a Guid or Hashed Machine Name.
 
 **Processor**: Its responsibility is to get all the data and divide it into small chunks (<2MB) and send each chunk to the Azure CosmosDB service.
 
@@ -98,11 +103,5 @@ flowchart TD
     end
 ```
 
-### Benefits
-Enabling this feature provides numerous benefits. The telemetry data collected will allow us to identify and address potential issues. This results in a superior support experience and ensures that some issues can even be resolved before they impact your application. In short, customers with this feature enabled can expect a smoother and more reliable experience.
-
-### Impact of this feature enabled
-* _Latency_: Customer should not see any impact on latency.
-* _Total RPS_: It depends on the infrastructure the application using SDK is hosted on among other factors but the impact should not exceed 10%.
-* _Any other impact_: Collector needs around 18MB of in-memory storage to hold the data and this storage is always constant (it means it doesn't grow, no matter how much data we have)
-* Benchmark Numbers: https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Performance.Tests/Contracts/BenchmarkResults.json
+### Limitations
+1. AAD Support is not available.
