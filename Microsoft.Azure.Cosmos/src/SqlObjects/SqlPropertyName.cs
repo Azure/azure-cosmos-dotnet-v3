@@ -68,10 +68,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         private SqlPropertyName(string value)
         {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                throw new ArgumentException($"{nameof(value)} must not be null, empty, or whitespace.");
-            }
+            // Todo: confirm purpose
+            //if (string.IsNullOrWhiteSpace(value))
+            //{
+            //    throw new ArgumentException($"{nameof(value)} must not be null, empty, or whitespace.");
+            //}
 
             this.Value = value;
         }
