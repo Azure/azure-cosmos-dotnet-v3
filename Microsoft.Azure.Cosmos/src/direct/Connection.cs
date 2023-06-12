@@ -386,6 +386,45 @@ namespace Microsoft.Azure.Documents.Rntbd
             // the request succeeded means nothing until the response comes back.
         }
 
+        // This method is thread safe.
+        public async Task WriteRequestWithResponseDelayAsync(ChannelCommonArguments args,
+                    TransportSerialization.SerializedRequest messagePayload,
+                    TransportRequestStats transportRequestStats)
+        {
+            this.ThrowIfDisposed();
+
+            if (transportRequestStats != null)
+            {
+                this.SnapshotConnectionTimestamps(
+                    out DateTime lastSendAttempt,
+                    out DateTime lastSend,
+                    out DateTime lastReceive,
+                    out DateTime? firstSendSinceLastReceive,
+                    out long numberOfSendsSinceLastReceive);
+                transportRequestStats.ConnectionLastSendAttemptTime = lastSendAttempt;
+                transportRequestStats.ConnectionLastSendTime = lastSend;
+                transportRequestStats.ConnectionLastReceiveTime = lastReceive;
+            }
+
+            args.SetTimeoutCode(TransportErrorCode.SendLockTimeout);
+            await this.writeSemaphore.WaitAsync();
+            try
+            {
+                args.SetTimeoutCode(TransportErrorCode.SendTimeout);
+                args.SetPayloadSent();
+                this.UpdateLastSendAttemptTime();
+                Thread.Sleep(transportRequestStats.FaultInjectionDelay);
+                await messagePayload.CopyToStreamAsync(this.stream);
+            }
+            finally
+            {
+                this.writeSemaphore.Release();
+            }
+            this.UpdateLastSendTime();
+            // Do not update the last receive timestamp here. The fact that sending
+            // the request succeeded means nothing until the response comes back.
+        }
+
         // This method is not thread safe. ReadResponseMetadataAsync and
         // ReadResponseBodyAsync must be called in sequence, from a single thread.
         [SuppressMessage("", "AvoidMultiLineComments", Justification = "Multi line business logic")]

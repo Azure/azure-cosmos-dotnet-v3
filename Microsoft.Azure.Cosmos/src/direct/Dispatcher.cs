@@ -334,6 +334,26 @@ namespace Microsoft.Azure.Documents.Rntbd
                                 return Task.FromResult(transportRequestStats.FaultInjectionStoreResponse).Result;
                             }                                                      
                         }
+
+                        if (this.serverErrorInjector.InjectRntbdServerResponseDelay(args, transportRequestStats))
+                        {
+                            try
+                            {
+                                await this.connection.WriteRequestWithResponseDelayAsync(
+                                    args.CommonArguments,
+                                    args.PreparedCall.SerializedRequest,
+                                    transportRequestStats);
+                            }
+                            catch (Exception e)
+                            {
+                                callInfo.SendFailed();
+                                throw new TransportException(
+                                    TransportErrorCode.SendFailed, e,
+                                    args.CommonArguments.ActivityId, args.PreparedCall.Uri,
+                                    this.ToString(), args.CommonArguments.UserPayload,
+                                    args.CommonArguments.PayloadSent);
+                            }
+                        }
                     }
                     try
                     {

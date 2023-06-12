@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Diagnostics;
     using System.Globalization;
+    using System.Reflection;
     using System.Text;
 
     internal sealed class TransportRequestStats
@@ -62,6 +63,7 @@ namespace Microsoft.Azure.Documents
         public Exception FaultInjectionException { get; set; }
         public FaultInjectionServerErrorType FaultInjectionServerErrorType { get; set; }
         public StoreResponse FaultInjectionStoreResponse { get; set; }
+        public TimeSpan FaultInjectionDelay { get; set; }
 
         public void RecordState(RequestStage requestStage)
         {

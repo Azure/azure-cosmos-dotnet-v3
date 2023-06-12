@@ -3,12 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.FaultInjection
 {
-    using Antlr4.Runtime.Misc;
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Runtime.ConstrainedExecution;
-    using System.Text;
 
     /// <summary>
     /// Fault Injection Request Context
@@ -123,6 +120,11 @@ namespace Microsoft.Azure.Documents.FaultInjection
             return this.locationEndpointToRoute;
         }
 
+        /// <summary>
+        /// Given a request id, returns the list of rule evaluation results.
+        /// </summary>
+        /// <param name="requestId"></param>
+        /// <returns>a list of the evaulation results</returns>
         public List<string> GetFaultInjectionRuleEvaluationResults(uint requestId)
         {
             if (this.requestIdByRuleEvaluation.TryGetValue(requestId, out List<string> ruleEvaluationResults))

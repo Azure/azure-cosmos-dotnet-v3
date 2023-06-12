@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Documents.FaultInjection
 
         /// <summary>
         ///  Used to simulate hight channel acquisiton. 
-        ///  When over a connection timeoutm can simulate connectionTimeoutException
+        ///  When over a connection timeouts can simulate connectionTimeoutException
         /// </summary>
         CONNECTION_DELAY
     }

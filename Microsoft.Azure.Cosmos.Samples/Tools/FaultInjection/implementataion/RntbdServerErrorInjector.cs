@@ -31,23 +31,23 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="request"></param>
         /// <param name="delay"></param>
         /// <returns>a bool representing if the injection was sucessfull.</returns>
-        public bool InjectRntbdServerResponseDelay(
-            DocumentServiceRequest request,
-            Action<TimeSpan> delay)
+        public void InjectRntbdServerResponseDelay(
+            ChannelCallArguments args,
+            TransportRequestStats transportRequestStats)
         {
             FaultInjectionServerErrorRule serverResponseDelayRule = this.ruleStore.FindRntbdServerResponseDelayRule(request);
-            if (serverResponseDelay != null)
+            if (serverResponseDelayRule != null)
             {
                 request.FaultInjectionRequestContext
                     .ApplyFaultInjectionRule(
                         serverResponseDelayRule.GetId());
 
-                delay.Invoke(serverResponseDelayRule.Delay); ///or something like that
+                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
+                transportRequestStats.FaultInjectionDelay = serverResponseDelayRule.GetResult().GetDelay();
                 return true;
             }
 
             return false;
-
         }
 
         /// <summary>

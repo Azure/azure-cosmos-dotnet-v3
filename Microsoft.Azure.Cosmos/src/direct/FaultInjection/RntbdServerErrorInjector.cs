@@ -30,12 +30,12 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// <param name="delay"></param>
         /// <returns>a bool representing if the injection was sucessfull.</returns>
         public bool InjectRntbdServerResponseDelay(
-            DocumentServiceRequest request,
-            Action<TimeSpan> delay)
+            ChannelCallArguments args,
+            TransportRequestStats transportRequestStats)
         {
             foreach (IRntbdServerErrorInjector injector in this.faultInjectors)
             {
-                if (injector.InjectRntbdServerResponseDelay(request, delay))
+                if (injector.InjectRntbdServerResponseDelay(args, transportRequestStats))
                 {
                     return true;
                 }

@@ -26,16 +26,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.serverErrorInjector = new RntbdServerErrorInjector(this.ruleStore);
         }
 
-        //public void ConfigureFaultInjectionRules(List<FaultInjectionRule> rules)
-        //{
-        //    rules.Select(
-        //        rule =>
-        //        {
-        //            IFaultInjectionRuleInternal effectiveRule = this.ruleStore.ConfigureFaultInjectionRule(rule, this.containerUri);
+        public void ConfigureFaultInjectionRules(List<FaultInjectionRule> rules)
+        {
+            rules.Select(
+                rule =>
+                {
+                    IFaultInjectionRuleInternal effectiveRule = this.ruleStore.ConfigureFaultInjectionRule(rule, this.containerUri);
 
-        //            //this.conectionErrorInjector.Accept(effectiveRule);
-        //        })
-        //}
+                    //this.conectionErrorInjector.Accept(effectiveRule);
+                })
+        }
 
         public IRntbdServerErrorInjector GetServerErrorInjector()
         {

@@ -14,12 +14,12 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// <summary>
         /// Injects a delay in the RNTBD server response
         /// </summary>
-        /// <param name="request"></param>
-        /// <param name="delay"></param>
+        /// <param name="args"></param>
+        /// <param name="transportRequestStats"></param>
         /// <returns>a bool representing if the injection was sucessfull.</returns>
         bool InjectRntbdServerResponseDelay(
-            DocumentServiceRequest request,
-            Action<TimeSpan> delay);
+            ChannelCallArguments args,
+            TransportRequestStats transportRequestStats);
 
         /// <summary>
         /// Injects a server error in the RNTBD server response
