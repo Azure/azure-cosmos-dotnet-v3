@@ -91,7 +91,7 @@ namespace CosmosBenchmark
             ILogger logger)
         {
             MetricsBuilder metricsBuilder = new MetricsBuilder();
-            if (config.AppInsightsInstrumentationKey.Trim().Length > 0)
+            if (!string.IsNullOrEmpty(config.AppInsightsInstrumentationKey.Trim()))
             {
                 string connectionString = $"InstrumentationKey={config.AppInsightsInstrumentationKey}";
                 MetricsOptions metricsOptions = new MetricsOptions();
