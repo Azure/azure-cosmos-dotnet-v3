@@ -97,6 +97,9 @@ namespace CosmosBenchmark
                 } while (currentIterationCount < iterationCount);
 
                 Trace.TraceInformation($"Executor {this.executorId} completed");
+            }catch(Exception e)
+            {
+                Console.WriteLine($"Error: {e.Message}");
             }
             finally
             {

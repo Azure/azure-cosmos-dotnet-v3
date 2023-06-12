@@ -83,13 +83,17 @@ namespace CosmosBenchmark
             public FileLogger(string filePath)
             {
                 this.logFilePath = filePath;
+                if (!File.Exists(filePath))
+                {
+                    File.Create(filePath);
+                }
             }
 
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
                 using (StreamWriter writer = new StreamWriter(this.logFilePath, true))
                 {
-                    writer.WriteLine($"{eventData.Payload[2]} | {eventData.Payload[3]}");
+                    writer.WriteLine($"{eventData.Payload[2]} ; {eventData.Payload[3]}");
                 }
             }
         }
