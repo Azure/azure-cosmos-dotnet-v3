@@ -13,8 +13,10 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -30,17 +32,20 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ICosmosAuthorizationTokenProvider authorizationTokenProvider;
         private readonly IStoreModel storeModel;
         private readonly CollectionCache collectionCache;
+        private readonly ClientTelemetry clientTelemetry;
 
         public PartitionKeyRangeCache(
             ICosmosAuthorizationTokenProvider authorizationTokenProvider,
             IStoreModel storeModel,
-            CollectionCache collectionCache)
+            CollectionCache collectionCache,
+            ClientTelemetry clientTelemetry)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
                     keyEqualityComparer: StringComparer.Ordinal);
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.storeModel = storeModel;
             this.collectionCache = collectionCache;
+            this.clientTelemetry = clientTelemetry;
         }
 
         public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
@@ -326,7 +331,20 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         try
                         {
-                            return await this.storeModel.ProcessMessageAsync(request);
+                            DocumentServiceResponse response = await this.storeModel.ProcessMessageAsync(request);
+
+                            this.clientTelemetry?.CollectCacheInfo(
+                                            cacheRefreshSource: "PartitionKeyRangeCache",
+                                            regionsContactedList: response.RequestStats.RegionsContacted,
+                                            requestLatency: response.RequestStats.RequestLatency,
+                                            statusCode: response.StatusCode,
+                                            containerId: null,
+                                            operationType: request.OperationType,
+                                            resourceType: request.ResourceType,
+                                            subStatusCode: response.SubStatusCode,
+                                            databaseId: null);
+
+                            return response;
                         }
                         catch (DocumentClientException ex)
                         {

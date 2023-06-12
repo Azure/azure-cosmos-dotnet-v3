@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .Returns(new ValueTask<string>(authToken));
 
                 // Act.
-                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object);
+                PartitionKeyRangeCache partitionKeyRangeCache = new(mockTokenProvider.Object, mockStoreModel.Object, mockCollectioNCache.Object, null);
                 IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                     containerRId,
                     FeedRangeEpk.FullRange.Range,

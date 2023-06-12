@@ -13,9 +13,11 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -47,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
+        private readonly ClientTelemetry clientTelemetry;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
@@ -61,7 +64,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             CosmosHttpClient httpClient,
             IOpenConnectionsHandler openConnectionsHandler,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
-            bool enableTcpConnectionEndpointRediscovery = false)
+            bool enableTcpConnectionEndpointRediscovery = false,
+            ClientTelemetry clientTelemetry = null)
         {
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
@@ -88,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariable<bool>(
                 name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
                 defaultValue: false);
+            this.clientTelemetry = clientTelemetry;
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
@@ -623,6 +628,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                     cancellationToken: default))
                 {
                     DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+
+                    this.clientTelemetry?.CollectCacheInfo(
+                                  cacheRefreshSource: "GatewayAddressCache-Master",
+                                  regionsContactedList: documentServiceResponse.RequestStats.RegionsContacted,
+                                  requestLatency: documentServiceResponse.RequestStats.RequestLatency,
+                                  statusCode: documentServiceResponse.StatusCode,
+                                  containerId: null,
+                                  operationType: request.OperationType,
+                                  resourceType: request.ResourceType,
+                                  subStatusCode: documentServiceResponse.SubStatusCode,
+                                  databaseId: null);
+
                     GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
                     return documentServiceResponse;
                 }
@@ -704,6 +721,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                     cancellationToken: default))
                 {
                     DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                    this.clientTelemetry?.CollectCacheInfo(
+                                    cacheRefreshSource: "GatewayAddressCache-Server",
+                                    regionsContactedList: documentServiceResponse.RequestStats.RegionsContacted,
+                                    requestLatency: documentServiceResponse.RequestStats.RequestLatency,
+                                    statusCode: documentServiceResponse.StatusCode,
+                                    containerId: null,
+                                    operationType: request.OperationType,
+                                    resourceType: request.ResourceType,
+                                    subStatusCode: documentServiceResponse.SubStatusCode,
+                                    databaseId: null);
                     GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
                     return documentServiceResponse;
                 }

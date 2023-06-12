@@ -276,7 +276,8 @@ namespace Microsoft.Azure.Cosmos
                         routingMapProvider: null,
                         serviceConfigReader: this.mockServiceConfigReader.Object,
                         connectionPolicy: connectionPolicy,
-                        httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                        httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)), 
+                        clientTelemetry: null);
 
                     ConnectionStateListener connectionStateListener = new ConnectionStateListener(globalAddressResolver);
                     connectionStateListener.OnConnectionEvent(ConnectionEvent.ReadEof, DateTime.Now, new Documents.Rntbd.ServerKey(new Uri("https://endpoint.azure.com:4040/")));
@@ -538,7 +539,8 @@ namespace Microsoft.Azure.Cosmos
                 routingMapProvider: this.partitionKeyRangeCache.Object,
                 serviceConfigReader: this.mockServiceConfigReader.Object,
                 connectionPolicy: connectionPolicy,
-                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)), 
+                clientTelemetry: null);
 
             globalAddressResolver.SetOpenConnectionsHandler(
                 openConnectionsHandler: fakeOpenConnectionHandler);
@@ -616,7 +618,8 @@ namespace Microsoft.Azure.Cosmos
                 routingMapProvider: this.partitionKeyRangeCache.Object,
                 serviceConfigReader: this.mockServiceConfigReader.Object,
                 connectionPolicy: connectionPolicy,
-                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)), 
+                clientTelemetry: null);
 
             globalAddressResolver.SetOpenConnectionsHandler(
                 openConnectionsHandler: fakeOpenConnectionHandler);
@@ -705,7 +708,8 @@ namespace Microsoft.Azure.Cosmos
                 routingMapProvider: partitionKeyRangeCache.Object,
                 serviceConfigReader: this.mockServiceConfigReader.Object,
                 connectionPolicy: connectionPolicy,
-                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                clientTelemetry: null);
 
             globalAddressResolver.SetOpenConnectionsHandler(
                 openConnectionsHandler: fakeOpenConnectionHandler);
@@ -781,7 +785,8 @@ namespace Microsoft.Azure.Cosmos
                 routingMapProvider: this.partitionKeyRangeCache.Object,
                 serviceConfigReader: this.mockServiceConfigReader.Object,
                 connectionPolicy: connectionPolicy,
-                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                clientTelemetry: null);
 
             globalAddressResolver.SetOpenConnectionsHandler(
                 openConnectionsHandler: fakeOpenConnectionHandler);

@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly CosmosHttpClient httpClient;
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
+        private readonly ClientTelemetry clientTelemetry;
         private IOpenConnectionsHandler openConnectionsHandler;
 
         public GlobalAddressResolver(
@@ -50,7 +52,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionKeyRangeCache routingMapProvider,
             IServiceConfigurationReader serviceConfigReader,
             ConnectionPolicy connectionPolicy,
-            CosmosHttpClient httpClient)
+            CosmosHttpClient httpClient,
+            ClientTelemetry clientTelemetry)
         {
             this.endpointManager = endpointManager;
             this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
@@ -80,6 +83,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.GetOrAddEndpoint(endpoint);
             }
+
+            this.clientTelemetry = clientTelemetry;
         }
 
         public async Task OpenAsync(
@@ -281,7 +286,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.serviceConfigReader,
                         this.httpClient,
                         this.openConnectionsHandler,
-                        enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery);
+                        enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
+                        clientTelemetry: this.clientTelemetry);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);
