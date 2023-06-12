@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure.Core;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;

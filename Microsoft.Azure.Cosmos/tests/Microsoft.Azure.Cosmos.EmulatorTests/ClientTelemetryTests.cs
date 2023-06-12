@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Cosmos.Routing;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -779,11 +780,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IDictionary<string, long> expectedOperationRecordCountMap = null,
             int expectedSubstatuscode = 0,
             bool? isAzureInstance = null,
-            string expectedCacheSource = "ClientCollectionCache",
+            List<string> expectedCacheSource = null,
             bool isExpectedNetworkTelemetry = true)
         {
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
 
+            expectedCacheSource ??= new List<string> { "ClientCollectionCache", "PartitionKeyRangeCache" };
+            
             // As this feature is thread based execution so wait for the results to avoid test flakiness
             List<ClientTelemetryProperties> localCopyOfActualInfo = null;
             ValueStopwatch stopwatch = ValueStopwatch.StartNew();
@@ -855,14 +858,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList: actualOperationList,
                 expectedSubstatuscode: expectedSubstatuscode);
 
-            if(!string.IsNullOrEmpty(expectedCacheSource))
-            {
-                Assert.IsTrue(cacheRefreshInfoSet.Count > 0, "Cache Refresh Information is not there");
+            
+            Assert.IsTrue(cacheRefreshInfoSet.Count > 0, "Cache Refresh Information is not there");
 
-                ClientTelemetryTests.AssertCacheRefreshInfoInformation(
-                  cacheRefreshInfoSet: cacheRefreshInfoSet,
-                  expectedCacheSource: expectedCacheSource);
-            }
+            ClientTelemetryTests.AssertCacheRefreshInfoInformation(
+                cacheRefreshInfoSet: cacheRefreshInfoSet,
+                expectedCacheSource: expectedCacheSource);
            
             ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation, this.expectedMetricNameUnitMap);
             if (localCopyOfActualInfo.First().ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant() 
@@ -1052,10 +1053,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static void AssertCacheRefreshInfoInformation(
             HashSet<CacheRefreshInfo> cacheRefreshInfoSet,
-            string expectedCacheSource)
+            List<string> expectedCacheSource)
         {
             foreach(CacheRefreshInfo cacheRefreshInfo in cacheRefreshInfoSet)
             {
+                Console.WriteLine($"CacheRefreshInfo: {cacheRefreshInfo.CacheRefreshSource}");
                 Assert.IsNotNull(cacheRefreshInfo.CacheRefreshSource);
                 Assert.IsTrue(expectedCacheSource.Contains(cacheRefreshInfo.CacheRefreshSource));
                 Assert.IsNotNull(cacheRefreshInfo.Operation, "Operation Type is null");

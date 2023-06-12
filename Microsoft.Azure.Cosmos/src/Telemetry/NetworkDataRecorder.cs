@@ -103,7 +103,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     Resource = storeResponseStatistic.RequestResourceType.ToString(),
                     Operation = storeResponseStatistic.RequestOperationType.ToString(),
                 };
-
         }
 
         public List<RequestInfo> GetRequests()
