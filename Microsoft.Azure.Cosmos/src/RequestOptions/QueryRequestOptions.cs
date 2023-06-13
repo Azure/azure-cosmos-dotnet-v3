@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -54,12 +55,13 @@ namespace Microsoft.Azure.Cosmos
     #else
         internal
     #endif
-        bool EnableOptimisticDirectExecution { get; set; }
-
-    #if PREVIEW
-        this.EnableOptimisticDirectExecution = true;
-    #endif
-
+        bool EnableOptimisticDirectExecution { get; set; } = 
+            #if PREVIEW 
+                true
+            #else
+                false
+            #endif
+            ;
         /// <summary>
         /// Gets or sets the maximum number of items that can be buffered client side during 
         /// parallel query execution in the Azure Cosmos DB service. 
