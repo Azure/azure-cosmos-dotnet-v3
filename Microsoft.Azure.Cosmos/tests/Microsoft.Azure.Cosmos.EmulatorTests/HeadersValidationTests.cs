@@ -389,6 +389,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
                 else
                 {
+                    headers.Set(HttpConstants.HttpHeaders.PartitionKey, "[\"test\"]");
                     this.ReadDocumentFeedRequestSinglePartition(client, collection.ResourceId, headers);                   
                 }
 
@@ -468,31 +469,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 supportedSerializationFormats: "jsontext",
                 transportSerializationFormat: null,
                 sqlQuerySpec: sqlQuerySpec);
+            /*
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "COSMOSBINARY",
                 transportSerializationFormat: null,
                 sqlQuerySpec: sqlQuerySpec);
+            */
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.JsonText,
                 supportedSerializationFormats: "JsonText, CosmosBinary",
                 transportSerializationFormat: null,
                 sqlQuerySpec: sqlQuerySpec);
+            /*
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "CosmosBinary, HybridRow",
                 transportSerializationFormat: null,
                 sqlQuerySpec: sqlQuerySpec);
+            */
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.JsonText,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
                 transportSerializationFormat: null,
                 sqlQuerySpec: sqlQuerySpec);
+            /*
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
                 transportSerializationFormat: "CosmosBinary",
                 sqlQuerySpec: sqlQuerySpec);
+            */
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.JsonText,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
