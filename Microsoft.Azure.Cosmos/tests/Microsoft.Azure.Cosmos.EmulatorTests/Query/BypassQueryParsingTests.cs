@@ -1,5 +1,6 @@
 namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
@@ -57,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             QueryRequestOptions feedOptions = new QueryRequestOptions { PartitionKey = PartitionKey.None };
             string query = @"SELECT VALUE { """" : r.numberField } FROM r";
-            IReadOnlyList<string> expected = Enumerable.Range(0, documentCount).Select(i => "{\"\":" + i.ToString() + "}").ToList();
+            IReadOnlyList<string> expected = Enumerable.Range(0, documentCount).Select(i => String.Format("{{\"\":{0}}}", i)).ToList();
 
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
