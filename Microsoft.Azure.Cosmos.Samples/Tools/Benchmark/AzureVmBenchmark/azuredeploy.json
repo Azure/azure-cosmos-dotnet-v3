@@ -64,13 +64,6 @@
                 "description": "Specifies a Virtual Network Subnet Address Prefix "
             }
         },
-
-        "resultsStorageConnectionString": {
-            "type": "string",
-            "metadata": {
-                "description": "Specifies a connection string of the storage account where results will be avaialble"
-            }
-        },
         "cosmosURI": {
             "type": "string",
             "metadata": {
