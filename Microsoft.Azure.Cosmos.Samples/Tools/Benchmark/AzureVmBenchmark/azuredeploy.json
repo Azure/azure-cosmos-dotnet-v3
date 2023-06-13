@@ -137,13 +137,6 @@
             "type": "int",
             "defaultValue": 500
         },
-        "appInsightConnectionString": {
-            "type": "string",
-            "defaultValue": "",
-            "metadata": {
-                "description": "Specifies application insight connection string for live monitering"
-            }
-        },
         "storageAccountName": {
             "type": "string",
             "defaultValue": "dotnetbenchmark",
