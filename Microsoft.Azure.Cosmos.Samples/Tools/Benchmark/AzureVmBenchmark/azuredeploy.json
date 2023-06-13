@@ -96,6 +96,7 @@
         },
         "resultsContainer": {
             "type": "string",
+            "defaultValue": "BenchmarkResult",
             "metadata": {
                 "description": "Specifies the name of the container to which the results to be saved"
             }
