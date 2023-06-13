@@ -4,11 +4,9 @@
 
 namespace CosmosBenchmark
 {
-    using App.Metrics.Timer;
-
     public interface IMetricsCollector
     {
-        TimerContext GetTimer();
+        void RecordLatency(double milliseconds);
 
         void CollectMetricsOnSuccess();
 

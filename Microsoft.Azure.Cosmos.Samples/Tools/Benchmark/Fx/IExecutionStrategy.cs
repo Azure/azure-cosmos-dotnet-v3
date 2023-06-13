@@ -6,7 +6,7 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Threading.Tasks;
-    using App.Metrics;
+    using Microsoft.ApplicationInsights;
     using Microsoft.Extensions.Logging;
 
     internal interface IExecutionStrategy
@@ -23,6 +23,6 @@ namespace CosmosBenchmark
             int serialExecutorIterationCount,
             double warmupFraction,
             ILogger logger,
-            IMetrics metrics);
+            TelemetryClient telemetryClient);
     }
 }

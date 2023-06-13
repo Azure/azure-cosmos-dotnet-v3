@@ -4,9 +4,6 @@
 
 namespace CosmosBenchmark
 {
-    using App.Metrics;
-    using App.Metrics.Timer;
-
     internal abstract class InsertBenchmarkOperation : BenchmarkOperation
     {
     }
