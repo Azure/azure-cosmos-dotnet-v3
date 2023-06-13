@@ -34,6 +34,5 @@ nohup dotnet run -c Release -e ${COSMOS_URI} -k ${COSMOS_KEY} -t ${THROUGHPUT} -
 --publishresults true --enablelatencypercentiles true --resultscontainer ${RESULTS_CONTAINER} --resultspartitionkeyvalue "pk" \
 --resultsstorageconnectionstring ${RESULT_STORAGE_CONNECTION_STRING} \
 --LatencyDiagnosticThreshold ${DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS} \
---AppInsightsInstrumentationKey ${APP_INSIGHT_CONN_STR} \
 --commitid "commitid" --commitdate "$(date '+%Y-%m-%d')" --committime "$(date '+%H:%M:%SZ')" -w ${WORKLOAD_TYPE} \
 > "/home/${ADMIN_USER_NAME}/agent.out" 2> "/home/${ADMIN_USER_NAME}/agent.err" &
