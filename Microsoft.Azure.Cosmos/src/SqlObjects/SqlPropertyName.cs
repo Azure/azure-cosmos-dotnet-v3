@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         private SqlPropertyName(string value)
         {
-            this.Value = value;
+            this.Value = value ?? throw new ArgumentException($"{nameof(value)} must not be null.");
         }
 
         public string Value { get; }
