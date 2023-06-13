@@ -12,15 +12,13 @@ namespace CosmosBenchmark
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using App.Metrics;
-    using App.Metrics.Formatters.Json;
-    using App.Metrics.Scheduling;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
+    using Microsoft.ApplicationInsights;
     using Newtonsoft.Json.Linq;
+    using Microsoft.ApplicationInsights.Extensibility;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
@@ -33,11 +31,6 @@ namespace CosmosBenchmark
         /// <param name="args">command line arguments.</param>
         public static async Task Main(string[] args)
         {
-            using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder
-                .AddConsole());
-
-            ILogger logger = loggerFactory.CreateLogger<Program>();
-
             try
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
@@ -53,16 +46,15 @@ namespace CosmosBenchmark
 
                 config.Print();
 
+                using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+                ILogger logger = loggerFactory.CreateLogger<Program>();
+
+                TelemetryConfiguration telemetryConfiguration = new(config.AppInsightsInstrumentationKey);
+                TelemetryClient telemetryClient = new TelemetryClient(telemetryConfiguration);
+
                 Program program = new Program();
 
-                IMetricsRoot metrics = ConfigureReporting(config, logger);
-
-                AppMetricsTaskScheduler scheduler = new AppMetricsTaskScheduler(
-                    TimeSpan.FromSeconds(config.MetricsReportingIntervalInSec),
-                    async () => await Task.WhenAll(metrics.ReportRunner.RunAllAsync()));
-                scheduler.Start();
-
-                RunSummary runSummary = await program.ExecuteAsync(config, logger, metrics);
+                RunSummary runSummary = await program.ExecuteAsync(config, logger, telemetryClient);
             }
             finally
             {
@@ -73,32 +65,6 @@ namespace CosmosBenchmark
                     Console.ReadLine();
                 }
             }
-        }
-
-        private static IMetricsRoot ConfigureReporting(
-            BenchmarkConfig config,
-            ILogger logger)
-        {
-            MetricsBuilder metricsBuilder = new MetricsBuilder();
-            if (config.AppInsightsInstrumentationKey.Trim().Length > 0)
-            {
-                string connectionString = $"InstrumentationKey={config.AppInsightsInstrumentationKey}";
-                MetricsOptions metricsOptions = new MetricsOptions();
-                metricsBuilder
-                    .Configuration.Configure(metricsOptions)
-                    .Report.ToApplicationInsights(connectionString);
-            }
-            else
-            {
-                metricsBuilder.Report.ToConsole(
-                    options =>
-                    {
-                        options.FlushInterval = TimeSpan.FromSeconds(config.MetricsReportingIntervalInSec);
-                        options.MetricsOutputFormatter = new MetricsJsonOutputFormatter();
-                    });
-            }
-
-            return metricsBuilder.Build();
         }
 
         private static async Task AddAzureInfoToRunSummary()
@@ -128,7 +94,7 @@ namespace CosmosBenchmark
         /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, ILogger logger, IMetrics metrics)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, ILogger logger, TelemetryClient telemetryClient)
         {
             // V3 SDK client initialization
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
@@ -173,7 +139,6 @@ namespace CosmosBenchmark
                         cosmosClient,
                         documentClient);
 
-
                     if (config.DisableCoreSdkLogging)
                     {
                         // Do it after client initialization (HACK)
@@ -181,7 +146,7 @@ namespace CosmosBenchmark
                     }
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, logger, metrics);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, logger, telemetryClient);
                 }
 
                 if (config.CleanupOnFinish)

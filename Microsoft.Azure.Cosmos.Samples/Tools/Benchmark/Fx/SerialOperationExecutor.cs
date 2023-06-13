@@ -7,18 +7,13 @@ namespace CosmosBenchmark
     using System;
     using System.Diagnostics;
     using System.Threading.Tasks;
-    using App.Metrics;
-    using App.Metrics.Counter;
-    using App.Metrics.Logging;
-    using App.Metrics.Timer;
+    using Microsoft.ApplicationInsights;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
 
     internal class SerialOperationExecutor : IExecutor
     {
         private readonly IBenchmarkOperation operation;
-
-        private readonly IMetricsCollector metricsCollector;
 
         private readonly string executorId;
 
@@ -44,36 +39,33 @@ namespace CosmosBenchmark
                 bool isWarmup,
                 bool traceFailures,
                 Action completionCallback,
+                BenchmarkConfig benchmarkConfig,
                 ILogger logger,
-                IMetrics metrics,
-                BenchmarkConfig benchmarkConfig)
+                TelemetryClient telemetryClient)
         {
             logger.LogInformation($"Executor {this.executorId} started");
 
             logger.LogInformation("Initializing counters and metrics.");
-
-            MetricsContext metricsContext = new MetricsContext(benchmarkConfig);
-            IMetricsCollector metricsCollector = MetricsCollectorProvider.GetMetricsCollector(this.operation, metricsContext, metrics);
 
             try
             {
                 int currentIterationCount = 0;
                 do
                 {
+                    IMetricsCollector metricsCollector = MetricsCollectorProvider.GetMetricsCollector(this.operation, telemetryClient);
+
                     OperationResult? operationResult = null;
 
                     await this.operation.PrepareAsync();
 
                     using (IDisposable telemetrySpan = TelemetrySpan.StartNew(
                                 () => operationResult.Value,
-                                disableTelemetry: isWarmup))
+                                disableTelemetry: isWarmup,
+                                metricsCollector.RecordLatency))
                     {
                         try
                         {
-                            using (TimerContext timerContext = metricsCollector.GetTimer())
-                            {
-                                operationResult = await this.operation.ExecuteOnceAsync();
-                            }
+                            operationResult = await this.operation.ExecuteOnceAsync();
 
                             metricsCollector.CollectMetricsOnSuccess();
 

@@ -10,7 +10,7 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using App.Metrics;
+    using Microsoft.ApplicationInsights;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
 
@@ -32,7 +32,7 @@ namespace CosmosBenchmark
             int serialExecutorIterationCount,
             double warmupFraction,
             ILogger logger,
-            IMetrics metrics)
+            TelemetryClient telemetryClient)
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
                         executorId: "Warmup",
@@ -42,9 +42,9 @@ namespace CosmosBenchmark
                     isWarmup: true,
                     traceFailures: benchmarkConfig.TraceFailures,
                     completionCallback: () => { },
+                    benchmarkConfig,
                     logger,
-                    metrics,
-                    benchmarkConfig);
+                    telemetryClient);
 
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
             for (int i = 0; i < serialExecutorConcurrency; i++)
@@ -62,21 +62,23 @@ namespace CosmosBenchmark
                         isWarmup: false,
                         traceFailures: benchmarkConfig.TraceFailures,
                         completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount),
+                        benchmarkConfig,
                         logger,
-                        metrics,
-                        benchmarkConfig);
+                        telemetryClient);
             }
 
             return await this.LogOutputStats(
                 benchmarkConfig, 
                 executors,
-                metrics);
+                logger,
+                telemetryClient);
         }
 
         private async Task<RunSummary> LogOutputStats(
             BenchmarkConfig benchmarkConfig,
             IExecutor[] executors,
-            IMetrics metrics)
+            ILogger logger,
+            TelemetryClient telemetryClient)
         {
             const int outputLoopDelayInSeconds = 1;
             IList<int> perLoopCounters = new List<int>();

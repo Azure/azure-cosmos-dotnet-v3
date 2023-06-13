@@ -6,7 +6,7 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Threading.Tasks;
-    using App.Metrics;
+    using Microsoft.ApplicationInsights;
     using Microsoft.Extensions.Logging;
 
     internal interface IExecutor
@@ -20,8 +20,8 @@ namespace CosmosBenchmark
                 bool isWarmup,
                 bool traceFailures,
                 Action completionCallback,
+                BenchmarkConfig benchmarkConfig,
                 ILogger logger,
-                IMetrics metrics,
-                BenchmarkConfig benchmarkConfig);
+                TelemetryClient telemetryClient);
     }
 }
