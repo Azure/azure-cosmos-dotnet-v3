@@ -50,9 +50,14 @@ namespace Microsoft.Azure.Cosmos
         /// Direct (optimistic) execution offers improved performance for several kinds of queries such as a single partition streaming query.
         /// </value>
     #if PREVIEW
-        public bool EnableOptimisticDirectExecution { get; set; } = true;
+        public
     #else
-        internal bool EnableOptimisticDirectExecution { get; set; }
+        internal
+    #endif
+        bool EnableOptimisticDirectExecution { get; set; }
+
+    #if PREVIEW
+        this.EnableOptimisticDirectExecution = true;
     #endif
 
         /// <summary>
