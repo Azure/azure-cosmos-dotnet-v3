@@ -19,15 +19,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class BatchSinglePartitionKeyTests : BatchTestBase
     {
         [ClassInitialize]
-        public static void ClassInitialize(TestContext context)
+        public static async Task ClassInitialize(TestContext context)
         {
-            BatchTestBase.ClassInit(context);
+            await BatchTestBase.ClassInitAsync(context);
         }
 
         [ClassCleanup]
-        public static void ClassCleanup()
+        public static async Task ClassCleanup()
         {
-            BatchTestBase.ClassClean();
+            await BatchTestBase.ClassCleanAsync();
         }
 
         [TestMethod]
@@ -693,7 +693,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DateTime patchDate = new DateTime(2020, 07, 01, 01, 02, 03);
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
-                PatchOperation.Add("/date", patchDate)
+                PatchOperation.Add("/date", patchDate),
+                PatchOperation.Move("/date", "/TodayDate")
             };
 
             BatchCore batch = (BatchCore)new BatchCore((ContainerInlineCore)customSerializationContainer, BatchTestBase.GetPartitionKey(this.PartitionKey1))
@@ -719,7 +720,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
-            Assert.IsTrue(dateJson.Contains(response.Resource["date"].ToString()));
+            Assert.IsNull(response.Resource["date"]);
+            Assert.IsTrue(dateJson.Contains(response.Resource["TodayDate"].ToString()));
         }
 
         private async Task<TransactionalBatchResponse> RunCrudAsync(bool isStream, bool isSchematized, bool useEpk, Container container)

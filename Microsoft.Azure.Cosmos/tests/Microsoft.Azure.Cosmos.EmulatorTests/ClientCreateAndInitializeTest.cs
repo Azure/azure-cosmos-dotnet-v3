@@ -23,9 +23,8 @@
         [TestInitialize]
         public async Task TestInitialize()
         {
-            this.cosmosClient = TestCommon.CreateCosmosClient(useGateway: false);
-            this.database = await this.cosmosClient.CreateDatabaseAsync(
-                   id: "ClientCreateAndInitializeDatabase");
+            await this.TestInit();
+
             ContainerResponse response = await this.database.CreateContainerAsync(
                         new ContainerProperties(id: "ClientCreateAndInitializeContainer", partitionKeyPath: PartitionKey),
                         throughput: 20000,
@@ -67,7 +66,7 @@
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             List<(string, string)> containers = new List<(string, string)> 
-            { ("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer")};
+            { (this.database.Id, "ClientCreateAndInitializeContainer")};
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
             {
@@ -78,7 +77,7 @@
             Assert.IsNotNull(cosmosClient);
             int httpCallsMadeAfterCreation = httpCallsMade;
 
-            ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer");
+            ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer(this.database.Id, "ClientCreateAndInitializeContainer");
             ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
             string diagnostics = readResponse.Diagnostics.ToString();
             Assert.IsTrue(diagnostics.Contains("\"ConnectionMode\":\"Direct\""));
@@ -101,14 +100,14 @@
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             List<(string, string)> containers = new List<(string, string)>
-            { ("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer")};
+            { (this.database.Id, "ClientCreateAndInitializeContainer")};
 
             CosmosClientBuilder builder = new CosmosClientBuilder(endpoint, authKey).WithHttpClientFactory(() => new HttpClient(httpClientHandlerHelper));
             CosmosClient cosmosClient = await builder.BuildAndInitializeAsync(containers);
             Assert.IsNotNull(cosmosClient);
             int httpCallsMadeAfterCreation = httpCallsMade;
 
-            ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer");
+            ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer(this.database.Id, "ClientCreateAndInitializeContainer");
             ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
             Assert.AreEqual(httpCallsMade, httpCallsMadeAfterCreation);
             cosmosClient.Dispose();
@@ -119,7 +118,7 @@
         public async Task AuthIncorrectTest()
         {
             List<(string databaseId, string containerId)> containers = new List<(string databaseId, string containerId)>
-            { ("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer")};
+            { (this.database.Id, "ClientCreateAndInitializeContainer")};
             string authKey = TestCommon.GetAccountInfo().authKey;
             CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync("https://127.0.0.1:0000/", authKey, containers);
             cosmosClient.Dispose();
@@ -148,7 +147,7 @@
         public async Task ContainerIncorrectTest()
         {
             List<(string databaseId, string containerId)> containers = new List<(string databaseId, string containerId)>
-            { ("ClientCreateAndInitializeDatabase", "IncorrectContainer")};
+            { (this.database.Id, "IncorrectContainer")};
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             try
             {
@@ -218,7 +217,7 @@
             List<(string, string)> containers = new () 
             { 
                 (
-                "ClientCreateAndInitializeDatabase",
+                this.database.Id,
                 "ClientCreateAndInitializeContainer"
                 )
             };
@@ -306,7 +305,7 @@
             List<(string, string)> containers = new()
             {
                 (
-                "ClientCreateAndInitializeDatabase",
+                this.database.Id,
                 "ClientCreateAndInitializeContainer"
                 )
             };
@@ -343,7 +342,7 @@
             List<(string, string)> containers = new()
             {
                 (
-                "ClientCreateAndInitializeDatabase",
+                this.database.Id,
                 "ClientCreateAndInitializeInvalidContainer"
                 )
             };

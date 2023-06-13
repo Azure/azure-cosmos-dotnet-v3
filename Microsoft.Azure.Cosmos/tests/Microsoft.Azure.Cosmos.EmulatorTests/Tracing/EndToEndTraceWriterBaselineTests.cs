@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
+    using System.Xml.Linq;
     using global::Azure;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
-
+    
     [VisualStudio.TestTools.UnitTesting.TestClass]
     [TestCategory("UpdateContract")]
     public sealed class EndToEndTraceWriterBaselineTests : BaselineTests<EndToEndTraceWriterBaselineTests.Input, EndToEndTraceWriterBaselineTests.Output>
@@ -41,10 +42,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         private static readonly TimeSpan delayTime = TimeSpan.FromSeconds(2);
         private static readonly RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
 
-        [ClassInitialize()]
+        private static readonly int TotalTestMethod = typeof(EndToEndTraceWriterBaselineTests).GetMethods().Where(m => m.GetCustomAttributes(typeof(TestMethodAttribute), false).Length > 0).Count();
+        
+        private static int MethodCount = 0;
+        
+        [ClassInitialize]
         public static async Task ClassInitAsync(TestContext context)
         {
-            testListener = Util.ConfigureOpenTelemetryAndCustomListeners();
+            EndToEndTraceWriterBaselineTests.testListener = Util.ConfigureOpenTelemetryAndCustomListeners();
             
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
                 useGateway: false,
@@ -66,11 +71,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                     }));
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
-                    Guid.NewGuid().ToString(),
+                    "databaseName",
                     cancellationToken: default);
 
             EndToEndTraceWriterBaselineTests.container = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
+                    id: "containerName",
                     partitionKeyPath: "/id",
                     throughput: 20000);
 
@@ -88,25 +93,40 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
         }
 
-        [ClassCleanup()]
+        [TestCleanup]
+        public async Task CleanUp()
+        {
+            await EndToEndTraceWriterBaselineTests.ClassCleanupAsync();
+        }
+        
         public static async Task ClassCleanupAsync()
         {
-            if(database != null)
+            EndToEndTraceWriterBaselineTests.MethodCount++;
+
+            if (EndToEndTraceWriterBaselineTests.MethodCount == EndToEndTraceWriterBaselineTests.TotalTestMethod)
             {
-                await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
+                if (database != null)
+                {
+                    await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
+                }
+                
+                EndToEndTraceWriterBaselineTests.client?.Dispose();
+                EndToEndTraceWriterBaselineTests.bulkClient?.Dispose();
+                EndToEndTraceWriterBaselineTests.miscCosmosClient?.Dispose();
+
+                Util.DisposeOpenTelemetryAndCustomListeners();
+
+                EndToEndTraceWriterBaselineTests.testListener.Dispose();
+                
             }
-
-            Util.DisposeOpenTelemetryAndCustomListeners();
-
-            await Task.Delay(5000);
         }
-
+        
         private static void AssertAndResetActivityInformation()
         {
             AssertActivity.AreEqualAcrossListeners();
 
             CustomOtelExporter.CollectedActivities = new();
-            testListener?.ResetAttributes();
+            EndToEndTraceWriterBaselineTests.testListener?.ResetAttributes();
         }
 
         [TestMethod]
@@ -143,10 +163,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                                     trace: traceForest,
                                     startLineNumber: startLineNumber,
                                     endLineNumber: endLineNumber, 
-                                    oTelActivities: testListener?.GetRecordedAttributes()));
+                                    oTelActivities: EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
-
             }
             //----------------------------------------------------------------
 
@@ -174,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                                 trace: traceForest,
                                 startLineNumber: startLineNumber,
                                 endLineNumber: endLineNumber,
-                                oTelActivities: testListener?.GetRecordedAttributes()));
+                                oTelActivities: EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -205,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                                 trace: traceForest,
                                 startLineNumber: startLineNumber,
                                 endLineNumber: endLineNumber,
-                                oTelActivities: testListener?.GetRecordedAttributes()));
+                                oTelActivities: EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -231,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ReadFeed Public API Typed", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("ReadFeed Public API Typed", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -273,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ChangeFeed", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("ChangeFeed", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -305,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ChangeFeed Typed", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("ChangeFeed Typed", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -338,7 +357,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ChangeFeed Public API", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("ChangeFeed Public API", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -371,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ChangeFeed Public API Typed", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("ChangeFeed Public API Typed", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -382,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //----------------------------------------------------------------
             {
                 Container leaseContainer = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
+                    id: "changefeedleasecontainer",
                     partitionKeyPath: "/id");
 
                 ChangeFeedProcessor processor = container
@@ -432,7 +451,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Change Feed Estimator", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Change Feed Estimator", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -468,7 +487,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Query", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -493,7 +512,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query Typed", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Query Typed", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -519,7 +538,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query Public API", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Query Public API", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -545,7 +564,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query Public API Typed", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Query Public API Typed", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -574,7 +593,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 Documents.ServiceInteropWrapper.AssembliesExist = currentLazy;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query - Without ServiceInterop", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Query - Without ServiceInterop", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -602,7 +621,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query Public API with FeedRanges", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Query Public API with FeedRanges", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -630,7 +649,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query Public API Typed with FeedRanges", traceForest, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Query Public API Typed with FeedRanges", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -646,9 +665,17 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
 
             AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
+
+            // It is not baseline test hence disable distributed tracing for this test
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                IsDistributedTracingEnabled = false
+            };
+            
             using (CosmosClient client = new CosmosClient(
                     endpoint,
-                    masterKeyCredential))
+                    masterKeyCredential,
+                    clientOptions))
             {
 
                 try
@@ -701,7 +728,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Write", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Point Write", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -719,7 +746,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Read", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Point Read", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -745,7 +772,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Replace", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Point Replace", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -787,7 +814,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Delete", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Point Delete", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -822,7 +849,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Write", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Point Write", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -840,7 +867,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Read", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Point Read", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -866,7 +893,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Replace", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Point Replace", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -911,7 +938,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Delete", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Point Delete", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -960,7 +987,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 }
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Operation with Request Timeout", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Point Operation with Request Timeout", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -1012,7 +1039,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 }
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Operation With Throttle", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Point Operation With Throttle", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -1092,7 +1119,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                     }
 
                     endLineNumber = GetLineNumber();
-                    inputs.Add(new Input($"Point Operation With Forbidden + Max Count = {maxCount}", trace, startLineNumber, endLineNumber, testListener.GetRecordedAttributes()));
+                    inputs.Add(new Input($"Point Operation With Forbidden + Max Count = {maxCount}", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener.GetRecordedAttributes()));
 
                     EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
                 }
@@ -1143,7 +1170,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 }
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Operation with Service Unavailable", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Point Operation with Service Unavailable", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -1194,7 +1221,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Batch Operation", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Batch Operation", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -1244,7 +1271,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
                 foreach (ITrace trace in traces)
                 {
-                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
                 }
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
@@ -1298,7 +1325,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Bulk Operation With Throttle", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Bulk Operation With Throttle", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -1320,7 +1347,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 startLineNumber = GetLineNumber();
              
-                DatabaseResponse databaseResponse = await miscCosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+                DatabaseResponse databaseResponse = await miscCosmosClient.CreateDatabaseAsync("miscdbcustonhandler");
                 EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
                     databaseResponse.Diagnostics.ToString(),
                     requestHandler.FullHandlerName,
@@ -1330,7 +1357,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 await databaseResponse.Database.DeleteAsync();
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -1343,13 +1370,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 startLineNumber = GetLineNumber();
                 RequestOptions requestOptions = new RequestOptions();
                 DatabaseResponse databaseResponse = await client.CreateDatabaseAsync(
-                    id: Guid.NewGuid().ToString(),
+                    id: "miscdbdataplane",
                     requestOptions: requestOptions);
                 ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
                 await databaseResponse.Database.DeleteAsync();
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Custom Handler", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -1378,6 +1405,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 itemList.Add(("id" + i, new PartitionKey(i.ToString())));
             }
 
+            EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
+
             //----------------------------------------------------------------
             //  Read Many Stream
             //----------------------------------------------------------------
@@ -1390,7 +1419,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 }
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Read Many Stream Api", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Read Many Stream Api", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -1405,7 +1434,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 ITrace trace = ((CosmosTraceDiagnostics)feedResponse.Diagnostics).Value;
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Read Many Typed Api", trace, startLineNumber, endLineNumber, testListener?.GetRecordedAttributes()));
+                inputs.Add(new Input("Read Many Typed Api", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -1424,10 +1453,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             StringBuilder oTelActivitiesString = new StringBuilder();
             if (input.OTelActivities != null && input.OTelActivities.Count > 0)
             {
+                oTelActivitiesString.Append("<OTelActivities>");
                 foreach (string attributes in input.OTelActivities)
                 {
                     oTelActivitiesString.AppendLine(attributes);
                 }
+                oTelActivitiesString.Append("</OTelActivities>");
             }
           
             AssertTraceProperites(input.Trace);
@@ -1436,9 +1467,23 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             Assert.IsTrue(text.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {text}");
             Assert.IsTrue(json.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {json}");
             
-            return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented), oTelActivitiesString.ToString());
+            return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented), this.FormatXml(oTelActivitiesString.ToString()));
         }
 
+        private string FormatXml(string xml)
+        {
+            try
+            {
+                XDocument doc = XDocument.Parse(xml);
+                return doc.ToString();
+            }
+            catch (Exception)
+            {
+                // Handle and throw if fatal exception here; don't just ignore them
+                return xml;
+            }
+        }
+        
         private static TraceForBaselineTesting CreateTraceForBaslineTesting(ITrace trace, TraceForBaselineTesting parent)
         {
             TraceForBaselineTesting convertedTrace = new TraceForBaselineTesting(trace.Name, trace.Level, trace.Component, parent);
@@ -1622,9 +1667,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
                 if (!string.IsNullOrWhiteSpace(this.OTelActivities))
                 {
-                    xmlWriter.WriteStartElement(nameof(this.OTelActivities));
                     xmlWriter.WriteRaw(this.OTelActivities);
-                    xmlWriter.WriteEndElement();
                 }
             }
         }

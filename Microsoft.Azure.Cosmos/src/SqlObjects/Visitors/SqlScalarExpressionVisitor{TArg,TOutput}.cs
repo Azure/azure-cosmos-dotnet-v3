@@ -21,8 +21,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TOutput Visit(SqlCoalesceScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlConditionalScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlExistsScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlFirstScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlFunctionCallScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlInScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlLastScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlLikeScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlLiteralScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlMemberIndexerScalarExpression scalarExpression, TArg input);

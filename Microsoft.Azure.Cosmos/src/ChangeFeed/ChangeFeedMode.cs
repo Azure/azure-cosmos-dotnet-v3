@@ -38,12 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// Latest version mode includes item creations and updates, not deletions.
         /// </remarks>
         /// <returns>A <see cref="ChangeFeedMode"/>  to receive latest version item changes.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        static ChangeFeedMode LatestVersion => ChangeFeedModeIncremental.Instance;
+        public static ChangeFeedMode LatestVersion => ChangeFeedModeIncremental.Instance;
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedMode"/> to receive notifications for creations, deletes, as well as all intermediary snapshots for updates.

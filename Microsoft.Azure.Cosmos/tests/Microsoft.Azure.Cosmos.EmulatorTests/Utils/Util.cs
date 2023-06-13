@@ -22,7 +22,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using OpenTelemetry;
     using OpenTelemetry.Trace;
-
+    using AzureCore = global::Azure.Core;
+    
     internal enum DocumentClientType
     {
         Gateway,
@@ -542,10 +543,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", true);
 
+            AzureCore.ActivityExtensions.ResetFeatureSwitch();
+            
             // Open Telemetry Listener
             Util.OTelTracerProvider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter() // use any exporter here
-                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*") // Right now, it will capture only "Azure.Cosmos.Operation"
+                .AddSource($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*")
                 .Build();
 
             // Custom Listener
@@ -567,6 +570,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Util.TestListener = null;
 
             AppContext.SetSwitch("Azure.Experimental.EnableActivitySource", false);
+
+            AzureCore.ActivityExtensions.ResetFeatureSwitch();
         }
 
         /// <summary>

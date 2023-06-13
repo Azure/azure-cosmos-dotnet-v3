@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void ParentResourceTest()
         {
             Assert.AreEqual(this.database, this.Container.Database);
-            Assert.AreEqual(this.cosmosClient, this.Container.Database.Client);
+            Assert.AreEqual(this.GetClient(), this.Container.Database.Client);
         }
 
         [TestMethod]
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string[] selfLinkSegments = containerProperties.SelfLink.Split('/');
             string databaseRid = selfLinkSegments[1];
             string containerRid = selfLinkSegments[3];
-            Container containerByRid = this.cosmosClient.GetContainer(databaseRid, containerRid);
+            Container containerByRid = this.GetClient().GetContainer(databaseRid, containerRid);
 
             // List of invalid characters are listed here.
             //https://docs.microsoft.com/dotnet/api/microsoft.azure.documents.resource.id?view=azure-dotnet#remarks
@@ -416,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Item -> Container -> Database contract 
             string dbName = Guid.NewGuid().ToString();
-            testContainer = this.cosmosClient.GetDatabase(dbName).GetContainer(collectionName);
+            testContainer = this.GetClient().GetDatabase(dbName).GetContainer(collectionName);
             await CosmosItemTests.TestNonePKForNonExistingContainer(testContainer);
         }
 
@@ -424,7 +424,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task NonPartitionKeyLookupCacheTest()
         {
             int count = 0;
-            CosmosClient client = TestCommon.CreateCosmosClient(builder =>
+            using CosmosClient client = TestCommon.CreateCosmosClient(builder =>
             {
                 builder.WithConnectionModeDirect();
                 builder.WithSendingRequestEventArgs((sender, e) =>
@@ -509,6 +509,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // OkRagnes should be fetched only once. 
             // Possible to make multiple calls for ranges
             Assert.AreEqual(expected, count);
+
+            await db.DeleteStreamAsync();
         }
 
         [TestMethod]
@@ -767,11 +769,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string currentVersion = HttpConstants.Versions.CurrentVersion;
             HttpConstants.Versions.CurrentVersion = "2020-07-15";
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
             Cosmos.Database database = null;
             try
             {
-                CosmosClient client = TestCommon.CreateCosmosClient(true);
-                
                 database = await client.CreateDatabaseIfNotExistsAsync("mydb");
                 
                 ContainerProperties containerProperties = new ContainerProperties("subpartitionedcontainer", new List<string> { "/Country", "/City" });
@@ -1575,7 +1576,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = (ContainerInlineCore)containerResponse;
 
                 // Get all the partition key ranges to verify there is more than one partition
-                IRoutingMapProvider routingMapProvider = await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+                IRoutingMapProvider routingMapProvider = await this.GetClient().DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
                 IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
                     containerResponse.Resource.ResourceId,
                     new Documents.Routing.Range<string>("00", "FF", isMaxInclusive: true, isMinInclusive: true),
@@ -1983,7 +1984,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             patchOperations.Clear();
             patchOperations.Add(PatchOperation.Add("/children/0/cost", 1));
-            //patchOperations.Add(PatchOperation.Set("/random", value));
             // with content response
             response = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
@@ -2005,6 +2005,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
             Assert.AreEqual(null, response.Resource.children[0].id);
+            
+            patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Add("/children/1/description","Child#1"));
+            patchOperations.Add(PatchOperation.Move("/children/0/description", "/description"));
+            patchOperations.Add(PatchOperation.Move("/children/1/description", "/children/0/description"));
+            // with content response
+            response = await containerInternal.PatchItemAsync<ToDoActivity>(
+                id: testItem.id,
+                partitionKey: new Cosmos.PartitionKey(testItem.pk),
+                patchOperations: patchOperations);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource);
+            Assert.AreEqual("testSet", response.Resource.description);
+            Assert.AreEqual("Child#1", response.Resource.children[0].description);
+            Assert.IsNull(response.Resource.children[1].description);
         }
 
         [TestMethod]
@@ -2692,7 +2708,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCategory("Quarantine") /* Gated runs emulator as rate limiting disabled */]
         public async Task VerifyToManyRequestTest(bool isQuery)
         {
-            CosmosClient client = TestCommon.CreateCosmosClient();
+            using CosmosClient client = TestCommon.CreateCosmosClient();
             Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync("LoadTest");
             Container container = await db.CreateContainerIfNotExistsAsync("LoadContainer", "/pk");
 
@@ -2755,7 +2771,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task VerifySessionNotFoundStatistics()
         {
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { ConsistencyLevel = Cosmos.ConsistencyLevel.Session });
+            using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(new CosmosClientOptions() { ConsistencyLevel = Cosmos.ConsistencyLevel.Session });
             DatabaseResponse database = await cosmosClient.CreateDatabaseIfNotExistsAsync("NoSession");
             Container container = await database.Database.CreateContainerIfNotExistsAsync("NoSession", "/pk");
 
@@ -2815,8 +2831,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 operation = ExecuteReadFeedAsync;
             }
 
-            CosmosClient cc1 = TestCommon.CreateCosmosClient();
-            CosmosClient cc2 = TestCommon.CreateCosmosClient();
+            using CosmosClient cc1 = TestCommon.CreateCosmosClient();
+            using CosmosClient cc2 = TestCommon.CreateCosmosClient();
             Cosmos.Database db1 = null;
             try
             {

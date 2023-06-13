@@ -37,8 +37,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 trace);
 
             Assert.AreEqual(nullReferenceException.StackTrace, cosmosNullReferenceException.StackTrace);
-            Assert.AreEqual(nullReferenceException.InnerException, cosmosNullReferenceException.InnerException);
+            Assert.AreEqual(nullReferenceException, cosmosNullReferenceException.InnerException);
             Assert.AreEqual(nullReferenceException.Data, cosmosNullReferenceException.Data);
+
 
             Assert.IsTrue(cosmosNullReferenceException.Message.Contains(message));
             Assert.IsTrue(cosmosNullReferenceException.Message.Contains(rootTraceName));
@@ -47,6 +48,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(cosmosToString.Contains("Microsoft.Azure.Cosmos.CosmosNullReferenceException"), $"The internal wrapper exception should not be exposed to users. {cosmosToString}");
             Assert.IsTrue(cosmosToString.Contains(message));
             Assert.IsTrue(cosmosToString.Contains(rootTraceName));
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ExpectArgumentNullExceptionTest()
+        {
+            _ = new CosmosNullReferenceException(null, NoOpTrace.Singleton);
         }
     }
 }
