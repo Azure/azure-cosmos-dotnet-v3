@@ -13,6 +13,7 @@ namespace CosmosBenchmark
     using App.Metrics.Timer;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
+    using OpenTelemetry.Metrics;
 
     internal class SerialOperationExecutor : IExecutor
     {
@@ -46,6 +47,7 @@ namespace CosmosBenchmark
                 Action completionCallback,
                 ILogger logger,
                 IMetrics metrics,
+                MeterProvider meterProvider,
                 BenchmarkConfig benchmarkConfig)
         {
             logger.LogInformation($"Executor {this.executorId} started");
