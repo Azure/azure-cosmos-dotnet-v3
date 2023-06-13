@@ -5,24 +5,52 @@
 namespace CosmosBenchmark
 {
     using System;
-    using App.Metrics;
+    using Microsoft.ApplicationInsights;
 
     internal static class MetricsCollectorProvider
     {
-        public static IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, MetricsContext metricsContext, IMetrics metrics)
+        private static MetricCollectionWindow metricCollectionWindow;
+
+        private static readonly object metricCollectionWindowLock = new object();
+
+        private static MetricCollectionWindow CurrentMetricCollectionWindow
+        {
+            get
+            {
+                if (CheckMetricCollectionInvalid(metricCollectionWindow))
+                {
+                    lock (metricCollectionWindowLock)
+                    {
+                        if (CheckMetricCollectionInvalid(metricCollectionWindow))
+                        {
+                            metricCollectionWindow = new MetricCollectionWindow();
+                        }
+                    }
+                }
+
+                return metricCollectionWindow;
+            }
+        }
+
+        private static bool CheckMetricCollectionInvalid(MetricCollectionWindow metricCollectionWindow)
+        {
+            return metricCollectionWindow is null || DateTime.Now > metricCollectionWindow.DateTimeCreated.AddSeconds(5);
+        }
+
+        public static IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, TelemetryClient telemetryClient)
         {
             Type benchmarkOperationType = benchmarkOperation.GetType();
             if (typeof(InsertBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
             {
-                return new InsertOperationMetricsCollector(metricsContext, metrics);
+                return CurrentMetricCollectionWindow.GetInsertOperationMetricsCollector(telemetryClient);
             }
             else if (typeof(QueryBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
             {
-                return new QueryOperationMetricsCollector(metricsContext, metrics);
+                return CurrentMetricCollectionWindow.GetQueryOperationMetricsCollector(telemetryClient);
             }
             else if (typeof(ReadBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
             {
-                return new ReadOperationMetricsCollector(metricsContext, metrics);
+                return CurrentMetricCollectionWindow.GetReadOperationMetricsCollector(telemetryClient);
             }
             else
             {

@@ -4,28 +4,20 @@
 
 namespace CosmosBenchmark
 {
-    using App.Metrics;
-    using App.Metrics.Timer;
+    using Microsoft.ApplicationInsights;
 
     internal class ReadOperationMetricsCollector : MetricsCollector
     {
-        public ReadOperationMetricsCollector(MetricsContext metricsContext, IMetrics metrics) : base(metricsContext, metrics)
+        public ReadOperationMetricsCollector(TelemetryClient telemetryClient) : base(telemetryClient)
         {
         }
 
-        public override TimerContext GetTimer()
-        {
-            return this.metrics.Measure.Timer.Time(this.metricsContext.ReadLatencyTimer);
-        }
+        protected override string AverageRpsMetricName => "ReadOperationAverageRps";
 
-        public override void CollectMetricsOnSuccess()
-        {
-            this.metrics.Measure.Counter.Increment(this.metricsContext.ReadSuccessMeter);
-        }
+        protected override string LatencyInMsMetricName => "ReadOperationLatencyInMs";
 
-        public override void CollectMetricsOnFailure()
-        {
-            this.metrics.Measure.Counter.Increment(this.metricsContext.ReadFailureMeter);
-        }
+        protected override string FailureOperationMetricName => "ReadOperationFailure";
+
+        protected override string SuccessOperationMetricName => "ReadOperationFailure";
     }
 }
