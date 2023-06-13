@@ -156,6 +156,13 @@
             "metadata": {
                 "description": "Specifies Storage Account Nmae"
             }
+        },
+        "applicationInsightsName": {
+            "type": "string",
+            "defaultValue": "CosmosDBBenchmarkTestAppInsights",
+            "metadata": {
+                "description": "Specifies Application Insights Account Nmae"
+            }
         }
     },
     "variables": {
@@ -181,6 +188,16 @@
             "kind": "StorageV2",
             "properties": {
                 "accessTier": "Hot"
+            }
+        },
+        {
+            "name": "[parameters('applicationInsightsName')]",
+            "type": "Microsoft.Insights/components",
+            "apiVersion": "2015-05-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "ApplicationId": "[parameters('applicationInsightsName')]",
+                "Application_Type": "web"
             }
         },
         {
