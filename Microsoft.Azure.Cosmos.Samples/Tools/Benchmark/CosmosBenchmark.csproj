@@ -21,6 +21,7 @@
     <PackageReference Include="App.Metrics.Abstractions" Version="4.3.0" />
     <PackageReference Include="App.Metrics.Reporting.ApplicationInsights" Version="3.0.0" />
     <PackageReference Include="App.Metrics.Reporting.Console" Version="4.3.0" />
+    <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.0.0-beta.12" />
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.21.0" />
