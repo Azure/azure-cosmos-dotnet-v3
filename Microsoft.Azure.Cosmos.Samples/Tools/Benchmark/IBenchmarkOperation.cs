@@ -8,8 +8,8 @@ namespace CosmosBenchmark
 
     internal interface IBenchmarkOperation
     {
-        Task PrepareAsync();
-
         Task<OperationResult> ExecuteOnceAsync();
+
+        Task PrepareAsync();
     }
 }

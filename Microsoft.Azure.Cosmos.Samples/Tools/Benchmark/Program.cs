@@ -16,7 +16,10 @@ namespace CosmosBenchmark
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Logging;
+    using Microsoft.ApplicationInsights;
     using Newtonsoft.Json.Linq;
+    using Microsoft.ApplicationInsights.Extensibility;
     using Container = Microsoft.Azure.Cosmos.Container;
     using CosmosBenchmark.Fx;
 
@@ -52,9 +55,15 @@ namespace CosmosBenchmark
 
                 config.Print();
 
+                using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+                ILogger logger = loggerFactory.CreateLogger<Program>();
+
+                TelemetryConfiguration telemetryConfiguration = new(config.AppInsightsInstrumentationKey);
+                TelemetryClient telemetryClient = new TelemetryClient(telemetryConfiguration);
+
                 Program program = new Program();
 
-                RunSummary runSummary = await program.ExecuteAsync(config);
+                RunSummary runSummary = await program.ExecuteAsync(config, logger, telemetryClient);
             }
             finally
             {
@@ -94,7 +103,7 @@ namespace CosmosBenchmark
         /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, ILogger logger, TelemetryClient telemetryClient)
         {
             // V3 SDK client initialization
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
@@ -150,7 +159,7 @@ namespace CosmosBenchmark
                     }
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, logger, telemetryClient);
                 }
 
                 if (config.CleanupOnFinish)

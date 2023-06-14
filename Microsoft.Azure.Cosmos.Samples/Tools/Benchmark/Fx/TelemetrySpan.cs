@@ -18,12 +18,14 @@ namespace CosmosBenchmark
 
         private Stopwatch stopwatch;
         private Func<OperationResult> lazyOperationResult;
+        private Action<double> recordLatencyAction;
         private bool disableTelemetry;
         private BenchmarkConfig benchmarkConfig;
 
         public static IDisposable StartNew(BenchmarkConfig benchmarkConfig,
             Func<OperationResult> lazyOperationResult,
-            bool disableTelemetry)
+            bool disableTelemetry,
+            Action<double> recordLatencyAction)
         {
             if (disableTelemetry || !TelemetrySpan.IncludePercentile)
             {
@@ -34,8 +36,8 @@ namespace CosmosBenchmark
             {
                 stopwatch = Stopwatch.StartNew(),
                 lazyOperationResult = lazyOperationResult,
-                disableTelemetry = disableTelemetry,
-                benchmarkConfig = benchmarkConfig
+                recordLatencyAction = recordLatencyAction,
+                disableTelemetry = disableTelemetry
             };
         }
 
@@ -49,6 +51,8 @@ namespace CosmosBenchmark
                 if (TelemetrySpan.IncludePercentile)
                 {
                     RecordLatency(this.stopwatch.Elapsed.TotalMilliseconds);
+
+                    this.recordLatencyAction?.Invoke(this.stopwatch.Elapsed.TotalMilliseconds);
                 }
 
                 BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(
@@ -80,6 +84,16 @@ namespace CosmosBenchmark
             }
 
             return MathNet.Numerics.Statistics.Statistics.Percentile(latencyHistogram.Take(latencyIndex + 1), percentile);
+        }
+
+        internal static double? GetLatencyQuantile(double quantile)
+        {
+            if (latencyHistogram == null)
+            {
+                return null;
+            }
+
+            return MathNet.Numerics.Statistics.Statistics.Quantile(latencyHistogram.Take(latencyIndex + 1), quantile);
         }
 
         private class NoOpDisposable : IDisposable

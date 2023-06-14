@@ -46,6 +46,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.requestNameValueCollection.XDate = value;
         }
 
+        public override string OptimisticDirectExecute
+        {
+            get => this.requestNameValueCollection.OptimisticDirectExecute;
+            set => this.requestNameValueCollection.OptimisticDirectExecute = value;
+        }
+
         public override string ConsistencyLevel
         {
             get => this.requestNameValueCollection.ConsistencyLevel;

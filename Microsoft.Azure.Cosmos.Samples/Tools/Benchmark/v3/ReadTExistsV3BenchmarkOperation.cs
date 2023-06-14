@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
 
-    internal class ReadTExistsV3BenchmarkOperation : IBenchmarkOperation
+    internal class ReadTExistsV3BenchmarkOperation : ReadBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -40,7 +40,7 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
-        public async Task<OperationResult> ExecuteOnceAsync()
+        public override async Task<OperationResult> ExecuteOnceAsync()
         {
             ItemResponse<Dictionary<string, object>> itemResponse = await this.container.ReadItemAsync<Dictionary<string, object>>(
                         this.nextExecutionItemId,
@@ -60,7 +60,7 @@ namespace CosmosBenchmark
             };
         }
 
-        public async Task PrepareAsync()
+        public override async Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))
