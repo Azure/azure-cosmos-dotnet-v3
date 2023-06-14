@@ -1089,7 +1089,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // errors Invalid operator
                 new LinqTestInput("String.Compare | 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") | 0)),
                 new LinqTestInput("String.Compare & 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") & 0)),
-                new LinqTestInput("String.Compare ^ 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") ^ 0))
+                new LinqTestInput("String.Compare ^ 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") ^ 0)),
+                // errors Unexpected number of arguments to string.Compare
+                new LinqTestInput("Unexpected number of arguments to string.Compare", b => getQuery(b).Select(doc => String.Compare(doc.StringField, 0, "str", 0, 3) == 0))
             };
             this.ExecuteTestSuite(inputs);
         }
