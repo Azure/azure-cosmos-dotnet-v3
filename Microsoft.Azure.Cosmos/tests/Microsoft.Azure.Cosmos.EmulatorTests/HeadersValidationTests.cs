@@ -165,17 +165,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateConsistencyLevelGateway()
         {
             DocumentClient client = TestCommon.CreateClient(true);
-            await ValidateCosistencyLevel(client);
+            await ValidateConsistencyLevel(client);
         }
 
         [TestMethod]
         public async Task ValidateConsistencyLevelRntbd()
         {
             DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp);
-            await ValidateCosistencyLevel(client);
+            await ValidateConsistencyLevel(client);
         }
 
-        private async Task ValidateCosistencyLevel(DocumentClient client)
+        private async Task ValidateConsistencyLevel(DocumentClient client)
         {
             DocumentCollection collection = TestCommon.CreateOrGetDocumentCollection(client);
 
