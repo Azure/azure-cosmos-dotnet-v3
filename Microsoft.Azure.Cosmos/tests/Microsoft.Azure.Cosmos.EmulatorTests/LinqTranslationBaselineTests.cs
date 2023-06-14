@@ -1071,11 +1071,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Projected Compare <", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) < 0)),
                 new LinqTestInput("Projected Compare <=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) <= 0)),
                 // static strings
-                new LinqTestInput("Compare static string ==", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == 0)),
-                new LinqTestInput("Compare static string >", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") > 0)),
-                new LinqTestInput("Compare static string >=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") >= 0)),
-                new LinqTestInput("Compare static string <", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") < 0)),
-                new LinqTestInput("Compare static string <=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") <= 0)),
+                new LinqTestInput("String.Compare static string ==", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == 0)),
+                new LinqTestInput("String.Compare static string >", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") > 0)),
+                new LinqTestInput("String.Compare static string >=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") >= 0)),
+                new LinqTestInput("String.Compare static string <", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") < 0)),
+                new LinqTestInput("String.Compare static string <=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") <= 0)),
                 // reverse operands
                 new LinqTestInput("Projected Compare == reverse operands", b => getQuery(b).Select(doc => 0 == String.Compare(doc.StringField, doc.StringField2))),
                 new LinqTestInput("Projected Compare < reverse operands", b => getQuery(b).Select(doc => 0 < String.Compare(doc.StringField, doc.StringField2))),
@@ -1083,13 +1083,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Projected Compare > reverse operands", b => getQuery(b).Select(doc => 0 > String.Compare(doc.StringField, doc.StringField2))),
                 new LinqTestInput("Projected Compare >= reverse operands", b => getQuery(b).Select(doc => 0 >= String.Compare(doc.StringField, doc.StringField2))),
                 // errors Invalid compare value
-                new LinqTestInput("Compare > 1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") > 1)),
-                new LinqTestInput("Compare == 1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == 1)),
-                new LinqTestInput("Compare == -1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == -1)),
+                new LinqTestInput("String.Compare > 1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") > 1)),
+                new LinqTestInput("String.Compare == 1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == 1)),
+                new LinqTestInput("String.Compare == -1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == -1)),
                 // errors Invalid operator
-                new LinqTestInput("Compare | 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") | 0)),
-                new LinqTestInput("Compare & 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") & 0)),
-                new LinqTestInput("Compare ^ 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") ^ 0))
+                new LinqTestInput("String.Compare | 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") | 0)),
+                new LinqTestInput("String.Compare & 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") & 0)),
+                new LinqTestInput("String.Compare ^ 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") ^ 0))
             };
             this.ExecuteTestSuite(inputs);
         }
