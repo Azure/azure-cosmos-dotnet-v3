@@ -144,10 +144,15 @@
         [TestMethod]
         public async Task TestDefaultQueryRequestOptionsSettings()
         {
-
             QueryRequestOptions requestOptions = new QueryRequestOptions();
+            bool odeExpectedValue =
+#if PREVIEW
+                    true;
+#else
+                    false;
+#endif
 
-            Assert.AreEqual(requestOptions.EnableOptimisticDirectExecution, false);
+            Assert.AreEqual(odeExpectedValue, requestOptions.EnableOptimisticDirectExecution);
         }
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s).
