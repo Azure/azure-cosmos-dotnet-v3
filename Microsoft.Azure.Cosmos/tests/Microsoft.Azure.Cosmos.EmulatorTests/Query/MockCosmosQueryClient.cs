@@ -35,7 +35,7 @@
 
         public int QueryPlanCalls { get; private set; }
 
-        public override bool ByPassQueryParsing()
+        public override bool BypassQueryParsing()
         {
             return this.forceQueryPlanGatewayElseServiceInterop;
         }

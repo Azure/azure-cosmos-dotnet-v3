@@ -927,7 +927,7 @@
     {
         public override Action<IQueryable> OnExecuteScalarQueryCallback => throw new NotImplementedException();
 
-        public override bool ByPassQueryParsing()
+        public override bool BypassQueryParsing()
         {
             return false;
         }
