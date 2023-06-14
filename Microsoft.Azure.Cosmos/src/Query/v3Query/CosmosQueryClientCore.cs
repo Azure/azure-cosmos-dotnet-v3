@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override bool ByPassQueryParsing()
+        public override bool BypassQueryParsing()
         {
             return CustomTypeExtensions.ByPassQueryParsing();
         }
