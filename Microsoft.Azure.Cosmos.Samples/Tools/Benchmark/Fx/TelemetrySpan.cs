@@ -18,11 +18,13 @@ namespace CosmosBenchmark
 
         private Stopwatch stopwatch;
         private Func<OperationResult> lazyOperationResult;
+        private Action<double> recordLatencyAction;
         private bool disableTelemetry;
 
         public static IDisposable StartNew(
             Func<OperationResult> lazyOperationResult,
-            bool disableTelemetry)
+            bool disableTelemetry,
+            Action<double> recordLatencyAction)
         {
             if (disableTelemetry || !TelemetrySpan.IncludePercentile)
             {
@@ -33,6 +35,7 @@ namespace CosmosBenchmark
             {
                 stopwatch = Stopwatch.StartNew(),
                 lazyOperationResult = lazyOperationResult,
+                recordLatencyAction = recordLatencyAction,
                 disableTelemetry = disableTelemetry
             };
         }
@@ -47,6 +50,8 @@ namespace CosmosBenchmark
                 if (TelemetrySpan.IncludePercentile)
                 {
                     RecordLatency(this.stopwatch.Elapsed.TotalMilliseconds);
+
+                    this.recordLatencyAction?.Invoke(this.stopwatch.Elapsed.TotalMilliseconds);
                 }
 
                 BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(
