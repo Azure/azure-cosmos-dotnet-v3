@@ -147,7 +147,7 @@
 
             QueryRequestOptions requestOptions = new QueryRequestOptions();
 
-            Assert.AreEqual(requestOptions.EnableOptimisticDirectExecution, false);
+            Assert.AreEqual(false, requestOptions.EnableOptimisticDirectExecution);
         }
 
         // test checks that the pipeline can take a query to the backend and returns its associated document(s).
