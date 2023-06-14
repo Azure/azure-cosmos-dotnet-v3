@@ -49,18 +49,16 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Direct (optimistic) execution offers improved performance for several kinds of queries such as a single partition streaming query.
         /// </value>
-    #if PREVIEW
+#if PREVIEW
         public
-    #else
+#else
         internal
-    #endif
-        bool EnableOptimisticDirectExecution { get; set; } = 
-            #if PREVIEW 
-                true
-            #else
-                false
-            #endif
-            ;
+#endif
+        bool EnableOptimisticDirectExecution { get; set; }
+#if PREVIEW 
+        = true;
+#endif
+
         /// <summary>
         /// Gets or sets the maximum number of items that can be buffered client side during 
         /// parallel query execution in the Azure Cosmos DB service. 

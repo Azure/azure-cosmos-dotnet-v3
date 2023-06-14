@@ -146,12 +146,12 @@
         {
             QueryRequestOptions requestOptions = new QueryRequestOptions();
             bool odeExpectedValue =
-                #if PREVIEW
-                    true
-                #else
-                    false
-                #endif
-                ;
+#if PREVIEW
+                    true;
+#else
+                    false;
+#endif
+
             Assert.AreEqual(odeExpectedValue, requestOptions.EnableOptimisticDirectExecution);
         }
 
