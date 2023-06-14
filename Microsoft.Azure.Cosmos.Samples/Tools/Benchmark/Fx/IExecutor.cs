@@ -16,7 +16,6 @@ namespace CosmosBenchmark
         public double TotalRuCharges { get; }
 
         public Task ExecuteAsync(
-                BenchmarkConfig benchmarkConfig,
                 int iterationCount,
                 bool isWarmup,
                 bool traceFailures,

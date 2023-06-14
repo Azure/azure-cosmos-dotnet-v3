@@ -38,7 +38,6 @@ namespace CosmosBenchmark
                         executorId: "Warmup",
                         benchmarkOperation: this.benchmarkOperation());
             await warmupExecutor.ExecuteAsync(
-                    benchmarkConfig,
                     (int)(serialExecutorIterationCount * warmupFraction),
                     isWarmup: true,
                     traceFailures: benchmarkConfig.TraceFailures,
@@ -59,7 +58,6 @@ namespace CosmosBenchmark
             for (int i = 0; i < serialExecutorConcurrency; i++)
             {
                 _ = executors[i].ExecuteAsync(
-                        benchmarkConfig,
                         iterationCount: serialExecutorIterationCount,
                         isWarmup: false,
                         traceFailures: benchmarkConfig.TraceFailures,

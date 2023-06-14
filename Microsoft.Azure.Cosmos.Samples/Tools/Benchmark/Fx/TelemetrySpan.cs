@@ -22,7 +22,8 @@ namespace CosmosBenchmark
         private bool disableTelemetry;
         private BenchmarkConfig benchmarkConfig;
 
-        public static IDisposable StartNew(BenchmarkConfig benchmarkConfig,
+        public static IDisposable StartNew(
+            BenchmarkConfig benchmarkConfig,
             Func<OperationResult> lazyOperationResult,
             bool disableTelemetry,
             Action<double> recordLatencyAction)
@@ -34,6 +35,7 @@ namespace CosmosBenchmark
 
             return new TelemetrySpan
             {
+                benchmarkConfig = benchmarkConfig,
                 stopwatch = Stopwatch.StartNew(),
                 lazyOperationResult = lazyOperationResult,
                 recordLatencyAction = recordLatencyAction,
