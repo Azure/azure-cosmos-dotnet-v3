@@ -1,5 +1,6 @@
 namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
@@ -14,9 +15,28 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         public async Task TestBypassQueryParsingWithNonePartitionKey()
         {
             int documentCount = 400;
-            QueryRequestOptions feedOptions = new QueryRequestOptions { PartitionKey = PartitionKey.None };
+
             string query = "SELECT VALUE r.numberField FROM r";
-            IReadOnlyList<int> expected = Enumerable.Range(0, documentCount).ToList();
+            IReadOnlyList<string> expectedOutput = Enumerable.Range(0, documentCount).Select(i => i.ToString()).ToList();
+
+            await this.ValidateQueryBypassWithNonePartitionKey(documentCount, query, expectedOutput);
+        }
+
+        [TestMethod]
+        [TestCategory("Query")]
+        public async Task TestBypassQueryParsingWithNonePartitionKeyEmptyPropertyName()
+        {
+            int documentCount = 400;
+
+            string query = @"SELECT VALUE { """" : r.numberField } FROM r";
+            IReadOnlyList<string> expectedOutput = Enumerable.Range(0, documentCount).Select(i => String.Format("{{\"\":{0}}}", i)).ToList();
+
+            await this.ValidateQueryBypassWithNonePartitionKey(documentCount, query, expectedOutput);
+        }
+
+        private async Task ValidateQueryBypassWithNonePartitionKey(int documentCount, string query, IReadOnlyList<string> expectedOutput)
+        {
+            QueryRequestOptions feedOptions = new QueryRequestOptions { PartitionKey = PartitionKey.None };
 
             async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
@@ -34,9 +54,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     cosmosQueryClientCore);
 
                 List<CosmosElement> items = await RunQueryAsync(containerWithBypassParsing, query, feedOptions);
-                int[] actual = items.Cast<CosmosNumber>().Select(x => (int)Number64.ToLong(x.Value)).ToArray();
+                string[] actualOutput = items.Select(x => x.ToString()).ToArray();
 
-                Assert.IsTrue(expected.SequenceEqual(actual));
+                Assert.IsTrue(expectedOutput.SequenceEqual(actualOutput));
             }
 
             IReadOnlyList<string> documents = CreateDocuments(documentCount);
