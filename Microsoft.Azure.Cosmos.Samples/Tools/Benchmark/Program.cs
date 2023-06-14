@@ -180,6 +180,7 @@ namespace CosmosBenchmark
                 BenchmarkProgress benchmarkProgress = await CompleteBenchmarkProgressStatus(benchmarkProgressItem, resultContainer);
                 if (config.PublishResults)
                 {
+                    Console.WriteLine("Publishing results");
                     runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
                     await this.PublishResults(
                         config,

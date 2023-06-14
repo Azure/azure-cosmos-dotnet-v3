@@ -16,7 +16,7 @@ namespace CosmosBenchmark
         {
             this.BenchmarkConfig = benchmarkConfig ?? throw new ArgumentNullException(nameof(benchmarkConfig));
             DateTime utcNow = DateTime.UtcNow;
-            this.id = $"{utcNow:yyyy-MM-dd:HH-mm}-{benchmarkConfig.CommitId}";
+            this.id = $"{Environment.MachineName}-{utcNow:yyyy-MM-dd:HH-mm}";
             this.Date = utcNow.ToString("yyyy-MM-dd");
             this.Time = utcNow.ToString("HH-mm");
             this.Concurrency = concurrency;
