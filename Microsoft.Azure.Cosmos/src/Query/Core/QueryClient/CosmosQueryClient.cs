@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             bool forceRefresh,
             ITrace trace);
 
-        public abstract bool ByPassQueryParsing();
+        public abstract bool BypassQueryParsing();
 
         public abstract Task ForceRefreshCollectionCacheAsync(
             string collectionLink,
