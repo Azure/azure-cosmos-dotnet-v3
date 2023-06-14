@@ -619,26 +619,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (reverseNodeType)
             {
-                switch (compareOperator)
-                {
-                    case ExpressionType.Equal:
-                        // do nothing
-                        break;
-                    case ExpressionType.GreaterThan:
-                        compareOperator = ExpressionType.LessThan;
-                        break;
-                    case ExpressionType.GreaterThanOrEqual:
-                        compareOperator = ExpressionType.LessThanOrEqual;
-                        break;
-                    case ExpressionType.LessThan:
-                        compareOperator = ExpressionType.GreaterThan;
-                        break;
-                    case ExpressionType.LessThanOrEqual:
-                        compareOperator = ExpressionType.GreaterThanOrEqual;
-                        break;
-                    default:
-                        throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareToInvalidOperator));
-                }
+                compareOperator = ReverseExpressionTypeForStrings(compareOperator, ClientResources.StringCompareToInvalidOperator);
             }
 
             SqlBinaryScalarOperatorKind op = GetBinaryOperatorKind(compareOperator, null);
@@ -647,6 +628,32 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlScalarExpression rightExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(left.Arguments[0], context);
 
             return SqlBinaryScalarExpression.Create(op, leftExpression, rightExpression);
+        }
+
+        private static ExpressionType ReverseExpressionTypeForStrings(ExpressionType compareOperator, string errorMessage)
+        {
+            switch (compareOperator)
+            {
+                case ExpressionType.Equal:
+                    // do nothing
+                    break;
+                case ExpressionType.GreaterThan:
+                    compareOperator = ExpressionType.LessThan;
+                    break;
+                case ExpressionType.GreaterThanOrEqual:
+                    compareOperator = ExpressionType.LessThanOrEqual;
+                    break;
+                case ExpressionType.LessThan:
+                    compareOperator = ExpressionType.GreaterThan;
+                    break;
+                case ExpressionType.LessThanOrEqual:
+                    compareOperator = ExpressionType.GreaterThanOrEqual;
+                    break;
+                default:
+                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, errorMessage));
+            }
+
+            return compareOperator;
         }
 
         private static bool TryMatchStringCompare(MethodCallExpression left, ConstantExpression right, ExpressionType compareOperator)
@@ -689,26 +696,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (reverseNodeType)
             {
-                switch (compareOperator)
-                {
-                    case ExpressionType.Equal:
-                        // do nothing
-                        break;
-                    case ExpressionType.GreaterThan:
-                        compareOperator = ExpressionType.LessThan;
-                        break;
-                    case ExpressionType.GreaterThanOrEqual:
-                        compareOperator = ExpressionType.LessThanOrEqual;
-                        break;
-                    case ExpressionType.LessThan:
-                        compareOperator = ExpressionType.GreaterThan;
-                        break;
-                    case ExpressionType.LessThanOrEqual:
-                        compareOperator = ExpressionType.GreaterThanOrEqual;
-                        break;
-                    default:
-                        throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareInvalidOperator));
-                }
+                compareOperator = ReverseExpressionTypeForStrings(compareOperator, ClientResources.StringCompareInvalidOperator);
             }
 
             SqlBinaryScalarOperatorKind op = GetBinaryOperatorKind(compareOperator, null);
