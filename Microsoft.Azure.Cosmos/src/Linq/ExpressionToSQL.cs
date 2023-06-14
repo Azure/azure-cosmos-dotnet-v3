@@ -663,7 +663,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     case ExpressionType.LessThanOrEqual:
                         break;
                     default:
-                        throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareToInvalidOperator));
+                        throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareInvalidOperator));
                 }
 
                 // the constant value should be zero, otherwise we can't determine how to translate the expression
@@ -671,7 +671,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (!(right.Type == typeof(int) && (int)right.Value == 0) &&
                     !(right.Type == typeof(int?) && ((int?)right.Value).HasValue && ((int?)right.Value).Value == 0))
                 {
-                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareToInvalidConstant));
+                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareInvalidConstant));
                 }
 
                 return true;
@@ -707,7 +707,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         compareOperator = ExpressionType.GreaterThanOrEqual;
                         break;
                     default:
-                        throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareToInvalidOperator));
+                        throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.StringCompareInvalidOperator));
                 }
             }
 
