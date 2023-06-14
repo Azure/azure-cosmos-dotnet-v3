@@ -140,7 +140,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the patched resource record.
         /// </returns>
-        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/partial-document-update#supported-modes">Supported partial document update modes</seealso>
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
