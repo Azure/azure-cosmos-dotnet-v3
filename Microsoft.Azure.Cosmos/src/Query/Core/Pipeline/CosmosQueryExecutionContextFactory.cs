@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     // If the query would go to gateway, but we have a partition key,
                     // then try seeing if we can execute as a passthrough using client side only logic.
                     // This is to short circuit the need to go to the gateway to get the query plan.
-                    if (cosmosQueryContext.QueryClient.ByPassQueryParsing()
+                    if (cosmosQueryContext.QueryClient.BypassQueryParsing()
                         && inputParameters.PartitionKey.HasValue)
                     {
                         bool parsed;
@@ -586,7 +586,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
            CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-            if (cosmosQueryContext.QueryClient.ByPassQueryParsing())
+            if (cosmosQueryContext.QueryClient.BypassQueryParsing())
             {
                 // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
                 // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
