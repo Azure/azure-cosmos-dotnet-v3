@@ -17,8 +17,8 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
-    using Azure.Storage.Blobs;
     using Container = Microsoft.Azure.Cosmos.Container;
+    using CosmosBenchmark.Fx;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
@@ -40,10 +40,8 @@ namespace CosmosBenchmark
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
 
-                string BlobName = $"{Environment.MachineName}-BenchmarkDiagnostics.out";
-
-                FileLogger logger = new FileLogger(BlobName);
-                logger.EnableEvents(BenchmarkLatencyEventSource.Instance, EventLevel.Informational);
+                DiagnosticDataListener diagnosticDataListener = new DiagnosticDataListener();
+                diagnosticDataListener.EnableEvents(BenchmarkLatencyEventSource.Instance, EventLevel.Informational);
 
                 BenchmarkLatencyEventSource eventSource = BenchmarkLatencyEventSource.Instance;
                 if (config.EnableLatencyPercentiles)
@@ -69,34 +67,6 @@ namespace CosmosBenchmark
             }
         }
 
-        public static BlobContainerClient GetBlobServiceClient(BenchmarkConfig config)
-        {
-            BlobContainerClient blobContainerClient = new BlobContainerClient(config.ResultsStorageConnectionString, "diagnostics"); // todo add date
-            blobContainerClient.CreateIfNotExists();
-            return blobContainerClient;
-        }
-
-        public class FileLogger : EventListener
-        {
-            private readonly string logFilePath;
-
-            public FileLogger(string filePath)
-            {
-                this.logFilePath = filePath;
-                if (!File.Exists(filePath))
-                {
-                    File.Create(filePath);
-                }
-            }
-
-            protected override void OnEventWritten(EventWrittenEventArgs eventData)
-            {
-                using (StreamWriter writer = new StreamWriter(this.logFilePath, true))
-                {
-                    writer.WriteLine($"{eventData.Payload[2]} ; {eventData.Payload[3]}");
-                }
-            }
-        }
         private static async Task AddAzureInfoToRunSummary()
         {
             using HttpClient httpClient = new HttpClient();
@@ -208,6 +178,11 @@ namespace CosmosBenchmark
                         cosmosClient);
                 }
 
+                if (!string.IsNullOrEmpty(config.ResultsStorageConnectionString))
+                {
+                    DiagnosticDataListener.UploadDiagnostcs(config);
+                }
+
                 return runSummary;
             }
         }
@@ -232,28 +207,6 @@ namespace CosmosBenchmark
                 await resultContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));
             }
 
-            if (!string.IsNullOrEmpty(config.ResultsStorageConnectionString))
-            {
-                UploadDiagnostcs(config);
-            }
-        }
-
-        public static void UploadDiagnostcs(BenchmarkConfig config)
-        {
-            try
-            {
-                string BlobName = $"{Environment.MachineName}-BenchmarkDiagnostics.out";
-
-                Console.WriteLine("Uploading diagnostics");
-                BlobContainerClient blobContainerClient = GetBlobServiceClient(config);
-                BlobClient blobClient = blobContainerClient.GetBlobClient(BlobName);
-                blobClient.Upload(BlobName, overwrite: true);
-
-            }catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-            
         }
 
         private Func<IBenchmarkOperation> GetBenchmarkFactory(
