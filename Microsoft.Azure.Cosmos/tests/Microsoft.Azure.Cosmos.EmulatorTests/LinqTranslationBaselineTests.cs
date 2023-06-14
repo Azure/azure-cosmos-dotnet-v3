@@ -1045,7 +1045,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void TestStringCompareStatic()
+        public void TestStringCompare()
         {
             IOrderedQueryable<DataObject> testQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
 
