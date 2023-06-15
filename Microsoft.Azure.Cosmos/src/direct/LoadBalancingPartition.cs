@@ -8,7 +8,9 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+    using Antlr4.Runtime.Misc;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     internal sealed class LoadBalancingPartition : IDisposable
     {
@@ -30,6 +32,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             new List<LbChannelState>();  // Guarded by capacityLock.
 
         private readonly SemaphoreSlim concurrentOpeningChannelSlim;
+
+        private readonly RntbdServerErrorInjector serverErrorInjector;
 
         public LoadBalancingPartition(Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest)
         {
