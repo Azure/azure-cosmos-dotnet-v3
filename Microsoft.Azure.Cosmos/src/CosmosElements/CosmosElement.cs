@@ -11,7 +11,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
+    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
 
     [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
 #if INTERNAL
@@ -187,7 +189,28 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public static CosmosElement Parse(string json)
         {
             TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(json);
-            tryParse.ThrowIfFailed();
+            bool isMalformedJSON = tryParse.InnerMostException.Message.Contains("Encountered an element that is not a valid JSON") 
+                || tryParse.InnerMostException.Message.Contains("Encountered an unexpected JSON token");
+            if (tryParse.Failed && isMalformedJSON)
+            {
+                MalformedContinuationTokenException malformedContinuationTokenException = new MalformedContinuationTokenException(tryParse.InnerMostException.Message);
+
+                throw CosmosExceptionFactory.CreateBadRequestException(
+                    message: $"Malformed Continuation Token: {json}.",
+                    headers: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
+                        new Headers(),
+                        default,
+                        default,
+                        20007,
+                        default),
+                    stackTrace: malformedContinuationTokenException.StackTrace,
+                    innerException: malformedContinuationTokenException,
+                    trace: null);
+            }
+            else
+            {
+                tryParse.ThrowIfFailed();
+            }
 
             return tryParse.Result;
         }

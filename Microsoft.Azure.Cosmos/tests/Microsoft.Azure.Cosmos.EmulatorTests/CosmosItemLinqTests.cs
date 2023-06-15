@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(itemIds.Count, 0);
         }
 
-        [TestMethod]
+            [TestMethod]
         [DataRow(false)]
         [DataRow(true)]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
@@ -209,6 +209,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queriable = linqQueryable.Where(item => item.taskNum < 100);
             Assert.AreEqual(1, queriable.Count());
             Assert.AreEqual(itemList[1].id, queriable.ToList()[0].id);
+        }
+
+        [TestMethod]
+        public void ItemLINQQueryWithInvalidContinuationTokenTest()
+        {
+            FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemLinqQueryable<ToDoActivity>().ToFeedIterator();
+
+            while (feedIterator.HasMoreResults)
+            {
+                IOrderedQueryable<ToDoActivity> querable = this.Container.GetItemLinqQueryable<ToDoActivity>(
+                    continuationToken: "Malformed String");
+                try
+                {
+                    FeedIterator<ToDoActivity> iterator = querable.ToFeedIterator();
+                }
+                catch (CosmosException exception)
+                {
+                    Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
+                    Assert.IsTrue(exception.SubStatusCode == 20007);
+                    return;
+                }
+            }
         }
 
         [TestMethod]
