@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(itemIds.Count, 0);
         }
 
-            [TestMethod]
+        [TestMethod]
         [DataRow(false)]
         [DataRow(true)]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
