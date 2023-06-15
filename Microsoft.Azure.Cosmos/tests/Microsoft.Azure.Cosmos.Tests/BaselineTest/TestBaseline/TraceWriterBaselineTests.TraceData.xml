@@ -341,10 +341,10 @@
             "RetryAfterInMs": "9000",
             "BELatencyInMs": "4.2",
             "ReplicaHealthStatuses": [
-                "http://storephysicaladdress-1p.com:Connected",
-                "http://storephysicaladdress-2s.com:Unknown",
-                "http://storephysicaladdress-3s.com:Unhealthy",
-                "http://storephysicaladdress-4s.com:Unknown"
+              "http://storephysicaladdress-1p.com:Connected",
+              "http://storephysicaladdress-2s.com:Unknown",
+              "http://storephysicaladdress-3s.com:Unhealthy",
+              "http://storephysicaladdress-4s.com:Unknown"
             ],
             "transportRequestTimeline": {
               "requestTimeline": [
@@ -535,7 +535,7 @@
             "RequestCharge": 0,
             "RetryAfterInMs": null,
             "BELatencyInMs": null,
-            "ReplicaHealthStatuses":[],
+            "ReplicaHealthStatuses": [],
             "transportRequestTimeline": null,
             "TransportException": null
           }
