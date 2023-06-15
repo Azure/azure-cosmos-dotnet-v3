@@ -83,7 +83,6 @@
             {
                 MaxConcurrency = this.MaxConcurrency,
                 MaxItemCount = this.MaxItemCount,
-                TransportSerializationFormat = this.contentSerialization == "JsonText" ? TransportSerializationFormat.Text : TransportSerializationFormat.Binary,
             };
 
             if (this.useStronglyTypedIterator)

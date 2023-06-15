@@ -6325,18 +6325,6 @@
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey] PartitionKey;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey] get_PartitionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PartitionKey(System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat] get_TransportSerializationFormat()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat] get_TransportSerializationFormat();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat] TransportSerializationFormat": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat] TransportSerializationFormat;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat] get_TransportSerializationFormat();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_TransportSerializationFormat(System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "System.Nullable`1[System.Boolean] EnableLowPrecisionOrderBy": {
           "Type": "Property",
           "Attributes": [],
@@ -6519,13 +6507,6 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_SessionToken(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_TransportSerializationFormat(System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_TransportSerializationFormat(System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -7385,18 +7366,6 @@
               "Attributes": [],
               "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey] PartitionKey;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey] get_PartitionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PartitionKey(System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat] get_TransportSerializationFormat()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat] get_TransportSerializationFormat();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat] TransportSerializationFormat": {
-              "Type": "Property",
-              "Attributes": [],
-              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat] TransportSerializationFormat;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat] get_TransportSerializationFormat();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_TransportSerializationFormat(System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
             "System.Nullable`1[System.Boolean] EnableLowPrecisionOrderBy": {
               "Type": "Property",
               "Attributes": [],
@@ -7579,13 +7548,6 @@
                 "CompilerGeneratedAttribute"
               ],
               "MethodInfo": "Void set_SessionToken(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "Void set_TransportSerializationFormat(System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "Void set_TransportSerializationFormat(System.Nullable`1[Microsoft.Azure.Cosmos.TransportSerializationFormat]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             }
           },
           "NestedTypes": {}
@@ -11001,27 +10963,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void Dispose();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.TransportSerializationFormat;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
-      "Subclasses": {},
-      "Members": {
-        "Int32 value__": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
-        },
-        "Microsoft.Azure.Cosmos.TransportSerializationFormat Binary": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.TransportSerializationFormat Binary;IsInitOnly:False;IsStatic:True;"
-        },
-        "Microsoft.Azure.Cosmos.TransportSerializationFormat Text": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.TransportSerializationFormat Text;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}

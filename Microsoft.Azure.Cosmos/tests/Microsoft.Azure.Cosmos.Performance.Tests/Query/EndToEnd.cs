@@ -164,7 +164,6 @@
                 MaxBufferedItemCount = -1,
                 MaxConcurrency = -1,
             };
-            SetSerializationFormat(queryRequestOptions, jsonSerializationFormat);
 
             FeedIterator feedIterator = container.GetItemQueryStreamIterator(
                 queryText: query,
@@ -190,7 +189,6 @@
                 MaxBufferedItemCount = -1,
                 MaxConcurrency = -1,
             };
-            SetSerializationFormat(queryRequestOptions, jsonSerializationFormat);
 
             FeedIterator feedIterator = container.GetItemQueryStreamIterator(
                 queryText: query,
@@ -203,20 +201,6 @@
                 QueryResponse queryResponse = (QueryResponse)await feedIterator.ReadNextAsync();
                 documents.AddRange(queryResponse.CosmosElements);
             }
-        }
-
-        private static void SetSerializationFormat(
-            QueryRequestOptions queryRequestOptions,
-            JsonSerializationFormat jsonSerializationFormat)
-        {
-            TransportSerializationFormat transportSerializationFormat = jsonSerializationFormat switch
-            {
-                JsonSerializationFormat.Text => TransportSerializationFormat.Text,
-                JsonSerializationFormat.Binary => TransportSerializationFormat.Binary,
-                _ => throw new Exception(),
-            };
-
-            queryRequestOptions.TransportSerializationFormat = transportSerializationFormat;
         }
 
         public IEnumerable<object[]> Data()

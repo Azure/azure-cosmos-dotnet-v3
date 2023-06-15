@@ -71,20 +71,10 @@
                 },
                 new QueryRequestOptions()
                 {
-                    TransportSerializationFormat = TransportSerializationFormat.Text
-                },
-                new QueryRequestOptions()
-                {
-                    TransportSerializationFormat = TransportSerializationFormat.Binary
-                },
-                new QueryRequestOptions()
-                {
-                    TransportSerializationFormat = TransportSerializationFormat.Text,
                     SupportedSerializationFormats = SupportedSerializationFormats.CosmosBinary
                 },
                 new QueryRequestOptions()
                 {
-                    TransportSerializationFormat = TransportSerializationFormat.Binary,
                     SupportedSerializationFormats = SupportedSerializationFormats.JsonText
                 }
             };

@@ -329,16 +329,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestHeaders.Set(HttpConstants.HttpHeaders.MergeStaticId, this.feedOptions.MergeStaticId);
             }
 
-            if (this.feedOptions.TransportSerializationFormat != null)
-            {
-                requestHeaders[HttpConstants.HttpHeaders.ContentSerializationFormat] = this.feedOptions.TransportSerializationFormat switch
-                {
-                    TransportSerializationFormat.Binary => ContentSerializationFormat.CosmosBinary.ToString(),
-                    TransportSerializationFormat.Text => ContentSerializationFormat.JsonText.ToString(),
-                    _ => throw new InvalidEnumArgumentException(),
-                };
-            }
-
             requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = this.feedOptions.SupportedSerializationFormats != null
                 ? this.feedOptions.SupportedSerializationFormats.Value.ToString()
                 : DefaultSupportedSerializationFormats;

@@ -69,7 +69,6 @@ namespace Microsoft.Azure.Cosmos
             this.MergeStaticId = options.MergeStaticId;
             this.Properties = options.Properties;
             this.SupportedSerializationFormats = options.SupportedSerializationFormats;
-            this.TransportSerializationFormat = options.TransportSerializationFormat;
         }
 
         /// <summary>
@@ -398,16 +397,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public string EndEpk { get; set; }
 
-        /// <summary>
-        /// Gets or sets the SupportedSerializationFormats for the query response from the service.
-        /// </summary>
-        public SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
-
-        /// <summary> 
-        /// Gets or sets the transport serialization format for the query response from the service.
-        /// </summary>
-        public TransportSerializationFormat? TransportSerializationFormat { get; set; }
-
         public bool EnableGroupBy { get; set; }
 
         /// <summary>
@@ -422,5 +411,10 @@ namespace Microsoft.Azure.Cosmos
         public CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
         public IDictionary<string, object> Properties { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SupportedSerializationFormats for the query response from the service.
+        /// </summary>
+        internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
     }
 }

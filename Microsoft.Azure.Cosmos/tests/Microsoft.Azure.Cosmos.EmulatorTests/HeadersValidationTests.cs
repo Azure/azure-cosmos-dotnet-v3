@@ -309,31 +309,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("hdetroja")]
-        public void ValidateTransportSerializationFormat()
-        {
-            List<QueryRequestOptions> queryRequestOptionsList = new List<QueryRequestOptions>()
-            {
-                new QueryRequestOptions()
-                {
-                    TransportSerializationFormat = TransportSerializationFormat.Binary
-                },
-                new QueryRequestOptions()
-                {
-                    TransportSerializationFormat = TransportSerializationFormat.Text
-                }
-            };
-
-            string[] expectedResults = new[] { "CosmosBinary", "JsonText" };
-            for (int i = 0; i < queryRequestOptionsList.Count; i++)
-            {
-                RequestMessage testrequestMessage = new RequestMessage();
-                queryRequestOptionsList[i].PopulateRequestOptions(testrequestMessage);
-                Assert.AreEqual(expectedResults[i], testrequestMessage.Headers.ContentSerializationFormat);
-            }
-        }
-
-        [TestMethod]
-        [Owner("hdetroja")]
         public void ValidateSupportedSerializationFormatsGateway()
         {
             DocumentClient client = TestCommon.CreateClient(true);
@@ -418,14 +393,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentCollection collection,
             SupportedSerializationFormats expectedFormat,
             string supportedSerializationFormats,
-            string transportSerializationFormat,
             SqlQuerySpec sqlQuerySpec = null)
         {
             INameValueCollection headers = new RequestNameValueCollection();
-            if(transportSerializationFormat != null)
-            {
-                headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, transportSerializationFormat);
-            }
 
             headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, supportedSerializationFormats);
             DocumentServiceResponse response;                   
@@ -457,9 +427,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.SupportedSerializationFormatsNegativeCases(client, collection, "Invalid value", isHttps);
 
             // Supported values
-            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedFormat: SupportedSerializationFormats.JsonText, supportedSerializationFormats: "JSONText", transportSerializationFormat: null);
-            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedFormat: SupportedSerializationFormats.JsonText, supportedSerializationFormats: "COSMOSbinary", transportSerializationFormat: null);
-            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedFormat: SupportedSerializationFormats.JsonText, supportedSerializationFormats: "JsonText, CosmosBinary", transportSerializationFormat: null);
+            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedFormat: SupportedSerializationFormats.JsonText, supportedSerializationFormats: "JSONText");
+            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedFormat: SupportedSerializationFormats.JsonText, supportedSerializationFormats: "COSMOSbinary");
+            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedFormat: SupportedSerializationFormats.JsonText, supportedSerializationFormats: "JsonText, CosmosBinary");
         }
 
         private void ValidateSupportedSerializationFormatsQuery(DocumentClient client, DocumentCollection collection, SqlQuerySpec sqlQuerySpec, bool isHttps)
@@ -478,43 +448,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.JsonText,
                 supportedSerializationFormats: "jsontext",
-                transportSerializationFormat: null,
                 sqlQuerySpec: sqlQuerySpec);
             /*
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "COSMOSBINARY",
-                transportSerializationFormat: null,
                 sqlQuerySpec: sqlQuerySpec);
             */
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.JsonText,
                 supportedSerializationFormats: "JsonText, CosmosBinary",
-                transportSerializationFormat: null,
                 sqlQuerySpec: sqlQuerySpec);
             /*
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "CosmosBinary, HybridRow",
-                transportSerializationFormat: null,
                 sqlQuerySpec: sqlQuerySpec);
             */
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.JsonText,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
-                transportSerializationFormat: null,
                 sqlQuerySpec: sqlQuerySpec);
             /*
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.CosmosBinary,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
-                transportSerializationFormat: "CosmosBinary",
                 sqlQuerySpec: sqlQuerySpec);
             */
             this.SupportedSerializationFormatsPositiveCases(client, collection,
                 expectedFormat: SupportedSerializationFormats.JsonText,
                 supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
-                transportSerializationFormat: "JsonText",
                 sqlQuerySpec: sqlQuerySpec);
         }
 

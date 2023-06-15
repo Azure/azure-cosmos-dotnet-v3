@@ -47,6 +47,5 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         public JsonSerializationFormat? JsonSerializationFormat { get; }
 
         protected override ImmutableHashSet<string> BannedAdditionalHeaders => BannedHeaders;
-
     }
 }

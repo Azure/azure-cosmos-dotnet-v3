@@ -74,7 +74,6 @@ namespace Microsoft.Azure.Cosmos.Query
             headers = await testQueryExecutionContext.CreateCommonHeadersAsync(feedOptions);
             Assert.AreEqual("CosmosBinary, HybridRow", headers[HttpConstants.HttpHeaders.SupportedSerializationFormats]);
 
-            feedOptions.TransportSerializationFormat = TransportSerializationFormat.Binary;
             headers = await testQueryExecutionContext.CreateCommonHeadersAsync(feedOptions);
             Assert.AreEqual("CosmosBinary", headers[HttpConstants.HttpHeaders.ContentSerializationFormat]);
         }

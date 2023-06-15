@@ -172,11 +172,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
-        /// <summary> 
-        /// Gets or sets the transport serialization format for the query response from the service.
-        /// </summary>
-        public TransportSerializationFormat? TransportSerializationFormat { get; set; }
-
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
         internal string StartId { get; set; }
@@ -240,16 +235,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.ResponseContinuationTokenLimitInKb != null)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
-            }
-
-            if (this.TransportSerializationFormat != null)
-            {
-                request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.TransportSerializationFormat switch
-                {
-                    Cosmos.TransportSerializationFormat.Binary => ContentSerializationFormat.CosmosBinary.ToString(),
-                    Cosmos.TransportSerializationFormat.Text => ContentSerializationFormat.JsonText.ToString(),
-                    _ => throw new InvalidEnumArgumentException(),
-                };
             }
             
             request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats != null
