@@ -397,6 +397,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public string EndEpk { get; set; }
 
+        /// <summary>
+        /// Gets or sets the SupportedSerializationFormats for the query response from the service.
+        /// </summary>
+        public SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
+
         public bool EnableGroupBy { get; set; }
 
         /// <summary>
@@ -411,10 +416,5 @@ namespace Microsoft.Azure.Cosmos
         public CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
         public IDictionary<string, object> Properties { get; set; }
-
-        /// <summary>
-        /// Gets or sets the SupportedSerializationFormats for the query response from the service.
-        /// </summary>
-        internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
     }
 }

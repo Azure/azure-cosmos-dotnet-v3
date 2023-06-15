@@ -164,6 +164,7 @@
                 MaxBufferedItemCount = -1,
                 MaxConcurrency = -1,
             };
+            SetSerializationFormat(queryRequestOptions, jsonSerializationFormat);
 
             FeedIterator feedIterator = container.GetItemQueryStreamIterator(
                 queryText: query,
@@ -189,6 +190,7 @@
                 MaxBufferedItemCount = -1,
                 MaxConcurrency = -1,
             };
+            SetSerializationFormat(queryRequestOptions, jsonSerializationFormat);
 
             FeedIterator feedIterator = container.GetItemQueryStreamIterator(
                 queryText: query,
@@ -201,6 +203,26 @@
                 QueryResponse queryResponse = (QueryResponse)await feedIterator.ReadNextAsync();
                 documents.AddRange(queryResponse.CosmosElements);
             }
+        }
+
+        private static void SetSerializationFormat(
+            QueryRequestOptions queryRequestOptions,
+            JsonSerializationFormat jsonSerializationFormat)
+        {
+            string contentSerializationFormat = jsonSerializationFormat switch
+            {
+                JsonSerializationFormat.Text => "JsonText",
+                JsonSerializationFormat.Binary => "CosmosBinary",
+                JsonSerializationFormat.HybridRow => "HybridRow",
+                _ => throw new Exception(),
+            };
+
+            CosmosSerializationFormatOptions formatOptions = new CosmosSerializationFormatOptions(
+                contentSerializationFormat,
+                (content) => JsonNavigator.Create(content),
+                () => JsonWriter.Create(JsonSerializationFormat.Text));
+
+            queryRequestOptions.CosmosSerializationFormatOptions = formatOptions;
         }
 
         public IEnumerable<object[]> Data()
