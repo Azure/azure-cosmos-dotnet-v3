@@ -228,8 +228,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
                     Assert.IsTrue(exception.SubStatusCode == 20007);
+                    Assert.IsTrue(exception.Message.Contains("Malformed String"));
                     return;
                 }
+
+                Assert.IsFalse(true, "Should never reach till here, hence ensuring that an exception is always recieved");
             }
         }
 
