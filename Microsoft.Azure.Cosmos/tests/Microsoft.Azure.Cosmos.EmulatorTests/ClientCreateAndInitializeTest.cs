@@ -205,7 +205,7 @@
         public async Task CreateAndInitializeAsync_WithValidDatabaseAndContainer_ShouldOpenRntbdConnectionsToBackendReplicas()
         {
             // Arrange.
-            int httpCallsMade = 0;
+            int httpCallsMade = 0, maxRequestsPerConnection = 6;
             HttpClientHandlerHelper httpClientHandlerHelper = new ()
             {
                 RequestCallBack = (request, cancellationToken) =>
@@ -227,6 +227,7 @@
             {
                 HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
                 ConnectionMode = ConnectionMode.Direct,
+                MaxRequestsPerTcpConnection = maxRequestsPerConnection,
             };
 
             // Act.
@@ -275,8 +276,8 @@
                                     .GetValue(loadBalancingPartition);
 
             Assert.IsNotNull(openChannels);
-            Assert.AreEqual(30, channelCapacity);
-            Assert.AreEqual(1, openChannels.Count);
+            Assert.AreEqual(48, openChannels.Count);
+            Assert.AreEqual(openChannels.Count * maxRequestsPerConnection, channelCapacity);
 
             Documents.Rntbd.LbChannelState channelState = openChannels.First();
 
