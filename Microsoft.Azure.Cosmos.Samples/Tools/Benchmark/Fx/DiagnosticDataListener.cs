@@ -65,8 +65,7 @@
             {
                 using (StreamWriter writer = new StreamWriter(DiagnosticsFilePath, true))
                 {
-                    //writer.WriteLine($"{eventData.Payload[2]} ; {eventData.Payload[3]}");
-                    writer.WriteLine("qwertyuioasdfghjkzxcvbnmxcvbnqwertyuioasdfghjkzxcvbnmxcvbn " + DateTime.Now);
+                    writer.WriteLine($"{eventData.Payload[2]} ; {eventData.Payload[3]}");
                 }
             }
         }
