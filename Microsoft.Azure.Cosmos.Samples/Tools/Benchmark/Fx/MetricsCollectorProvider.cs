@@ -5,7 +5,8 @@
 namespace CosmosBenchmark
 {
     using System;
-    using Microsoft.ApplicationInsights;
+    using System.Diagnostics.Metrics;
+    using OpenTelemetry.Metrics;
 
     internal static class MetricsCollectorProvider
     {
@@ -13,23 +14,26 @@ namespace CosmosBenchmark
 
         private static readonly object metricCollectionWindowLock = new object();
 
-        private static MetricCollectionWindow CurrentMetricCollectionWindow
+        private static readonly Meter insertOperationMeter = new("CosmosBenchmarkInsertOperationMeter");
+
+        private static readonly Meter queryOperationMeter = new("CosmosBenchmarkQueryOperationMeter");
+
+        private static readonly Meter readOperationMeter = new("CosmosBenchmarkReadOperationMeter");
+
+        private static MetricCollectionWindow GetCurrentMetricCollectionWindow(MeterProvider meterProvider)
         {
-            get
+            if (CheckMetricCollectionInvalid(metricCollectionWindow))
             {
-                if (CheckMetricCollectionInvalid(metricCollectionWindow))
+                lock (metricCollectionWindowLock)
                 {
-                    lock (metricCollectionWindowLock)
+                    if (CheckMetricCollectionInvalid(metricCollectionWindow))
                     {
-                        if (CheckMetricCollectionInvalid(metricCollectionWindow))
-                        {
-                            metricCollectionWindow = new MetricCollectionWindow();
-                        }
+                        metricCollectionWindow = new MetricCollectionWindow();
                     }
                 }
-
-                return metricCollectionWindow;
             }
+
+            return metricCollectionWindow;
         }
 
         private static bool CheckMetricCollectionInvalid(MetricCollectionWindow metricCollectionWindow)
@@ -37,20 +41,20 @@ namespace CosmosBenchmark
             return metricCollectionWindow is null || DateTime.Now > metricCollectionWindow.DateTimeCreated.AddSeconds(5);
         }
 
-        public static IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, TelemetryClient telemetryClient)
+        public static IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, MeterProvider meterProvider)
         {
             Type benchmarkOperationType = benchmarkOperation.GetType();
             if (typeof(InsertBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
             {
-                return CurrentMetricCollectionWindow.GetInsertOperationMetricsCollector(telemetryClient);
+                return GetCurrentMetricCollectionWindow(meterProvider).GetInsertOperationMetricsCollector(insertOperationMeter);
             }
             else if (typeof(QueryBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
             {
-                return CurrentMetricCollectionWindow.GetQueryOperationMetricsCollector(telemetryClient);
+                return GetCurrentMetricCollectionWindow(meterProvider).GetQueryOperationMetricsCollector(queryOperationMeter);
             }
             else if (typeof(ReadBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
             {
-                return CurrentMetricCollectionWindow.GetReadOperationMetricsCollector(telemetryClient);
+                return GetCurrentMetricCollectionWindow(meterProvider).GetReadOperationMetricsCollector(readOperationMeter);
             }
             else
             {

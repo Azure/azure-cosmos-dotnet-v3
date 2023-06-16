@@ -5,14 +5,15 @@
 namespace CosmosBenchmark
 {
     using Microsoft.ApplicationInsights;
+    using System.Diagnostics.Metrics;
 
     internal class InsertOperationMetricsCollector : MetricsCollector
     {
-        public InsertOperationMetricsCollector(TelemetryClient telemetryClient) : base(telemetryClient)
+        public InsertOperationMetricsCollector(Meter meter) : base(meter)
         {
         }
 
-        protected override string AverageRpsMetricName => "InsertOperationAverageRps";
+        protected override string RpsMetricName => "InsertOperationRps";
 
         protected override string LatencyInMsMetricName => "InsertOperationLatencyInMs";
 
