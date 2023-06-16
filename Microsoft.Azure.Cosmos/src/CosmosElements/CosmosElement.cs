@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Documents;
 
     [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
 #if INTERNAL
@@ -193,27 +194,24 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 tryParse.ThrowIfFailed();
             }
+            catch (Exception exception) when (exception.InnerException is JsonParseException)
+            {
+                MalformedContinuationTokenException malformedContinuationTokenException = new MalformedContinuationTokenException(exception.Message);
+                throw CosmosExceptionFactory.CreateBadRequestException(
+                        message: $"Malformed Continuation Token: {json}.",
+                        headers: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
+                            new Headers(),
+                            default,
+                            default,
+                            (int)SubStatusCodes.MalformedContinuationToken,
+                            default),
+                        stackTrace: malformedContinuationTokenException.StackTrace,
+                        innerException: malformedContinuationTokenException,
+                        trace: null);
+            }
             catch (Exception exception)
             {
-                if (exception.InnerException is JsonParseException)
-                {
-                    MalformedContinuationTokenException malformedContinuationTokenException = new MalformedContinuationTokenException(exception.Message);
-                    throw CosmosExceptionFactory.CreateBadRequestException(
-                            message: $"Malformed Continuation Token: {json}.",
-                            headers: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
-                                new Headers(),
-                                default,
-                                default,
-                                20007,
-                                default),
-                            stackTrace: malformedContinuationTokenException.StackTrace,
-                            innerException: malformedContinuationTokenException,
-                            trace: null);
-                }
-                else 
-                {
-                    throw exception;
-                }
+                throw exception;
             }
 
             return tryParse.Result;
