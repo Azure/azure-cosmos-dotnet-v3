@@ -359,5 +359,10 @@ namespace Microsoft.Azure.Cosmos
         /// Name of the Azure Italy North region in the Azure Cosmos DB service.
         /// </summary>
         public const string ItalyNorth = "Italy North";
+
+        /// <summary>
+        /// Name of the Azure Israel Central region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string IsraelCentral = "Israel Central";
     }
 }
