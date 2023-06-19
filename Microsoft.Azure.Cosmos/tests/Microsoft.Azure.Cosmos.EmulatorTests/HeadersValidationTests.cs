@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("hdetroja")]
+        [Owner("maya-painter")]
         public void ValidateSupportedSerializationFormatsGateway()
         {
             DocumentClient client = TestCommon.CreateClient(true);

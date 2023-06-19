@@ -245,9 +245,7 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
             }
             
-            request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats != null
-                ? this.SupportedSerializationFormats.ToString()
-                : DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
+            request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats?.ToString() ?? DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
 
             if (this.StartId != null)
             {

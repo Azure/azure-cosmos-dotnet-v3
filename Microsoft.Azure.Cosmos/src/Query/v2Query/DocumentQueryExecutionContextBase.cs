@@ -329,9 +329,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestHeaders.Set(HttpConstants.HttpHeaders.MergeStaticId, this.feedOptions.MergeStaticId);
             }
 
-            requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = this.feedOptions.SupportedSerializationFormats != null
-                ? this.feedOptions.SupportedSerializationFormats.Value.ToString()
-                : DefaultSupportedSerializationFormats;
+            requestHeaders[HttpConstants.HttpHeaders.SupportedSerializationFormats] = this.feedOptions.SupportedSerializationFormats?.ToString() ?? DefaultSupportedSerializationFormats;
 
             return requestHeaders;
         }
