@@ -16,12 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - [3836](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3836) Integrated cache: Adds BypassIntegratedCache to DedicatedGatewayRequestOptions
-- [3909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3909) Query: Refactors EnableOptimisticDirectExecution to true by default in Preview mode
-
-#### Fixed
-- [3876](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3876) Distributed Tracing: Fixes design documentation issues
-- [3868](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3868) AI Integration: Fixes Open Telemetry Example
-- [3887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3887) Open Telemetry End To End Test: Adds baseline for network level requests trace
+- [3909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3909) Query: Adds EnableOptimisticDirectExecution in QueryRequestOptions enabled by default
 
 ### <a name="3.35.0"/> [3.35.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.0) - 2023-06-19
 
