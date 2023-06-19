@@ -4,14 +4,13 @@
 
 namespace CosmosBenchmark
 {
-    using System.Collections.Generic;
     using System.Diagnostics.Metrics;
 
     internal abstract class MetricsCollector : IMetricsCollector
     {
-        private readonly Histogram<double> operationLatencyHistogram;
+        private readonly Meter meter;
 
-        private readonly List<double> latencies;
+        private readonly Histogram<double> operationLatencyHistogram;
 
         private readonly Histogram<double> rpsMetricNameHistogram;
 
@@ -19,13 +18,27 @@ namespace CosmosBenchmark
 
         private readonly Counter<long> failureOperationCounter;
 
+        private readonly ObservableGauge<double> latencyInMsMetricNameGauge;
+
+        private readonly ObservableGauge<double> rpsNameGauge;
+
+        private double latencyInMs;
+
+        private double rps;
+
         public MetricsCollector(Meter meter)
         {
-            this.latencies = new List<double>();
-            this.rpsMetricNameHistogram = meter.CreateHistogram<double>(this.RpsMetricName);
-            this.operationLatencyHistogram = meter.CreateHistogram<double>(this.LatencyInMsMetricName);
+            this.meter = meter;
+            this.rpsMetricNameHistogram = meter.CreateHistogram<double>(this.RpsHistogramName);
+            this.operationLatencyHistogram = meter.CreateHistogram<double>(this.LatencyInMsHistogramName);
             this.successOperationCounter = meter.CreateCounter<long>(this.SuccessOperationMetricName);
             this.failureOperationCounter = meter.CreateCounter<long>(this.FailureOperationMetricName);
+            
+            this.latencyInMsMetricNameGauge = this.meter.CreateObservableGauge(this.LatencyInMsMetricName,
+                () => new Measurement<double>(this.latencyInMs));
+
+            this.rpsNameGauge = this.meter.CreateObservableGauge(this.LatencyInMsMetricName,
+                () => new Measurement<double>(this.rps));
         }
 
         public void CollectMetricsOnSuccess()
@@ -40,10 +53,15 @@ namespace CosmosBenchmark
 
         public void RecordLatencyAndRps(double milliseconds)
         {
-            double rps = 1000 / milliseconds;
-            this.rpsMetricNameHistogram.Record(rps);
-            this.operationLatencyHistogram.Record(milliseconds);
+            this.rps = 1000 / milliseconds;
+            this.latencyInMs = milliseconds;
+            this.rpsMetricNameHistogram.Record(this.rps);
+            this.operationLatencyHistogram.Record(this.latencyInMs);
         }
+
+        protected abstract string RpsHistogramName { get; }
+
+        protected abstract string LatencyInMsHistogramName { get; }
 
         protected abstract string RpsMetricName { get; }
 

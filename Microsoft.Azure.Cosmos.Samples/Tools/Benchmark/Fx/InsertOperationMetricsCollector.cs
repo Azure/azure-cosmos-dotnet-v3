@@ -13,6 +13,10 @@ namespace CosmosBenchmark
         {
         }
 
+        protected override string RpsHistogramName => "InsertOperationRpsHistogram";
+
+        protected override string LatencyInMsHistogramName => "InsertOperationLatencyInMsHistogram";
+
         protected override string RpsMetricName => "InsertOperationRps";
 
         protected override string LatencyInMsMetricName => "InsertOperationLatencyInMs";

@@ -18,7 +18,7 @@ namespace CosmosBenchmark
 
         private static readonly Meter queryOperationMeter = new("CosmosBenchmarkQueryOperationMeter");
 
-        private static readonly Meter readOperationMeter = new("CosmosBenchmarkReadOperationMeter");
+        private static readonly Meter readOperationMeter = new ("CosmosBenchmarkReadOperationMeter");
 
         private static MetricCollectionWindow GetCurrentMetricCollectionWindow(MeterProvider meterProvider)
         {
@@ -28,6 +28,7 @@ namespace CosmosBenchmark
                 {
                     if (CheckMetricCollectionInvalid(metricCollectionWindow))
                     {
+                        // Reset Meter provider and meters.
                         metricCollectionWindow = new MetricCollectionWindow();
                     }
                 }

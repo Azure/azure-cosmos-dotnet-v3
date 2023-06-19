@@ -12,6 +12,10 @@ namespace CosmosBenchmark
         {
         }
 
+        protected override string RpsHistogramName => "ReadOperationRpsHistogram";
+
+        protected override string LatencyInMsHistogramName => "ReadOperationLatencyInMsHistogram";
+
         protected override string RpsMetricName => "ReadOperationRps";
 
         protected override string LatencyInMsMetricName => "ReadOperationLatencyInMs";
