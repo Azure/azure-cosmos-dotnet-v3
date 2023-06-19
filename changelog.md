@@ -12,6 +12,35 @@ Preview features are treated as a separate branch and will not be included in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+### <a name="3.34.0-preview"/> [3.35.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.0-preview) - 2023-06-19
+
+### Added
+- [3836](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3836) Integrated cache: Adds BypassIntegratedCache to DedicatedGatewayRequestOptions
+- [3909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3909) Query: Refactors EnableOptimisticDirectExecution to true by default in Preview mode
+
+#### Fixed
+- [3876](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3876) Distributed Tracing: Fixes design documentation issues
+- [3868](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3868) AI Integration: Fixes Open Telemetry Example
+- [3887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3887) Open Telemetry End To End Test: Adds baseline for network level requests trace
+
+### <a name="3.35.0"/> [3.35.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.0) - 2023-06-19
+
+#### Fixed 
+- [3864](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3864) NugetPackage: Removes ThirdPartyNotice.txt from content and contentFiles folders
+- [3866](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3866) CosmosClient: Fixes missing Trace when converting HTTP Timeout to 503
+- [3879](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3879) Subpartitioning: Fixes handling of split physical partitions
+- [3907](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3907) Query: Fixes empty property name parsing exception
+
+#### Added
+- [3860](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3860) Documentation: Adds see also link to Container.CreateTransactionalBatch
+- [3852](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3852) Query: Adds type-markers with count and length for large arrays
+- [3838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3838) Benchmarking: Adds use of ARM Templates for benchmarking
+- [3877](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3877) Direct Package Upgrade 3.31.0: Refactors code to make compatible with latest direct
+- [3874](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3874) Client Encryption: Adds Microsoft.Azure.Cosmos compatibility to version 3.34.0
+- [3891](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3891) Documentation: Adds additional remarks to CosmosClient
+- [3902](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3902) ConnectionPolicy: Refactors Code to Reduce Default Request Timeout to 6 Seconds
+- [3910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3910) Documentations: Adds links to PatchItems docs
+
 ### <a name="3.34.0-preview"/> [3.34.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.34.0-preview) - 2023-05-17
 
 ### Added
