@@ -52,7 +52,7 @@ namespace CosmosBenchmark
                 int currentIterationCount = 0;
                 do
                 {
-                    IMetricsCollector metricsCollector = MetricsCollectorProvider.GetMetricsCollector(this.operation, meterProvider);
+                    IMetricsCollector metricsCollector = MetricsCollectorProvider.GetMetricsCollector(this.operation, meterProvider, benchmarkConfig);
 
                     OperationResult? operationResult = null;
 
