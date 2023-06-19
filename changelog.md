@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [3852](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3852) Query: Adds type-markers with count and length for large arrays
 - [3838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3838) Benchmarking: Adds use of ARM Templates for benchmarking
 - [3877](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3877) Regions: Adds Malaysia South, Isreal Central, and Italy North
-- [3877](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3877) Distributed Tracing: Enables Distributing Tracing for Operations
+- [3887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3887) Distributed Tracing: Setting DisplayName for an operation level activity as `<operationname><space><containername>`
 - [3874](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3874) Client Encryption: Adds Microsoft.Azure.Cosmos compatibility to version 3.34.0
 - [3891](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3891) Documentation: Adds additional remarks to CosmosClient
 - [3902](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3902) ConnectionPolicy: Refactors Code to Reduce Default Request Timeout to 6 Seconds
