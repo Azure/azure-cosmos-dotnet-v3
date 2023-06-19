@@ -15,13 +15,15 @@ namespace CosmosBenchmark
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Monitor.OpenTelemetry.Exporter;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
-    using Microsoft.ApplicationInsights;
     using Newtonsoft.Json.Linq;
     using Microsoft.ApplicationInsights.Extensibility;
     using Container = Microsoft.Azure.Cosmos.Container;
     using CosmosBenchmark.Fx;
+    using OpenTelemetry;
+    using OpenTelemetry.Metrics;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
@@ -39,6 +41,18 @@ namespace CosmosBenchmark
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
                 await Program.AddAzureInfoToRunSummary();
+
+                OpenTelemetry.Trace.TracerProviderBuilder tracerProviderBuilder = Sdk.CreateTracerProviderBuilder()
+                    .AddAzureMonitorTraceExporter();
+
+                MeterProvider meterProvider = Sdk.CreateMeterProviderBuilder()
+                    .AddAzureMonitorMetricExporter(configure: new Action<AzureMonitorExporterOptions>((options) => Configure(options, config)))
+                    .AddMeter("CosmosBenchmarkInsertOperationMeter")
+                    .AddMeter("CosmosBenchmarkQueryOperationMeter")
+                    .AddMeter("CosmosBenchmarkReadOperationMeter")
+                    .AddConsoleExporter()
+                    .AddAzureMonitorMetricExporter()
+                    .Build();
 
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
@@ -58,12 +72,9 @@ namespace CosmosBenchmark
                 using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
                 ILogger logger = loggerFactory.CreateLogger<Program>();
 
-                TelemetryConfiguration telemetryConfiguration = new(config.AppInsightsInstrumentationKey);
-                TelemetryClient telemetryClient = new TelemetryClient(telemetryConfiguration);
-
                 Program program = new Program();
 
-                RunSummary runSummary = await program.ExecuteAsync(config, logger, telemetryClient);
+                RunSummary runSummary = await program.ExecuteAsync(config, logger, meterProvider);
             }
             finally
             {
@@ -99,11 +110,16 @@ namespace CosmosBenchmark
             }
         }
 
+        private static void Configure(AzureMonitorExporterOptions options, BenchmarkConfig config)
+        {
+            options.ConnectionString = $"InstrumentationKey={config.AppInsightsInstrumentationKey}";
+        }
+
         /// <summary>
         /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, ILogger logger, TelemetryClient telemetryClient)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, ILogger logger, MeterProvider meterProvider)
         {
             // V3 SDK client initialization
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
@@ -159,7 +175,7 @@ namespace CosmosBenchmark
                     }
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, logger, telemetryClient);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, logger, meterProvider);
                 }
 
                 if (config.CleanupOnFinish)

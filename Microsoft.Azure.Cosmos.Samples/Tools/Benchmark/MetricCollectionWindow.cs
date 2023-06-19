@@ -1,7 +1,7 @@
 ﻿namespace CosmosBenchmark
 {
     using System;
-    using Microsoft.ApplicationInsights;
+    using System.Diagnostics.Metrics;
 
     internal class MetricCollectionWindow
     {
@@ -21,39 +21,39 @@
             this.DateTimeCreated = DateTime.Now;
         }
 
-        public InsertOperationMetricsCollector GetInsertOperationMetricsCollector(TelemetryClient telemetryClient)
+        public InsertOperationMetricsCollector GetInsertOperationMetricsCollector(Meter meter)
         {
             if (this.insertOperationMetricsCollector is null)
             {
                 lock (this.insertOperationMetricsCollectorLock)
                 {
-                    this.insertOperationMetricsCollector ??= new InsertOperationMetricsCollector(telemetryClient);
+                    this.insertOperationMetricsCollector ??= new InsertOperationMetricsCollector(meter);
                 }
             }
 
             return this.insertOperationMetricsCollector;
         }
 
-        public QueryOperationMetricsCollector GetQueryOperationMetricsCollector(TelemetryClient telemetryClient)
+        public QueryOperationMetricsCollector GetQueryOperationMetricsCollector(Meter meter)
         {
             if (this.queryOperationMetricsCollector is null)
             {
                 lock (this.queryOperationMetricsCollectorLock)
                 {
-                    this.queryOperationMetricsCollector ??= new QueryOperationMetricsCollector(telemetryClient);
+                    this.queryOperationMetricsCollector ??= new QueryOperationMetricsCollector(meter);
                 }
             }
 
             return this.queryOperationMetricsCollector;
         }
 
-        public ReadOperationMetricsCollector GetReadOperationMetricsCollector(TelemetryClient telemetryClient)
+        public ReadOperationMetricsCollector GetReadOperationMetricsCollector(Meter meter)
         {
             if (this.readOperationMetricsCollector is null)
             {
                 lock (this.readOperationMetricsCollectorLock)
                 {
-                    this.readOperationMetricsCollector ??= new ReadOperationMetricsCollector(telemetryClient);
+                    this.readOperationMetricsCollector ??= new ReadOperationMetricsCollector(meter);
                 }
             }
 

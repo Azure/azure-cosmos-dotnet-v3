@@ -7,9 +7,9 @@ namespace CosmosBenchmark
     using System;
     using System.Diagnostics;
     using System.Threading.Tasks;
-    using Microsoft.ApplicationInsights;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
+    using OpenTelemetry.Metrics;
 
     internal class SerialOperationExecutor : IExecutor
     {
@@ -41,7 +41,7 @@ namespace CosmosBenchmark
                 Action completionCallback,
                 BenchmarkConfig benchmarkConfig,
                 ILogger logger,
-                TelemetryClient telemetryClient)
+                MeterProvider meterProvider)
         {
             logger.LogInformation($"Executor {this.executorId} started");
 
@@ -52,7 +52,7 @@ namespace CosmosBenchmark
                 int currentIterationCount = 0;
                 do
                 {
-                    IMetricsCollector metricsCollector = MetricsCollectorProvider.GetMetricsCollector(this.operation, telemetryClient);
+                    IMetricsCollector metricsCollector = MetricsCollectorProvider.GetMetricsCollector(this.operation, meterProvider);
 
                     OperationResult? operationResult = null;
 
@@ -62,7 +62,7 @@ namespace CosmosBenchmark
                                 benchmarkConfig,
                                 () => operationResult.Value,
                                 disableTelemetry: isWarmup,
-                                metricsCollector.RecordLatency))
+                                metricsCollector.RecordLatencyAndRps))
                     {
                         try
                         {
