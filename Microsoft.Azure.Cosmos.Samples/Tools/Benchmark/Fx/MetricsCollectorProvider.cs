@@ -20,16 +20,17 @@ namespace CosmosBenchmark
 
         private static readonly Meter readOperationMeter = new ("CosmosBenchmarkReadOperationMeter");
 
-        private static MetricCollectionWindow GetCurrentMetricCollectionWindow(MeterProvider meterProvider)
+        private static MetricCollectionWindow GetCurrentMetricCollectionWindow(MeterProvider meterProvider, BenchmarkConfig config)
         {
-            if (CheckMetricCollectionInvalid(metricCollectionWindow))
+            if (CheckMetricCollectionInvalid(metricCollectionWindow, config))
             {
                 lock (metricCollectionWindowLock)
                 {
-                    if (CheckMetricCollectionInvalid(metricCollectionWindow))
+                    if (CheckMetricCollectionInvalid(metricCollectionWindow, config))
                     {
                         // Reset Meter provider and meters.
                         metricCollectionWindow = new MetricCollectionWindow();
+                        meterProvider.ForceFlush();
                     }
                 }
             }
@@ -37,25 +38,25 @@ namespace CosmosBenchmark
             return metricCollectionWindow;
         }
 
-        private static bool CheckMetricCollectionInvalid(MetricCollectionWindow metricCollectionWindow)
+        private static bool CheckMetricCollectionInvalid(MetricCollectionWindow metricCollectionWindow, BenchmarkConfig config)
         {
-            return metricCollectionWindow is null || DateTime.Now > metricCollectionWindow.DateTimeCreated.AddSeconds(5);
+            return metricCollectionWindow is null || DateTime.Now > metricCollectionWindow.DateTimeCreated.AddSeconds(config.MetricsReportingIntervalInSec);
         }
 
-        public static IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, MeterProvider meterProvider)
+        public static IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, MeterProvider meterProvider, BenchmarkConfig config)
         {
             Type benchmarkOperationType = benchmarkOperation.GetType();
             if (typeof(InsertBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
             {
-                return GetCurrentMetricCollectionWindow(meterProvider).GetInsertOperationMetricsCollector(insertOperationMeter);
+                return GetCurrentMetricCollectionWindow(meterProvider, config).GetInsertOperationMetricsCollector(insertOperationMeter);
             }
             else if (typeof(QueryBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
             {
-                return GetCurrentMetricCollectionWindow(meterProvider).GetQueryOperationMetricsCollector(queryOperationMeter);
+                return GetCurrentMetricCollectionWindow(meterProvider, config).GetQueryOperationMetricsCollector(queryOperationMeter);
             }
             else if (typeof(ReadBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
             {
-                return GetCurrentMetricCollectionWindow(meterProvider).GetReadOperationMetricsCollector(readOperationMeter);
+                return GetCurrentMetricCollectionWindow(meterProvider, config).GetReadOperationMetricsCollector(readOperationMeter);
             }
             else
             {

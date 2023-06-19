@@ -131,7 +131,7 @@ namespace CosmosBenchmark
         public string ResultsStorageConnectionString { get; set; }
 
         [Option(Required = false, HelpText = "Metrics reporting interval in seconds")]
-        public int MetricsReportingIntervalInSec { get; set; }
+        public int MetricsReportingIntervalInSec { get; set; } = 5;
 
         [Option(Required = false, HelpText = "Application Insights instrumentation key")]
         public string AppInsightsInstrumentationKey { get; set; }
