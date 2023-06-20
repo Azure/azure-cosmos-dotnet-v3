@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Name of the Azure Israel Central region in the Azure Cosmos DB service.
         /// </summary>
-        internal const string IsraelCentral = "Israel Central";
+        public const string IsraelCentral = "Israel Central";
 
         /// <summary>
         /// Name of the Azure Mexico Central region in the Azure Cosmos DB service.

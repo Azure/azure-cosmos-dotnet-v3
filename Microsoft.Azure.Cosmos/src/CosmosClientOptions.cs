@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the request timeout in seconds when connecting to the Azure Cosmos DB service.
         /// The number specifies the time to wait for response to come back from network peer.
         /// </summary>
-        /// <value>Default value is 1 minute.</value>
+        /// <value>Default value is 6 seconds.</value>
         /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
         public TimeSpan RequestTimeout { get; set; }
 

@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = new ClientEncryptionKeyProperties(
                 clientEncryptionKeyId,
-                dataEncryptionKeyAlgorithm,
+                encryptionAlgorithm,
                 wrappedDataEncryptionKey,
                 encryptionKeyWrapMetadata);
 

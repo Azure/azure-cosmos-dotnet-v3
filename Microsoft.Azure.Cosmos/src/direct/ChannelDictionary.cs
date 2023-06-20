@@ -60,20 +60,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             bool localRegionRequest,
             Guid activityId)
         {
-            // Do not open a new channel, if the channel is
-            // already a part of the concurrent dictionary.
-            if (!this.channels.ContainsKey(
-                new ServerKey(physicalAddress)))
-            {
-                this.ThrowIfDisposed();
-                IChannel channel = this.GetChannel(
-                    physicalAddress,
-                    localRegionRequest);
+            this.ThrowIfDisposed();
+            IChannel channel = this.GetChannel(
+                physicalAddress,
+                localRegionRequest);
 
-                return channel.OpenChannelAsync(activityId);
-            }
-
-            return Task.FromResult(0);
+            return channel.OpenChannelAsync(activityId);
         }
 
         public void Dispose()

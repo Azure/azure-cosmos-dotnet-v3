@@ -31,7 +31,15 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private readonly SemaphoreSlim concurrentOpeningChannelSlim;
 
-        public LoadBalancingPartition(Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest)
+        // This channel factory delegate is meant for unit testing only and a default implementation is provided.
+        // However it can be extended to support the main line code path if needed.
+        private readonly Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChannel> channelFactory;
+
+        public LoadBalancingPartition(
+            Uri serverUri,
+            ChannelProperties channelProperties,
+            bool localRegionRequest,
+            Func<Guid, Uri, ChannelProperties, bool, SemaphoreSlim, IChannel> channelFactory = null)
         {
             Debug.Assert(serverUri != null);
             this.serverUri = serverUri;
@@ -44,6 +52,10 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             this.concurrentOpeningChannelSlim =
                 new SemaphoreSlim(channelProperties.MaxConcurrentOpeningConnectionCount, channelProperties.MaxConcurrentOpeningConnectionCount);
+
+            this.channelFactory = channelFactory != null
+                ? channelFactory
+                : CreateAndInitializeChannel;
         }
 
         public async Task<StoreResponse> RequestAsync(
@@ -210,9 +222,24 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.capacityLock.EnterWriteLock();
             try
             {
-                return this.OpenChannelAndIncrementCapacity(
-                    activityId: activityId,
-                    waitForBackgroundInitializationComplete: true);
+                if (this.capacity < this.maxCapacity)
+                {
+                    return this.OpenChannelAndIncrementCapacity(
+                        activityId: activityId,
+                        waitForBackgroundInitializationComplete: true);
+
+                }
+                else
+                {
+                    string errorMessage = $"Failed to open channels to server {this.serverUri} because the current channel capacity {this.capacity} has exceeded the maaximum channel capacity limit: {this.maxCapacity}";
+
+                    // Converting the error into invalid operation exception. Note that the OpenChannelAsync() method is used today, by the open connection flow
+                    // in RntbdOpenConnectionHandler that is primarily used for the replica validation. Because the replica validation is done deterministically
+                    // to open the Rntbd connections with best effort, throwing an exception from this place won't impact the replica validation flow because it
+                    // will be caught and swallowed by the RntbdOpenConnectionHandler and the replica validation flow will continue.
+                    throw new InvalidOperationException(
+                        message: errorMessage);
+                }
             }
             finally
             {
@@ -234,7 +261,17 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 this.capacityLock.ExitWriteLock();
             }
-            this.capacityLock.Dispose();
+
+            try
+            {
+                this.capacityLock.Dispose();
+            }
+            catch(SynchronizationLockException)
+            {
+                // SynchronizationLockException is thrown if there are inflight requests during the disposal of capacityLock
+                // suspend this exception to avoid crashing disposing other partitions/channels in hierarchical calls
+                return;
+            }
         }
 
         /// <summary>
@@ -250,12 +287,20 @@ namespace Microsoft.Azure.Documents.Rntbd
             bool waitForBackgroundInitializationComplete)
         {
             Debug.Assert(this.capacityLock.IsWriteLockHeld);
-            Channel newChannel = new(
+
+            IChannel newChannel = this.channelFactory(
                 activityId,
                 this.serverUri,
                 this.channelProperties,
                 this.localRegionRequest,
                 this.concurrentOpeningChannelSlim);
+
+            if (newChannel == null)
+            {
+                throw new ArgumentNullException(
+                    paramName: nameof(newChannel),
+                    message: "Channel can't be null.");
+            }
 
             if (waitForBackgroundInitializationComplete)
             {
@@ -267,6 +312,30 @@ namespace Microsoft.Azure.Documents.Rntbd
                     newChannel,
                     this.channelProperties.MaxRequestsPerChannel));
             this.capacity += this.channelProperties.MaxRequestsPerChannel;
+        }
+
+        /// <summary>
+        /// Creates and initializes a new instance of rntbd <see cref="Channel"/>.
+        /// </summary>
+        /// <param name="activityId">A guid containing the activity id for the operation.</param>
+        /// <param name="serverUri">An instance of <see cref="Uri"/> containing the physical server uri.</param>
+        /// <param name="channelProperties">An instance of <see cref="ChannelProperties"/>.</param>
+        /// <param name="localRegionRequest">A boolean flag indicating if the request is intendent for local region.</param>
+        /// <param name="concurrentOpeningChannelSlim">An instance of <see cref="SemaphoreSlim"/>.</param>
+        /// <returns></returns>
+        private static IChannel CreateAndInitializeChannel(
+            Guid activityId,
+            Uri serverUri,
+            ChannelProperties channelProperties,
+            bool localRegionRequest,
+            SemaphoreSlim concurrentOpeningChannelSlim)
+        {
+            return new Channel(
+                activityId,
+                serverUri,
+                channelProperties,
+                localRegionRequest,
+                concurrentOpeningChannelSlim);
         }
 
         private sealed class SequenceGenerator

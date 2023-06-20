@@ -971,6 +971,13 @@ namespace Microsoft.Azure.Cosmos
                 expected: TransportAddressHealthState.HealthStatus.Connected,
                 actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
 
+            GatewayAddressCacheTests.ValidateHealthStatesInDiagnostics(
+                addressInfo: addressInfo,
+                numberOfConnectedReplicas: 0,
+                numberOfUnknownReplicas: 4,
+                numberOfUnhealthyPendingReplicas: 0,
+                numberOfUnhealthyReplicas: 0);
+
             Assert.AreEqual(4, addressInfo.AllAddresses.Count);
             Assert.AreEqual(1, addressInfo.AllAddresses.Count(x => x.PhysicalUri == oldAddress));
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
@@ -1008,6 +1015,14 @@ namespace Microsoft.Azure.Cosmos
                 actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
 
             mockHttpHandler.VerifyAll();
+
+            GatewayAddressCacheTests.ValidateHealthStatesInDiagnostics(
+                addressInfo: addressInfo,
+                numberOfConnectedReplicas: 2,
+                numberOfUnknownReplicas: 1,
+                numberOfUnhealthyPendingReplicas: 1,
+                numberOfUnhealthyReplicas: 0);
+
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
                 expectedTotalFailedAddressesToOpenCount: 0,
@@ -1106,6 +1121,13 @@ namespace Microsoft.Azure.Cosmos
                 manualResetEvent: manualResetEvent,
                 shouldReset: true);
 
+            GatewayAddressCacheTests.ValidateHealthStatesInDiagnostics(
+                addressInfo: addressInfo,
+                numberOfConnectedReplicas: 0,
+                numberOfUnknownReplicas: 4,
+                numberOfUnhealthyPendingReplicas: 0,
+                numberOfUnhealthyReplicas: 0);
+
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
                 expectedTotalFailedAddressesToOpenCount: 0,
@@ -1156,6 +1178,13 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(
                 expected: TransportAddressHealthState.HealthStatus.Unhealthy,
                 actual: refreshedUri.GetCurrentHealthState().GetHealthStatus());
+
+            GatewayAddressCacheTests.ValidateHealthStatesInDiagnostics(
+                addressInfo: addressInfo,
+                numberOfConnectedReplicas: 2,
+                numberOfUnknownReplicas: 1,
+                numberOfUnhealthyPendingReplicas: 1,
+                numberOfUnhealthyReplicas: 0);
 
             GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
                 fakeOpenConnectionHandler: fakeOpenConnectionHandler,
@@ -1354,6 +1383,41 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(expectedTotalHandlerInvocationCount, fakeOpenConnectionHandler.GetTotalMethodInvocationCount());
             Assert.AreEqual(expectedTotalReceivedAddressesCount, fakeOpenConnectionHandler.GetTotalReceivedAddressesCount());
             Assert.AreEqual(expectedTotalSuccessAddressesToOpenCount, fakeOpenConnectionHandler.GetTotalSuccessfulInvocationCount());
+        }
+
+        /// <summary>
+        /// Helper method to validate and assert on the cached health states for diagnostics.
+        /// </summary>
+        /// <param name="addressInfo">An instance of <see cref="PartitionAddressInformation"/> containing the partition address information.</param>
+        /// <param name="numberOfConnectedReplicas">An integer containing the number of connected replicas to be validated inthe cached health status list.</param>
+        /// <param name="numberOfUnknownReplicas">An integer containing the number of unknown replicas to be validated inthe cached health status list.</param>
+        /// <param name="numberOfUnhealthyPendingReplicas">An integer containing the number of unhealthy pending replicas to be validated inthe cached health status list.</param>
+        /// <param name="numberOfUnhealthyReplicas">An integer containing the number of unhealthy replicas to be validated inthe cached health status list.</param>
+        private static void ValidateHealthStatesInDiagnostics(
+            PartitionAddressInformation addressInfo,
+            int numberOfConnectedReplicas,
+            int numberOfUnknownReplicas,
+            int numberOfUnhealthyPendingReplicas,
+            int numberOfUnhealthyReplicas)
+        {
+            IReadOnlyList<string> replicaHealthStatuses = addressInfo.Get(Protocol.Tcp)?.ReplicaTransportAddressUrisHealthState;
+
+            Assert.IsNotNull(replicaHealthStatuses);
+            Assert.AreEqual(
+                expected: numberOfConnectedReplicas,
+                actual: replicaHealthStatuses.Where(x => x.Contains("| status: Connected |")).Count());
+
+            Assert.AreEqual(
+                expected: numberOfUnknownReplicas,
+                actual: replicaHealthStatuses.Where(x => x.Contains("| status: Unknown |")).Count());
+
+            Assert.AreEqual(
+                expected: numberOfUnhealthyPendingReplicas,
+                actual: replicaHealthStatuses.Where(x => x.Contains("| status: UnhealthyPending |")).Count());
+
+            Assert.AreEqual(
+                expected: numberOfUnhealthyReplicas,
+                actual: replicaHealthStatuses.Where(x => x.Contains("| status: Unhealthy |")).Count());
         }
 
         private class FakeMessageHandler : HttpMessageHandler
