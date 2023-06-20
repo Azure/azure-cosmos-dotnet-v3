@@ -6700,7 +6700,8 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnableReadRequestsFallback ?? (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.BoundedStaleness),
                 !this.enableRntbdChannel,
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
-                true);
+                true,
+                this.ConnectionPolicy.EnableReplicaValidation);
 
             if (subscribeRntbdStatus)
             {

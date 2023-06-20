@@ -61,7 +61,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             CosmosHttpClient httpClient,
             IOpenConnectionsHandler openConnectionsHandler,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
-            bool enableTcpConnectionEndpointRediscovery = false)
+            bool enableTcpConnectionEndpointRediscovery = false,
+            bool replicaAddressValidationEnabled = false)
         {
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
@@ -85,9 +86,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GatewayAddressCache.ProtocolString(this.protocol));
 
             this.openConnectionsHandler = openConnectionsHandler;
-            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariable<bool>(
-                name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
-                defaultValue: false);
+            this.isReplicaAddressValidationEnabled = replicaAddressValidationEnabled;
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
@@ -173,6 +172,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
                             .Select(group => this.ToPartitionAddressAndRange(collection.ResourceId, @group.ToList(), inNetworkRequest));
 
+                    List<Task> openConnectionTasks = new ();
                     foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
                     {
                         this.serverPartitionAddressCache.Set(
@@ -185,10 +185,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                         // other flow, the flag should be passed as `false`.
                         if (this.openConnectionsHandler != null && shouldOpenRntbdChannels)
                         {
-                            await this.openConnectionsHandler
-                                .TryOpenRntbdChannelsAsync(
-                                    addresses: addressInfo.Item2.Get(Protocol.Tcp)?.ReplicaTransportAddressUris);
+                            openConnectionTasks
+                                .Add(this.openConnectionsHandler
+                                    .TryOpenRntbdChannelsAsync(
+                                        addresses: addressInfo.Item2.Get(Protocol.Tcp)?.ReplicaTransportAddressUris));
                         }
+                    }
+
+                    if (openConnectionTasks.Any())
+                    {
+                        await Task.WhenAll(openConnectionTasks);
                     }
                 }
             }

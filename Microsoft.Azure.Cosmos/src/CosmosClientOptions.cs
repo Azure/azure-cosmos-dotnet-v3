@@ -347,6 +347,18 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
+        /// Gets or sets the replica validation flag.
+        /// Enabling replica validation helps the cosmos client to become more
+        /// resilient to service upgrades by choosing a healthy replica over the
+        /// one undergoing an upgrade. The default value for this parameter is false.
+        /// </summary>
+        /// <remarks>
+        /// <para>This is optimal for workloads where latency spikes are critical during upgrades.</para>
+        /// </remarks>
+        /// <seealso cref="CosmosClientBuilder.WithReplicaValidation(bool)"/>
+        public bool EnableReplicaValidation { get; set; } = false;
+
+        /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
         /// </summary>
         /// <value>
@@ -758,6 +770,7 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
+                EnableReplicaValidation = this.EnableReplicaValidation,
                 HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };

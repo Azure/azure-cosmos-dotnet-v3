@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Cosmos
             this.EnableReadRequestsFallback = null;
             this.EnableClientTelemetry = ClientTelemetryOptions.IsClientTelemetryEnabled();
             this.ServerCertificateCustomValidationCallback = null;
+            this.EnableReplicaValidation = false;
         }
 
         /// <summary>
@@ -454,6 +455,18 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
         /// </summary>
         public Func<HttpClient> HttpClientFactory
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the flag to enable replica validation.
+        /// </summary>
+        /// <value>
+        /// The default value is false
+        /// </value>
+        public bool EnableReplicaValidation
         {
             get;
             set;

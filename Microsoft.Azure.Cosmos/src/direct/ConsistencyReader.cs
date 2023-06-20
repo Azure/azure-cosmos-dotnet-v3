@@ -144,12 +144,13 @@ namespace Microsoft.Azure.Documents
             ISessionContainer sessionContainer,
             TransportClient transportClient,
             IServiceConfigurationReader serviceConfigReader,
-            IAuthorizationTokenProvider authorizationTokenProvider)
+            IAuthorizationTokenProvider authorizationTokenProvider,
+            bool enableReplicaValidation)
         {
             this.addressSelector = addressSelector;
             this.serviceConfigReader = serviceConfigReader;
             this.authorizationTokenProvider = authorizationTokenProvider;
-            this.storeReader = new StoreReader(transportClient, addressSelector, new AddressEnumerator(), sessionContainer);
+            this.storeReader = new StoreReader(transportClient, addressSelector, new AddressEnumerator(), sessionContainer, enableReplicaValidation);
             this.quorumReader = new QuorumReader(transportClient, addressSelector, this.storeReader, serviceConfigReader, authorizationTokenProvider);
         }
 
