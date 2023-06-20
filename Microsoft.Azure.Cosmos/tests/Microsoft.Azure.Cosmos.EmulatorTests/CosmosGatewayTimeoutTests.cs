@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
             }
 
-            public override bool ByPassQueryParsing()
+            public override bool BypassQueryParsing()
             {
                 return true;
             }
