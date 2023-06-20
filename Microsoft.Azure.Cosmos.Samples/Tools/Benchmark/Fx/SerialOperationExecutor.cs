@@ -34,7 +34,8 @@ namespace CosmosBenchmark
                 int iterationCount,
                 bool isWarmup,
                 bool traceFailures,
-                Action completionCallback)
+                Action completionCallback,
+                BenchmarkConfig benchmarkConfig)
         {
             Trace.TraceInformation($"Executor {this.executorId} started");
 
@@ -48,6 +49,7 @@ namespace CosmosBenchmark
                     await this.operation.PrepareAsync();
 
                     using (IDisposable telemetrySpan = TelemetrySpan.StartNew(
+                                benchmarkConfig,
                                 () => operationResult.Value,
                                 disableTelemetry: isWarmup))
                     {
