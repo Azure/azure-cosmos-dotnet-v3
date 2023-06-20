@@ -18,7 +18,7 @@
         {
             if (!File.Exists(DiagnosticsFilePath))
             {
-                File.Create(DiagnosticsFilePath);
+                File.Create(DiagnosticsFilePath).Close();
             }
 
             ThreadPool.QueueUserWorkItem(state =>
@@ -30,7 +30,7 @@
                         // Check the file size
                         if (!File.Exists(DiagnosticsFilePath))
                         {
-                            File.Create(DiagnosticsFilePath);
+                            File.Create(DiagnosticsFilePath).Close();
                         }
 
                         FileInfo fileInfo = new FileInfo(DiagnosticsFilePath);
@@ -84,7 +84,7 @@
                         string diagnosticFile = diagnosticFiles[i];
                         Console.WriteLine($"Uploading {i+1} of {diagnosticFiles.Length} file: {diagnosticFile} ");
 
-                        string BlobName = $"{Environment.MachineName}{diagnosticFile}";
+                        string BlobName = $"{Environment.MachineName}/{Environment.MachineName}-{i}.out";
                         BlobContainerClient blobContainerClient = GetBlobServiceClient(config);
                         BlobClient blobClient = blobContainerClient.GetBlobClient(BlobName);
 
