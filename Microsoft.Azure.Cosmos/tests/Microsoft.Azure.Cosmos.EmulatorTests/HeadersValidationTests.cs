@@ -204,7 +204,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("brchon")]
         public void ValidateJsonSerializationFormatGateway()
         {
             var client = TestCommon.CreateClient(true);
@@ -308,7 +307,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("maya-painter")]
         public void ValidateSupportedSerializationFormatsGateway()
         {
             DocumentClient client = TestCommon.CreateClient(true);
