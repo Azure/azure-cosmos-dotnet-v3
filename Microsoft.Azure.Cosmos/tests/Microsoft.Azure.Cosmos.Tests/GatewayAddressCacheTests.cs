@@ -1555,7 +1555,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Task IOpenConnectionsHandler.TryOpenRntbdChannelsAsync(
-                IEnumerable<TransportAddressUri> addresses)
+                IEnumerable<TransportAddressUri> addresses,
+                SemaphoreSlim semaphore,
+                TimeSpan semaphoreAcquireTimeout)
             {
                 int idx = 0;
                 this.totalReceivedAddressesCounter += addresses.Count();

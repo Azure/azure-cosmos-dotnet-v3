@@ -26,18 +26,6 @@ namespace Microsoft.Azure.Cosmos.Rntbd
         private readonly TransportClient transportClient;
 
         /// <summary>
-        /// A read-only instance of <see cref="SemaphoreSlim"/> for
-        /// concurrency control.
-        /// </summary>
-        private readonly SemaphoreSlim semaphore;
-
-        /// <summary>
-        /// A read-only TimeSpan indicating the semephore timeout in minutes.
-        /// The default timeout is 10 minutes.
-        /// </summary>
-        private static readonly TimeSpan SemaphoreAcquireTimeout = TimeSpan.FromMinutes(10);
-
-        /// <summary>
         /// A booolean flag indicating if the current instance of RntbdOpenConnectionHandler
         /// has been disposed.
         /// </summary>
@@ -52,16 +40,13 @@ namespace Microsoft.Azure.Cosmos.Rntbd
         {
             this.disposed = false;
             this.transportClient = transportClient ?? throw new ArgumentNullException(nameof(transportClient), $"Argument {nameof(transportClient)} can not be null");
-
-            // The semaphore arguments `initialCount` and `maxCount` are set to match the number of cpu cores, to keep the
-            // implementation similar to the Java counterpart.
-            this.semaphore = new SemaphoreSlim(
-                initialCount: Environment.ProcessorCount,
-                maxCount: Environment.ProcessorCount);
         }
 
         /// <inheritdoc/>
-        public async Task TryOpenRntbdChannelsAsync(IEnumerable<TransportAddressUri> addresses)
+        public async Task TryOpenRntbdChannelsAsync(
+            IEnumerable<TransportAddressUri> addresses,
+            SemaphoreSlim semaphore,
+            TimeSpan semaphoreAcquireTimeout)
         {
             foreach (TransportAddressUri address in addresses)
             {
@@ -71,8 +56,8 @@ namespace Microsoft.Azure.Cosmos.Rntbd
                     Trace.CorrelationManager.ActivityId);
                 try
                 {
-                    slimAcquired = await this.semaphore
-                        .WaitAsync(RntbdOpenConnectionHandler.SemaphoreAcquireTimeout)
+                    slimAcquired = await semaphore
+                        .WaitAsync(semaphoreAcquireTimeout)
                         .ConfigureAwait(false);
 
                     if (slimAcquired)
@@ -86,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Rntbd
                         DefaultTrace.TraceWarning("Failed to open Rntbd connection to backend uri: {0} because" +
                             "the semaphore couldn't be acquired within the given timeout: {1} minutes. '{2}'",
                             address.Uri,
-                            RntbdOpenConnectionHandler.SemaphoreAcquireTimeout.TotalMinutes,
+                            semaphoreAcquireTimeout.TotalMinutes,
                             Trace.CorrelationManager.ActivityId);
                     }
                 }
@@ -102,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Rntbd
                 {
                     if (slimAcquired)
                     {
-                        this.semaphore.Release();
+                        semaphore.Release();
                     }
                 }
             }
@@ -113,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Rntbd
         {
             if (!this.disposed)
             {
-                this.semaphore.Dispose();
+                this.transportClient.Dispose();
                 this.disposed = true;
             }
             else
