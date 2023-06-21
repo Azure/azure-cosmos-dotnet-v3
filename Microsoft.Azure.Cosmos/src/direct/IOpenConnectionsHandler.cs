@@ -4,9 +4,7 @@
 
 namespace Microsoft.Azure.Documents
 {
-    using System;
     using System.Collections.Generic;
-    using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -20,11 +18,7 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="addresses">An enumerable of <see cref="TransportAddressUri"/>
         /// containing the backend replica addresses.</param>
-        /// <param name="semaphore">The semaphore.</param>
-        /// <param name="semaphoreAcquireTimeout">The semaphore connection timeout.</param>
         Task TryOpenRntbdChannelsAsync(
-             IEnumerable<TransportAddressUri> addresses,
-             SemaphoreSlim semaphore,
-             TimeSpan semaphoreAcquireTimeout);
+             IEnumerable<TransportAddressUri> addresses);
     }
 }

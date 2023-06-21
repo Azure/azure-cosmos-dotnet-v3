@@ -48,18 +48,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
 
-        /// <summary>
-        /// A read-only instance of <see cref="SemaphoreSlim"/> for
-        /// concurrency control.
-        /// </summary>
-        private readonly SemaphoreSlim semaphore;
-
-        /// <summary>
-        /// A read-only TimeSpan indicating the semephore timeout in minutes.
-        /// The default timeout is 10 minutes.
-        /// </summary>
-        private static readonly TimeSpan SemaphoreAcquireTimeout = TimeSpan.FromMinutes(10);
-
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
         private bool disposedValue;
@@ -96,12 +84,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GatewayAddressCache.protocolFilterFormat,
                 Constants.Properties.Protocol,
                 GatewayAddressCache.ProtocolString(this.protocol));
-
-            // The semaphore arguments `initialCount` and `maxCount` are set to match the number of cpu cores, to keep the
-            // implementation similar to the Java counterpart.
-            this.semaphore = new SemaphoreSlim(
-                initialCount: Environment.ProcessorCount,
-                maxCount: Environment.ProcessorCount);
 
             this.openConnectionsHandler = openConnectionsHandler;
             this.isReplicaAddressValidationEnabled = replicaAddressValidationEnabled;
@@ -206,9 +188,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             openConnectionTasks
                                 .Add(this.openConnectionsHandler
                                     .TryOpenRntbdChannelsAsync(
-                                        addresses: addressInfo.Item2.Get(Protocol.Tcp)?.ReplicaTransportAddressUris,
-                                        semaphore: this.semaphore,
-                                        semaphoreAcquireTimeout: GatewayAddressCache.SemaphoreAcquireTimeout));
+                                        addresses: addressInfo.Item2.Get(Protocol.Tcp)?.ReplicaTransportAddressUris));
                         }
                     }
 
@@ -892,9 +872,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (addressesNeedToValidateStatus.Any())
             {
                 Task openConnectionsInBackgroundTask = Task.Run(async () => await this.openConnectionsHandler.TryOpenRntbdChannelsAsync(
-                    addresses: addressesNeedToValidateStatus,
-                    semaphore: this.semaphore,
-                    semaphoreAcquireTimeout: GatewayAddressCache.SemaphoreAcquireTimeout));
+                    addresses: addressesNeedToValidateStatus));
             }
         }
 
@@ -997,7 +975,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (disposing)
             {
                 this.serverPartitionAddressCache?.Dispose();
-                this.semaphore.Dispose();
             }
 
             this.disposedValue = true;
