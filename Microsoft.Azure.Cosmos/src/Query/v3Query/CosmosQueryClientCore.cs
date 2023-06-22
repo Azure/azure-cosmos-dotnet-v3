@@ -69,6 +69,13 @@ namespace Microsoft.Azure.Cosmos
                 // Dis-ambiguate the NonePK if used 
                 PartitionKeyInternal partitionKeyInternal = partitionKey.Value.IsNone ? containerProperties.GetNoneValue() : partitionKey.Value.InternalKey;
                 effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
+                //effectivePartitionKeyString = PartitionKeyInternal.GetEffectivePartitionKeyRange(
+                //       containerProperties.PartitionKey,
+                //       new Range<PartitionKeyInternal>(
+                //           min: partitionKeyInternal,
+                //           max: partitionKeyInternal,
+                //           isMinInclusive: true,
+                //           isMaxInclusive: true)).ToString();
             }
 
             return new ContainerQueryProperties(

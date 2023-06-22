@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -774,11 +775,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 if (inputParameters.PartitionKey != null)
                 {
                     Debug.Assert(partitionKeyDefinition != null, "CosmosQueryExecutionContextFactory Assert!", "PartitionKeyDefinition cannot be null if partitionKey is defined");
-
-                    targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                    targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
                         cosmosQueryContext.ResourceLink,
                         containerQueryProperties.ResourceId,
-                        containerQueryProperties.EffectivePartitionKeyString,
+                        new List<Documents.Routing.Range<string>> 
+                        {
+                            Documents.Routing.PartitionKeyInternal.GetEffectivePartitionKeyRange(
+                                containerQueryProperties.PartitionKeyDefinition,
+                                new Documents.Routing.Range<Documents.Routing.PartitionKeyInternal>(
+                                    min: inputParameters.PartitionKey.Value.InternalKey,
+                                    max: inputParameters.PartitionKey.Value.InternalKey,
+                                    isMinInclusive: true,
+                                    isMaxInclusive: true))
+                        },
                         forceRefresh: false,
                         trace);
                 }
