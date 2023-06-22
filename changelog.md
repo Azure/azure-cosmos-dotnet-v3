@@ -12,6 +12,52 @@ Preview features are treated as a separate branch and will not be included in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+### <a name="3.34.0-preview"/> [3.35.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.0-preview) - 2023-06-19
+
+### Added
+- [3836](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3836) Integrated cache: Adds BypassIntegratedCache to DedicatedGatewayRequestOptions
+- [3909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3909) Query: Adds EnableOptimisticDirectExecution in QueryRequestOptions enabled by default
+
+### <a name="3.35.0"/> [3.35.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.0) - 2023-06-19
+
+#### Fixed 
+- [3864](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3864) NugetPackage: Removes ThirdPartyNotice.txt from content and contentFiles folders
+- [3866](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3866) CosmosClient: Fixes missing Trace when converting HTTP Timeout to 503
+- [3879](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3879) Subpartitioning: Fixes handling of split physical partitions
+- [3907](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3907) Query: Fixes empty property name parsing exception
+
+#### Added
+- [3860](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3860) Documentation: Adds see also link to Container.CreateTransactionalBatch
+- [3852](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3852) Query: Adds type-markers with count and length for large arrays
+- [3838](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3838) Benchmarking: Adds use of ARM Templates for benchmarking
+- [3877](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3877) Regions: Adds Malaysia South, Isreal Central, and Italy North
+- [3887](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3887) Distributed Tracing: Setting DisplayName for an operation level activity as `<operationname><space><containername>`
+- [3874](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3874) Client Encryption: Adds Microsoft.Azure.Cosmos compatibility to version 3.34.0
+- [3891](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3891) Documentation: Adds additional remarks to CosmosClient
+- [3902](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3902) ConnectionPolicy: Refactors Code to Reduce Default Request Timeout to 6 Seconds
+- [3910](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3910) Documentations: Adds links to PatchItems docs
+- [3918](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3918) Regions: Adds Israel Central
+- [3918](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3918) CosmosClient: Fixes SynchronizationLockException when disposing client with requests in-flight.
+
+### <a name="3.34.0-preview"/> [3.34.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.34.0-preview) - 2023-05-17
+
+### Added
+- [3761](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3761) Query: Adds Computed Property SDK Support
+
+#### Fixed
+- [3845](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3845) AI Integration: Fixes Operation Name in the activity and end to end Tests.
+
+### <a name="3.34.0"/> [3.34.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.34.0) - 2023-05-17
+
+#### Fixed 
+- [3847](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3847) PackageLicense: Replaces PackageLicenseUrl with PackageLicenseFile since PackageLicenseUrl is deprecated
+- [3832](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3832) Query: Fixes format exception when using culture and partitionKey, difference between Windows and Linux
+
+#### Added
+- [3854](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3854) Change Feed: Adds LatestVersion to ChangeFeedMode
+- [3833](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3833) Query: Adds TRIM string system function support in LINQ
+- [3826](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3826) Query: Adds support for Lambda expression reuse in LINQ
+- [3724](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3724) Query: Added remaining Cosmos Type checking functions to CosmosLinqExtensions. Thanks @onionhammer.
 
 ### <a name="3.33.0-preview"/> [3.33.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.33.0-preview) - 2023-04-21
 

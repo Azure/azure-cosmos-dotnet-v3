@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
+    using System.Xml.Linq;
     using global::Azure;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -70,11 +71,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                     }));
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
-                    Guid.NewGuid().ToString(),
+                    "databaseName",
                     cancellationToken: default);
 
             EndToEndTraceWriterBaselineTests.container = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
+                    id: "containerName",
                     partitionKeyPath: "/id",
                     throughput: 20000);
 
@@ -400,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //----------------------------------------------------------------
             {
                 Container leaseContainer = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
+                    id: "changefeedleasecontainer",
                     partitionKeyPath: "/id");
 
                 ChangeFeedProcessor processor = container
@@ -1346,7 +1347,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 startLineNumber = GetLineNumber();
              
-                DatabaseResponse databaseResponse = await miscCosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+                DatabaseResponse databaseResponse = await miscCosmosClient.CreateDatabaseAsync("miscdbcustonhandler");
                 EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
                     databaseResponse.Diagnostics.ToString(),
                     requestHandler.FullHandlerName,
@@ -1369,7 +1370,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 startLineNumber = GetLineNumber();
                 RequestOptions requestOptions = new RequestOptions();
                 DatabaseResponse databaseResponse = await client.CreateDatabaseAsync(
-                    id: Guid.NewGuid().ToString(),
+                    id: "miscdbdataplane",
                     requestOptions: requestOptions);
                 ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
                 await databaseResponse.Database.DeleteAsync();
@@ -1452,10 +1453,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             StringBuilder oTelActivitiesString = new StringBuilder();
             if (input.OTelActivities != null && input.OTelActivities.Count > 0)
             {
+                oTelActivitiesString.Append("<OTelActivities>");
                 foreach (string attributes in input.OTelActivities)
                 {
                     oTelActivitiesString.AppendLine(attributes);
                 }
+                oTelActivitiesString.Append("</OTelActivities>");
             }
           
             AssertTraceProperites(input.Trace);
@@ -1464,9 +1467,23 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             Assert.IsTrue(text.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {text}");
             Assert.IsTrue(json.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {json}");
             
-            return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented), oTelActivitiesString.ToString());
+            return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented), this.FormatXml(oTelActivitiesString.ToString()));
         }
 
+        private string FormatXml(string xml)
+        {
+            try
+            {
+                XDocument doc = XDocument.Parse(xml);
+                return doc.ToString();
+            }
+            catch (Exception)
+            {
+                // Handle and throw if fatal exception here; don't just ignore them
+                return xml;
+            }
+        }
+        
         private static TraceForBaselineTesting CreateTraceForBaslineTesting(ITrace trace, TraceForBaselineTesting parent)
         {
             TraceForBaselineTesting convertedTrace = new TraceForBaselineTesting(trace.Name, trace.Level, trace.Component, parent);
@@ -1650,9 +1667,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
                 if (!string.IsNullOrWhiteSpace(this.OTelActivities))
                 {
-                    xmlWriter.WriteStartElement(nameof(this.OTelActivities));
                     xmlWriter.WriteRaw(this.OTelActivities);
-                    xmlWriter.WriteEndElement();
                 }
             }
         }

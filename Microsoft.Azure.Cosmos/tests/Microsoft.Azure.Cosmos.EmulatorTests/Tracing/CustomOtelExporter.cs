@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using OpenTelemetry;
     using OpenTelemetry.Trace;
 
@@ -18,11 +19,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
     {
         private readonly string _name;
 
-        public static List<Activity> CollectedActivities = new List<Activity>();
+        public static List<Activity> CollectedActivities;
         
         public CustomOtelExporter(string name = "CustomOtelExporter")
         {
             this._name = name;
+            CollectedActivities = new List<Activity>();
         }
 
         public override ExportResult Export(in Batch<Activity> batch)
@@ -33,9 +35,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             foreach (Activity activity in batch)
             {
-                AssertActivity.IsValid(activity);
-                
-                CollectedActivities.Add(activity);
+                if (string.Equals(activity.Source.Name, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", StringComparison.OrdinalIgnoreCase))
+                {
+                    AssertActivity.IsValidOperationActivity(activity);
+
+                    CollectedActivities.Add(activity);
+                }  
             }
 
             return ExportResult.Success;
