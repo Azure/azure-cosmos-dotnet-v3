@@ -318,4 +318,10 @@
   <data name="FeedToken_InvalidFeedTokenForContainer" xml:space="preserve">
     <value>The continuation was generated for container {0} but current container is {1}.</value>
   </data>
+  <data name="TooFewPartitionKeyComponents" xml:space="preserve">
+    <value>PartitionKey has fewer components than defined the collection resource.</value>
+  </data>
+  <data name="TooManyPartitionKeyComponents" xml:space="preserve">
+    <value>PartitionKey has more components than defined the collection resource.</value>
+  </data>
 </root>

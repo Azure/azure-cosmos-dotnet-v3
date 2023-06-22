@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Reflection;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using global::Azure;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -838,6 +839,73 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 HttpConstants.Versions.CurrentVersion = currentVersion;
                 if(database != null) await database.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task TransactionalBatchTestForSubpartitionedContainer()
+        {
+            string currentVersion = HttpConstants.Versions.CurrentVersion;
+            HttpConstants.Versions.CurrentVersion = "2020-07-15";
+            using CosmosClient client = TestCommon.CreateCosmosClient(true);
+            Cosmos.Database database = null;
+            try
+            {
+                database = await client.CreateDatabaseIfNotExistsAsync("mydb");
+
+                ContainerProperties containerProperties = new ContainerProperties("subpartitionedcontainer", new List<string> { "/Country", "/City" });
+                Container container = await database.CreateContainerAsync(containerProperties);
+                ContainerInternal containerInternal = (ContainerInternal)container;
+
+                TransactionalBatchInternal transactionalBatchInternal = (TransactionalBatchInternal)containerInternal.CreateTransactionalBatch(
+                    new PartitionKeyBuilder().Add("USA").Add("Redmond").Build()) ;
+                
+                //Document create.
+                ItemResponse<Document>[] documents = new ItemResponse<Document>[5];
+                Document doc1 = new Document { Id = "document1" };
+                doc1.SetValue("Country", "USA");
+                doc1.SetValue("City", "Redmond");
+
+                Document doc2 = new Document { Id = "document2" };
+                doc2.SetValue("Country", "USA");
+                doc2.SetValue("City", "Redmond");
+                await transactionalBatchInternal
+                    .CreateItem<Document>(doc1)
+                    .CreateItem<Document>(doc2)
+                    .ExecuteAsync();
+
+                //Specifying a partial partition key should fail
+                Cosmos.PartitionKey partialPartitionKey = new PartitionKeyBuilder().Add("USA").Build();
+                TransactionalBatch transactionalBatchInternalPartialKey = containerInternal.CreateTransactionalBatch(partialPartitionKey);
+                try
+                {
+                    TransactionalBatchResponse response = await transactionalBatchInternalPartialKey.CreateItem<Document>(doc1).ExecuteAsync();
+                    Assert.Fail("Should have thrown");
+                }
+                catch (Exception ex)
+                {
+                    Assert.AreEqual(typeof(ArgumentException), ex.GetType());
+                    Assert.IsTrue(ex.Message.Contains(ClientResources.TooFewPartitionKeyComponents));
+                }
+
+                //OverSpecifying a partition key should fail
+                Cosmos.PartitionKey overSpecifiedPartitionKey = new PartitionKeyBuilder().Add("USA").Add("Redmond").Add("someValue").Build();
+                TransactionalBatch transactionalBatchOverSpecifiedPartitionKey = containerInternal.CreateTransactionalBatch(overSpecifiedPartitionKey);
+                try
+                {
+                    TransactionalBatchResponse response = await transactionalBatchOverSpecifiedPartitionKey.CreateItem<Document>(doc1).ExecuteAsync();
+                    Assert.Fail("Should have thrown");
+                }
+                catch (Exception ex)
+                {
+                    Assert.AreEqual(typeof(ArgumentException), ex.GetType());
+                    Assert.IsTrue(ex.Message.Contains(ClientResources.TooManyPartitionKeyComponents));
+                }
+            }
+            finally
+            {
+                HttpConstants.Versions.CurrentVersion = currentVersion;
+                if (database != null) await database.DeleteAsync();
             }
         }
 
