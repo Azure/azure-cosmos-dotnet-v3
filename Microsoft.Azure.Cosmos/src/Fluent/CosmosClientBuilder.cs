@@ -622,23 +622,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Gets or sets the boolean to only return the headers and status code in
-        /// the Cosmos DB response for write item operation like Create, Upsert, Patch and Replace.
-        /// Setting the option to false will cause the response to have a null resource. This reduces networking and CPU load by not sending
-        /// the resource back over the network and serializing it on the client.
+        /// Gets or sets the prioritize healthy replicas flag.
+        /// Prioritizing healthy replicas helps the cosmos client to become more
+        /// resilient to service upgrades by choosing a healthy replica over the
+        /// one undergoing an upgrade. The default value for this parameter is false.
         /// </summary>
-        /// <param name="replicaValidationEnabled">a boolean indicating whether payload will be included in the response or not.</param>
-        /// <remarks>
-        /// <para>
-        /// This option can be overriden by similar property in ItemRequestOptions and TransactionalBatchItemRequestOptions
-        /// </para>
-        /// </remarks>
+        /// <param name="replicaValidationEnabled">a boolean flag indicating if the feature will be enabled.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        /// <seealso cref="ItemRequestOptions.EnableContentResponseOnWrite"/>
-        /// <seealso cref="TransactionalBatchItemRequestOptions.EnableContentResponseOnWrite"/>
-        public CosmosClientBuilder WithReplicaValidation(bool replicaValidationEnabled)
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithPrioritizeHealthyReplicas(
+            bool replicaValidationEnabled)
         {
-            this.clientOptions.EnableReplicaValidation = replicaValidationEnabled;
+            this.clientOptions.PrioritizeHealthyReplicas = replicaValidationEnabled;
             return this;
         }
 
