@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool shouldOpenRntbdChannels,
             CancellationToken cancellationToken)
         {
-            List<Task<TryCatch<DocumentServiceResponse>>> tasks = new ();
+            List<Task> tasks = new ();
             int batchSize = GatewayAddressCache.DefaultBatchSize;
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
@@ -146,58 +146,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 for (int i = 0; i < partitionKeyRangeIdentities.Count; i += batchSize)
                 {
-                    tasks
-                        .Add(this.GetAddressesAsync(
-                            request: request,
-                            collectionRid: collection.ResourceId,
-                            partitionKeyRangeIds: partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId)));
+                    tasks.Add(
+                        this.GetAddressesAsync(
+                                request: request,
+                                collectionRid: collection.ResourceId,
+                                partitionKeyRangeIds: partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId))
+                                .ContinueWith(response => this.WarmupCachesAndOpenConnectionsAsync(
+                                    containerProperties: collection,
+                                    documentServiceResponseWrapper: response.Result,
+                                    shouldOpenRntbdChannels: shouldOpenRntbdChannels)));
                 }
             }
 
-            foreach (TryCatch<DocumentServiceResponse> task in await Task.WhenAll(tasks))
-            {
-                if (task.Failed)
-                {
-                    continue;
-                }
-
-                using (DocumentServiceResponse response = task.Result)
-                {
-                    FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
-
-                    bool inNetworkRequest = this.IsInNetworkRequest(response);
-
-                    IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
-                        addressFeed.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
-                            .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
-                            .Select(group => this.ToPartitionAddressAndRange(collection.ResourceId, @group.ToList(), inNetworkRequest));
-
-                    List<Task> openConnectionTasks = new ();
-                    foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
-                    {
-                        this.serverPartitionAddressCache.Set(
-                            new PartitionKeyRangeIdentity(collection.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
-                            addressInfo.Item2);
-
-                        // The `shouldOpenRntbdChannels` boolean flag indicates whether the SDK should establish Rntbd connections to the
-                        // backend replica nodes. For the `CosmosClient.CreateAndInitializeAsync()` flow, the flag should be passed as
-                        // `true` so that the Rntbd connections to the backend replicas could be established deterministically. For any
-                        // other flow, the flag should be passed as `false`.
-                        if (this.openConnectionsHandler != null && shouldOpenRntbdChannels)
-                        {
-                            openConnectionTasks
-                                .Add(this.openConnectionsHandler
-                                    .TryOpenRntbdChannelsAsync(
-                                        addresses: addressInfo.Item2.Get(Protocol.Tcp)?.ReplicaTransportAddressUris));
-                        }
-                    }
-
-                    if (openConnectionTasks.Any())
-                    {
-                        await Task.WhenAll(openConnectionTasks);
-                    }
-                }
-            }
+            await Task.Run(() => Task.WhenAll(tasks), cancellationToken);
         }
 
         /// <inheritdoc/>
@@ -353,6 +314,54 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 throw;
+            }
+        }
+
+        private async Task WarmupCachesAndOpenConnectionsAsync(
+            ContainerProperties containerProperties,
+            TryCatch<DocumentServiceResponse> documentServiceResponseWrapper,
+            bool shouldOpenRntbdChannels)
+        {
+            if (documentServiceResponseWrapper.Failed)
+            {
+                return;
+            }
+
+            using (DocumentServiceResponse response = documentServiceResponseWrapper.Result)
+            {
+                FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
+
+                bool inNetworkRequest = this.IsInNetworkRequest(response);
+
+                IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
+                    addressFeed.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
+                        .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
+                        .Select(group => this.ToPartitionAddressAndRange(containerProperties.ResourceId, @group.ToList(), inNetworkRequest));
+
+                List<Task> openConnectionTasks = new ();
+                foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
+                {
+                    this.serverPartitionAddressCache.Set(
+                        new PartitionKeyRangeIdentity(containerProperties.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
+                        addressInfo.Item2);
+
+                    // The `shouldOpenRntbdChannels` boolean flag indicates whether the SDK should establish Rntbd connections to the
+                    // backend replica nodes. For the `CosmosClient.CreateAndInitializeAsync()` flow, the flag should be passed as
+                    // `true` so that the Rntbd connections to the backend replicas could be established deterministically. For any
+                    // other flow, the flag should be passed as `false`.
+                    if (this.openConnectionsHandler != null && shouldOpenRntbdChannels)
+                    {
+                        openConnectionTasks
+                            .Add(this.openConnectionsHandler
+                                .TryOpenRntbdChannelsAsync(
+                                    addresses: addressInfo.Item2.Get(Protocol.Tcp)?.ReplicaTransportAddressUris));
+                    }
+                }
+
+                if (openConnectionTasks.Any())
+                {
+                    await Task.WhenAll(openConnectionTasks);
+                }
             }
         }
 
