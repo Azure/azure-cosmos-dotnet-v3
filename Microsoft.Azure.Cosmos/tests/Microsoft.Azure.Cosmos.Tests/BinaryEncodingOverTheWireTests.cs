@@ -28,15 +28,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             ConfigurationManager.AppSettings["GatewayEndpoint"],
             ConfigurationManager.AppSettings["MasterKey"],
             new CosmosClientOptions() { ConnectionMode = ConnectionMode.Gateway });
-        private static readonly CosmosClient DirectHttpsClient = new CosmosClient(
-            ConfigurationManager.AppSettings["GatewayEndpoint"],
-            ConfigurationManager.AppSettings["MasterKey"],
-            new CosmosClientOptions() { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Documents.Client.Protocol.Https });
         private static readonly CosmosClient RntbdClient = new CosmosClient(
             ConfigurationManager.AppSettings["GatewayEndpoint"],
             ConfigurationManager.AppSettings["MasterKey"],
             new CosmosClientOptions() { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Documents.Client.Protocol.Tcp });
-        private static readonly CosmosClient[] Clients = new CosmosClient[] { GatewayClient, DirectHttpsClient, RntbdClient };
+        private static readonly CosmosClient[] Clients = new CosmosClient[] { GatewayClient, RntbdClient };
         private static readonly CosmosClient Client = RntbdClient;
         private static readonly AsyncLazy<Database> Database = new AsyncLazy<Database>(async () =>
         {

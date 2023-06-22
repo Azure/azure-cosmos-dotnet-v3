@@ -206,14 +206,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateJsonSerializationFormatGateway()
         {
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             ValidateJsonSerializationFormat(client);
         }
 
         [TestMethod]
         public void ValidateJsonSerializationFormatRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            using var client = TestCommon.CreateClient(false, Protocol.Tcp);
             ValidateJsonSerializationFormat(client);
         }
 
@@ -309,22 +309,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateSupportedSerializationFormatsGateway()
         {
-            DocumentClient client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             this.ValidateSupportedSerializationFormats(client, true);
         }
 
         [TestMethod]
         public void ValidateSupportedSerializationFormatsRntbd()
         {
-            DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp);
+            using var client = TestCommon.CreateClient(false, Protocol.Tcp);
             this.ValidateSupportedSerializationFormats(client, false);
-        }
-
-        [TestMethod]
-        public void ValidateSupportedSerializationFormatsHttps()
-        {
-            DocumentClient client = TestCommon.CreateClient(false, Protocol.Https);
-            this.ValidateSupportedSerializationFormats(client, true);
         }
 
         private void ValidateSupportedSerializationFormats(DocumentClient client, bool isHttps)
