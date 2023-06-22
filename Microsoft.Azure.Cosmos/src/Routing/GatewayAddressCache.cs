@@ -47,6 +47,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
+        private static readonly TimeSpan WarmupCacheAndOpenConnectionDelayInMinutes = TimeSpan.FromMinutes(40);
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
@@ -147,18 +148,24 @@ namespace Microsoft.Azure.Cosmos.Routing
                 for (int i = 0; i < partitionKeyRangeIdentities.Count; i += batchSize)
                 {
                     tasks.Add(
-                        this.GetAddressesAsync(
+                        this.WarmupCachesAndOpenConnectionsAsync(
                                 request: request,
                                 collectionRid: collection.ResourceId,
-                                partitionKeyRangeIds: partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId))
-                                .ContinueWith(response => this.WarmupCachesAndOpenConnectionsAsync(
-                                    containerProperties: collection,
-                                    documentServiceResponseWrapper: response.Result,
-                                    shouldOpenRntbdChannels: shouldOpenRntbdChannels)));
+                                partitionKeyRangeIds: partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId),
+                                containerProperties: collection,
+                                shouldOpenRntbdChannels: shouldOpenRntbdChannels));
                 }
             }
 
-            await Task.Run(() => Task.WhenAll(tasks), cancellationToken);
+            Task timeoutTask = Task.Delay(GatewayAddressCache.WarmupCacheAndOpenConnectionDelayInMinutes, cancellationToken);
+            Task resultTask = await Task.WhenAny(Task.WhenAll(tasks), timeoutTask);
+
+            if (resultTask == timeoutTask)
+            {
+                // Operation cancelled.
+                DefaultTrace.TraceWarning("The open connection task was cancelled because the cancellation token was expired. '{0}'",
+                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
+            }
         }
 
         /// <inheritdoc/>
@@ -318,50 +325,67 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         private async Task WarmupCachesAndOpenConnectionsAsync(
+            DocumentServiceRequest request,
+            string collectionRid,
+            IEnumerable<string> partitionKeyRangeIds,
             ContainerProperties containerProperties,
-            TryCatch<DocumentServiceResponse> documentServiceResponseWrapper,
             bool shouldOpenRntbdChannels)
         {
+            TryCatch<DocumentServiceResponse> documentServiceResponseWrapper = await this.GetAddressesAsync(
+                                request: request,
+                                collectionRid: collectionRid,
+                                partitionKeyRangeIds: partitionKeyRangeIds);
+
             if (documentServiceResponseWrapper.Failed)
             {
                 return;
             }
 
-            using (DocumentServiceResponse response = documentServiceResponseWrapper.Result)
+            try
             {
-                FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
-
-                bool inNetworkRequest = this.IsInNetworkRequest(response);
-
-                IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
-                    addressFeed.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
-                        .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
-                        .Select(group => this.ToPartitionAddressAndRange(containerProperties.ResourceId, @group.ToList(), inNetworkRequest));
-
-                List<Task> openConnectionTasks = new ();
-                foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
+                using (DocumentServiceResponse response = documentServiceResponseWrapper.Result)
                 {
-                    this.serverPartitionAddressCache.Set(
-                        new PartitionKeyRangeIdentity(containerProperties.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
-                        addressInfo.Item2);
+                    FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
 
-                    // The `shouldOpenRntbdChannels` boolean flag indicates whether the SDK should establish Rntbd connections to the
-                    // backend replica nodes. For the `CosmosClient.CreateAndInitializeAsync()` flow, the flag should be passed as
-                    // `true` so that the Rntbd connections to the backend replicas could be established deterministically. For any
-                    // other flow, the flag should be passed as `false`.
-                    if (this.openConnectionsHandler != null && shouldOpenRntbdChannels)
+                    bool inNetworkRequest = this.IsInNetworkRequest(response);
+
+                    IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
+                        addressFeed.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
+                            .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
+                            .Select(group => this.ToPartitionAddressAndRange(containerProperties.ResourceId, @group.ToList(), inNetworkRequest));
+
+                    List<Task> openConnectionTasks = new ();
+                    foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
                     {
-                        openConnectionTasks
-                            .Add(this.openConnectionsHandler
-                                .TryOpenRntbdChannelsAsync(
-                                    addresses: addressInfo.Item2.Get(Protocol.Tcp)?.ReplicaTransportAddressUris));
+                        this.serverPartitionAddressCache.Set(
+                            new PartitionKeyRangeIdentity(containerProperties.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
+                            addressInfo.Item2);
+
+                        // The `shouldOpenRntbdChannels` boolean flag indicates whether the SDK should establish Rntbd connections to the
+                        // backend replica nodes. For the `CosmosClient.CreateAndInitializeAsync()` flow, the flag should be passed as
+                        // `true` so that the Rntbd connections to the backend replicas could be established deterministically. For any
+                        // other flow, the flag should be passed as `false`.
+                        if (this.openConnectionsHandler != null && shouldOpenRntbdChannels)
+                        {
+                            openConnectionTasks
+                                .Add(this.openConnectionsHandler
+                                    .TryOpenRntbdChannelsAsync(
+                                        addresses: addressInfo.Item2.Get(Protocol.Tcp)?.ReplicaTransportAddressUris));
+                        }
+                    }
+
+                    if (openConnectionTasks.Any())
+                    {
+                        await Task.WhenAll(openConnectionTasks);
                     }
                 }
-
-                if (openConnectionTasks.Any())
-                {
-                    await Task.WhenAll(openConnectionTasks);
-                }
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning("Failed to open connections warm-up cache for the server addresses: {0} with exception: {1}. '{2}'",
+                    collectionRid,
+                    ex,
+                    System.Diagnostics.Trace.CorrelationManager.ActivityId);
             }
         }
 
