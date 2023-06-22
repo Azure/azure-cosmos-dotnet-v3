@@ -45,7 +45,7 @@
       "metadata": {
         "description": "Name for the container group"
       },
-      "defaultValue":  "CosmosDBBenchmark"
+      "defaultValue": "CosmosDBBenchmark"
     },
     "containerName": {
       "type": "string",
@@ -89,17 +89,20 @@
         "description": "Location for all resources."
       }
     },
+    "applicationInsightsName": {
+      "type": "string",
+      "defaultValue": "CosmosDBBenchmarkTestAppInsights",
+      "metadata": {
+        "description": "Specifies Application Insights Account Nmae"
+      }
+    },
     "dashboardName": {
       "type": "string",
       "defaultValue": "Cosmos Benchmark Statistics"
-    },
-    "appInsightsResoureName": {
-      "type": "string",
-      "defaultValue": "CosmosDBBenchmarkTestAppInsights"
     }
   },
   "variables": {
-    "appInsightsResourceIds": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/microsoft.insights/components/', parameters('appInsightsResoureName'))]"
+    "appInsightsResourceIds": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/microsoft.insights/components/', parameters('applicationInsightsName'))]"
   },
   "resources": [
     {
@@ -158,6 +161,16 @@
             }
           }
         ]
+      }
+    },
+    {
+      "name": "[parameters('applicationInsightsName')]",
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2015-05-01",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "ApplicationId": "[parameters('applicationInsightsName')]",
+        "Application_Type": "web"
       }
     },
     {
