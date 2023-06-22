@@ -33,15 +33,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             JsonSerializationFormat? jsonSerializationFormat = null,
             Dictionary<string, string> additionalHeaders = null,
             ChangeFeedQuerySpec changeFeedQuerySpec = null)
-            : base(pageSizeHint, jsonSerializationFormat, additionalHeaders)
+            : base(pageSizeHint, additionalHeaders)
         {
             this.Mode = mode ?? throw new ArgumentNullException(nameof(mode));
             this.ChangeFeedQuerySpec = changeFeedQuerySpec;
+            this.JsonSerializationFormat = jsonSerializationFormat;
         }
 
         public ChangeFeedMode Mode { get; }
 
         public ChangeFeedQuerySpec ChangeFeedQuerySpec { get; }
+
+        public JsonSerializationFormat? JsonSerializationFormat { get; }
 
         protected override ImmutableHashSet<string> BannedAdditionalHeaders => BannedHeaders;
     }

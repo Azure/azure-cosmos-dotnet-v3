@@ -162,7 +162,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             return CosmosQueryClientCore.GetCosmosElementResponse(
-                requestOptions,
                 resourceType,
                 message,
                 trace);
@@ -304,7 +303,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private static TryCatch<QueryPage> GetCosmosElementResponse(
-            QueryRequestOptions requestOptions,
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
             ITrace trace)
@@ -343,8 +341,7 @@ namespace Microsoft.Azure.Cosmos
                     long responseLengthBytes = memoryStream.Length;
                     CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
                         memoryStream,
-                        resourceType,
-                        requestOptions.CosmosSerializationFormatOptions);
+                        resourceType);
 
                     QueryState queryState;
                     if (cosmosResponseMessage.Headers.ContinuationToken != null)
@@ -451,12 +448,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="stream">The memory stream response for the query REST response Azure Cosmos</param>
         /// <param name="resourceType">The resource type</param>
-        /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
         /// <returns>An array of CosmosElements parsed from the response body.</returns>
         public static CosmosArray ParseElementsFromRestStream(
             Stream stream,
-            ResourceType resourceType,
-            CosmosSerializationFormatOptions cosmosSerializationOptions)
+            ResourceType resourceType)
         {
             if (!(stream is MemoryStream memoryStream))
             {
@@ -485,20 +480,7 @@ namespace Microsoft.Azure.Cosmos
             // You want to create a CosmosElement for each document in "Documents".
 
             ReadOnlyMemory<byte> content = memoryStream.TryGetBuffer(out ArraySegment<byte> buffer) ? buffer : (ReadOnlyMemory<byte>)memoryStream.ToArray();
-            IJsonNavigator jsonNavigator;
-            if (cosmosSerializationOptions != null)
-            {
-                // Use the users custom navigator
-                jsonNavigator = cosmosSerializationOptions.CreateCustomNavigatorCallback(content);
-                if (jsonNavigator == null)
-                {
-                    throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");
-                }
-            }
-            else
-            {
-                jsonNavigator = JsonNavigator.Create(content);
-            }
+            IJsonNavigator jsonNavigator = JsonNavigator.Create(content);
 
             string resourceName = resourceType switch
             {
