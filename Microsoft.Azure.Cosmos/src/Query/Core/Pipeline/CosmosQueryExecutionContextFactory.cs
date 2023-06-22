@@ -25,9 +25,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Tokens;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     internal static class CosmosQueryExecutionContextFactory
     {
@@ -772,8 +774,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             else
             {
                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                if (inputParameters.PartitionKey != null)
+                if (inputParameters.PartitionKey.HasValue)
                 {
+                    Documents.Routing.PartitionKeyInternal partitionKeyInternal = inputParameters.PartitionKey.Value.IsNone 
+                        ? GetNoneValue(partitionKeyDefinition) 
+                        : inputParameters.PartitionKey.Value.InternalKey;
+
                     Debug.Assert(partitionKeyDefinition != null, "CosmosQueryExecutionContextFactory Assert!", "PartitionKeyDefinition cannot be null if partitionKey is defined");
                     targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
                         cosmosQueryContext.ResourceLink,
@@ -783,8 +789,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             Documents.Routing.PartitionKeyInternal.GetEffectivePartitionKeyRange(
                                 containerQueryProperties.PartitionKeyDefinition,
                                 new Documents.Routing.Range<Documents.Routing.PartitionKeyInternal>(
-                                    min: inputParameters.PartitionKey.Value.InternalKey,
-                                    max: inputParameters.PartitionKey.Value.InternalKey,
+                                    min: partitionKeyInternal,
+                                    max: partitionKeyInternal,
                                     isMinInclusive: true,
                                     isMaxInclusive: true))
                         },
@@ -810,6 +816,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return null;
         }
 
+        private static Documents.Routing.PartitionKeyInternal GetNoneValue(
+            PartitionKeyDefinition partitionKeyDefinition)
+        {
+            if (partitionKeyDefinition == null)
+            {
+                throw new ArgumentNullException($"{nameof(partitionKeyDefinition)}");
+            }
+
+            if (partitionKeyDefinition.Paths.Count == 0 || (partitionKeyDefinition.IsSystemKey == true))
+            {
+                return Documents.Routing.PartitionKeyInternal.Empty;
+            }
+            else
+            {
+                return Documents.Routing.PartitionKeyInternal.Undefined;
+            }
+        }
+
         public sealed class InputParameters
         {
             private const int DefaultMaxConcurrency = 0;
@@ -825,7 +849,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 int? maxConcurrency,
                 int? maxItemCount,
                 int? maxBufferedItemCount,
-                PartitionKey? partitionKey,
+                Cosmos.PartitionKey? partitionKey,
                 IReadOnlyDictionary<string, object> properties,
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
                 ExecutionEnvironment? executionEnvironment,
@@ -875,7 +899,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public int MaxConcurrency { get; }
             public int MaxItemCount { get; }
             public int MaxBufferedItemCount { get; }
-            public PartitionKey? PartitionKey { get; }
+            public Cosmos.PartitionKey? PartitionKey { get; }
             public IReadOnlyDictionary<string, object> Properties { get; }
             public PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; }
             public ExecutionEnvironment ExecutionEnvironment { get; }
