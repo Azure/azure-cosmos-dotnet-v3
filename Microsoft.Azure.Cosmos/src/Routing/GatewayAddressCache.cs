@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
-        private static readonly TimeSpan WarmupCacheAndOpenConnectionDelayInMinutes = TimeSpan.FromMinutes(40);
+        private static readonly TimeSpan WarmupCacheAndOpenConnectionTimeout = TimeSpan.FromMinutes(40);
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
@@ -157,7 +157,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
-            Task timeoutTask = Task.Delay(GatewayAddressCache.WarmupCacheAndOpenConnectionDelayInMinutes, cancellationToken);
+            using CancellationTokenSource linkedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            Task timeoutTask = Task.Delay(GatewayAddressCache.WarmupCacheAndOpenConnectionTimeout, linkedToken.Token);
             Task resultTask = await Task.WhenAny(Task.WhenAll(tasks), timeoutTask);
 
             if (resultTask == timeoutTask)
@@ -165,6 +166,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 // Operation cancelled.
                 DefaultTrace.TraceWarning("The open connection task was cancelled because the cancellation token was expired. '{0}'",
                     System.Diagnostics.Trace.CorrelationManager.ActivityId);
+            }
+            else
+            {
+                linkedToken.Cancel();
             }
         }
 
