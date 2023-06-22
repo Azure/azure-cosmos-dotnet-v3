@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Resource);
             this.Container = (ContainerInlineCore)response;
 
-            DocumentFeedResponse<PartitionKeyRange> pkRangesFeed = await this.cosmosClient.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
+            DocumentFeedResponse<PartitionKeyRange> pkRangesFeed = await this.GetClient().DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
             Assert.IsTrue(pkRangesFeed.Count > 1, "Refresh container throughput to have at-least > 1 pk-range");
         }
 

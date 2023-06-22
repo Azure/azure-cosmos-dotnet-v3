@@ -119,12 +119,11 @@ namespace Microsoft.Azure.Cosmos
             string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
-            Guid clientQueryCorrelationId,
             FeedRange feedRange,
             QueryRequestOptions requestOptions,
+            AdditionalRequestHeaders additionalRequestHeaders,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            bool isContinuationExpected,
             int pageSize,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -143,13 +142,14 @@ namespace Microsoft.Azure.Cosmos
                 {
                     cosmosRequestMessage.Headers.Add(
                         HttpConstants.HttpHeaders.IsContinuationExpected,
-                        isContinuationExpected.ToString());
+                        additionalRequestHeaders.IsContinuationExpected.ToString());
                     QueryRequestOptions.FillContinuationToken(
                         cosmosRequestMessage,
                         continuationToken);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-                    cosmosRequestMessage.Headers.Add(WFConstants.BackendHeaders.CorrelatedActivityId, clientQueryCorrelationId.ToString());
+                    cosmosRequestMessage.Headers.Add(WFConstants.BackendHeaders.CorrelatedActivityId, additionalRequestHeaders.CorrelatedActivityId.ToString());
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.OptimisticDirectExecute, additionalRequestHeaders.OptimisticDirectExecute.ToString());
                 },
                 trace: trace,
                 cancellationToken: cancellationToken);
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override bool ByPassQueryParsing()
+        public override bool BypassQueryParsing()
         {
             return CustomTypeExtensions.ByPassQueryParsing();
         }

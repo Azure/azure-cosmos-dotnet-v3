@@ -1,6 +1,54 @@
 ﻿<Results>
   <Result>
     <Input>
+      <Description><![CDATA[IsArray array]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.ArrayField.IsArray())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE IS_ARRAY(root["ArrayField"])]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsArray string]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.IsArray())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE IS_ARRAY(root["StringField"])]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsBool bool]]></Description>
+      <Expression><![CDATA[query.Where(doc => Convert(doc.BooleanField, Object).IsBool())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE IS_BOOL(root["BooleanField"])]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsBool string]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.IsBool())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE IS_BOOL(root["StringField"])]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[IsDefined array]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.ArrayField.IsDefined())]]></Expression>
     </Input>
@@ -47,6 +95,52 @@ WHERE IS_NULL(root["StringField"])]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[IsNumber number]]></Description>
+      <Expression><![CDATA[query.Select(doc => Convert(doc.NumericField, Object).IsNumber())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE IS_NUMBER(root["NumericField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsNumber string]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.IsNumber())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE IS_NUMBER(root["StringField"])]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsObject object]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ObjectField.IsObject())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE IS_OBJECT(root["ObjectField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsObject string]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.IsObject())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE IS_OBJECT(root["StringField"])]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[IsPrimitive array]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.ArrayField.IsPrimitive())]]></Expression>
     </Input>
@@ -66,6 +160,29 @@ FROM root]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 WHERE IS_PRIMITIVE(root["StringField"])]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsString string]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.IsString())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE IS_STRING(root["StringField"])]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[IsString number]]></Description>
+      <Expression><![CDATA[query.Select(doc => Convert(doc.NumericField, Object).IsString())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE IS_STRING(root["NumericField"]) 
+FROM root]]></SqlQuery>
     </Output>
   </Result>
 </Results>
