@@ -406,6 +406,9 @@
       "type": "Microsoft.Portal/dashboards",
       "location": "[resourceGroup().location]",
       "apiVersion": "2015-08-01-preview",
+      "dependsOn": [
+                "[resourceId('Microsoft.Insights/components', parameters('applicationInsightsName'))]"
+            ],
       "tags": {
         "hidden-title": "[parameters('dashboardName')]"
       },
