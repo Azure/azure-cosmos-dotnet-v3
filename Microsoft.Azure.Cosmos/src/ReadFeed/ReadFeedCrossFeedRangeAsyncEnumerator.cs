@@ -45,8 +45,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
 
             CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
                 innerReadFeedPage.Page.Content,
-                Documents.ResourceType.Document,
-                cosmosSerializationOptions: null);
+                Documents.ResourceType.Document);
             ReadFeedPage page = new ReadFeedPage(
                 documents,
                 innerReadFeedPage.Page.RequestCharge,
