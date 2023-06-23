@@ -37,7 +37,7 @@ namespace CosmosBenchmark
             this.latencyInMsMetricNameGauge = this.meter.CreateObservableGauge(this.LatencyInMsMetricName,
                 () => new Measurement<double>(this.latencyInMs));
 
-            this.rpsNameGauge = this.meter.CreateObservableGauge(this.LatencyInMsMetricName,
+            this.rpsNameGauge = this.meter.CreateObservableGauge(this.RpsMetricName,
                 () => new Measurement<double>(this.rps));
         }
 
