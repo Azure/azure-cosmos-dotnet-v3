@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -164,17 +165,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateConsistencyLevelGateway()
         {
             DocumentClient client = TestCommon.CreateClient(true);
-            await ValidateCosistencyLevel(client);
+            await ValidateConsistencyLevel(client);
         }
 
         [TestMethod]
         public async Task ValidateConsistencyLevelRntbd()
         {
             DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp);
-            await ValidateCosistencyLevel(client);
+            await ValidateConsistencyLevel(client);
         }
 
-        private async Task ValidateCosistencyLevel(DocumentClient client)
+        private async Task ValidateConsistencyLevel(DocumentClient client)
         {
             DocumentCollection collection = TestCommon.CreateOrGetDocumentCollection(client);
 
@@ -203,17 +204,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Owner("brchon")]
         public void ValidateJsonSerializationFormatGateway()
         {
-            var client = TestCommon.CreateClient(true);
+            using var client = TestCommon.CreateClient(true);
             ValidateJsonSerializationFormat(client);
         }
 
         [TestMethod]
         public void ValidateJsonSerializationFormatRntbd()
         {
-            var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            using var client = TestCommon.CreateClient(false, Protocol.Tcp);
             ValidateJsonSerializationFormat(client);
         }
 
@@ -304,6 +304,184 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             response = QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
             Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
             Assert.IsTrue(response.ResponseBody.ReadByte() == HeadersValidationTests.BinarySerializationByteMarkValue);
+        }
+
+        [TestMethod]
+        public void ValidateSupportedSerializationFormatsGateway()
+        {
+            using var client = TestCommon.CreateClient(true);
+            this.ValidateSupportedSerializationFormats(client, true);
+        }
+
+        [TestMethod]
+        public void ValidateSupportedSerializationFormatsRntbd()
+        {
+            using var client = TestCommon.CreateClient(false, Protocol.Tcp);
+            this.ValidateSupportedSerializationFormats(client, false);
+        }
+
+        private void ValidateSupportedSerializationFormats(DocumentClient client, bool isHttps)
+        {
+            DocumentCollection collection = TestCommon.CreateOrGetDocumentCollection(client);
+            this.ValidateSupportedSerializationFormatsReadFeed(client, collection, isHttps);
+
+            List<SqlQuerySpec> sqlQueryList = new List<SqlQuerySpec>()
+            {
+                new SqlQuerySpec("SELECT * FROM c"),
+                new SqlQuerySpec("SELECT c.id FROM c ORDER BY c.partitionKey"),
+                new SqlQuerySpec("SELECT c.name FROM c GROUP BY c.name")
+            };
+
+            foreach(SqlQuerySpec sqlQuery in sqlQueryList)
+            {
+                this.ValidateSupportedSerializationFormatsQuery(client, collection, sqlQuery, isHttps);
+            }
+        }
+
+        private void SupportedSerializationFormatsNegativeCases(
+            DocumentClient client, 
+            DocumentCollection collection, 
+            string invalidValue,
+            bool isHttps,
+            SqlQuerySpec sqlQuerySpec = null)
+        {
+            INameValueCollection headers = new RequestNameValueCollection();
+            headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, invalidValue);
+
+            try
+            {
+                DocumentServiceResponse response;
+                if (sqlQuerySpec != null)
+                {
+                    response = this.QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
+                }
+                else
+                {
+                    headers.Set(HttpConstants.HttpHeaders.PartitionKey, "[\"test\"]");
+                    response = this.ReadDocumentFeedRequestSinglePartition(client, collection.ResourceId, headers);
+                }
+
+                if (isHttps)
+                {
+                    // Invalid value is treated as default JsonText if HTTPS
+                    Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+                    Assert.IsTrue(this.CheckSerializationFormat(response) == JsonSerializationFormat.Text);
+                }
+                else
+                {
+                    Assert.Fail("Should throw an exception");
+                }
+            }
+            catch (Exception ex)
+            {
+                DocumentClientException innerException = ex.InnerException as DocumentClientException;
+                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "invalid status code");
+            }
+        }
+
+        private void SupportedSerializationFormatsPositiveCases(
+            DocumentClient client,
+            DocumentCollection collection,
+            SupportedSerializationFormats expectedFormat,
+            string supportedSerializationFormats,
+            SqlQuerySpec sqlQuerySpec = null)
+        {
+            INameValueCollection headers = new RequestNameValueCollection();
+
+            headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, supportedSerializationFormats);
+            DocumentServiceResponse response;                   
+            if(sqlQuerySpec!=null)
+            {
+                response = this.QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
+            }
+            else
+            {
+                Assert.IsTrue(expectedFormat == SupportedSerializationFormats.JsonText, "ReadFeed response should be in Text");
+                response = this.ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
+            }
+
+            Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            
+            if(expectedFormat == SupportedSerializationFormats.JsonText)
+            {
+                Assert.IsTrue(this.CheckSerializationFormat(response) == JsonSerializationFormat.Text);
+            }
+            else
+            {
+                Assert.IsTrue(this.CheckSerializationFormat(response) == JsonSerializationFormat.Binary);
+            }
+        }
+
+        private void ValidateSupportedSerializationFormatsReadFeed(DocumentClient client, DocumentCollection collection, bool isHttps)
+        {
+            // Value not supported
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "Invalid value", isHttps);
+
+            // Supported values
+            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedFormat: SupportedSerializationFormats.JsonText, supportedSerializationFormats: "JSONText");
+            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedFormat: SupportedSerializationFormats.JsonText, supportedSerializationFormats: "COSMOSbinary");
+            this.SupportedSerializationFormatsPositiveCases(client, collection, expectedFormat: SupportedSerializationFormats.JsonText, supportedSerializationFormats: "JsonText, CosmosBinary");
+        }
+
+        private void ValidateSupportedSerializationFormatsQuery(DocumentClient client, DocumentCollection collection, SqlQuerySpec sqlQuerySpec, bool isHttps)
+        {
+            // Values not supported
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "Invalid value", isHttps, sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, ", ,", isHttps, sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, ",,", isHttps, sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "JsonText CosmosBinary", isHttps, sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, ",JsonText|CosmosBinary", isHttps, sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "Json Text", isHttps, sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "Json,Text", isHttps, sqlQuerySpec: sqlQuerySpec);
+            this.SupportedSerializationFormatsNegativeCases(client, collection, "JsonText, ", isHttps, sqlQuerySpec: sqlQuerySpec);
+
+            // Supported values
+            this.SupportedSerializationFormatsPositiveCases(client, collection,
+                expectedFormat: SupportedSerializationFormats.JsonText,
+                supportedSerializationFormats: "jsontext",
+                sqlQuerySpec: sqlQuerySpec);
+            /*
+            this.SupportedSerializationFormatsPositiveCases(client, collection,
+                expectedFormat: SupportedSerializationFormats.CosmosBinary,
+                supportedSerializationFormats: "COSMOSBINARY",
+                sqlQuerySpec: sqlQuerySpec);
+            */
+            this.SupportedSerializationFormatsPositiveCases(client, collection,
+                expectedFormat: SupportedSerializationFormats.JsonText,
+                supportedSerializationFormats: "JsonText, CosmosBinary",
+                sqlQuerySpec: sqlQuerySpec);
+            /*
+            this.SupportedSerializationFormatsPositiveCases(client, collection,
+                expectedFormat: SupportedSerializationFormats.CosmosBinary,
+                supportedSerializationFormats: "CosmosBinary, HybridRow",
+                sqlQuerySpec: sqlQuerySpec);
+            */
+            this.SupportedSerializationFormatsPositiveCases(client, collection,
+                expectedFormat: SupportedSerializationFormats.JsonText,
+                supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
+                sqlQuerySpec: sqlQuerySpec);
+            /*
+            this.SupportedSerializationFormatsPositiveCases(client, collection,
+                expectedFormat: SupportedSerializationFormats.CosmosBinary,
+                supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
+                sqlQuerySpec: sqlQuerySpec);
+            */
+            this.SupportedSerializationFormatsPositiveCases(client, collection,
+                expectedFormat: SupportedSerializationFormats.JsonText,
+                supportedSerializationFormats: "JsonText, CosmosBinary, HybridRow",
+                sqlQuerySpec: sqlQuerySpec);
+        }
+
+        private JsonSerializationFormat CheckSerializationFormat(DocumentServiceResponse response)
+        {
+            if(response.ResponseBody.ReadByte() < BinarySerializationByteMarkValue)
+            {
+                return JsonSerializationFormat.Text;
+            }
+            else
+            {
+                return JsonSerializationFormat.Binary;
+            }
         }
 
         [TestMethod]
