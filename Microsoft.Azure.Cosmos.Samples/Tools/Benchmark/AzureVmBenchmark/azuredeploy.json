@@ -155,13 +155,13 @@
                 "description": "Specifies Application Insights Account Name"
             }
         },
-        "dashboardName": {
-            "type": "string",
-            "defaultValue": "Cosmos Benchmark Statistics",
-            "metadata": {
+    "dashboardName": {
+      "type": "string",
+      "defaultValue": "Cosmos Benchmark Statistics",
+      "metadata": {
                 "description": "Specifies Application Insights Dashboard Name"
             }
-        }
+    }
     },
     "variables": {
         "vmName": "[concat(parameters('projectName'), '-vm')]",
@@ -401,183 +401,335 @@
                 "count": "[parameters('vmCount')]"
             }
         },
-        {
-            "name": "CosmosDBBenchmarkDashboard",
-            "type": "Microsoft.Portal/dashboards",
-            "location": "[resourceGroup().location]",
-            "apiVersion": "2015-08-01-preview",
-            "dependsOn": [
+    {
+      "name": "CosmosDBBenchmarkDashboard",
+      "type": "Microsoft.Portal/dashboards",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-08-01-preview",
+      "dependsOn": [
                 "[resourceId('Microsoft.Insights/components', parameters('applicationInsightsName'))]"
             ],
-            "tags": {
-                "hidden-title": "[parameters('dashboardName')]"
-            },
+      "tags": {
+        "hidden-title": "[parameters('dashboardName')]"
+      },
 
-            "properties": {
-                "lenses": {
-                    "0": {
-                        "order": 0,
-                        "parts": {
-                            "0": {
-                                "position": {
-                                    "x": 0,
-                                    "y": 0,
-                                    "colSpan": 11,
-                                    "rowSpan": 5
-                                },
-                                "metadata": {
-                                    "inputs": [
-                                        {
-                                            "name": "resourceTypeMode",
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "ComponentId",
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "Scope",
-                                            "value": {
-                                                "resourceIds": [
-                                                    "[variables('appInsightsResourceIds')]"
-                                                ]
-                                            },
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "PartId",
-                                            "value": "104528fc-0216-49c6-bf70-fffe9d37f93d",
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "Version",
-                                            "value": "2.0",
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "TimeRange",
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "DashboardId",
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "DraftRequestParameters",
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "Query",
-                                            "value": "customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 50),\n    percentile(value, 75),\n    percentile(value, 90),\n    percentile(value, 95),\n    percentile(value, 99),\n    percentile(value, 99.9),\n    percentile(value, 99.99)\n    by ts = bin(timestamp, 5s)\n| render timechart \n\n",
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "ControlType",
-                                            "value": "FrameControlChart",
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "SpecificChart",
-                                            "value": "Line",
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "PartTitle",
-                                            "value": "Analytics",
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "PartSubTitle",
-                                            "value": "CosmosDBBenchmarkTestAppInsights",
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "Dimensions",
-                                            "value": {
-                                                "xAxis": {
-                                                    "name": "ts",
-                                                    "type": "datetime"
-                                                },
-                                                "yAxis": [
-                                                    {
-                                                        "name": "percentile_value_50",
-                                                        "type": "real"
-                                                    },
-                                                    {
-                                                        "name": "percentile_value_75",
-                                                        "type": "real"
-                                                    },
-                                                    {
-                                                        "name": "percentile_value_90",
-                                                        "type": "real"
-                                                    },
-                                                    {
-                                                        "name": "percentile_value_95",
-                                                        "type": "real"
-                                                    }
-                                                ],
-                                                "splitBy": [],
-                                                "aggregation": "Sum"
-                                            },
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "LegendOptions",
-                                            "value": {
-                                                "isEnabled": true,
-                                                "position": "Bottom"
-                                            },
-                                            "isOptional": true
-                                        },
-                                        {
-                                            "name": "IsQueryContainTimeRange",
-                                            "value": true,
-                                            "isOptional": true
-                                        }
-                                    ],
-                                    "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
-                                    "settings": {}
-                                }
-                            }
-                        }
-                    }
+      "properties": {
+        "lenses": {
+          "0": {
+            "order": 0,
+            "parts": {
+              "0": {
+                "position": {
+                  "x": 0,
+                  "y": 0,
+                  "colSpan": 10,
+                  "rowSpan": 6
                 },
                 "metadata": {
-                    "model": {
-                        "timeRange": {
-                            "value": {
-                                "relative": {
-                                    "duration": 24,
-                                    "timeUnit": 1
-                                }
-                            },
-                            "type": "MsPortalFx.Composition.Configuration.ValueTypes.TimeRange"
+                  "inputs": [
+                    {
+                      "name": "resourceTypeMode",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "ComponentId",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Scope",
+                      "value": {
+                        "resourceIds": [
+                          "[variables('appInsightsResourceIds')]"
+                        ]
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartId",
+                      "value": "104528fc-0216-49c6-bf70-fffe9d37f93d",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Version",
+                      "value": "2.0",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "TimeRange",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "DashboardId",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "DraftRequestParameters",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Query",
+                      "value": "customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 50),\n    percentile(value, 75),\n    percentile(value, 90),\n    percentile(value, 95)\n    by ts = bin(timestamp, 5s)\n| render timechart \n\n",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "ControlType",
+                      "value": "FrameControlChart",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "SpecificChart",
+                      "value": "Line",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartTitle",
+                      "value": "Analytics",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartSubTitle",
+                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Dimensions",
+                      "value": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
                         },
-                        "filterLocale": {
-                            "value": "en-us"
-                        },
-                        "filters": {
-                            "value": {
-                                "MsPortalFx_TimeRange": {
-                                    "model": {
-                                        "format": "utc",
-                                        "granularity": "auto",
-                                        "relative": "24h"
-                                    },
-                                    "displayCache": {
-                                        "name": "UTC Time",
-                                        "value": "Past 24 hours"
-                                    },
-                                    "filteredPartIds": [
-                                        "StartboardPart-LogsDashboardPart-4f9d44ab-efbe-4310-8809-63ae942a3091"
-                                    ]
-                                }
-                            }
-                        }
+                        "yAxis": [
+                          {
+                            "name": "percentile_value_50",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_75",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_90",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_94",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "LegendOptions",
+                      "value": {
+                        "isEnabled": true,
+                        "position": "Bottom"
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "IsQueryContainTimeRange",
+                      "value": true,
+                      "isOptional": true
                     }
+                  ],
+                  "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+                  "settings": {
+                    "content": {
+                      "Dimensions": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
+                        },
+                        "yAxis": [
+                          {
+                            "name": "percentile_value_50",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_75",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_90",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_95",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      },
+                      "IsQueryContainTimeRange": true
+                    }
+                  }
                 }
+              },
+              "1": {
+                "position": {
+                  "x": 10,
+                  "y": 0,
+                  "colSpan": 10,
+                  "rowSpan": 6
+                },
+                "metadata": {
+                  "inputs": [
+                    {
+                      "name": "resourceTypeMode",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "ComponentId",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Scope",
+                      "value": {
+                        "resourceIds": [
+                          "[variables('appInsightsResourceIds')]"
+                        ]
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartId",
+                      "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Version",
+                      "value": "2.0",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "TimeRange",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "DashboardId",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "DraftRequestParameters",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Query",
+                      "value": "customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 95),\n    percentile(value, 99),\n    percentile(value, 99.9),\n    percentile(value, 99.99)\n    by ts = bin(timestamp, 5s)\n| render timechart \n\n",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "ControlType",
+                      "value": "FrameControlChart",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "SpecificChart",
+                      "value": "Line",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartTitle",
+                      "value": "Analytics",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartSubTitle",
+                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Dimensions",
+                      "value": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
+                        },
+                        "yAxis": [
+                          {
+                            "name": "percentile_value_95",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_99",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_99_9",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_99_99",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "LegendOptions",
+                      "value": {
+                        "isEnabled": true,
+                        "position": "Bottom"
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "IsQueryContainTimeRange",
+                      "value": true,
+                      "isOptional": true
+                    }
+                  ],
+                  "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+                  "settings": {}
+                }
+              }
             }
+          }
+        },
+        "metadata": {
+          "model": {
+            "timeRange": {
+              "value": {
+                "relative": {
+                  "duration": 24,
+                  "timeUnit": 1
+                }
+              },
+              "type": "MsPortalFx.Composition.Configuration.ValueTypes.TimeRange"
+            },
+            "filterLocale": {
+              "value": "en-us"
+            },
+            "filters": {
+              "value": {
+                "MsPortalFx_TimeRange": {
+                  "model": {
+                    "format": "utc",
+                    "granularity": "auto",
+                    "relative": "24h"
+                  },
+                  "displayCache": {
+                    "name": "UTC Time",
+                    "value": "Past 24 hours"
+                  },
+                  "filteredPartIds": [
+                    "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700a",
+                    "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700c"
+                  ]
+                }
+              }
+            }
+          }
         }
+      }
+    }
     ],
     "outputs": {
         "results": {
