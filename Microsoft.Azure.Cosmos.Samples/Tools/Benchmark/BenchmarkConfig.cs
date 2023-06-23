@@ -142,18 +142,6 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Logging context name. The default value is \"CosmosDBBenchmarkLoggingContext\"")]
         public string LoggingContextIdentifier { get; set; } = "CosmosDBBenchmarkLoggingContext";
 
-        [Option(Required = false, HelpText = "Metrics reporting interval in seconds")]
-        public int MetricsReportingIntervalInSec { get; set; } = 5;
-
-        [Option(Required = false, HelpText = "Application Insights instrumentation key")]
-        public string AppInsightsInstrumentationKey { get; set; }
-
-        [Option(Required = false, HelpText = "The reservoir sample size.")]
-        public int ReservoirSampleSize { get; set; } = 1028;
-
-        [Option(Required = false, HelpText = "Logging context name. The default value is \"CosmosDBBenchmarkLoggingContext\"")]
-        public string LoggingContextIdentifier { get; set; } = "CosmosDBBenchmarkLoggingContext";
-
         internal int GetTaskCount(int containerThroughput)
         {
             int taskCount = this.DegreeOfParallelism;

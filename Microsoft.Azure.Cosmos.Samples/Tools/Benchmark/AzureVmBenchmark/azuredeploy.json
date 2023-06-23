@@ -419,8 +419,8 @@
                 "position": {
                   "x": 0,
                   "y": 0,
-                  "colSpan": 11,
-                  "rowSpan": 5
+                  "colSpan": 10,
+                  "rowSpan": 6
                 },
                 "metadata": {
                   "inputs": [
@@ -465,7 +465,7 @@
                     },
                     {
                       "name": "Query",
-                      "value": "customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 50),\n    percentile(value, 75),\n    percentile(value, 90),\n    percentile(value, 95),\n    percentile(value, 99),\n    percentile(value, 99.9),\n    percentile(value, 99.99)\n    by ts = bin(timestamp, 5s)\n| render timechart \n\n",
+                      "value": "customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 50),\n    percentile(value, 75),\n    percentile(value, 90),\n    percentile(value, 95)\n    by ts = bin(timestamp, 5s)\n| render timechart \n\n",
                       "isOptional": true
                     },
                     {
@@ -509,7 +509,158 @@
                             "type": "real"
                           },
                           {
+                            "name": "percentile_value_94",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "LegendOptions",
+                      "value": {
+                        "isEnabled": true,
+                        "position": "Bottom"
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "IsQueryContainTimeRange",
+                      "value": true,
+                      "isOptional": true
+                    }
+                  ],
+                  "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+                  "settings": {
+                    "content": {
+                      "Dimensions": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
+                        },
+                        "yAxis": [
+                          {
+                            "name": "percentile_value_50",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_75",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_90",
+                            "type": "real"
+                          },
+                          {
                             "name": "percentile_value_95",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      },
+                      "IsQueryContainTimeRange": true
+                    }
+                  }
+                }
+              },
+              "1": {
+                "position": {
+                  "x": 10,
+                  "y": 0,
+                  "colSpan": 10,
+                  "rowSpan": 6
+                },
+                "metadata": {
+                  "inputs": [
+                    {
+                      "name": "resourceTypeMode",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "ComponentId",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Scope",
+                      "value": {
+                        "resourceIds": [
+                          "[variables('appInsightsResourceIds')]"
+                        ]
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartId",
+                      "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Version",
+                      "value": "2.0",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "TimeRange",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "DashboardId",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "DraftRequestParameters",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Query",
+                      "value": "customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 95),\n    percentile(value, 99),\n    percentile(value, 99.9),\n    percentile(value, 99.99)\n    by ts = bin(timestamp, 5s)\n| render timechart \n\n",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "ControlType",
+                      "value": "FrameControlChart",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "SpecificChart",
+                      "value": "Line",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartTitle",
+                      "value": "Analytics",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartSubTitle",
+                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Dimensions",
+                      "value": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
+                        },
+                        "yAxis": [
+                          {
+                            "name": "percentile_value_95",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_99",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_99_9",
+                            "type": "real"
+                          },
+                          {
+                            "name": "percentile_value_99_99",
                             "type": "real"
                           }
                         ],
@@ -566,7 +717,8 @@
                     "value": "Past 24 hours"
                   },
                   "filteredPartIds": [
-                    "StartboardPart-LogsDashboardPart-4f9d44ab-efbe-4310-8809-63ae942a3091"
+                    "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700a",
+                    "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700c"
                   ]
                 }
               }
