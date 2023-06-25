@@ -94,8 +94,11 @@ namespace CosmosBenchmark
             MetricCollectionWindow metricCollectionWindow = GetCurrentMetricCollectionWindow(config);
 
             // Reset metricCollectionWindow and flush.
-            meterProvider.ForceFlush();
-            metricCollectionWindow.Reset(config);
+            if (!metricCollectionWindow.IsValid)
+            {
+                meterProvider.ForceFlush();
+                metricCollectionWindow.Reset(config);
+            }
 
             Type benchmarkOperationType = benchmarkOperation.GetType();
             if (typeof(InsertBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
