@@ -1,63 +1,27 @@
-﻿namespace CosmosBenchmark
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace CosmosBenchmark
 {
     using System;
-    using System.Diagnostics.Metrics;
 
     internal class MetricCollectionWindow
     {
-        private InsertOperationMetricsCollector insertOperationMetricsCollector;
-        private readonly object insertOperationMetricsCollectorLock = new object();
+        public DateTime Started { get; private set; }
+        public DateTime ValidTill { get; private set; }
 
-        private QueryOperationMetricsCollector queryOperationMetricsCollector;
-        private readonly object queryOperationMetricsCollectorLock = new object();
-
-        private ReadOperationMetricsCollector readOperationMetricsCollector;
-        private readonly object readOperationMetricsCollectorLock = new object();
-
-        public DateTime DateTimeCreated { get; init; }
-
-        public MetricCollectionWindow()
+        public MetricCollectionWindow(BenchmarkConfig config)
         {
-            this.DateTimeCreated = DateTime.Now;
+            this.Reset(config);
         }
 
-        public InsertOperationMetricsCollector GetInsertOperationMetricsCollector(Meter meter)
+        public bool IsValid => DateTime.Now > this.ValidTill;
+
+        internal void Reset(BenchmarkConfig config)
         {
-            if (this.insertOperationMetricsCollector is null)
-            {
-                lock (this.insertOperationMetricsCollectorLock)
-                {
-                    this.insertOperationMetricsCollector ??= new InsertOperationMetricsCollector(meter);
-                }
-            }
-
-            return this.insertOperationMetricsCollector;
-        }
-
-        public QueryOperationMetricsCollector GetQueryOperationMetricsCollector(Meter meter)
-        {
-            if (this.queryOperationMetricsCollector is null)
-            {
-                lock (this.queryOperationMetricsCollectorLock)
-                {
-                    this.queryOperationMetricsCollector ??= new QueryOperationMetricsCollector(meter);
-                }
-            }
-
-            return this.queryOperationMetricsCollector;
-        }
-
-        public ReadOperationMetricsCollector GetReadOperationMetricsCollector(Meter meter)
-        {
-            if (this.readOperationMetricsCollector is null)
-            {
-                lock (this.readOperationMetricsCollectorLock)
-                {
-                    this.readOperationMetricsCollector ??= new ReadOperationMetricsCollector(meter);
-                }
-            }
-
-            return this.readOperationMetricsCollector;
+            this.Started = DateTime.Now;
+            this.ValidTill = this.Started.AddSeconds(config.MetricsReportingIntervalInSec);
         }
     }
 }
