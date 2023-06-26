@@ -1286,6 +1286,17 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken);
 
         /// <summary>
+        /// Delegate to receive all changes and deletes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// </summary>
+        /// <typeparam name="T">The document type</typeparam>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>a <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        public delegate Task AllVersionsAndDeleteChangesHandler<T>(
+            IReadOnlyCollection<ChangeFeedProcessorItem<T>> changes,
+            CancellationToken cancellationToken);
+
+        /// <summary>
         /// Delegate to receive the estimation of pending changes to be read by the associated <see cref="ChangeFeedProcessor"/> instance.
         /// </summary>
         /// <param name="estimatedPendingChanges">An estimation in number of transactions.</param>
@@ -1308,6 +1319,17 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with all versions and deletes.
+        /// </summary>
+        /// <typeparam name="T">Document type</typeparam>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesHandler">Delegate to receive all changes and deletes</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            AllVersionsAndDeleteChangesHandler<T> onChangesHandler);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.

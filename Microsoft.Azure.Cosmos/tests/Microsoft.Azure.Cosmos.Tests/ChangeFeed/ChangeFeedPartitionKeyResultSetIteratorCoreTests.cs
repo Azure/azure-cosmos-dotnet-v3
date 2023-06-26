@@ -78,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
+                mode: ChangeFeedMode.Incremental,
                 continuationToken: null,
                 maxItemCount: itemCount,
                 container: containerMock.Object,
@@ -159,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
+                mode: ChangeFeedMode.AllVersionsAndDeletes,
                 continuationToken: null,
                 maxItemCount: itemCount,
                 container: containerMock.Object,
@@ -226,6 +228,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
+                mode: ChangeFeedMode.Incremental,
                 continuationToken: null,
                 maxItemCount: itemCount,
                 container: containerMock.Object,
@@ -310,6 +313,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
+                mode: ChangeFeedMode.Incremental,
                 continuationToken: null,
                 maxItemCount: itemCount,
                 container: containerMock.Object,

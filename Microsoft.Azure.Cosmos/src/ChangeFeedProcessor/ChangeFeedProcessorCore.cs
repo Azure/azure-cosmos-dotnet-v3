@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     internal sealed class ChangeFeedProcessorCore : ChangeFeedProcessor
     {
         private readonly ChangeFeedObserverFactory observerFactory;
+        private readonly ChangeFeedMode mode;
         private ContainerInternal leaseContainer;
         private string instanceName;
         private ContainerInternal monitoredContainer;
@@ -27,9 +28,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager;
         private bool initialized = false;
 
-        public ChangeFeedProcessorCore(ChangeFeedObserverFactory observerFactory)
+        public ChangeFeedProcessorCore(ChangeFeedObserverFactory observerFactory, ChangeFeedMode mode)
         {
             this.observerFactory = observerFactory ?? throw new ArgumentNullException(nameof(observerFactory));
+            this.mode = mode;
         }
 
         public void ApplyBuildConfiguration(
@@ -121,7 +123,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 this.documentServiceLeaseStoreManager.LeaseManager, 
                 partitionSuperviserFactory, 
                 synchronizer,
-                this.changeFeedProcessorOptions.HealthMonitor);
+                this.changeFeedProcessorOptions.HealthMonitor,
+                this.mode);
 
             PartitionLoadBalancerCore partitionLoadBalancer = new PartitionLoadBalancerCore(
                 partitionController,

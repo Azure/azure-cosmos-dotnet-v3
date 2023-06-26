@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             this.partitionProcessorFactory = partitionProcessorFactory ?? throw new ArgumentNullException(nameof(partitionProcessorFactory));
         }
 
-        public override PartitionSupervisor Create(DocumentServiceLease lease)
+        public override PartitionSupervisor Create(DocumentServiceLease lease, ChangeFeedMode mode)
         {
             if (lease == null)
             {
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             }
 
             ChangeFeedObserver changeFeedObserver = this.observerFactory.CreateObserver();
-            FeedProcessor processor = this.partitionProcessorFactory.Create(lease, changeFeedObserver);
+            FeedProcessor processor = this.partitionProcessorFactory.Create(lease, changeFeedObserver, mode);
             LeaseRenewerCore renewer = new LeaseRenewerCore(lease, this.leaseManager, this.changeFeedLeaseOptions.LeaseRenewInterval);
 
             return new PartitionSupervisorCore(lease, changeFeedObserver, processor, renewer);

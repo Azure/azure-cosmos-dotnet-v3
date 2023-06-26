@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 return Task.CompletedTask;
             }
 
-            ChangeFeedObserverFactoryCore<dynamic> changeFeedObserverFactoryCore = new ChangeFeedObserverFactoryCore<dynamic>(changesHandler, this.cosmosSerializerCore);
+            ChangeFeedObserverFactoryCore<dynamic> changeFeedObserverFactoryCore = new ChangeFeedObserverFactoryCore<dynamic>((Cosmos.Container.ChangesHandler<dynamic>)changesHandler, this.cosmosSerializerCore);
 
             ChangeFeedObserver changeFeedObserver = changeFeedObserverFactoryCore.CreateObserver();
 

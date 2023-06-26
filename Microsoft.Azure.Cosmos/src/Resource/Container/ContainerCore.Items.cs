@@ -577,7 +577,8 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
                 new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
                 withManualCheckpointing: false);
-            return this.GetChangeFeedProcessorBuilderPrivate(processorName, observerFactory);
+            return this.GetChangeFeedProcessorBuilderPrivate(processorName,
+                observerFactory, ChangeFeedMode.Incremental);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
@@ -597,7 +598,29 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
                 new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
                 withManualCheckpointing: false);
-            return this.GetChangeFeedProcessorBuilderPrivate(processorName, observerFactory);
+            return this.GetChangeFeedProcessorBuilderPrivate(processorName,
+                observerFactory, ChangeFeedMode.Incremental);
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            AllVersionsAndDeleteChangesHandler<T> onChangesDelegate)
+        {
+            if (processorName == null)
+            {
+                throw new ArgumentNullException(nameof(processorName));
+            }
+
+            if (onChangesDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(onChangesDelegate));
+            }
+
+            ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
+                new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
+                withManualCheckpointing: false);
+            return this.GetChangeFeedProcessorBuilderPrivate(processorName,
+                observerFactory, ChangeFeedMode.AllVersionsAndDeletes);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
@@ -617,7 +640,8 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
                 new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
                 withManualCheckpointing: true);
-            return this.GetChangeFeedProcessorBuilderPrivate(processorName, observerFactory);
+            return this.GetChangeFeedProcessorBuilderPrivate(processorName,
+                observerFactory, ChangeFeedMode.Incremental);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
@@ -637,7 +661,8 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
                 new ChangeFeedObserverFactoryCore(onChangesDelegate),
                 withManualCheckpointing: false);
-            return this.GetChangeFeedProcessorBuilderPrivate(processorName, observerFactory);
+            return this.GetChangeFeedProcessorBuilderPrivate(processorName,
+                observerFactory, ChangeFeedMode.Incremental);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
@@ -657,7 +682,9 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
                 new ChangeFeedObserverFactoryCore(onChangesDelegate),
                 withManualCheckpointing: true);
-            return this.GetChangeFeedProcessorBuilderPrivate(processorName, observerFactory);
+            return this.GetChangeFeedProcessorBuilderPrivate(processorName,
+                observerFactory,
+                ChangeFeedMode.Incremental);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
@@ -1332,9 +1359,10 @@ namespace Microsoft.Azure.Cosmos
 
         private ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderPrivate(
             string processorName,
-            ChangeFeedObserverFactory observerFactory)
+            ChangeFeedObserverFactory observerFactory,
+            ChangeFeedMode mode)
         {
-            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
+            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory, mode);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
                 container: this,

@@ -138,7 +138,7 @@
             catch (CosmosException ex)
             {
                 Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
-                throw ex;
+                throw;
             }
         }
 
@@ -156,7 +156,7 @@
             catch (CosmosException ex)
             {
                 Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
-                throw ex;
+                throw;
             }
         }
 

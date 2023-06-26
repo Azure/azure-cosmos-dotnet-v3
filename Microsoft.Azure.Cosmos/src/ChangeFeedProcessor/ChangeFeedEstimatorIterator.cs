@@ -54,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                   changeFeedEstimatorRequestOptions,
                   (DocumentServiceLease lease, string continuationToken, bool startFromBeginning) => ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                           lease: lease,
+                          mode: ChangeFeedMode.LatestVersion,
                           continuationToken: continuationToken,
                           maxItemCount: 1,
                           container: monitoredContainer,
