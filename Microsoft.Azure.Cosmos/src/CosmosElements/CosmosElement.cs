@@ -11,10 +11,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
-    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Documents;
 
     [Newtonsoft.Json.JsonConverter(typeof(CosmosElementJsonConverter))]
 #if INTERNAL
