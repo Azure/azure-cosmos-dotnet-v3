@@ -63,17 +63,23 @@ namespace Microsoft.Azure.Cosmos
                 trace,
                 cancellationToken);
 
-            string effectivePartitionKeyString = null;
+            List<Range<string>> effectivePartitionKeyRange = null;
             if (partitionKey != null)
             {
                 // Dis-ambiguate the NonePK if used 
                 PartitionKeyInternal partitionKeyInternal = partitionKey.Value.IsNone ? containerProperties.GetNoneValue() : partitionKey.Value.InternalKey;
-                effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
+                effectivePartitionKeyRange.Add(PartitionKeyInternal.GetEffectivePartitionKeyRange(
+                        containerProperties.PartitionKey,
+                        new Range<PartitionKeyInternal>(
+                            min: partitionKeyInternal,
+                            max: partitionKeyInternal,
+                            isMinInclusive: true,
+                            isMaxInclusive: true)));
             }
 
             return new ContainerQueryProperties(
                 containerProperties.ResourceId,
-                effectivePartitionKeyString,
+                effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
                 containerProperties.GeospatialConfig.GeospatialType);
         }

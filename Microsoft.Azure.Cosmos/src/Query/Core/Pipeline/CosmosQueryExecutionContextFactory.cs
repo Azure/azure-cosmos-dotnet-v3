@@ -213,12 +213,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                                 // Only thing that matters is that we target the correct range.
                                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                                List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                                List<PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
                                     cosmosQueryContext.ResourceLink,
                                     containerQueryProperties.ResourceId,
-                                    containerQueryProperties.EffectivePartitionKeyString,
+                                    containerQueryProperties.EffectivePartitionKeyRanges,
                                     forceRefresh: false,
-                                    createQueryPipelineTrace);
+                                    trace);
 
                                 return CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
                                     documentContainer,
@@ -637,12 +637,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace)
         {
             List<Documents.PartitionKeyRange> targetRanges;
-            if (containerQueryProperties.EffectivePartitionKeyString != null)
+            if (containerQueryProperties.EffectivePartitionKeyRanges != null)
             {
-                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     containerQueryProperties.ResourceId,
-                    containerQueryProperties.EffectivePartitionKeyString,
+                    containerQueryProperties.EffectivePartitionKeyRanges,
                     forceRefresh: false,
                     trace);
             }

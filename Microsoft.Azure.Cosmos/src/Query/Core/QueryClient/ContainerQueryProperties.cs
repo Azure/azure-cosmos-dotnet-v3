@@ -4,24 +4,26 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 {
+    using System.Collections.Generic;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     internal readonly struct ContainerQueryProperties
     {
         public ContainerQueryProperties(
             string resourceId,
-            string effectivePartitionKeyString,
+            List<Range<string>> effectivePartitionKeyRanges,
             PartitionKeyDefinition partitionKeyDefinition,
             Cosmos.GeospatialType geospatialType)
         {
             this.ResourceId = resourceId;
-            this.EffectivePartitionKeyString = effectivePartitionKeyString;
+            this.EffectivePartitionKeyRanges = effectivePartitionKeyRanges;
             this.PartitionKeyDefinition = partitionKeyDefinition;
             this.GeospatialType = geospatialType;
         }
 
         public string ResourceId { get; }
-        public string EffectivePartitionKeyString { get; }
+        public List<Range<string>> EffectivePartitionKeyRanges { get; }
         public PartitionKeyDefinition PartitionKeyDefinition { get; }
         public Cosmos.GeospatialType GeospatialType { get; }
     }
