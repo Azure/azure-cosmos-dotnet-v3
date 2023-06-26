@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return;
                 }
 
-                Assert.IsFalse(true, "Should never reach till here, hence ensuring that an exception is always recieved");
+                Assert.Fail("Should never reach till here, hence ensuring that an exception is always recieved");
             }
         }
 

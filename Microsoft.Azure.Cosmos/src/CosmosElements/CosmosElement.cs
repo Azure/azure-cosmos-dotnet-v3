@@ -190,29 +190,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public static CosmosElement Parse(string json)
         {
             TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(json);
-            try
-            {
-                tryParse.ThrowIfFailed();
-            }
-            catch (Exception exception) when (exception.InnerException is JsonParseException)
-            {
-                MalformedContinuationTokenException malformedContinuationTokenException = new MalformedContinuationTokenException(exception.Message);
-                throw CosmosExceptionFactory.CreateBadRequestException(
-                        message: $"Malformed Continuation Token: {json}.",
-                        headers: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
-                            new Headers(),
-                            default,
-                            default,
-                            (int)SubStatusCodes.MalformedContinuationToken,
-                            default),
-                        stackTrace: malformedContinuationTokenException.StackTrace,
-                        innerException: malformedContinuationTokenException,
-                        trace: null);
-            }
-            catch (Exception exception)
-            {
-                throw exception;
-            }
+            tryParse.ThrowIfFailed();
 
             return tryParse.Result;
         }
