@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -150,6 +151,35 @@ namespace Microsoft.Azure.Cosmos.Linq
                     base.WriteJson(writer, value, serializer);
                 }
             }
+        }
+
+        [TestMethod]
+        public void TestNewtonsoftExtensionDataQuery()
+        {
+            Expression<Func<DocumentWithExtensionData, bool>> expr = a => (string)a.NewtonsoftExtensionData["foo"] == "bar";
+            string sql = SqlTranslator.TranslateExpression(expr.Body);
+
+            Assert.AreEqual("(a[\"foo\"] = \"bar\")", sql);
+        }
+
+        [TestMethod]
+        public void TestSystemTextJsonExtensionDataQuery()
+        {
+            Expression<Func<DocumentWithExtensionData, bool>> expr = a => ((object)a.NetExtensionData["foo"]) == "bar";
+            string sql = SqlTranslator.TranslateExpression(expr.Body);
+
+            // TODO: This is a limitation in the translator. It should be able to handle STJ extension data, if a custom
+            // JSON serializer is specified.
+            Assert.AreEqual("(a[\"NetExtensionData\"][\"foo\"] = \"bar\")", sql);
+        }
+
+        class DocumentWithExtensionData
+        {
+            [Newtonsoft.Json.JsonExtensionData(ReadData = true, WriteData = true)]
+            public Dictionary<string, object> NewtonsoftExtensionData { get; set; }
+
+            [System.Text.Json.Serialization.JsonExtensionData()]
+            public Dictionary<string, System.Text.Json.JsonElement> NetExtensionData { get; set; }
         }
 
         /// <remarks>
