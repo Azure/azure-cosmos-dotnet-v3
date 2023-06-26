@@ -775,24 +775,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
                 if (inputParameters.PartitionKey.HasValue)
                 {
-                    Documents.Routing.PartitionKeyInternal partitionKeyInternal = inputParameters.PartitionKey.Value.IsNone 
-                        ? GetNoneValue(partitionKeyDefinition) 
-                        : inputParameters.PartitionKey.Value.InternalKey;
-
                     Debug.Assert(partitionKeyDefinition != null, "CosmosQueryExecutionContextFactory Assert!", "PartitionKeyDefinition cannot be null if partitionKey is defined");
                     targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
                         cosmosQueryContext.ResourceLink,
                         containerQueryProperties.ResourceId,
-                        new List<Documents.Routing.Range<string>> 
-                        {
-                            Documents.Routing.PartitionKeyInternal.GetEffectivePartitionKeyRange(
-                                containerQueryProperties.PartitionKeyDefinition,
-                                new Documents.Routing.Range<Documents.Routing.PartitionKeyInternal>(
-                                    min: partitionKeyInternal,
-                                    max: partitionKeyInternal,
-                                    isMinInclusive: true,
-                                    isMaxInclusive: true))
-                        },
+                        containerQueryProperties.EffectivePartitionKeyRanges,
                         forceRefresh: false,
                         trace);
                 }
