@@ -347,6 +347,23 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
+        /// Gets or sets the prioritize healthy replicas flag.
+        /// Prioritizing healthy replicas helps the cosmos client to become more
+        /// resilient to connection timeouts, by choosing a healthy replica over an
+        /// unhealthy one. The default value for this parameter is false.
+        /// </summary>
+        /// <remarks>
+        /// <para>This is optimal for workloads where latency spikes are critical during upgrades.</para>
+        /// </remarks>
+        /// <seealso cref="CosmosClientBuilder.WithPrioritizeHealthyReplicas(bool)"/>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool PrioritizeHealthyReplicas { get; set; }
+
+        /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
         /// </summary>
         /// <value>

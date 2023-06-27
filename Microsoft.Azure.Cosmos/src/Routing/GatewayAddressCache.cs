@@ -66,7 +66,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             CosmosHttpClient httpClient,
             IOpenConnectionsHandler openConnectionsHandler,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
-            bool enableTcpConnectionEndpointRediscovery = false)
+            bool enableTcpConnectionEndpointRediscovery = false,
+            bool replicaAddressValidationEnabled = false)
         {
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
@@ -90,9 +91,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GatewayAddressCache.ProtocolString(this.protocol));
 
             this.openConnectionsHandler = openConnectionsHandler;
-            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariable<bool>(
-                name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
-                defaultValue: false);
+            this.isReplicaAddressValidationEnabled = replicaAddressValidationEnabled;
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
