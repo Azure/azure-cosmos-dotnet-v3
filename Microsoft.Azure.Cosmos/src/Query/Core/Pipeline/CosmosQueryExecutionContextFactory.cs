@@ -798,7 +798,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             return null;
-        }      
+        }
 
         public sealed class InputParameters
         {
