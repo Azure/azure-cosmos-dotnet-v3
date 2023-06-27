@@ -17,6 +17,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.0.0-beta.12" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.16.0" />
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.21.0" />
@@ -24,6 +26,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.5.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
