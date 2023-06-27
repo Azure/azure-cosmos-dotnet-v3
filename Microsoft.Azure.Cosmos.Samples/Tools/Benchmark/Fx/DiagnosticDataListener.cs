@@ -84,11 +84,11 @@ namespace CosmosBenchmark.Fx
             });
         }
 
-        private void CreateFileIfNotExist(string FileName)
+        private void CreateFileIfNotExist(string fileName)
         {
-            if (!File.Exists(FileName))
+            if (!File.Exists(fileName))
             {
-                File.Create(FileName).Close();
+                File.Create(fileName).Close();
             }
         }
 
