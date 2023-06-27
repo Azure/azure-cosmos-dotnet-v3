@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -38,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly CosmosHttpClient httpClient;
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
-        private readonly bool isReplicaAddressValidationEnabled;
+        private readonly bool replicaAddressValidationEnabled;
         private IOpenConnectionsHandler openConnectionsHandler;
 
         public GlobalAddressResolver(
@@ -66,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 ? GlobalAddressResolver.MaxBackupReadRegions : 0;
 
             this.enableTcpConnectionEndpointRediscovery = connectionPolicy.EnableTcpConnectionEndpointRediscovery;
+            this.replicaAddressValidationEnabled = connectionPolicy.EnableAdvancedReplicaSelectionForTcp;
 
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled();
 
@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.httpClient,
                         this.openConnectionsHandler,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
-                        replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled);
+                        replicaAddressValidationEnabled: this.replicaAddressValidationEnabled);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);

@@ -233,7 +233,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
-            this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled();
         }
 
         /// <summary>
@@ -6703,7 +6702,7 @@ namespace Microsoft.Azure.Cosmos
                 !this.enableRntbdChannel,
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
                 true,
-                enableReplicaValidation: this.isReplicaAddressValidationEnabled);
+                enableReplicaValidation: this.ConnectionPolicy.EnableAdvancedReplicaSelectionForTcp);
 
             if (subscribeRntbdStatus)
             {

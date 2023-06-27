@@ -347,6 +347,23 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
+        /// Gets or sets the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection
+        /// status, and based on status, it prioritizes the replicas which show healthy stable connections, so that the requests can be sent
+        /// confidently to the particular replica. This helps the cosmos client to become more resilient and effective to any connectivity issues.
+        /// The default value for this parameter is 'false'.
+        /// </summary>
+        /// <remarks>
+        /// <para>This is optimal for latency-sensitive workloads. Does not apply if <see cref="ConnectionMode.Gateway"/> is used.</para>
+        /// </remarks>
+        /// <seealso cref="CosmosClientBuilder.WithAdvancedReplicaSelectionEnabledForTcp()"/>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool EnableAdvancedReplicaSelectionForTcp { get; set; }
+
+        /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
         /// </summary>
         /// <value>
@@ -758,6 +775,7 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
+                EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
                 HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };

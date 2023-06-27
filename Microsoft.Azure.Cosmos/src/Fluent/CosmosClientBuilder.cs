@@ -622,6 +622,24 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Enables the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection status,
+        /// and based on status, it prioritizes the replicas which are connected to the backend, so that the requests can be sent
+        /// confidently to the particular replica. This helps the cosmos client to become more resilient and effictive to any connection
+        /// timeouts. The default value for this parameter is false.
+        /// </summary>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithAdvancedReplicaSelectionEnabledForTcp()
+        {
+            this.clientOptions.EnableAdvancedReplicaSelectionForTcp = true;
+            return this;
+        }
+
+        /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
         internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)
