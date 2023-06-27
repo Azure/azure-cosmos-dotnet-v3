@@ -8,6 +8,7 @@ namespace CosmosBenchmark.Fx
     using System.Diagnostics.Tracing;
     using System.IO;
     using System.Threading;
+    using System.Threading.Tasks;
     using Azure.Storage.Blobs;
 
     internal class DiagnosticDataListener : EventListener
@@ -20,14 +21,20 @@ namespace CosmosBenchmark.Fx
         /// <summary>
         /// A constant string representing the diagnostics file path.
         /// </summary>
-        private const string DiagnosticsFilePath = "BenchmarkDiagnostics.out";
-        private const int MaxDIagnosticFileSize = 100_000_000;
-        private const int FileSizeCheckIntervalMs = 5_000;
+        private readonly string DiagnosticsFileName = "BenchmarkDiagnostics.out";
+        /// <summary>
+        /// A constant int representing the maximum file size.
+        /// </summary>
+        private readonly int MaxDIagnosticFileSize = 100_000_000;
+        /// <summary>
+        /// A constant int representing the interval at which the file size is checked.
+        /// </summary>
+        private readonly int FileSizeCheckIntervalMs = 5_000;
 
         /// <summary>
         /// Lock object for synchronization.
         /// </summary>
-        private readonly object fileLock = new object();
+        private readonly object FileLock = new object();
         private static readonly string BlobPrefix = $"{Environment.MachineName}/{Environment.MachineName}";
 
         /// <summary>
@@ -40,28 +47,27 @@ namespace CosmosBenchmark.Fx
         /// </summary>
         public DiagnosticDataListener()
         {
-            CreateFileIfNotExist();
-
-
             /// <summary>
             /// Checks the file size every n milliseconds for diagnostics and creates a new one if the maximum limit is exceeded.
             /// </summary>
-            ThreadPool.QueueUserWorkItem(state =>
+            ThreadPool.QueueUserWorkItem(async state =>
             {
+
                 while (true)
                 {
-                    lock (this.fileLock)
+                    lock (this.FileLock)
                     {
-                        CreateFileIfNotExist();
+                        this.CreateFileIfNotExist(this.DiagnosticsFileName);
+                        
+                        FileInfo fileInfo = new FileInfo(this.DiagnosticsFileName);
 
-                        FileInfo fileInfo = new FileInfo(DiagnosticsFilePath);
                         long fileSize = fileInfo.Length;
 
-                        if (fileSize > MaxDIagnosticFileSize)
+                        if (fileSize > this.MaxDIagnosticFileSize)
                         {
 
                             string newFilePath = Path.Combine(fileInfo.DirectoryName, $"{fileInfo.Name}-{this.filesCount}");
-                            File.Move(DiagnosticsFilePath, newFilePath, true);
+                            File.Move(this.DiagnosticsFileName, newFilePath, true);
                             this.filesCount++;
 
                             Utility.TeeTraceInformation("File size exceeded 100MB. Renamed the file and created a new one.");
@@ -69,16 +75,16 @@ namespace CosmosBenchmark.Fx
 
                     }
 
-                    Thread.Sleep(FileSizeCheckIntervalMs);
+                    await Task.Delay(this.FileSizeCheckIntervalMs);
                 }
             });
         }
 
-        private static void CreateFileIfNotExist()
+        private void CreateFileIfNotExist(string FileName)
         {
-            if (!File.Exists(DiagnosticsFilePath))
+            if (!File.Exists(FileName))
             {
-                File.Create(DiagnosticsFilePath).Close();
+                File.Create(FileName).Close();
             }
         }
 
@@ -88,19 +94,18 @@ namespace CosmosBenchmark.Fx
         /// <param name="eventData">An instance of <see cref="EventWrittenEventArgs "/> containing the request latency and diagnostics.</param>
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            lock (this.fileLock)
+            lock (this.FileLock)
             {
                 try
                 {
-                    using (StreamWriter writer = new StreamWriter(DiagnosticsFilePath, true))
+                    using (StreamWriter writer = new StreamWriter(this.DiagnosticsFileName, true))
                     {
                         writer.WriteLine($"{eventData.Payload[2]} ; {eventData.Payload[3]}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Utility.TeeTraceInformation("An exception ocured while writing diagnostic data to the file");
-                    Utility.TeeTraceInformation(ex.Message);
+                    Utility.TeeTraceInformation($"An exception ocured while writing diagnostic data to the file. {ex.Message}");
                 }
 
             }
@@ -114,9 +119,9 @@ namespace CosmosBenchmark.Fx
         {
 
             Utility.TeeTraceInformation("Uploading diagnostics");
-            string[] diagnosticFiles = Directory.GetFiles(".", $"{DiagnosticsFilePath}*");
+            string[] diagnosticFiles = Directory.GetFiles(".", $"{this.DiagnosticsFileName}*");
 
-            lock (this.fileLock)
+            lock (this.FileLock)
             {
                 for (int i = 0; i < diagnosticFiles.Length; i++)
                 {
@@ -125,15 +130,13 @@ namespace CosmosBenchmark.Fx
                         string diagnosticFile = diagnosticFiles[i];
                         Utility.TeeTraceInformation($"Uploading {i + 1} of {diagnosticFiles.Length} file: {diagnosticFile} ");
 
-                        string BlobName = $"{BlobPrefix}-{i}.out";
-                        BlobClient blobClient = GetBlobServiceClient(config, BlobName);
+                        BlobClient blobClient = GetBlobServiceClient(config, $"{BlobPrefix}-{i}.out");
 
                         blobClient.Upload(diagnosticFile, overwrite: true);
                     }
                     catch (Exception ex)
                     {
-                        Utility.TeeTraceInformation("An exception ocured while uploading file to the blob storage");
-                        Utility.TeeTraceInformation(ex.Message);
+                        Utility.TeeTraceInformation($"An exception ocured while uploading file to the blob storage. {ex.Message}");
                     }
                 }
 
@@ -141,11 +144,11 @@ namespace CosmosBenchmark.Fx
 
         }
 
-        private static BlobClient GetBlobServiceClient(BenchmarkConfig config, string BlobName)
+        private static BlobClient GetBlobServiceClient(BenchmarkConfig config, string blobName)
         {
             BlobContainerClient blobContainerClient = new BlobContainerClient(config.ResultsStorageConnectionString, BlobContainerName);
             blobContainerClient.CreateIfNotExists();
-            return blobContainerClient.GetBlobClient(BlobName);
+            return blobContainerClient.GetBlobClient(blobName);
         }
     }
 }
