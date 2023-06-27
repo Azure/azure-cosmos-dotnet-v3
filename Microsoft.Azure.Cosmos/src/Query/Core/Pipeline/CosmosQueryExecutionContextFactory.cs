@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -28,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
 
     internal static class CosmosQueryExecutionContextFactory
     {
@@ -213,12 +211,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                                 // Only thing that matters is that we target the correct range.
                                 Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
-                                List<PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
+                                List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
                                     cosmosQueryContext.ResourceLink,
                                     containerQueryProperties.ResourceId,
                                     containerQueryProperties.EffectivePartitionKeyRanges,
                                     forceRefresh: false,
-                                    trace);
+                                    createQueryPipelineTrace);
 
                                 return CosmosQueryExecutionContextFactory.TryCreatePassthroughQueryExecutionContext(
                                     documentContainer,
@@ -800,25 +798,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             return null;
-        }
-
-        private static Documents.Routing.PartitionKeyInternal GetNoneValue(
-            PartitionKeyDefinition partitionKeyDefinition)
-        {
-            if (partitionKeyDefinition == null)
-            {
-                throw new ArgumentNullException($"{nameof(partitionKeyDefinition)}");
-            }
-
-            if (partitionKeyDefinition.Paths.Count == 0 || (partitionKeyDefinition.IsSystemKey == true))
-            {
-                return Documents.Routing.PartitionKeyInternal.Empty;
-            }
-            else
-            {
-                return Documents.Routing.PartitionKeyInternal.Undefined;
-            }
-        }
+        }      
 
         public sealed class InputParameters
         {
@@ -835,7 +815,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 int? maxConcurrency,
                 int? maxItemCount,
                 int? maxBufferedItemCount,
-                Cosmos.PartitionKey? partitionKey,
+                PartitionKey? partitionKey,
                 IReadOnlyDictionary<string, object> properties,
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
                 ExecutionEnvironment? executionEnvironment,
@@ -885,7 +865,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             public int MaxConcurrency { get; }
             public int MaxItemCount { get; }
             public int MaxBufferedItemCount { get; }
-            public Cosmos.PartitionKey? PartitionKey { get; }
+            public PartitionKey? PartitionKey { get; }
             public IReadOnlyDictionary<string, object> Properties { get; }
             public PartitionedQueryExecutionInfo PartitionedQueryExecutionInfo { get; }
             public ExecutionEnvironment ExecutionEnvironment { get; }

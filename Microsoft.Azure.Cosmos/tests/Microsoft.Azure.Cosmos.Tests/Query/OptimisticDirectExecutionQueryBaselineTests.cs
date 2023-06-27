@@ -959,9 +959,16 @@
 
         public override Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(string containerLink, Cosmos.PartitionKey? partitionKey, ITrace trace, CancellationToken cancellationToken)
         {
-            return Task.FromResult(new ContainerQueryProperties(
+           return Task.FromResult(new ContainerQueryProperties(
                 "test",
-                WFConstants.BackendHeaders.EffectivePartitionKeyString,
+                new List<Range<string>>
+                { 
+                    new Range<string>(
+                        PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                        PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                        true,
+                        true)
+                },
                 new PartitionKeyDefinition(),
                 Cosmos.GeospatialType.Geometry));
         }
