@@ -12,6 +12,7 @@ Preview features are treated as a separate branch and will not be included in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ### <a name="3.35.1-preview"/> [3.35.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.1-preview) - 2023-06-27
 ### <a name="3.35.1"/> [3.35.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.1) - 2023-06-27
 
