@@ -209,7 +209,8 @@
                 enableReadRequestsFallback: false,
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 detectClientConnectivityIssues: true,
-                disableRetryWithRetryPolicy: false);
+                disableRetryWithRetryPolicy: false,
+                enableReplicaValidation: false);
 
             // Reducing retry timeout to avoid long-running tests
             replicatedResourceClient.GoneAndRetryWithRetryTimeoutInSecondsOverride = 1;

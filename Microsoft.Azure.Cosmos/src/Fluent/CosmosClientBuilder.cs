@@ -622,22 +622,20 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Gets or sets the prioritize healthy replicas flag.
-        /// Prioritizing healthy replicas helps the cosmos client to become more
-        /// resilient to connection timeouts, by choosing a healthy replica over an
-        /// unhealthy one. The default value for this parameter is false.
+        /// Enables the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection status,
+        /// and based on status, it prioritizes the replicas which are connected to the backend, so that the requests can be sent
+        /// confidently to the particular replica. This helps the cosmos client to become more resilient and effictive to any connection
+        /// timeouts. The default value for this parameter is false.
         /// </summary>
-        /// <param name="replicaValidationEnabled">a boolean flag indicating if the feature will be enabled.</param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        CosmosClientBuilder WithPrioritizeHealthyReplicas(
-            bool replicaValidationEnabled)
+        CosmosClientBuilder WithAdvancedReplicaSelectionEnabledForTcp()
         {
-            this.clientOptions.PrioritizeHealthyReplicas = replicaValidationEnabled;
+            this.clientOptions.EnableAdvancedReplicaSelectionForTcp = true;
             return this;
         }
 
