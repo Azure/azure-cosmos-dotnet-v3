@@ -7,7 +7,6 @@ namespace CosmosBenchmark
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.Tracing;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -19,9 +18,9 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json.Linq;
-    using Container = Microsoft.Azure.Cosmos.Container;
     using OpenTelemetry;
     using OpenTelemetry.Metrics;
+    using Container = Microsoft.Azure.Cosmos.Container;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
@@ -78,6 +77,10 @@ namespace CosmosBenchmark
             }
         }
 
+        /// <summary>
+        /// Adds Azure VM information to run summary.
+        /// </summary>
+        /// <returns></returns>
         private static async Task AddAzureInfoToRunSummary()
         {
             using HttpClient httpClient = new HttpClient();

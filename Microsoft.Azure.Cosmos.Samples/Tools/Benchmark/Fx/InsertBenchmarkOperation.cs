@@ -4,6 +4,9 @@
 
 namespace CosmosBenchmark
 {
+    /// <summary>
+    /// Represents the Benchmark insert operation.
+    /// </summary>
     internal abstract class InsertBenchmarkOperation : BenchmarkOperation
     {
     }
