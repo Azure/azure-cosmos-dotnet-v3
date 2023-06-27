@@ -8,6 +8,9 @@ namespace CosmosBenchmark
     using System.Diagnostics.Metrics;
     using OpenTelemetry.Metrics;
 
+    /// <summary>
+    /// Represents the metrics collector provider.
+    /// </summary>
     internal static class MetricsCollectorProvider
     {
         private static MetricCollectionWindow metricCollectionWindow;
@@ -28,6 +31,9 @@ namespace CosmosBenchmark
 
         private static readonly Meter readOperationMeter = new ("CosmosBenchmarkReadOperationMeter");
 
+        /// <summary>
+        /// The instance of <see cref="CosmosBenchmark.InsertOperationMetricsCollector"/>.
+        /// </summary>
         public static InsertOperationMetricsCollector InsertOperationMetricsCollector
         {
             get
@@ -44,6 +50,9 @@ namespace CosmosBenchmark
             }
         }
 
+        /// <summary>
+        /// The instance of <see cref="CosmosBenchmark.QueryOperationMetricsCollector"/>.
+        /// </summary>
         public static QueryOperationMetricsCollector QueryOperationMetricsCollector
         {
             get
@@ -60,6 +69,9 @@ namespace CosmosBenchmark
             }
         }
 
+        /// <summary>
+        /// The instance of <see cref="CosmosBenchmark.ReadOperationMetricsCollector"/>.
+        /// </summary>
         public static ReadOperationMetricsCollector ReadOperationMetricsCollector
         {
             get
@@ -76,6 +88,11 @@ namespace CosmosBenchmark
             }
         }
 
+        /// <summary>
+        /// Gets the current metrics collection window.
+        /// </summary>
+        /// <param name="config">The instance of <see cref="BenchmarkConfig"/>.</param>
+        /// <returns>Current <see cref="MetricCollectionWindow"/></returns>
         private static MetricCollectionWindow GetCurrentMetricCollectionWindow(BenchmarkConfig config)
         {
             if (metricCollectionWindow is null || !metricCollectionWindow.IsValid)
@@ -89,6 +106,14 @@ namespace CosmosBenchmark
             return metricCollectionWindow;
         }
 
+        /// <summary>
+        /// Gets the metric collector.
+        /// </summary>
+        /// <param name="benchmarkOperation">Benchmark operation.</param>
+        /// <param name="meterProvider">Meter provider.</param>
+        /// <param name="config">Benchmark configuration.</param>
+        /// <returns>Metrics collector.</returns>
+        /// <exception cref="NotSupportedException">Thown if provided benchmark operation is not covered supported to collect metrics.</exception>
         public static IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, MeterProvider meterProvider, BenchmarkConfig config)
         {
             MetricCollectionWindow metricCollectionWindow = GetCurrentMetricCollectionWindow(config);

@@ -6,6 +6,9 @@ namespace CosmosBenchmark
 {
     using System.Diagnostics.Metrics;
 
+    /// <summary>
+    /// Represents the metrics collector.
+    /// </summary>
     internal abstract class MetricsCollector : IMetricsCollector
     {
         private readonly Meter meter;
@@ -26,6 +29,10 @@ namespace CosmosBenchmark
 
         private double rps;
 
+        /// <summary>
+        /// Initialize new  instance of <see cref="MetricsCollector"/>.
+        /// </summary>
+        /// <param name="meter">OpenTelemetry meter.</param>
         public MetricsCollector(Meter meter)
         {
             this.meter = meter;
@@ -41,16 +48,26 @@ namespace CosmosBenchmark
                 () => new Measurement<double>(this.rps));
         }
 
+        /// <summary>
+        /// Collects the number of successful operations.
+        /// </summary>
         public void CollectMetricsOnSuccess()
         {
             this.successOperationCounter.Add(1);
         }
 
+        /// <summary>
+        /// Collects the number of failed operations.
+        /// </summary>
         public void CollectMetricsOnFailure()
         {
             this.failureOperationCounter.Add(1);
         }
 
+        /// <summary>
+        /// Records latency in milliseconda.
+        /// </summary>
+        /// <param name="milliseconds">The number of milliseconds to record.</param>
         public void RecordLatencyAndRps(double milliseconds)
         {
             this.rps = 1000 / milliseconds;

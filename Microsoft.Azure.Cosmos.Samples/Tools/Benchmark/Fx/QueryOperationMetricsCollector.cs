@@ -6,8 +6,15 @@ namespace CosmosBenchmark
 {
     using System.Diagnostics.Metrics;
 
+    /// <summary>
+    /// Represents the Benchmark query operation metrics collector.
+    /// </summary>
     internal class QueryOperationMetricsCollector : MetricsCollector
     {
+        /// <summary>
+        /// Initializes new instance of <see cref="QueryOperationMetricsCollector"/>.
+        /// </summary>
+        /// <param name="meter">OpenTelemetry meter.</param>
         public QueryOperationMetricsCollector(Meter meter) : base(meter)
         {
         }

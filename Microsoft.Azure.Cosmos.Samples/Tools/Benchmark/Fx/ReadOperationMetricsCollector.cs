@@ -6,8 +6,15 @@ namespace CosmosBenchmark
 {
     using System.Diagnostics.Metrics;
 
+    /// <summary>
+    /// Represents the Benchmark read operation metrics collector.
+    /// </summary>
     internal class ReadOperationMetricsCollector : MetricsCollector
     {
+        /// <summary>
+        /// Initializes new instance of <see cref="ReadOperationMetricsCollector"/>.
+        /// </summary>
+        /// <param name="meter">OpenTelemetry meter.</param>
         public ReadOperationMetricsCollector(Meter meter) : base(meter)
         {
         }
