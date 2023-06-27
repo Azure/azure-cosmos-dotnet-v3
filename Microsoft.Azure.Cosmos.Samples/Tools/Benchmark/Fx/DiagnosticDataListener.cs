@@ -11,7 +11,7 @@ namespace CosmosBenchmark.Fx
     using System.Threading.Tasks;
     using Azure.Storage.Blobs;
 
-    internal class DiagnosticDataListener : EventListener
+    public class DiagnosticDataListener : EventListener
     {
         /// <summary>
         /// A constant string representing the container name in Azure Blob Storage.
@@ -35,7 +35,11 @@ namespace CosmosBenchmark.Fx
         /// Lock object for synchronization.
         /// </summary>
         private readonly object FileLock = new object();
-        private static readonly string BlobPrefix = $"{Environment.MachineName}/{Environment.MachineName}";
+
+        /// <summary>
+        /// string representing filename prefix in blob storage
+        /// </summary>
+        private readonly string BlobPrefix = $"{Environment.MachineName}/{Environment.MachineName}";
 
         /// <summary>
         /// Number of files 
@@ -130,7 +134,7 @@ namespace CosmosBenchmark.Fx
                         string diagnosticFile = diagnosticFiles[i];
                         Utility.TeeTraceInformation($"Uploading {i + 1} of {diagnosticFiles.Length} file: {diagnosticFile} ");
 
-                        BlobClient blobClient = GetBlobServiceClient(config, $"{BlobPrefix}-{i}.out");
+                        BlobClient blobClient = GetBlobServiceClient(config, $"{this.BlobPrefix}-{i}.out");
 
                         blobClient.Upload(diagnosticFile, overwrite: true);
                     }
