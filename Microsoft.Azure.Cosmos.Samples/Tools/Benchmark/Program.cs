@@ -54,6 +54,11 @@ namespace CosmosBenchmark
                 Program program = new Program();
 
                 RunSummary runSummary = await program.ExecuteAsync(config);
+
+                if (!string.IsNullOrEmpty(config.ResultsStorageConnectionString))
+                {
+                    diagnosticDataListener.UploadDiagnostcs(config);
+                }
             }
             finally
             {
@@ -176,11 +181,6 @@ namespace CosmosBenchmark
                         config,
                         runSummary,
                         cosmosClient);
-                }
-
-                if (!string.IsNullOrEmpty(config.ResultsStorageConnectionString))
-                {
-                    DiagnosticDataListener.UploadDiagnostcs(config);
                 }
 
                 return runSummary;
