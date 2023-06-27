@@ -4,11 +4,17 @@
 
 namespace CosmosBenchmark
 {
-    using Microsoft.ApplicationInsights;
     using System.Diagnostics.Metrics;
 
+    /// <summary>
+    /// Represents the Benchmark insert operation metrics collector.
+    /// </summary>
     internal class InsertOperationMetricsCollector : MetricsCollector
     {
+        /// <summary>
+        /// Initializes new instance of <see cref="InsertOperationMetricsCollector"/>.
+        /// </summary>
+        /// <param name="meter">OpenTelemetry meter.</param>
         public InsertOperationMetricsCollector(Meter meter) : base(meter)
         {
         }
