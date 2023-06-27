@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     internal abstract class HttpTimeoutPolicy
     {
         public abstract string TimeoutPolicyName { get; }
-        public abstract TimeSpan MaximumRetryTimeLimit { get; }
         public abstract int TotalRetryCount { get; }
         public abstract IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator();
         public abstract bool IsSafeToRetry(HttpMethod httpMethod);
