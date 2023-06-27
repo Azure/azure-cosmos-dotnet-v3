@@ -29,8 +29,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyDefault.Name;
 
-        public override TimeSpan MaximumRetryTimeLimit => TimeSpan.FromSeconds((3 * CosmosHttpClient.GatewayRequestTimeout.TotalSeconds) + 1); // 3 times 65s + 1s delay + 1s buffer
-
         public override int TotalRetryCount => this.TimeoutsAndDelays.Count;
 
         public override IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator()
