@@ -20,7 +20,6 @@ namespace CosmosBenchmark
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json.Linq;
     using Container = Microsoft.Azure.Cosmos.Container;
-    using CosmosBenchmark.Fx;
     using OpenTelemetry;
     using OpenTelemetry.Metrics;
 
@@ -53,10 +52,6 @@ namespace CosmosBenchmark
 
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
-                DiagnosticDataListener diagnosticDataListener = new DiagnosticDataListener();
-                diagnosticDataListener.EnableEvents(BenchmarkLatencyEventSource.Instance, EventLevel.Informational);
-
-                BenchmarkLatencyEventSource eventSource = BenchmarkLatencyEventSource.Instance;
                 if (config.EnableLatencyPercentiles)
                 {
                     TelemetrySpan.IncludePercentile = true;
