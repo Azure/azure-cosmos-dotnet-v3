@@ -15,12 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="3.35.1-preview"/> [3.35.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.1-preview) - 2023-06-27
 
 #### Fixed 
-- [3944](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3944) HttpTransport: Fixes HttpTimeoutPolicies to not accidentally suppress retries
+- [3944](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3944) Availability: Fixes HttpTimeoutPolicies to not accidentally suppress retries
 
 ### <a name="3.35.1"/> [3.35.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.1) - 2023-06-27
 
 #### Fixed 
-- [3944](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3944) HttpTransport: Fixes HttpTimeoutPolicies to not accidentally suppress retries
+- [3944](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3944) Availability: Fixes HttpTimeoutPolicies to not accidentally suppress retries
 
 ### <a name="3.35.0-preview"/> [3.35.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.0-preview) - 2023-06-19
 
