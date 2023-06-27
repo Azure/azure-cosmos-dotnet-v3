@@ -6,7 +6,7 @@ namespace CosmosBenchmark
 {
     public interface IMetricsCollector
     {
-        void RecordLatency(double milliseconds);
+        void RecordLatencyAndRps(double milliseconds);
 
         void CollectMetricsOnSuccess();
 

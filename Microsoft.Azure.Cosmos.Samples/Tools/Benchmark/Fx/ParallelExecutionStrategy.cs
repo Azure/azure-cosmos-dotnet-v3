@@ -13,6 +13,7 @@ namespace CosmosBenchmark
     using Microsoft.ApplicationInsights;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
+    using OpenTelemetry.Metrics;
 
     internal class ParallelExecutionStrategy : IExecutionStrategy
     {
@@ -32,7 +33,7 @@ namespace CosmosBenchmark
             int serialExecutorIterationCount,
             double warmupFraction,
             ILogger logger,
-            TelemetryClient telemetryClient)
+            MeterProvider meterProvider)
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
                         executorId: "Warmup",
@@ -44,7 +45,7 @@ namespace CosmosBenchmark
                     completionCallback: () => { },
                     benchmarkConfig,
                     logger,
-                    telemetryClient);
+                    meterProvider);
 
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
             for (int i = 0; i < serialExecutorConcurrency; i++)
@@ -64,21 +65,21 @@ namespace CosmosBenchmark
                         completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount),
                         benchmarkConfig,
                         logger,
-                        telemetryClient);
+                        meterProvider);
             }
 
             return await this.LogOutputStats(
                 benchmarkConfig, 
                 executors,
                 logger,
-                telemetryClient);
+                meterProvider);
         }
 
         private async Task<RunSummary> LogOutputStats(
             BenchmarkConfig benchmarkConfig,
             IExecutor[] executors,
             ILogger logger,
-            TelemetryClient telemetryClient)
+            MeterProvider meterProvider)
         {
             const int outputLoopDelayInSeconds = 1;
             IList<int> perLoopCounters = new List<int>();
