@@ -59,12 +59,9 @@ namespace CosmosBenchmark
 
                 config.Print();
 
-                using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
-                ILogger logger = loggerFactory.CreateLogger<Program>();
-
                 Program program = new Program();
 
-                RunSummary runSummary = await program.ExecuteAsync(config, logger, meterProvider);
+                RunSummary runSummary = await program.ExecuteAsync(config, meterProvider);
             }
             finally
             {
@@ -113,7 +110,7 @@ namespace CosmosBenchmark
         /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, ILogger logger, MeterProvider meterProvider)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, MeterProvider meterProvider)
         {
             // V3 SDK client initialization
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
@@ -165,7 +162,7 @@ namespace CosmosBenchmark
                     }
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, logger, meterProvider);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, meterProvider);
                 }
 
                 if (config.CleanupOnFinish)

@@ -10,8 +10,6 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.ApplicationInsights;
-    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using OpenTelemetry.Metrics;
 
@@ -32,7 +30,6 @@ namespace CosmosBenchmark
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
             double warmupFraction,
-            ILogger logger,
             MeterProvider meterProvider)
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
@@ -44,7 +41,6 @@ namespace CosmosBenchmark
                     traceFailures: benchmarkConfig.TraceFailures,
                     completionCallback: () => { },
                     benchmarkConfig,
-                    logger,
                     meterProvider);
 
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
@@ -64,21 +60,18 @@ namespace CosmosBenchmark
                         traceFailures: benchmarkConfig.TraceFailures,
                         completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount),
                         benchmarkConfig,
-                        logger,
                         meterProvider);
             }
 
             return await this.LogOutputStats(
                 benchmarkConfig, 
                 executors,
-                logger,
                 meterProvider);
         }
 
         private async Task<RunSummary> LogOutputStats(
             BenchmarkConfig benchmarkConfig,
             IExecutor[] executors,
-            ILogger logger,
             MeterProvider meterProvider)
         {
             const int outputLoopDelayInSeconds = 1;

@@ -8,7 +8,6 @@ namespace CosmosBenchmark
     using System.Diagnostics;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Extensions.Logging;
     using OpenTelemetry.Metrics;
 
     internal class SerialOperationExecutor : IExecutor
@@ -40,12 +39,11 @@ namespace CosmosBenchmark
                 bool traceFailures,
                 Action completionCallback,
                 BenchmarkConfig benchmarkConfig,
-                ILogger logger,
                 MeterProvider meterProvider)
         {
-            logger.LogInformation($"Executor {this.executorId} started");
+            Trace.TraceInformation($"Executor {this.executorId} started");
 
-            logger.LogInformation("Initializing counters and metrics.");
+            Trace.TraceInformation("Initializing counters and metrics.");
 
             try
             {
