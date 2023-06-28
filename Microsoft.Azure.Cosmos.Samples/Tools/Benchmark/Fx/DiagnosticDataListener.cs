@@ -25,11 +25,11 @@ namespace CosmosBenchmark.Fx
         /// <summary>
         /// A constant int representing the maximum file size.
         /// </summary>
-        private readonly int MaxDIagnosticFileSize = 100;
+        private readonly int MaxDIagnosticFileSize = 100_000_000;
         /// <summary>
         /// A constant int representing the interval at which the file size is checked.
         /// </summary>
-        private readonly int FileSizeCheckIntervalMs = 2_000;
+        private readonly int FileSizeCheckIntervalMs = 5_000;
 
         /// <summary>
         /// Lock object for synchronization.
