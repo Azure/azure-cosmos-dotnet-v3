@@ -21,15 +21,15 @@ namespace CosmosBenchmark.Fx
         /// <summary>
         /// A constant string representing the diagnostics file path.
         /// </summary>
-        private readonly string DiagnosticsFileName = "BenchmarkDiagnostics.out";
+        public const string DiagnosticsFileName = "BenchmarkDiagnostics.out";
         /// <summary>
         /// A constant int representing the maximum file size.
         /// </summary>
-        private readonly int MaxDIagnosticFileSize = 100_000_000;
+        private readonly int MaxDIagnosticFileSize = 100;
         /// <summary>
         /// A constant int representing the interval at which the file size is checked.
         /// </summary>
-        private readonly int FileSizeCheckIntervalMs = 5_000;
+        private readonly int FileSizeCheckIntervalMs = 2_000;
 
         /// <summary>
         /// Lock object for synchronization.
@@ -61,9 +61,9 @@ namespace CosmosBenchmark.Fx
                 {
                     lock (this.FileLock)
                     {
-                        this.CreateFileIfNotExist(this.DiagnosticsFileName);
+                        this.CreateFileIfNotExist(DiagnosticsFileName);
                         
-                        FileInfo fileInfo = new FileInfo(this.DiagnosticsFileName);
+                        FileInfo fileInfo = new FileInfo(DiagnosticsFileName);
 
                         long fileSize = fileInfo.Length;
 
@@ -71,7 +71,7 @@ namespace CosmosBenchmark.Fx
                         {
 
                             string newFilePath = Path.Combine(fileInfo.DirectoryName, $"{fileInfo.Name}-{this.filesCount}");
-                            File.Move(this.DiagnosticsFileName, newFilePath, true);
+                            File.Move(DiagnosticsFileName, newFilePath, true);
                             this.filesCount++;
 
                             Utility.TeeTraceInformation("File size exceeded 100MB. Renamed the file and created a new one.");
@@ -84,11 +84,11 @@ namespace CosmosBenchmark.Fx
             });
         }
 
-        private void CreateFileIfNotExist(string fileName)
+        private void CreateFileIfNotExist(string FileName)
         {
-            if (!File.Exists(fileName))
+            if (!File.Exists(FileName))
             {
-                File.Create(fileName).Close();
+                File.Create(FileName).Close();
             }
         }
 
@@ -102,7 +102,7 @@ namespace CosmosBenchmark.Fx
             {
                 try
                 {
-                    using (StreamWriter writer = new StreamWriter(this.DiagnosticsFileName, true))
+                    using (StreamWriter writer = new StreamWriter(DiagnosticsFileName, true))
                     {
                         writer.WriteLine($"{eventData.Payload[2]} ; {eventData.Payload[3]}");
                     }
@@ -119,11 +119,11 @@ namespace CosmosBenchmark.Fx
         /// Uploading all files with diagnostic data to blob storage
         /// </summary>
         /// <param name="config">An instance of <see cref="BenchmarkConfig "/> containing the benchmark tool input parameters.</param>
-        public void UploadDiagnostcs(BenchmarkConfig config)
+        public void UploadDiagnostcs(BlobContainerClient blobContainerClient)
         {
 
             Utility.TeeTraceInformation("Uploading diagnostics");
-            string[] diagnosticFiles = Directory.GetFiles(".", $"{this.DiagnosticsFileName}*");
+            string[] diagnosticFiles = Directory.GetFiles(".", $"{DiagnosticsFileName}*");
 
             lock (this.FileLock)
             {
@@ -134,7 +134,7 @@ namespace CosmosBenchmark.Fx
                         string diagnosticFile = diagnosticFiles[i];
                         Utility.TeeTraceInformation($"Uploading {i + 1} of {diagnosticFiles.Length} file: {diagnosticFile} ");
 
-                        BlobClient blobClient = GetBlobServiceClient(config, $"{this.BlobPrefix}-{i}.out");
+                        BlobClient blobClient = blobContainerClient.GetBlobClient($"{this.BlobPrefix}-{i}.out");
 
                         blobClient.Upload(diagnosticFile, overwrite: true);
                     }
@@ -148,11 +148,17 @@ namespace CosmosBenchmark.Fx
 
         }
 
-        private static BlobClient GetBlobServiceClient(BenchmarkConfig config, string blobName)
+        /// <summary>
+        /// Creating an instance of BlobClient using configs
+        /// </summary>
+        /// <param name="config">An instance of <see cref="BenchmarkConfig "/> containing the benchmark tool input parameters.</param>
+        public BlobContainerClient GetBlobServiceClient(BenchmarkConfig config)
         {
-            BlobContainerClient blobContainerClient = new BlobContainerClient(config.ResultsStorageConnectionString, BlobContainerName);
+            BlobContainerClient blobContainerClient = new BlobContainerClient(
+                config.ResultsStorageConnectionString,
+                BlobContainerName);
             blobContainerClient.CreateIfNotExists();
-            return blobContainerClient.GetBlobClient(blobName);
+            return blobContainerClient;
         }
     }
 }

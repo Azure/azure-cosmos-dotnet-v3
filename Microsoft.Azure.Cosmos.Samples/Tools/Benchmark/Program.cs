@@ -15,6 +15,7 @@ namespace CosmosBenchmark
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Storage.Blobs;
     using CosmosBenchmark.Fx;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
@@ -57,7 +58,8 @@ namespace CosmosBenchmark
 
                 if (!string.IsNullOrEmpty(config.ResultsStorageConnectionString))
                 {
-                    diagnosticDataListener.UploadDiagnostcs(config);
+                    BlobContainerClient blobContainerClient = diagnosticDataListener.GetBlobServiceClient(config);
+                    diagnosticDataListener.UploadDiagnostcs(blobContainerClient);
                 }
             }
             finally
