@@ -173,7 +173,10 @@
     "vmScriptExtensionScriptUrl": "[concat('https://raw.githubusercontent.com/',parameters('benchmarkingToolsRepoName'),'/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/scripts/execute.sh')]",
     "customScriptUrl": "[concat('https://raw.githubusercontent.com/',parameters('benchmarkingToolsRepoName'),'/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/scripts/custom-script.sh')]",
     "vmScriptExtensionScriptName": "execute.sh",
-    "appInsightsResourceIds": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/microsoft.insights/components/', parameters('applicationInsightsName'))]"
+    "appInsightsResourceIds": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/microsoft.insights/components/', parameters('applicationInsightsName'))]",
+    "chart0Expression": "[concat('customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 50),\n    percentile(value, 75),\n    percentile(value, 90),\n    percentile(value, 95)\n    by ts = bin(timestamp, ', parameters('metricsReportingIntervalInSec'), 's)\n| render timechart \n\n')]",
+    "chart1Expression": "[concat('customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 99),\n    percentile(value, 99.9),\n    percentile(value, 99.99)\n    by ts = bin(timestamp, ', parameters('metricsReportingIntervalInSec'), 's)\n| render timechart \n\n')]",
+    "chart2Expression": "[concat('customMetrics\n| where name == \"ReadOperationRps\" and timestamp > ago(1d)\n| summarize\n    avg(value)\n    by ts = bin(timestamp, ', parameters('metricsReportingIntervalInSec'), 's)\n| render timechart \n\n')]"
   },
   "resources": [
     {
@@ -468,7 +471,7 @@
                     },
                     {
                       "name": "Query",
-                      "value": "customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 50),\n    percentile(value, 75),\n    percentile(value, 90),\n    percentile(value, 95)\n    by ts = bin(timestamp, 5s)\n| render timechart \n\n",
+                      "value": "[variables('chart0Expression')]",
                       "isOptional": true
                     },
                     {
@@ -483,12 +486,12 @@
                     },
                     {
                       "name": "PartTitle",
-                      "value": "Analytics",
+                      "value": "Request latencies P50, P75, P90, P95 in ms",
                       "isOptional": true
                     },
                     {
                       "name": "PartSubTitle",
-                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "value": "A Latency Percentiles dashboard provides a concise overview of the distribution of response times or latencies for a system or application. It helps monitor and analyze the performance of the system, identify bottlenecks or outliers, and ensure optimal user experience.",
                       "isOptional": true
                     },
                     {
@@ -512,7 +515,7 @@
                             "type": "real"
                           },
                           {
-                            "name": "percentile_value_94",
+                            "name": "percentile_value_95",
                             "type": "real"
                           }
                         ],
@@ -619,7 +622,7 @@
                     },
                     {
                       "name": "Query",
-                      "value": "customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 95),\n    percentile(value, 99),\n    percentile(value, 99.9),\n    percentile(value, 99.99)\n    by ts = bin(timestamp, 5s)\n| render timechart \n\n",
+                      "value": "[variables('chart1Expression')]",
                       "isOptional": true
                     },
                     {
@@ -634,12 +637,12 @@
                     },
                     {
                       "name": "PartTitle",
-                      "value": "Analytics",
+                      "value": "Request latencies P99, P99.9, P99.99 in ms",
                       "isOptional": true
                     },
                     {
                       "name": "PartSubTitle",
-                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "value": "A Latency Percentiles dashboard provides a concise overview of the distribution of response times or latencies for a system or application. It helps monitor and analyze the performance of the system, identify bottlenecks or outliers, and ensure optimal user experience.",
                       "isOptional": true
                     },
                     {
@@ -650,10 +653,6 @@
                           "type": "datetime"
                         },
                         "yAxis": [
-                          {
-                            "name": "percentile_value_95",
-                            "type": "real"
-                          },
                           {
                             "name": "percentile_value_99",
                             "type": "real"
@@ -694,7 +693,7 @@
                 "position": {
                   "x": 0,
                   "y": 6,
-                  "colSpan": 10,
+                  "colSpan": 5,
                   "rowSpan": 6
                 },
                 "metadata": {
@@ -740,7 +739,7 @@
                     },
                     {
                       "name": "Query",
-                      "value": "customMetrics\n| where name == \"ReadOperationRps\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 50),\n    percentile(value, 75),\n    percentile(value, 90),\n    percentile(value, 95)\n    by ts = bin(timestamp, 5s)\n| render timechart \n\n",
+                      "value": "customMetrics\n| where name == \"ReadOperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
                       "isOptional": true
                     },
                     {
@@ -755,12 +754,12 @@
                     },
                     {
                       "name": "PartTitle",
-                      "value": "Analytics",
+                      "value": "Failed operations",
                       "isOptional": true
                     },
                     {
                       "name": "PartSubTitle",
-                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "value": "Provides the number of failed operations. (most likely related to some error or inavailability)",
                       "isOptional": true
                     },
                     {
@@ -772,19 +771,7 @@
                         },
                         "yAxis": [
                           {
-                            "name": "percentile_value_95",
-                            "type": "real"
-                          },
-                          {
-                            "name": "percentile_value_99",
-                            "type": "real"
-                          },
-                          {
-                            "name": "percentile_value_99_9",
-                            "type": "real"
-                          },
-                          {
-                            "name": "percentile_value_99_99",
+                            "name": "sum_value",
                             "type": "real"
                           }
                         ],
@@ -808,10 +795,155 @@
                     }
                   ],
                   "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
-                  "settings": {}
+                  "settings": {
+                    "content": {
+                      "Query": "customMetrics\n| where name == \"ReadOperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n",
+                      "Dimensions": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
+                        },
+                        "yAxis": [
+                          {
+                            "name": "sum_value",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      }
+                    }
+                  }
                 }
               },
               "3": {
+                "position": {
+                  "x": 5,
+                  "y": 6,
+                  "colSpan": 5,
+                  "rowSpan": 6
+                },
+                "metadata": {
+                  "inputs": [
+                    {
+                      "name": "resourceTypeMode",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "ComponentId",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Scope",
+                      "value": {
+                        "resourceIds": [
+                          "[variables('appInsightsResourceIds')]"
+                        ]
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartId",
+                      "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Version",
+                      "value": "2.0",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "TimeRange",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "DashboardId",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "DraftRequestParameters",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Query",
+                      "value": "customMetrics\n| where name == \"ReadOperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "ControlType",
+                      "value": "FrameControlChart",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "SpecificChart",
+                      "value": "Line",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartTitle",
+                      "value": "Success operations",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartSubTitle",
+                      "value": "Provides the number of successful operations.",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Dimensions",
+                      "value": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
+                        },
+                        "yAxis": [
+                          {
+                            "name": "sum_value",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "LegendOptions",
+                      "value": {
+                        "isEnabled": true,
+                        "position": "Bottom"
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "IsQueryContainTimeRange",
+                      "value": true,
+                      "isOptional": true
+                    }
+                  ],
+                  "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+                  "settings": {
+                    "content": {
+                      "Query": "customMetrics\n| where name == \"ReadOperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n",
+                      "Dimensions": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
+                        },
+                        "yAxis": [
+                          {
+                            "name": "sum_value",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      }
+                    }
+                  }
+                }
+              },
+              "4": {
                 "position": {
                   "x": 10,
                   "y": 6,
@@ -861,7 +993,7 @@
                     },
                     {
                       "name": "Query",
-                      "value": "customMetrics\n| where name == \"ReadOperationRps\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 95),\n    percentile(value, 99),\n    percentile(value, 99.9),\n    percentile(value, 99.99)\n    by ts = bin(timestamp, 5s)\n| render timechart \n\n",
+                      "value": "[variables('chart2Expression')]",
                       "isOptional": true
                     },
                     {
@@ -876,12 +1008,12 @@
                     },
                     {
                       "name": "PartTitle",
-                      "value": "Analytics",
+                      "value": "Requests per Second (RPS)",
                       "isOptional": true
                     },
                     {
                       "name": "PartSubTitle",
-                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "value": "A Requests per Second (RPS) dashboard provides a concise overview of the number of requests being processed by a system or application per second.",
                       "isOptional": true
                     },
                     {
@@ -893,19 +1025,7 @@
                         },
                         "yAxis": [
                           {
-                            "name": "percentile_value_95",
-                            "type": "real"
-                          },
-                          {
-                            "name": "percentile_value_99",
-                            "type": "real"
-                          },
-                          {
-                            "name": "percentile_value_99_9",
-                            "type": "real"
-                          },
-                          {
-                            "name": "percentile_value_99_99",
+                            "name": "RPs",
                             "type": "real"
                           }
                         ],
@@ -929,7 +1049,25 @@
                     }
                   ],
                   "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
-                  "settings": {}
+                  "settings": {
+                    "content": {
+                      "Dimensions": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
+                        },
+                        "yAxis": [
+                          {
+                            "name": "avg_value",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      },
+                      "IsQueryContainTimeRange": false
+                    }
+                  }
                 }
               }
             }
@@ -964,6 +1102,7 @@
                   "filteredPartIds": [
                     "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700a",
                     "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700c",
+                    "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700d",
                     "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700e",
                     "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700f"
                   ]
