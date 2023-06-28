@@ -8,7 +8,6 @@
     <Version>$(CustomEncryptionVersion)</Version>
     <Company>Microsoft Corporation</Company>
     <Authors>Microsoft</Authors>
-      <IsPreview>true</IsPreview>
     <Description>This is an internal library that provides an implementation for client-side encryption for Azure Cosmos DB for NoSQL for multi-tenant use case. For more information, refer to https://aka.ms/CosmosCustomClientEncryption</Description>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <Title>Microsoft Azure Cosmos DB client-side encryption library for multi-tenant</Title>
