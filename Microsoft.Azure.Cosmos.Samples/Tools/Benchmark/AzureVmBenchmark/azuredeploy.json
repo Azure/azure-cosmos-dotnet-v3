@@ -134,12 +134,12 @@
                     },
                     {
                       "name": "PartTitle",
-                      "value": "Latencies P50, P75, P90, P95 in Ms",
+                      "value": "Request latencies P50, P75, P90, P95 in ms",
                       "isOptional": true
                     },
                     {
                       "name": "PartSubTitle",
-                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "value": "A Latency Percentiles dashboard provides a concise overview of the distribution of response times or latencies for a system or application. It helps monitor and analyze the performance of the system, identify bottlenecks or outliers, and ensure optimal user experience.",
                       "isOptional": true
                     },
                     {
@@ -285,12 +285,12 @@
                     },
                     {
                       "name": "PartTitle",
-                      "value": "Latencies P99, P99.9, P99.99 in Ms",
+                      "value": "Request latencies P99, P99.9, P99.99 in ms",
                       "isOptional": true
                     },
                     {
                       "name": "PartSubTitle",
-                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "value": "A Latency Percentiles dashboard provides a concise overview of the distribution of response times or latencies for a system or application. It helps monitor and analyze the performance of the system, identify bottlenecks or outliers, and ensure optimal user experience.",
                       "isOptional": true
                     },
                     {
@@ -407,7 +407,7 @@
                     },
                     {
                       "name": "PartSubTitle",
-                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "value": "Provides the number of failed operations. (most likely related to some error or inavailability)",
                       "isOptional": true
                     },
                     {
@@ -534,7 +534,7 @@
                     },
                     {
                       "name": "PartSubTitle",
-                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "value": "Provides the number of successful operations.",
                       "isOptional": true
                     },
                     {
@@ -656,12 +656,12 @@
                     },
                     {
                       "name": "PartTitle",
-                      "value": "RPs",
+                      "value": "Requests per Second (RPS)",
                       "isOptional": true
                     },
                     {
                       "name": "PartSubTitle",
-                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "value": "A Requests per Second (RPS) dashboard provides a concise overview of the number of requests being processed by a system or application per second.",
                       "isOptional": true
                     },
                     {
