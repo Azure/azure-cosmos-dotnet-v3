@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The default value for this parameter is false.
         /// </value>
-        public bool EnableReplicaValidation
+        public bool EnableAdvancedReplicaSelectionForTcp
         {
             get;
             set;

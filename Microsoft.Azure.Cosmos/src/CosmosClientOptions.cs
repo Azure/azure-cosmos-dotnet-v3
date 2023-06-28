@@ -348,12 +348,12 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets or sets the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection
-        /// status, and based on status, it prioritizes the replicas which are connected to the backend, so that the requests can be sent
-        /// confidently to the particular replica. This helps the cosmos client to become more resilient and effictive to any connection
-        /// timeouts. The default value for this parameter is false.
+        /// status, and based on status, it prioritizes the replicas which show healthy stable connections, so that the requests can be sent
+        /// confidently to the particular replica. This helps the cosmos client to become more resilient and effective to any connectivity issues.
+        /// The default value for this parameter is 'false'.
         /// </summary>
         /// <remarks>
-        /// <para>This is optimal for workloads where latency spikes are critical due to connection timeouts. Does not apply if <see cref="ConnectionMode.Gateway"/> is used.</para>
+        /// <para>This is optimal for latency-sensitive workloads. Does not apply if <see cref="ConnectionMode.Gateway"/> is used.</para>
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithAdvancedReplicaSelectionEnabledForTcp()"/>
 #if PREVIEW
@@ -775,7 +775,7 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                EnableReplicaValidation = this.EnableAdvancedReplicaSelectionForTcp,
+                EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
                 HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };

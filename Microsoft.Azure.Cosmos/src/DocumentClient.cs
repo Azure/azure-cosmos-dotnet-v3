@@ -6701,7 +6701,7 @@ namespace Microsoft.Azure.Cosmos
                 !this.enableRntbdChannel,
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
                 true,
-                enableReplicaValidation: this.ConnectionPolicy.EnableReplicaValidation);
+                enableReplicaValidation: this.ConnectionPolicy.EnableAdvancedReplicaSelectionForTcp);
 
             if (subscribeRntbdStatus)
             {

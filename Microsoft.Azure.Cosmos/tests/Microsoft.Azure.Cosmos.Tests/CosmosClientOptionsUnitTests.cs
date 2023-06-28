@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.HttpClientFactory);
             Assert.AreNotEqual(Cosmos.ConsistencyLevel.Session, clientOptions.ConsistencyLevel);
             Assert.IsFalse(policy.EnablePartitionLevelFailover);
-            Assert.IsFalse(policy.EnableReplicaValidation);
+            Assert.IsFalse(policy.EnableAdvancedReplicaSelectionForTcp);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
             Assert.AreEqual((Documents.ConsistencyLevel)consistencyLevel, clientOptions.GetDocumentsConsistencyLevel());
             Assert.IsTrue(policy.EnablePartitionLevelFailover);
-            Assert.IsTrue(policy.EnableReplicaValidation);
+            Assert.IsTrue(policy.EnableAdvancedReplicaSelectionForTcp);
 
             IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
             //Verify Direct Mode settings

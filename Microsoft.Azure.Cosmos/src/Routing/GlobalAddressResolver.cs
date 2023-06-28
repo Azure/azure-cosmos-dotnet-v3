@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 ? GlobalAddressResolver.MaxBackupReadRegions : 0;
 
             this.enableTcpConnectionEndpointRediscovery = connectionPolicy.EnableTcpConnectionEndpointRediscovery;
-            this.replicaAddressValidationEnabled = connectionPolicy.EnableReplicaValidation;
+            this.replicaAddressValidationEnabled = connectionPolicy.EnableAdvancedReplicaSelectionForTcp;
 
             this.maxEndpoints = maxBackupReadEndpoints + 2; // for write and alternate write endpoint (during failover)
 
