@@ -217,248 +217,6 @@
                       },
                       "IsQueryContainTimeRange": true
                     }
-                  },
-                  "2": {
-                    "position": {
-                      "x": 0,
-                      "y": 6,
-                      "colSpan": 10,
-                      "rowSpan": 6
-                    },
-                    "metadata": {
-                      "inputs": [
-                        {
-                          "name": "resourceTypeMode",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "ComponentId",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "Scope",
-                          "value": {
-                            "resourceIds": [
-                              "[variables('appInsightsResourceIds')]"
-                            ]
-                          },
-                          "isOptional": true
-                        },
-                        {
-                          "name": "PartId",
-                          "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "Version",
-                          "value": "2.0",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "TimeRange",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "DashboardId",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "DraftRequestParameters",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "Query",
-                          "value": "customMetrics\n| where name == \"ReadOperationRps\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 50),\n    percentile(value, 75),\n    percentile(value, 90),\n    percentile(value, 95)\n    by ts = bin(timestamp, 5s)\n| render timechart \n\n",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "ControlType",
-                          "value": "FrameControlChart",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "SpecificChart",
-                          "value": "Line",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "PartTitle",
-                          "value": "Analytics",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "PartSubTitle",
-                          "value": "CosmosDBBenchmarkTestAppInsights",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "Dimensions",
-                          "value": {
-                            "xAxis": {
-                              "name": "ts",
-                              "type": "datetime"
-                            },
-                            "yAxis": [
-                              {
-                                "name": "percentile_value_95",
-                                "type": "real"
-                              },
-                              {
-                                "name": "percentile_value_99",
-                                "type": "real"
-                              },
-                              {
-                                "name": "percentile_value_99_9",
-                                "type": "real"
-                              },
-                              {
-                                "name": "percentile_value_99_99",
-                                "type": "real"
-                              }
-                            ],
-                            "splitBy": [],
-                            "aggregation": "Sum"
-                          },
-                          "isOptional": true
-                        },
-                        {
-                          "name": "LegendOptions",
-                          "value": {
-                            "isEnabled": true,
-                            "position": "Bottom"
-                          },
-                          "isOptional": true
-                        },
-                        {
-                          "name": "IsQueryContainTimeRange",
-                          "value": true,
-                          "isOptional": true
-                        }
-                      ],
-                      "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
-                      "settings": {}
-                    }
-                  },
-                  "3": {
-                    "position": {
-                      "x": 10,
-                      "y": 6,
-                      "colSpan": 10,
-                      "rowSpan": 6
-                    },
-                    "metadata": {
-                      "inputs": [
-                        {
-                          "name": "resourceTypeMode",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "ComponentId",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "Scope",
-                          "value": {
-                            "resourceIds": [
-                              "[variables('appInsightsResourceIds')]"
-                            ]
-                          },
-                          "isOptional": true
-                        },
-                        {
-                          "name": "PartId",
-                          "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "Version",
-                          "value": "2.0",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "TimeRange",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "DashboardId",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "DraftRequestParameters",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "Query",
-                          "value": "customMetrics\n| where name == \"ReadOperationRps\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 95),\n    percentile(value, 99),\n    percentile(value, 99.9),\n    percentile(value, 99.99)\n    by ts = bin(timestamp, 5s)\n| render timechart \n\n",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "ControlType",
-                          "value": "FrameControlChart",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "SpecificChart",
-                          "value": "Line",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "PartTitle",
-                          "value": "Analytics",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "PartSubTitle",
-                          "value": "CosmosDBBenchmarkTestAppInsights",
-                          "isOptional": true
-                        },
-                        {
-                          "name": "Dimensions",
-                          "value": {
-                            "xAxis": {
-                              "name": "ts",
-                              "type": "datetime"
-                            },
-                            "yAxis": [
-                              {
-                                "name": "percentile_value_95",
-                                "type": "real"
-                              },
-                              {
-                                "name": "percentile_value_99",
-                                "type": "real"
-                              },
-                              {
-                                "name": "percentile_value_99_9",
-                                "type": "real"
-                              },
-                              {
-                                "name": "percentile_value_99_99",
-                                "type": "real"
-                              }
-                            ],
-                            "splitBy": [],
-                            "aggregation": "Sum"
-                          },
-                          "isOptional": true
-                        },
-                        {
-                          "name": "LegendOptions",
-                          "value": {
-                            "isEnabled": true,
-                            "position": "Bottom"
-                          },
-                          "isOptional": true
-                        },
-                        {
-                          "name": "IsQueryContainTimeRange",
-                          "value": true,
-                          "isOptional": true
-                        }
-                      ],
-                      "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
-                      "settings": {}
-                    }
                   }
                 }
               },
@@ -581,6 +339,260 @@
               },
               "2": {
                 "position": {
+                  "x": 0,
+                  "y": 6,
+                  "colSpan": 5,
+                  "rowSpan": 6
+                },
+                "metadata": {
+                  "inputs": [
+                    {
+                      "name": "resourceTypeMode",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "ComponentId",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Scope",
+                      "value": {
+                        "resourceIds": [
+                          "[variables('appInsightsResourceIds')]"
+                        ]
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartId",
+                      "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Version",
+                      "value": "2.0",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "TimeRange",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "DashboardId",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "DraftRequestParameters",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Query",
+                      "value": "customMetrics\n| where name == \"ReadOperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "ControlType",
+                      "value": "FrameControlChart",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "SpecificChart",
+                      "value": "Line",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartTitle",
+                      "value": "Failed operations",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartSubTitle",
+                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Dimensions",
+                      "value": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
+                        },
+                        "yAxis": [
+                          {
+                            "name": "sum_value",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "LegendOptions",
+                      "value": {
+                        "isEnabled": true,
+                        "position": "Bottom"
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "IsQueryContainTimeRange",
+                      "value": true,
+                      "isOptional": true
+                    }
+                  ],
+                  "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+                  "settings": {
+                    "content": {
+                      "Query": "customMetrics\n| where name == \"ReadOperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n",
+                      "Dimensions": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
+                        },
+                        "yAxis": [
+                          {
+                            "name": "sum_value",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      }
+                    }
+                  }
+                }
+              },
+              "3": {
+                "position": {
+                  "x": 5,
+                  "y": 6,
+                  "colSpan": 5,
+                  "rowSpan": 6
+                },
+                "metadata": {
+                  "inputs": [
+                    {
+                      "name": "resourceTypeMode",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "ComponentId",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Scope",
+                      "value": {
+                        "resourceIds": [
+                          "[variables('appInsightsResourceIds')]"
+                        ]
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartId",
+                      "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Version",
+                      "value": "2.0",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "TimeRange",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "DashboardId",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "DraftRequestParameters",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Query",
+                      "value": "customMetrics\n| where name == \"ReadOperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "ControlType",
+                      "value": "FrameControlChart",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "SpecificChart",
+                      "value": "Line",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartTitle",
+                      "value": "Success operations",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "PartSubTitle",
+                      "value": "CosmosDBBenchmarkTestAppInsights",
+                      "isOptional": true
+                    },
+                    {
+                      "name": "Dimensions",
+                      "value": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
+                        },
+                        "yAxis": [
+                          {
+                            "name": "sum_value",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "LegendOptions",
+                      "value": {
+                        "isEnabled": true,
+                        "position": "Bottom"
+                      },
+                      "isOptional": true
+                    },
+                    {
+                      "name": "IsQueryContainTimeRange",
+                      "value": true,
+                      "isOptional": true
+                    }
+                  ],
+                  "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+                  "settings": {
+                    "content": {
+                      "Query": "customMetrics\n| where name == \"ReadOperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n",
+                      "Dimensions": {
+                        "xAxis": {
+                          "name": "ts",
+                          "type": "datetime"
+                        },
+                        "yAxis": [
+                          {
+                            "name": "sum_value",
+                            "type": "real"
+                          }
+                        ],
+                        "splitBy": [],
+                        "aggregation": "Sum"
+                      }
+                    }
+                  }
+                }
+              },
+              "4": {
+                "position": {
                   "x": 10,
                   "y": 6,
                   "colSpan": 10,
@@ -685,118 +697,8 @@
                     }
                   ],
                   "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
-                  "settings": {}
-                }
-              },
-              "3": {
-                "position": {
-                  "x": 0,
-                  "y": 9,
-                  "colSpan": 10,
-                  "rowSpan": 3
-                },
-                "metadata": {
-                  "inputs": [
-                    {
-                      "name": "resourceTypeMode",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "ComponentId",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "Scope",
-                      "value": {
-                        "resourceIds": [
-                          "/subscriptions/8fba6d4f-7c37-4d13-9063-fd58ad2b86e2/resourceGroups/CosmosDBBenchmarkTest/providers/microsoft.insights/components/CosmosDBBenchmarkDemo"
-                        ]
-                      },
-                      "isOptional": true
-                    },
-                    {
-                      "name": "PartId",
-                      "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "Version",
-                      "value": "2.0",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "TimeRange",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "DashboardId",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "DraftRequestParameters",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "Query",
-                      "value": "customMetrics\n| where name == \"ReadOperationSuccess\" and timestamp > ago(1h)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "ControlType",
-                      "value": "FrameControlChart",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "SpecificChart",
-                      "value": "Line",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "PartTitle",
-                      "value": "Success operations",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "PartSubTitle",
-                      "value": "CosmosDBBenchmarkTestAppInsights",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "Dimensions",
-                      "value": {
-                        "xAxis": {
-                          "name": "ts",
-                          "type": "datetime"
-                        },
-                        "yAxis": [
-                          {
-                            "name": "count_success",
-                            "type": "real"
-                          }
-                        ],
-                        "splitBy": [],
-                        "aggregation": "Sum"
-                      },
-                      "isOptional": true
-                    },
-                    {
-                      "name": "LegendOptions",
-                      "value": {
-                        "isEnabled": true,
-                        "position": "Bottom"
-                      },
-                      "isOptional": true
-                    },
-                    {
-                      "name": "IsQueryContainTimeRange",
-                      "value": true,
-                      "isOptional": true
-                    }
-                  ],
-                  "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
                   "settings": {
                     "content": {
-                      "Query": "customMetrics\n| where name == \"ReadOperationSuccess\" and timestamp > ago(1h)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
                       "Dimensions": {
                         "xAxis": {
                           "name": "ts",
@@ -804,140 +706,14 @@
                         },
                         "yAxis": [
                           {
-                            "name": "count_success",
-                            "type": "real"
-                          }
-                        ],
-                        "splitBy": [],
-                        "aggregation": "Sum"
-                      }
-                    }
-                  }
-                }
-              },
-              "4": {
-                "position": {
-                  "x": 0,
-                  "y": 6,
-                  "colSpan": 10,
-                  "rowSpan": 3
-                },
-                "metadata": {
-                  "inputs": [
-                    {
-                      "name": "resourceTypeMode",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "ComponentId",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "Scope",
-                      "value": {
-                        "resourceIds": [
-                          "/subscriptions/8fba6d4f-7c37-4d13-9063-fd58ad2b86e2/resourceGroups/CosmosDBBenchmarkTest/providers/microsoft.insights/components/CosmosDBBenchmarkDemo"
-                        ]
-                      },
-                      "isOptional": true
-                    },
-                    {
-                      "name": "PartId",
-                      "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "Version",
-                      "value": "2.0",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "TimeRange",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "DashboardId",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "DraftRequestParameters",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "Query",
-                      "value": "customMetrics\n| where name == \"ReadOperationFailure\" and timestamp > ago(1h)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "ControlType",
-                      "value": "FrameControlChart",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "SpecificChart",
-                      "value": "Line",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "PartTitle",
-                      "value": "Failed operations",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "PartSubTitle",
-                      "value": "CosmosDBBenchmarkTestAppInsights",
-                      "isOptional": true
-                    },
-                    {
-                      "name": "Dimensions",
-                      "value": {
-                        "xAxis": {
-                          "name": "ts",
-                          "type": "datetime"
-                        },
-                        "yAxis": [
-                          {
-                            "name": "count_failed",
+                            "name": "avg_value",
                             "type": "real"
                           }
                         ],
                         "splitBy": [],
                         "aggregation": "Sum"
                       },
-                      "isOptional": true
-                    },
-                    {
-                      "name": "LegendOptions",
-                      "value": {
-                        "isEnabled": true,
-                        "position": "Bottom"
-                      },
-                      "isOptional": true
-                    },
-                    {
-                      "name": "IsQueryContainTimeRange",
-                      "value": true,
-                      "isOptional": true
-                    }
-                  ],
-                  "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
-                  "settings": {
-                    "content": {
-                      "Query": "customMetrics\n| where name == \"ReadOperationFailure\" and timestamp > ago(1h)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
-                      "Dimensions": {
-                        "xAxis": {
-                          "name": "ts",
-                          "type": "datetime"
-                        },
-                        "yAxis": [
-                          {
-                            "name": "Failed operations",
-                            "type": "real"
-                          }
-                        ],
-                        "splitBy": [],
-                        "aggregation": "Sum"
-                      }
+                      "IsQueryContainTimeRange": false
                     }
                   }
                 }
