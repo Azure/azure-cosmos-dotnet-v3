@@ -296,7 +296,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true);
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+#if PREVIEW
+                EnableOptimisticDirectExecution = false
+#endif
+            };
+
+            IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.
@@ -483,7 +490,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
-            IOrderedQueryable<Data> query = container.GetItemLinqQueryable<Data>(allowSynchronousQueryExecution: true);
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+#if PREVIEW
+                EnableOptimisticDirectExecution = false
+#endif
+            };
+
+            IOrderedQueryable<Data> query = container.GetItemLinqQueryable<Data>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.

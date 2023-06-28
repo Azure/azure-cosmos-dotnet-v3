@@ -81,7 +81,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 };
 
-                using FeedIterator<JObject> iterator = gatewayQueryPlanContainer.GetItemQueryIterator<JObject>("select * From T order by T.status");
+                QueryRequestOptions requestOptions = new QueryRequestOptions()
+                {
+#if PREVIEW
+                    EnableOptimisticDirectExecution = false
+#endif
+                };
+
+                using FeedIterator<JObject> iterator = gatewayQueryPlanContainer.GetItemQueryIterator<JObject>("select * From T order by T.status", requestOptions: requestOptions);
                 FeedResponse<JObject> response = await iterator.ReadNextAsync();
 
                 Assert.IsTrue(isQueryRequestFound, "Query plan call back was not called.");
