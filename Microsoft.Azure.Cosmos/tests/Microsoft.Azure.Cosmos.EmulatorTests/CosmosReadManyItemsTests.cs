@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 database = await cosmosClient.CreateDatabaseAsync("ReadManyTypedTestScenarioDb");
-                Container containerCC1 = await database.CreateContainerAsync("ReadManyTypedTestContainer", "/pk");
+                Container container = await database.CreateContainerAsync("ReadManyTypedTestContainer", "/pk");
 
                 // Create items with different pk values
                 for (int i = 0; i < 500; i++)
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
                     item.pk = "pk" + i.ToString();
                     item.id = i.ToString();
-                    ItemResponse<ToDoActivity> itemResponse = await containerCC1.CreateItemAsync(item);
+                    ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync(item);
                     Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
                 }
 
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     itemList.Add((i.ToString(), new PartitionKey("pk" + i.ToString())));
                 }
 
-                FeedResponse<ToDoActivity> feedResponse = await containerCC1.ReadManyItemsAsync<ToDoActivity>(itemList);
+                FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
                 Assert.IsNotNull(feedResponse);
                 Assert.AreEqual(20, feedResponse.Count);
                 Assert.IsTrue(feedResponse.Headers.RequestCharge > 0);

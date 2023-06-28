@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the boolean flag to enable replica validation.
         /// </summary>
         /// <value>
-        /// The default value is false
+        /// The default value for this parameter is false.
         /// </value>
         public bool EnableReplicaValidation
         {
