@@ -64,10 +64,10 @@ namespace CosmosBenchmark
             }
             finally
             {
-                Console.WriteLine($"{nameof(CosmosBenchmark)} completed successfully.");
+                Utility.TeeTraceInformation($"{nameof(CosmosBenchmark)} completed successfully.");
                 if (Debugger.IsAttached)
                 {
-                    Console.WriteLine("Press any key to exit...");
+                    Utility.TeeTraceInformation("Press any key to exit...");
                     Console.ReadLine();
                 }
             }
@@ -88,11 +88,11 @@ namespace CosmosBenchmark
                 JObject jObject = JObject.Parse(jsonVmInfo);
                 RunSummary.AzureVmInfo = jObject;
                 RunSummary.Location = jObject["compute"]["location"].ToString();
-                Console.WriteLine($"Azure VM Location:{RunSummary.Location}");
+                Utility.TeeTraceInformation($"Azure VM Location:{RunSummary.Location}");
             }
             catch (Exception e)
             {
-                Console.WriteLine("Failed to get Azure VM info:" + e.ToString());
+                Utility.TeeTraceInformation("Failed to get Azure VM info:" + e.ToString());
             }
         }
 
@@ -128,11 +128,11 @@ namespace CosmosBenchmark
 
                 BenchmarkProgress benchmarkProgressItem = await CreateBenchmarkProgressItem(resultContainer);
 
-                Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
+                Utility.TeeTraceInformation($"Using container {config.Container} with {currentContainerThroughput} RU/s");
                 int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
 
-                Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
-                Console.WriteLine();
+                Utility.TeePrint("Starting Inserts with {0} tasks", taskCount);
+
 
                 string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
                 int opsPerTask = config.ItemCount / taskCount;
@@ -161,7 +161,7 @@ namespace CosmosBenchmark
 
                 if (config.CleanupOnFinish)
                 {
-                    Console.WriteLine($"Deleting Database {config.Database}");
+                    Utility.TeeTraceInformation($"Deleting Database {config.Database}");
                     await database.DeleteStreamAsync();
                 }
 
@@ -177,7 +177,7 @@ namespace CosmosBenchmark
                 BenchmarkProgress benchmarkProgress = await CompleteBenchmarkProgressStatus(benchmarkProgressItem, resultContainer);
                 if (config.PublishResults)
                 {
-                    Console.WriteLine("Publishing results");
+                    Utility.TeeTraceInformation("Publishing results");
                     runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
                     await this.PublishResults(
                         config,
@@ -293,8 +293,8 @@ namespace CosmosBenchmark
                 // Show user cost of running this test
                 double estimatedCostPerMonth = 0.06 * options.Throughput;
                 double estimatedCostPerHour = estimatedCostPerMonth / (24 * 30);
-                Console.WriteLine($"The container will cost an estimated ${Math.Round(estimatedCostPerHour, 2)} per hour (${Math.Round(estimatedCostPerMonth, 2)} per month)");
-                Console.WriteLine("Press enter to continue ...");
+                Utility.TeeTraceInformation($"The container will cost an estimated ${Math.Round(estimatedCostPerHour, 2)} per hour (${Math.Round(estimatedCostPerMonth, 2)} per month)");
+                Utility.TeeTraceInformation("Press enter to continue ...");
                 Console.ReadLine();
 
                 string partitionKeyPath = options.PartitionKeyPath;

@@ -10,6 +10,9 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// Represents a class that is used as an item in CosmosDB to track benchmark progress.
+    /// </summary>
     public class BenchmarkProgress
     {
         [JsonProperty]
