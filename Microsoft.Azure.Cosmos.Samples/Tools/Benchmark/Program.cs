@@ -302,6 +302,10 @@ namespace CosmosBenchmark
             }
         }
 
+        /// <summary>
+        /// Creating a progress item in ComsosDb when the benchmark start
+        /// </summary>
+        /// <param name="resultContainer">An instance of <see cref="Container "/> that represents operations performed on a database container.</param>
         private static async Task<BenchmarkProgress> CreateBenchmarkProgressItem(Container resultContainer)
         {
             BenchmarkProgress benchmarkProgress = new BenchmarkProgress
@@ -318,6 +322,11 @@ namespace CosmosBenchmark
             return itemResponse.Resource;
         }
 
+        /// <summary>
+        /// Change a progress item status to Complete in ComsosDb when the benchmark compleated
+        /// </summary>
+        /// <param name="resultContainer">An instance of <see cref="Container "/> that represents operations performed on a database container.</param>
+        /// <param name="benchmarkProgress">An instance of <see cref="BenchmarkProgress"/> that represents the document to be modified.</param>
         public static async Task<BenchmarkProgress> CompleteBenchmarkProgressStatus(BenchmarkProgress benchmarkProgress, Container resultContainer)
         {
             benchmarkProgress.JobStatus = "COMPLETE";
@@ -326,6 +335,11 @@ namespace CosmosBenchmark
             return itemResponse.Resource;
         }
 
+        /// <summary>
+        /// Configure and prepare the Cosmos DB Container instance for the result container.
+        /// </summary>
+        /// <param name="config">An instance of <see cref="BenchmarkConfig "/> containing the benchmark tool input parameters.</param>
+        /// <param name="cosmosClient">An instance of <see cref="CosmosClient "/> that represents operations performed on a CosmosDb database.</param>
         private static async Task<Container> GetResultContainer(BenchmarkConfig config, CosmosClient cosmosClient)
         {
             Database database = cosmosClient.GetDatabase(config.ResultsDatabase ?? config.Database);
