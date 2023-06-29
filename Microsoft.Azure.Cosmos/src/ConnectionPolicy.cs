@@ -460,18 +460,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the boolean flag to enable replica validation.
-        /// </summary>
-        /// <value>
-        /// The default value for this parameter is false.
-        /// </value>
-        public bool EnableAdvancedReplicaSelectionForTcp
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
         /// (Direct/TCP) This is an advanced setting that controls the number of TCP connections that will be opened eagerly to each Cosmos DB back-end.
         /// </summary>
         /// <value>

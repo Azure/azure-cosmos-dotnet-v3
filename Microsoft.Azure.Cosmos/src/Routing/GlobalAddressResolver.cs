@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal sealed class GlobalAddressResolver : IAddressResolverExtension, IDisposable
     {
         private const int MaxBackupReadRegions = 3;
+        private const string ReplicaConnectivityValidationEnabled = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
 
         private readonly GlobalEndpointManager endpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly CosmosHttpClient httpClient;
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
-        private readonly bool replicaAddressValidationEnabled;
+        private readonly bool isReplicaAddressValidationEnabled;
         private IOpenConnectionsHandler openConnectionsHandler;
 
         public GlobalAddressResolver(
@@ -67,8 +68,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 ? GlobalAddressResolver.MaxBackupReadRegions : 0;
 
             this.enableTcpConnectionEndpointRediscovery = connectionPolicy.EnableTcpConnectionEndpointRediscovery;
-            this.replicaAddressValidationEnabled = connectionPolicy.EnableAdvancedReplicaSelectionForTcp;
-
+#if PREVIEW
+            this.isReplicaAddressValidationEnabled = ConfigurationManager
+                                                    .GetEnvironmentVariable(
+                                                           variable: GlobalAddressResolver.ReplicaConnectivityValidationEnabled,
+                                                           defaultValue: true);
+#else
+            this.isReplicaAddressValidationEnabled = false;
+#endif
             this.maxEndpoints = maxBackupReadEndpoints + 2; // for write and alternate write endpoint (during failover)
 
             this.addressCacheByEndpoint = new ConcurrentDictionary<Uri, EndpointCache>();
@@ -284,7 +291,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.httpClient,
                         this.openConnectionsHandler,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
-                        replicaAddressValidationEnabled: this.replicaAddressValidationEnabled);
+                        replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);

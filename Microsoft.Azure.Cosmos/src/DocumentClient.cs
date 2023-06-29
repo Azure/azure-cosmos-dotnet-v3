@@ -99,6 +99,7 @@ namespace Microsoft.Azure.Cosmos
         private const string EnableCpuMonitorConfig = "CosmosDbEnableCpuMonitor";
         // Env variable
         private const string RntbdMaxConcurrentOpeningConnectionCountConfig = "AZURE_COSMOS_TCP_MAX_CONCURRENT_OPENING_CONNECTION_COUNT";
+        private const string ReplicaConnectivityValidationEnabled = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
 
         private const int MaxConcurrentConnectionOpenRequestsPerProcessor = 25;
         private const int DefaultMaxRequestsPerRntbdChannel = 30;
@@ -113,6 +114,8 @@ namespace Microsoft.Azure.Cosmos
         private const string DefaultInitTaskKey = "InitTaskKey";
 
         private readonly bool IsLocalQuorumConsistency = false;
+        private readonly bool isReplicaAddressValidationEnabled;
+
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
@@ -231,7 +234,14 @@ namespace Microsoft.Azure.Cosmos
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
-
+#if PREVIEW
+            this.isReplicaAddressValidationEnabled = ConfigurationManager
+                                                    .GetEnvironmentVariable(
+                                                           variable: DocumentClient.ReplicaConnectivityValidationEnabled,
+                                                           defaultValue: true);
+#else
+            this.isReplicaAddressValidationEnabled = false;
+#endif
         }
 
         /// <summary>
@@ -6701,7 +6711,7 @@ namespace Microsoft.Azure.Cosmos
                 !this.enableRntbdChannel,
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
                 true,
-                enableReplicaValidation: this.ConnectionPolicy.EnableAdvancedReplicaSelectionForTcp);
+                enableReplicaValidation: this.isReplicaAddressValidationEnabled);
 
             if (subscribeRntbdStatus)
             {
