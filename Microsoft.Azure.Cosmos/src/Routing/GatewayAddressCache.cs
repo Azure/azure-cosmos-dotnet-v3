@@ -143,7 +143,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 Paths.CollectionsPathSegment,
                 Uri.EscapeUriString(collection.Id));
 
-            using CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             using (DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
                 OperationType.Read,
                 collectionAltLink,
@@ -159,9 +158,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 partitionKeyRangeIds: partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId),
                                 containerProperties: collection,
                                 shouldOpenRntbdChannels: shouldOpenRntbdChannels,
-                                cancellationToken: linkedTokenSource.Token));
+                                cancellationToken: cancellationToken));
                 }
             }
+
+            using CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             // The `timeoutTask` is a background task which adds a delay for a period of WarmupCacheAndOpenConnectionTimeout. The task will
             // be cancelled either by - a) when `linkedTokenSource` expires, which means the original `cancellationToken` expires or

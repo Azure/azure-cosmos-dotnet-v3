@@ -27,8 +27,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal sealed class GlobalAddressResolver : IAddressResolverExtension, IDisposable
     {
         private const int MaxBackupReadRegions = 3;
-        private const string ReplicaConnectivityValidationEnabled = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
-
         private readonly GlobalEndpointManager endpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly Protocol protocol;
@@ -68,14 +66,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                 ? GlobalAddressResolver.MaxBackupReadRegions : 0;
 
             this.enableTcpConnectionEndpointRediscovery = connectionPolicy.EnableTcpConnectionEndpointRediscovery;
-#if PREVIEW
-            this.isReplicaAddressValidationEnabled = ConfigurationManager
-                                                    .GetEnvironmentVariable(
-                                                           variable: GlobalAddressResolver.ReplicaConnectivityValidationEnabled,
-                                                           defaultValue: true);
-#else
-            this.isReplicaAddressValidationEnabled = false;
-#endif
+
+            this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled();
+
             this.maxEndpoints = maxBackupReadEndpoints + 2; // for write and alternate write endpoint (during failover)
 
             this.addressCacheByEndpoint = new ConcurrentDictionary<Uri, EndpointCache>();
