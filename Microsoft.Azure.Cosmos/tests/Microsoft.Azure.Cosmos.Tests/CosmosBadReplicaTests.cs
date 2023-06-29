@@ -25,8 +25,15 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         [TestMethod]
         [Timeout(30000)]
-        public async Task TestGoneFromServiceScenarioAsync()
+        [DataRow(true, DisplayName = "Validate when replica validation is enabled.")]
+        [DataRow(false, DisplayName = "Validate when replica validation is disabled.")]
+        public async Task TestGoneFromServiceScenarioAsync(
+            bool enableReplicaValidation)
         {
+            Environment.SetEnvironmentVariable(
+                variable: ConfigurationManager.ReplicaConnectivityValidationEnabled,
+                value: enableReplicaValidation.ToString());
+
             Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);
             Uri endpoint = MockSetupsHelper.SetupSingleRegionAccount(
                 "mockAccountInfo",
@@ -160,7 +167,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                     mockHttpHandler.VerifyAll();
 
                     Documents.TransportAddressUri failedReplica = urisVisited.First();
-                    Assert.AreEqual(1, urisVisited.Count(x => x.Equals(failedReplica)));
+
+                    // With replica validation enabled in preview mode, the failed replica will be validated as a part of the flow,
+                    // and because any subsequent validation/ connection will be successful, the failed replica will now be marked
+                    // as connected, thus it will be visited more than once. However, note that when replice validation is disabled,
+                    // no validation is done thus the URI will be marked as unhealthy as expected. Therefore the uri will be visited
+                    // just once.
+                    Assert.IsTrue(
+                        enableReplicaValidation
+                            ? urisVisited.Any(x => x.Equals(failedReplica))
+                            : urisVisited.Count(x => x.Equals(failedReplica)) == 1);
 
                     urisVisited.Clear();
                     delayCacheRefresh = false;

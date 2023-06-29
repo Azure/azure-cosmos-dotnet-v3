@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
         /// This will eventually be removed oncereplica valdiatin is enabled by default for both preview
         /// and GA.
         /// </summary>
-        private static readonly string ReplicaConnectivityValidationEnabled = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
+        internal static readonly string ReplicaConnectivityValidationEnabled = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
 
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
