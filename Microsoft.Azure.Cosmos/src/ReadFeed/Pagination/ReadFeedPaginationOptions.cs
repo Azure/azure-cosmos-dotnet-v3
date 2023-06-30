@@ -27,9 +27,8 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
         public ReadFeedPaginationOptions(
             PaginationDirection? paginationDirection = null,
             int? pageSizeHint = null,
-            JsonSerializationFormat? jsonSerializationFormat = null,
             Dictionary<string, string> additionalHeaders = null)
-            : base(pageSizeHint, jsonSerializationFormat, additionalHeaders)
+            : base(pageSizeHint, additionalHeaders)
         {
             this.Direction = paginationDirection;
         }
