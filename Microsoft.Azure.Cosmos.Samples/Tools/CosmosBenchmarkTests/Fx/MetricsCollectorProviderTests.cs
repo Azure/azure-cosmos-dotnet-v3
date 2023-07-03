@@ -1,47 +1,59 @@
 ﻿namespace CosmosBenchmark.Fx.Tests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
+    using OpenTelemetry.Metrics;
 
     [TestClass]
     public class MetricsCollectorProviderTests
     {
-        InsertOperationMetricsCollector insertOperationMetricsCollector1;
-        InsertOperationMetricsCollector insertOperationMetricsCollector2;
+        private InsertOperationMetricsCollector insertOperationMetricsCollector1;
+        private InsertOperationMetricsCollector insertOperationMetricsCollector2;
 
-        ReadOperationMetricsCollector readOperationMetricsCollector1;
-        ReadOperationMetricsCollector readOperationMetricsCollector2;
+        private ReadOperationMetricsCollector readOperationMetricsCollector1;
+        private ReadOperationMetricsCollector readOperationMetricsCollector2;
 
-        QueryOperationMetricsCollector queryOperationMetricsCollector1;
-        QueryOperationMetricsCollector queryOperationMetricsCollector2;
+        private QueryOperationMetricsCollector queryOperationMetricsCollector1;
+        private QueryOperationMetricsCollector queryOperationMetricsCollector2;
+
+        private MetricsCollectorProvider metricsCollectorProvider;
+
+        [TestInitialize]
+        public void Setup()
+        {
+            Mock<MeterProvider> meterProviderMock = new Mock<MeterProvider>();
+            Mock<BenchmarkConfig> benchmarkConfigMock = new Mock<BenchmarkConfig>();
+            this.metricsCollectorProvider = new MetricsCollectorProvider(meterProviderMock.Object, benchmarkConfigMock.Object);
+        }
 
         public void InitInsertOperationMetricsCollector1()
         {
-            this.insertOperationMetricsCollector1 = MetricsCollectorProvider.InsertOperationMetricsCollector;
+            this.insertOperationMetricsCollector1 = this.metricsCollectorProvider.InsertOperationMetricsCollector;
         }
 
         public void InitInsertOperationMetricsCollector2()
         {
-            this.insertOperationMetricsCollector2 = MetricsCollectorProvider.InsertOperationMetricsCollector;
+            this.insertOperationMetricsCollector2 = this.metricsCollectorProvider.InsertOperationMetricsCollector;
         }
 
         public void InitReadOperationMetricsCollector1()
         {
-            this.readOperationMetricsCollector1 = MetricsCollectorProvider.ReadOperationMetricsCollector;
+            this.readOperationMetricsCollector1 = this.metricsCollectorProvider.ReadOperationMetricsCollector;
         }
 
         public void InitReadOperationMetricsCollector2()
         {
-            this.readOperationMetricsCollector2 = MetricsCollectorProvider.ReadOperationMetricsCollector;
+            this.readOperationMetricsCollector2 = this.metricsCollectorProvider.ReadOperationMetricsCollector;
         }
 
         public void InitQueryOperationMetricsCollector1()
         {
-            this.queryOperationMetricsCollector1 = MetricsCollectorProvider.QueryOperationMetricsCollector;
+            this.queryOperationMetricsCollector1 = this.metricsCollectorProvider.QueryOperationMetricsCollector;
         }
 
         public void InitQueryOperationMetricsCollector2()
         {
-            this.queryOperationMetricsCollector2 = MetricsCollectorProvider.QueryOperationMetricsCollector;
+            this.queryOperationMetricsCollector2 = this.metricsCollectorProvider.QueryOperationMetricsCollector;
         }
 
         [TestMethod]

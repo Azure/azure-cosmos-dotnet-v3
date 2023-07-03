@@ -11,80 +11,90 @@ namespace CosmosBenchmark
     /// <summary>
     /// Represents the metrics collector provider.
     /// </summary>
-    public static class MetricsCollectorProvider
+    public class MetricsCollectorProvider : IMetricsCollectorProvider
     {
-        private static MetricCollectionWindow metricCollectionWindow;
-        private static readonly object metricCollectionWindowLock = new object();
+        private MetricCollectionWindow metricCollectionWindow;
+        private readonly object metricCollectionWindowLock = new object();
 
-        private static InsertOperationMetricsCollector insertOperationMetricsCollector;
-        private static readonly object insertOperationMetricsCollectorLock = new object();
+        private InsertOperationMetricsCollector insertOperationMetricsCollector;
+        private readonly object insertOperationMetricsCollectorLock = new object();
 
-        private static QueryOperationMetricsCollector queryOperationMetricsCollector;
-        private static readonly object queryOperationMetricsCollectorLock = new object();
+        private QueryOperationMetricsCollector queryOperationMetricsCollector;
+        private readonly object queryOperationMetricsCollectorLock = new object();
 
-        private static ReadOperationMetricsCollector readOperationMetricsCollector;
-        private static readonly object readOperationMetricsCollectorLock = new object();
+        private ReadOperationMetricsCollector readOperationMetricsCollector;
+        private readonly object readOperationMetricsCollectorLock = new object();
 
-        private static readonly Meter insertOperationMeter = new("CosmosBenchmarkInsertOperationMeter");
+        private readonly Meter insertOperationMeter = new("CosmosBenchmarkInsertOperationMeter");
 
-        private static readonly Meter queryOperationMeter = new("CosmosBenchmarkQueryOperationMeter");
+        private readonly Meter queryOperationMeter = new("CosmosBenchmarkQueryOperationMeter");
 
-        private static readonly Meter readOperationMeter = new ("CosmosBenchmarkReadOperationMeter");
+        private readonly Meter readOperationMeter = new ("CosmosBenchmarkReadOperationMeter");
+
+        private readonly MeterProvider meterProvider;
+
+        private readonly BenchmarkConfig config;
+
+        public MetricsCollectorProvider(MeterProvider meterProvider, BenchmarkConfig config)
+        {
+            this.meterProvider = meterProvider;
+            this.config = config;
+        }
 
         /// <summary>
         /// The instance of <see cref="CosmosBenchmark.InsertOperationMetricsCollector"/>.
         /// </summary>
-        public static InsertOperationMetricsCollector InsertOperationMetricsCollector
+        public InsertOperationMetricsCollector InsertOperationMetricsCollector
         {
             get
             {
-                if (insertOperationMetricsCollector is null)
+                if (this.insertOperationMetricsCollector is null)
                 {
-                    lock (insertOperationMetricsCollectorLock)
+                    lock (this.insertOperationMetricsCollectorLock)
                     {
-                        insertOperationMetricsCollector ??= new InsertOperationMetricsCollector(insertOperationMeter);
+                        this.insertOperationMetricsCollector ??= new InsertOperationMetricsCollector(this.insertOperationMeter);
                     }
                 }
 
-                return insertOperationMetricsCollector;
+                return this.insertOperationMetricsCollector;
             }
         }
 
         /// <summary>
         /// The instance of <see cref="CosmosBenchmark.QueryOperationMetricsCollector"/>.
         /// </summary>
-        public static QueryOperationMetricsCollector QueryOperationMetricsCollector
+        public QueryOperationMetricsCollector QueryOperationMetricsCollector
         {
             get
             {
-                if (queryOperationMetricsCollector is null)
+                if (this.queryOperationMetricsCollector is null)
                 {
-                    lock (queryOperationMetricsCollectorLock)
+                    lock (this.queryOperationMetricsCollectorLock)
                     {
-                        queryOperationMetricsCollector ??= new QueryOperationMetricsCollector(queryOperationMeter);
+                        this.queryOperationMetricsCollector ??= new QueryOperationMetricsCollector(this.queryOperationMeter);
                     }
                 }
 
-                return queryOperationMetricsCollector;
+                return this.queryOperationMetricsCollector;
             }
         }
 
         /// <summary>
         /// The instance of <see cref="CosmosBenchmark.ReadOperationMetricsCollector"/>.
         /// </summary>
-        public static ReadOperationMetricsCollector ReadOperationMetricsCollector
+        public ReadOperationMetricsCollector ReadOperationMetricsCollector
         {
             get
             {
-                if (readOperationMetricsCollector is null)
+                if (this.readOperationMetricsCollector is null)
                 {
-                    lock (readOperationMetricsCollectorLock)
+                    lock (this.readOperationMetricsCollectorLock)
                     {
-                        readOperationMetricsCollector ??= new ReadOperationMetricsCollector(readOperationMeter);
+                        this.readOperationMetricsCollector ??= new ReadOperationMetricsCollector(this.readOperationMeter);
                     }
                 }
 
-                return readOperationMetricsCollector;
+                return this.readOperationMetricsCollector;
             }
         }
 
@@ -93,50 +103,48 @@ namespace CosmosBenchmark
         /// </summary>
         /// <param name="config">The instance of <see cref="BenchmarkConfig"/>.</param>
         /// <returns>Current <see cref="MetricCollectionWindow"/></returns>
-        private static MetricCollectionWindow GetCurrentMetricCollectionWindow(BenchmarkConfig config)
+        private MetricCollectionWindow GetCurrentMetricCollectionWindow(BenchmarkConfig config)
         {
-            if (metricCollectionWindow is null || !metricCollectionWindow.IsValid)
+            if (this.metricCollectionWindow is null || !this.metricCollectionWindow.IsValid)
             {
-                lock (metricCollectionWindowLock)
+                lock (this.metricCollectionWindowLock)
                 {
-                    metricCollectionWindow ??= new MetricCollectionWindow(config);
+                    this.metricCollectionWindow ??= new MetricCollectionWindow(config);
                 }
             }
 
-            return metricCollectionWindow;
+            return this.metricCollectionWindow;
         }
 
         /// <summary>
         /// Gets the metric collector.
         /// </summary>
         /// <param name="benchmarkOperation">Benchmark operation.</param>
-        /// <param name="meterProvider">Meter provider.</param>
-        /// <param name="config">Benchmark configuration.</param>
         /// <returns>Metrics collector.</returns>
         /// <exception cref="NotSupportedException">Thown if provided benchmark operation is not covered supported to collect metrics.</exception>
-        public static IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, MeterProvider meterProvider, BenchmarkConfig config)
+        public IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation)
         {
-            MetricCollectionWindow metricCollectionWindow = GetCurrentMetricCollectionWindow(config);
+            MetricCollectionWindow metricCollectionWindow = this.GetCurrentMetricCollectionWindow(this.config);
 
             // Reset metricCollectionWindow and flush.
             if (!metricCollectionWindow.IsValid)
             {
-                meterProvider.ForceFlush();
-                metricCollectionWindow.Reset(config);
+                this.meterProvider.ForceFlush();
+                metricCollectionWindow.Reset(this.config);
             }
 
             Type benchmarkOperationType = benchmarkOperation.GetType();
             if (typeof(InsertBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
             {
-                return InsertOperationMetricsCollector;
+                return this.InsertOperationMetricsCollector;
             }
             else if (typeof(QueryBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
             {
-                return QueryOperationMetricsCollector;
+                return this.QueryOperationMetricsCollector;
             }
             else if (typeof(ReadBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
             {
-                return ReadOperationMetricsCollector;
+                return this.ReadOperationMetricsCollector;
             }
             else
             {

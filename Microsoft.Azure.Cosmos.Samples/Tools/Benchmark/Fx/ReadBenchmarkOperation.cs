@@ -4,7 +4,7 @@
 
 namespace CosmosBenchmark
 {
-    internal abstract class ReadBenchmarkOperation : BenchmarkOperation
+    public abstract class ReadBenchmarkOperation : BenchmarkOperation
     {
     }
 }

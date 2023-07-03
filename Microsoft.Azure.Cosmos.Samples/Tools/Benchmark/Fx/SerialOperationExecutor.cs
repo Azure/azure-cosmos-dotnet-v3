@@ -39,7 +39,7 @@ namespace CosmosBenchmark
                 bool traceFailures,
                 Action completionCallback,
                 BenchmarkConfig benchmarkConfig,
-                MeterProvider meterProvider)
+                IMetricsCollectorProvider metricsCollectorProvider)
         {
             Trace.TraceInformation($"Executor {this.executorId} started");
 
@@ -50,7 +50,7 @@ namespace CosmosBenchmark
                 int currentIterationCount = 0;
                 do
                 {
-                    IMetricsCollector metricsCollector = MetricsCollectorProvider.GetMetricsCollector(this.operation, meterProvider, benchmarkConfig);
+                    IMetricsCollector metricsCollector = metricsCollectorProvider.GetMetricsCollector(this.operation);
 
                     OperationResult? operationResult = null;
 

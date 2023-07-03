@@ -51,7 +51,7 @@ namespace CosmosBenchmark
         /// <summary>
         /// Collects the number of successful operations.
         /// </summary>
-        public void CollectMetricsOnSuccess()
+        public virtual void CollectMetricsOnSuccess()
         {
             this.successOperationCounter.Add(1);
         }
@@ -59,7 +59,7 @@ namespace CosmosBenchmark
         /// <summary>
         /// Collects the number of failed operations.
         /// </summary>
-        public void CollectMetricsOnFailure()
+        public virtual void CollectMetricsOnFailure()
         {
             this.failureOperationCounter.Add(1);
         }
