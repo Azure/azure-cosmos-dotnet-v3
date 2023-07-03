@@ -9,7 +9,7 @@ namespace CosmosBenchmark
     /// <summary>
     /// Represents the Benchmark query operation metrics collector.
     /// </summary>
-    internal class QueryOperationMetricsCollector : MetricsCollector
+    public class QueryOperationMetricsCollector : MetricsCollector
     {
         /// <summary>
         /// Initializes new instance of <see cref="QueryOperationMetricsCollector"/>.

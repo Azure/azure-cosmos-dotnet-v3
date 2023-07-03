@@ -9,7 +9,7 @@ namespace CosmosBenchmark
     /// <summary>
     /// Represents the Benchmark read operation metrics collector.
     /// </summary>
-    internal class ReadOperationMetricsCollector : MetricsCollector
+    public class ReadOperationMetricsCollector : MetricsCollector
     {
         /// <summary>
         /// Initializes new instance of <see cref="ReadOperationMetricsCollector"/>.

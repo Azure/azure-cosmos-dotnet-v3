@@ -9,7 +9,7 @@ namespace CosmosBenchmark
     /// <summary>
     /// Represents the Benchmark insert operation metrics collector.
     /// </summary>
-    internal class InsertOperationMetricsCollector : MetricsCollector
+    public class InsertOperationMetricsCollector : MetricsCollector
     {
         /// <summary>
         /// Initializes new instance of <see cref="InsertOperationMetricsCollector"/>.

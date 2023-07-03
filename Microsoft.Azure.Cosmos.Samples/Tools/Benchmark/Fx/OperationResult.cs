@@ -3,7 +3,7 @@
     using System;
     using Microsoft.Azure.Cosmos;
 
-    internal struct OperationResult
+    public struct OperationResult
     {
         public string DatabseName { get; set; }
         public string ContainerName { get; set; }

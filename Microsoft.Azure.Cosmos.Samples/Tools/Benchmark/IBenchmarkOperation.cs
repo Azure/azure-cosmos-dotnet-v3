@@ -9,7 +9,7 @@ namespace CosmosBenchmark
     /// <summary>
     /// Representes the Benchmark operation.
     /// </summary>
-    internal interface IBenchmarkOperation
+    public interface IBenchmarkOperation
     {
         /// <summary>
         /// Executes Benchmark operation once asynchronously.

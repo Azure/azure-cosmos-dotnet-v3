@@ -9,7 +9,7 @@ namespace CosmosBenchmark
     /// <summary>
     /// Represents the metrics collector.
     /// </summary>
-    internal abstract class MetricsCollector : IMetricsCollector
+    public abstract class MetricsCollector : IMetricsCollector
     {
         private readonly Meter meter;
 

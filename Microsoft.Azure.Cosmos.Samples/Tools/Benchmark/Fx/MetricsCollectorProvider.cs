@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     /// <summary>
     /// Represents the metrics collector provider.
     /// </summary>
-    internal static class MetricsCollectorProvider
+    public static class MetricsCollectorProvider
     {
         private static MetricCollectionWindow metricCollectionWindow;
         private static readonly object metricCollectionWindowLock = new object();

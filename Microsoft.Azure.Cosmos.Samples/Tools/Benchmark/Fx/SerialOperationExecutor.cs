@@ -10,7 +10,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Cosmos;
     using OpenTelemetry.Metrics;
 
-    internal class SerialOperationExecutor : IExecutor
+    public class SerialOperationExecutor : IExecutor
     {
         private readonly IBenchmarkOperation operation;
 
