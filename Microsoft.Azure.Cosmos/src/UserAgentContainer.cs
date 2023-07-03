@@ -3,6 +3,7 @@
 // ------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Text.RegularExpressions;
 
     /// <summary>
@@ -14,22 +15,37 @@ namespace Microsoft.Azure.Cosmos
         private const int MaxClientId = 10;
         private readonly string cosmosBaseUserAgent;
         private readonly string clientId;
+        private CosmosClientOptionsFeatures features;
 
         public UserAgentContainer(
             int clientId,
-            string features = null,
+            CosmosClientOptionsFeatures features,
             string regionConfiguration = "NS",
             string suffix = null) 
                : base()
         {
             this.clientId = System.Math.Min(clientId, UserAgentContainer.MaxClientId).ToString();
+            this.features = features;
+
+            string featureString = null;
+            if (features != CosmosClientOptionsFeatures.NoFeatures)
+            {
+                featureString = Convert.ToString((int)features, 4).PadLeft(8, '0');
+            }
+
             this.cosmosBaseUserAgent = this.CreateBaseUserAgentString(
-                features: features,
+                features: featureString,
                 regionConfiguration: regionConfiguration);
+
             this.Suffix = suffix ?? string.Empty;
         }
 
         internal override string BaseUserAgent => this.cosmosBaseUserAgent ?? string.Empty;
+
+        public void UpdateFeatureFlag(CosmosClientOptionsFeatures cosmosClientOptionsFeatures)
+        {
+            this.features |= cosmosClientOptionsFeatures;
+        }
 
         protected virtual void GetEnvironmentInformation(
             out string clientVersion,

@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos
     {
         NoFeatures = 0,
         AllowBulkExecution = 1,
-        HttpClientFactory = 2
+        HttpClientFactory = 2,
+        DistributedTracing = 3,
+        ClientTelemetry = 4
     }
 }

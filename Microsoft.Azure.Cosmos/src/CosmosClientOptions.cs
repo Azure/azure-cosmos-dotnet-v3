@@ -918,17 +918,16 @@ namespace Microsoft.Azure.Cosmos
                 features |= CosmosClientOptionsFeatures.HttpClientFactory;
             }
 
-            string featureString = null;
-            if (features != CosmosClientOptionsFeatures.NoFeatures)
+            if (this.IsDistributedTracingEnabled)
             {
-                featureString = Convert.ToString((int)features, 2).PadLeft(8, '0');
+                features |= CosmosClientOptionsFeatures.DistributedTracing;
             }
 
             string regionConfiguration = this.GetRegionConfiguration();
 
             return new UserAgentContainer(
                         clientId: clientId,
-                        features: featureString,
+                        features: features,
                         regionConfiguration: regionConfiguration,
                         suffix: this.ApplicationName);
         }
