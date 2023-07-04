@@ -81,7 +81,7 @@ namespace CosmosBenchmark
                         {
                             if (traceFailures)
                             {
-                                Console.WriteLine(ex.ToString());
+                                Trace.TraceInformation(ex.ToString());
                             }
 
                             metricsCollector.CollectMetricsOnFailure();
@@ -110,9 +110,10 @@ namespace CosmosBenchmark
                 } while (currentIterationCount < iterationCount);
 
                 Trace.TraceInformation($"Executor {this.executorId} completed");
-            } catch(Exception e)
+            }
+            catch (Exception e)
             {
-                Console.WriteLine($"Error: {e.Message}");
+                Trace.TraceInformation($"Error: {e.Message}");
             }
             finally
             {

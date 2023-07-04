@@ -11,22 +11,51 @@ namespace CosmosBenchmark
     /// </summary>
     internal abstract class MetricsCollector : IMetricsCollector
     {
+        /// <summary>
+        /// Represents the meter to collect metrics.
+        /// </summary>
         private readonly Meter meter;
 
+        /// <summary>
+        /// Represents the histogram for operation latency.
+        /// </summary>
         private readonly Histogram<double> operationLatencyHistogram;
 
+        /// <summary>
+        /// Represents the histogram for records per second metric.
+        /// </summary>
         private readonly Histogram<double> rpsMetricNameHistogram;
 
+        /// <summary>
+        /// Represents the success operation counter.
+        /// </summary>
         private readonly Counter<long> successOperationCounter;
 
+        /// <summary>
+        /// Represents the failure operation counter.
+        /// </summary>
         private readonly Counter<long> failureOperationCounter;
 
+        /// <summary>
+        /// Represents latency in milliseconds metric gauge.
+        /// </summary>
+        /// <remarks>Please do not remove this as it used when collecting metrics..</remarks>
         private readonly ObservableGauge<double> latencyInMsMetricNameGauge;
 
+        /// <summary>
+        /// Represents records per second metric gauge.
+        /// </summary>
+        /// <remarks>Please do not remove this as it used when collecting metrics..</remarks>
         private readonly ObservableGauge<double> rpsNameGauge;
 
+        /// <summary>
+        /// Latency in milliseconds.
+        /// </summary>
         private double latencyInMs;
 
+        /// <summary>
+        /// Records per second.
+        /// </summary>
         private double rps;
 
         /// <summary>
@@ -68,7 +97,8 @@ namespace CosmosBenchmark
         /// Records latency in milliseconda.
         /// </summary>
         /// <param name="milliseconds">The number of milliseconds to record.</param>
-        public void RecordLatencyAndRps(double milliseconds)
+        public void RecordLatencyAndRps(
+            double milliseconds)
         {
             this.rps = 1000 / milliseconds;
             this.latencyInMs = milliseconds;
@@ -76,16 +106,34 @@ namespace CosmosBenchmark
             this.operationLatencyHistogram.Record(this.latencyInMs);
         }
 
+        /// <summary>
+        /// Gets the name of the histogram for requests per second (RPS) metric.
+        /// </summary>
         protected abstract string RpsHistogramName { get; }
 
+        /// <summary>
+        /// Gets the name of the histogram for operation latency in milliseconds.
+        /// </summary>
         protected abstract string LatencyInMsHistogramName { get; }
 
+        /// <summary>
+        /// Gets the name of the observable gauge for requests per second (RPS) metric.
+        /// </summary>
         protected abstract string RpsMetricName { get; }
 
+        /// <summary>
+        /// Gets the name of the observable gauge for operation latency in milliseconds.
+        /// </summary>
         protected abstract string LatencyInMsMetricName { get; }
 
+        /// <summary>
+        /// Gets the name of the counter for failed operations.
+        /// </summary>
         protected abstract string FailureOperationMetricName { get; }
 
+        /// <summary>
+        /// Gets the name of the counter for successful operations.
+        /// </summary>
         protected abstract string SuccessOperationMetricName { get; }
     }
 }
