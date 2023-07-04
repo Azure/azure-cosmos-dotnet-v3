@@ -126,22 +126,13 @@ namespace CosmosBenchmark
             }
 
             Type benchmarkOperationType = benchmarkOperation.GetType();
-            if (typeof(InsertBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
+            return benchmarkOperationType switch
             {
-                return InsertOperationMetricsCollector;
-            }
-            else if (typeof(QueryBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
-            {
-                return QueryOperationMetricsCollector;
-            }
-            else if (typeof(ReadBenchmarkOperation).IsAssignableFrom(benchmarkOperationType))
-            {
-                return ReadOperationMetricsCollector;
-            }
-            else
-            {
-                throw new NotSupportedException($"The type {nameof(benchmarkOperationType)} is not supported for collecting metrics.");
-            }
+                Type t when typeof(InsertBenchmarkOperation).IsAssignableFrom(t) => InsertOperationMetricsCollector,
+                Type t when typeof(QueryBenchmarkOperation).IsAssignableFrom(t) => QueryOperationMetricsCollector,
+                Type t when typeof(ReadBenchmarkOperation).IsAssignableFrom(t) => ReadOperationMetricsCollector,
+                _ => throw new NotSupportedException($"The type {nameof(benchmarkOperationType)} is not supported for collecting metrics."),
+            };
         }
     }
 }

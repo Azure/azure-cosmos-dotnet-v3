@@ -79,8 +79,6 @@ namespace CosmosBenchmark
         public double? Top95PercentLatencyInMs { get; set; }
         public double? Top98PercentLatencyInMs { get; set; }
         public double? Top99PercentLatencyInMs { get; set; }
-        public double? Top999PercentLatencyInMs { get; set; }
-        public double? Top9999PercentLatencyInMs { get; set; }
         public double? MaxLatencyInMs { get; set; }
 
         public double AverageRps { get; set; }
