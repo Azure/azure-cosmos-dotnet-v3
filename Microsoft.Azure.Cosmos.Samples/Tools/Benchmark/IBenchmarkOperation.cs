@@ -7,7 +7,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Representes the Benchmark operation.
+    /// Represents the Benchmark operation.
     /// </summary>
     internal interface IBenchmarkOperation
     {
