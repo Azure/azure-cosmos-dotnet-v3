@@ -187,7 +187,7 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, new TraceSummary());
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, rootTrace);
 
             TransportAddressUri uri1 = new TransportAddressUri(new Uri("http://someUri1.com"));
             TransportAddressUri uri2 = new TransportAddressUri(new Uri("http://someUri2.com"));
@@ -340,6 +340,12 @@
             "RequestCharge": 3.14,
             "RetryAfterInMs": "9000",
             "BELatencyInMs": "4.2",
+            "ReplicaHealthStatuses": [
+              "http://storephysicaladdress-1p.com:Connected",
+              "http://storephysicaladdress-2s.com:Unknown",
+              "http://storephysicaladdress-3s.com:Unhealthy",
+              "http://storephysicaladdress-4s.com:Unknown"
+            ],
             "transportRequestTimeline": {
               "requestTimeline": [
                 {
@@ -405,7 +411,7 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, new TraceSummary());
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, rootTrace);
             datum.ContactedReplicas.Add(default);
 
             TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", default);
@@ -529,6 +535,7 @@
             "RequestCharge": 0,
             "RetryAfterInMs": null,
             "BELatencyInMs": null,
+            "ReplicaHealthStatuses": [],
             "transportRequestTimeline": null,
             "TransportException": null
           }
@@ -546,7 +553,7 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, new TraceSummary());
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, rootTrace);
             TraceWriterBaselineTests.SetEndRequestTime(datum,DateTime.MaxValue);
 
             HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(

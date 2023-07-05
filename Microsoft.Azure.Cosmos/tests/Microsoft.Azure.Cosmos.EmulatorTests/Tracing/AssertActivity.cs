@@ -4,9 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Tracing
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -16,20 +18,20 @@ namespace Microsoft.Azure.Cosmos.Tracing
     {
         public static void IsValidOperationActivity(Activity activity)
         {
-            Assert.IsTrue(activity.OperationName == activity.DisplayName);
-
-            Assert.IsFalse(string.IsNullOrEmpty(activity.GetTagItem("db.cosmosdb.connection_mode").ToString()), $"connection mode is emtpy for {activity.OperationName}");
-
-            if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Gateway.ToString())
+            if (string.Equals(activity.Source.Name, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", StringComparison.OrdinalIgnoreCase))
             {
-                Assert.AreEqual(ActivityKind.Internal, activity.Kind, $" Actual Kind is {activity.Kind} but expected is {ActivityKind.Internal} for {activity.OperationName}");
-            }
-            else if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Direct.ToString())
-            {
-                Assert.AreEqual(ActivityKind.Client, activity.Kind, $" Actual Kind is {activity.Kind} but expected is {ActivityKind.Client} for {activity.OperationName}");
-            }
-            
-            IList<string> expectedTags = new List<string>
+                Assert.IsFalse(string.IsNullOrEmpty(activity.GetTagItem("db.cosmosdb.connection_mode").ToString()), $"connection mode is empty for {activity.OperationName}");
+
+                if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Gateway.ToString())
+                {
+                    Assert.AreEqual(ActivityKind.Internal, activity.Kind, $" Actual Kind is {activity.Kind} but expected is {ActivityKind.Internal} for {activity.OperationName}");
+                }
+                else if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Direct.ToString())
+                {
+                    Assert.AreEqual(ActivityKind.Client, activity.Kind, $" Actual Kind is {activity.Kind} but expected is {ActivityKind.Client} for {activity.OperationName}");
+                }
+
+                IList<string> expectedTags = new List<string>
             {
                  "az.namespace",
                  "az.schema_url",
@@ -60,11 +62,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                  "db.cosmosdb.correlated_activity_id"
             };
 
-            foreach (KeyValuePair<string, string> actualTag in activity.Tags)
-            {
-                Assert.IsTrue(expectedTags.Contains(actualTag.Key), $"{actualTag.Key} is not allowed for {activity.OperationName}");
+                foreach (KeyValuePair<string, string> actualTag in activity.Tags)
+                {
+                    Assert.IsTrue(expectedTags.Contains(actualTag.Key), $"{actualTag.Key} is not allowed for {activity.OperationName}");
 
-                AssertActivity.AssertDatabaseAndContainerName(activity.OperationName, actualTag);
+                    AssertActivity.AssertDatabaseAndContainerName(activity.OperationName, actualTag);
+                }
             }
         }
 

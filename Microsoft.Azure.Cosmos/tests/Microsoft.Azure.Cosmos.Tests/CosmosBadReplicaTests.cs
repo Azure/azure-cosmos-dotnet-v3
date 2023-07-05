@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -14,44 +13,50 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core;
-    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosBadReplicaTests
     {
         [TestMethod]
         [Timeout(30000)]
-        public async Task TestGoneFromServiceScenarioAsync()
+        [DataRow(true, DisplayName = "Validate when replica validation is enabled.")]
+        [DataRow(false, DisplayName = "Validate when replica validation is disabled.")]
+        public async Task TestGoneFromServiceScenarioAsync(
+            bool enableReplicaValidation)
         {
-            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);
-            Uri endpoint = MockSetupsHelper.SetupSingleRegionAccount(
-                "mockAccountInfo",
-                consistencyLevel: ConsistencyLevel.Session,
-                mockHttpHandler,
-                out string primaryRegionEndpoint);
+            try
+            {
+                Environment.SetEnvironmentVariable(
+                    variable: ConfigurationManager.ReplicaConnectivityValidationEnabled,
+                    value: enableReplicaValidation.ToString());
 
-            string databaseName = "mockDbName";
-            string containerName = "mockContainerName";
-            string containerRid = "ccZ1ANCszwk=";
-            Documents.ResourceId cRid = Documents.ResourceId.Parse(containerRid);
-            MockSetupsHelper.SetupContainerProperties(
-                mockHttpHandler: mockHttpHandler,
-                regionEndpoint: primaryRegionEndpoint,
-                databaseName: databaseName,
-                containerName: containerName,
-                containerRid: containerRid);
+                Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);
+                Uri endpoint = MockSetupsHelper.SetupSingleRegionAccount(
+                    "mockAccountInfo",
+                    consistencyLevel: ConsistencyLevel.Session,
+                    mockHttpHandler,
+                    out string primaryRegionEndpoint);
 
-            MockSetupsHelper.SetupSinglePartitionKeyRange(
-                mockHttpHandler,
-                primaryRegionEndpoint,
-                cRid,
-                out IReadOnlyList<string> partitionKeyRanges);
+                string databaseName = "mockDbName";
+                string containerName = "mockContainerName";
+                string containerRid = "ccZ1ANCszwk=";
+                Documents.ResourceId cRid = Documents.ResourceId.Parse(containerRid);
+                MockSetupsHelper.SetupContainerProperties(
+                    mockHttpHandler: mockHttpHandler,
+                    regionEndpoint: primaryRegionEndpoint,
+                    databaseName: databaseName,
+                    containerName: containerName,
+                    containerRid: containerRid);
 
-            List<string> replicaIds1 = new List<string>()
+                MockSetupsHelper.SetupSinglePartitionKeyRange(
+                    mockHttpHandler,
+                    primaryRegionEndpoint,
+                    cRid,
+                    out IReadOnlyList<string> partitionKeyRanges);
+
+                List<string> replicaIds1 = new List<string>()
             {
                 "11111111111111111",
                 "22222222222222222",
@@ -59,14 +64,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "44444444444444444",
             };
 
-            HttpResponseMessage replicaSet1 = MockSetupsHelper.CreateAddresses(
-                replicaIds1,
-                partitionKeyRanges.First(),
-                "eastus",
-                cRid);
+                HttpResponseMessage replicaSet1 = MockSetupsHelper.CreateAddresses(
+                    replicaIds1,
+                    partitionKeyRanges.First(),
+                    "eastus",
+                    cRid);
 
-            // One replica changed on the refresh
-            List<string> replicaIds2 = new List<string>()
+                // One replica changed on the refresh
+                List<string> replicaIds2 = new List<string>()
             {
                 "11111111111111111",
                 "22222222222222222",
@@ -74,117 +79,133 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "55555555555555555",
             };
 
-            HttpResponseMessage replicaSet2 = MockSetupsHelper.CreateAddresses(
-                replicaIds2,
-                partitionKeyRanges.First(),
-                "eastus",
-                cRid);
+                HttpResponseMessage replicaSet2 = MockSetupsHelper.CreateAddresses(
+                    replicaIds2,
+                    partitionKeyRanges.First(),
+                    "eastus",
+                    cRid);
 
-            bool delayCacheRefresh = true;
-            bool delayRefreshUnblocked = false;
-            mockHttpHandler.SetupSequence(x => x.SendAsync(
-                It.Is<HttpRequestMessage>(r => r.RequestUri.ToString().Contains("addresses")), It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(replicaSet1))
-                .Returns(async ()=>
-                {
-                    //block cache refresh to verify bad replica is not visited during refresh
-                    while (delayCacheRefresh)
+                bool delayCacheRefresh = true;
+                bool delayRefreshUnblocked = false;
+                mockHttpHandler.SetupSequence(x => x.SendAsync(
+                    It.Is<HttpRequestMessage>(r => r.RequestUri.ToString().Contains("addresses")), It.IsAny<CancellationToken>()))
+                    .Returns(Task.FromResult(replicaSet1))
+                    .Returns(async ()=>
                     {
-                        await Task.Delay(TimeSpan.FromMilliseconds(20));
+                        //block cache refresh to verify bad replica is not visited during refresh
+                        while (delayCacheRefresh)
+                        {
+                            await Task.Delay(TimeSpan.FromMilliseconds(20));
+                        }
+
+                        delayRefreshUnblocked = true;
+                        return replicaSet2;
+                    });
+
+                int callBack = 0;
+                List<Documents.TransportAddressUri> urisVisited = new List<Documents.TransportAddressUri>();
+                Mock<Documents.TransportClient> mockTransportClient = new Mock<Documents.TransportClient>(MockBehavior.Strict);
+                mockTransportClient.Setup(x => x.InvokeResourceOperationAsync(It.IsAny<Documents.TransportAddressUri>(), It.IsAny<Documents.DocumentServiceRequest>()))
+                    .Callback<Documents.TransportAddressUri, Documents.DocumentServiceRequest>((t, _) => urisVisited.Add(t))
+                .Returns(() =>
+                {
+                    callBack++;
+                    if (callBack == 1)
+                    {
+                        throw Documents.Rntbd.TransportExceptions.GetGoneException(
+                            new Uri("https://localhost:8081"),
+                            Guid.NewGuid(),
+                            new Documents.TransportException(Documents.TransportErrorCode.ConnectionBroken,
+                            null,
+                            Guid.NewGuid(),
+                            new Uri("https://localhost:8081"),
+                            "Mock",
+                            userPayload: true,
+                            payloadSent: false));
                     }
 
-                    delayRefreshUnblocked = true;
-                    return replicaSet2;
+                    return Task.FromResult(new Documents.StoreResponse()
+                    {
+                        Status = 200,
+                        Headers = new Documents.Collections.StoreResponseNameValueCollection()
+                        {
+                            ActivityId = Guid.NewGuid().ToString(),
+                            LSN = "12345",
+                            PartitionKeyRangeId = "0",
+                            GlobalCommittedLSN = "12345",
+                            SessionToken = "1#12345#1=12345"
+                        },
+                        ResponseBody = new MemoryStream()
+                    });
                 });
 
-            int callBack = 0;
-            List<Documents.TransportAddressUri> urisVisited = new List<Documents.TransportAddressUri>();
-            Mock<Documents.TransportClient> mockTransportClient = new Mock<Documents.TransportClient>(MockBehavior.Strict);
-            mockTransportClient.Setup(x => x.InvokeResourceOperationAsync(It.IsAny<Documents.TransportAddressUri>(), It.IsAny<Documents.DocumentServiceRequest>()))
-                .Callback<Documents.TransportAddressUri, Documents.DocumentServiceRequest>((t, _) => urisVisited.Add(t))
-            .Returns(() =>
-            {
-                callBack++;
-                if (callBack == 1)
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
-                    throw Documents.Rntbd.TransportExceptions.GetGoneException(
-                        new Uri("https://localhost:8081"),
-                        Guid.NewGuid(),
-                        new Documents.TransportException(Documents.TransportErrorCode.ConnectionBroken,
-                        null,
-                        Guid.NewGuid(),
-                        new Uri("https://localhost:8081"),
-                        "Mock",
-                        userPayload: true,
-                        payloadSent: false));
-                }
+                    ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                    HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                    TransportClientHandlerFactory = (original) => mockTransportClient.Object,
+                };
 
-                return Task.FromResult(new Documents.StoreResponse()
+                using (CosmosClient customClient = new CosmosClient(
+                    endpoint.ToString(),
+                    Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                    cosmosClientOptions))
                 {
-                    Status = 200,
-                    Headers = new Documents.Collections.StoreResponseNameValueCollection()
+                    try
                     {
-                        ActivityId = Guid.NewGuid().ToString(),
-                        LSN = "12345",
-                        PartitionKeyRangeId = "0",
-                        GlobalCommittedLSN = "12345",
-                        SessionToken = "1#12345#1=12345"
-                    },
-                    ResponseBody = new MemoryStream()
-                });
-            });
+                        Container container = customClient.GetContainer(databaseName, containerName);
 
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
-            {
-                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
-                HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
-                TransportClientHandlerFactory = (original) => mockTransportClient.Object,
-            };
+                        for (int i = 0; i < 20; i++)
+                        {
+                            ResponseMessage response = await container.ReadItemStreamAsync(Guid.NewGuid().ToString(), new Cosmos.PartitionKey(Guid.NewGuid().ToString()));
+                            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                        }
 
-            using (CosmosClient customClient = new CosmosClient(
-                endpoint.ToString(),
-                Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
-                cosmosClientOptions))
-            {
-                try
-                {
-                    Container container = customClient.GetContainer(databaseName, containerName);
+                        mockTransportClient.VerifyAll();
+                        mockHttpHandler.VerifyAll();
 
-                    for (int i = 0; i < 20; i++)
-                    {
-                        ResponseMessage response = await container.ReadItemStreamAsync(Guid.NewGuid().ToString(), new Cosmos.PartitionKey(Guid.NewGuid().ToString()));
-                        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                        Documents.TransportAddressUri failedReplica = urisVisited.First();
+
+                        // With replica validation enabled in preview mode, the failed replica will be validated as a part of the flow,
+                        // and because any subsequent validation/ connection will be successful, the failed replica will now be marked
+                        // as connected, thus it will be visited more than once. However, note that when replice validation is disabled,
+                        // no validation is done thus the URI will be marked as unhealthy as expected. Therefore the uri will be visited
+                        // just once.
+                        Assert.IsTrue(
+                            enableReplicaValidation
+                                ? urisVisited.Any(x => x.Equals(failedReplica))
+                                : urisVisited.Count(x => x.Equals(failedReplica)) == 1);
+
+                        urisVisited.Clear();
+                        delayCacheRefresh = false;
+                        do
+                        {
+                            await Task.Delay(TimeSpan.FromMilliseconds(100));
+                        }while (!delayRefreshUnblocked);
+
+                        for (int i = 0; i < 20; i++)
+                        {
+                            ResponseMessage response = await container.ReadItemStreamAsync(Guid.NewGuid().ToString(), new Cosmos.PartitionKey(Guid.NewGuid().ToString()));
+                            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                        }
+
+                        Assert.AreEqual(4, urisVisited.ToHashSet().Count());
+
+                        // Clears all the setups. No network calls should be done on the next operation.
+                        mockHttpHandler.Reset();
+                        mockTransportClient.Reset();
                     }
-
-                    mockTransportClient.VerifyAll();
-                    mockHttpHandler.VerifyAll();
-
-                    Documents.TransportAddressUri failedReplica = urisVisited.First();
-                    Assert.AreEqual(1, urisVisited.Count(x => x.Equals(failedReplica)));
-
-                    urisVisited.Clear();
-                    delayCacheRefresh = false;
-                    do 
+                    finally
                     {
-                        await Task.Delay(TimeSpan.FromMilliseconds(100));
-                    }while (!delayRefreshUnblocked);
-
-                    for (int i = 0; i < 20; i++)
-                    {
-                        ResponseMessage response = await container.ReadItemStreamAsync(Guid.NewGuid().ToString(), new Cosmos.PartitionKey(Guid.NewGuid().ToString()));
-                        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                        mockTransportClient.Setup(x => x.Dispose());
                     }
-
-                    Assert.AreEqual(4, urisVisited.ToHashSet().Count());
-
-                    // Clears all the setups. No network calls should be done on the next operation.
-                    mockHttpHandler.Reset();
-                    mockTransportClient.Reset();
                 }
-                finally
-                {
-                    mockTransportClient.Setup(x => x.Dispose());
-                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(
+                    variable: ConfigurationManager.ReplicaConnectivityValidationEnabled,
+                    value: null);
             }
         }
     }
