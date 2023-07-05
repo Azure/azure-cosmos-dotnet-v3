@@ -205,7 +205,7 @@
         public async Task CreateAndInitializeAsync_WithValidDatabaseAndContainer_ShouldOpenRntbdConnectionsToBackendReplicas()
         {
             // Arrange.
-            int httpCallsMade = 0;
+            int httpCallsMade = 0, maxRequestsPerConnection = 6;
             HttpClientHandlerHelper httpClientHandlerHelper = new ()
             {
                 RequestCallBack = (request, cancellationToken) =>
@@ -227,6 +227,7 @@
             {
                 HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
                 ConnectionMode = ConnectionMode.Direct,
+                MaxRequestsPerTcpConnection = maxRequestsPerConnection,
             };
 
             // Act.
@@ -275,8 +276,11 @@
                                     .GetValue(loadBalancingPartition);
 
             Assert.IsNotNull(openChannels);
-            Assert.AreEqual(30, channelCapacity);
-            Assert.AreEqual(1, openChannels.Count);
+            Assert.AreEqual(48, openChannels.Count, "Here the expected value 48 rather explains how many time we call the" +
+                "LoadBalancingPartition.OpenChannelAsync(). The emulator by default returns 12 partitions, and each partition has 4 replicas," +
+                "and by behavior the emulator uses the same URI for eac of these replica, hence 12 * 4 = 48 times we call the OpenChannelAsync()." +
+                "In ideal world, the value should be 1, because for each unique URI, the OpenChannelAsync() call will just be 1.");
+            Assert.AreEqual(openChannels.Count * maxRequestsPerConnection, channelCapacity);
 
             Documents.Rntbd.LbChannelState channelState = openChannels.First();
 

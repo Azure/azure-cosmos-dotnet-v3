@@ -147,11 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             List<Documents.Routing.Range<string>> effectiveRanges = new List<Documents.Routing.Range<string>>(queryInfoInternal.QueryRanges.Count);
             foreach (Documents.Routing.Range<PartitionKeyInternal> internalRange in queryInfoInternal.QueryRanges)
             {
-                effectiveRanges.Add(new Documents.Routing.Range<string>(
-                     internalRange.Min.GetEffectivePartitionKeyString(partitionKeyDefinition, false),
-                     internalRange.Max.GetEffectivePartitionKeyString(partitionKeyDefinition, false),
-                     internalRange.IsMinInclusive,
-                     internalRange.IsMaxInclusive));
+                effectiveRanges.Add(PartitionKeyInternal.GetEffectivePartitionKeyRange(partitionKeyDefinition, internalRange));
             }
 
             effectiveRanges.Sort(Documents.Routing.Range<string>.MinComparer.Instance);

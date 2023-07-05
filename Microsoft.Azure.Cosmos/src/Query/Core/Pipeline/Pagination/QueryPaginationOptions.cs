@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
     {
         public static readonly QueryPaginationOptions Default = new QueryPaginationOptions();
 
+        public bool OptimisticDirectExecute { get; }
+
         public static readonly ImmutableHashSet<string> BannedHeaders = new HashSet<string>()
         {
             HttpConstants.HttpHeaders.Continuation,
@@ -29,10 +31,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
 
         public QueryPaginationOptions(
             int? pageSizeHint = null,
-            JsonSerializationFormat? jsonSerializationFormat = null,
+            bool optimisticDirectExecute = false,
             Dictionary<string, string> additionalHeaders = null)
-            : base(pageSizeHint, jsonSerializationFormat, additionalHeaders)
+            : base(pageSizeHint, additionalHeaders)
         {
+            this.OptimisticDirectExecute = optimisticDirectExecute;
         }
 
         protected override ImmutableHashSet<string> BannedAdditionalHeaders => BannedHeaders;
