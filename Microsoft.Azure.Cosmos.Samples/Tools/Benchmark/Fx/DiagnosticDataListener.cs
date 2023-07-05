@@ -52,7 +52,7 @@ namespace CosmosBenchmark.Fx
         public DiagnosticDataListener()
         {
             /// <summary>
-            /// Checks the file size every n milliseconds for diagnostics and creates a new one if the maximum limit is exceeded.
+            /// Checks the file size every <see cref="FileSizeCheckIntervalMs"/> milliseconds for diagnostics and creates a new one if the maximum limit is exceeded.
             /// </summary>
             ThreadPool.QueueUserWorkItem(async state =>
             {
