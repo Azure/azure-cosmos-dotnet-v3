@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.ComponentModel;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
@@ -188,6 +190,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
+        internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
+
         internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
 
         internal bool? ReturnResultsInDeterministicOrder { get; set; }
@@ -240,11 +244,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
             }
-
-            if (this.CosmosSerializationFormatOptions != null)
-            {
-                request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.CosmosSerializationFormatOptions.ContentSerializationFormat;
-            }
+            
+            request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats?.ToString() ?? DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
 
             if (this.StartId != null)
             {

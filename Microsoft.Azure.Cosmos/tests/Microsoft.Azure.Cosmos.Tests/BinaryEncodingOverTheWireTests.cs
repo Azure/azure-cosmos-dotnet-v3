@@ -28,15 +28,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             ConfigurationManager.AppSettings["GatewayEndpoint"],
             ConfigurationManager.AppSettings["MasterKey"],
             new CosmosClientOptions() { ConnectionMode = ConnectionMode.Gateway });
-        private static readonly CosmosClient DirectHttpsClient = new CosmosClient(
-            ConfigurationManager.AppSettings["GatewayEndpoint"],
-            ConfigurationManager.AppSettings["MasterKey"],
-            new CosmosClientOptions() { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Documents.Client.Protocol.Https });
         private static readonly CosmosClient RntbdClient = new CosmosClient(
             ConfigurationManager.AppSettings["GatewayEndpoint"],
             ConfigurationManager.AppSettings["MasterKey"],
             new CosmosClientOptions() { ConnectionMode = ConnectionMode.Direct, ConnectionProtocol = Documents.Client.Protocol.Tcp });
-        private static readonly CosmosClient[] Clients = new CosmosClient[] { GatewayClient, DirectHttpsClient, RntbdClient };
+        private static readonly CosmosClient[] Clients = new CosmosClient[] { GatewayClient, RntbdClient };
         private static readonly CosmosClient Client = RntbdClient;
         private static readonly AsyncLazy<Database> Database = new AsyncLazy<Database>(async () =>
         {
@@ -124,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task CombinedScriptsDataTest()
         {
-            await this.TestCurratedDocs("CombinedScriptsData.json");
+            await this.TestCuratedDocs("CombinedScriptsData.json");
         }
 
         // For now we are skipping this test since the documents are too large to ingest and we get a rate size too large (HTTP 413).
@@ -139,96 +135,96 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task DevTestCollTest()
         {
-            await this.TestCurratedDocs("devtestcoll.json");
+            await this.TestCuratedDocs("devtestcoll.json");
         }
 
         [TestMethod]
         public async Task LastFMTest()
         {
-            await this.TestCurratedDocs("lastfm");
+            await this.TestCuratedDocs("lastfm");
         }
 
         [TestMethod]
         public async Task LogDataTest()
         {
-            await this.TestCurratedDocs("LogData.json");
+            await this.TestCuratedDocs("LogData.json");
         }
 
         [TestMethod]
         public async Task MillionSong1KDocumentsTest()
         {
-            await this.TestCurratedDocs("MillionSong1KDocuments.json");
+            await this.TestCuratedDocs("MillionSong1KDocuments.json");
         }
 
         [TestMethod]
         public async Task MsnCollectionTest()
         {
-            await this.TestCurratedDocs("MsnCollection.json");
+            await this.TestCuratedDocs("MsnCollection.json");
         }
 
         [TestMethod]
         public async Task NutritionDataTest()
         {
-            await this.TestCurratedDocs("NutritionData");
+            await this.TestCuratedDocs("NutritionData");
         }
 
         [TestMethod]
         public async Task RunsCollectionTest()
         {
-            await this.TestCurratedDocs("runsCollection");
+            await this.TestCuratedDocs("runsCollection");
         }
 
         [TestMethod]
         public async Task StatesCommitteesTest()
         {
-            await this.TestCurratedDocs("states_committees.json");
+            await this.TestCuratedDocs("states_committees.json");
         }
 
         [TestMethod]
         public async Task StatesLegislatorsTest()
         {
-            await this.TestCurratedDocs("states_legislators");
+            await this.TestCuratedDocs("states_legislators");
         }
 
         [TestMethod]
         public async Task Store01Test()
         {
-            await this.TestCurratedDocs("store01C.json");
+            await this.TestCuratedDocs("store01C.json");
         }
 
         [TestMethod]
         public async Task TicinoErrorBucketsTest()
         {
-            await this.TestCurratedDocs("TicinoErrorBuckets");
+            await this.TestCuratedDocs("TicinoErrorBuckets");
         }
 
         [TestMethod]
         public async Task TwitterDataTest()
         {
-            await this.TestCurratedDocs("twitter_data");
+            await this.TestCuratedDocs("twitter_data");
         }
 
         [TestMethod]
         public async Task Ups1Test()
         {
-            await this.TestCurratedDocs("ups1");
+            await this.TestCuratedDocs("ups1");
         }
 
         [TestMethod]
         public async Task XpertEventsTest()
         {
-            await this.TestCurratedDocs("XpertEvents");
+            await this.TestCuratedDocs("XpertEvents");
         }
 
-        private async Task TestCurratedDocs(string path)
+        private async Task TestCuratedDocs(string path)
         {
             IEnumerable<object> documents = BinaryEncodingOverTheWireTests.GetDocumentsFromCurratedDoc(path);
             await BinaryEncodingOverTheWireTests.CreateIngestQueryDelete(
                 documents.Select(x => x.ToString()),
-                this.TestCurratedDocs);
+                this.TestCuratedDocs);
         }
 
-        private async Task TestCurratedDocs(CosmosClient cosmosClient, Container container, List<JToken> items)
+        private async Task TestCuratedDocs(CosmosClient cosmosClient, Container container, List<JToken> items)
         {
             HashSet<JToken> inputItems = new HashSet<JToken>(items, JsonTokenEqualityComparer.Value);
 
