@@ -1000,19 +1000,8 @@ namespace Microsoft.Azure.Cosmos
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: fakeOpenConnectionHandler,
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
-                enableTcpConnectionEndpointRediscovery: true);
-
-            // By default, the replica validation feature is disabled in GatewayAddressCache. Reflection is used to enable the feature
-            // for the purpose of this test.
-            FieldInfo fieldInfo = cache
-                .GetType()
-                .GetField(
-                    name: "isReplicaAddressValidationEnabled",
-                    bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
-
-            fieldInfo.SetValue(
-                    obj: cache,
-                    value: true);
+                enableTcpConnectionEndpointRediscovery: true,
+                replicaAddressValidationEnabled: true);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid);
 
@@ -1156,19 +1145,8 @@ namespace Microsoft.Azure.Cosmos
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: fakeOpenConnectionHandler,
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
-                enableTcpConnectionEndpointRediscovery: true);
-
-            // By default, the replica validation feature is disabled in GatewayAddressCache. Reflection is used to enable the feature
-            // for the purpose of this test.
-            FieldInfo fieldInfo = cache
-                .GetType()
-                .GetField(
-                    name: "isReplicaAddressValidationEnabled",
-                    bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
-
-            fieldInfo.SetValue(
-                    obj: cache,
-                    value: true);
+                enableTcpConnectionEndpointRediscovery: true,
+                replicaAddressValidationEnabled: true);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid);
 
