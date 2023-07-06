@@ -4,7 +4,8 @@
       <Description>Query</Description>
       <Setup><![CDATA[
     FeedIteratorInternal feedIterator = (FeedIteratorInternal)container.GetItemQueryStreamIterator(
-        queryText: "SELECT * FROM c");
+        queryText: "SELECT * FROM c",
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
     while (feedIterator.HasMoreResults)
@@ -48,6 +49,7 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -83,6 +85,7 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -118,6 +121,7 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -153,6 +157,7 @@
                         │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
                         │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
                         │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+                        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
                         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
                         │       │   (
                         │       │       [System Info]
@@ -253,6 +258,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -344,6 +353,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -441,6 +454,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -532,6 +549,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -696,7 +717,8 @@
       <Description>Query Typed</Description>
       <Setup><![CDATA[
     FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container.GetItemQueryIterator<JToken>(
-        queryText: "SELECT * FROM c");
+        queryText: "SELECT * FROM c",
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
     while (feedIterator.HasMoreResults)
@@ -740,6 +762,7 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -776,6 +799,7 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -812,6 +836,7 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -848,6 +873,7 @@
         │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
         │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
         │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
         │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
         │               │       │   (
         │               │       │       [System Info]
@@ -949,6 +975,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -1044,6 +1074,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -1145,6 +1179,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -1240,6 +1278,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -1408,7 +1450,8 @@
       <Description>Query Public API</Description>
       <Setup><![CDATA[
     FeedIterator feedIterator = container.GetItemQueryStreamIterator(
-        queryText: "SELECT * FROM c");
+        queryText: "SELECT * FROM c",
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
 
@@ -1453,6 +1496,7 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -1488,6 +1532,7 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -1523,6 +1568,7 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -1558,6 +1604,7 @@
                         │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
                         │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
                         │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+                        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
                         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
                         │       │   (
                         │       │       [System Info]
@@ -1658,6 +1705,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -1749,6 +1800,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -1846,6 +1901,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -1937,6 +1996,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -2101,7 +2164,8 @@
       <Description>Query Public API Typed</Description>
       <Setup><![CDATA[
     FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
-        queryText: "SELECT * FROM c");
+        queryText: "SELECT * FROM c",
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
 
@@ -2146,6 +2210,7 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -2182,6 +2247,7 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -2218,6 +2284,7 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -2254,6 +2321,7 @@
         │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
         │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
         │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
         │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
         │               │       │   (
         │               │       │       [System Info]
@@ -2355,6 +2423,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -2450,6 +2522,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -2551,6 +2627,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -2646,6 +2726,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -2816,7 +2900,8 @@
     Lazy<bool> currentLazy = Documents.ServiceInteropWrapper.AssembliesExist;
     Documents.ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => false);
     FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
-        queryText: "SELECT * FROM c");
+        queryText: "SELECT * FROM c",
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
 
@@ -2852,6 +2937,7 @@
     │   │   │           Redacted To Not Change The Baselines From Run To Run
     │   │   │       )
     │   │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │   │   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │   │       │   (
     │   │   │       │       [System Info]
@@ -2882,6 +2968,7 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -2918,6 +3005,7 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -2954,6 +3042,7 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -2990,6 +3079,7 @@
         │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
         │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
         │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
         │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
         │               │       │   (
         │               │       │       [System Info]
@@ -3046,6 +3136,10 @@
               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
               "duration in milliseconds": 0,
               "children": [
+                {
+                  "name": "Get Collection Cache",
+                  "duration in milliseconds": 0
+                },
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                   "duration in milliseconds": 0,
@@ -3132,6 +3226,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -3233,6 +3331,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -3331,6 +3433,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -3426,6 +3532,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -3596,7 +3706,8 @@
     FeedIterator feedIterator = container.GetItemQueryStreamIterator(
         feedRange: FeedRangeEpk.FullRange,
         queryDefinition: new QueryDefinition("SELECT * FROM c"),
-        continuationToken: null);
+        continuationToken: null,
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
 
@@ -3642,6 +3753,7 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -3677,6 +3789,7 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -3712,6 +3825,7 @@
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │                   │       │   (
     │                   │       │       [System Info]
@@ -3747,6 +3861,7 @@
                         │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
                         │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
                         │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+                        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
                         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
                         │       │   (
                         │       │       [System Info]
@@ -3853,6 +3968,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -3944,6 +4063,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -4041,6 +4164,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -4132,6 +4259,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -4298,7 +4429,8 @@
     FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
         feedRange: FeedRangeEpk.FullRange,
         queryDefinition: new QueryDefinition("SELECT * FROM c"),
-        continuationToken: null);
+        continuationToken: null,
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
 
@@ -4344,6 +4476,7 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -4380,6 +4513,7 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -4416,6 +4550,7 @@
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
     │   │               │       │   (
     │   │               │       │       [System Info]
@@ -4452,6 +4587,7 @@
         │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
         │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
         │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
         │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
         │               │       │   (
         │               │       │       [System Info]
@@ -4559,6 +4695,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -4654,6 +4794,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
@@ -4755,6 +4899,10 @@
                               "duration in milliseconds": 0
                             },
                             {
+                              "name": "Get Collection Cache",
+                              "duration in milliseconds": 0
+                            },
+                            {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "duration in milliseconds": 0,
                               "data": {
@@ -4850,6 +4998,10 @@
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
+                              "duration in milliseconds": 0
+                            },
+                            {
+                              "name": "Get Collection Cache",
                               "duration in milliseconds": 0
                             },
                             {
