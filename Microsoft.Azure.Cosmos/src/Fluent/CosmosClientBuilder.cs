@@ -628,12 +628,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// timeouts. The default value for this parameter is false.
         /// </summary>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithAdvancedReplicaSelectionEnabledForTcp()
+        internal CosmosClientBuilder WithAdvancedReplicaSelectionEnabledForTcp()
         {
             this.clientOptions.EnableAdvancedReplicaSelectionForTcp = true;
             return this;

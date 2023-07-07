@@ -356,12 +356,7 @@ namespace Microsoft.Azure.Cosmos
         /// <para>This is optimal for latency-sensitive workloads. Does not apply if <see cref="ConnectionMode.Gateway"/> is used.</para>
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithAdvancedReplicaSelectionEnabledForTcp()"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        bool EnableAdvancedReplicaSelectionForTcp { get; set; }
+        internal bool EnableAdvancedReplicaSelectionForTcp { get; set; }
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.

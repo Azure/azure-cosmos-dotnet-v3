@@ -113,7 +113,6 @@ namespace Microsoft.Azure.Cosmos
         private const string DefaultInitTaskKey = "InitTaskKey";
 
         private readonly bool IsLocalQuorumConsistency = false;
-        private readonly bool isReplicaAddressValidationEnabled;
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;

@@ -67,8 +67,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.enableTcpConnectionEndpointRediscovery = connectionPolicy.EnableTcpConnectionEndpointRediscovery;
             this.replicaAddressValidationEnabled = connectionPolicy.EnableAdvancedReplicaSelectionForTcp;
 
-            this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled();
-
             this.maxEndpoints = maxBackupReadEndpoints + 2; // for write and alternate write endpoint (during failover)
 
             this.addressCacheByEndpoint = new ConcurrentDictionary<Uri, EndpointCache>();
