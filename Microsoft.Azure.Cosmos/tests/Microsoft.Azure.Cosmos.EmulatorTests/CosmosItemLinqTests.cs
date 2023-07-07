@@ -214,12 +214,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ItemLINQQueryWithInvalidContinuationTokenTest()
         {
+            string malformedString = "Malformed String";
             FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemLinqQueryable<ToDoActivity>().ToFeedIterator();
 
             while (feedIterator.HasMoreResults)
             {
                 IOrderedQueryable<ToDoActivity> querable = this.Container.GetItemLinqQueryable<ToDoActivity>(
-                    continuationToken: "Malformed String");
+                    continuationToken: malformedString);
                 try
                 {
                     FeedIterator<ToDoActivity> iterator = querable.ToFeedIterator();
@@ -227,8 +228,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 catch (CosmosException exception)
                 {
                     Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
-                    Assert.IsTrue(exception.SubStatusCode == 20007);
-                    Assert.IsTrue(exception.Message.Contains("Malformed String"));
+                    Assert.IsTrue(exception.SubStatusCode == (int)Documents.SubStatusCodes.MalformedContinuationToken);
+                    Assert.IsTrue(exception.Message.Contains(malformedString));
                     return;
                 }
 
