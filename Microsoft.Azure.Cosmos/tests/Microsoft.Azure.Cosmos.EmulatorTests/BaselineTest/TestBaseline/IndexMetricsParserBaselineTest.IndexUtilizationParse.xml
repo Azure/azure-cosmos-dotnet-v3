@@ -49,7 +49,7 @@ Index Utilization Information
 Index Utilization Information
   Utilized Single Indexes
     Index Spec: /ı/?
-    Index Impact Score: High
+    Index Impact Score: Low
     ---
   Potential Single Indexes
   Utilized Composite Indexes
@@ -67,7 +67,7 @@ Index Utilization Information
 Index Utilization Information
   Utilized Single Indexes
     Index Spec: /ZZZzzz/?
-    Index Impact Score: High
+    Index Impact Score: Low
     ---
   Potential Single Indexes
   Utilized Composite Indexes
@@ -85,7 +85,7 @@ Index Utilization Information
 Index Utilization Information
   Utilized Single Indexes
     Index Spec: /" !\"!@#$%^&*()<>?:\"{}|ßÃŒÆ12ếàưỏốởặ"/?
-    Index Impact Score: High
+    Index Impact Score: Low
     ---
   Potential Single Indexes
   Utilized Composite Indexes
@@ -103,7 +103,7 @@ Index Utilization Information
 Index Utilization Information
   Utilized Single Indexes
     Index Spec: /"Der schnelle Braunfuchs springt über den faulen Hund"/?
-    Index Impact Score: High
+    Index Impact Score: Low
     ---
   Potential Single Indexes
   Utilized Composite Indexes
@@ -121,7 +121,7 @@ Index Utilization Information
 Index Utilization Information
   Utilized Single Indexes
     Index Spec: /"Η γρήγορη καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί"/?
-    Index Impact Score: High
+    Index Impact Score: Low
     ---
   Potential Single Indexes
   Utilized Composite Indexes
@@ -139,7 +139,7 @@ Index Utilization Information
 Index Utilization Information
   Utilized Single Indexes
     Index Spec: /"الثعلب البني السريع يقفز فوق الكلب الكسول"/?
-    Index Impact Score: High
+    Index Impact Score: Low
     ---
   Potential Single Indexes
   Utilized Composite Indexes
@@ -157,7 +157,7 @@ Index Utilization Information
 Index Utilization Information
   Utilized Single Indexes
     Index Spec: /"Быстрая коричневая лиса прыгает через ленивую собаку"/?
-    Index Impact Score: High
+    Index Impact Score: Low
     ---
   Potential Single Indexes
   Utilized Composite Indexes
@@ -175,7 +175,7 @@ Index Utilization Information
 Index Utilization Information
   Utilized Single Indexes
     Index Spec: /素早く茶色のキツネが怠惰な犬を飛び越えます/?
-    Index Impact Score: High
+    Index Impact Score: Low
     ---
   Potential Single Indexes
   Utilized Composite Indexes
@@ -193,7 +193,7 @@ Index Utilization Information
 Index Utilization Information
   Utilized Single Indexes
     Index Spec: /"तेज, भूरी लोमडी आलसी कुत्ते के उपर कूद गई"/?
-    Index Impact Score: High
+    Index Impact Score: Low
     ---
   Potential Single Indexes
   Utilized Composite Indexes
