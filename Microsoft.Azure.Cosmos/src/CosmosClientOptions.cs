@@ -355,7 +355,6 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// <para>This is optimal for latency-sensitive workloads. Does not apply if <see cref="ConnectionMode.Gateway"/> is used.</para>
         /// </remarks>
-        /// <seealso cref="CosmosClientBuilder.WithAdvancedReplicaSelectionEnabledForTcp()"/>
         internal bool EnableAdvancedReplicaSelectionForTcp { get; set; }
 
         /// <summary>

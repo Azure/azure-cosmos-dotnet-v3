@@ -56,12 +56,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ReadManyTypedTestWithAdvancedReplicaSelection(
             bool advancedReplicaSelectionEnabled)
         {
-            CosmosClient cosmosClient = advancedReplicaSelectionEnabled
-                ? TestCommon.CreateCosmosClient(
-                    customizeClientBuilder: (CosmosClientBuilder builder) => builder.WithAdvancedReplicaSelectionEnabledForTcp())
-                : TestCommon.CreateCosmosClient();
+            CosmosClientOptions clientOptions = new ()
+            {
+                EnableAdvancedReplicaSelectionForTcp = advancedReplicaSelectionEnabled,
+            };
 
             Database database = null;
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(clientOptions);
             try
             {
                 database = await cosmosClient.CreateDatabaseAsync("ReadManyTypedTestScenarioDb");
