@@ -4,7 +4,8 @@
       <Description>Query</Description>
       <Setup><![CDATA[
     FeedIteratorInternal feedIterator = (FeedIteratorInternal)container.GetItemQueryStreamIterator(
-        queryText: "SELECT * FROM c");
+        queryText: "SELECT * FROM c",
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
     while (feedIterator.HasMoreResults)
@@ -696,7 +697,8 @@
       <Description>Query Typed</Description>
       <Setup><![CDATA[
     FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container.GetItemQueryIterator<JToken>(
-        queryText: "SELECT * FROM c");
+        queryText: "SELECT * FROM c",
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
     while (feedIterator.HasMoreResults)
@@ -1408,7 +1410,8 @@
       <Description>Query Public API</Description>
       <Setup><![CDATA[
     FeedIterator feedIterator = container.GetItemQueryStreamIterator(
-        queryText: "SELECT * FROM c");
+        queryText: "SELECT * FROM c",
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
 
@@ -2101,7 +2104,8 @@
       <Description>Query Public API Typed</Description>
       <Setup><![CDATA[
     FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
-        queryText: "SELECT * FROM c");
+        queryText: "SELECT * FROM c",
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
 
@@ -2816,7 +2820,8 @@
     Lazy<bool> currentLazy = Documents.ServiceInteropWrapper.AssembliesExist;
     Documents.ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => false);
     FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
-        queryText: "SELECT * FROM c");
+        queryText: "SELECT * FROM c",
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
 
@@ -3596,7 +3601,8 @@
     FeedIterator feedIterator = container.GetItemQueryStreamIterator(
         feedRange: FeedRangeEpk.FullRange,
         queryDefinition: new QueryDefinition("SELECT * FROM c"),
-        continuationToken: null);
+        continuationToken: null,
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
 
@@ -4298,7 +4304,8 @@
     FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
         feedRange: FeedRangeEpk.FullRange,
         queryDefinition: new QueryDefinition("SELECT * FROM c"),
-        continuationToken: null);
+        continuationToken: null,
+        requestOptions: requestOptions);
 
     List<ITrace> traces = new List<ITrace>();
 

@@ -1136,8 +1136,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Tuple<int, List<DataObject>> generatedData = this.CreateDataTestSelectTop();
             int seed = generatedData.Item1;
             List<DataObject> data = generatedData.Item2;
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+#if PREVIEW
+                EnableOptimisticDirectExecution = false
+#endif
+            };
 
-            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
