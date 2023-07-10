@@ -42,10 +42,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 CosmosDbEventSource.Singleton.LatencyOverThreshold(response.Diagnostics.ToString());
             }
-            else if (DiagnosticsFilterHelper.IsNonSuccessResponse(
+            else if (!DiagnosticsFilterHelper.IsSuccessfulResponse(
                         response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
-                CosmosDbEventSource.Singleton.NonSuccessResponse(response.Diagnostics.ToString());
+                CosmosDbEventSource.Singleton.FailedResponse(response.Diagnostics.ToString());
             }
         }
 
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         [Event(3, Level = EventLevel.Warning)]
-        private void NonSuccessResponse(string message)
+        private void FailedResponse(string message)
         {
             this.WriteEvent(3, message);
         }

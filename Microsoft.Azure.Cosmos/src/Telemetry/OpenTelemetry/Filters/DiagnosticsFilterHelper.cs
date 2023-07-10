@@ -33,13 +33,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         }
 
         /// <summary>
-        /// Allow only when HTTP status code is not Success
+        /// Check if response HTTP status code is returning successful
         /// </summary>
         /// <returns>true or false</returns>
-        public static bool IsNonSuccessResponse(
-          OpenTelemetryAttributes response)
+        public static bool IsSuccessfulResponse(OpenTelemetryAttributes response)
         { 
-            return !response.StatusCode.IsSuccess();
+            return response.StatusCode.IsSuccess() 
+                        || (response.StatusCode == System.Net.HttpStatusCode.NotFound && response.SubStatusCode == 0)
+                        || (response.StatusCode == System.Net.HttpStatusCode.NotModified && response.SubStatusCode == 0)
+                        || (response.StatusCode == System.Net.HttpStatusCode.Conflict && response.SubStatusCode == 0)
+                        || (response.StatusCode == System.Net.HttpStatusCode.PreconditionFailed && response.SubStatusCode == 0)
+                        ;
         }
     }
 }
