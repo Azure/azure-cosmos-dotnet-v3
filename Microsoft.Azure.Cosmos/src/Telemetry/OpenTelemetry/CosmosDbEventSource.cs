@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             else if (!DiagnosticsFilterHelper.IsSuccessfulResponse(
                         response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
-                CosmosDbEventSource.Singleton.FailedResponse(response.Diagnostics.ToString());
+                CosmosDbEventSource.Singleton.FailedRequest(response.Diagnostics.ToString());
             }
         }
 
@@ -70,8 +70,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.WriteEvent(2, message);
         }
 
-        [Event(3, Level = EventLevel.Warning)]
-        private void FailedResponse(string message)
+        [Event(3, Level = EventLevel.Error)]
+        private void FailedRequest(string message)
         {
             this.WriteEvent(3, message);
         }
