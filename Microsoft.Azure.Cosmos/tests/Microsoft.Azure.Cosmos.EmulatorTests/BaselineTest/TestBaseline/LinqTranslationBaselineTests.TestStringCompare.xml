@@ -201,7 +201,7 @@ FROM root]]>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[The right hand side of string.Compare() comparison must be constant '0']]></ErrorMessage>
+      <ErrorMessage><![CDATA[The right-hand side of String.Compare() comparison must be constant '0']]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -211,7 +211,7 @@ FROM root]]>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[The right hand side of string.Compare() comparison must be constant '0']]></ErrorMessage>
+      <ErrorMessage><![CDATA[The right-hand side of String.Compare() comparison must be constant '0']]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -221,7 +221,7 @@ FROM root]]>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[The right hand side of string.Compare() comparison must be constant '0']]></ErrorMessage>
+      <ErrorMessage><![CDATA[The right-hand side of String.Compare() comparison must be constant '0']]></ErrorMessage>
     </Output>
   </Result>
   <Result>
