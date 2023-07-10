@@ -1,13 +1,16 @@
-//------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
 namespace CosmosBenchmark
 {
     /// <summary>
-    /// Represents the Benchmark insert operation.
+    /// Benchmark operation type.
     /// </summary>
-    internal abstract class InsertBenchmarkOperation : BenchmarkOperation
+    public enum BenchmarkOperationType
     {
+        Read,
+        Insert,
+        Query
     }
 }

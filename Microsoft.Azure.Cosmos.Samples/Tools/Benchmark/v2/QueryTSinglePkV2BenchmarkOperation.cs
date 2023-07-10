@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Linq;
 
-    internal class QueryTSinglePkV2BenchmarkOperation : QueryBenchmarkOperation
+    internal class QueryTSinglePkV2BenchmarkOperation : IBenchmarkOperation
     {
         private readonly DocumentClient documentClient;
         private readonly string partitionKeyPath;
@@ -46,7 +46,9 @@ namespace CosmosBenchmark
             this.sampleJObject[this.partitionKeyPath] = this.executionItemPartitionKey;
         }
 
-        public override async Task<OperationResult> ExecuteOnceAsync()
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Query;
+
+        public async Task<OperationResult> ExecuteOnceAsync()
         {
             IDocumentQuery<Dictionary<string, object>> query = this.documentClient.CreateDocumentQuery<Dictionary<string, object>>(
                 this.containerUri,
@@ -93,7 +95,7 @@ namespace CosmosBenchmark
             };
         }
 
-        public override async Task PrepareAsync()
+        public async Task PrepareAsync()
         {
             if (this.initialized)
             {
@@ -107,7 +109,7 @@ namespace CosmosBenchmark
                     new RequestOptions() { PartitionKey = new PartitionKey(this.executionItemPartitionKey) });
             if (itemResponse.StatusCode != HttpStatusCode.Created)
             {
-                throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                throw new Exception($"Create failed with status code: {itemResponse.StatusCode}");
             }
 
             this.initialized = true;

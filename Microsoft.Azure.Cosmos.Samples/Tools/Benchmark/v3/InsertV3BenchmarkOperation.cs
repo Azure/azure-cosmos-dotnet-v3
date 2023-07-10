@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
 
-    internal class InsertV3BenchmarkOperation : InsertBenchmarkOperation
+    internal class InsertV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -37,7 +37,9 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
-        public override async Task<OperationResult> ExecuteOnceAsync()
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Insert;
+
+        public async Task<OperationResult> ExecuteOnceAsync()
         {
             using (MemoryStream input = JsonHelper.ToStream(this.sampleJObject))
             {
@@ -60,7 +62,7 @@ namespace CosmosBenchmark
             }
         }
 
-        public override Task PrepareAsync()
+        public Task PrepareAsync()
         {
             string newPartitionKey = Guid.NewGuid().ToString();
             this.sampleJObject["id"] = Guid.NewGuid().ToString();

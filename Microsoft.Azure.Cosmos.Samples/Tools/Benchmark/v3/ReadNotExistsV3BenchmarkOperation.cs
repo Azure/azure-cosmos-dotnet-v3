@@ -9,7 +9,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ReadNotExistsV3BenchmarkOperation : ReadBenchmarkOperation
+    internal class ReadNotExistsV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
 
@@ -32,7 +32,9 @@ namespace CosmosBenchmark
             this.container = cosmosClient.GetContainer(this.databsaeName, this.containerName);
         }
 
-        public override async Task<OperationResult> ExecuteOnceAsync()
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
+
+        public async Task<OperationResult> ExecuteOnceAsync()
         {
             using (ResponseMessage itemResponse = await this.container.ReadItemStreamAsync(
                         this.nextExecutionItemId,
@@ -40,7 +42,7 @@ namespace CosmosBenchmark
             {
                 if (itemResponse.StatusCode != HttpStatusCode.NotFound)
                 {
-                    throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                    throw new Exception($"ReadItem failed with {itemResponse.StatusCode}");
                 }
 
                 return new OperationResult()
@@ -54,7 +56,7 @@ namespace CosmosBenchmark
             }
         }
 
-        public override Task PrepareAsync()
+        public Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))

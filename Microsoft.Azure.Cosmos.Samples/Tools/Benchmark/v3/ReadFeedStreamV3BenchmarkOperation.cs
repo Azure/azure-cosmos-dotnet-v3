@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ReadFeedStreamV3BenchmarkOperation : ReadBenchmarkOperation
+    internal class ReadFeedStreamV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -39,7 +39,9 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
-        public override async Task<OperationResult> ExecuteOnceAsync()
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
+
+        public async Task<OperationResult> ExecuteOnceAsync()
         {
             FeedIterator feedIterator = this.container
                 .GetItemQueryStreamIterator(
@@ -50,7 +52,7 @@ namespace CosmosBenchmark
             ResponseMessage feedResponse = await feedIterator.ReadNextAsync();
             if (feedResponse.StatusCode != HttpStatusCode.OK)
             {
-                throw new Exception($"ReadItem failed wth {feedResponse.StatusCode}");
+                throw new Exception($"ReadItem failed with {feedResponse.StatusCode}");
             }
 
             return new OperationResult()
@@ -63,7 +65,7 @@ namespace CosmosBenchmark
             };
         }
 
-        public override async Task PrepareAsync()
+        public async Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))
@@ -84,7 +86,7 @@ namespace CosmosBenchmark
 
                     if (itemResponse.StatusCode != HttpStatusCode.Created)
                     {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                        throw new Exception($"Create failed with status code: {itemResponse.StatusCode}");
                     }
                 }
             }

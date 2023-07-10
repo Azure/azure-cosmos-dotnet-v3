@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ReadStreamExistsWithDiagnosticsV3BenchmarkOperation : ReadBenchmarkOperation
+    internal class ReadStreamExistsWithDiagnosticsV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -39,7 +39,9 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
-        public override async Task<OperationResult> ExecuteOnceAsync()
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
+
+        public async Task<OperationResult> ExecuteOnceAsync()
         {
             using (ResponseMessage itemResponse = await this.container.ReadItemStreamAsync(
                         this.nextExecutionItemId,
@@ -47,7 +49,7 @@ namespace CosmosBenchmark
             {
                 if (itemResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                    throw new Exception($"ReadItem failed with {itemResponse.StatusCode}");
                 }
 
                 string diagnostics = itemResponse.Diagnostics.ToString();
@@ -67,7 +69,7 @@ namespace CosmosBenchmark
             }
         }
 
-        public override async Task PrepareAsync()
+        public async Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))

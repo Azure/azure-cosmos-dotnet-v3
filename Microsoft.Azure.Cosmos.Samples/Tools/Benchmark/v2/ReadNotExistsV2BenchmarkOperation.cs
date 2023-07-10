@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
-    internal class ReadNotExistsV2BenchmarkOperation : ReadBenchmarkOperation
+    internal class ReadNotExistsV2BenchmarkOperation : IBenchmarkOperation
     {
         private readonly string databsaeName;
         private readonly string containerName;
@@ -21,6 +21,8 @@ namespace CosmosBenchmark
         private string nextExecutionItemId;
 
         private readonly DocumentClient documentClient;
+
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
 
         public ReadNotExistsV2BenchmarkOperation(
             DocumentClient documentClient,
@@ -35,7 +37,7 @@ namespace CosmosBenchmark
             this.containerName = containerName;
         }
 
-        public override async Task<OperationResult> ExecuteOnceAsync()
+        public async Task<OperationResult> ExecuteOnceAsync()
         {
             Uri itemUri = UriFactory.CreateDocumentUri(this.databsaeName, this.containerName, this.nextExecutionItemId);
 
@@ -52,7 +54,7 @@ namespace CosmosBenchmark
             {
                 if (dce.StatusCode != HttpStatusCode.NotFound)
                 {
-                    throw new Exception($"ReadItem failed wth {dce?.StatusCode} {dce?.ToString()}");
+                    throw new Exception($"ReadItem failed with {dce?.StatusCode} {dce?.ToString()}");
                 }
 
                 return new OperationResult()
@@ -65,7 +67,7 @@ namespace CosmosBenchmark
             }
         }
 
-        public override Task PrepareAsync()
+        public Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))

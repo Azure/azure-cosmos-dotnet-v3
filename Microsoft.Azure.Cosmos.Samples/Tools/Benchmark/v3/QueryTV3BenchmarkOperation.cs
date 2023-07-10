@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal abstract class QueryTV3BenchmarkOperation : QueryBenchmarkOperation
+    internal abstract class QueryTV3BenchmarkOperation : IBenchmarkOperation
     {
         protected readonly Container container;
         protected readonly Dictionary<string, object> sampleJObject;
@@ -30,6 +30,8 @@ namespace CosmosBenchmark
         public abstract bool IsCrossPartitioned { get; }
         public abstract bool IsPaginationEnabled { get; }
         public abstract bool IsQueryStream { get; }
+
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Query;
 
         protected string executionItemId = null;
         protected string executionPartitionKey = null;
@@ -55,7 +57,7 @@ namespace CosmosBenchmark
         /// </summary>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public override async Task<OperationResult> ExecuteOnceAsync()
+        public async Task<OperationResult> ExecuteOnceAsync()
         {
             if (this.IsQueryStream)
             {
@@ -258,7 +260,7 @@ namespace CosmosBenchmark
         /// </summary>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public override async Task PrepareAsync()
+        public async Task PrepareAsync()
         {
             if (this.initialized)
             {
@@ -291,7 +293,7 @@ namespace CosmosBenchmark
 
                     if (itemResponse.StatusCode != HttpStatusCode.Created)
                     {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                        throw new Exception($"Create failed with status code: {itemResponse.StatusCode}");
                     }
                 }
             }
