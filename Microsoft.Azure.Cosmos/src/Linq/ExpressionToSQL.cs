@@ -457,6 +457,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     return ExpressionToSql.VisitStringCompareTo(methodCallExpression, constantExpression, inputExpression.NodeType, reverseNodeType, context);
                 }
+
                 if (TryMatchStringCompare(methodCallExpression, constantExpression, inputExpression.NodeType))
                 {
                     return ExpressionToSql.VisitStringCompare(methodCallExpression, constantExpression, inputExpression.NodeType, reverseNodeType, context);

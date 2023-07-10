@@ -268,10 +268,10 @@
     <value>Failed to deserialize response returned by server.</value>
   </data>
   <data name="StringCompareToInvalidConstant" xml:space="preserve">
-    <value>The right hand side of string.CompareTo() comparison must be constant '0'</value>
+    <value>The right-hand side of String.CompareTo() comparison must be constant '0'.</value>
   </data>
   <data name="StringCompareInvalidConstant" xml:space="preserve">
-    <value>The right hand side of string.Compare() comparison must be constant '0'</value>
+    <value>The right-hand side of String.Compare() comparison must be constant '0'.</value>
   </data>
   <data name="StringCompareToInvalidOperator" xml:space="preserve">
     <value>Invalid operator for string.CompareTo(). Vaid operators are ('==', '&lt;', '&lt;=', '&gt;' or '&gt;=')</value>
