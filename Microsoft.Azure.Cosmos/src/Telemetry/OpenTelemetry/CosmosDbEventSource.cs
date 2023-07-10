@@ -35,17 +35,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            if (DiagnosticsFilterHelper.IsLatencyThresholdCrossed(
+            if (!DiagnosticsFilterHelper.IsSuccessfulResponse(
+                        response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
+            {
+                CosmosDbEventSource.Singleton.FailedRequest(response.Diagnostics.ToString());
+            } 
+            else if (DiagnosticsFilterHelper.IsLatencyThresholdCrossed(
                     config: config,
                     operationType: operationType,
                     response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
                 CosmosDbEventSource.Singleton.LatencyOverThreshold(response.Diagnostics.ToString());
-            }
-            else if (!DiagnosticsFilterHelper.IsSuccessfulResponse(
-                        response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
-            {
-                CosmosDbEventSource.Singleton.FailedRequest(response.Diagnostics.ToString());
             }
         }
 
