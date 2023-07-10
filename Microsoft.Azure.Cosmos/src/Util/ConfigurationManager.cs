@@ -32,13 +32,20 @@ namespace Microsoft.Azure.Cosmos
         /// both preview and GA. The method will eventually be removed, once replica valdiatin is enabled by default
         /// for  both preview and GA.
         /// </summary>
+        /// <param name="connectionPolicy">An instance of <see cref="ConnectionPolicy"/> containing the client options.</param>
         /// <returns>A boolean flag indicating if replica validation is enabled.</returns>
-        public static bool IsReplicaAddressValidationEnabled()
+        public static bool IsReplicaAddressValidationEnabled(
+            ConnectionPolicy connectionPolicy)
         {
             bool replicaValidationDefaultValue = false;
 #if PREVIEW
             replicaValidationDefaultValue = true;
 #endif
+            if (connectionPolicy != null
+                && connectionPolicy.EnableAdvancedReplicaSelectionForTcp)
+            {
+                return true;
+            }
 
             return ConfigurationManager
                     .GetEnvironmentVariable(
