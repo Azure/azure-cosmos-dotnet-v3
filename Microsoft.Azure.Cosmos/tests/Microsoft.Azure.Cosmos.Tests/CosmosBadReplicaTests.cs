@@ -63,28 +63,28 @@ namespace Microsoft.Azure.Cosmos.Tests
                     cRid,
                     out IReadOnlyList<string> partitionKeyRanges);
 
-                List<string> replicaIds1 = new List<string>()
-            {
-                "11111111111111111",
-                "22222222222222222",
-                "33333333333333333",
-                "44444444444444444",
-            };
+                    List<string> replicaIds1 = new List<string>()
+                {
+                    "11111111111111111",
+                    "22222222222222222",
+                    "33333333333333333",
+                    "44444444444444444",
+                };
 
-                HttpResponseMessage replicaSet1 = MockSetupsHelper.CreateAddresses(
-                    replicaIds1,
-                    partitionKeyRanges.First(),
-                    "eastus",
-                    cRid);
+                    HttpResponseMessage replicaSet1 = MockSetupsHelper.CreateAddresses(
+                        replicaIds1,
+                        partitionKeyRanges.First(),
+                        "eastus",
+                        cRid);
 
-                // One replica changed on the refresh
-                List<string> replicaIds2 = new List<string>()
-            {
-                "11111111111111111",
-                "22222222222222222",
-                "33333333333333333",
-                "55555555555555555",
-            };
+                    // One replica changed on the refresh
+                    List<string> replicaIds2 = new List<string>()
+                {
+                    "11111111111111111",
+                    "22222222222222222",
+                    "33333333333333333",
+                    "55555555555555555",
+                };
 
                 HttpResponseMessage replicaSet2 = MockSetupsHelper.CreateAddresses(
                     replicaIds2,

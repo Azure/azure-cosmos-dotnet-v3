@@ -769,7 +769,7 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp.HasValue && this.EnableAdvancedReplicaSelectionForTcp.Value,
+                EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
                 HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };
