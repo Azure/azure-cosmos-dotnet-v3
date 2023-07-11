@@ -21,16 +21,23 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         [TestMethod]
         [Timeout(30000)]
-        [DataRow(true, DisplayName = "Validate when replica validation is enabled.")]
-        [DataRow(false, DisplayName = "Validate when replica validation is disabled.")]
+        [DataRow(true, true, false, DisplayName = "Validate when replica validation is enabled using environment variable.")]
+        [DataRow(false, true, false, DisplayName = "Validate when replica validation is disabled using environment variable.")]
+        [DataRow(true, false, true, DisplayName = "Validate when replica validation is enabled using cosmos client options.")]
+        [DataRow(false, false, true, DisplayName = "Validate when replica validation is disabled using cosmos client options.")]
         public async Task TestGoneFromServiceScenarioAsync(
-            bool enableReplicaValidation)
+            bool enableReplicaValidation,
+            bool useEnvironmentVariable,
+            bool useCosmosClientOptions)
         {
             try
             {
-                Environment.SetEnvironmentVariable(
-                    variable: ConfigurationManager.ReplicaConnectivityValidationEnabled,
-                    value: enableReplicaValidation.ToString());
+                if (useEnvironmentVariable)
+                {
+                    Environment.SetEnvironmentVariable(
+                        variable: ConfigurationManager.ReplicaConnectivityValidationEnabled,
+                        value: enableReplicaValidation.ToString());
+                }
 
                 Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);
                 Uri endpoint = MockSetupsHelper.SetupSingleRegionAccount(
@@ -56,28 +63,28 @@ namespace Microsoft.Azure.Cosmos.Tests
                     cRid,
                     out IReadOnlyList<string> partitionKeyRanges);
 
-                List<string> replicaIds1 = new List<string>()
-            {
-                "11111111111111111",
-                "22222222222222222",
-                "33333333333333333",
-                "44444444444444444",
-            };
+                    List<string> replicaIds1 = new List<string>()
+                {
+                    "11111111111111111",
+                    "22222222222222222",
+                    "33333333333333333",
+                    "44444444444444444",
+                };
 
-                HttpResponseMessage replicaSet1 = MockSetupsHelper.CreateAddresses(
-                    replicaIds1,
-                    partitionKeyRanges.First(),
-                    "eastus",
-                    cRid);
+                    HttpResponseMessage replicaSet1 = MockSetupsHelper.CreateAddresses(
+                        replicaIds1,
+                        partitionKeyRanges.First(),
+                        "eastus",
+                        cRid);
 
-                // One replica changed on the refresh
-                List<string> replicaIds2 = new List<string>()
-            {
-                "11111111111111111",
-                "22222222222222222",
-                "33333333333333333",
-                "55555555555555555",
-            };
+                    // One replica changed on the refresh
+                    List<string> replicaIds2 = new List<string>()
+                {
+                    "11111111111111111",
+                    "22222222222222222",
+                    "33333333333333333",
+                    "55555555555555555",
+                };
 
                 HttpResponseMessage replicaSet2 = MockSetupsHelper.CreateAddresses(
                     replicaIds2,
@@ -146,6 +153,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     TransportClientHandlerFactory = (original) => mockTransportClient.Object,
                 };
 
+                if (useCosmosClientOptions)
+                {
+                    cosmosClientOptions.EnableAdvancedReplicaSelectionForTcp = enableReplicaValidation;
+                }
+
                 using (CosmosClient customClient = new CosmosClient(
                     endpoint.ToString(),
                     Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
@@ -203,9 +215,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             finally
             {
-                Environment.SetEnvironmentVariable(
-                    variable: ConfigurationManager.ReplicaConnectivityValidationEnabled,
-                    value: null);
+                if (useEnvironmentVariable)
+                {
+                    Environment.SetEnvironmentVariable(
+                        variable: ConfigurationManager.ReplicaConnectivityValidationEnabled,
+                        value: null);
+                }
             }
         }
     }
