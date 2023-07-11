@@ -56,7 +56,6 @@ namespace CosmosBenchmark.Fx
             /// </summary>
             ThreadPool.QueueUserWorkItem(async state =>
             {
-
                 while (true)
                 {
                     lock (this.FileLock)
@@ -78,7 +77,6 @@ namespace CosmosBenchmark.Fx
                         }
 
                     }
-
                     await Task.Delay(this.FileSizeCheckIntervalMs);
                 }
             });
@@ -111,7 +109,6 @@ namespace CosmosBenchmark.Fx
                 {
                     Utility.TeeTraceInformation($"An exception ocured while writing diagnostic data to the file. {ex.Message}");
                 }
-
             }
         }
 
@@ -121,7 +118,6 @@ namespace CosmosBenchmark.Fx
         /// <param name="config">An instance of <see cref="BenchmarkConfig "/> containing the benchmark tool input parameters.</param>
         public void UploadDiagnostcs(BlobContainerClient blobContainerClient)
         {
-
             Utility.TeeTraceInformation("Uploading diagnostics");
             string[] diagnosticFiles = Directory.GetFiles(".", $"{DiagnosticsFileName}*");
 
@@ -145,7 +141,6 @@ namespace CosmosBenchmark.Fx
                 }
 
             }
-
         }
 
         /// <summary>

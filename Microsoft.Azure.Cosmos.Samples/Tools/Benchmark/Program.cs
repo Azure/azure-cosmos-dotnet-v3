@@ -329,7 +329,7 @@ namespace CosmosBenchmark
         /// <param name="benchmarkProgress">An instance of <see cref="BenchmarkProgress"/> that represents the document to be modified.</param>
         public static async Task<BenchmarkProgress> CompleteBenchmarkProgressStatus(BenchmarkProgress benchmarkProgress, Container resultContainer)
         {
-            benchmarkProgress.JobStatus = "COMPLETE";
+            benchmarkProgress.JobStatus = "COMPLETED";
             benchmarkProgress.JobEndTime = DateTime.Now;
             ItemResponse<BenchmarkProgress> itemResponse = await resultContainer.UpsertItemAsync(benchmarkProgress);
             return itemResponse.Resource;

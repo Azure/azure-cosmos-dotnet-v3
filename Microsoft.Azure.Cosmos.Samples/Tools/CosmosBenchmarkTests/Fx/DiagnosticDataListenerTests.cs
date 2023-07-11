@@ -27,11 +27,15 @@
             }
         }
 
+
+        /// <summary>
+        /// The scenario tested here is to ensure 
+        /// that all created files with captured diagnostic 
+        /// data are successfully uploaded to the Blob storage
+        /// </summary>
         [TestMethod]
         public void UploadDiagnostics_WhenFilesExist_ShouldUploadFilesToBlobStorage()
         {
-            
-
             for (int i = 0; i < 10; i++)
             {
                 string fileName = $"BenchmarkDiagnostics.out-{i}";
