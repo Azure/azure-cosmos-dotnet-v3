@@ -22,10 +22,12 @@ namespace CosmosBenchmark.Fx
         /// A constant string representing the diagnostics file path.
         /// </summary>
         public const string DiagnosticsFileName = "BenchmarkDiagnostics.out";
+        
         /// <summary>
         /// A constant int representing the maximum file size.
         /// </summary>
         private readonly int MaxDIagnosticFileSize = 100_000_000;
+
         /// <summary>
         /// A constant int representing the interval at which the file size is checked.
         /// </summary>
