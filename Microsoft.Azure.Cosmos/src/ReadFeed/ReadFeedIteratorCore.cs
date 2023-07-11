@@ -9,13 +9,16 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Cosmos feed stream iterator. This is used to get the query responses with a Stream content
@@ -113,7 +116,25 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                             else
                             {
                                 CosmosString tokenAsString = (CosmosString)token;
-                                state = ReadFeedState.Continuation(CosmosElement.Parse(tokenAsString.Value));
+                                try
+                                {
+                                    state = ReadFeedState.Continuation(CosmosElement.Parse(tokenAsString.Value));
+                                }
+                                catch (Exception exception) when (exception.InnerException is JsonParseException)
+                                {
+                                    MalformedContinuationTokenException malformedContinuationTokenException = new MalformedContinuationTokenException(exception.Message);
+                                    throw CosmosExceptionFactory.CreateBadRequestException(
+                                            message: $"Malformed Continuation Token: {tokenAsString}.",
+                                            headers: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
+                                                new Headers(),
+                                                default,
+                                                default,
+                                                (int)SubStatusCodes.MalformedContinuationToken,
+                                                default),
+                                            stackTrace: exception.StackTrace,
+                                            innerException: malformedContinuationTokenException,
+                                            trace: null);
+                                }
                             }
 
                             FeedRangeState<ReadFeedState> feedRangeState = new FeedRangeState<ReadFeedState>(feedRange, state);
