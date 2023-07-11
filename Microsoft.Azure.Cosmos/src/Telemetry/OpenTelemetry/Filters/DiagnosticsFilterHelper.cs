@@ -42,8 +42,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                         || (response.StatusCode == System.Net.HttpStatusCode.NotFound && response.SubStatusCode == 0)
                         || (response.StatusCode == System.Net.HttpStatusCode.NotModified && response.SubStatusCode == 0)
                         || (response.StatusCode == System.Net.HttpStatusCode.Conflict && response.SubStatusCode == 0)
-                        || (response.StatusCode == System.Net.HttpStatusCode.PreconditionFailed && response.SubStatusCode == 0)
-                        ;
+                        || (response.StatusCode == System.Net.HttpStatusCode.PreconditionFailed && response.SubStatusCode == 0);
         }
     }
 }
