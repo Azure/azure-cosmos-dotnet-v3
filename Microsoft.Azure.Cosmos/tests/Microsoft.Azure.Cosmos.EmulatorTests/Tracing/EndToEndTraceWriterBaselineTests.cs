@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
-    
+
     [VisualStudio.TestTools.UnitTesting.TestClass]
     [TestCategory("UpdateContract")]
     public sealed class EndToEndTraceWriterBaselineTests : BaselineTests<EndToEndTraceWriterBaselineTests.Input, EndToEndTraceWriterBaselineTests.Output>
@@ -464,6 +464,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         public async Task QueryAsync()
         {
             List<Input> inputs = new List<Input>();
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+#if PREVIEW
+                    EnableOptimisticDirectExecution = false
+#endif
+            };
 
             int startLineNumber;
             int endLineNumber;
@@ -474,7 +480,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 startLineNumber = GetLineNumber();
                 FeedIteratorInternal feedIterator = (FeedIteratorInternal)container.GetItemQueryStreamIterator(
-                    queryText: "SELECT * FROM c");
+                    queryText: "SELECT * FROM c",
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
                 while (feedIterator.HasMoreResults)
@@ -499,7 +506,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 startLineNumber = GetLineNumber();
                 FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container.GetItemQueryIterator<JToken>(
-                    queryText: "SELECT * FROM c");
+                    queryText: "SELECT * FROM c",
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
                 while (feedIterator.HasMoreResults)
@@ -524,7 +532,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 startLineNumber = GetLineNumber();
                 FeedIterator feedIterator = container.GetItemQueryStreamIterator(
-                    queryText: "SELECT * FROM c");
+                    queryText: "SELECT * FROM c",
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
 
@@ -550,7 +559,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 startLineNumber = GetLineNumber();
                 FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
-                    queryText: "SELECT * FROM c");
+                    queryText: "SELECT * FROM c",
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
 
@@ -578,7 +588,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 Lazy<bool> currentLazy = Documents.ServiceInteropWrapper.AssembliesExist;
                 Documents.ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => false);
                 FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
-                    queryText: "SELECT * FROM c");
+                    queryText: "SELECT * FROM c",
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
 
@@ -607,7 +618,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 FeedIterator feedIterator = container.GetItemQueryStreamIterator(
                     feedRange: FeedRangeEpk.FullRange,
                     queryDefinition: new QueryDefinition("SELECT * FROM c"),
-                    continuationToken: null);
+                    continuationToken: null,
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
 
@@ -635,7 +647,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
                     feedRange: FeedRangeEpk.FullRange,
                     queryDefinition: new QueryDefinition("SELECT * FROM c"),
-                    continuationToken: null);
+                    continuationToken: null,
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
 

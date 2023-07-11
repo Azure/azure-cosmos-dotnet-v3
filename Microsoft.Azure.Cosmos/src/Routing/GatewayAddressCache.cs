@@ -66,7 +66,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             CosmosHttpClient httpClient,
             IOpenConnectionsHandler openConnectionsHandler,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
-            bool enableTcpConnectionEndpointRediscovery = false)
+            bool enableTcpConnectionEndpointRediscovery = false,
+            bool replicaAddressValidationEnabled = false)
         {
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
@@ -90,9 +91,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GatewayAddressCache.ProtocolString(this.protocol));
 
             this.openConnectionsHandler = openConnectionsHandler;
-            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariable<bool>(
-                name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
-                defaultValue: false);
+            this.isReplicaAddressValidationEnabled = replicaAddressValidationEnabled;
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
@@ -158,7 +157,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 collectionRid: collection.ResourceId,
                                 partitionKeyRangeIds: partitionKeyRangeIdentities.Skip(i).Take(batchSize).Select(range => range.PartitionKeyRangeId),
                                 containerProperties: collection,
-                                shouldOpenRntbdChannels: shouldOpenRntbdChannels));
+                                shouldOpenRntbdChannels: shouldOpenRntbdChannels,
+                                cancellationToken: cancellationToken));
                 }
             }
 
@@ -348,12 +348,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <param name="partitionKeyRangeIds">An instance of <see cref="IEnumerable{T}"/> containing the list of partition key range ids.</param>
         /// <param name="containerProperties">An instance of <see cref="ContainerProperties"/> containing the collection properties.</param>
         /// <param name="shouldOpenRntbdChannels">A boolean flag indicating whether Rntbd connections are required to be established to the backend replica nodes.</param>
+        /// <param name="cancellationToken">An instance of <see cref="CancellationToken"/>.</param>
         private async Task WarmupCachesAndOpenConnectionsAsync(
             DocumentServiceRequest request,
             string collectionRid,
             IEnumerable<string> partitionKeyRangeIds,
             ContainerProperties containerProperties,
-            bool shouldOpenRntbdChannels)
+            bool shouldOpenRntbdChannels,
+            CancellationToken cancellationToken)
         {
             TryCatch<DocumentServiceResponse> documentServiceResponseWrapper = await this.GetAddressesAsync(
                                 request: request,
@@ -381,6 +383,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                     List<Task> openConnectionTasks = new ();
                     foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
                     {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
                         this.serverPartitionAddressCache.Set(
                             new PartitionKeyRangeIdentity(containerProperties.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
                             addressInfo.Item2);
@@ -398,10 +405,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         }
                     }
 
-                    if (openConnectionTasks.Any())
-                    {
-                        await Task.WhenAll(openConnectionTasks);
-                    }
+                    await Task.WhenAll(openConnectionTasks);
                 }
             }
             catch (Exception ex)
