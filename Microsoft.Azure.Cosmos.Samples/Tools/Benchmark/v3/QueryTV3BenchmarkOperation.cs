@@ -260,7 +260,7 @@ namespace CosmosBenchmark
         /// </summary>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public async Task PrepareAsync()
+        public virtual async Task PrepareAsync()
         {
             if (this.initialized)
             {
