@@ -82,6 +82,9 @@ namespace CosmosBenchmark.Fx
             });
         }
 
+        /// <summary>
+        /// Creates the file with specified filename if not exists
+        /// </summary>
         private void CreateFileIfNotExist(string FileName)
         {
             if (!File.Exists(FileName))
