@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
-            List<Documents.Routing.Range<string>> providedRanges,
+            IReadOnlyList<Documents.Routing.Range<string>> providedRanges,
             bool forceRefresh,
             ITrace trace);
 

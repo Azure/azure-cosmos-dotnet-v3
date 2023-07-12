@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         }
 
         public string ResourceId { get; }
-        public List<Range<string>> EffectivePartitionKeyRanges { get; }
+        public IReadOnlyList<Range<string>> EffectivePartitionKeyRanges { get; }
         public PartitionKeyDefinition PartitionKeyDefinition { get; }
         public Cosmos.GeospatialType GeospatialType { get; }
     }
