@@ -62,6 +62,10 @@ namespace CosmosBenchmark
                     diagnosticDataListener.UploadDiagnostcs(blobContainerClient);
                 }
             }
+            catch (Exception e)
+            {
+                Utility.TeeTraceInformation("Exception ocured:" + e.ToString());
+            }
             finally
             {
                 Utility.TeeTraceInformation($"{nameof(CosmosBenchmark)} completed successfully.");
