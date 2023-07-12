@@ -56,7 +56,7 @@ dotnet build --configuration Release -p:"OSSProjectRef=true;ShouldUnsetParentCon
 ```
 
 
-   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-cosmos-dotnet-v3%2Fmaster%2FMicrosoft.Azure.Cosmos.Samples%2FTools%2FBenchmark%2FAzureVmBenchmark%2Fazuredeploy.json)
+   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-cosmos-dotnet-v3%2Fusers%2Fv-dchaava%2Fbenchmark-demo-fixes%2FMicrosoft.Azure.Cosmos.Samples%2FTools%2FBenchmark%2FARMTemplate%2FbenchmarkTemplate.json)
 
 For PerfRuns with reports (INTERNAL)
 ```
