@@ -4,8 +4,8 @@
 		<ClientPreviewVersion>3.35.1</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview</ClientPreviewSuffixVersion>
 		<DirectVersion>3.31.3</DirectVersion>
-		<EncryptionOfficialVersion>2.0.2</EncryptionOfficialVersion>
-		<EncryptionPreviewVersion>2.0.2</EncryptionPreviewVersion>
+		<EncryptionOfficialVersion>2.0.3</EncryptionOfficialVersion>
+		<EncryptionPreviewVersion>2.0.3</EncryptionPreviewVersion>
 		<EncryptionPreviewSuffixVersion>preview</EncryptionPreviewSuffixVersion>
 		<CustomEncryptionVersion>1.0.0-preview06</CustomEncryptionVersion>
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
