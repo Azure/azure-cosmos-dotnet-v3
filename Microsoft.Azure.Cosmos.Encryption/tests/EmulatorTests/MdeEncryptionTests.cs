@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using global::Azure.Core.Cryptography;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -2352,9 +2353,182 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, readResponse.Resource);
+
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKeyBuilder().Add(testDoc.Sensitive_StringFormat).Build()
+            };
+
+            using FeedIterator<TestDoc> setIterator = encryptionContainer.GetItemQueryIterator<TestDoc>("select * from c", requestOptions: queryRequestOptions);
+
+            while (setIterator.HasMoreResults)
+            {
+                FeedResponse<TestDoc> response = await setIterator.ReadNextAsync().ConfigureAwait(false);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                VerifyExpectedDocResponse(testDoc, response.First());
+            }
+
+            QueryDefinition queryDefinition = encryptionContainer.CreateQueryDefinition("SELECT * FROM c WHERE c.Sensitive_StringFormat = @Sensitive_StringFormat");
+
+            await queryDefinition.AddParameterAsync("@Sensitive_StringFormat", testDoc.Sensitive_StringFormat, "/Sensitive_StringFormat");
+
+            FeedIterator<TestDoc> setIteratorWithFilter = encryptionContainer.GetItemQueryIterator<TestDoc>(queryDefinition, requestOptions: queryRequestOptions);
+
+            while (setIteratorWithFilter.HasMoreResults)
+            {
+                FeedResponse<TestDoc> response = await setIteratorWithFilter.ReadNextAsync().ConfigureAwait(false);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                VerifyExpectedDocResponse(testDoc, response.First());
+            }
+
+            queryRequestOptions = new QueryRequestOptions
+            {
+                PartitionKey = new PartitionKeyBuilder().Add(testDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2).Build()
+            };
+
+            setIteratorWithFilter = encryptionContainer.GetItemQueryIterator<TestDoc>(queryDefinition, requestOptions: queryRequestOptions);
+
+            while (setIteratorWithFilter.HasMoreResults)
+            {
+                FeedResponse<TestDoc> response = await setIteratorWithFilter.ReadNextAsync().ConfigureAwait(false);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.AreEqual(0, response.Count());
+            }
 #endif
         }
+#if ENCRYPTIONTESTPREVIEW
+        [TestMethod]
+        public async Task TestHirarchicalPkWithFullAndPartialKey() 
+        {
+            HirarchicalPkTestDoc testDoc = HirarchicalPkTestDoc.Create();
 
+            ClientEncryptionIncludedPath cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/State",
+                ClientEncryptionKeyId = "key1",
+                EncryptionType = "Deterministic",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+            };
+
+            ClientEncryptionIncludedPath cepWithPKIdPath2 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/City",
+                ClientEncryptionKeyId = "key1",
+                EncryptionType = "Deterministic",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+            };
+
+            ClientEncryptionIncludedPath cepWithPKIdPath3 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/ZipCode",
+                ClientEncryptionKeyId = "key1",
+                EncryptionType = "Deterministic",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+            };
+
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { cepWithPKIdPath1, cepWithPKIdPath2, cepWithPKIdPath3 };
+
+            ClientEncryptionPolicy clientEncryptionPolicy= new ClientEncryptionPolicy(paths, 2);
+
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "HierarchicalPkContainer",
+                PartitionKeyPaths = new List<string> { "/State", "/City", "/ZipCode" },
+                ClientEncryptionPolicy = clientEncryptionPolicy
+            };
+
+            encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+            await encryptionContainer.InitializeEncryptionAsync();
+
+            PartitionKey hirarchicalPk = new PartitionKeyBuilder()
+                .Add(testDoc.State)
+                .Add(testDoc.City)
+                .Add(testDoc.ZipCode)
+                .Build();
+
+            PartitionKey partialHirarchicalPk = new PartitionKeyBuilder()
+                .Add(testDoc.State)
+                .Add(testDoc.City)
+                .Build();
+
+            ItemResponse<HirarchicalPkTestDoc> createResponse = await encryptionContainer.CreateItemAsync(
+                testDoc,
+                partitionKey: hirarchicalPk);
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            // read back
+            ItemResponse<HirarchicalPkTestDoc> readResponse = await encryptionContainer.ReadItemAsync<HirarchicalPkTestDoc>(
+               testDoc.Id,
+               hirarchicalPk);
+
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, readResponse.Resource);
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                PartitionKey = partialHirarchicalPk
+            };
+
+            using FeedIterator<HirarchicalPkTestDoc> setIterator = encryptionContainer.GetItemQueryIterator<HirarchicalPkTestDoc>("select * from c", requestOptions: queryRequestOptions);
+
+            while (setIterator.HasMoreResults)
+            {
+                FeedResponse<HirarchicalPkTestDoc> response = await setIterator.ReadNextAsync().ConfigureAwait(false);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                VerifyExpectedDocResponse(testDoc, response.First());
+            }
+
+            QueryDefinition withEncryptedParameter = encryptionContainer.CreateQueryDefinition(
+                    "SELECT * FROM c WHERE c.City = @cityInput AND c.State = @stateInput");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@cityInput",
+                    testDoc.City,
+                    "/City");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@stateInput",
+                    testDoc.State,
+                    "/State");
+
+            FeedIterator<HirarchicalPkTestDoc> queryResponseIterator;
+            queryResponseIterator = encryptionContainer.GetItemQueryIterator<HirarchicalPkTestDoc>(withEncryptedParameter, requestOptions: queryRequestOptions);
+
+            FeedResponse<HirarchicalPkTestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
+            Assert.AreEqual(HttpStatusCode.OK, readDocs.StatusCode);
+            VerifyExpectedDocResponse(testDoc, readDocs.First());
+
+            partialHirarchicalPk = new PartitionKeyBuilder()
+                .Add(testDoc.State)
+                .Build();
+
+            queryRequestOptions = new QueryRequestOptions
+            {
+                PartitionKey = partialHirarchicalPk
+            };
+
+            queryResponseIterator = encryptionContainer.GetItemQueryIterator<HirarchicalPkTestDoc>(withEncryptedParameter, requestOptions: queryRequestOptions);
+
+            readDocs = await queryResponseIterator.ReadNextAsync();
+            Assert.AreEqual(HttpStatusCode.OK, readDocs.StatusCode);
+            VerifyExpectedDocResponse(testDoc, readDocs.First());
+
+            partialHirarchicalPk = new PartitionKeyBuilder()
+                .Add(testDoc.ZipCode)
+                .Build();
+
+            queryRequestOptions = new QueryRequestOptions
+            {
+                PartitionKey = partialHirarchicalPk
+            };
+
+
+            queryResponseIterator = encryptionContainer.GetItemQueryIterator<HirarchicalPkTestDoc>(withEncryptedParameter, requestOptions: queryRequestOptions);
+            Assert.IsFalse(queryResponseIterator.HasMoreResults);
+        }
+#endif
         [TestMethod]
         public async Task EncryptionStreamIteratorValidation()
         {
@@ -3204,7 +3378,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             return deleteResponse;
         }
 
-        private static void VerifyExpectedDocResponse(TestDoc expectedDoc, TestDoc verifyDoc)
+        private static void VerifyExpectedDocResponse(HirarchicalPkTestDoc expectedDoc, HirarchicalPkTestDoc verifyDoc)
+        {
+            Assert.AreEqual(expectedDoc.Id, verifyDoc.Id);
+            Assert.AreEqual(expectedDoc.State, verifyDoc.State);
+            Assert.AreEqual(expectedDoc.City, verifyDoc.City);
+            Assert.AreEqual(expectedDoc.ZipCode, verifyDoc.ZipCode);
+        }
+            private static void VerifyExpectedDocResponse(TestDoc expectedDoc, TestDoc verifyDoc)
         {
             Assert.AreEqual(expectedDoc.Id, verifyDoc.Id);
             Assert.AreEqual(expectedDoc.Sensitive_StringFormat, verifyDoc.Sensitive_StringFormat);
@@ -3707,6 +3888,70 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                             }
                         }
                     }
+                };
+            }
+
+            public Stream ToStream()
+            {
+                return TestCommon.ToStream(this);
+            }
+        }
+
+        public class HirarchicalPkTestDoc
+        {
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            public string PK { get; set; }
+
+            public string State { get; set; }
+
+            public string City { get; set; }
+
+            public string ZipCode { get; set; }
+
+            public HirarchicalPkTestDoc()
+            {
+            }
+            public HirarchicalPkTestDoc(HirarchicalPkTestDoc other)
+            {
+                this.Id = other.Id;
+                this.PK = other.PK;
+                this.State = other.State;
+                this.City = other.City;
+                this.ZipCode = other.ZipCode;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is HirarchicalPkTestDoc doc
+                       && this.Id == doc.Id
+                       && this.PK == doc.PK
+                       && this.State == doc.State
+                       && this.City == doc.City
+                       && this.ZipCode == doc.ZipCode;
+            }
+
+            public override int GetHashCode()
+            {
+                int hashCode = 1652434776;
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Id);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.PK);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.State);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.City);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.ZipCode);
+                return hashCode;
+            }
+
+            public static HirarchicalPkTestDoc Create(string partitionKey = null)
+            {
+                return new HirarchicalPkTestDoc()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    PK = partitionKey ?? Guid.NewGuid().ToString(),
+                    State = Guid.NewGuid().ToString(),
+                    City = Guid.NewGuid().ToString(),
+                    ZipCode = Guid.NewGuid().ToString()
                 };
             }
 
