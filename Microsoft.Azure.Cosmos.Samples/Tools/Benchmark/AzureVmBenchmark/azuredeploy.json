@@ -110,6 +110,47 @@
         },
         "workloadType": {
             "type": "string",
+            "allowedValues": [
+                "InsertV3BenchmarkOperation",
+                "QueryStreamCrossPkDistinctFullDrainV3BenchmarkOperation",
+                "QueryStreamCrossPkDistinctWithPaginationV3BenchmarkOperation",
+                "QueryStreamCrossPkGroupByFullDrainV3BenchmarkOperation",
+                "QueryStreamCrossPkGroupByWithPaginationV3BenchmarkOperation",
+                "QueryStreamCrossPkOrderByFullDrainV3BenchmarkOperation",
+                "QueryStreamCrossPkOrderByWithPaginationV3BenchmarkOperation",
+                "QueryStreamCrossPkV3BenchmarkOperation",
+                "QueryStreamCrossPkWithPaginationV3BenchmarkOperation",
+                "QueryStreamSinglePkDistinctFullDrainV3BenchmarkOperation",
+                "QueryStreamSinglePkDistinctWithPaginationV3BenchmarkOperation",
+                "QueryStreamSinglePkGroupByFullDrainV3BenchmarkOperation",
+                "QueryStreamSinglePkGroupByWithPaginationV3BenchmarkOperation",
+                "QueryStreamSinglePkGroupByWithPaginationV3BenchmarkOperation",
+                "QueryStreamSinglePkOrderByWithPaginationV3BenchmarkOperation",
+                "QueryStreamSinglePkV3BenchmarkOperation",
+                "QueryStreamSinglePkWithPaginationV3BenchmarkOperation",
+                "QueryTCrossPkDistinctFullDrainV3BenchmarkOperation",
+                "QueryTCrossPkDistinctWithPaginationV3BenchmarkOperation",
+                "QueryTCrossPkGroupByFullDrainV3BenchmarkOperation",
+                "QueryTCrossPkGroupByWithPaginationV3BenchmarkOperation",
+                "QueryTCrossPkOrderByFullDrainV3BenchmarkOperation",
+                "QueryTCrossPkOrderByWithPaginationV3BenchmarkOperation",
+                "QueryTCrossPkV3BenchmarkOperation",
+                "QueryTCrossPkWithPaginationV3BenchmarkOperation",
+                "QueryTSinglePkDistinctFullDrainV3BenchmarkOperation",
+                "QueryTSinglePkDistinctWithPaginationV3BenchmarkOperation",
+                "QueryTSinglePkGroupByFullDrainV3BenchmarkOperation",
+                "QueryTSinglePkGroupByWithPaginationV3BenchmarkOperation",
+                "QueryTSinglePkOrderByFullDrainV3BenchmarkOperation",
+                "QueryTSinglePkOrderByWithPaginationV3BenchmarkOperation",
+                "QueryTSinglePkV3BenchmarkOperation",
+                "QueryTSinglePkWithPaginationV3BenchmarkOperation",
+                "QueryTV3BenchmarkOperation",
+                "ReadFeedStreamV3BenchmarkOperation",
+                "ReadNotExistsV3BenchmarkOperation",
+                "ReadStreamExistsV3BenchmarkOperation",
+                "ReadStreamExistsWithDiagnosticsV3BenchmarkOperation",
+                "ReadTExistsV3BenchmarkOperation"
+            ],
             "defaultValue": "ReadTExistsV3BenchmarkOperation",
             "metadata": {
                 "description": "Specifies the workload"
@@ -128,10 +169,6 @@
             "metadata": {
                 "description": "Specifies the GitHub branch for YCSB source code repository"
             }
-        },
-        "guidValue": {
-            "type": "string",
-            "defaultValue": "[newGuid()]"
         },
         "diagnosticsLatencyThresholdInMS": {
             "type": "int",
@@ -384,7 +421,7 @@
                 "settings": {
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat('ADMIN_USER_NAME=',parameters('adminUsername'),' ','BENCHMARKING_TOOLS_URL=',variables('benchmarkingToolsURL'),' ','BENCHMARKING_TOOLS_BRANCH_NAME=',parameters('benchmarkingToolsBranchName'),' ','GUID=',parameters('guidValue'),' ','WORKLOAD_TYPE=',parameters('workloadType'),' ','VM_NAME=',variables('vmName'),copyIndex(1), ' ','RESULT_STORAGE_CONNECTION_STRING=','\"',concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value),'\"',' ','COSMOS_URI=','\"',parameters('cosmosURI'),'\"', ' ', 'COSMOS_KEY=',parameters('cosmosKey'), ' ', 'THROUGHPUT=',parameters('throughput'), ' ', 'DOCUMENTS=',parameters('documents'), ' ','PARALLELISM=',parameters('parallelism'), ' ','RESULTS_CONTAINER=',parameters('resultsContainer'), ' ','VM_COUNT=',parameters('vmCount'), ' ','DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS=',parameters('diagnosticsLatencyThresholdInMS'), ' ','METRICS_REPORTINT_INTERVAL_SEC=',parameters('metricsReportingIntervalInSec'), ' ','CUSTOM_SCRIPT_URL=',variables('customScriptUrl'), ' ','MACHINE_INDEX=',copyIndex(1), ' ','APP_INSIGHT_CONN_STR=','\"', reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName'))).InstrumentationKey,'\"',' ', 'bash ',variables('vmScriptExtensionScriptName'))]",
+                    "commandToExecute": "[concat('ADMIN_USER_NAME=',parameters('adminUsername'),' ','BENCHMARKING_TOOLS_URL=',variables('benchmarkingToolsURL'),' ','BENCHMARKING_TOOLS_BRANCH_NAME=',parameters('benchmarkingToolsBranchName'),' ','WORKLOAD_TYPE=',parameters('workloadType'),' ','VM_NAME=',variables('vmName'),copyIndex(1), ' ','RESULT_STORAGE_CONNECTION_STRING=','\"',concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value),'\"',' ','COSMOS_URI=','\"',parameters('cosmosURI'),'\"', ' ', 'COSMOS_KEY=',parameters('cosmosKey'), ' ', 'THROUGHPUT=',parameters('throughput'), ' ', 'DOCUMENTS=',parameters('documents'), ' ','PARALLELISM=',parameters('parallelism'), ' ','RESULTS_CONTAINER=',parameters('resultsContainer'), ' ','VM_COUNT=',parameters('vmCount'), ' ','DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS=',parameters('diagnosticsLatencyThresholdInMS'), ' ','METRICS_REPORTINT_INTERVAL_SEC=',parameters('metricsReportingIntervalInSec'), ' ','CUSTOM_SCRIPT_URL=',variables('customScriptUrl'), ' ','MACHINE_INDEX=',copyIndex(1), ' ','APP_INSIGHT_CONN_STR=','\"', reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName'))).InstrumentationKey,'\"',' ', 'bash ',variables('vmScriptExtensionScriptName'))]",
                     "fileUris": [ "[concat(variables('vmScriptExtensionScriptURL'))]" ]
                 }
             },
