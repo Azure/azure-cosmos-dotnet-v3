@@ -8,10 +8,13 @@ namespace CosmosBenchmark
     using System.Diagnostics;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Logging;
+    using OpenTelemetry.Metrics;
 
     internal class SerialOperationExecutor : IExecutor
     {
         private readonly IBenchmarkOperation operation;
+
         private readonly string executorId;
 
         public SerialOperationExecutor(
@@ -26,6 +29,7 @@ namespace CosmosBenchmark
         }
 
         public int SuccessOperationCount { get; private set; }
+
         public int FailedOperationCount { get; private set; }
 
         public double TotalRuCharges { get; private set; }
@@ -34,26 +38,36 @@ namespace CosmosBenchmark
                 int iterationCount,
                 bool isWarmup,
                 bool traceFailures,
-                Action completionCallback)
+                Action completionCallback,
+                BenchmarkConfig benchmarkConfig,
+                ILogger logger,
+                MeterProvider meterProvider)
         {
-            Trace.TraceInformation($"Executor {this.executorId} started");
+            logger.LogInformation($"Executor {this.executorId} started");
+
+            logger.LogInformation("Initializing counters and metrics.");
 
             try
             {
                 int currentIterationCount = 0;
                 do
                 {
+                    IMetricsCollector metricsCollector = MetricsCollectorProvider.GetMetricsCollector(this.operation, meterProvider, benchmarkConfig);
+
                     OperationResult? operationResult = null;
 
                     await this.operation.PrepareAsync();
 
                     using (IDisposable telemetrySpan = TelemetrySpan.StartNew(
                                 () => operationResult.Value,
-                                disableTelemetry: isWarmup))
+                                disableTelemetry: isWarmup,
+                                metricsCollector.RecordLatencyAndRps))
                     {
                         try
                         {
                             operationResult = await this.operation.ExecuteOnceAsync();
+
+                            metricsCollector.CollectMetricsOnSuccess();
 
                             // Success case
                             this.SuccessOperationCount++;
@@ -70,6 +84,8 @@ namespace CosmosBenchmark
                             {
                                 Console.WriteLine(ex.ToString());
                             }
+
+                            metricsCollector.CollectMetricsOnFailure();
 
                             // failure case
                             this.FailedOperationCount++;

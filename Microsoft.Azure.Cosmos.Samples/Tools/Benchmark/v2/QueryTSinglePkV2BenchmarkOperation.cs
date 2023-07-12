@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Linq;
 
-    internal class QueryTSinglePkV2BenchmarkOperation : IBenchmarkOperation
+    internal class QueryTSinglePkV2BenchmarkOperation : QueryBenchmarkOperation
     {
         private readonly DocumentClient documentClient;
         private readonly string partitionKeyPath;
@@ -46,7 +46,7 @@ namespace CosmosBenchmark
             this.sampleJObject[this.partitionKeyPath] = this.executionItemPartitionKey;
         }
 
-        public async Task<OperationResult> ExecuteOnceAsync()
+        public override async Task<OperationResult> ExecuteOnceAsync()
         {
             IDocumentQuery<Dictionary<string, object>> query = this.documentClient.CreateDocumentQuery<Dictionary<string, object>>(
                 this.containerUri,
@@ -93,7 +93,7 @@ namespace CosmosBenchmark
             };
         }
 
-        public async Task PrepareAsync()
+        public override async Task PrepareAsync()
         {
             if (this.initialized)
             {

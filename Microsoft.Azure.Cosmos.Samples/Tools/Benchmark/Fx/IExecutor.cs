@@ -6,6 +6,8 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Threading.Tasks;
+    using Microsoft.Extensions.Logging;
+    using OpenTelemetry.Metrics;
 
     internal interface IExecutor
     {
@@ -17,6 +19,9 @@ namespace CosmosBenchmark
                 int iterationCount,
                 bool isWarmup,
                 bool traceFailures,
-                Action completionCallback);
+                Action completionCallback,
+                BenchmarkConfig benchmarkConfig,
+                ILogger logger,
+                MeterProvider meterProvider);
     }
 }
