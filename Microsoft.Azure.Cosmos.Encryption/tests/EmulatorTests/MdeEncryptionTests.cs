@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using global::Azure.Core.Cryptography;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
