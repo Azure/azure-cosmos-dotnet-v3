@@ -6,9 +6,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Linq;
+    using System.Net;
+    using System.Net.Http;
+    using System.Text;
     using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Resource.Settings;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class SynchronizationContextTests
@@ -19,11 +28,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Timeout(30000)]
         public void VerifySynchronizationContextDoesNotLock(bool withClientTelemetry)
         {
-            if (withClientTelemetry)
-            {
-                Util.EnableClientTelemetryEnvironmentVariables();
-            }
-
             string databaseId = Guid.NewGuid().ToString();
             SynchronizationContext prevContext = SynchronizationContext.Current;
             try
@@ -32,7 +36,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 SynchronizationContext.SetSynchronizationContext(syncContext);
                 syncContext.Post(_ =>
                 {
-                    using (CosmosClient client = TestCommon.CreateCosmosClient())
+
+                    HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+                    {
+                        RequestCallBack = (request, cancellation) =>
+                        {
+                            if (request.RequestUri.AbsoluteUri.Equals("http://dummy.test.com"))
+                            {
+                                HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+                                
+
+                                return Task.FromResult(result);
+                            }
+                            else if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                            {
+                                HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+                                
+                                AccountClientConfigProperties clientConfigProperties = new AccountClientConfigProperties
+                                {
+                                    ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                                    {
+                                        IsEnabled = withClientTelemetry,
+                                        Endpoint = withClientTelemetry? "http://dummy.test.com" : null
+                                    }
+                                };
+
+                                string payload = JsonConvert.SerializeObject(clientConfigProperties);
+                                result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+                                return Task.FromResult(result);
+                            }
+                            else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri))
+                            {
+                                HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+                                
+                                return Task.FromResult(result);
+                            }
+                            return null;
+                        }
+                    };
+                    
+                    using (CosmosClient client = TestCommon.CreateCosmosClient(
+                        customizeClientBuilder: builder => builder.WithHttpClientFactory(() => new HttpClient(httpHandler))))
                     {
                         Cosmos.Database database = client.CreateDatabaseAsync(databaseId).GetAwaiter().GetResult();
                         database = client.CreateDatabaseIfNotExistsAsync(databaseId).GetAwaiter().GetResult();
@@ -138,11 +183,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     client.GetDatabase(databaseId).DeleteAsync().GetAwaiter().GetResult();
                 }
-
-                if (withClientTelemetry)
-                {
-                    Util.DisableClientTelemetryEnvironmentVariables();
-                }
             }
         }
 
@@ -150,11 +190,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public class TestSynchronizationContext : SynchronizationContext
         {
-            private object locker = new object();
+            private readonly object locker = new object();
 
             public override void Post(SendOrPostCallback d, object state)
             {
-                lock (locker)
+                lock (this.locker)
                 {
                     d(state);
                 }

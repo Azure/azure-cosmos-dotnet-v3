@@ -15,24 +15,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
     using Newtonsoft.Json;
-    using Documents.Rntbd;
     using System.Globalization;
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Cosmos.Resource.Settings;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
     {
+        private const string EndpointUrl = "http://dummy.test.com/";
+
         private const int scheduledInSeconds = 1;
         private static readonly object jsonObject = JsonConvert.DeserializeObject("{\"compute\":{\"azEnvironment\":\"AzurePublicCloud\",\"customData\":\"\",\"isHostCompatibilityLayerVm\":\"false\",\"licenseType\":\"\",\"location\":\"eastus\",\"name\":\"sourabh-testing\",\"offer\":\"UbuntuServer\",\"osProfile\":{\"adminUsername\":\"azureuser\",\"computerName\":\"sourabh-testing\"},\"osType\":\"Linux\",\"placementGroupId\":\"\",\"plan\":{\"name\":\"\",\"product\":\"\",\"publisher\":\"\"},\"platformFaultDomain\":\"0\",\"platformUpdateDomain\":\"0\",\"provider\":\"Microsoft.Compute\",\"publicKeys\":[{\"keyData\":\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC5uCeOAm3ehmhI+2PbMoMl17Eo\r\nqfHKCycSaBJsv9qxlmBOuFheSJc1XknJleXUSsuTO016/d1PyWpevnqOZNRksWoa\r\nJvQ23sDTxcK+X2OP3QlCUeX4cMjPXqlL8z1UYzU4Bx3fFvf8fs67G3N72sxWBw5P\r\nZyuXyhBm0NCe/2NYMKgEDT4ma8XszO0ikbhoPKbMbgHAQk/ktWQHNcqYOPQKEWqp\r\nEK1R0rjS2nmtovfScP/ZGXcvOpJ1/NDBo4dh1K+OxOGM/4PSH/F448J5Zy4eAyEk\r\nscys+IpeIOTOlRUy/703SNIX0LEWlnYqbyL9c1ypcYLQqF76fKkDfzzFI/OWVlGw\r\nhj/S9uP8iMsR+fhGIbn6MAa7O4DWPWLuedSp7KDYyjY09gqNJsfuaAJN4LiC6bPy\r\nhknm0PVLK3ux7EUOt+cZrHCdIFWbdOtxiPNIl1tkv9kV5aE5Aj2gJm4MeB9uXYhS\r\nOuksboBc0wyUGrl9+XZJ1+NlZOf7IjVi86CieK8= generated-by-azure\r\n\",\"path\":\"/home/azureuser/.ssh/authorized_keys\"}],\"publisher\":\"Canonical\",\"resourceGroupName\":\"sourabh-telemetry-sdk\",\"resourceId\":\"/subscriptions/8fba6d4f-7c37-4d13-9063-fd58ad2b86e2/resourceGroups/sourabh-telemetry-sdk/providers/Microsoft.Compute/virtualMachines/sourabh-testing\",\"securityProfile\":{\"secureBootEnabled\":\"false\",\"virtualTpmEnabled\":\"false\"},\"sku\":\"18.04-LTS\",\"storageProfile\":{\"dataDisks\":[],\"imageReference\":{\"id\":\"\",\"offer\":\"UbuntuServer\",\"publisher\":\"Canonical\",\"sku\":\"18.04-LTS\",\"version\":\"latest\"},\"osDisk\":{\"caching\":\"ReadWrite\",\"createOption\":\"FromImage\",\"diffDiskSettings\":{\"option\":\"\"},\"diskSizeGB\":\"30\",\"encryptionSettings\":{\"enabled\":\"false\"},\"image\":{\"uri\":\"\"},\"managedDisk\":{\"id\":\"/subscriptions/8fba6d4f-7c37-4d13-9063-fd58ad2b86e2/resourceGroups/sourabh-telemetry-sdk/providers/Microsoft.Compute/disks/sourabh-testing_OsDisk_1_9a54abfc5ba149c6a106bd9e5b558c2a\",\"storageAccountType\":\"Premium_LRS\"},\"name\":\"sourabh-testing_OsDisk_1_9a54abfc5ba149c6a106bd9e5b558c2a\",\"osType\":\"Linux\",\"vhd\":{\"uri\":\"\"},\"writeAcceleratorEnabled\":\"false\"}},\"subscriptionId\":\"8fba6d4f-7c37-4d13-9063-fd58ad2b86e2\",\"tags\":\"azsecpack:nonprod;platformsettings.host_environment.service.platform_optedin_for_rootcerts:true\",\"tagsList\":[{\"name\":\"azsecpack\",\"value\":\"nonprod\"},{\"name\":\"platformsettings.host_environment.service.platform_optedin_for_rootcerts\",\"value\":\"true\"}],\"version\":\"18.04.202103250\",\"vmId\":\"d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd\",\"vmScaleSetName\":\"\",\"vmSize\":\"Standard_D2s_v3\",\"zone\":\"1\"},\"network\":{\"interface\":[{\"ipv4\":{\"ipAddress\":[{\"privateIpAddress\":\"10.0.7.5\",\"publicIpAddress\":\"\"}],\"subnet\":[{\"address\":\"10.0.7.0\",\"prefix\":\"24\"}]},\"ipv6\":{\"ipAddress\":[]},\"macAddress\":\"000D3A8F8BA0\"}]}}");
 
         private CosmosClientBuilder cosmosClientBuilder;
-        private static SystemUsageMonitor systemUsageMonitor;
 
         private List<ClientTelemetryProperties> actualInfo;
         private List<string> preferredRegionList;
@@ -42,33 +42,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private HttpClientHandlerHelper httpHandler;
         private HttpClientHandlerHelper httpHandlerForNonAzureInstance;
 
-        [ClassInitialize]
-        public static void ClassInitialize(TestContext _)
-        {
-            SystemUsageMonitor oldSystemUsageMonitor = (SystemUsageMonitor)typeof(DiagnosticsHandlerHelper)
-                .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.Instance);
-            oldSystemUsageMonitor.Stop();
-
-            ClientTelemetryTests.ResetSystemUsageMonitor(true);
-        }
-
         [TestInitialize]
         public void TestInitialize()
         {
-            Util.EnableClientTelemetryEnvironmentVariables();
-            
+            ClientTelemetryOptions.DefaultTimeStampInSeconds = TimeSpan.FromSeconds(1);
             this.actualInfo = new List<ClientTelemetryProperties>();
 
             this.httpHandler = new HttpClientHandlerHelper
             {
                 RequestCallBack = (request, cancellation) =>
                 {
-                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Equals(EndpointUrl))
                     {
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
@@ -76,11 +64,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         return Task.FromResult(result);
                     }
+                    else if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                    {
+                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+
+                        AccountClientConfigProperties clientConfigProperties = new AccountClientConfigProperties
+                        {
+                            ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                            {
+                                IsEnabled = true,
+                                Endpoint = EndpointUrl
+                            }
+                        };
+
+                        string payload = JsonConvert.SerializeObject(clientConfigProperties);
+                        result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+                        return Task.FromResult(result);
+                    }
                     else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri))
                     {
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
-                        string payload = JsonConvert.SerializeObject(ClientTelemetryTests.jsonObject);
+                        string payload = JsonConvert.SerializeObject(jsonObject);
                         result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
                         return Task.FromResult(result);
@@ -93,16 +99,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 RequestCallBack = (request, cancellation) =>
                 {
-                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Equals(EndpointUrl))
                     {
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-
                         lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
                         }
+
+                        return Task.FromResult(result);
+                    }
+                    else if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                    {
+                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+
+                        AccountClientConfigProperties clientConfigProperties = new AccountClientConfigProperties
+                        {
+                            ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                            {
+                                IsEnabled = true,
+                                Endpoint = EndpointUrl
+                            }
+                        };
+
+                        string payload = JsonConvert.SerializeObject(clientConfigProperties);
+                        result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
 
                         return Task.FromResult(result);
                     }
@@ -129,34 +153,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                         .WithApplicationPreferredRegions(this.preferredRegionList);
         }
 
-        private static void ResetSystemUsageMonitor(bool isTelemetryEnabled)
-        {
-            ClientTelemetryTests.systemUsageMonitor?.Stop();
-
-            FieldInfo diagnosticsHandlerHelperInstance = typeof(DiagnosticsHandlerHelper)
-                .GetField("isTelemetryMonitoringEnabled", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
-            diagnosticsHandlerHelperInstance.SetValue(null, isTelemetryEnabled);
-
-            List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
-            {
-                (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
-                        .GetField("diagnosticSystemUsageRecorder", 
-                                                BindingFlags.Instance | BindingFlags.NonPublic)
-                        .GetValue(DiagnosticsHandlerHelper.Instance)
-            };
-
-            if (isTelemetryEnabled)
-            {
-                recorders.Add(
-                    (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
-                                .GetField("telemetrySystemUsageRecorder", 
-                                                            BindingFlags.Instance | BindingFlags.NonPublic)
-                                .GetValue(DiagnosticsHandlerHelper.Instance));
-            }
-
-            ClientTelemetryTests.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
-        }
-
         [TestCleanup]
         public async Task Cleanup()
         {
@@ -164,23 +160,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                BindingFlags.Static |
                BindingFlags.NonPublic);
             isInitializedField.SetValue(null, false);
-
+            
             FieldInfo azMetadataField = typeof(VmMetadataApiHandler).GetField("azMetadata",
                BindingFlags.Static |
                BindingFlags.NonPublic);
             azMetadataField.SetValue(null, null);
 
             await base.TestCleanup();
-
-            Util.DisableClientTelemetryEnvironmentVariables();
         }
 
-        [ClassCleanup]
-        public static void FinalCleanup()
-        {
-            ClientTelemetryTests.ResetSystemUsageMonitor(false);
-        }
-            
         [TestMethod]
         [DataRow(ConnectionMode.Direct, true)]
         [DataRow(ConnectionMode.Gateway, true)]
@@ -189,8 +177,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task PointSuccessOperationsTest(ConnectionMode mode, bool isAzureInstance)
         {
             Container container = await this.CreateClientAndContainer(
-                mode: mode,
-                isAzureInstance: isAzureInstance);
+                 mode: mode,
+                 isAzureInstance: isAzureInstance);
 
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
@@ -265,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.WaitAndAssert(expectedOperationCount: 2,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.Eventual,
-                expectedOperationRecordCountMap: expectedRecordCountInOperation, 
+                expectedOperationRecordCountMap: expectedRecordCountInOperation,
                 expectedCacheSource: null,
                 isExpectedNetworkTelemetry: false);
         }
@@ -399,6 +387,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
 
+
             await container.CreateItemAsync<ToDoActivity>(testItem, requestOptions: new ItemRequestOptions());
 
             for (int count = 0; count < 50; count++)
@@ -415,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await this.WaitAndAssert(
                 expectedOperationCount: 4,// 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
-                expectedOperationRecordCountMap: expectedRecordCountInOperation); 
+                expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
@@ -423,8 +412,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationSinglePartitionTest(ConnectionMode mode)
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
-
             Container container = await this.CreateClientAndContainer(mode);
 
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "MyTestItemId");
@@ -482,7 +469,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryMultiPageSinglePartitionOperationTest(ConnectionMode mode)
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
             Container container = await this.CreateClientAndContainer(mode: mode);
 
             ItemRequestOptions requestOptions = new ItemRequestOptions()
@@ -545,8 +531,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationCrossPartitionTest(ConnectionMode mode)
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
-
             ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
                 isLargeContainer: true);
@@ -597,8 +581,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task QueryOperationMutiplePageCrossPartitionTest(ConnectionMode mode)
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
-
             ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
                 isLargeContainer: true);
@@ -697,7 +679,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             httpHandler.RequestCallBack = (request, cancellation) =>
             {
-                if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                if (request.RequestUri.AbsoluteUri.Equals(EndpointUrl))
                 {
                     HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
@@ -710,11 +692,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     return Task.FromResult(result);
                 }
+                else if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                {
+                    HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+
+                    AccountClientConfigProperties clientConfigProperties = new AccountClientConfigProperties
+                    {
+                        ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                        {
+                            IsEnabled = true,
+                            Endpoint = EndpointUrl
+                        }
+                    };
+
+                    string payload = JsonConvert.SerializeObject(clientConfigProperties);
+                    result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+
+                    return Task.FromResult(result);
+                }
                 else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri))
                 {
                     HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
-                    string payload = JsonConvert.SerializeObject(ClientTelemetryTests.jsonObject);
+                    string payload = JsonConvert.SerializeObject(jsonObject);
                     result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
                     return Task.FromResult(result);
@@ -758,7 +759,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 { Documents.OperationType.Create.ToString(), 1}
             };
-            
+
             await this.WaitAndAssert(expectedOperationCount: 2,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation,
                 expectedSubstatuscode: 999999,
@@ -795,7 +796,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 HashSet<OperationInfo> actualOperationSet = new HashSet<OperationInfo>();
                 HashSet<RequestInfo> requestInfoSet = new HashSet<RequestInfo>();
-                
+
                 lock (this.actualInfo)
                 {
                     // Setting the number of unique OperationInfo irrespective of response size as response size is varying in case of queries.
@@ -828,7 +829,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
                     }
 
-                    Assert.IsTrue(stopwatch.Elapsed.TotalMinutes < 1, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
+                    Assert.IsTrue(stopwatch.Elapsed.TotalSeconds < 10, $"The expected operation count({expectedOperationCount}) was never hit, Actual Operation Count is {actualOperationSet.Count}.  ActualInfo:{JsonConvert.SerializeObject(this.actualInfo)}");
                 }
             }
             while (localCopyOfActualInfo == null);
@@ -836,14 +837,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<OperationInfo> actualOperationList = new List<OperationInfo>();
             List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
             List<RequestInfo> actualRequestInformation = new List<RequestInfo>();
-            
+
             if (localCopyOfActualInfo[0].ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant())
             {
                 this.expectedMetricNameUnitMap.Add(ClientTelemetryOptions.NumberOfTcpConnectionName, ClientTelemetryOptions.NumberOfTcpConnectionUnit);
             }
 
             ClientTelemetryTests.AssertAccountLevelInformation(
-                localCopyOfActualInfo: localCopyOfActualInfo,
+                            localCopyOfActualInfo: localCopyOfActualInfo,
                 actualOperationList: actualOperationList,
                 actualSystemInformation: actualSystemInformation,
                 actualRequestInformation: actualRequestInformation,
@@ -855,7 +856,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList: actualOperationList,
                 expectedSubstatuscode: expectedSubstatuscode);
 
-            if(!string.IsNullOrEmpty(expectedCacheSource))
+            if (!string.IsNullOrEmpty(expectedCacheSource))
             {
                 Assert.IsTrue(cacheRefreshInfoSet.Count > 0, "Cache Refresh Information is not there");
 
@@ -863,9 +864,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                   cacheRefreshInfoSet: cacheRefreshInfoSet,
                   expectedCacheSource: expectedCacheSource);
             }
-           
+
             ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation, this.expectedMetricNameUnitMap);
-            if (localCopyOfActualInfo.First().ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant() 
+            if (localCopyOfActualInfo.First().ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant()
                 && isExpectedNetworkTelemetry)
             {
                 ClientTelemetryTests.AssertNetworkLevelInformation(actualRequestInformation);
@@ -875,13 +876,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(actualRequestInformation == null || actualRequestInformation.Count == 0, "Request Information is not expected in Gateway mode");
             }
         }
-        
+
         private static void AssertNetworkLevelInformation(List<RequestInfo> actualRequestInformation)
         {
             Assert.IsNotNull(actualRequestInformation);
             Assert.IsTrue(actualRequestInformation.Count > 0);
-            
-            foreach(RequestInfo requestInfo in actualRequestInformation)
+
+            foreach (RequestInfo requestInfo in actualRequestInformation)
             {
                 Assert.IsNotNull(requestInfo.Uri);
                 Assert.IsNotNull(requestInfo.DatabaseName);
@@ -895,7 +896,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(requestInfo.Metrics, "MetricInfo is null");
             }
         }
-            
+
         private static void AssertSystemLevelInformation(List<SystemInfo> actualSystemInformation, IDictionary<string, string> expectedMetricNameUnitMap)
         {
             IDictionary<string, string> actualMetricNameUnitMap = new Dictionary<string, string>();
@@ -906,12 +907,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual("HostMachine", systemInfo.Resource);
                 Assert.IsNotNull(systemInfo.MetricInfo, "MetricInfo is null");
 
-                if(!actualMetricNameUnitMap.TryAdd(systemInfo.MetricInfo.MetricsName, systemInfo.MetricInfo.UnitName))
+                if (!actualMetricNameUnitMap.TryAdd(systemInfo.MetricInfo.MetricsName, systemInfo.MetricInfo.UnitName))
                 {
                     Assert.AreEqual(systemInfo.MetricInfo.UnitName, actualMetricNameUnitMap[systemInfo.MetricInfo.MetricsName]);
                 }
 
-                if(!systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.IsThreadStarvingName) &&
+                if (!systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.IsThreadStarvingName) &&
                     !systemInfo.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.ThreadWaitIntervalInMsName))
                 {
                     Assert.IsTrue(systemInfo.MetricInfo.Count > 0, $"MetricInfo ({systemInfo.MetricInfo.MetricsName}) Count is not greater than 0");
@@ -933,8 +934,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private static void AssertOperationLevelInformation(
-            Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel, 
-            IDictionary<string, long> expectedOperationRecordCountMap, 
+            Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel,
+            IDictionary<string, long> expectedOperationRecordCountMap,
             List<OperationInfo> actualOperationList,
             int expectedSubstatuscode = 0)
         {
@@ -944,7 +945,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.IsNotNull(operation.Operation, "Operation Type is null");
                 Assert.IsNotNull(operation.Resource, "Resource Type is null");
-                
+
                 Assert.AreEqual(expectedSubstatuscode, operation.SubStatusCode);
                 Assert.AreEqual(expectedConsistencyLevel?.ToString(), operation.Consistency, $"Consistency is not {expectedConsistencyLevel}");
 
@@ -972,13 +973,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (expectedOperationRecordCountMap != null)
             {
-                    Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({actualOperationRecordCountMap}) for operation does not match with expected record i.e. ({expectedOperationRecordCountMap})");
+                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), $"actual record i.e. ({actualOperationRecordCountMap}) for operation does not match with expected record i.e. ({expectedOperationRecordCountMap})");
             }
         }
 
         private static void AssertAccountLevelInformation(
-            List<ClientTelemetryProperties> localCopyOfActualInfo, 
-            List<OperationInfo> actualOperationList, 
+            List<ClientTelemetryProperties> localCopyOfActualInfo,
+            List<OperationInfo> actualOperationList,
             List<SystemInfo> actualSystemInformation,
             List<RequestInfo> actualRequestInformation,
             bool? isAzureInstance)
@@ -1000,7 +1001,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         actualSystemInformation.Add(sysInfo);
                     }
                 }
-                
+
                 if (telemetryInfo.RequestInfo != null)
                 {
                     actualRequestInformation.AddRange(telemetryInfo.RequestInfo);
@@ -1029,13 +1030,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsFalse(telemetryInfo.UserAgent.Contains("userAgentSuffix"), "Useragent should not have suffix appended"); // Useragent should not contain useragentsuffix as it can have PII
                 Assert.IsNotNull(telemetryInfo.ConnectionMode);
 
-                if(!string.IsNullOrEmpty(telemetryInfo.MachineId))
+                if (!string.IsNullOrEmpty(telemetryInfo.MachineId))
                 {
                     machineId.Add(telemetryInfo.MachineId);
                 }
             }
 
-            if(isAzureInstance.HasValue)
+            if (isAzureInstance.HasValue)
             {
                 if (isAzureInstance.Value)
                 {
@@ -1054,7 +1055,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HashSet<CacheRefreshInfo> cacheRefreshInfoSet,
             string expectedCacheSource)
         {
-            foreach(CacheRefreshInfo cacheRefreshInfo in cacheRefreshInfoSet)
+            foreach (CacheRefreshInfo cacheRefreshInfo in cacheRefreshInfoSet)
             {
                 Assert.IsNotNull(cacheRefreshInfo.CacheRefreshSource);
                 Assert.IsTrue(expectedCacheSource.Contains(cacheRefreshInfo.CacheRefreshSource));
@@ -1074,7 +1075,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(cacheRefreshInfo.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
             }
         }
-        
+
         private static ItemBatchOperation CreateItem(string itemId)
         {
             var testItem = new { id = itemId, Status = itemId };
@@ -1097,7 +1098,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (customHttpHandler == null)
             {
                 handlerHelper = isAzureInstance ? this.httpHandler : this.httpHandlerForNonAzureInstance;
-            } 
+            }
             else
             {
                 handlerHelper = customHttpHandler;
@@ -1112,11 +1113,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 : this.cosmosClientBuilder.Build());
 
             this.database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
-    
+
             return await this.database.CreateContainerAsync(
                 id: Guid.NewGuid().ToString(),
                 partitionKeyPath: "/id",
-                throughput: isLargeContainer? 15000 : 400);
+                throughput: isLargeContainer ? 15000 : 400);
 
         }
 

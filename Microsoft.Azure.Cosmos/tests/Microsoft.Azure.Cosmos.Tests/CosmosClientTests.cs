@@ -248,11 +248,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (CosmosClient client = new CosmosClient(
                     CosmosClientTests.AccountEndpoint,
-                    masterKeyCredential,
-                    new CosmosClientOptions()
-                    {
-                        EnableClientTelemetry = false,
-                    }))
+                    masterKeyCredential))
             {
                 Assert.AreEqual(typeof(AuthorizationTokenProviderMasterKey), client.AuthorizationTokenProvider.GetType());
             }
@@ -265,11 +261,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (CosmosClient client = new CosmosClient(
                     CosmosClientTests.AccountEndpoint,
-                    resourceToken,
-                    new CosmosClientOptions()
-                    {
-                        EnableClientTelemetry = false,
-                    }))
+                    resourceToken))
             {
                 Assert.AreEqual(typeof(AuthorizationTokenProviderResourceToken), client.AuthorizationTokenProvider.GetType());
             }
@@ -283,11 +275,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             AzureKeyCredential masterKeyCredential = new AzureKeyCredential(originalKey);
             using (CosmosClient client = new CosmosClient(
                     CosmosClientTests.AccountEndpoint,
-                    masterKeyCredential,
-                    new CosmosClientOptions()
-                    {
-                        EnableClientTelemetry = false,
-                    }))
+                    masterKeyCredential))
             {
                 Assert.AreEqual(typeof(AzureKeyCredentialAuthorizationTokenProvider), client.AuthorizationTokenProvider.GetType());
 
@@ -304,11 +292,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             AzureKeyCredential resourceTokenCredential = new AzureKeyCredential(resourceToken);
             using (CosmosClient client = new CosmosClient(
                     CosmosClientTests.AccountEndpoint,
-                    resourceTokenCredential,
-                    new CosmosClientOptions()
-                    {
-                        EnableClientTelemetry = false,
-                    }))
+                    resourceTokenCredential))
             {
                 Assert.AreEqual(typeof(AzureKeyCredentialAuthorizationTokenProvider), client.AuthorizationTokenProvider.GetType());
 
@@ -377,8 +361,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     masterKeyCredential,
                     new CosmosClientOptions()
                     {
-                        HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
-                        EnableClientTelemetry = false,
+                        HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object))
                     }))
             {
                 Container container = client.GetContainer(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
@@ -440,10 +423,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             for (int z = 0; z < 100; ++z)
             {
-                using CosmosClient cosmos = new(ConnectionString, new CosmosClientOptions
-                {
-                    EnableClientTelemetry = true
-                });
+                using CosmosClient cosmos = new(ConnectionString);
             }
 
             string assertMsg = String.Empty;

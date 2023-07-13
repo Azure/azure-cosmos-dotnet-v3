@@ -1,22 +1,20 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Web;
     using Documents.Client;
     using global::Azure;
     using global::Azure.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.IdentityModel.Tokens;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
+    using System.Net.Http;
 
     [TestClass]
     public class CosmosAadTests
@@ -26,14 +24,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task AadMockTest(ConnectionMode connectionMode)
         {
+            string clientConfigApiResponse = null;
+            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+            {
+                ResponseIntercepter = async (response) =>
+                {
+                    bool isClientConfigApi = response.RequestMessage.RequestUri.AbsoluteUri.Contains(Documents.Paths.ClientConfigPathSegment);
+                    if (isClientConfigApi)
+                    {
+                        string responseString = await response.Content.ReadAsStringAsync();
+                        if (response.IsSuccessStatusCode)
+                        {
+                            Assert.IsTrue(responseString.Contains("isEnabled"));
+                        }
+                        else
+                        {
+                            clientConfigApiResponse = responseString;
+                        }
+                    }
+                    return response;
+                }
+            };
+            
             int requestCount = 0;
             string databaseId = Guid.NewGuid().ToString();
             string containerId = Guid.NewGuid().ToString();
             using CosmosClient cosmosClient = TestCommon.CreateCosmosClient();
             Database database = await cosmosClient.CreateDatabaseAsync(databaseId);
-        Container container = await database.CreateContainerAsync(
-            containerId,
-            "/id");
+            Container container = await database.CreateContainerAsync(
+                containerId,
+                "/id");
 
             try
             {
@@ -81,6 +101,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                      });
                 }
 
+                clientOptions.HttpClientFactory = () => new HttpClient(httpHandler);
+                
                 using CosmosClient aadClient = new CosmosClient(
                     endpoint,
                     simpleEmulatorTokenCredential,
@@ -120,6 +142,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await aadContainer.DeleteItemAsync<ToDoActivity>(
                     toDoActivity.id,
                     new PartitionKey(toDoActivity.id));
+
+                Assert.IsNull(clientConfigApiResponse, clientConfigApiResponse);
             }
             finally
             {

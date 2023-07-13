@@ -26,13 +26,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     [TestClass]
     public class ClientTelemetryTests
     {
-        [TestCleanup]
-        public void Cleanup()
-        {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
-        }
-
         [TestMethod]
         public void CheckMetricsAggregationLogic()
         {
@@ -126,7 +119,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         [DataRow(150, 0, 0)] // When only operation info is there in payload
         public async Task CheckIfPayloadIsDividedCorrectlyAsync(int expectedOperationInfoSize, int expectedCacheRefreshInfoSize, int expectedRequestInfoSize)
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
             ClientTelemetryOptions.PayloadSizeThreshold = 1024 * 15; //15 Kb
 
             string data = File.ReadAllText("Telemetry/ClientTelemetryPayloadWithoutMetrics.json", Encoding.UTF8);
@@ -242,6 +234,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             }
             
             await processor.ProcessAndSendAsync(
+                new Uri("http://dummy.telemetry.endpoint/"),
                 clientTelemetryProperties,
                 operationInfoSnapshot,
                 cacheRefreshInfoSnapshot,
@@ -256,8 +249,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         [TestMethod]
         public async Task ClientTelmetryProcessor_should_timeout()
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.telemetry.endpoint/");
-            
             string data = File.ReadAllText("Telemetry/ClientTelemetryPayloadWithoutMetrics.json", Encoding.UTF8);
             ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
  
@@ -340,7 +331,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             {
                 CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
                 await Task.Delay(1000, cts.Token); // Making this task wait to ensure that processir is taking more time.
-                await processor.ProcessAndSendAsync(clientTelemetryProperties,
+                await processor.ProcessAndSendAsync(
+                                                    new Uri("http://dummy.telemetry.endpoint/"),
+                                                    clientTelemetryProperties,
                                                     operationInfoSnapshot,
                                                     cacheRefreshInfoSnapshot,
                                                     default,
@@ -353,12 +346,5 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                                                                     timeout: TimeSpan.FromTicks(1)));
         }
 
-        [TestMethod]
-        [ExpectedException(typeof(FormatException))]
-        public void CheckMisconfiguredTelemetry_should_fail()
-        {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "non-boolean");
-            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
-        }
     }
 }

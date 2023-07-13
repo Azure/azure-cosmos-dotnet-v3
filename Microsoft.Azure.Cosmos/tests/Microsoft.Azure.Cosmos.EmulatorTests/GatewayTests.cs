@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Linq.Expressions;
     using System.Net;
+    using System.Net.Http;
     using System.Runtime.CompilerServices;
     using System.Text;
     using System.Threading.Tasks;
@@ -3375,7 +3376,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await database.DeleteAsync();
         }
+        
+        [TestMethod]
+        public async Task ValidateClientConfigApiWithComputeGateway()
+        {
+            string clientConfigResponse = null;
+            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+            {
+                ResponseIntercepter = async (response) =>
+                {
+                    bool isClientConfigApi = response.RequestMessage.RequestUri.AbsoluteUri.Contains(Documents.Paths.ClientConfigPathSegment);
+                    if (isClientConfigApi)
+                    {
+                        string responseString = await response.Content.ReadAsStringAsync();
 
+                        if (response.IsSuccessStatusCode)
+                        {
+                            Assert.IsTrue(responseString.Contains("isEnabled"));
+                        }
+                        else
+                        {
+                            clientConfigResponse = "call to compute gateway failed with Status Code: " + response.StatusCode + " and response: " + responseString;
+                        }
+                    }
+                    return response;
+                }
+            };
+            
+            using CosmosClient client = TestCommon.CreateCosmosClient(
+                (builder) => builder.WithHttpClientFactory(() => new HttpClient(httpHandler)),
+                accountEndpointOverride: Utils.ConfigurationManager.AppSettings["ComputeGatewayEndpoint"]);
+            
+            Cosmos.Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+
+            Cosmos.Container container = await database.CreateContainerAsync(
+                id: Guid.NewGuid().ToString(),
+                partitionKeyPath: "/id");
+
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
+            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
+
+            await database.DeleteAsync();
+            
+            if(clientConfigResponse != null)
+            {
+                Assert.Fail(clientConfigResponse);
+            }
+        }
+        
         public static string DumpFullExceptionMessage(Exception e)
         {
             StringBuilder exceptionMessage = new StringBuilder();

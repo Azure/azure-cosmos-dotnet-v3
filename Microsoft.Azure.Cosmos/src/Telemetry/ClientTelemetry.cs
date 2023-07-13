@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Handler;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Resource.Settings;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
+        private static readonly TimeSpan observingWindow = ClientTelemetryOptions.DefaultTimeStampInSeconds;
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly ClientTelemetryProcessor processor;
@@ -38,6 +39,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly GlobalEndpointManager globalEndpointManager;
 
+        private readonly Uri endpointUrl;
+        
         private Task telemetryTask;
 
         private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
@@ -65,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="diagnosticsHelper"></param>
         /// <param name="preferredRegions"></param>
         /// <param name="globalEndpointManager"></param>
+        /// <param name="databaseAccountClientConfigs"></param>
         /// <returns>ClientTelemetry</returns>
         public static ClientTelemetry CreateAndStartBackgroundTelemetry(
             string clientId,
@@ -74,7 +78,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper,
             IReadOnlyList<string> preferredRegions,
-            GlobalEndpointManager globalEndpointManager)
+            GlobalEndpointManager globalEndpointManager,
+            AccountClientConfigProperties databaseAccountClientConfigs)
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
 
@@ -86,7 +91,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 authorizationTokenProvider,
                 diagnosticsHelper,
                 preferredRegions,
-                globalEndpointManager);
+                globalEndpointManager,
+                databaseAccountClientConfigs);
 
             clientTelemetry.StartObserverTask();
 
@@ -101,13 +107,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper,
             IReadOnlyList<string> preferredRegions,
-            GlobalEndpointManager globalEndpointManager)
+            GlobalEndpointManager globalEndpointManager,
+            AccountClientConfigProperties databaseAccountClientConfigs)
         {
             this.diagnosticsHelper = diagnosticsHelper ?? throw new ArgumentNullException(nameof(diagnosticsHelper));
             this.globalEndpointManager = globalEndpointManager;
             
             this.processor = new ClientTelemetryProcessor(httpClient, authorizationTokenProvider);
 
+            this.endpointUrl = new Uri(databaseAccountClientConfigs.ClientTelemetryConfiguration.Endpoint);
+            
             this.clientTelemetryInfo = new ClientTelemetryProperties(
                 clientId: clientId, 
                 processId: HashingExtension.ComputeHash(System.Diagnostics.Process.GetCurrentProcess().ProcessName), 
@@ -142,12 +151,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
-                    if (string.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName))
+                    if (string.IsNullOrEmpty(this.clientTelemetryInfo?.GlobalDatabaseAccountName))
                     {
                         AccountProperties accountProperties = await ClientTelemetryHelper.SetAccountNameAsync(this.globalEndpointManager);
                         this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
                     }
-
+                  
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
@@ -157,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     Compute vmInformation = VmMetadataApiHandler.GetMachineInfo();
                     this.clientTelemetryInfo.ApplicationRegion = vmInformation?.Location;
                     this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
-
+                    
                     this.clientTelemetryInfo.SystemInfo = ClientTelemetryHelper.RecordSystemUtilization(this.diagnosticsHelper,
                         this.clientTelemetryInfo.IsDirectConnectionMode);
 
@@ -169,12 +178,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
 
                     List<RequestInfo> requestInfoSnapshot = this.networkDataRecorder.GetRequests();
-
                     try
                     {
                         CancellationTokenSource cancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
                         Task processorTask = Task.Run(() => this.processor
                                                                     .ProcessAndSendAsync(
+                                                                            endpointUrl: this.endpointUrl,
                                                                             clientTelemetryInfo: this.clientTelemetryInfo,
                                                                             operationInfoSnapshot: operationInfoSnapshot,
                                                                             cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,

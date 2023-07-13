@@ -44,7 +44,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         public static CosmosClient CreateMockCosmosClient(
             bool useCustomSerializer = false,
-            bool? isClientTelemetryEnabled = null,
             Action < CosmosClientBuilder> customizeClientBuilder = null)
         {
             MockDocumentClient documentClient = new MockDocumentClient();
@@ -60,12 +59,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         IgnoreNullValues = true,
                     });
             }
-
-            if (isClientTelemetryEnabled.HasValue && isClientTelemetryEnabled.Value)
-            {
-                cosmosClientBuilder.WithTelemetryEnabled();
-            }
-
+            
             documentClient.dummyHeaderNames = new string[100];
             for (int i = 0; i < documentClient.dummyHeaderNames.Length; i++)
             {

@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Resource.Settings;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -22,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
     using Moq;
+    using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Routing.PartitionRoutingHelper;
 
     internal class MockCosmosUtil
@@ -31,18 +33,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public static CosmosClient CreateMockCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
-            Cosmos.ConsistencyLevel? accountConsistencyLevel = null,
-            bool enableTelemetry = false)
+            Cosmos.ConsistencyLevel? accountConsistencyLevel = null)
         {
             DocumentClient documentClient = accountConsistencyLevel.HasValue ? new MockDocumentClient(accountConsistencyLevel.Value) : new MockDocumentClient();
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
-            if(enableTelemetry)
-            {
-                documentClient.clientTelemetry = new Mock<ClientTelemetry>().Object;
-
-                cosmosClientBuilder.WithTelemetryEnabled();
-            }
 
             return cosmosClientBuilder.Build(documentClient);
         }

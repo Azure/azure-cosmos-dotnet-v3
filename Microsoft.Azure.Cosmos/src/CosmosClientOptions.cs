@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
@@ -730,9 +731,15 @@ namespace Microsoft.Azure.Cosmos
         internal bool? EnableCpuMonitor { get; set; }
 
         /// <summary>
-        /// Flag to enable telemetry
+        /// Telemetry feature is under preview right now.
+        /// By default, this can be controlled by enabling it on portal but alternatively, it can be disabled by this flag for particular CosmosClient instance.
         /// </summary>
-        internal bool? EnableClientTelemetry { get; set; }
+        public bool? DisableClientTelemetryToService { get; set; }
+#if INTERNAL
+        = true;
+#else
+        = false;
+#endif
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
@@ -774,9 +781,9 @@ namespace Microsoft.Azure.Cosmos
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };
 
-            if (this.EnableClientTelemetry.HasValue)
+            if (this.DisableClientTelemetryToService.HasValue)
             {
-                connectionPolicy.EnableClientTelemetry = this.EnableClientTelemetry.Value;
+                connectionPolicy.DisableClientTelemetryToService = this.DisableClientTelemetryToService.Value;
             }
 
             if (this.ApplicationRegion != null)

@@ -57,25 +57,21 @@ namespace Microsoft.Azure.Cosmos.Handler
         private DiagnosticsHandlerHelper()
         {
             DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled = false;
-
+            DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = false;
+            
             // If the CPU monitor fails for some reason don't block the application
             try
             {
-                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled();
-
                 List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
                 {
                     this.diagnosticSystemUsageRecorder,
+                    this.telemetrySystemUsageRecorder
                 };
-
-                if (DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
-                {
-                    recorders.Add(this.telemetrySystemUsageRecorder);
-                }
 
                 this.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
 
                 DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled = true;
+                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = true;
             }
             catch (Exception ex)
             {

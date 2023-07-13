@@ -6,9 +6,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
     using System.IO;
+    using System.Net.Http;
+    using System.Threading.Tasks;
+    using System.Threading;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Newtonsoft.Json;
+    using Microsoft.Azure.Cosmos.Resource.Settings;
+    using System.Net;
+    using System.Text;
 
     /// <summary>
     /// Benchmark for Item related operations.
@@ -36,7 +41,53 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             bool useBulk = false,
             bool? isClientTelemetryEnabled = null)
         {
-            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, isClientTelemetryEnabled, (builder) => builder.WithBulkExecution(useBulk));
+            if (isClientTelemetryEnabled.HasValue && isClientTelemetryEnabled.Value)
+            {
+                string EndpointUrl = "http://dummy.test.com/";
+                HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+                {
+                    RequestCallBack = (request, cancellation) =>
+                    {
+                        if (request.RequestUri.AbsoluteUri.Equals(EndpointUrl))
+                        {
+                            HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+
+                            string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+
+                            return Task.FromResult(result);
+                        }
+                        else if (request.RequestUri.AbsoluteUri.Contains(Documents.Paths.ClientConfigPathSegment))
+                        {
+                            HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+
+                            AccountClientConfigProperties clientConfigProperties = new AccountClientConfigProperties
+                            {
+                                ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                                {
+                                    IsEnabled = true,
+                                    Endpoint = EndpointUrl
+                                }
+                            };
+
+                            string payload = JsonConvert.SerializeObject(clientConfigProperties);
+                            result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+                            return Task.FromResult(result);
+                        }
+                        return null;
+                    }
+                };
+
+                this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, (builder) => builder
+                                                                                                                .WithBulkExecution(useBulk)
+                                                                                                                .WithHttpClientFactory(() => new HttpClient(httpHandler)));
+            }
+            else
+            {
+                this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, (builder) => builder.WithBulkExecution(useBulk));
+            }
+           
+            
             this.TestContainer = this.TestClient.GetDatabase("myDB").GetContainer("myColl");
             this.IncludeDiagnosticsToString = includeDiagnosticsToString;
 
@@ -77,6 +128,46 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 count: this.TestItemBytes.Length,
                 writable: false,
                 publiclyVisible: true);
+        }
+
+        private class HttpClientHandlerHelper : DelegatingHandler
+        {
+            public HttpClientHandlerHelper() : base(new HttpClientHandler())
+            {
+            }
+
+            public Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> RequestCallBack { get; set; }
+
+            public Func<HttpResponseMessage, Task<HttpResponseMessage>> ResponseIntercepter { get; set; }
+
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                HttpResponseMessage httpResponse = null;
+                if (this.RequestCallBack != null)
+                {
+                    Task<HttpResponseMessage> response = this.RequestCallBack(request, cancellationToken);
+                    if (response != null)
+                    {
+                        httpResponse = await response;
+                        if (httpResponse != null)
+                        {
+                            if (this.ResponseIntercepter != null)
+                            {
+                                httpResponse = await this.ResponseIntercepter(httpResponse);
+                            }
+                            return httpResponse;
+                        }
+                    }
+                }
+
+                httpResponse = await base.SendAsync(request, cancellationToken);
+                if (this.ResponseIntercepter != null)
+                {
+                    httpResponse = await this.ResponseIntercepter(httpResponse);
+                }
+
+                return httpResponse;
+            }
         }
     }
 }

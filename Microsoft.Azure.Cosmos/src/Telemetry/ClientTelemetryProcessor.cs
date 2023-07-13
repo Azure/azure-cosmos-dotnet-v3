@@ -19,8 +19,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal class ClientTelemetryProcessor
     {
-        private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
-        
         private readonly AuthorizationTokenProvider tokenProvider;
         private readonly CosmosHttpClient httpClient;
             
@@ -35,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <returns>Task</returns>
         internal async Task ProcessAndSendAsync(
+            Uri endpointUrl,
             ClientTelemetryProperties clientTelemetryInfo, 
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharget)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
@@ -48,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     operationInfoSnapshot: operationInfoSnapshot,
                     cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                     sampledRequestInfo: requestInfoSnapshot,
-                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken));
+                    callback: async (payload) => await this.SendAsync(endpointUrl, clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken));
             }
             catch (Exception ex)
             {
@@ -65,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <returns>Async Task</returns>
         private async Task SendAsync(
+            Uri endpointUrl,
             string globalDatabaseAccountName, 
             string jsonPayload, 
             CancellationToken cancellationToken)

@@ -681,23 +681,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Disable Telemetry if enabled using environment properties
+        /// Telemetry feature is under preview right now.
+        /// By default, this can be controlled by enabling it on portal but alternatively, it can be disabled by this flag for particular CosmosClient instance.
         /// </summary>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        internal CosmosClientBuilder WithTelemetryDisabled()
+        public CosmosClientBuilder DisableClientTelemetryToService()
         {
-            this.clientOptions.EnableClientTelemetry = false;
-            return this;
-        }
-
-        /// <summary>
-        /// To enable Telemetry, set COSMOS.CLIENT_TELEMETRY_ENABLED environment property. 
-        /// This function is used by Test only.
-        /// </summary>
-        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        internal CosmosClientBuilder WithTelemetryEnabled()
-        {
-            this.clientOptions.EnableClientTelemetry = true;
+            this.clientOptions.DisableClientTelemetryToService = true;
             return this;
         }
 

@@ -39,7 +39,7 @@
   "MockedItemBenchmark.ReadItemNotExists;[Type=OfT]": 43489.25,
   "MockedItemBenchmark.ReadItemNotExists;[Type=OfTCustom]": 43490,
   "MockedItemBenchmark.ReadItemNotExists;[Type=OfTWithClientTelemetryEnabled]": 43489.25,
-  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTWithDiagnosticsToString]": 58054,
+  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTWithDiagnosticsToString]": 64478.75,
   "MockedItemBenchmark.ReadItemNotExists;[Type=Stream]": 39044,
   "MockedItemBenchmark.UpdateItem;[Type=OfT]": 36591,
   "MockedItemBenchmark.UpdateItem;[Type=OfTCustom]": 36594.25,

@@ -132,8 +132,7 @@ namespace CosmosCTL
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                ApplicationName = CTLConfig.UserAgentSuffix,
-                EnableClientTelemetry = true
+                ApplicationName = CTLConfig.UserAgentSuffix
             };
 
             if (this.UseGatewayMode)
