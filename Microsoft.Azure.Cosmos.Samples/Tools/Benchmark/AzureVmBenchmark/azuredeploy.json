@@ -82,10 +82,10 @@
                 "description": "Specifies Collection throughput use"
             }
         },
-        "documents": {
+        "operationsCount": {
             "type": "int",
             "metadata": {
-                "description": "Specifies the number of documents to insert"
+                "description": "Specifies the number of operations to execute"
             }
         },
         "parallelism": {
@@ -192,9 +192,12 @@
                 "description": "Specifies Application Insights Account Nmae"
             }
         },
-        "startDateTime": {
+        "resultStorageContainerPrefix": {
             "type": "string",
-            "defaultValue": "[utcNow('u')]"
+            "defaultValue": "[utcNow('u')]",
+            "metadata": {
+                "description": "Specifies Application Insights Account Nmae"
+            }
         }
     },
     "variables": {
@@ -425,7 +428,7 @@
                 "settings": {
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat('ADMIN_USER_NAME=',parameters('adminUsername'),' ','BENCHMARKING_TOOLS_URL=',variables('benchmarkingToolsURL'),' ','BENCHMARKING_TOOLS_BRANCH_NAME=',parameters('benchmarkingToolsBranchName'),' ','WORKLOAD_TYPE=',parameters('workloadType'),' ','VM_NAME=',variables('vmName'),copyIndex(1), ' ','RESULT_STORAGE_CONNECTION_STRING=','\"',concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value),'\"',' ','COSMOS_URI=','\"',parameters('cosmosURI'),'\"', ' ', 'COSMOS_KEY=',parameters('cosmosKey'), ' ', 'THROUGHPUT=',parameters('throughput'), ' ', 'DOCUMENTS=',parameters('documents'), ' ','PARALLELISM=',parameters('parallelism'), ' ','RESULTS_CONTAINER=',parameters('resultsContainer'), ' ','RESULT_STORAGE_CONTAINER_PREFIX=',parameters('startDateTime'), ' ','VM_COUNT=',parameters('vmCount'), ' ','DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS=',parameters('diagnosticsLatencyThresholdInMS'), ' ','METRICS_REPORTINT_INTERVAL_SEC=',parameters('metricsReportingIntervalInSec'), ' ','CUSTOM_SCRIPT_URL=',variables('customScriptUrl'), ' ','MACHINE_INDEX=',copyIndex(1), ' ','APP_INSIGHT_CONN_STR=','\"', reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName'))).InstrumentationKey,'\"',' ', 'bash ',variables('vmScriptExtensionScriptName'))]",
+                    "commandToExecute": "[concat('ADMIN_USER_NAME=',parameters('adminUsername'),' ','BENCHMARKING_TOOLS_URL=',variables('benchmarkingToolsURL'),' ','BENCHMARKING_TOOLS_BRANCH_NAME=',parameters('benchmarkingToolsBranchName'),' ','WORKLOAD_TYPE=',parameters('workloadType'),' ','VM_NAME=',variables('vmName'),copyIndex(1), ' ','RESULT_STORAGE_CONNECTION_STRING=','\"',concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value),'\"',' ','COSMOS_URI=','\"',parameters('cosmosURI'),'\"', ' ', 'COSMOS_KEY=',parameters('cosmosKey'), ' ', 'THROUGHPUT=',parameters('throughput'), ' ', 'DOCUMENTS=',parameters('operationsCount'), ' ','PARALLELISM=',parameters('parallelism'), ' ','RESULTS_CONTAINER=',parameters('resultsContainer'), ' ','RESULT_STORAGE_CONTAINER_PREFIX=',parameters('resultStorageContainerPrefix'), ' ','VM_COUNT=',parameters('vmCount'), ' ','DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS=',parameters('diagnosticsLatencyThresholdInMS'), ' ','METRICS_REPORTINT_INTERVAL_SEC=',parameters('metricsReportingIntervalInSec'), ' ','CUSTOM_SCRIPT_URL=',variables('customScriptUrl'), ' ','MACHINE_INDEX=',copyIndex(1), ' ','APP_INSIGHT_CONN_STR=','\"', reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName'))).InstrumentationKey,'\"',' ', 'bash ',variables('vmScriptExtensionScriptName'))]",
                     "fileUris": [ "[concat(variables('vmScriptExtensionScriptURL'))]" ]
                 }
             },
