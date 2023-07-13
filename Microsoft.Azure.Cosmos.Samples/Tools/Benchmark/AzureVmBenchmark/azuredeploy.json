@@ -192,11 +192,7 @@
                 "description": "Specifies Application Insights Account Nmae"
             }
         },
-        "resultStorageContainerPrefix": {
-            "type": "string",
-            "defaultValue": ""
-        },
-        "convertedEpoch": {
+        "startTimestamp": {
             "type": "int",
             "defaultValue": "[dateTimeToEpoch(utcNow())]"
         }
@@ -211,7 +207,7 @@
         "vmScriptExtensionScriptUrl": "[concat('https://raw.githubusercontent.com/',parameters('benchmarkingToolsRepoName'),'/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/scripts/execute.sh')]",
         "customScriptUrl": "[concat('https://raw.githubusercontent.com/',parameters('benchmarkingToolsRepoName'),'/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/scripts/custom-script.sh')]",
         "vmScriptExtensionScriptName": "execute.sh",
-        "convertedDatetime": "[dateTimeFromEpoch(parameters('convertedEpoch'))]"
+        "convertedDatetime": "[dateTimeFromEpoch(parameters('startTimestamp'))]"
 
     },
     "resources": [
