@@ -22,7 +22,7 @@ namespace CosmosBenchmark.Fx
         /// A constant string representing the diagnostics file path.
         /// </summary>
         public const string DiagnosticsFileName = "BenchmarkDiagnostics.out";
-        
+
         /// <summary>
         /// A constant int representing the maximum file size.
         /// </summary>
@@ -63,7 +63,7 @@ namespace CosmosBenchmark.Fx
                     lock (this.FileLock)
                     {
                         this.CreateFileIfNotExist(DiagnosticsFileName);
-                        
+
                         FileInfo fileInfo = new FileInfo(DiagnosticsFileName);
 
                         long fileSize = fileInfo.Length;
@@ -121,7 +121,7 @@ namespace CosmosBenchmark.Fx
         /// Uploading all files with diagnostic data to blob storage
         /// </summary>
         /// <param name="config">An instance of <see cref="BenchmarkConfig "/> containing the benchmark tool input parameters.</param>
-        public void UploadDiagnostcs(BlobContainerClient blobContainerClient)
+        public void UploadDiagnostcs(BlobContainerClient blobContainerClient, String containerPrefix)
         {
             Utility.TeeTraceInformation("Uploading diagnostics");
             string[] diagnosticFiles = Directory.GetFiles(".", $"{DiagnosticsFileName}*");
@@ -135,7 +135,10 @@ namespace CosmosBenchmark.Fx
                         string diagnosticFile = diagnosticFiles[i];
                         Utility.TeeTraceInformation($"Uploading {i + 1} of {diagnosticFiles.Length} file: {diagnosticFile} ");
 
-                        BlobClient blobClient = blobContainerClient.GetBlobClient($"{this.BlobPrefix}-{i}.out");
+                        string blobName = string.IsNullOrEmpty(containerPrefix) ?
+                            $"{this.BlobPrefix}-{i}.out" : $"{containerPrefix}/{this.BlobPrefix}-{i}.out";
+
+                        BlobClient blobClient = blobContainerClient.GetBlobClient(blobName);
 
                         blobClient.Upload(diagnosticFile, overwrite: true);
                     }

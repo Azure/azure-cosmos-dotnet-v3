@@ -59,7 +59,7 @@ namespace CosmosBenchmark
                 if (!string.IsNullOrEmpty(config.ResultsStorageConnectionString))
                 {
                     BlobContainerClient blobContainerClient = diagnosticDataListener.GetBlobServiceClient(config);
-                    diagnosticDataListener.UploadDiagnostcs(blobContainerClient);
+                    diagnosticDataListener.UploadDiagnostcs(blobContainerClient, config.ResultStorageContainerPrefix);
                 }
             }
             catch (Exception e)

@@ -130,6 +130,9 @@ namespace CosmosBenchmark
         [JsonIgnore]
         public string ResultsStorageConnectionString { get; set; }
 
+        [Option(Required = false, HelpText = "Blob storage container folder prefix")]
+        public string ResultStorageContainerPrefix { get; set; }
+
         internal int GetTaskCount(int containerThroughput)
         {
             int taskCount = this.DegreeOfParallelism;
