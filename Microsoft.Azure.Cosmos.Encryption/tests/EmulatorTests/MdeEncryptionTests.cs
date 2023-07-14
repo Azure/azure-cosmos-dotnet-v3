@@ -2437,7 +2437,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 ClientEncryptionPolicy = clientEncryptionPolicy
             };
 
-            encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainer.InitializeEncryptionAsync();
 
             PartitionKey hirarchicalPk = new PartitionKeyBuilder()
@@ -2523,9 +2523,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 PartitionKey = partialHirarchicalPk
             };
 
-
             queryResponseIterator = encryptionContainer.GetItemQueryIterator<HirarchicalPkTestDoc>(withEncryptedParameter, requestOptions: queryRequestOptions);
-            Assert.IsFalse(queryResponseIterator.HasMoreResults);
+
+            while (queryResponseIterator.HasMoreResults)
+            {
+                FeedResponse<HirarchicalPkTestDoc> response = await queryResponseIterator.ReadNextAsync().ConfigureAwait(false);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.AreEqual(0, response.Count());
+            }
         }
 #endif
         [TestMethod]

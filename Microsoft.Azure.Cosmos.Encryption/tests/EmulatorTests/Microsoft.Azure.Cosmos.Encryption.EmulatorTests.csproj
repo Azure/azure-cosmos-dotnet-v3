@@ -12,6 +12,9 @@
     <EmulatorFlavor>master</EmulatorFlavor>
     <DisableCopyEmulator>True</DisableCopyEmulator>
     <LangVersion>$(LangVersion)</LangVersion>
+      <IsPreview>TRUE</IsPreview>
+      <DefineConstants>ENCRYPTIONTESTPREVIEW</DefineConstants>
+
   </PropertyGroup>
   
   <ItemGroup>
