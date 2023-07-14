@@ -47,7 +47,7 @@
             Mock<BlobClient> mockClient = new Mock<BlobClient>();
             mockContainer.Setup(mock => mock.GetBlobClient(It.IsAny<string>())).Returns(mockClient.Object);
 
-            this.listener.UploadDiagnostcs(mockContainer.Object);
+            this.listener.UploadDiagnostcs(mockContainer.Object, "prefix");
             mockClient.Verify(mock => mock.Upload(It.IsAny<string>(), true, default), Times.Exactly(filesCount));
         }
     }

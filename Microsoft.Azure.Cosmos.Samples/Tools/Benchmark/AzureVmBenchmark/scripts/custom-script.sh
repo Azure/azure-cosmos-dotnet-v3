@@ -3,19 +3,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-echo "##########VM NAME###########: $DB_BINDING_NAME"
-echo "##########VM NAME###########: $VM_NAME"
-echo "##########MACHINE_INDEX###########: $MACHINE_INDEX"
-echo "##########VM_COUNT###########: $VM_COUNT"
-
-echo "##########BENCHMARKING_TOOLS_BRANCH_NAME###########: $BENCHMARKING_TOOLS_BRANCH_NAME"
-echo "##########BENCHMARKING_TOOLS_URL###########: $BENCHMARKING_TOOLS_URL"
-
-export OSSProjectRef=True
-export DOTNET_CLI_HOME=/temp
-export RESULTS_PK="runs-summary" #For test runs use different one
-export PL=18
-
 #Cloning Test Bench Repo
 echo "########## Cloning Test Bench repository ##########"
 git clone https://github.com/Azure/azure-cosmos-dotnet-v3.git
@@ -35,5 +22,5 @@ nohup dotnet run -c Release -e ${COSMOS_URI} -k ${COSMOS_KEY} -t ${THROUGHPUT} -
 --resultsstorageconnectionstring ${RESULT_STORAGE_CONNECTION_STRING} \
 --LatencyDiagnosticThreshold ${DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS} \
 --ResultStorageContainerPrefix ${RESULT_STORAGE_CONTAINER_PREFIX} \
---commitid "commitid" --commitdate "$(date '+%Y-%m-%d')" --committime "$(date '+%H:%M:%SZ')" -w ${WORKLOAD_TYPE} \
+-w ${WORKLOAD_TYPE} \
 > "/home/${ADMIN_USER_NAME}/agent.out" 2> "/home/${ADMIN_USER_NAME}/agent.err" &

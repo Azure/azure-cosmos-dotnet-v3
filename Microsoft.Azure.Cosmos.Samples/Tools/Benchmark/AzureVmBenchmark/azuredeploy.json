@@ -31,7 +31,7 @@
         },
         "vmSize": {
             "type": "string",
-            "defaultValue": "Standard_D2s_v3",
+            "defaultValue": "Standard_D4s_v3",
             "metadata": {
                 "description": "Specifies a Virtual Machine size"
             }
@@ -78,6 +78,7 @@
         },
         "throughput": {
             "type": "int",
+            "defaultValue": 100000,
             "metadata": {
                 "description": "Specifies Collection throughput use"
             }
@@ -90,6 +91,7 @@
         },
         "parallelism": {
             "type": "int",
+            "defaultValue": -1,
             "metadata": {
                 "description": "Specifies the degree of parallelism"
             }
@@ -156,18 +158,11 @@
                 "description": "Specifies the workload"
             }
         },
-        "benchmarkingToolsRepoName": {
-            "type": "string",
-            "defaultValue": "Azure/azure-cosmos-dotnet-v3",
-            "metadata": {
-                "description": "Specifies the GitHub Url for YCSB source code repository"
-            }
-        },
         "benchmarkingToolsBranchName": {
             "type": "string",
-            "defaultValue": "main",
+            "defaultValue": "master",
             "metadata": {
-                "description": "Specifies the GitHub branch for YCSB source code repository"
+                "description": "Specifies the GitHub branch for the benchmark tool source code repository"
             }
         },
         "diagnosticsLatencyThresholdInMS": {
@@ -202,10 +197,10 @@
         "publicIPAddressName": "[concat(parameters('projectName'), '-ip')]",
         "networkInterfaceName": "[concat(parameters('projectName'), '-nic')]",
         "networkSecurityGroupName": "[concat(parameters('projectName'), '-nsg')]",
-        "benchmarkingToolsURL": "[ concat('https://github.com/',parameters('benchmarkingToolsRepoName'),'.git')]",
-        "cloudInitScriptUrl": "[concat('https://raw.githubusercontent.com/',parameters('benchmarkingToolsRepoName'),'/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/system/cloud-init.txt')]",
-        "vmScriptExtensionScriptUrl": "[concat('https://raw.githubusercontent.com/',parameters('benchmarkingToolsRepoName'),'/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/scripts/execute.sh')]",
-        "customScriptUrl": "[concat('https://raw.githubusercontent.com/',parameters('benchmarkingToolsRepoName'),'/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/scripts/custom-script.sh')]",
+        "benchmarkingToolsURL": "https://github.com/Azure/azure-cosmos-dotnet-v3.git",
+        "cloudInitScriptUrl": "[concat('https://raw.githubusercontent.com/Azure/azure-cosmos-dotnet-v3/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/system/cloud-init.txt')]",
+        "vmScriptExtensionScriptUrl": "[concat('https://raw.githubusercontent.com/Azure/azure-cosmos-dotnet-v3/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/scripts/execute.sh')]",
+        "customScriptUrl": "[concat('https://raw.githubusercontent.com/Azure/azure-cosmos-dotnet-v3/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/scripts/custom-script.sh')]",
         "vmScriptExtensionScriptName": "execute.sh",
         "convertedDatetime": "[dateTimeFromEpoch(parameters('startDate'))]"
 
