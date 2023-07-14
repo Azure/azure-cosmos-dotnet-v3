@@ -2,6 +2,7 @@
 
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
+export DOTNET_CLI_HOME=/temp
 
 cloud-init status --wait
 echo "##########CUSTOM_SCRIPT_URL###########: $CUSTOM_SCRIPT_URL"
