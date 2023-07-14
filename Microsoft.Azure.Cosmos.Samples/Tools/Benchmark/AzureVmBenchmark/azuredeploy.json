@@ -184,7 +184,7 @@
             "type": "string",
             "defaultValue": "CosmosDBBenchmarkTestAppInsights",
             "metadata": {
-                "description": "Specifies Application Insights Account Nmae"
+                "description": "Specifies Application Insights Account Name"
             }
         },
         "startDate": {
