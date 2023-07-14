@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (!this.IsValidThrottleStatusCode(dce.StatusCode))
                 {
-                    DefaultTrace.TraceError(
+                    DefaultTrace.TraceVerbose(
                         "Operation will NOT be retried. Current attempt {0}, Status Code: {1} ",
                         this.currentAttemptCount,
                         dce.StatusCode);
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!this.IsValidThrottleStatusCode(cosmosResponseMessage?.StatusCode))
             {
-                DefaultTrace.TraceError(
+                DefaultTrace.TraceVerbose(
                     "Operation will NOT be retried. Current attempt {0}, Status Code: {1} ",
                     this.currentAttemptCount,
                     cosmosResponseMessage?.StatusCode);
