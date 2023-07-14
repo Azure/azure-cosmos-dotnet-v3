@@ -1,0 +1,267 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected Compare ==]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, doc.StringField2) == 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] = root["StringField2"])
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected Compare >]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, doc.StringField2) > 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] > root["StringField2"])
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected Compare >=]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, doc.StringField2) >= 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] >= root["StringField2"])
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected Compare <]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, doc.StringField2) < 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] < root["StringField2"])
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected Compare <=]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, doc.StringField2) <= 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] <= root["StringField2"])
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String.Compare static string ==]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") == 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] = "str")
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String.Compare static string >]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") > 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] > "str")
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String.Compare static string >=]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") >= 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] >= "str")
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String.Compare static string <]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") < 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] < "str")
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String.Compare static string <=]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") <= 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] <= "str")
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected Compare == reverse operands]]></Description>
+      <Expression><![CDATA[query.Select(doc => (0 == Compare(doc.StringField, doc.StringField2)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] = root["StringField2"])
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected Compare < reverse operands]]></Description>
+      <Expression><![CDATA[query.Select(doc => (0 < Compare(doc.StringField, doc.StringField2)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] > root["StringField2"])
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected Compare <= reverse operands]]></Description>
+      <Expression><![CDATA[query.Select(doc => (0 <= Compare(doc.StringField, doc.StringField2)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] >= root["StringField2"])
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected Compare > reverse operands]]></Description>
+      <Expression><![CDATA[query.Select(doc => (0 > Compare(doc.StringField, doc.StringField2)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] < root["StringField2"])
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Projected Compare >= reverse operands]]></Description>
+      <Expression><![CDATA[query.Select(doc => (0 >= Compare(doc.StringField, doc.StringField2)))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery>
+        <![CDATA[
+SELECT VALUE (root["StringField"] <= root["StringField2"])
+FROM root]]>
+      </SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String.Compare > 1]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") > 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The right-hand side of String.Compare() comparison must be constant '0'.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String.Compare == 1]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") == 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The right-hand side of String.Compare() comparison must be constant '0'.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String.Compare == -1]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") == -1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[The right-hand side of String.Compare() comparison must be constant '0'.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String.Compare | 0]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") | 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Invalid operator for string.Compare(). Vaid operators are ('==', '<', '<=', '>' or '>=')]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String.Compare & 0]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") & 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Invalid operator for string.Compare(). Vaid operators are ('==', '<', '<=', '>' or '>=')]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[String.Compare ^ 0]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, "str") ^ 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Invalid operator for string.Compare(). Vaid operators are ('==', '<', '<=', '>' or '>=')]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Unexpected number of arguments to string.Compare]]></Description>
+      <Expression><![CDATA[query.Select(doc => (Compare(doc.StringField, 0, "str", 0, 3) == 0))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method 'Compare' is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>
