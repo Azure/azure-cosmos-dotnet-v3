@@ -978,7 +978,7 @@
             throw new NotImplementedException();
         }
 
-        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string resourceLink, string collectionResourceId, List<Range<string>> providedRanges, bool forceRefresh, ITrace trace)
+        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string resourceLink, string collectionResourceId, IReadOnlyList<Range<string>> providedRanges, bool forceRefresh, ITrace trace)
         {
             return Task.FromResult(new List<PartitionKeyRange>{new PartitionKeyRange()
             {

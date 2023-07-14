@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
-            List<Range<string>> providedRanges,
+            IReadOnlyList<Range<string>> providedRanges,
             bool forceRefresh,
             ITrace trace)
         {
