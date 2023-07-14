@@ -56,10 +56,10 @@ namespace CosmosBenchmark
 
                 RunSummary runSummary = await program.ExecuteAsync(config);
 
-                if (!string.IsNullOrEmpty(config.ResultsStorageConnectionString))
+                if (!string.IsNullOrEmpty(config.DiagnosticsStorageConnectionString))
                 {
                     BlobContainerClient blobContainerClient = diagnosticDataListener.GetBlobServiceClient(config);
-                    diagnosticDataListener.UploadDiagnostcs(blobContainerClient, config.ResultStorageContainerPrefix);
+                    diagnosticDataListener.UploadDiagnostcs(blobContainerClient, config.DiagnosticsStorageContainerPrefix);
                 }
             }
             catch (Exception e)

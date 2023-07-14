@@ -18,9 +18,9 @@ dotnet build --configuration Release -p:"OSSProjectRef=true;ShouldUnsetParentCon
 
 echo "########## Run benchmark ##########"
 nohup dotnet run -c Release -e ${COSMOS_URI} -k ${COSMOS_KEY} -t ${THROUGHPUT} -n ${DOCUMENTS} --pl ${PARALLELISM} \
---publishresults true --enablelatencypercentiles true --resultscontainer ${RESULTS_CONTAINER} --resultspartitionkeyvalue "pk" \
---resultsstorageconnectionstring ${RESULT_STORAGE_CONNECTION_STRING} \
---LatencyDiagnosticThreshold ${DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS} \
---ResultStorageContainerPrefix ${RESULT_STORAGE_CONTAINER_PREFIX} \
+--enablelatencypercentiles true --resultscontainer ${RESULTS_CONTAINER} --resultspartitionkeyvalue "pk" \
+--DiagnosticsStorageConnectionString ${DIAGNOSTICS_STORAGE_CONNECTION_STRING} \
+--DiagnosticLatencyThresholdInMs ${DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS} \
+--DiagnosticsStorageContainerPrefix ${DIAGNOSTICS_STORAGE_CONTAINER_PREFIX} \
 -w ${WORKLOAD_TYPE} \
 > "/home/${ADMIN_USER_NAME}/agent.out" 2> "/home/${ADMIN_USER_NAME}/agent.err" &

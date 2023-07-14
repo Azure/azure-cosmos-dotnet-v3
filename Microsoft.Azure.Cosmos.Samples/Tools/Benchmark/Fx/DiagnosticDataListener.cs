@@ -79,7 +79,7 @@ namespace CosmosBenchmark.Fx
                         }
 
                     }
-                    await Task.Delay(this.FileSizeCheckIntervalMs);
+                    await Task.Delay(this.FileSizeCheckInterval);
                 }
             });
         }
@@ -121,7 +121,7 @@ namespace CosmosBenchmark.Fx
         /// Uploading all files with diagnostic data to blob storage
         /// </summary>
         /// <param name="config">An instance of <see cref="BenchmarkConfig "/> containing the benchmark tool input parameters.</param>
-        public void UploadDiagnostcs(BlobContainerClient blobContainerClient, String containerPrefix)
+        public void UploadDiagnostcs(BlobContainerClient blobContainerClient, string containerPrefix)
         {
             Utility.TeeTraceInformation("Uploading diagnostics");
             string[] diagnosticFiles = Directory.GetFiles(".", $"{DiagnosticsFileName}*");
@@ -158,7 +158,7 @@ namespace CosmosBenchmark.Fx
         public BlobContainerClient GetBlobServiceClient(BenchmarkConfig config)
         {
             BlobContainerClient blobContainerClient = new BlobContainerClient(
-                config.ResultsStorageConnectionString,
+                config.DiagnosticsStorageConnectionString,
                 BlobContainerName);
             blobContainerClient.CreateIfNotExists();
             return blobContainerClient;

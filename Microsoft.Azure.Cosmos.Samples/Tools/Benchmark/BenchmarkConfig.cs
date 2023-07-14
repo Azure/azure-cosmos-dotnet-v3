@@ -131,7 +131,7 @@ namespace CosmosBenchmark
         public string DiagnosticsStorageConnectionString { get; set; }
 
         [Option(Required = false, HelpText = "Blob storage container folder prefix")]
-        public string ResultStorageContainerPrefix { get; set; }
+        public string DiagnosticsStorageContainerPrefix { get; set; }
 
         internal int GetTaskCount(int containerThroughput)
         {
