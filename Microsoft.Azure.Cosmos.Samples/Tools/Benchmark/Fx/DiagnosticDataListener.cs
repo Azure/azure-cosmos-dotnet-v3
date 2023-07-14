@@ -31,7 +31,7 @@ namespace CosmosBenchmark.Fx
         /// <summary>
         /// A constant int representing the interval at which the file size is checked.
         /// </summary>
-        private readonly int FileSizeCheckIntervalMs = 5_000;
+        private readonly TimeSpan FileSizeCheckInterval = TimeSpan.FromSeconds(5);
 
         /// <summary>
         /// Lock object for synchronization.
