@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
-    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeInfo;
+    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter;
 
     internal sealed class ResumeValueComparer
     {

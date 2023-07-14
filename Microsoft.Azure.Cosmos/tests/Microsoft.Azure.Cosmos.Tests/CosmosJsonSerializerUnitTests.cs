@@ -274,15 +274,15 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         {
             // Test serializing of different types
             string queryText = "SELECT * FROM root r";
-            (SqlQueryResumeInfo.ResumeValue resumeValue, string resumeString)[] testValues = new (SqlQueryResumeInfo.ResumeValue resumeValue, string resumeString)[] {
-                (new SqlQueryResumeInfo.UndefinedResumeValue(), "[]"),
-                (new SqlQueryResumeInfo.NullResumeValue(), "null"),
-                (new SqlQueryResumeInfo.BooleanResumeValue(true), "true"),
-                (new SqlQueryResumeInfo.BooleanResumeValue(false), "false"),
-                (new SqlQueryResumeInfo.NumberResumeValue(10), "10"),
-                (new SqlQueryResumeInfo.StringResumeValue("testval"), "\"testval\""),
-                (new SqlQueryResumeInfo.ArrayResumeValue(UInt128.Create(10000,20000)), "{\"type\":\"array\",\"low\":10000,\"high\":20000}"),
-                (new SqlQueryResumeInfo.ObjectResumeValue(UInt128.Create(10000,20000)), "{\"type\":\"object\",\"low\":10000,\"high\":20000}")
+            (SqlQueryResumeFilter.ResumeValue resumeValue, string resumeString)[] testValues = new (SqlQueryResumeFilter.ResumeValue resumeValue, string resumeString)[] {
+                (new SqlQueryResumeFilter.UndefinedResumeValue(), "[]"),
+                (new SqlQueryResumeFilter.NullResumeValue(), "null"),
+                (new SqlQueryResumeFilter.BooleanResumeValue(true), "true"),
+                (new SqlQueryResumeFilter.BooleanResumeValue(false), "false"),
+                (new SqlQueryResumeFilter.NumberResumeValue(10), "10"),
+                (new SqlQueryResumeFilter.StringResumeValue("testval"), "\"testval\""),
+                (new SqlQueryResumeFilter.ArrayResumeValue(UInt128.Create(10000,20000)), "{\"type\":\"array\",\"low\":10000,\"high\":20000}"),
+                (new SqlQueryResumeFilter.ObjectResumeValue(UInt128.Create(10000,20000)), "{\"type\":\"object\",\"low\":10000,\"high\":20000}")
             };
 
             CosmosJsonDotNetSerializer userSerializer = new CosmosJsonDotNetSerializer();
@@ -292,14 +292,14 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 userSerializer,
                 propertiesSerializer);
 
-            foreach ((SqlQueryResumeInfo.ResumeValue resumeValue, string resumeString) in testValues)
+            foreach ((SqlQueryResumeFilter.ResumeValue resumeValue, string resumeString) in testValues)
             {
                 foreach(string rid in new string[] { "rid", null})
                 {
                     SqlQuerySpec querySpec = new SqlQuerySpec(
                         queryText,
                         new SqlParameterCollection(),
-                        new SqlQueryResumeInfo(true, rid, new List<SqlQueryResumeInfo.ResumeValue>() { resumeValue }));
+                        new SqlQueryResumeFilter(new List<SqlQueryResumeFilter.ResumeValue>() { resumeValue }, rid, true));
 
                     Stream stream = sqlQuerySpecSerializer.ToStream(querySpec);
                     using (StreamReader sr = new StreamReader(stream))
@@ -308,8 +308,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                         Assert.IsNotNull(result);
 
                         string expectedValue = string.IsNullOrEmpty(rid)
-                            ? $"{{\"query\":\"{queryText}\",\"resumeInfo\":{{\"exclude\":true,\"value\":[{resumeString}]}}}}"
-                            : $"{{\"query\":\"{queryText}\",\"resumeInfo\":{{\"exclude\":true,\"rid\":\"{rid}\",\"value\":[{resumeString}]}}}}";
+                            ? $"{{\"query\":\"{queryText}\",\"resumeFilter\":{{\"value\":[{resumeString}],\"exclude\":true}}}}"
+                            : $"{{\"query\":\"{queryText}\",\"resumeFilter\":{{\"value\":[{resumeString}],\"rid\":\"{rid}\",\"exclude\":true}}}}";
                         Assert.AreEqual(expectedValue, result);
                     }
                 }

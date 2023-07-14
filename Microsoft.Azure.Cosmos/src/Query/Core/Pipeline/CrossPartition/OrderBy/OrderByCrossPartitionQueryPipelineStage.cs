@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
-    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeInfo;
+    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter;
     using ResourceId = Documents.ResourceId;
 
     /// <summary>
@@ -94,10 +94,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public TryCatch<QueryPage> Current { get; private set; }
 
-        public ValueTask DisposeAsync()
-        {
-            return default;
-        }
+        public ValueTask DisposeAsync() => default;
 
         private async ValueTask<bool> MoveNextAsync_Initialize_FromBeginningAsync(
             OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator,
@@ -1028,13 +1025,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             string targetFilter;
             string rightFilter;
 
-            SqlQueryResumeInfo leftInfo;
-            SqlQueryResumeInfo targetInfo;
-            SqlQueryResumeInfo rightInfo;
+            SqlQueryResumeFilter leftResumeFilter;
+            SqlQueryResumeFilter targetResumeFilter;
+            SqlQueryResumeFilter rightResumeFilter;
 
             if (targetContinuationToken.ResumeValues != null && targetContinuationToken.ResumeValues.Count > 0)
             {
-                (leftInfo, targetInfo, rightInfo) = GetQueryResumeInfo(
+                (leftResumeFilter, targetResumeFilter, rightResumeFilter) = GetQueryResumeInfo(
                     targetContinuationToken.ResumeValues,
                     targetContinuationToken.SkipCount,
                     targetContinuationToken.Rid);
@@ -1066,9 +1063,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     // and target partition takes the previous filter from continuation (or true if no continuation)
                     (leftFilter, targetFilter, rightFilter) = GetFormattedFilters(columnAndItems);
 
-                    leftInfo = null;
-                    targetInfo = null;
-                    rightInfo = null;
+                    leftResumeFilter = null;
+                    targetResumeFilter = null;
+                    rightResumeFilter = null;
                 }
                 else
                 {
@@ -1079,7 +1076,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         resumeValues.Add(orderByItem.Accept(OrderByValueToResumeValueVisitor.Singleton));
                     }
 
-                    (leftInfo, targetInfo, rightInfo) = GetQueryResumeInfo(
+                    (leftResumeFilter, targetResumeFilter, rightResumeFilter) = GetQueryResumeInfo(
                         resumeValues,
                         targetContinuationToken.SkipCount,
                         targetContinuationToken.Rid);
@@ -1093,17 +1090,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             SqlQuerySpec leftQuerySpec = new SqlQuerySpec(
                 originalSpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: leftFilter),
                 originalSpec.Parameters,
-                leftInfo);
+                leftResumeFilter);
 
             SqlQuerySpec targetQuerySpec = new SqlQuerySpec(
                 originalSpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: targetFilter),
                 originalSpec.Parameters,
-                targetInfo);
+                targetResumeFilter);
 
             SqlQuerySpec rightQuerySpec = new SqlQuerySpec(
                 originalSpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: rightFilter),
                 originalSpec.Parameters,
-                rightInfo);
+                rightResumeFilter);
 
             return (leftQuerySpec, targetQuerySpec, rightQuerySpec);
         }
@@ -1115,6 +1112,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             string filter)
         {
             OrderByContinuationToken token;
+            // If order by items have c* types then it cannot be converted to resume values
             if (HasNonJsonTypes(orderByQueryResult.OrderByItems))
             {
                 token = new OrderByContinuationToken(
@@ -1282,16 +1280,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             return TryCatch<(bool, int, TryCatch<OrderByQueryPage>)>.FromResult((false, itemsToSkip, enumerator.Current));
         }
 
-        private static (SqlQueryResumeInfo leftInfo, SqlQueryResumeInfo targetInfo, SqlQueryResumeInfo rightInfo) GetQueryResumeInfo(
+        private static (SqlQueryResumeFilter leftInfo, SqlQueryResumeFilter targetInfo, SqlQueryResumeFilter rightInfo) GetQueryResumeInfo(
             IReadOnlyList<ResumeValue> resumeValues,
             int skipCount,
             string rid)
         {
             // NOTE: SkipCount == 0 indicates that backend continuation token needs to be used so resume info is not set for the target partition
             return (
-                new SqlQueryResumeInfo(true, null, resumeValues),
-                skipCount == 0 ? null : new SqlQueryResumeInfo(false, rid, resumeValues),
-                new SqlQueryResumeInfo(false, null, resumeValues)
+                new SqlQueryResumeFilter(resumeValues, null, true),
+                skipCount == 0 ? null : new SqlQueryResumeFilter(resumeValues, rid, false),
+                new SqlQueryResumeFilter(resumeValues, null, false)
             );
         }
 
@@ -1431,7 +1429,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
         }
 
-        private sealed class OrderByValueToResumeValueVisitor : ICosmosElementVisitor<SqlQueryResumeInfo.ResumeValue>
+        private sealed class OrderByValueToResumeValueVisitor : ICosmosElementVisitor<SqlQueryResumeFilter.ResumeValue>
         {
             public static readonly OrderByValueToResumeValueVisitor Singleton = new OrderByValueToResumeValueVisitor();
 

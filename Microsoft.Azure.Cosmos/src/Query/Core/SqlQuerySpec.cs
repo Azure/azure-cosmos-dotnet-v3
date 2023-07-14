@@ -50,11 +50,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <param name="queryText">The text of the database query.</param>
         /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
         /// <param name="resumeInfo">The <see cref="T:Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeInfo"/> instance, which represents the query resume info.</param>
-        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, SqlQueryResumeInfo resumeInfo)
+        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, SqlQueryResumeFilter resumeInfo)
         {
             this.QueryText = queryText;
             this.parameters = parameters ?? throw new ArgumentNullException("parameters");
-            this.ResumeInfo = resumeInfo;
+            this.ResumeFilter = resumeInfo;
         }
 
         /// <summary>
@@ -75,8 +75,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             set => this.parameters = value ?? throw new ArgumentNullException("value");
         }
 
-        [DataMember(Name = "resumeInfo", EmitDefaultValue = false)]
-        public SqlQueryResumeInfo ResumeInfo { get; set; }
+        [DataMember(Name = "resumeFilter", EmitDefaultValue = false)]
+        public SqlQueryResumeFilter ResumeFilter { get; set; }
 
         /// <summary>
         /// Returns a value that indicates whether the Azure Cosmos DB database <see cref="Parameters"/> property should be serialized.

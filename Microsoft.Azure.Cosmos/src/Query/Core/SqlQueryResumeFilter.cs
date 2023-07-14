@@ -10,30 +10,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
     [DataContract]
-    internal sealed class SqlQueryResumeInfo
+    internal sealed class SqlQueryResumeFilter
     {
-        [DataMember(Name = "exclude")]
-        public bool Exclude { get; }
+        [DataMember(Name = "value")]
+        public IReadOnlyList<ResumeValue> ResumeValues { get; }
 
         [DataMember(Name = "rid", EmitDefaultValue = false)]
         public string Rid { get; }
 
-        [DataMember(Name = "value")]
-        public IReadOnlyList<ResumeValue> ResumeValues { get; }
+        [DataMember(Name = "exclude")]
+        public bool Exclude { get; }
 
-        public SqlQueryResumeInfo(
-            bool exclude,
+        public SqlQueryResumeFilter(
+            IReadOnlyList<ResumeValue> resumeValues,
             string rid,
-            IReadOnlyList<ResumeValue> resumeValues)
+            bool exclude)
         {
             if (resumeValues.Count == 0)
             {
                 throw new ArgumentException($"{nameof(resumeValues)} can not be empty.");
             }
 
-            this.Exclude = exclude;
-            this.Rid = rid;
             this.ResumeValues = resumeValues;
+            this.Rid = rid;
+            this.Exclude = exclude;
         }
 
         public class ResumeValue

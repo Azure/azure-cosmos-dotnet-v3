@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeInfo;
+    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter;
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
@@ -510,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
 
                 SqlQuery sqlQuery = monadicParse.Result;
-                if ((sqlQuery.OrderByClause != null) && (feedRangeState.State != null) && (sqlQuerySpec.ResumeInfo == null))
+                if ((sqlQuery.OrderByClause != null) && (feedRangeState.State != null) && (sqlQuerySpec.ResumeFilter == null))
                 {
                     // This is a hack.
                     // If the query is an ORDER BY query then we need to seek to the resume term.
@@ -551,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 IEnumerable<CosmosElement> queryPageResults = queryResults;
 
                 // If the resume value is passed in query spec, filter out the results that has order by item value smaller than resume values
-                if (sqlQuerySpec.ResumeInfo != null)
+                if (sqlQuerySpec.ResumeFilter != null)
                 {
                     if (sqlQuery.OrderByClause.OrderByItems.Length != 1)
                     {
@@ -567,7 +567,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         CosmosObject document = (CosmosObject)queryResultEnumerator.Current;
                         CosmosElement orderByValue = ((CosmosObject)((CosmosArray)document["orderByItems"])[0])["item"];
 
-                        int sortOrderCompare = ResumeValueComparer.Compare(orderByValue, sqlQuerySpec.ResumeInfo.ResumeValues[0]);
+                        int sortOrderCompare = ResumeValueComparer.Compare(orderByValue, sqlQuerySpec.ResumeFilter.ResumeValues[0]);
 
                         if (sortOrderCompare != 0)
                         {

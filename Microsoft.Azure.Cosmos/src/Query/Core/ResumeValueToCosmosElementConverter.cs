@@ -11,30 +11,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
     internal sealed class ResumeValueToCosmosElementConverter
     {
-        public static CosmosElement Convert(SqlQueryResumeInfo.ResumeValue resumeValue)
+        public static CosmosElement Convert(SqlQueryResumeFilter.ResumeValue resumeValue)
         {
             return resumeValue switch
             {
-                SqlQueryResumeInfo.UndefinedResumeValue => CosmosArray.Create(new List<CosmosElement>()),
-                SqlQueryResumeInfo.NullResumeValue => CosmosNull.Create(),
-                SqlQueryResumeInfo.BooleanResumeValue booleanValue => CosmosBoolean.Create(booleanValue.Value),
-                SqlQueryResumeInfo.NumberResumeValue numberValue => CosmosNumber64.Create(numberValue.Value),
-                SqlQueryResumeInfo.StringResumeValue stringValue => CosmosString.Create(stringValue.Value),
-                SqlQueryResumeInfo.ArrayResumeValue arrayValue => CosmosObject.Create(
+                SqlQueryResumeFilter.UndefinedResumeValue => CosmosArray.Create(new List<CosmosElement>()),
+                SqlQueryResumeFilter.NullResumeValue => CosmosNull.Create(),
+                SqlQueryResumeFilter.BooleanResumeValue booleanValue => CosmosBoolean.Create(booleanValue.Value),
+                SqlQueryResumeFilter.NumberResumeValue numberValue => CosmosNumber64.Create(numberValue.Value),
+                SqlQueryResumeFilter.StringResumeValue stringValue => CosmosString.Create(stringValue.Value),
+                SqlQueryResumeFilter.ArrayResumeValue arrayValue => CosmosObject.Create(
                     new Dictionary<string, CosmosElement>()
                     {
-                        { SqlQueryResumeInfo.ResumeValue.PropertyNames.Type, CosmosString.Create(SqlQueryResumeInfo.ResumeValue.PropertyNames.ArrayType) },
-                        { SqlQueryResumeInfo.ResumeValue.PropertyNames.Low, CosmosNumber64.Create(arrayValue.HashValue.GetLow()) },
-                        { SqlQueryResumeInfo.ResumeValue.PropertyNames.High, CosmosNumber64.Create(arrayValue.HashValue.GetHigh()) }
+                        { SqlQueryResumeFilter.ResumeValue.PropertyNames.Type, CosmosString.Create(SqlQueryResumeFilter.ResumeValue.PropertyNames.ArrayType) },
+                        { SqlQueryResumeFilter.ResumeValue.PropertyNames.Low, CosmosNumber64.Create(arrayValue.HashValue.GetLow()) },
+                        { SqlQueryResumeFilter.ResumeValue.PropertyNames.High, CosmosNumber64.Create(arrayValue.HashValue.GetHigh()) }
                     }),
-                SqlQueryResumeInfo.ObjectResumeValue objectValue => CosmosObject.Create(
+                SqlQueryResumeFilter.ObjectResumeValue objectValue => CosmosObject.Create(
                     new Dictionary<string, CosmosElement>()
                     {
-                        { SqlQueryResumeInfo.ResumeValue.PropertyNames.Type, CosmosString.Create(SqlQueryResumeInfo.ResumeValue.PropertyNames.ObjectType) },
-                        { SqlQueryResumeInfo.ResumeValue.PropertyNames.Low, CosmosNumber64.Create(objectValue.HashValue.GetLow()) },
-                        { SqlQueryResumeInfo.ResumeValue.PropertyNames.High, CosmosNumber64.Create(objectValue.HashValue.GetHigh()) }
+                        { SqlQueryResumeFilter.ResumeValue.PropertyNames.Type, CosmosString.Create(SqlQueryResumeFilter.ResumeValue.PropertyNames.ObjectType) },
+                        { SqlQueryResumeFilter.ResumeValue.PropertyNames.Low, CosmosNumber64.Create(objectValue.HashValue.GetLow()) },
+                        { SqlQueryResumeFilter.ResumeValue.PropertyNames.High, CosmosNumber64.Create(objectValue.HashValue.GetHigh()) }
                     }),
-                _ => throw new ArgumentException($"Invalid {nameof(SqlQueryResumeInfo.ResumeValue)} type."),
+                _ => throw new ArgumentException($"Invalid {nameof(SqlQueryResumeFilter.ResumeValue)} type."),
             };
         }
     }

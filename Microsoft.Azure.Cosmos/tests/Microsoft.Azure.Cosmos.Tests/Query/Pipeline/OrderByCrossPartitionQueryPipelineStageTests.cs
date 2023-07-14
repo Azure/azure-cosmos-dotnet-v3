@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             mockContainer
                 .Setup(
                 c => c.MonadicQueryAsync(
-                    It.Is<SqlQuerySpec>(sqlQuerySpec => expectedQuerySpec.Equals(sqlQuerySpec.QueryText) && sqlQuerySpec.ResumeInfo.ResumeValues.Count == 1),
+                    It.Is<SqlQuerySpec>(sqlQuerySpec => expectedQuerySpec.Equals(sqlQuerySpec.QueryText) && sqlQuerySpec.ResumeFilter.ResumeValues.Count == 1),
                     It.IsAny<FeedRangeState<QueryState>>(),
                     It.IsAny<QueryPaginationOptions>(),
                     NoOpTrace.Singleton,

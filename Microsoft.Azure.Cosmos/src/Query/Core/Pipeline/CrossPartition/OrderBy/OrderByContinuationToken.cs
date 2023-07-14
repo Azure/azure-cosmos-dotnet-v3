@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
-    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeInfo;
+    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter;
 
     /// <summary>
     /// <para>
@@ -358,6 +358,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             int skipCount = (int)Number64.ToLong(skipCountRaw.GetValue());
 
+            // filter will be present only when orderByItems is present. This property is not used for resumeValue base continuation
             if (!cosmosObject.TryGetValue(PropertyNames.Filter, out CosmosElement filterRaw) && orderByItems != null)
             {
                 return TryCatch<OrderByContinuationToken>.FromException(

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         public override bool CanConvert(Type objectType)
         {
             return typeof(SqlParameter) == objectType
-                || typeof(SqlQueryResumeInfo.ResumeValue).IsAssignableFrom(objectType);
+                || typeof(SqlQueryResumeFilter.ResumeValue).IsAssignableFrom(objectType);
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
@@ -62,61 +62,61 @@ namespace Microsoft.Azure.Cosmos
 
                 writer.WriteEndObject();
             }
-            else if (value is SqlQueryResumeInfo.ResumeValue resumeValue)
+            else if (value is SqlQueryResumeFilter.ResumeValue resumeValue)
             {
                 this.WriteResumeValue(writer, resumeValue, serializer);
             }
         }
 
-        private void WriteResumeValue(JsonWriter writer, SqlQueryResumeInfo.ResumeValue value, JsonSerializer serializer)
+        private void WriteResumeValue(JsonWriter writer, SqlQueryResumeFilter.ResumeValue value, JsonSerializer serializer)
         {
             switch (value)
             {
-                case SqlQueryResumeInfo.UndefinedResumeValue:
+                case SqlQueryResumeFilter.UndefinedResumeValue:
                     writer.WriteStartArray();
                     writer.WriteEndArray();
                     break;
 
-                case SqlQueryResumeInfo.NullResumeValue:
+                case SqlQueryResumeFilter.NullResumeValue:
                     writer.WriteNull();
                     break;
 
-                case SqlQueryResumeInfo.BooleanResumeValue booleanValue:
+                case SqlQueryResumeFilter.BooleanResumeValue booleanValue:
                     serializer.Serialize(writer, booleanValue.Value);
                     break;
 
-                case SqlQueryResumeInfo.NumberResumeValue numberValue:
+                case SqlQueryResumeFilter.NumberResumeValue numberValue:
                     serializer.Serialize(writer, numberValue.Value);
                     break;
 
-                case SqlQueryResumeInfo.StringResumeValue stringValue:
+                case SqlQueryResumeFilter.StringResumeValue stringValue:
                     serializer.Serialize(writer, stringValue.Value.ToString());
                     break;
 
-                case SqlQueryResumeInfo.ArrayResumeValue arrayValue:
+                case SqlQueryResumeFilter.ArrayResumeValue arrayValue:
                     writer.WriteStartObject();
-                    writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Type);
-                    writer.WriteValue(SqlQueryResumeInfo.ResumeValue.PropertyNames.ArrayType);
-                    writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Low);
+                    writer.WritePropertyName(SqlQueryResumeFilter.ResumeValue.PropertyNames.Type);
+                    writer.WriteValue(SqlQueryResumeFilter.ResumeValue.PropertyNames.ArrayType);
+                    writer.WritePropertyName(SqlQueryResumeFilter.ResumeValue.PropertyNames.Low);
                     writer.WriteValue(arrayValue.HashValue.GetLow());
-                    writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.High);
+                    writer.WritePropertyName(SqlQueryResumeFilter.ResumeValue.PropertyNames.High);
                     writer.WriteValue(arrayValue.HashValue.GetHigh());
                     writer.WriteEndObject();
                     break;
 
-                case SqlQueryResumeInfo.ObjectResumeValue objectValue:
+                case SqlQueryResumeFilter.ObjectResumeValue objectValue:
                     writer.WriteStartObject();
-                    writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Type);
-                    writer.WriteValue(SqlQueryResumeInfo.ResumeValue.PropertyNames.ObjectType);
-                    writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.Low);
+                    writer.WritePropertyName(SqlQueryResumeFilter.ResumeValue.PropertyNames.Type);
+                    writer.WriteValue(SqlQueryResumeFilter.ResumeValue.PropertyNames.ObjectType);
+                    writer.WritePropertyName(SqlQueryResumeFilter.ResumeValue.PropertyNames.Low);
                     writer.WriteValue(objectValue.HashValue.GetLow());
-                    writer.WritePropertyName(SqlQueryResumeInfo.ResumeValue.PropertyNames.High);
+                    writer.WritePropertyName(SqlQueryResumeFilter.ResumeValue.PropertyNames.High);
                     writer.WriteValue(objectValue.HashValue.GetHigh());
                     writer.WriteEndObject();
                     break;
 
                 default:
-                    throw new ArgumentException($"Invalid {nameof(SqlQueryResumeInfo.ResumeValue)} type.");
+                    throw new ArgumentException($"Invalid {nameof(SqlQueryResumeFilter.ResumeValue)} type.");
             }
         }
 
