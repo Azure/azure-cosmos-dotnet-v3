@@ -128,7 +128,7 @@ namespace CosmosBenchmark
 
         [Option(Required = false, HelpText = "Blob storage account connection string")]
         [JsonIgnore]
-        public string ResultsStorageConnectionString { get; set; }
+        public string DiagnosticsStorageConnectionString { get; set; }
 
         internal int GetTaskCount(int containerThroughput)
         {
