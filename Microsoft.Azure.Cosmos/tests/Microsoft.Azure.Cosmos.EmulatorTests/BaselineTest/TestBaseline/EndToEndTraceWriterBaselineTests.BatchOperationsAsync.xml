@@ -162,7 +162,7 @@
     <ATTRIBUTE key="tcp.sub_status_code">1001</ATTRIBUTE>
     <ATTRIBUTE key="tcp.status_code">207</ATTRIBUTE>
   </ACTIVITY>
-  <EVENT name="LatencyOverThreshold" />
+  <EVENT name="FailedRequest" />
 </OTelActivities></Output>
   </Result>
 </Results>
