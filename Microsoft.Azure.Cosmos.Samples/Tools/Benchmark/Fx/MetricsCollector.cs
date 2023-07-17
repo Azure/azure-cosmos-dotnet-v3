@@ -94,7 +94,7 @@ namespace CosmosBenchmark
         }
 
         /// <summary>
-        /// Records latency in milliseconda.
+        /// Records latency in milliseconds.
         /// </summary>
         /// <param name="milliseconds">The number of milliseconds to record.</param>
         public void RecordLatencyAndRps(
