@@ -146,7 +146,6 @@
                 "QueryTSinglePkOrderByWithPaginationV3BenchmarkOperation",
                 "QueryTSinglePkV3BenchmarkOperation",
                 "QueryTSinglePkWithPaginationV3BenchmarkOperation",
-                "QueryTV3BenchmarkOperation",
                 "ReadFeedStreamV3BenchmarkOperation",
                 "ReadNotExistsV3BenchmarkOperation",
                 "ReadStreamExistsV3BenchmarkOperation",
