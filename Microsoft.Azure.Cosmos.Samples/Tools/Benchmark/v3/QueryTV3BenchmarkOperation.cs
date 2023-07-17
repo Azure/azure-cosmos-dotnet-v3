@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal abstract class QueryTV3BenchmarkOperation : QueryBenchmarkOperation
+    internal abstract class QueryTV3BenchmarkOperation : IBenchmarkOperation
     {
         protected readonly Container container;
         protected readonly Dictionary<string, object> sampleJObject;
@@ -57,7 +57,7 @@ namespace CosmosBenchmark
         /// </summary>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public override async Task<OperationResult> ExecuteOnceAsync()
+        public async Task<OperationResult> ExecuteOnceAsync()
         {
             if (this.IsQueryStream)
             {
@@ -260,7 +260,7 @@ namespace CosmosBenchmark
         /// </summary>
         /// <returns></returns>
         /// <exception cref="Exception"></exception>
-        public override async Task PrepareAsync()
+        public async Task PrepareAsync()
         {
             if (this.initialized)
             {

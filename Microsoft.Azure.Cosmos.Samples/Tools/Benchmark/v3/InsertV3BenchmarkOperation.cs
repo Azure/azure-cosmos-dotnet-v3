@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
 
-    internal class InsertV3BenchmarkOperation : InsertBenchmarkOperation
+    internal class InsertV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -62,7 +62,7 @@ namespace CosmosBenchmark
             }
         }
 
-        public override Task PrepareAsync()
+        public Task PrepareAsync()
         {
             string newPartitionKey = Guid.NewGuid().ToString();
             this.sampleJObject["id"] = Guid.NewGuid().ToString();

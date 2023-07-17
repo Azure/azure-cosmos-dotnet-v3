@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ReadFeedStreamV3BenchmarkOperation : ReadBenchmarkOperation
+    internal class ReadFeedStreamV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -65,7 +65,7 @@ namespace CosmosBenchmark
             };
         }
 
-        public override async Task PrepareAsync()
+        public async Task PrepareAsync()
         {
             if (string.IsNullOrEmpty(this.nextExecutionItemId) ||
                 string.IsNullOrEmpty(this.nextExecutionItemPartitionKey))
