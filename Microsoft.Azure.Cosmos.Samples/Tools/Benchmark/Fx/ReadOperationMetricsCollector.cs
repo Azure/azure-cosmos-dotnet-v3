@@ -19,16 +19,34 @@ namespace CosmosBenchmark
         {
         }
 
+        /// <summary>
+        /// Gets the name of the histogram for requests per second (RPS) metric.
+        /// </summary>
         protected override string RpsHistogramName => "ReadOperationRpsHistogram";
 
+        /// <summary>
+        /// Gets the name of the histogram for operation latency in milliseconds.
+        /// </summary>
         protected override string LatencyInMsHistogramName => "ReadOperationLatencyInMsHistogram";
 
+        /// <summary>
+        /// Gets the name of the observable gauge for requests per second (RPS) metric.
+        /// </summary>
         protected override string RpsMetricName => "ReadOperationRps";
 
+        /// <summary>
+        /// Gets the name of the observable gauge for operation latency in milliseconds.
+        /// </summary>
         protected override string LatencyInMsMetricName => "ReadOperationLatencyInMs";
 
+        /// <summary>
+        /// Gets the name of the counter for failed operations.
+        /// </summary>
         protected override string FailureOperationMetricName => "ReadOperationFailure";
 
+        /// <summary>
+        /// Gets the name of the counter for successful operations.
+        /// </summary>
         protected override string SuccessOperationMetricName => "ReadOperationSuccess";
     }
 }
