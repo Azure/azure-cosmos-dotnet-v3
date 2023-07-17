@@ -1067,7 +1067,7 @@ namespace Microsoft.Azure.Cosmos
                             globalEndpointManager: this.GlobalEndpointManager,
                             databaseAccountClientConfigs: databaseAccountClientConfigs);
 
-                        DefaultTrace.TraceInformation("Client Telemetry Enabled.");
+                        DefaultTrace.TraceVerbose("Client Telemetry Enabled.");
                     }
                     catch (Exception ex)
                     {
@@ -1076,7 +1076,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    DefaultTrace.TraceInformation("Client Telemetry Job already running.");
+                    DefaultTrace.TraceVerbose("Client Telemetry Job already running.");
                 }
             }
             else
@@ -6803,15 +6803,18 @@ namespace Microsoft.Azure.Cosmos
             // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
             // the system information so no need to track it.
 #if !INTERNAL
-            TryCatch<AccountClientConfigProperties> accountClientConfigProperties = await accountReader.GetDatabaseAccountClientConfigAsync();
-            // Make sure to intialize the client telemetry job if the client config is available
-            if (accountClientConfigProperties.Succeeded)
+            if (!this.ConnectionPolicy.DisableClientTelemetryToService)
             {
-                this.InitializeClientTelemetry(accountClientConfigProperties.Result);
+                TryCatch<AccountClientConfigProperties> accountClientConfigProperties = await accountReader.GetDatabaseAccountClientConfigAsync();
+                // Make sure to intialize the client telemetry job if the client config is available
+                if (accountClientConfigProperties.Succeeded)
+                {
+                    this.InitializeClientTelemetry(accountClientConfigProperties.Result);
+                }
+
+                // No matter what, start the background job to retry calling client config API
+                this.accountClientConfigTask = this.GlobalEndpointManager.RefreshAccountClientConfigsAndStartClientTelemetryJobAsync();
             }
-            
-            // No matter what, start the background job to retry calling client config API
-            this.accountClientConfigTask = this.GlobalEndpointManager.InitializeClientTelemetryTaskAndStartBackgroundRefreshAsync();
 #endif
         }
 

@@ -497,11 +497,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.StartLocationBackgroundRefreshLoop();
         }
 
-        public virtual Task InitializeClientTelemetryTaskAndStartBackgroundRefreshAsync()
-        {
-            return this.RefreshAccountClientConfigsAndStartClientTelemetryJobAsync();
-        }
-        
         public async Task RefreshAccountClientConfigsAndStartClientTelemetryJobAsync()
         {
             // Reload Account Client Configuration
