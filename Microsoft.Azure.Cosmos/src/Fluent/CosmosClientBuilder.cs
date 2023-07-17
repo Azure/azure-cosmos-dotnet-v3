@@ -685,7 +685,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// By default, this can be controlled by enabling it on portal but alternatively, it can be disabled by this flag for particular CosmosClient instance.
         /// </summary>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        public CosmosClientBuilder DisableClientTelemetryToService()
+        internal CosmosClientBuilder DisableClientTelemetryToService()
         {
             this.clientOptions.DisableClientTelemetryToService = true;
             return this;
