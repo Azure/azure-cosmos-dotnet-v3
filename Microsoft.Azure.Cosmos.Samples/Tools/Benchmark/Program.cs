@@ -20,12 +20,9 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json.Linq;
-    using Microsoft.ApplicationInsights.Extensibility;
     using Container = Microsoft.Azure.Cosmos.Container;
-    using CosmosBenchmark.Fx;
     using OpenTelemetry;
     using OpenTelemetry.Metrics;
-    using Container = Microsoft.Azure.Cosmos.Container;
 
     /// <summary>
     /// This sample demonstrates how to achieve high performance writes using Azure Comsos DB.
@@ -52,7 +49,7 @@ namespace CosmosBenchmark
                     .AddMeter("CosmosBenchmarkInsertOperationMeter")
                     .AddMeter("CosmosBenchmarkQueryOperationMeter")
                     .AddMeter("CosmosBenchmarkReadOperationMeter")
-                    .AddConsoleExporter()
+                    //.AddConsoleExporter()
                     .AddAzureMonitorMetricExporter()
                     .Build();
 
@@ -75,7 +72,7 @@ namespace CosmosBenchmark
 
                 Program program = new Program();
 
-                RunSummary runSummary = await program.ExecuteAsync(config);
+                RunSummary runSummary = await program.ExecuteAsync(config,logger,meterProvider);
 
                 if (!string.IsNullOrEmpty(config.DiagnosticsStorageConnectionString))
                 {
@@ -212,11 +209,6 @@ namespace CosmosBenchmark
                         config,
                         runSummary,
                         cosmosClient);
-                }
-
-                if (!string.IsNullOrEmpty(config.ResultsStorageConnectionString))
-                {
-                    DiagnosticDataListener.UploadDiagnostcs(config);
                 }
 
                 return runSummary;
