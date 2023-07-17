@@ -15,13 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### <a name="3.35.2-preview"/> [3.35.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.2-preview) - 2023-07-17
 
+#### Fixed
+- [3973](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3973) Application Insights Integration: Fixes event generation for failed requests
+
 #### Added
 - [3951](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3951) Upgrade Resiliency: Adds Code to Enable Replica Validation Feature By Default for Preview
 
 ### <a name="3.35.2"/> [3.35.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.2) - 2023-07-17
 
 #### Fixed
-- [3973](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3973) Application Insights Integration: Fixes event generation for failed requests
 - [3917](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3917) Query: Fixes malformed continuation token exception type and message
 - [3969](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3969) Diagnostics: Fixes verbose levels for "Operation will NOT be retried"
 
