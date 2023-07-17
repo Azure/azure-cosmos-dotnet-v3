@@ -25,20 +25,20 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly IRetryPolicyFactory retryPolicy;
         private readonly ISessionContainer sessionContainer;
-        private readonly ClientTelemetry clientTelemetry;
+        private readonly DocumentClient client;
 
         public ClientCollectionCache(
             ISessionContainer sessionContainer,
             IStoreModel storeModel,
             ICosmosAuthorizationTokenProvider tokenProvider,
             IRetryPolicyFactory retryPolicy,
-            ClientTelemetry clientTelemetry)
+            DocumentClient client)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
             this.tokenProvider = tokenProvider;
             this.retryPolicy = retryPolicy;
             this.sessionContainer = sessionContainer;
-            this.clientTelemetry = clientTelemetry;
+            this.client = client;
         }
 
         protected override Task<ContainerProperties> GetByRidAsync(string apiVersion,
@@ -215,10 +215,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                             {
                                 ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
 
-                                if (this.clientTelemetry != null)
+                                if (this.client.ClientTelemetryInstance != null)
                                 {
                                     ClientCollectionCache.GetDatabaseAndCollectionName(collectionLink, out string databaseName, out string collectionName);
-                                    this.clientTelemetry.CollectCacheInfo(
+                                    this.client.ClientTelemetryInstance.CollectCacheInfo(
                                                     cacheRefreshSource: ClientCollectionCache.TelemetrySourceName,
                                                     regionsContactedList: response.RequestStats.RegionsContacted,
                                                     requestLatency: response.RequestStats.RequestLatency,

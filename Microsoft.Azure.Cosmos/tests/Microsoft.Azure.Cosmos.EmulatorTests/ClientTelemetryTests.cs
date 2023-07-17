@@ -497,7 +497,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     requestOptions: new QueryRequestOptions()
                     {
                         ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix,
-                        MaxItemCount = 1
+                        MaxItemCount = 1,
+                        EnableOptimisticDirectExecution = false
                     }))
                 {
                     while (queryResultSetIterator.HasMoreResults)
@@ -551,7 +552,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<object> families = new List<object>();
 
             QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
-            using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition))
+            using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition,
+                 requestOptions: new QueryRequestOptions()
+                 {
+                     EnableOptimisticDirectExecution = false
+                 }))
             {
                 while (queryResultSetIterator.HasMoreResults)
                 {
@@ -604,7 +609,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  queryDefinition: queryDefinition,
                  requestOptions: new QueryRequestOptions()
                  {
-                     MaxItemCount = 1
+                     MaxItemCount = 1,
+                     EnableOptimisticDirectExecution = false
                  }))
             {
                 while (queryResultSetIterator.HasMoreResults)
@@ -644,7 +650,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<ToDoActivity> results = new List<ToDoActivity>();
             using (FeedIterator<ToDoActivity> resultSetIterator = container.GetItemQueryIterator<ToDoActivity>(
                   "SELECT * FROM c",
-                  continuationToken: "dummy token"))
+                  continuationToken: "dummy token",
+                  requestOptions: new QueryRequestOptions()
+                  {
+                     EnableOptimisticDirectExecution = false
+                  }))
             {
                 try
                 {
@@ -973,7 +983,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (expectedOperationRecordCountMap != null)
             {
-                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), $"actual record i.e. ({actualOperationRecordCountMap}) for operation does not match with expected record i.e. ({expectedOperationRecordCountMap})");
+                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo(actualOperationRecordCountMap), $"actual record i.e. ({string.Join(", ", actualOperationRecordCountMap)}) for operation does not match with expected record i.e. ({string.Join(", ", expectedOperationRecordCountMap)})");
             }
         }
 
