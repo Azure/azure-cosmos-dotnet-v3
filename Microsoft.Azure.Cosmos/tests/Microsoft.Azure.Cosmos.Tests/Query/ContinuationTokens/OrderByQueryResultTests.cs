@@ -31,11 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
                 memoryStream,
-                Documents.ResourceType.Document,
-                new CosmosSerializationFormatOptions(
-                    "JsonText",
-                    (content) => JsonNavigator.Create(content),
-                    () => JsonWriter.Create(JsonSerializationFormat.Text)));
+                Documents.ResourceType.Document);
 
             List<OrderByQueryResult> orderByQueryResults = documents.Select(x => new OrderByQueryResult(x)).ToList();
             Assert.AreEqual(14, orderByQueryResults.Count);

@@ -55,9 +55,6 @@ dotnet build --configuration Release -p:"OSSProjectRef=true;ShouldUnsetParentCon
 
 ```
 
-
-   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-cosmos-dotnet-v3%2Fdiagnostics-with-metrics%2FMicrosoft.Azure.Cosmos.Samples%2FTools%2FBenchmark%2FAzureVmBenchmark%2Fazuredeploy.json)
-
 For PerfRuns with reports (INTERNAL)
 ```
 
@@ -131,3 +128,7 @@ Copyright (C) 2019 CosmosBenchmark
 ## Running on Azure
 
 If you want to quickly get results, you can use our [guide to leverage Azure Container Instances](./AzureContainerInstances/README.md) to execute the benchmarks in any number of Azure regions with very little setup required.
+
+## Running on Azure VM
+
+If you want to execute benchmarking on multiple machines with one ARM Template, you can use our [guide to leverage Azure Virtual Machines](./AzureVmBenchmark/README.md) to execute the benchmarks in any number of Azure regions usgin ARM Template.

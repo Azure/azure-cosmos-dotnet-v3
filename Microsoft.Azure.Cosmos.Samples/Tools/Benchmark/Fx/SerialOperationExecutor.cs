@@ -83,7 +83,7 @@ namespace CosmosBenchmark
                         {
                             if (traceFailures)
                             {
-                                Console.WriteLine(ex.ToString());
+                                Utility.TeeTraceInformation($"An exception ocured while executing the operation {ex.ToString}");
                             }
 
                             metricsCollector.CollectMetricsOnFailure();

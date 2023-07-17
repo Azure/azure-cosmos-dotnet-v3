@@ -1,107 +1,176 @@
-﻿namespace CosmosBenchmark.Fx
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace CosmosBenchmark.Fx
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics.Tracing;
     using System.IO;
     using System.Threading;
+    using System.Threading.Tasks;
     using Azure.Storage.Blobs;
 
-    internal class DiagnosticDataListener : EventListener
+    public class DiagnosticDataListener : EventListener
     {
+        /// <summary>
+        /// A constant string representing the container name in Azure Blob Storage.
+        /// </summary>
         private const string BlobContainerName = "diagnostics";
-        private const string DiagnosticsFilePath = "BenchmarkDiagnostics.out";
-        private static readonly object fileLock = new object();
+
+        /// <summary>
+        /// A constant string representing the diagnostics file path.
+        /// </summary>
+        public const string DiagnosticsFileName = "BenchmarkDiagnostics.out";
+
+        /// <summary>
+        /// A constant int representing the maximum file size.
+        /// </summary>
+        private readonly int MaxDIagnosticFileSize = 100_000_000;
+
+        /// <summary>
+        /// A constant int representing the interval at which the file size is checked.
+        /// </summary>
+        private readonly TimeSpan FileSizeCheckInterval = TimeSpan.FromSeconds(5);
+
+        /// <summary>
+        /// Lock object for synchronization.
+        /// </summary>
+        private readonly object FileLock = new object();
+
+        /// <summary>
+        /// string representing filename prefix in blob storage
+        /// </summary>
+        private readonly string BlobPrefix = $"{Environment.MachineName}/{Environment.MachineName}";
+
+        /// <summary>
+        /// Number of files 
+        /// </summary>
         private int filesCount = 0;
 
-        public DiagnosticDataListener()
-        {
-            if (!File.Exists(DiagnosticsFilePath))
-            {
-                File.Create(DiagnosticsFilePath).Close();
-            }
+        /// <summary>
+        /// Represents a Blob storage container client instance
+        /// </summary>
+        private readonly Lazy<BlobContainerClient> BlobContainerClient;
 
-            ThreadPool.QueueUserWorkItem(state =>
+        /// <summary>
+        /// Represents a Benchmark Configs
+        /// </summary>
+        private readonly BenchmarkConfig config;
+
+        /// <summary>
+        /// Represents a class that performs writing diagnostic data to a file and uploading it to Azure Blob Storage
+        /// </summary>
+        public DiagnosticDataListener(BenchmarkConfig config)
+        {
+            this.config = config;
+            this.EnableEvents(BenchmarkLatencyEventSource.Instance, EventLevel.Informational);
+            this.BlobContainerClient = new Lazy<BlobContainerClient>(() => this.GetBlobServiceClient());
+
+            /// <summary>
+            /// Checks the file size every <see cref="FileSizeCheckIntervalMs"/> milliseconds for diagnostics and creates a new one if the maximum limit is exceeded.
+            /// </summary>
+            ThreadPool.QueueUserWorkItem(async state =>
             {
                 while (true)
                 {
-                    lock (fileLock)
+                    lock (this.FileLock)
                     {
-                        // Check the file size
-                        if (!File.Exists(DiagnosticsFilePath))
-                        {
-                            File.Create(DiagnosticsFilePath).Close();
-                        }
+                        this.CreateFileIfNotExist(DiagnosticsFileName);
 
-                        FileInfo fileInfo = new FileInfo(DiagnosticsFilePath);
+                        FileInfo fileInfo = new FileInfo(DiagnosticsFileName);
                         long fileSize = fileInfo.Length;
 
-                        // If the file size is greater than 100MB (100,000,000 bytes)
-                        if (fileSize > 100_000_000)
+                        if (fileSize > this.MaxDIagnosticFileSize)
                         {
 
-                            // Create a new file with the same name
                             string newFilePath = Path.Combine(fileInfo.DirectoryName, $"{fileInfo.Name}-{this.filesCount}");
-                            File.Move(DiagnosticsFilePath, newFilePath, true);
+                            File.Move(DiagnosticsFileName, newFilePath, true);
                             this.filesCount++;
 
-                            // Optionally, you can perform additional actions on the new file
-                            // For example, you can delete or process it
-
-                            Console.WriteLine("File size exceeded 100MB. Renamed the file and created a new one.");
+                            Utility.TeeTraceInformation("File size exceeded 100MB. Renamed the file and created a new one.");
                         }
-
                     }
-
-                    // Wait for 10 seconds before checking again
-                    Thread.Sleep(5_000);
+                    await Task.Delay(this.FileSizeCheckInterval);
                 }
             });
         }
 
+        /// <summary>
+        /// Creates the file with specified filename if not exists
+        /// </summary>
+        private void CreateFileIfNotExist(string FileName)
+        {
+            if (!File.Exists(FileName))
+            {
+                File.Create(FileName).Close();
+            }
+        }
+
+        /// <summary>
+        /// Listening for events generated by BenchmarkLatencyEventSource
+        /// </summary>
+        /// <param name="eventData">An instance of <see cref="EventWrittenEventArgs "/> containing the request latency and diagnostics.</param>
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            lock (fileLock)
+            lock (this.FileLock)
             {
-                using (StreamWriter writer = new StreamWriter(DiagnosticsFilePath, true))
+                try
                 {
-                    writer.WriteLine($"{eventData.Payload[2]} ; {eventData.Payload[3]}");
+                    using (StreamWriter writer = new StreamWriter(DiagnosticsFileName, true))
+                    {
+                        writer.WriteLine($"{eventData.Payload[2]} ; {eventData.Payload[3]}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Utility.TeeTraceInformation($"An exception ocured while writing diagnostic data to the file. {ex.Message}");
                 }
             }
         }
 
-        public static void UploadDiagnostcs(BenchmarkConfig config)
+        /// <summary>
+        /// Uploading all files with diagnostic data to blob storage
+        /// </summary>
+        public void UploadDiagnostcs()
         {
-            try
-            {
-                Console.WriteLine("Uploading diagnostics");
-                string[] diagnosticFiles = Directory.GetFiles(".", $"{DiagnosticsFilePath}*");
+            Utility.TeeTraceInformation("Uploading diagnostics");
+            string[] diagnosticFiles = Directory.GetFiles(".", $"{DiagnosticsFileName}*");
+            string containerPrefix = this.config.DiagnosticsStorageContainerPrefix;
 
-                lock (fileLock)
+            lock (this.FileLock)
+            {
+                BlobContainerClient blobContainerClient = this.BlobContainerClient.Value;
+                for (int i = 0; i < diagnosticFiles.Length; i++)
                 {
-                    for (int i = 0; i < diagnosticFiles.Length; i++)
+                    try
                     {
                         string diagnosticFile = diagnosticFiles[i];
-                        Console.WriteLine($"Uploading {i+1} of {diagnosticFiles.Length} file: {diagnosticFile} ");
+                        Utility.TeeTraceInformation($"Uploading {i + 1} of {diagnosticFiles.Length} file: {diagnosticFile} ");
 
-                        string BlobName = $"{Environment.MachineName}/{Environment.MachineName}-{i}.out";
-                        BlobContainerClient blobContainerClient = GetBlobServiceClient(config);
-                        BlobClient blobClient = blobContainerClient.GetBlobClient(BlobName);
+                        string blobName = string.IsNullOrEmpty(containerPrefix) ?
+                            $"{this.BlobPrefix}-{i}.out" : $"{containerPrefix}/{this.BlobPrefix}-{i}.out";
+
+                        BlobClient blobClient = blobContainerClient.GetBlobClient(blobName);
 
                         blobClient.Upload(diagnosticFile, overwrite: true);
                     }
+                    catch (Exception ex)
+                    {
+                        Utility.TeeTraceInformation($"An exception ocured while uploading file to the blob storage. {ex.Message}");
+                    }
                 }
-
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
             }
         }
 
-        public static BlobContainerClient GetBlobServiceClient(BenchmarkConfig config)
+        /// <summary>
+        /// Creating an instance of BlobClient using configs
+        /// </summary>
+        private BlobContainerClient GetBlobServiceClient()
         {
-            BlobContainerClient blobContainerClient = new BlobContainerClient(config.ResultsStorageConnectionString, BlobContainerName);
+            BlobContainerClient blobContainerClient = new BlobContainerClient(
+                this.config.DiagnosticsStorageConnectionString,
+                BlobContainerName);
             blobContainerClient.CreateIfNotExists();
             return blobContainerClient;
         }

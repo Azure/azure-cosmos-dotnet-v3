@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
-    
+
     [VisualStudio.TestTools.UnitTesting.TestClass]
     [TestCategory("UpdateContract")]
     public sealed class EndToEndTraceWriterBaselineTests : BaselineTests<EndToEndTraceWriterBaselineTests.Input, EndToEndTraceWriterBaselineTests.Output>
@@ -71,11 +71,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                     }));
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
-                    Guid.NewGuid().ToString(),
+                    "databaseName",
                     cancellationToken: default);
 
             EndToEndTraceWriterBaselineTests.container = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
+                    id: "containerName",
                     partitionKeyPath: "/id",
                     throughput: 20000);
 
@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //----------------------------------------------------------------
             {
                 Container leaseContainer = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
-                    id: Guid.NewGuid().ToString(),
+                    id: "changefeedleasecontainer",
                     partitionKeyPath: "/id");
 
                 ChangeFeedProcessor processor = container
@@ -464,6 +464,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         public async Task QueryAsync()
         {
             List<Input> inputs = new List<Input>();
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+#if PREVIEW
+                    EnableOptimisticDirectExecution = false
+#endif
+            };
 
             int startLineNumber;
             int endLineNumber;
@@ -474,7 +480,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 startLineNumber = GetLineNumber();
                 FeedIteratorInternal feedIterator = (FeedIteratorInternal)container.GetItemQueryStreamIterator(
-                    queryText: "SELECT * FROM c");
+                    queryText: "SELECT * FROM c",
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
                 while (feedIterator.HasMoreResults)
@@ -499,7 +506,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 startLineNumber = GetLineNumber();
                 FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container.GetItemQueryIterator<JToken>(
-                    queryText: "SELECT * FROM c");
+                    queryText: "SELECT * FROM c",
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
                 while (feedIterator.HasMoreResults)
@@ -524,7 +532,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 startLineNumber = GetLineNumber();
                 FeedIterator feedIterator = container.GetItemQueryStreamIterator(
-                    queryText: "SELECT * FROM c");
+                    queryText: "SELECT * FROM c",
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
 
@@ -550,7 +559,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 startLineNumber = GetLineNumber();
                 FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
-                    queryText: "SELECT * FROM c");
+                    queryText: "SELECT * FROM c",
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
 
@@ -578,7 +588,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 Lazy<bool> currentLazy = Documents.ServiceInteropWrapper.AssembliesExist;
                 Documents.ServiceInteropWrapper.AssembliesExist = new Lazy<bool>(() => false);
                 FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
-                    queryText: "SELECT * FROM c");
+                    queryText: "SELECT * FROM c",
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
 
@@ -607,7 +618,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 FeedIterator feedIterator = container.GetItemQueryStreamIterator(
                     feedRange: FeedRangeEpk.FullRange,
                     queryDefinition: new QueryDefinition("SELECT * FROM c"),
-                    continuationToken: null);
+                    continuationToken: null,
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
 
@@ -635,7 +647,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
                     feedRange: FeedRangeEpk.FullRange,
                     queryDefinition: new QueryDefinition("SELECT * FROM c"),
-                    continuationToken: null);
+                    continuationToken: null,
+                    requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
 
@@ -1347,7 +1360,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 startLineNumber = GetLineNumber();
              
-                DatabaseResponse databaseResponse = await miscCosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+                DatabaseResponse databaseResponse = await miscCosmosClient.CreateDatabaseAsync("miscdbcustonhandler");
                 EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
                     databaseResponse.Diagnostics.ToString(),
                     requestHandler.FullHandlerName,
@@ -1370,7 +1383,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 startLineNumber = GetLineNumber();
                 RequestOptions requestOptions = new RequestOptions();
                 DatabaseResponse databaseResponse = await client.CreateDatabaseAsync(
-                    id: Guid.NewGuid().ToString(),
+                    id: "miscdbdataplane",
                     requestOptions: requestOptions);
                 ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
                 await databaseResponse.Database.DeleteAsync();

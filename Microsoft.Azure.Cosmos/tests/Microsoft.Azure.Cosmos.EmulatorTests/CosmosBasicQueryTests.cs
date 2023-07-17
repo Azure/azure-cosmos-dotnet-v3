@@ -240,7 +240,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     requestOptions: new QueryRequestOptions()
                     {
                         MaxItemCount = 1,
-                        MaxConcurrency = 1
+                        MaxConcurrency = 1,
+#if PREVIEW
+                        EnableOptimisticDirectExecution = false
+#endif
                     }))
                 {
                     while (feedIterator.HasMoreResults)
@@ -268,7 +271,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions: new QueryRequestOptions()
                 {
                     MaxItemCount = 1,
-                    MaxConcurrency = 1
+                    MaxConcurrency = 1,
+#if PREVIEW
+                    EnableOptimisticDirectExecution = false
+#endif
                 });
 
             // First request should be a success

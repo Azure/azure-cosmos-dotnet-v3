@@ -62,7 +62,7 @@ namespace CosmosBenchmark
                     operationResult.ContainerName,
                     (int)this.stopwatch.ElapsedMilliseconds,
                     operationResult.LazyDiagnostics, 
-                    this.benchmarkConfig.LatencyDiagnosticThreshold);
+                    this.benchmarkConfig.DiagnosticLatencyThresholdInMs);
             }
         }
 

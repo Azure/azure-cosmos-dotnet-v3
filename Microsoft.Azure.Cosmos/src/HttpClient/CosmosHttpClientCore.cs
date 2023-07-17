@@ -438,8 +438,7 @@ namespace Microsoft.Azure.Cosmos
             DateTime startDateTimeUtc,
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator)
         {
-            return (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
-                !timeoutEnumerator.MoveNext(); // No more retries are configured
+            return !timeoutEnumerator.MoveNext(); // No more retries are configured
         }
 
         private async Task<HttpResponseMessage> ExecuteHttpHelperAsync(

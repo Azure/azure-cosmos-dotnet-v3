@@ -497,6 +497,7 @@ namespace Microsoft.Azure.Cosmos
                                     databaseName: databaseName,
                                     operationType: operationType,
                                     requestOptions: requestOptions,
+                                    trace: trace,
                                     clientContext: this.isDisposed ? null : this))
             using (new ActivityScope(Guid.NewGuid()))
             {
