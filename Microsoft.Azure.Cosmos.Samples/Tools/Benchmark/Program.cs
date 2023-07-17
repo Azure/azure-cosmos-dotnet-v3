@@ -15,7 +15,6 @@ namespace CosmosBenchmark
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-    using Azure.Storage.Blobs;
     using CosmosBenchmark.Fx;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
@@ -40,8 +39,7 @@ namespace CosmosBenchmark
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
 
-                DiagnosticDataListener diagnosticDataListener = new DiagnosticDataListener();
-                diagnosticDataListener.EnableEvents(BenchmarkLatencyEventSource.Instance, EventLevel.Informational);
+                DiagnosticDataListener diagnosticDataListener = new DiagnosticDataListener(config);
 
                 BenchmarkLatencyEventSource eventSource = BenchmarkLatencyEventSource.Instance;
                 if (config.EnableLatencyPercentiles)
@@ -58,8 +56,7 @@ namespace CosmosBenchmark
 
                 if (!string.IsNullOrEmpty(config.DiagnosticsStorageConnectionString))
                 {
-                    BlobContainerClient blobContainerClient = diagnosticDataListener.GetBlobServiceClient(config);
-                    diagnosticDataListener.UploadDiagnostcs(blobContainerClient, config.DiagnosticsStorageContainerPrefix);
+                    diagnosticDataListener.UploadDiagnostcs();
                 }
             }
             catch (Exception e)

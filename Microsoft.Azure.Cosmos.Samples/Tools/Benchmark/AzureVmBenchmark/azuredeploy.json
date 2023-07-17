@@ -167,7 +167,7 @@
         },
         "diagnosticsLatencyThresholdInMS": {
             "type": "int",
-            "defaultValue": 500
+            "defaultValue": 100
         },
         "storageAccountName": {
             "type": "string",

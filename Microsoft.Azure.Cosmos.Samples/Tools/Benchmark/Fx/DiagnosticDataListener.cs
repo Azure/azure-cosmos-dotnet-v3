@@ -49,10 +49,24 @@ namespace CosmosBenchmark.Fx
         private int filesCount = 0;
 
         /// <summary>
+        /// Represents a Blob storage container client instance
+        /// </summary>
+        private readonly Lazy<BlobContainerClient> BlobContainerClient;
+
+        /// <summary>
+        /// Represents a Benchmark Configs
+        /// </summary>
+        private readonly BenchmarkConfig config;
+
+        /// <summary>
         /// Represents a class that performs writing diagnostic data to a file and uploading it to Azure Blob Storage
         /// </summary>
-        public DiagnosticDataListener()
+        public DiagnosticDataListener(BenchmarkConfig config)
         {
+            this.config = config;
+            this.EnableEvents(BenchmarkLatencyEventSource.Instance, EventLevel.Informational);
+            this.BlobContainerClient = new Lazy<BlobContainerClient>(() => this.GetBlobServiceClient());
+
             /// <summary>
             /// Checks the file size every <see cref="FileSizeCheckIntervalMs"/> milliseconds for diagnostics and creates a new one if the maximum limit is exceeded.
             /// </summary>
@@ -65,7 +79,6 @@ namespace CosmosBenchmark.Fx
                         this.CreateFileIfNotExist(DiagnosticsFileName);
 
                         FileInfo fileInfo = new FileInfo(DiagnosticsFileName);
-
                         long fileSize = fileInfo.Length;
 
                         if (fileSize > this.MaxDIagnosticFileSize)
@@ -77,7 +90,6 @@ namespace CosmosBenchmark.Fx
 
                             Utility.TeeTraceInformation("File size exceeded 100MB. Renamed the file and created a new one.");
                         }
-
                     }
                     await Task.Delay(this.FileSizeCheckInterval);
                 }
@@ -120,14 +132,15 @@ namespace CosmosBenchmark.Fx
         /// <summary>
         /// Uploading all files with diagnostic data to blob storage
         /// </summary>
-        /// <param name="config">An instance of <see cref="BenchmarkConfig "/> containing the benchmark tool input parameters.</param>
-        public void UploadDiagnostcs(BlobContainerClient blobContainerClient, string containerPrefix)
+        public void UploadDiagnostcs()
         {
             Utility.TeeTraceInformation("Uploading diagnostics");
             string[] diagnosticFiles = Directory.GetFiles(".", $"{DiagnosticsFileName}*");
+            string containerPrefix = this.config.DiagnosticsStorageContainerPrefix;
 
             lock (this.FileLock)
             {
+                BlobContainerClient blobContainerClient = this.BlobContainerClient.Value;
                 for (int i = 0; i < diagnosticFiles.Length; i++)
                 {
                     try
@@ -147,18 +160,16 @@ namespace CosmosBenchmark.Fx
                         Utility.TeeTraceInformation($"An exception ocured while uploading file to the blob storage. {ex.Message}");
                     }
                 }
-
             }
         }
 
         /// <summary>
         /// Creating an instance of BlobClient using configs
         /// </summary>
-        /// <param name="config">An instance of <see cref="BenchmarkConfig "/> containing the benchmark tool input parameters.</param>
-        public BlobContainerClient GetBlobServiceClient(BenchmarkConfig config)
+        private BlobContainerClient GetBlobServiceClient()
         {
             BlobContainerClient blobContainerClient = new BlobContainerClient(
-                config.DiagnosticsStorageConnectionString,
+                this.config.DiagnosticsStorageConnectionString,
                 BlobContainerName);
             blobContainerClient.CreateIfNotExists();
             return blobContainerClient;
