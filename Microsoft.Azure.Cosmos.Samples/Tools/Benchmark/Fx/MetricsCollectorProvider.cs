@@ -113,7 +113,7 @@ namespace CosmosBenchmark
         /// <param name="meterProvider">Meter provider.</param>
         /// <param name="config">Benchmark configuration.</param>
         /// <returns>Metrics collector.</returns>
-        /// <exception cref="NotSupportedException">Thown if provided benchmark operation is not covered supported to collect metrics.</exception>
+        /// <exception cref="NotSupportedException">Thrown if provided benchmark operation is not covered supported to collect metrics.</exception>
         public static IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, MeterProvider meterProvider, BenchmarkConfig config)
         {
             MetricCollectionWindow metricCollectionWindow = GetCurrentMetricCollectionWindow(config);
@@ -125,13 +125,12 @@ namespace CosmosBenchmark
                 metricCollectionWindow.Reset(config);
             }
 
-            Type benchmarkOperationType = benchmarkOperation.GetType();
-            return benchmarkOperationType switch
+            return benchmarkOperation.OperationType switch
             {
-                Type t when typeof(InsertBenchmarkOperation).IsAssignableFrom(t) => InsertOperationMetricsCollector,
-                Type t when typeof(QueryBenchmarkOperation).IsAssignableFrom(t) => QueryOperationMetricsCollector,
-                Type t when typeof(ReadBenchmarkOperation).IsAssignableFrom(t) => ReadOperationMetricsCollector,
-                _ => throw new NotSupportedException($"The type {nameof(benchmarkOperationType)} is not supported for collecting metrics."),
+                BenchmarkOperationType.Insert => InsertOperationMetricsCollector,
+                BenchmarkOperationType.Query => QueryOperationMetricsCollector,
+                BenchmarkOperationType.Read => ReadOperationMetricsCollector,
+                _ => throw new NotSupportedException($"The type of {nameof(benchmarkOperation)} is not supported for collecting metrics."),
             };
         }
     }

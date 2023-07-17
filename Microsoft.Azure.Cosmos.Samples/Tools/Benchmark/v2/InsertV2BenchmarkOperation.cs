@@ -10,7 +10,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
-    internal class InsertV2BenchmarkOperation : InsertBenchmarkOperation
+    internal class InsertV2BenchmarkOperation : IBenchmarkOperation
     {
         private readonly DocumentClient documentClient;
         private readonly Uri containerUri;
@@ -60,7 +60,7 @@ namespace CosmosBenchmark
             };
         }
 
-        public override Task PrepareAsync()
+        public Task PrepareAsync()
         {
             string newPartitionKey = Guid.NewGuid().ToString();
 
