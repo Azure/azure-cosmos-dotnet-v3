@@ -32,7 +32,6 @@
 | diagnosticsLatencyThresholdInMS | Specifies request latency threshold for capturing diagnostic data |
 | storageAccountName | Specifies Storage Account Nmae |
 | metricsReportingIntervalInSec | Specifies metrics reporting interval in seconds |
-
 | applicationInsightsName | Specifies Application Insights Account Name |
 | startDate | Specifies Diagnostic Blob storage container folder prefix  |
 
