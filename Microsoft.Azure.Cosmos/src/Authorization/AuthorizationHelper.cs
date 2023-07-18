@@ -809,7 +809,7 @@ namespace Microsoft.Azure.Cosmos
             }
             finally
             {
-                if (rentedArray != null)
+                if (!useStackAlloc)
                 {
                     ArrayPool<byte>.Shared.Return(rentedArray);
                 }
