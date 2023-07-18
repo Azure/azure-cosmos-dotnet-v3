@@ -14,11 +14,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
     internal class TelemetryHandler : RequestHandler
     {
-        private readonly CosmosClient Client;
+        private readonly TelemetryToServiceHelper TelemetryToServiceHelper;
         
-        public TelemetryHandler(CosmosClient client)
+        public TelemetryHandler(TelemetryToServiceHelper telemetryHelper)
         {
-            this.Client = client ?? throw new ArgumentNullException(nameof(client));
+            this.TelemetryToServiceHelper = telemetryHelper ?? throw new ArgumentNullException(nameof(telemetryHelper));
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// <returns>true/false</returns>
         private bool IsClientTelemetryJobRunning(out ClientTelemetry clientTelemetryJob)
         {
-            clientTelemetryJob = this.Client.DocumentClient.ClientTelemetryInstance;
+            clientTelemetryJob = this.TelemetryToServiceHelper.clientTelemetryInstance;
             if (clientTelemetryJob == null)
             {
                 return false;

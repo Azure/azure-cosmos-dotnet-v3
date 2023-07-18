@@ -121,7 +121,8 @@ namespace Microsoft.Azure.Cosmos
                 ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                     cosmosClient,
                     clientOptions.ConsistencyLevel,
-                    clientOptions.CustomHandlers);
+                    clientOptions.CustomHandlers,
+                    documentClient.TelemetryToServiceHelper);
 
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }

@@ -81,18 +81,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             DocumentClient documentClient = this.GetClient().DocumentClient;
 
+            Assert.IsNull(documentClient.TelemetryToServiceHelper);
+
             ClientCollectionCache collCache = (ClientCollectionCache)documentClient
             .GetType()
             .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
             .GetValue(documentClient);
 
-            DocumentClient collectionCacheDocumentClientInstance = (DocumentClient)collCache
+            TelemetryToServiceHelper telemetryToServiceHelper = (TelemetryToServiceHelper)collCache
                 .GetType()
-                .GetField("client", BindingFlags.Instance | BindingFlags.NonPublic)
+                .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
                 .GetValue(collCache);
 
-            Assert.IsNull(documentClient.ClientTelemetryInstance);
-            Assert.IsNull(collectionCacheDocumentClientInstance.ClientTelemetryInstance);
+            Assert.IsNull(telemetryToServiceHelper);
         }
 
         [TestMethod]
@@ -144,20 +145,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
             .GetValue(documentClient);
 
-            DocumentClient collectionCacheDocumentClientInstance = (DocumentClient)collCache
-                .GetType()
-                .GetField("client", BindingFlags.Instance | BindingFlags.NonPublic)
-                .GetValue(collCache);
+            TelemetryToServiceHelper telemetryToServiceHelper = (TelemetryToServiceHelper)collCache
+               .GetType()
+               .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
+               .GetValue(collCache);
 
             if (isEnabled)
             {
-                Assert.IsNotNull(documentClient.ClientTelemetryInstance);
-                Assert.IsNotNull(collectionCacheDocumentClientInstance.ClientTelemetryInstance);
+                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryInstance);
+                Assert.IsNotNull(telemetryToServiceHelper.clientTelemetryInstance);
             }
             else
             {
-                Assert.IsNull(documentClient.ClientTelemetryInstance);
-                Assert.IsNull(collectionCacheDocumentClientInstance.ClientTelemetryInstance);
+                Assert.IsNull(documentClient.TelemetryToServiceHelper.clientTelemetryInstance);
+                Assert.IsNull(telemetryToServiceHelper.clientTelemetryInstance);
             }
         }
         
@@ -220,8 +221,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithHttpClientFactory(() => new HttpClient(httpHandler));
             this.SetClient(this.cosmosClientBuilder.Build());
 
-            FieldInfo field = typeof(GlobalEndpointManager).GetField("backgroundRefreshAccountClientConfigTimeIntervalInMS", BindingFlags.Instance | BindingFlags.NonPublic);
-            field.SetValue(this.GetClient().DocumentClient.GlobalEndpointManager, 10);
+            TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 10;
 
             this.database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
 
@@ -232,20 +232,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                 .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
                                                 .GetValue(documentClient);
 
-            DocumentClient collectionCacheDocumentClientInstance = (DocumentClient)collCache
-                .GetType()
-                .GetField("client", BindingFlags.Instance | BindingFlags.NonPublic)
-                .GetValue(collCache);
+            TelemetryToServiceHelper telemetryToServiceHelper = (TelemetryToServiceHelper)collCache
+               .GetType()
+               .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
+               .GetValue(collCache);
 
             if (isEnabledInitially)
             {
-                Assert.IsNotNull(documentClient.ClientTelemetryInstance, "Before: Client Telemetry Job should be Running");
-                Assert.IsNotNull(collectionCacheDocumentClientInstance.ClientTelemetryInstance);
+                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryInstance, "Before: Client Telemetry Job should be Running");
+                Assert.IsNotNull(telemetryToServiceHelper.clientTelemetryInstance);
             }
             else
             {
-                Assert.IsNull(documentClient.ClientTelemetryInstance, "Before: Client Telemetry Job should be Stopped");
-                Assert.IsNull(collectionCacheDocumentClientInstance.ClientTelemetryInstance);
+                Assert.IsNull(documentClient.TelemetryToServiceHelper.clientTelemetryInstance, "Before: Client Telemetry Job should be Stopped");
+                Assert.IsNull(telemetryToServiceHelper.clientTelemetryInstance);
             }
 
             manualResetEvent.WaitOne(TimeSpan.FromMilliseconds(100));
@@ -257,20 +257,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                 .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
                                                 .GetValue(documentClient);
 
-            collectionCacheDocumentClientInstance = (DocumentClient)collCache
-                .GetType()
-                .GetField("client", BindingFlags.Instance | BindingFlags.NonPublic)
-                .GetValue(collCache);
+            telemetryToServiceHelper = (TelemetryToServiceHelper)collCache
+               .GetType()
+               .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
+               .GetValue(collCache);
 
             if (isEnabledInitially)
             {
-                Assert.IsNull(documentClient.ClientTelemetryInstance, "After: Client Telemetry Job should be Stopped");
-                Assert.IsNull(collectionCacheDocumentClientInstance.ClientTelemetryInstance);
+                Assert.IsNull(documentClient.TelemetryToServiceHelper.clientTelemetryInstance, "After: Client Telemetry Job should be Stopped");
+                Assert.IsNull(telemetryToServiceHelper.clientTelemetryInstance);
             }
             else
             {
-                Assert.IsNotNull(documentClient.ClientTelemetryInstance, "After: Client Telemetry Job should be Running");
-                Assert.IsNotNull(collectionCacheDocumentClientInstance.ClientTelemetryInstance);
+                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryInstance, "After: Client Telemetry Job should be Running");
+                Assert.IsNotNull(telemetryToServiceHelper.clientTelemetryInstance);
             }
             
         }

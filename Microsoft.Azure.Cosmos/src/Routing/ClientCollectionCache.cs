@@ -25,20 +25,20 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly IRetryPolicyFactory retryPolicy;
         private readonly ISessionContainer sessionContainer;
-        private readonly DocumentClient client;
+        private readonly TelemetryToServiceHelper telemetryToServiceHelper;
 
         public ClientCollectionCache(
             ISessionContainer sessionContainer,
             IStoreModel storeModel,
             ICosmosAuthorizationTokenProvider tokenProvider,
             IRetryPolicyFactory retryPolicy,
-            DocumentClient client)
+            TelemetryToServiceHelper telemetryToServiceHelper)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
             this.tokenProvider = tokenProvider;
             this.retryPolicy = retryPolicy;
             this.sessionContainer = sessionContainer;
-            this.client = client;
+            this.telemetryToServiceHelper = telemetryToServiceHelper;
         }
 
         protected override Task<ContainerProperties> GetByRidAsync(string apiVersion,
@@ -215,10 +215,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                             {
                                 ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
 
-                                if (this.client.ClientTelemetryInstance != null)
+                                ClientTelemetry telemetryInstance = this.telemetryToServiceHelper?.clientTelemetryInstance;
+                                if (telemetryInstance != null)
                                 {
                                     ClientCollectionCache.GetDatabaseAndCollectionName(collectionLink, out string databaseName, out string collectionName);
-                                    this.client.ClientTelemetryInstance.CollectCacheInfo(
+                                    telemetryInstance.CollectCacheInfo(
                                                     cacheRefreshSource: ClientCollectionCache.TelemetrySourceName,
                                                     regionsContactedList: response.RequestStats.RegionsContacted,
                                                     requestLatency: response.RequestStats.RequestLatency,

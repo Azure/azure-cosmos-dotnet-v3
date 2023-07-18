@@ -10,12 +10,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Resource.Settings;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -94,38 +93,6 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        public virtual async Task<TryCatch<AccountClientConfigProperties>> GetDatabaseAccountClientConfigAsync(Func<ValueTask<HttpRequestMessage>> requestMessage,
-                                                IClientSideRequestStatistics clientSideRequestStatistics,
-                                                CancellationToken cancellationToken = default)
-        {
-            // Get the ServiceDocumentResource from the gateway.
-            using (HttpResponseMessage responseMessage = await this.gatewayStoreClient.SendHttpAsync(
-                requestMessage,
-                ResourceType.DatabaseAccount,
-                HttpTimeoutPolicyControlPlaneRead.Instance,
-                clientSideRequestStatistics,
-                cancellationToken))
-            {
-                using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
-                {
-                    try
-                    {
-                        return TryCatch<AccountClientConfigProperties>.FromResult(CosmosResource.FromStream<AccountClientConfigProperties>(documentServiceResponse));
-                    }
-                    catch (ObjectDisposedException ex) when (cancellationToken.IsCancellationRequested)
-                    {
-                        DefaultTrace.TraceWarning($"Client is being disposed at {DateTime.UtcNow}, cancelling client config call.");
-                        return TryCatch<AccountClientConfigProperties>.FromException(ex);
-                    }
-                    catch (Exception ex)
-                    {
-                            DefaultTrace.TraceWarning($"Exception while calling client config " + ex.StackTrace);
-                            return TryCatch<AccountClientConfigProperties>.FromException(ex);
-                        }
-                    }
-            }
-        }
-        
         public virtual async Task<AccountProperties> GetDatabaseAccountAsync(Func<ValueTask<HttpRequestMessage>> requestMessage,
                                                         IClientSideRequestStatistics clientSideRequestStatistics,
                                                         CancellationToken cancellationToken = default)

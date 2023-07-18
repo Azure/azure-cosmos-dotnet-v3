@@ -20,11 +20,8 @@ namespace Microsoft.Azure.Cosmos
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Query;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Resource.Settings;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -188,10 +185,6 @@ namespace Microsoft.Azure.Cosmos
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
-
-#if !INTERNAL
-        private Task accountClientConfigTask;
-#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
@@ -665,7 +658,7 @@ namespace Microsoft.Azure.Cosmos
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
-                    client: this);
+                    telemetryToServiceHelper: this.TelemetryToServiceHelper);
                 this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
 
                 DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
@@ -944,6 +937,14 @@ namespace Microsoft.Azure.Cosmos
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
 
+            this.TelemetryToServiceHelper = TelemetryToServiceHelper.StartBackgroundJobForClientConfigAndTelemetry(this.clientId,
+                                                                 this.ConnectionPolicy,
+                                                                 this.cosmosAuthorization,
+                                                                 this.httpClient,
+                                                                 this.ServiceEndpoint,
+                                                                 this.GlobalEndpointManager,
+                                                                 this.cancellationTokenSource);
+
             if (sessionContainer != null)
             {
                 this.sessionContainer = sessionContainer;
@@ -1027,7 +1028,7 @@ namespace Microsoft.Azure.Cosmos
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
-                    client: this);
+                    telemetryToServiceHelper: this.TelemetryToServiceHelper);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
@@ -1043,58 +1044,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// Trigger Client Telemetry job when it is enabled and not already running.
-        /// </summary>
-        private void InitializeClientTelemetry(AccountClientConfigProperties databaseAccountClientConfigs)
-        {
-            if (databaseAccountClientConfigs.IsClientTelemetryEnabled() && !this.ConnectionPolicy.DisableClientTelemetryToService)
-            {
-                if (this.ClientTelemetryInstance == null)
-                {
-                    try
-                    {
-                        this.ClientTelemetryInstance = ClientTelemetry.CreateAndStartBackgroundTelemetry(
-                            clientId: this.clientId,
-                            httpClient: this.httpClient,
-                            userAgent: this.ConnectionPolicy.UserAgentContainer.BaseUserAgent,
-                            connectionMode: this.ConnectionPolicy.ConnectionMode,
-                            authorizationTokenProvider: this.cosmosAuthorization,
-                            diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
-                            preferredRegions: this.ConnectionPolicy.PreferredLocations,
-                            globalEndpointManager: this.GlobalEndpointManager,
-                            databaseAccountClientConfigs: databaseAccountClientConfigs);
-
-                        DefaultTrace.TraceVerbose("Client Telemetry Enabled.");
-                    }
-                    catch (Exception ex)
-                    {
-                        DefaultTrace.TraceWarning($"Error While starting Telemetry Job : {ex.Message}");
-                    }
-                }
-                else
-                {
-                    DefaultTrace.TraceVerbose("Client Telemetry Job already running.");
-                }
-            }
-            else
-            {
-                if (this.ClientTelemetryInstance != null)
-                {
-                    DefaultTrace.TraceInformation("Stopping Client Telemetry Job.");
-
-                    ClientTelemetry tempTask = this.ClientTelemetryInstance;
-                    this.ClientTelemetryInstance = null;
-
-                    tempTask.Dispose();
-                }
-                else
-                {
-                    DefaultTrace.TraceInformation("Client Telemetry Disabled.");
-                }
-            }
         }
 
         private async Task InitializeCachesAsync(string databaseName, DocumentCollection collection, CancellationToken cancellationToken)
@@ -1367,10 +1316,10 @@ namespace Microsoft.Azure.Cosmos
                 this.initTaskCache = null;
             }
 
-            if (this.ClientTelemetryInstance != null)
+            if (this.TelemetryToServiceHelper != null)
             {
-                this.ClientTelemetryInstance.Dispose();
-                this.ClientTelemetryInstance = null;
+                this.TelemetryToServiceHelper.Dispose();
+                this.TelemetryToServiceHelper = null;
             }
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
@@ -1420,7 +1369,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual Task<QueryPartitionProvider> QueryPartitionProvider => this.queryPartitionProvider.Value;
 
-        public ClientTelemetry ClientTelemetryInstance { get; private set; }
+        public TelemetryToServiceHelper TelemetryToServiceHelper { get; private set; }
 
         internal virtual async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
@@ -6456,45 +6405,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return TaskHelper.InlineIfPossible(() => this.GetDatabaseAccountPrivateAsync(this.ReadEndpoint), this.ResetSessionTokenRetryPolicy.GetRequestPolicy());
         }
-        
-        async Task IDocumentClientInternal.RefreshDatabaseAccountClientConfigInternalAsync()
-        {
-            if (this.GatewayStoreModel is GatewayStoreModel gatewayModel)
-            {
-                Uri serviceEndpoint = new Uri(this.ServiceEndpoint + Paths.ClientConfigPathSegment);
-                
-                async ValueTask<HttpRequestMessage> CreateRequestMessage()
-                {
-                    HttpRequestMessage request = new HttpRequestMessage
-                    {
-                        Method = HttpMethod.Get,
-                        RequestUri = serviceEndpoint
-                    };
-
-                    INameValueCollection headersCollection = new StoreResponseNameValueCollection();
-                    await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
-                        headersCollection,
-                        serviceEndpoint,
-                        "GET",
-                        AuthorizationTokenType.PrimaryMasterKey);
-
-                    foreach (string key in headersCollection.AllKeys())
-                    {
-                        request.Headers.Add(key, headersCollection[key]);
-                    }
-
-                    return request;
-                }
-
-                TryCatch<AccountClientConfigProperties> databaseAccountClientConfigs = await gatewayModel.GetDatabaseAccountClientConfigAsync(CreateRequestMessage,
-                                                                                            clientSideRequestStatistics: null);
-                if (databaseAccountClientConfigs.Succeeded)
-                {
-                    this.InitializeClientTelemetry(databaseAccountClientConfigs.Result);
-                }
-            }
-        }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
         /// <summary>
         /// Read the <see cref="AccountProperties"/> as an asynchronous operation
         /// given a specific reginal endpoint url.
@@ -6799,23 +6710,6 @@ namespace Microsoft.Azure.Cosmos
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
             
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
-  
-            // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
-            // the system information so no need to track it.
-#if !INTERNAL
-            if (!this.ConnectionPolicy.DisableClientTelemetryToService)
-            {
-                TryCatch<AccountClientConfigProperties> accountClientConfigProperties = await accountReader.GetDatabaseAccountClientConfigAsync();
-                // Make sure to intialize the client telemetry job if the client config is available
-                if (accountClientConfigProperties.Succeeded)
-                {
-                    this.InitializeClientTelemetry(accountClientConfigProperties.Result);
-                }
-
-                // No matter what, start the background job to retry calling client config API
-                this.accountClientConfigTask = this.GlobalEndpointManager.RefreshAccountClientConfigsAndStartClientTelemetryJobAsync();
-            }
-#endif
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)

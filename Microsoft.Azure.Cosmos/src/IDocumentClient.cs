@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets Client Telemetry Instance with Task
         /// </summary>
-        ClientTelemetry ClientTelemetryInstance { get; }
+        TelemetryToServiceHelper TelemetryToServiceHelper { get; }
         
         #endregion
 
