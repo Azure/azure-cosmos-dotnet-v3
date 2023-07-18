@@ -786,7 +786,9 @@ namespace Microsoft.Azure.Cosmos
             // Increase the buffer by 3x so it can be used for the URL encoding
             int capacity = Base64.GetMaxEncodedToUtf8Length(hashPayLoad.Length) * 3;
             bool useStackAlloc = capacity <= MaxCapacityInBytes;
-            Span<byte> encodingBuffer = useStackAlloc ? stackalloc byte[capacity] : ArrayPool<byte>.Shared.Rent(capacity);
+
+            byte[] rentedArray = null;
+            Span<byte> encodingBuffer = useStackAlloc ? stackalloc byte[capacity] : (rentedArray = ArrayPool<byte>.Shared.Rent(capacity));
 
             try
             {
@@ -802,14 +804,14 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 return urlEncode
-                ? AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten)
-                : Encoding.UTF8.GetString(encodingBuffer.Slice(0, bytesWritten));
+                    ? AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten)
+                    : Encoding.UTF8.GetString(encodingBuffer.Slice(0, bytesWritten));
             }
             finally
             {
-                if (!useStackAlloc)
+                if (rentedArray != null)
                 {
-                    ArrayPool<byte>.Shared.Return(encodingBuffer.ToArray());
+                    ArrayPool<byte>.Shared.Return(rentedArray);
                 }
             }
         }
