@@ -39,6 +39,8 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
+
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             using (ResponseMessage itemResponse = await this.container.ReadItemStreamAsync(
@@ -47,7 +49,7 @@ namespace CosmosBenchmark
             {
                 if (itemResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                    throw new Exception($"ReadItem failed with {itemResponse.StatusCode}");
                 }
 
                 string diagnostics = itemResponse.Diagnostics.ToString();
