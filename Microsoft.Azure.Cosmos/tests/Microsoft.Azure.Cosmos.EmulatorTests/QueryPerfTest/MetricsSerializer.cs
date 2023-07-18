@@ -177,19 +177,9 @@
             textWriter.Flush();
         }
 
-        public void OdeSerialization(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor, int numberOfIterations, bool rawData)
-        {
-            if (rawData)
-            {
-                OdeRawDataSerialization(textWriter, queryStatisticsDatumVisitor);
-            }
-            else
-            {
-                OdeProcessedDataSerialization(textWriter, queryStatisticsDatumVisitor, numberOfIterations);
-            }
-        }
+        
 
-        private static void OdeRawDataSerialization(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor)
+        internal static void SerializeODERawDataQueryMetrics(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor)
         {
             textWriter.WriteLine();
             textWriter.WriteLine(PrintQueryMetrics);
@@ -238,7 +228,7 @@
             textWriter.WriteLine($"{prevQuery},{prevOde},{totalRU},{totalBackendTime},{totalTransitTime},{totalClientTime},{totalEndToEndTime}");
         }
 
-        private static void OdeProcessedDataSerialization(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor, int numberOfIterations)
+        internal static void SerializeODEProcessedDataQueryMetrics(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor, int numberOfIterations)
         {
             textWriter.WriteLine();
             textWriter.WriteLine(PrintQueryMetrics);

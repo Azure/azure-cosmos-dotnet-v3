@@ -15,8 +15,8 @@
     {
         private const string RawDataFileName = "OptimisticDirectExecutionPerformanceTestsRawData.csv";
         private const string DiagnosticsDataFileName = "OptimisticDirectExecutionPerformanceTestsAggregatedData.csv";
-        private readonly string RawDataPath = Path.GetFullPath(RawDataFileName);
-        private readonly string AggregateDataPath = Path.GetFullPath(DiagnosticsDataFileName);
+        private static readonly string RawDataPath = Path.GetFullPath(RawDataFileName);
+        private static readonly string AggregateDataPath = Path.GetFullPath(DiagnosticsDataFileName);
         private static readonly QueryStatisticsDatumVisitor queryStatisticsDatumVisitor = new QueryStatisticsDatumVisitor();
         private static readonly string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
         private static readonly string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
@@ -35,25 +35,25 @@
             };
 
             CosmosClient cosmosClient = new CosmosClient(endpoint, authKey, clientOptions);
-            (Database database, Container container) = await this.TestInitialize(cosmosClient);
+            (Database database, Container container) = await this.InitializeTest(cosmosClient);
             await this.RunAsync(container);
             await this.TestCleanup(database);
         }
 
-        private async Task<(Database, Container)> TestInitialize(CosmosClient cosmosClient)
+        private async Task<(Database, Container)> InitializeTest(CosmosClient cosmosClient)
         {
             Database database = await this.CreateDatabaseAsync(cosmosClient);
             Container container = await this.CreateContainerAsync(database);
             await this.AddItemsToContainerAsync(container);
 
-            if (File.Exists(this.RawDataPath))
+            if (File.Exists(RawDataPath))
             {
-                File.Delete(this.RawDataPath);
+                File.Delete(RawDataPath);
             }
 
-            if (File.Exists(this.AggregateDataPath))
+            if (File.Exists(AggregateDataPath))
             {
-                File.Delete(this.AggregateDataPath);
+                File.Delete(AggregateDataPath);
             }
 
             return (database, container);
@@ -67,7 +67,7 @@
 
         private async Task<Container> CreateContainerAsync(Database database)
         {
-            return await database.CreateContainerIfNotExistsAsync(containerId, partitionKeyPath: "/name");
+            return await database.CreateContainerAsync(containerId, partitionKeyPath: "/name");
         }
 
         private async Task AddItemsToContainerAsync(Container container)
@@ -122,7 +122,6 @@
         
         private async Task RunAsync(Container container)
         {
-            MetricsSerializer metricsSerializer = new MetricsSerializer();
             string highPrepTimeSumQuery = CreateHighPrepTimeSumQuery();
             string highPrepTimeConditionalQuery = CreateHighPrepTimeConditionalQuery();
 
@@ -225,14 +224,14 @@
                 await this.RunQueryAsync(container, testCase);
             }
 
-            using (StreamWriter writer = new StreamWriter(new FileStream(this.RawDataPath, FileMode.Append, FileAccess.Write)))
+            using (StreamWriter writer = new StreamWriter(new FileStream(RawDataPath, FileMode.Append, FileAccess.Write)))
             {
-                metricsSerializer.OdeSerialization(writer, queryStatisticsDatumVisitor, numberOfIterations, rawData: true);
+                SerializeODEQueryMetrics(writer, queryStatisticsDatumVisitor, numberOfIterations, rawData: true);
             }
 
-            using (StreamWriter writer = new StreamWriter(new FileStream(this.AggregateDataPath, FileMode.Append, FileAccess.Write)))
+            using (StreamWriter writer = new StreamWriter(new FileStream(AggregateDataPath, FileMode.Append, FileAccess.Write)))
             {
-                metricsSerializer.OdeSerialization(writer, queryStatisticsDatumVisitor, numberOfIterations, rawData: false);
+                SerializeODEQueryMetrics(writer, queryStatisticsDatumVisitor, numberOfIterations, rawData: false);
             }
         }
 
@@ -306,6 +305,18 @@
             }
 
             Assert.AreEqual(queryInput.ExpectedResultCount, totalDocumentCount);
+        }
+
+        private static void SerializeODEQueryMetrics(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor, int numberOfIterations, bool rawData)
+        {
+            if (rawData)
+            {
+                MetricsSerializer.SerializeODERawDataQueryMetrics(textWriter, queryStatisticsDatumVisitor);
+            }
+            else
+            {
+                MetricsSerializer.SerializeODEProcessedDataQueryMetrics(textWriter, queryStatisticsDatumVisitor, numberOfIterations);
+            }
         }
 
         private static string CreateHighPrepTimeSumQuery()
