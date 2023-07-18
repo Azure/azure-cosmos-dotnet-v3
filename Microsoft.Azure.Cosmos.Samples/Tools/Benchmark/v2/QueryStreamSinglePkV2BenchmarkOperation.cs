@@ -47,6 +47,8 @@ namespace CosmosBenchmark
             this.containerUri = UriFactory.CreateDocumentCollectionUri(this.databsaeName, this.containerName);
         }
 
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Query;
+
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             IDocumentQuery<dynamic> query = this.documentClient.CreateDocumentQuery<dynamic>(
