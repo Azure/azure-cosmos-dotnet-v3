@@ -15,7 +15,7 @@ Many applications can benefit from having a read-write model like below
 
 | Operation | Write-Region | Replicated-Regions |
 |---|---|---|
-|Write | Guaranteed write completion in write region <br> vs Bounded: write un-availability when bounds are violated | Asynchronous non-blocking replication (eventual) <br> vs Bounded: Limits staleness by bounds  |
+|Write | Write high availabillity in write region <br> vs BoundedStaleness: write un-availability when bounds are violated | Eventual replication: Asynchronous non-blocking, possibly unbounded staleness <br> vs BoundedStaleness: staleness limited by bounds  |
 |Read |**Single write region**: Read my writes <br> **Multiple write regions**: read-my-writes from the region of writes, otherwise eventual <br> Monotonic reads <br>No sessionToken management| **Single write region**: Eventual read <br> **Multiple write regions**: read-my-writes from the region of writes, otherwise eventual <br> Monotonic reads <br>No sessionToken management |
 
 > ### NOTE: cross-region reads will violate the monotonic reads guarantee
