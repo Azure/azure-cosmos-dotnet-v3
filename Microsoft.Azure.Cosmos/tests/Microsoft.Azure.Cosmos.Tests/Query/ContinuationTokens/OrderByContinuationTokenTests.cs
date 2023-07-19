@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
@@ -52,6 +53,48 @@ namespace Microsoft.Azure.Cosmos.Query
                 cosmosElementToken.ToString());
             TryCatch<OrderByContinuationToken> tryOrderByContinuationTokenFromCosmosElement = OrderByContinuationToken.TryCreateFromCosmosElement(cosmosElementToken);
             Assert.IsTrue(tryOrderByContinuationTokenFromCosmosElement.Succeeded);
+            OrderByContinuationToken orderByContinuationTokenFromCosmosElement = tryOrderByContinuationTokenFromCosmosElement.Result;
+            Assert.IsNotNull(orderByContinuationTokenFromCosmosElement);
+            Assert.AreEqual(cosmosElementToken.ToString(), OrderByContinuationToken.ToCosmosElement(orderByContinuationTokenFromCosmosElement).ToString());
+        }
+
+        [TestMethod]
+        public void TestResumeFilterRoundTripAsCosmosElement()
+        {
+            ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                token: "someToken",
+                range: new Range<string>("asdf", "asdf", false, false));
+
+            List<SqlQueryResumeFilter.ResumeValue> resumeValues = new List<SqlQueryResumeFilter.ResumeValue>()
+            {
+                new SqlQueryResumeFilter.UndefinedResumeValue(),
+                new SqlQueryResumeFilter.NullResumeValue(),
+                new SqlQueryResumeFilter.BooleanResumeValue(true),
+                new SqlQueryResumeFilter.StringResumeValue("asdf"),
+                new SqlQueryResumeFilter.NumberResumeValue(1337),
+                new SqlQueryResumeFilter.ArrayResumeValue(UInt128.Create(10000,20000)),
+                new SqlQueryResumeFilter.ObjectResumeValue(UInt128.Create(30000,40000))
+            };
+
+            string rid = "someRid";
+            int skipCount = 42;
+            string filter = "someFilter";
+            OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                parallelContinuationToken,
+                orderByItems: null,
+                resumeValues,
+                rid,
+                skipCount,
+                filter);
+
+            CosmosElement cosmosElementToken = OrderByContinuationToken.ToCosmosElement(orderByContinuationToken);
+            Assert.AreEqual(
+                @"{""compositeToken"":{""token"":""someToken"",""range"":{""min"":""asdf"",""max"":""asdf""}},""resumeValues"":[[],null,true,""asdf"",1337,{""type"":""array"",""low"":10000,""high"":20000},{""type"":""object"",""low"":30000,""high"":40000}],""rid"":""someRid"",""skipCount"":42}",
+                cosmosElementToken.ToString());
+
+            TryCatch<OrderByContinuationToken> tryOrderByContinuationTokenFromCosmosElement = OrderByContinuationToken.TryCreateFromCosmosElement(cosmosElementToken);
+            Assert.IsTrue(tryOrderByContinuationTokenFromCosmosElement.Succeeded);
+
             OrderByContinuationToken orderByContinuationTokenFromCosmosElement = tryOrderByContinuationTokenFromCosmosElement.Result;
             Assert.IsNotNull(orderByContinuationTokenFromCosmosElement);
             Assert.AreEqual(cosmosElementToken.ToString(), OrderByContinuationToken.ToCosmosElement(orderByContinuationTokenFromCosmosElement).ToString());

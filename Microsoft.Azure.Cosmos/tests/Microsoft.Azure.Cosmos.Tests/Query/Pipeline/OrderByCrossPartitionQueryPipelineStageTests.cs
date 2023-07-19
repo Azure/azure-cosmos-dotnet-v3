@@ -47,6 +47,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             };
         }
 
+        private static IReadOnlyList<(string serializedToken, SqlQueryResumeFilter.ResumeValue resumeValue)> ResumeValueTestData()
+        {
+            return new List<(string, SqlQueryResumeFilter.ResumeValue)>
+            {
+                ("[]", new SqlQueryResumeFilter.UndefinedResumeValue()),
+                ("null", new SqlQueryResumeFilter.NullResumeValue()),
+                ("false", new SqlQueryResumeFilter.BooleanResumeValue(false)),
+                ("true", new SqlQueryResumeFilter.BooleanResumeValue(true)),
+                ("1337", new SqlQueryResumeFilter.NumberResumeValue(1337)),
+                ("asdf", new SqlQueryResumeFilter.StringResumeValue("asdf")),
+                ("{\"type\":\"array\",\"low\":10000,\"high\":20000}", new SqlQueryResumeFilter.ArrayResumeValue(Cosmos.UInt128.Create(10000,20000))),
+                ("{\"type\":\"object\",\"low\":30000,\"high\":40000}", new SqlQueryResumeFilter.ObjectResumeValue(Cosmos.UInt128.Create(30000,40000)))
+            };
+        }
+
         [TestMethod]
         public void MonadicCreate_NullContinuationToken()
         {
@@ -276,6 +291,90 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                             {
                                 OrderByContinuationToken.ToCosmosElement(orderByContinuationToken1),
                                 OrderByContinuationToken.ToCosmosElement(orderByContinuationToken2)
+                            }));
+                    Assert.IsTrue(monadicCreate.Succeeded);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void MonadicCreate_OrderByWithResumeValues()
+        {
+            Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
+            IReadOnlyList<(string serializedToken, SqlQueryResumeFilter.ResumeValue resumeValue)> tokens = ResumeValueTestData();
+
+            foreach ((string serializedToken, SqlQueryResumeFilter.ResumeValue resumeValue) in tokens)
+            {
+                ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                    token: serializedToken,
+                    range: new Documents.Routing.Range<string>("A", "B", true, false));
+
+                OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                    parallelContinuationToken,
+                    orderByItems: null,
+                    resumeValues: new List<SqlQueryResumeFilter.ResumeValue>() { resumeValue},
+                    rid: "rid",
+                    skipCount: 42,
+                    filter: null);
+
+                TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
+                    documentContainer: mockDocumentContainer.Object,
+                    sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c.item"),
+                    targetRanges: new List<FeedRangeEpk>() { new FeedRangeEpk(new Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)) },
+                    partitionKey: null,
+                    orderByColumns: new List<OrderByColumn>()
+                    {
+                    new OrderByColumn("item", SortOrder.Ascending)
+                    },
+                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                    maxConcurrency: 10,
+                    cancellationToken: default,
+                    continuationToken: CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
+                        OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
+                        }));
+                Assert.IsTrue(monadicCreate.Succeeded);
+            }
+
+            // Multiple resume values
+            foreach ((string token1, SqlQueryResumeFilter.ResumeValue resumeValue1) in tokens)
+            {
+                foreach ((string token2, SqlQueryResumeFilter.ResumeValue resumeValue2) in tokens)
+                {
+                    ParallelContinuationToken parallelContinuationToken1 = new ParallelContinuationToken(
+                        token: $"[{token1}, {token2}]",
+                        range: new Documents.Routing.Range<string>("A", "B", true, false));
+
+                    OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                        parallelContinuationToken1,
+                        orderByItems: null,
+                        new List<SqlQueryResumeFilter.ResumeValue>() { resumeValue1, resumeValue2 },
+                        rid: "rid",
+                        skipCount: 42,
+                        filter: null);
+
+                    TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
+                        documentContainer: mockDocumentContainer.Object,
+                        sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c.item1, c.item2"),
+                        targetRanges: new List<FeedRangeEpk>()
+                        {
+                            new FeedRangeEpk(new Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)),
+                            new FeedRangeEpk(new Range<string>(min: "B", max: "C", isMinInclusive: true, isMaxInclusive: false)),
+                        },
+                        partitionKey: null,
+                        orderByColumns: new List<OrderByColumn>()
+                        {
+                               new OrderByColumn("item1", SortOrder.Ascending),
+                               new OrderByColumn("item2", SortOrder.Ascending)
+                        },
+                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                        maxConcurrency: 10,
+                        cancellationToken: default,
+                        continuationToken: CosmosArray.Create(
+                            new List<CosmosElement>()
+                            {
+                                OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
                             }));
                     Assert.IsTrue(monadicCreate.Succeeded);
                 }
