@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// Dividing these same values with 1000 during Serialization.
     /// This Class get initiated with the client and get disposed with client.
     /// </summary>
-    internal class ClientTelemetry : IDisposable
+    internal class ClientTelemetry : IClientTelemetryCollectors
     {
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.DefaultTimeStampInSeconds;
 
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="globalEndpointManager"></param>
         /// <param name="databaseAccountClientConfigs"></param>
         /// <returns>ClientTelemetry</returns>
-        public static ClientTelemetry CreateAndStartBackgroundTelemetry(
+        public static IClientTelemetryCollectors CreateAndStartBackgroundTelemetry(
             string clientId,
             CosmosHttpClient httpClient,
             string userAgent,
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return clientTelemetry;
         }
 
-        internal ClientTelemetry(
+        private ClientTelemetry(
             string clientId,
             CosmosHttpClient httpClient,
             string userAgent,
@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Cache Telemetry Information.
         /// </summary>
-        internal void CollectCacheInfo(string cacheRefreshSource,
+        public virtual void CollectCacheInfo(string cacheRefreshSource,
                             HashSet<(string regionName, Uri uri)> regionsContactedList,
                             TimeSpan? requestLatency,
                             HttpStatusCode statusCode,
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="requestCharge"></param>
         /// <param name="subStatusCode"></param>
         /// <param name="trace"></param>
-        internal void CollectOperationInfo(CosmosDiagnostics cosmosDiagnostics,
+        public virtual void CollectOperationInfo(CosmosDiagnostics cosmosDiagnostics,
                             HttpStatusCode statusCode,
                             long responseSizeInBytes,
                             string containerId,

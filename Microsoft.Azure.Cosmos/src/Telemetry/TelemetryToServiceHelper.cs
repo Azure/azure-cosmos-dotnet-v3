@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         internal static int DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 10 * 60 * 1000;
 
-        internal ClientTelemetry clientTelemetryInstance = null;
+        internal IClientTelemetryCollectors clientTelemetryCollector = new ClientTelemetryCollectorsNoOp();
 
         private readonly AuthorizationTokenProvider cosmosAuthorization;
         private readonly CosmosHttpClient httpClient;
@@ -32,6 +32,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly CancellationTokenSource cancellationTokenSource;
 
         private Task accountClientConfigTask = null;
+
+        private TelemetryToServiceHelper()
+        {
+            //NoOp constructor
+        }
 
         private TelemetryToServiceHelper(
             string clientId,
@@ -51,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.cancellationTokenSource = cancellationTokenSource;
         }
 
-        public static TelemetryToServiceHelper StartBackgroundJobForClientConfigAndTelemetry(string clientId,
+        public static TelemetryToServiceHelper CreateAndInitializeClientConfigAndTelemetryJob(string clientId,
             ConnectionPolicy connectionPolicy,
             AuthorizationTokenProvider cosmosAuthorization,
             CosmosHttpClient httpClient,
@@ -61,11 +66,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (connectionPolicy.DisableClientTelemetryToService)
             {
-                return null;
+                return new TelemetryToServiceHelper(); //NoOpscontructor
             }
 
             TelemetryToServiceHelper telemetryToServiceHelper = new TelemetryToServiceHelper(
                 clientId, connectionPolicy, cosmosAuthorization, httpClient, serviceEndpoint, globalEndpointManager, cancellationTokenSource);
+
             telemetryToServiceHelper.Initialize();
 
             return telemetryToServiceHelper;
@@ -87,6 +93,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     this.InitializeClientTelemetry(databaseAccountClientConfigs.Result);
                 }
+                else
+                {
+                    DefaultTrace.TraceWarning($"Exception while calling client config " + databaseAccountClientConfigs.Exception.ToString());
+                }
+
                 await Task.Delay(TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeIntervalInMS);
             }
         }
@@ -135,11 +146,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (databaseAccountClientConfigs.IsClientTelemetryEnabled())
             {
-                if (this.clientTelemetryInstance == null)
+                if (this.clientTelemetryCollector is ClientTelemetryCollectorsNoOp)
                 {
                     try
                     {
-                        this.clientTelemetryInstance = ClientTelemetry.CreateAndStartBackgroundTelemetry(
+                        this.clientTelemetryCollector = ClientTelemetry.CreateAndStartBackgroundTelemetry(
                             clientId: this.clientId,
                             httpClient: this.httpClient,
                             userAgent: this.connectionPolicy.UserAgentContainer.BaseUserAgent,
@@ -164,13 +175,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             else
             {
-                if (this.clientTelemetryInstance != null)
+                if (this.clientTelemetryCollector is not ClientTelemetryCollectorsNoOp)
                 {
                     DefaultTrace.TraceInformation("Stopping Client Telemetry Job.");
 
-                    this.clientTelemetryInstance.Dispose();
+                    this.clientTelemetryCollector.Dispose();
 
-                    this.clientTelemetryInstance = null;
+                    this.clientTelemetryCollector = new ClientTelemetryCollectorsNoOp();
                 }
                 else
                 {
@@ -181,7 +192,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public void Dispose()
         {
-            this.clientTelemetryInstance?.Dispose();
+            if (this.cancellationTokenSource != null && !this.cancellationTokenSource.IsCancellationRequested)
+            {
+                this.cancellationTokenSource.Cancel();
+                this.cancellationTokenSource.Dispose();
+            }
+
+            this.clientTelemetryCollector?.Dispose();
         }
     }
 }

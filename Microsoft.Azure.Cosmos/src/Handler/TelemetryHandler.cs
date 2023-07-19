@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
 
             // Check if this particular operation is eligible for client telemetry collection
-            if (this.IsEligibleForTelemetryCollection(request, out ClientTelemetry clientTelemetryJob))
+            if (this.IsEligibleForTelemetryCollection(request, out IClientTelemetryCollectors clientTelemetryJob))
             {
                 try
                 {
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// <param name="request"></param>
         /// <param name="clientTelemetryJob"></param>
         /// <returns>true/false</returns>
-        private bool IsEligibleForTelemetryCollection(RequestMessage request, out ClientTelemetry clientTelemetryJob)
+        private bool IsEligibleForTelemetryCollection(RequestMessage request, out IClientTelemetryCollectors clientTelemetryJob)
         {
             return this.IsClientTelemetryJobRunning(out clientTelemetryJob) && this.IsRequestAllowed(request);
         }
@@ -71,14 +71,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// </summary>
         /// <param name="clientTelemetryJob"></param>
         /// <returns>true/false</returns>
-        private bool IsClientTelemetryJobRunning(out ClientTelemetry clientTelemetryJob)
+        private bool IsClientTelemetryJobRunning(out IClientTelemetryCollectors clientTelemetryJob)
         {
-            clientTelemetryJob = this.TelemetryToServiceHelper.clientTelemetryInstance;
-            if (clientTelemetryJob == null)
-            {
-                return false;
-            }
-            return true;
+            clientTelemetryJob = this.TelemetryToServiceHelper.clientTelemetryCollector;
+            return clientTelemetryJob is not ClientTelemetryCollectorsNoOp;
         }
 
         /// <summary>

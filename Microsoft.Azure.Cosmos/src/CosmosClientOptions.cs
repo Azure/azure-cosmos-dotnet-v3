@@ -734,7 +734,7 @@ namespace Microsoft.Azure.Cosmos
         /// Telemetry feature is under preview right now.
         /// By default, this can be controlled by enabling it on portal but alternatively, it can be disabled by this flag for particular CosmosClient instance.
         /// </summary>
-        public bool? DisableClientTelemetryToService { get; set; }
+        internal bool? DisableClientTelemetryToService { get; set; }
 #if INTERNAL
         = true;
 #else

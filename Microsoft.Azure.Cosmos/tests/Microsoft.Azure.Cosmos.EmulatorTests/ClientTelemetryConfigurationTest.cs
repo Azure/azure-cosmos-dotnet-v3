@@ -81,7 +81,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             DocumentClient documentClient = this.GetClient().DocumentClient;
 
-            Assert.IsNull(documentClient.TelemetryToServiceHelper);
+            Assert.IsNotNull(documentClient.TelemetryToServiceHelper);
+            Assert.IsTrue(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
 
             ClientCollectionCache collCache = (ClientCollectionCache)documentClient
             .GetType()
@@ -93,7 +94,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
                 .GetValue(collCache);
 
-            Assert.IsNull(telemetryToServiceHelper);
+            Assert.IsNotNull(telemetryToServiceHelper);
+            Assert.IsTrue(telemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
         }
 
         [TestMethod]
@@ -145,20 +147,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
             .GetValue(documentClient);
 
-            TelemetryToServiceHelper telemetryToServiceHelper = (TelemetryToServiceHelper)collCache
+            TelemetryToServiceHelper telemetryToServiceHelperFromCollectionCache = (TelemetryToServiceHelper)collCache
                .GetType()
                .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
                .GetValue(collCache);
 
             if (isEnabled)
             {
-                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryInstance);
-                Assert.IsNotNull(telemetryToServiceHelper.clientTelemetryInstance);
+                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryCollector);
+                Assert.IsNotNull(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector);
+
+
+                Assert.IsFalse(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
             }
             else
             {
-                Assert.IsNull(documentClient.TelemetryToServiceHelper.clientTelemetryInstance);
-                Assert.IsNull(telemetryToServiceHelper.clientTelemetryInstance);
+                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryCollector);
+                Assert.IsNotNull(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector);
+
+                Assert.IsTrue(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
             }
         }
         
@@ -232,20 +241,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                 .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
                                                 .GetValue(documentClient);
 
-            TelemetryToServiceHelper telemetryToServiceHelper = (TelemetryToServiceHelper)collCache
+            TelemetryToServiceHelper telemetryToServiceHelperFromCollectionCache = (TelemetryToServiceHelper)collCache
                .GetType()
                .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
                .GetValue(collCache);
 
             if (isEnabledInitially)
             {
-                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryInstance, "Before: Client Telemetry Job should be Running");
-                Assert.IsNotNull(telemetryToServiceHelper.clientTelemetryInstance);
+                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryCollector, "Before: Client Telemetry Job should be Running");
+                Assert.IsNotNull(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector);
+
+                Assert.IsFalse(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
             }
             else
             {
-                Assert.IsNull(documentClient.TelemetryToServiceHelper.clientTelemetryInstance, "Before: Client Telemetry Job should be Stopped");
-                Assert.IsNull(telemetryToServiceHelper.clientTelemetryInstance);
+                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryCollector, "Before: Client Telemetry Job should be Stopped");
+                Assert.IsNotNull(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector);
+
+                Assert.IsTrue(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
             }
 
             manualResetEvent.WaitOne(TimeSpan.FromMilliseconds(100));
@@ -257,20 +272,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                 .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
                                                 .GetValue(documentClient);
 
-            telemetryToServiceHelper = (TelemetryToServiceHelper)collCache
+            telemetryToServiceHelperFromCollectionCache = (TelemetryToServiceHelper)collCache
                .GetType()
                .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
                .GetValue(collCache);
 
             if (isEnabledInitially)
             {
-                Assert.IsNull(documentClient.TelemetryToServiceHelper.clientTelemetryInstance, "After: Client Telemetry Job should be Stopped");
-                Assert.IsNull(telemetryToServiceHelper.clientTelemetryInstance);
+                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryCollector, "After: Client Telemetry Job should be Stopped");
+                Assert.IsNotNull(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector);
+
+                Assert.IsTrue(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
             }
             else
             {
-                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryInstance, "After: Client Telemetry Job should be Running");
-                Assert.IsNotNull(telemetryToServiceHelper.clientTelemetryInstance);
+                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryCollector, "After: Client Telemetry Job should be Running");
+                Assert.IsNotNull(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector);
+
+                Assert.IsFalse(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
             }
             
         }

@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             {
                                 ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
 
-                                ClientTelemetry telemetryInstance = this.telemetryToServiceHelper?.clientTelemetryInstance;
+                                IClientTelemetryCollectors telemetryInstance = this.telemetryToServiceHelper?.clientTelemetryCollector;
                                 if (telemetryInstance != null)
                                 {
                                     ClientCollectionCache.GetDatabaseAndCollectionName(collectionLink, out string databaseName, out string collectionName);
