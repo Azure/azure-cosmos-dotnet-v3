@@ -5,7 +5,7 @@
 ## Context
 Distributed databases that rely on replication for high availability, low latency, or both, must make a fundamental tradeoff between the read consistency, availability, latency, and throughput. 
 
-The linearizability of the strong consistency model is the gold standard of data programmability. But it adds a steep price from higher write latencies due to data having to replicate and commit across large distances. Strong consistency may also suffer from reduced availability (during failures) because data can't replicate and commit in every region. Eventual consistency offers higher availability and better performance, but it's more difficult to program applications because data may not be consistent across all regions
+The linearizability of the strong consistency model is the gold standard of data programmability. But it adds a steep price from higher write latencies due to data having to replicate and commit across large distances. Strong consistency may also suffer from reduced availability (during failures) because data can't replicate and commit in every region. Eventual consistency offers higher availability and better performance, but it's more difficult to program applications because data may not be consistent across all regions (eventual reads are not guaranteed to be monotonic).
 
 
 Please refer to [public documentation](https://learn.microsoft.com/en-us/azure/cosmos-db/consistency-levels) for more details.
@@ -15,8 +15,8 @@ Many applications can benefit from having a read-write model like below
 
 | Operation | Write-Region | Replicated-Regions |
 |---|---|---|
-|Write | Guaranteed write completion in write region | Asynchronous non-blocking replication  |
-|Read | Quorum read (read my writes) <br> Monotonic reads in the region  | Quorum read (eventual reads) <br> Monotonic reads in the region |
+|Write | Guaranteed write completion in write region <br> vs Bounded: write un-availability when bounds are violated | Asynchronous non-blocking replication (eventual) <br> vs Bounded: Limits staleness by bounds  |
+|Read |**Single write region**: Read my writes <br> **Multiple write regions**: read-my-writes from the region of writes, otherwise eventual <br> Monotonic reads <br>No sessionToken management| **Single write region**: Eventual read <br> **Multiple write regions**: read-my-writes from the region of writes, otherwise eventual <br> Monotonic reads <br>No sessionToken management |
 
 > ### NOTE: cross-region reads will violate the monotonic reads guarantee
 
