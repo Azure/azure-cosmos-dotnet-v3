@@ -15,8 +15,9 @@ Many applications can benefit from having a read-write model like below
 | Operation | Write-Region | Replicated-Regions |
 |---|---|---|
 |Write | Guaranteed write completion in write region | Asynchronous non-blocking replication  |
-|Read | Quorum read (read my writes)  | Quorum read (eventual reads) |
+|Read | Quorum read (read my writes) <br> Monotonic reads in the region  | Quorum read (eventual reads) <br> Monotonic reads in the region |
 
+> ### NOTE: cross-region reads will violate the monotonic reads guarantee
 
 
 ## How-TO
