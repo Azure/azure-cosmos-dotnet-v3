@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestHandler handler = client.RequestHandler;
             foreach (Type type in types)
             {
-                Assert.IsTrue(type.Equals(handler.GetType()));
+                Assert.IsTrue(type.Equals(handler.GetType()), handler.GetType() + "  is not matching with " + type);
                 handler = handler.InnerHandler;
             }
 

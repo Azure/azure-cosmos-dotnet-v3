@@ -1370,7 +1370,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual Task<QueryPartitionProvider> QueryPartitionProvider => this.queryPartitionProvider.Value;
 
-        public TelemetryToServiceHelper TelemetryToServiceHelper { get; private set; }
+        internal TelemetryToServiceHelper TelemetryToServiceHelper { get; set; }
+        TelemetryToServiceHelper IDocumentClient.TelemetryToServiceHelper { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         internal virtual async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {

@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private Task accountClientConfigTask = null;
 
-        private TelemetryToServiceHelper()
+        internal TelemetryToServiceHelper()
         {
             //NoOp constructor
         }
