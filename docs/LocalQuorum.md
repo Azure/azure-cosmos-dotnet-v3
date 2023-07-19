@@ -21,11 +21,13 @@ Many applications can benefit from having a read-write model like below
 
 
 ## How-TO
-It involves two stages
+It involves three stages
 
+#### Create CosmosDB account with Eventual/ConsistentPrefix/Session consistency
+
+#### Enabling/opt-in ability to upgrade consistency level 
 SDK version: MA [3.35.1](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md#-3351---2023-06-27) or [minimum recommended version](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md#-recommended-version)
 
-1. Enabling/opt-in ability to upgrade consistency level 
 ```C#
 CosmosClientOptions clientOptions = new CosmosClientOptions();
 var upgradeConsistencyProperty = clientOptions.GetType().GetProperty("EnableUpgradeConsistencyToLocalQuorum", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -34,9 +36,9 @@ upgradeConsistencyProperty.SetValue(clientOptions, true);
 CosmosClient cosmosClient = new CosmosClient(..., clientOptions);
 ```
 
-2. Per request upgrade consistency to Bounded 
-> #### Please note that Bounded here is only used as HINT for SDK to do quorum reads 
-> #### It will not impact CosmosDB account or write consistency levels
+#### Per request upgrade consistency to Bounded 
+> ###### Please note that Bounded here is only used as HINT for SDK to do quorum reads 
+> ###### It will not impact CosmosDB account or write consistency levels
 
 ```C#
 ItemRequestOptions requestOption = new ItemRequestOptions();
