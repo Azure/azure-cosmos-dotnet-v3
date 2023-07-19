@@ -64,6 +64,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             GlobalEndpointManager globalEndpointManager,
             CancellationTokenSource cancellationTokenSource)
         {
+#if INTERNAL
+            return new TelemetryToServiceHelper();
+#else
+
             if (connectionPolicy.DisableClientTelemetryToService)
             {
                 return new TelemetryToServiceHelper(); //NoOpscontructor
@@ -75,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             telemetryToServiceHelper.Initialize();
 
             return telemetryToServiceHelper;
+#endif
         }
 
         private void Initialize()
