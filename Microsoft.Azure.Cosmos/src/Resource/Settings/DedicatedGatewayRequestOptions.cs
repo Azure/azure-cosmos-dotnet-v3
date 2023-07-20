@@ -13,8 +13,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class DedicatedGatewayRequestOptions
     {
-        private const string HttpVersion = "HttpVersion";
-
         /// <summary> 
         /// Gets or sets the staleness value associated with the request in the Azure CosmosDB service. 
         /// </summary> 
