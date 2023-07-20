@@ -274,6 +274,7 @@ namespace Microsoft.Azure.Cosmos
 
             DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);
             DedicatedGatewayRequestOptions.PopulateBypassIntegratedCacheOption(this.DedicatedGatewayRequestOptions, request);
+            DedicatedGatewayRequestOptions.PopulateShardKeyOption(this.DedicatedGatewayRequestOptions, request);
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
 

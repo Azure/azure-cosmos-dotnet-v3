@@ -317,6 +317,16 @@ namespace Microsoft.Azure.Cosmos
                             requestMessage.Headers.TryAddWithoutValidation(key, request.Headers[key]);
                         }
                     }
+
+                    if (key.Equals(HttpConstants.HttpHeaders.DedicatedGatewayShardKey, StringComparison.OrdinalIgnoreCase) && request.Headers[key] != null)
+                    {
+                        string useHttp2String = Environment.GetEnvironmentVariable("UseHttp2");
+                        bool useHttp2 = bool.Parse(string.IsNullOrEmpty(useHttp2String) ? "false" : useHttp2String);
+                        if (useHttp2)
+                        {
+                            requestMessage.Version = new Version(2, 0);
+                        }
+                    }
                 }
             }
 

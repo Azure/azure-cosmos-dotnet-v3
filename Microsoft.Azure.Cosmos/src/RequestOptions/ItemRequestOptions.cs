@@ -152,6 +152,7 @@ namespace Microsoft.Azure.Cosmos
 
             DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);
             DedicatedGatewayRequestOptions.PopulateBypassIntegratedCacheOption(this.DedicatedGatewayRequestOptions, request);
+            DedicatedGatewayRequestOptions.PopulateShardKeyOption(this.DedicatedGatewayRequestOptions, request);
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
             base.PopulateRequestOptions(request);

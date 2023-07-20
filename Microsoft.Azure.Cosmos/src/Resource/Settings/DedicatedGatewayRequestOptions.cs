@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class DedicatedGatewayRequestOptions
     {
+        private const string HttpVersion = "HttpVersion";
+
         /// <summary> 
         /// Gets or sets the staleness value associated with the request in the Azure CosmosDB service. 
         /// </summary> 
@@ -57,6 +59,42 @@ namespace Microsoft.Azure.Cosmos
 #endif
         bool? BypassIntegratedCache { get; set; }
 
+        /// <summary>
+        /// Get or set the shard key associated with the request in the Azure CosmosDB Service.
+        /// </summary>
+        /// <value>Default value is null</value>
+        /// <remarks>
+        /// Shard key is supported with the maximum length of 36 characters and accepts only alphanumeric characters and the hyphen (-) character.
+        /// </remarks>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// DedicatedGatewayRequestOptions dedicatedGatewayRequestOptions = new DedicatedGatewayRequestOptions
+        /// {
+        ///     ShardKey = <shard_key>
+        /// };
+        /// 
+        /// // For ItemRequestOptions
+        /// ItemRequestOptions requestOptions = new ItemRequestOptions
+        /// {
+        ///     DedicatedGatewayRequestOptions = dedicatedGatewayRequestOptions
+        /// };
+        /// 
+        /// // For QueryRequestOptions
+        /// QueryRequestOptions requestOptions = new QueryRequestOptions
+        /// {
+        ///     DedicatedGatewayRequestOptions = dedicatedGatewayRequestOptions
+        /// };
+        /// ]]>
+        /// </code>
+        /// </example>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        string ShardKey { get; set; }
+
         internal static void PopulateMaxIntegratedCacheStalenessOption(DedicatedGatewayRequestOptions dedicatedGatewayRequestOptions, RequestMessage request)
         {
             if (dedicatedGatewayRequestOptions?.MaxIntegratedCacheStaleness != null)
@@ -77,6 +115,14 @@ namespace Microsoft.Azure.Cosmos
             if (dedicatedGatewayRequestOptions != null && dedicatedGatewayRequestOptions.BypassIntegratedCache.HasValue && dedicatedGatewayRequestOptions.BypassIntegratedCache.Value)
             {
                 request.Headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayPerRequestBypassIntegratedCache, true.ToString(CultureInfo.InvariantCulture));
+            }
+        }
+
+        internal static void PopulateShardKeyOption(DedicatedGatewayRequestOptions dedicatedGatewayRequestOptions, RequestMessage request)
+        {
+            if (!string.IsNullOrEmpty(dedicatedGatewayRequestOptions?.ShardKey))
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayShardKey, dedicatedGatewayRequestOptions.ShardKey);
             }
         }
     }

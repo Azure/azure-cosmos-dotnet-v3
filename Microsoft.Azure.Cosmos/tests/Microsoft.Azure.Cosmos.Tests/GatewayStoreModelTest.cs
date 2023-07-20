@@ -1208,6 +1208,56 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        /// <summary>
+        /// Simulating Dedicated Gateway with ShardKey set
+        /// </summary>
+        [TestMethod]
+        public async Task GatewayStoreModel_UseHttp2_WhenDedicatedGatewayShardKeyIsSetAndHttp2EnvVarIsSet()
+        {
+            // Set environment variable to use http2.
+            Environment.SetEnvironmentVariable("UseHttp2", "true");
+
+            Task<HttpResponseMessage> sendFunc(HttpRequestMessage request)
+            {
+                Assert.AreEqual(request.Version, new Version(2, 0));
+                HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
+                return Task.FromResult(response);
+            }
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer(string.Empty);
+            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Eventual,
+                eventSource,
+                null,
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+
+            ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null).Object;
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache).Object;
+            storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
+
+            // Set Dedicated Gateway shard key header.
+            INameValueCollection headers = new RequestNameValueCollection();
+            headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayShardKey, "9d64f9af-e38e-4ab9-9db2-e2f28bafd534");
+
+            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                "dbs/OVJwAA==/colls/OVJwAOcMtA0=/docs/OVJwAOcMtA0BAAAAAAAAAA==/",
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers))
+            {
+                await this.TestGatewayStoreModelProcessMessageAsync(storeModel, request);
+            }
+        }
+
         private class MockMessageHandler : HttpMessageHandler
         {
             private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc;
