@@ -50,7 +50,6 @@ namespace Microsoft.Azure.Cosmos
             this.EnableReadRequestsFallback = null;
             this.EnableClientTelemetry = ClientTelemetryOptions.IsClientTelemetryEnabled();
             this.ServerCertificateCustomValidationCallback = null;
-            this.EnableReplicaValidation = false;
         }
 
         /// <summary>
@@ -461,12 +460,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the flag to enable replica validation.
+        /// Gets or sets the boolean flag to enable replica validation.
         /// </summary>
         /// <value>
-        /// The default value is false
+        /// The default value for this parameter is false.
         /// </value>
-        public bool EnableReplicaValidation
+        public bool? EnableAdvancedReplicaSelectionForTcp
         {
             get;
             set;

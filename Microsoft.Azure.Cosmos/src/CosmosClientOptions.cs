@@ -347,16 +347,15 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
-        /// Gets or sets the replica validation flag.
-        /// Enabling replica validation helps the cosmos client to become more
-        /// resilient to service upgrades by choosing a healthy replica over the
-        /// one undergoing an upgrade. The default value for this parameter is false.
+        /// Gets or sets the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection
+        /// status, and based on status, it prioritizes the replicas which show healthy stable connections, so that the requests can be sent
+        /// confidently to the particular replica. This helps the cosmos client to become more resilient and effective to any connectivity issues.
+        /// The default value for this parameter is 'false'.
         /// </summary>
         /// <remarks>
-        /// <para>This is optimal for workloads where latency spikes are critical during upgrades.</para>
+        /// <para>This is optimal for latency-sensitive workloads. Does not apply if <see cref="ConnectionMode.Gateway"/> is used.</para>
         /// </remarks>
-        /// <seealso cref="CosmosClientBuilder.WithReplicaValidation(bool)"/>
-        public bool EnableReplicaValidation { get; set; } = false;
+        internal bool? EnableAdvancedReplicaSelectionForTcp { get; set; }
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
@@ -770,7 +769,7 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                EnableReplicaValidation = this.EnableReplicaValidation,
+                EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
                 HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };
