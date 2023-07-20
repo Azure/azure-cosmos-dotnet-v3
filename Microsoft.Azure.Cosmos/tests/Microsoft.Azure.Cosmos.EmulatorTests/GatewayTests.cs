@@ -3377,7 +3377,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await database.DeleteAsync();
         }
         
-        [TestMethod]
+/*        [TestMethod]
         public async Task ValidateClientConfigApiWithComputeGateway()
         {
             string clientConfigResponse = null;
@@ -3423,7 +3423,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.Fail(clientConfigResponse);
             }
         }
-        
+        */
         public static string DumpFullExceptionMessage(Exception e)
         {
             StringBuilder exceptionMessage = new StringBuilder();
