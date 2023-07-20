@@ -38,10 +38,12 @@ namespace CosmosBenchmark
 
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
+                DiagnosticDataListener diagnosticDataListener = null;
+                if (!string.IsNullOrEmpty(config.DiagnosticsStorageConnectionString))
+                {
+                    diagnosticDataListener = new DiagnosticDataListener(config);
+                }
 
-                DiagnosticDataListener diagnosticDataListener = new DiagnosticDataListener(config);
-
-                BenchmarkLatencyEventSource eventSource = BenchmarkLatencyEventSource.Instance;
                 if (config.EnableLatencyPercentiles)
                 {
                     TelemetrySpan.IncludePercentile = true;
