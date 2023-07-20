@@ -81,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             int httpCallCount = 0;
             int metadataCallCount = 0;
+            int clientConfigCallCount = 0;
             bool delayCallBack = true;
 
             var isInitializedField = typeof(VmMetadataApiHandler).GetField("isInitialized",
@@ -100,7 +101,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     if(request.RequestUri.AbsoluteUri ==  VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri)
                     {
                         Interlocked.Increment(ref metadataCallCount);
-                    } 
+                    }
+                    else if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                    {
+                        Interlocked.Increment(ref clientConfigCallCount);
+                    }
                     else
                     {
                         Interlocked.Increment(ref httpCallCount);
@@ -147,6 +152,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.AreEqual(1, metadataCallCount, "Only one call for VM Metadata call with be made");
                 Assert.AreEqual(1, httpCallCount, "Only the first task should do the http call. All other should wait on the first task");
+
+                Assert.IsTrue(clientConfigCallCount > 0, "Call for client config call with be made");
 
                 // Reset counters and retry the client to verify a new http call is done for new requests
                 tasks.Clear();
