@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     this.InitializeClientTelemetry(databaseAccountClientConfigs.Result);
                 }
-                else
+                else if (!this.cancellationTokenSource.IsCancellationRequested)
                 {
                     DefaultTrace.TraceWarning($"Exception while calling client config " + databaseAccountClientConfigs.Exception.ToString());
                 }
