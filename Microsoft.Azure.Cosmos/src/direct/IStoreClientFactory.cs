@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Documents
             bool enableReadRequestsFallback = false,
             bool useFallbackClient = true,
             bool useMultipleWriteLocations = false,
-            bool detectClientConnectivityIssues = false);
+            bool detectClientConnectivityIssues = false,
+            bool enableReplicaValidation = false);
     }
 }

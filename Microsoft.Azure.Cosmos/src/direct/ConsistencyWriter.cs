@@ -59,7 +59,8 @@ For globally strong write:
             TransportClient transportClient,
             IServiceConfigurationReader serviceConfigReader,
             IAuthorizationTokenProvider authorizationTokenProvider,
-            bool useMultipleWriteLocations)
+            bool useMultipleWriteLocations,
+            bool enableReplicaValidation)
         {
             this.transportClient = transportClient;
             this.addressSelector = addressSelector;
@@ -71,7 +72,8 @@ For globally strong write:
                                     transportClient,
                                     addressSelector,
                                     new AddressEnumerator(),
-                                    sessionContainer: null); //we need store reader only for global strong, no session is needed*/
+                                    sessionContainer: null,
+                                    enableReplicaValidation); //we need store reader only for global strong, no session is needed*/
         }
 
         // Test hook

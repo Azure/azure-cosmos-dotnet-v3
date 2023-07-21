@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Documents
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
             bool disableRetryWithRetryPolicy = false,
+            bool enableReplicaValidation = false,
             RetryWithConfiguration retryWithConfiguration = null)
         {
             this.transportClient = transportClient;
@@ -68,7 +69,8 @@ namespace Microsoft.Azure.Documents
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 detectClientConnectivityIssues: detectClientConnectivityIssues,
                 disableRetryWithRetryPolicy: disableRetryWithRetryPolicy,
-                retryWithConfiguration: retryWithConfiguration);
+                retryWithConfiguration: retryWithConfiguration,
+                enableReplicaValidation: enableReplicaValidation);
         }
 
         internal JsonSerializerSettings SerializerSettings { get; set; }

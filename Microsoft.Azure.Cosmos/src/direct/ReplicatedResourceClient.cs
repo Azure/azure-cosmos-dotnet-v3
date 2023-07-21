@@ -68,13 +68,14 @@ namespace Microsoft.Azure.Documents
             bool useMultipleWriteLocations,
             bool detectClientConnectivityIssues,
             bool disableRetryWithRetryPolicy,
+            bool enableReplicaValidation,
             RetryWithConfiguration retryWithConfiguration = null)
         {
             this.addressResolver = addressResolver;
             this.addressSelector = new AddressSelector(addressResolver, protocol);
             if (protocol != Protocol.Https && protocol != Protocol.Tcp)
             {
-                throw new ArgumentOutOfRangeException("protocol");
+                throw new ArgumentOutOfRangeException(nameof(protocol));
             }
 
             this.protocol = protocol;
@@ -86,14 +87,16 @@ namespace Microsoft.Azure.Documents
                 sessionContainer,
                 transportClient,
                 serviceConfigReader,
-                authorizationTokenProvider);
+                authorizationTokenProvider,
+                enableReplicaValidation);
             this.consistencyWriter = new ConsistencyWriter(
                 this.addressSelector,
                 sessionContainer,
                 transportClient,
                 serviceConfigReader,
                 authorizationTokenProvider,
-                useMultipleWriteLocations);
+                useMultipleWriteLocations,
+                enableReplicaValidation);
             this.enableReadRequestsFallback = enableReadRequestsFallback;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
             this.detectClientConnectivityIssues = detectClientConnectivityIssues;

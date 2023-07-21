@@ -45,7 +45,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false"/>
+		<None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false" />
 	</ItemGroup>
 	
 	<ItemGroup>
@@ -95,6 +95,11 @@
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
 			<DependentUpon>SystemStrings.tt</DependentUpon>
+		</Compile>
+		<Compile Update="RMResources.Designer.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>RMResources.resx</DependentUpon>
 		</Compile>
 	</ItemGroup>
 	<ItemGroup>

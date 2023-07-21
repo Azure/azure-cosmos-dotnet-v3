@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using System.Linq;
     using System.Net;
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
@@ -25,16 +24,15 @@ namespace Microsoft.Azure.Documents
             TransportClient transportClient,
             AddressSelector addressSelector,
             IAddressEnumerator addressEnumerator,
-            ISessionContainer sessionContainer)
+            ISessionContainer sessionContainer,
+            bool enableReplicaValidation)
         {
             this.transportClient = transportClient;
             this.addressSelector = addressSelector;
             this.addressEnumerator = addressEnumerator ?? throw new ArgumentNullException(nameof(addressEnumerator));
             this.sessionContainer = sessionContainer;
             this.canUseLocalLSNBasedHeaders = VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.Versions.v2018_06_18);
-            this.isReplicaAddressValidationEnabled = Helpers.GetEnvironmentVariable(
-                name: Constants.EnvironmentVariables.ReplicaConnectivityValidationEnabled,
-                defaultValue: false);
+            this.isReplicaAddressValidationEnabled = enableReplicaValidation;
         }
 
         // Test hook

@@ -308,7 +308,8 @@ namespace Microsoft.Azure.Documents
             bool enableReadRequestsFallback = false,
             bool useFallbackClient = true,
             bool useMultipleWriteLocations = false,
-            bool detectClientConnectivityIssues = false)
+            bool detectClientConnectivityIssues = false,
+            bool enableReplicaValidation = false)
         {
             this.ThrowIfDisposed();
             if (useFallbackClient && this.fallbackTransportClient != null)
@@ -326,7 +327,8 @@ namespace Microsoft.Azure.Documents
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 detectClientConnectivityIssues: detectClientConnectivityIssues,
                 disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
-                retryWithConfiguration: this.retryWithConfiguration);
+                retryWithConfiguration: this.retryWithConfiguration,
+                enableReplicaValidation: enableReplicaValidation);
             }
 
             return new StoreClient(
@@ -341,7 +343,8 @@ namespace Microsoft.Azure.Documents
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 detectClientConnectivityIssues: detectClientConnectivityIssues,
                 disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
-                retryWithConfiguration: this.retryWithConfiguration);
+                retryWithConfiguration: this.retryWithConfiguration,
+                enableReplicaValidation: enableReplicaValidation);
         }
 
         #region IDisposable
