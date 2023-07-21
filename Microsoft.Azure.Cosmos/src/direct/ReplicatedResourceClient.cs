@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Documents
             this.addressSelector = new AddressSelector(addressResolver, protocol);
             if (protocol != Protocol.Https && protocol != Protocol.Tcp)
             {
-                throw new ArgumentOutOfRangeException("protocol");
+                throw new ArgumentOutOfRangeException(nameof(protocol));
             }
 
             this.protocol = protocol;
