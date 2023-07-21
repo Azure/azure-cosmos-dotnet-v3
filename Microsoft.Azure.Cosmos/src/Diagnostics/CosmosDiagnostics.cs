@@ -44,6 +44,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        ///  This represents the accumulated backend query metrics for the request.
+        /// </summary>
+        /// <returns>The string represemation of the query metrics dictionary.</returns>
+        public virtual BackendAccumulatedMetrics GetQueryMetrics()
+        {
+            // Default implementation avoids breaking change for users upgrading.
+            throw new NotImplementedException($"{nameof(CosmosDiagnostics)}.{nameof(GetQueryMetrics)}");
+        }
+
+        /// <summary>
         /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
         /// </summary>
         /// <returns>The string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.</returns>

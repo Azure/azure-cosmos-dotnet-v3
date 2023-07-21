@@ -62,9 +62,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 this.UserDefinedFunctionExecutionTime = userDefinedFunctionExecutionTimes;
             }
 
-            public TimeSpan QueryEngineExecutionTime { get; set; }
-            public TimeSpan SystemFunctionExecutionTime { get; set; }
-            public TimeSpan UserDefinedFunctionExecutionTime { get; set; }
+            public TimeSpan QueryEngineExecutionTime { get; }
+            public TimeSpan SystemFunctionExecutionTime { get; }
+            public TimeSpan UserDefinedFunctionExecutionTime { get; }
 
             public Accumulator Accumulate(RuntimeExecutionTimes runtimeExecutionTimes)
             {

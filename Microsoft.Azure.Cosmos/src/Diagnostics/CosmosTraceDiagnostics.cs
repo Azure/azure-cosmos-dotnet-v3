@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
@@ -49,9 +50,40 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return this.Value?.Summary?.RegionsContacted;
         }
 
+        public override BackendAccumulatedMetrics GetQueryMetrics()
+        {
+            QueryMetrics queryMetrics = QueryMetrics.Empty;
+            this.WalkTraceTreeForQueryMetrics(this.Value, ref queryMetrics);
+            return new BackendAccumulatedMetrics(queryMetrics);
+        }
+
         internal bool IsGoneExceptionHit()
         {
             return this.WalkTraceTreeForGoneException(this.Value);
+        }
+
+        private bool WalkTraceTreeForQueryMetrics(ITrace currentTrace, ref QueryMetrics queryMetrics)
+        {
+            if (currentTrace == null)
+            {
+                return false;
+            }
+
+            foreach (object datums in currentTrace.Data.Values)
+            {
+                if (datums is QueryMetricsTraceDatum queryMetricsTraceDatum)
+                {
+                    queryMetrics += queryMetricsTraceDatum.QueryMetrics;
+                    return true;
+                }
+            }
+
+            foreach (ITrace childTrace in currentTrace.Children)
+            {
+                this.WalkTraceTreeForQueryMetrics(childTrace, ref queryMetrics);
+            }
+
+            return false;
         }
 
         private bool WalkTraceTreeForGoneException(ITrace currentTrace)
