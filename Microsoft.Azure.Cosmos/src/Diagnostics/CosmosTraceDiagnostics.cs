@@ -62,19 +62,19 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return this.WalkTraceTreeForGoneException(this.Value);
         }
 
-        private bool WalkTraceTreeForQueryMetrics(ITrace currentTrace, ref QueryMetrics queryMetrics)
+        private void WalkTraceTreeForQueryMetrics(ITrace currentTrace, ref QueryMetrics queryMetrics)
         {
             if (currentTrace == null)
             {
-                return false;
+                return;
             }
 
-            foreach (object datums in currentTrace.Data.Values)
+            foreach (object datum in currentTrace.Data.Values)
             {
-                if (datums is QueryMetricsTraceDatum queryMetricsTraceDatum)
+                if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
                 {
                     queryMetrics += queryMetricsTraceDatum.QueryMetrics;
-                    return true;
+                    return;
                 }
             }
 
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 this.WalkTraceTreeForQueryMetrics(childTrace, ref queryMetrics);
             }
 
-            return false;
+            return;
         }
 
         private bool WalkTraceTreeForGoneException(ITrace currentTrace)
@@ -93,9 +93,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return false;
             }
 
-            foreach (object datums in currentTrace.Data.Values)
+            foreach (object datum in currentTrace.Data.Values)
             {
-                if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
                     foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
                     {
