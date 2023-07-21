@@ -35,19 +35,9 @@
             this.queryMetrics.RUCharge = ruCharge;
         }
 
-        public void AddQuery(string query)
-        {
-            this.queryMetrics.Query = query;
-        }
-
         public void AddCorrelatedActivityId(Guid activityId)
         {
             this.queryMetrics.CorrelatedActivityId = activityId;
-        }
-
-        public void AddEnableOdeFlag(bool enableOde)
-        {
-            this.queryMetrics.EnableOde = enableOde;
         }
 
         public void AddPocoTime(double time)

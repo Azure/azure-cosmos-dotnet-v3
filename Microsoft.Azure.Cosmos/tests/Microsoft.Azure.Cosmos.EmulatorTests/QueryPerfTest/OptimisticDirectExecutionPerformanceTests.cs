@@ -17,7 +17,7 @@
         private const string DiagnosticsDataFileName = "OptimisticDirectExecutionPerformanceTestsAggregatedData.csv";
         private static readonly string RawDataPath = Path.GetFullPath(RawDataFileName);
         private static readonly string AggregateDataPath = Path.GetFullPath(DiagnosticsDataFileName);
-        private static readonly QueryStatisticsDatumVisitor queryStatisticsDatumVisitor = new QueryStatisticsDatumVisitor();
+        private static readonly List<CustomOdeStats> customOdeStatisticsList = new List<CustomOdeStats>();
         private static readonly string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
         private static readonly string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
         private static readonly string cosmosDatabaseId = Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.CosmosDatabaseId"];
@@ -25,6 +25,13 @@
         private static readonly PartitionKey partitionKeyValue = new PartitionKey("Andersen");
         private static readonly int numberOfIterations = int.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.NumberOfIterations"]);
         private static readonly int warmupIterations = int.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.WarmupIterations"]);
+
+        internal class CustomOdeStats
+        { 
+            public string Query { get; set; }
+            public bool EnableOde { get; set; }
+            public QueryStatisticsDatumVisitor QueryStatisticsDatumVisitor { get; set; }
+        }
 
         [TestMethod]
         public async Task OptimisticDirectExecutionPerformanceTest()
@@ -226,12 +233,12 @@
 
             using (StreamWriter writer = new StreamWriter(new FileStream(RawDataPath, FileMode.Append, FileAccess.Write)))
             {
-                SerializeODEQueryMetrics(writer, queryStatisticsDatumVisitor, numberOfIterations, rawData: true);
+                SerializeODEQueryMetrics(writer, customOdeStatisticsList, numberOfIterations, rawData: true);
             }
 
             using (StreamWriter writer = new StreamWriter(new FileStream(AggregateDataPath, FileMode.Append, FileAccess.Write)))
             {
-                SerializeODEQueryMetrics(writer, queryStatisticsDatumVisitor, numberOfIterations, rawData: false);
+                SerializeODEQueryMetrics(writer, customOdeStatisticsList, numberOfIterations, rawData: false);
             }
         }
 
@@ -275,9 +282,12 @@
             Guid correlatedActivityId = Guid.NewGuid();
             FeedResponse<T> response;
             int totalDocumentCount = 0;
+            string query;
+            bool enableOde;
 
             while (feedIterator.HasMoreResults)
             {
+                QueryStatisticsDatumVisitor queryStatisticsDatumVisitor = new QueryStatisticsDatumVisitor();
                 totalTime.Start();
                 response = await feedIterator.ReadNextAsync();
                 getTraceTime.Start();
@@ -290,12 +300,18 @@
                 totalTime.Stop();
                 if (response.RequestCharge != 0)
                 {
-                    queryStatisticsDatumVisitor.AddQuery(queryInput.Query);
-                    queryStatisticsDatumVisitor.AddEnableOdeFlag(queryInput.EnableOptimisticDirectExecution);
+                    query = queryInput.Query;
+                    enableOde = queryInput.EnableOptimisticDirectExecution;
                     queryStatisticsDatumVisitor.AddCorrelatedActivityId(correlatedActivityId);
                     queryStatisticsDatumVisitor.AddRuCharge(response.RequestCharge);
                     queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds);
                     queryStatisticsDatumVisitor.PopulateMetrics();
+                    customOdeStatisticsList.Add(new CustomOdeStats
+                    {
+                        Query = query,
+                        EnableOde = enableOde,
+                        QueryStatisticsDatumVisitor = queryStatisticsDatumVisitor
+                    });
                 }
 
                 totalTime.Reset();
@@ -307,15 +323,15 @@
             Assert.AreEqual(queryInput.ExpectedResultCount, totalDocumentCount);
         }
 
-        private static void SerializeODEQueryMetrics(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor, int numberOfIterations, bool rawData)
+        private static void SerializeODEQueryMetrics(TextWriter textWriter, List<CustomOdeStats> customOdeStatisticsList, int numberOfIterations, bool rawData)
         {
             if (rawData)
             {
-                MetricsSerializer.SerializeODERawDataQueryMetrics(textWriter, queryStatisticsDatumVisitor);
+                MetricsSerializer.SerializeODERawDataQueryMetrics(textWriter, customOdeStatisticsList);
             }
             else
             {
-                MetricsSerializer.SerializeODEProcessedDataQueryMetrics(textWriter, queryStatisticsDatumVisitor, numberOfIterations);
+                MetricsSerializer.SerializeODEProcessedDataQueryMetrics(textWriter, customOdeStatisticsList, numberOfIterations);
             }
         }
 

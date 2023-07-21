@@ -179,7 +179,7 @@
 
         
 
-        internal static void SerializeODERawDataQueryMetrics(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor)
+        internal static void SerializeODERawDataQueryMetrics(TextWriter textWriter,  List<OptimisticDirectExecutionPerformanceTests.CustomOdeStats> customOdeStatsList)
         {
             textWriter.WriteLine();
             textWriter.WriteLine(PrintQueryMetrics);
@@ -192,10 +192,11 @@
             double totalRU = 0;
             string prevQuery = "";
             bool prevOde = default;
-            Guid prevCorrelatedActivityId = queryStatisticsDatumVisitor.QueryMetricsList[0].CorrelatedActivityId;
+            Guid prevCorrelatedActivityId = customOdeStatsList[0].QueryStatisticsDatumVisitor.QueryMetricsList[0].CorrelatedActivityId;
 
-            foreach (QueryStatisticsMetrics metrics in queryStatisticsDatumVisitor.QueryMetricsList)
+            foreach (OptimisticDirectExecutionPerformanceTests.CustomOdeStats customOdeStats in customOdeStatsList)
             {
+                QueryStatisticsMetrics metrics = customOdeStats.QueryStatisticsDatumVisitor.QueryMetricsList[0];
                 double transitTime = metrics.Created + metrics.ChannelAcquisitionStarted + metrics.Pipelined + metrics.Received + metrics.Completed;
                 double backendTime = metrics.TotalQueryExecutionTime;
 
@@ -206,8 +207,8 @@
                     totalEndToEndTime += metrics.EndToEndTime;
                     totalTransitTime += transitTime;
                     totalRU += metrics.RUCharge;
-                    prevQuery = metrics.Query;
-                    prevOde = metrics.EnableOde;
+                    prevQuery = customOdeStats.Query;
+                    prevOde = customOdeStats.EnableOde;
                     prevCorrelatedActivityId = metrics.CorrelatedActivityId;
 
                 }
@@ -220,29 +221,30 @@
                     totalTransitTime = transitTime;
                     totalRU = metrics.RUCharge;
                     prevCorrelatedActivityId = metrics.CorrelatedActivityId;
-                    prevQuery = metrics.Query;
-                    prevOde = metrics.EnableOde;
+                    prevQuery = customOdeStats.Query;
+                    prevOde = customOdeStats.EnableOde;
                 }
             }
 
             textWriter.WriteLine($"{prevQuery},{prevOde},{totalRU},{totalBackendTime},{totalTransitTime},{totalClientTime},{totalEndToEndTime}");
         }
 
-        internal static void SerializeODEProcessedDataQueryMetrics(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor, int numberOfIterations)
+        internal static void SerializeODEProcessedDataQueryMetrics(TextWriter textWriter, List<OptimisticDirectExecutionPerformanceTests.CustomOdeStats> customOdeStatsList, int numberOfIterations)
         {
             textWriter.WriteLine();
             textWriter.WriteLine(PrintQueryMetrics);
             textWriter.Write("\"{0}\",\"{1}\",\"{2}\",\"{3}\"", "Query", "ODE", "RUCharge", "EndToEndTime");
             textWriter.WriteLine();
 
-            string prevQuery = queryStatisticsDatumVisitor.QueryMetricsList[0].Query;
-            bool prevOde = queryStatisticsDatumVisitor.QueryMetricsList[0].EnableOde;
+            string prevQuery = customOdeStatsList[0].Query;
+            bool prevOde = customOdeStatsList[0].EnableOde;
             double totalEndToEndTime = 0;
             double totalRU = 0;
 
-            foreach (QueryStatisticsMetrics metrics in queryStatisticsDatumVisitor.QueryMetricsList)
+            foreach (OptimisticDirectExecutionPerformanceTests.CustomOdeStats customOdeStats in customOdeStatsList)
             {
-                if (metrics.Query == prevQuery && metrics.EnableOde == prevOde)
+                QueryStatisticsMetrics metrics = customOdeStats.QueryStatisticsDatumVisitor.QueryMetricsList[0];
+                if (customOdeStats.Query == prevQuery && customOdeStats.EnableOde == prevOde)
                 {
                     totalEndToEndTime += metrics.EndToEndTime;
                     totalRU += metrics.RUCharge;
@@ -252,8 +254,8 @@
                     textWriter.WriteLine($"{prevQuery},{prevOde},{totalRU / numberOfIterations},{totalEndToEndTime / numberOfIterations}");
                     totalEndToEndTime = metrics.EndToEndTime;
                     totalRU = metrics.RUCharge;
-                    prevQuery = metrics.Query;
-                    prevOde = metrics.EnableOde;
+                    prevQuery = customOdeStats.Query;
+                    prevOde = customOdeStats.EnableOde;
                 }
             }
 

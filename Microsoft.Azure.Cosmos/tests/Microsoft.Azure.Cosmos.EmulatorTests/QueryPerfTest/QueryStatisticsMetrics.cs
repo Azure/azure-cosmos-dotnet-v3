@@ -4,10 +4,6 @@
 
     internal class QueryStatisticsMetrics
     {
-        public string Query { get; set; }
-
-        public bool EnableOde { get; set; }
-
         public Guid CorrelatedActivityId { get; set; }
 
         public double EndToEndTime { get; set; }
