@@ -115,6 +115,9 @@
     <Content Include="BaselineTest\TestBaseline\LinqAggregateFunctionBaselineTests.TestAggregateSum.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqAttributeContractBaselineTests.TestClassAndMemberAssignmentAttributeContract.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="BaselineTest\TestBaseline\LinqAttributeContractBaselineTests.TestMemberAssignmentAttributeContract.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

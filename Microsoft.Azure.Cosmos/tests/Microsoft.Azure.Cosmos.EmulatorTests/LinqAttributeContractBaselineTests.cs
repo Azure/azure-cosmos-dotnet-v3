@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using System.Threading.Tasks;
+    using Newtonsoft.Json.Serialization;
 
     /// <summary>
     /// Class that tests to see that we honor the attributes for members in a class / struct when we create LINQ queries.
@@ -165,6 +166,25 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         /// <summary>
+        /// Class with attributes on both the class itself, ans also its members.
+        /// </summary>
+        [DataContract, JsonObject(NamingStrategyType = typeof(CamelCaseNamingStrategy))]
+        public class Datum3
+        {
+            [JsonProperty(PropertyName = "jsonProperty")]
+            public string JsonProperty;
+
+            [DataMember(Name = "dataMember")]
+            public string DataMember;
+
+            public string Default; // This should inherit the camel casing strategy from the parent class
+
+            [JsonProperty(PropertyName = "jsonPropertyHasHigherPriority")]
+            [DataMember(Name = "thanDataMember")]
+            public string JsonPropertyAndDataMember;
+        }
+
+        /// <summary>
         /// In general the attribute priority is as follows:
         /// 1) JsonProperty
         /// 2) DataMember
@@ -176,6 +196,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Assert.AreEqual("jsonProperty", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonProperty").First()));
             Assert.AreEqual("dataMember", TypeSystem.GetMemberName(typeof(Datum).GetMember("DataMember").First()));
             Assert.AreEqual("Default", TypeSystem.GetMemberName(typeof(Datum).GetMember("Default").First()));
+            Assert.AreEqual("default", TypeSystem.GetMemberName(typeof(Datum3).GetMember("Default").First()));
             Assert.AreEqual("jsonPropertyHasHigherPriority", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonPropertyAndDataMember").First()));
         }
 
@@ -240,6 +261,26 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     JsonProperty = doc.JsonProperty,
                     JsonPropertyAndDataMember = doc.JsonPropertyAndDataMember
                 })));
+            this.ExecuteTestSuite(inputs);
+        }
+
+        /// <summary>
+        /// Tests to see if we are honoring the attribute contract in a class and member assignment.
+        /// </summary>
+        [TestMethod]
+        public void TestClassAndMemberAssignmentAttributeContract()
+        {
+            List<LinqTestInput> inputs = new()
+            {
+                new LinqTestInput("ClassAndMemberAssignment",
+                b => getQuery(b).Select(doc => new Datum3()
+                {
+                    DataMember = doc.DataMember,
+                    Default = doc.Default,
+                    JsonProperty = doc.JsonProperty,
+                    JsonPropertyAndDataMember = doc.JsonPropertyAndDataMember
+                }))
+            };
             this.ExecuteTestSuite(inputs);
         }
 
