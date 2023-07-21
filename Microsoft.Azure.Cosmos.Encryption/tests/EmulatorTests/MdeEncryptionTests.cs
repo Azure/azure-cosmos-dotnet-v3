@@ -189,6 +189,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             // Reset static cache TTL
             Microsoft.Data.Encryption.Cryptography.ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromHours(2);
+            // flag to disable https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3951
+            // need to be removed after the fix
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_REPLICA_VALIDATION_ENABLED", "False");
         }
 
         private static async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(string cekId, Cosmos.EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
@@ -2303,7 +2306,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             VerifyExpectedDocResponse(testDoc, readResponse.Resource);
 
 #if ENCRYPTIONTESTPREVIEW
-            // hierarchical
+            // hierarchical pk container test
             cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
             {
                 Path = "/Sensitive_LongFormat",
@@ -2353,7 +2356,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, readResponse.Resource);
 
-
+            // test to validate query with one partition key (topmost) in hierarchical pk container of 3 keys
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
                 PartitionKey = new PartitionKeyBuilder().Add(testDoc.Sensitive_StringFormat).Build()
@@ -2368,6 +2371,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 VerifyExpectedDocResponse(testDoc, response.First());
             }
 
+            // test to validate query with one partition key (topmost) in hierarchical pk container of 3 keys with where clause on topmost pk
             QueryDefinition queryDefinition = encryptionContainer.CreateQueryDefinition("SELECT * FROM c WHERE c.Sensitive_StringFormat = @Sensitive_StringFormat");
 
             await queryDefinition.AddParameterAsync("@Sensitive_StringFormat", testDoc.Sensitive_StringFormat, "/Sensitive_StringFormat");
@@ -2381,6 +2385,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 VerifyExpectedDocResponse(testDoc, response.First());
             }
 
+            // test to validate query with one partition key (2nd topmost) in hierarchical pk container of 3 keys with where clause on topmost pk
+            // this shold give 0 items as PK is set wrongly
             queryRequestOptions = new QueryRequestOptions
             {
                 PartitionKey = new PartitionKeyBuilder().Add(testDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2).Build()
@@ -2432,7 +2438,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             ContainerProperties containerProperties = new ContainerProperties()
             {
-                Id = "HierarchicalPkContainer",
+                Id = "HierarchicalPkContainerWith3Pk",
                 PartitionKeyPaths = new List<string> { "/State", "/City", "/ZipCode" },
                 ClientEncryptionPolicy = clientEncryptionPolicy
             };
@@ -2444,11 +2450,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .Add(testDoc.State)
                 .Add(testDoc.City)
                 .Add(testDoc.ZipCode)
-                .Build();
-
-            PartitionKey partialHirarchicalPk = new PartitionKeyBuilder()
-                .Add(testDoc.State)
-                .Add(testDoc.City)
                 .Build();
 
             ItemResponse<HirarchicalPkTestDoc> createResponse = await encryptionContainer.CreateItemAsync(
@@ -2464,6 +2465,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, readResponse.Resource);
+
+            PartitionKey partialHirarchicalPk = new PartitionKeyBuilder()
+               .Add(testDoc.State)
+               .Add(testDoc.City)
+               .Build();
 
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
@@ -2492,12 +2498,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     testDoc.State,
                     "/State");
 
+            // query with partial HirarchicalPk  state and city
             FeedIterator<HirarchicalPkTestDoc> queryResponseIterator;
             queryResponseIterator = encryptionContainer.GetItemQueryIterator<HirarchicalPkTestDoc>(withEncryptedParameter, requestOptions: queryRequestOptions);
 
-            FeedResponse<HirarchicalPkTestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
-            Assert.AreEqual(HttpStatusCode.OK, readDocs.StatusCode);
-            VerifyExpectedDocResponse(testDoc, readDocs.First());
+            while (queryResponseIterator.HasMoreResults)
+            {
+                FeedResponse<HirarchicalPkTestDoc> response = await queryResponseIterator.ReadNextAsync().ConfigureAwait(false);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                VerifyExpectedDocResponse(testDoc, response.First());
+            }
 
             partialHirarchicalPk = new PartitionKeyBuilder()
                 .Add(testDoc.State)
@@ -2508,11 +2518,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 PartitionKey = partialHirarchicalPk
             };
 
+            // query with partial HirarchicalPk  state
             queryResponseIterator = encryptionContainer.GetItemQueryIterator<HirarchicalPkTestDoc>(withEncryptedParameter, requestOptions: queryRequestOptions);
 
-            readDocs = await queryResponseIterator.ReadNextAsync();
-            Assert.AreEqual(HttpStatusCode.OK, readDocs.StatusCode);
-            VerifyExpectedDocResponse(testDoc, readDocs.First());
+            while (queryResponseIterator.HasMoreResults)
+            {
+                FeedResponse<HirarchicalPkTestDoc> response = await queryResponseIterator.ReadNextAsync().ConfigureAwait(false);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                VerifyExpectedDocResponse(testDoc, response.First());
+            }
 
             partialHirarchicalPk = new PartitionKeyBuilder()
                 .Add(testDoc.ZipCode)
@@ -2523,6 +2537,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 PartitionKey = partialHirarchicalPk
             };
 
+            // query with partial HirarchicalPk  zipCode.
+            // Since zipCode is 3rd in HirarchicalPk set. Query will get 0 response.
             queryResponseIterator = encryptionContainer.GetItemQueryIterator<HirarchicalPkTestDoc>(withEncryptedParameter, requestOptions: queryRequestOptions);
 
             while (queryResponseIterator.HasMoreResults)
@@ -2530,6 +2546,128 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 FeedResponse<HirarchicalPkTestDoc> response = await queryResponseIterator.ReadNextAsync().ConfigureAwait(false);
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.AreEqual(0, response.Count());
+            }
+
+            // query with no HirarchicalPk set.
+            queryResponseIterator = encryptionContainer.GetItemQueryIterator<HirarchicalPkTestDoc>(withEncryptedParameter);
+
+            while (queryResponseIterator.HasMoreResults)
+            {
+                FeedResponse<HirarchicalPkTestDoc> response = await queryResponseIterator.ReadNextAsync().ConfigureAwait(false);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                VerifyExpectedDocResponse(testDoc, response.First());
+            }
+
+            partialHirarchicalPk = new PartitionKeyBuilder()
+                .Add(testDoc.State)
+                .Add(testDoc.City)
+                .Add(testDoc.ZipCode)
+                .Add("Extra Value")
+                .Build();
+
+            queryRequestOptions = new QueryRequestOptions
+            {
+                PartitionKey = partialHirarchicalPk
+            };
+
+            // query with more PKs grater than number of PK feilds set in the container settings.
+            try
+            {
+                queryResponseIterator = encryptionContainer.GetItemQueryIterator<HirarchicalPkTestDoc>(withEncryptedParameter, requestOptions: queryRequestOptions);
+                while (queryResponseIterator.HasMoreResults)
+                {
+                    FeedResponse<HirarchicalPkTestDoc> response = await queryResponseIterator.ReadNextAsync().ConfigureAwait(false);
+                    Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                    Assert.AreEqual(0, response.Count());
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(ex is NotSupportedException);
+                if (ex is NotSupportedException notSupportedException)
+                    Assert.IsTrue(notSupportedException.Message.Contains("size cannout be greater than number of Hirarchical Partition keys set"));
+            }
+        }
+
+        [TestMethod]
+        public async Task TestHirarchicalPkWithOnlyOneKey()
+        {
+            HirarchicalPkTestDoc testDoc = HirarchicalPkTestDoc.Create();
+
+            ClientEncryptionIncludedPath cepWithPKIdPath1 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/State",
+                ClientEncryptionKeyId = "key1",
+                EncryptionType = "Deterministic",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+            };
+
+            ClientEncryptionIncludedPath cepWithPKIdPath2 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/City",
+                ClientEncryptionKeyId = "key1",
+                EncryptionType = "Deterministic",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+            };
+
+            ClientEncryptionIncludedPath cepWithPKIdPath3 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/ZipCode",
+                ClientEncryptionKeyId = "key1",
+                EncryptionType = "Deterministic",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+            };
+
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { cepWithPKIdPath1, cepWithPKIdPath2, cepWithPKIdPath3 };
+
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths, 2);
+
+            ContainerProperties containerProperties = new ContainerProperties()
+            {
+                Id = "HierarchicalPkContainerWithOnePk",
+                PartitionKeyPaths = new List<string> { "/State" },
+                ClientEncryptionPolicy = clientEncryptionPolicy
+            };
+
+            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+            await encryptionContainer.InitializeEncryptionAsync();
+
+            PartitionKey hirarchicalPk = new PartitionKeyBuilder()
+                .Add(testDoc.State)
+                .Build();
+
+            ItemResponse<HirarchicalPkTestDoc> createResponse = await encryptionContainer.CreateItemAsync(
+                testDoc,
+                partitionKey: hirarchicalPk);
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            // read back
+            ItemResponse<HirarchicalPkTestDoc> readResponse = await encryptionContainer.ReadItemAsync<HirarchicalPkTestDoc>(
+               testDoc.Id,
+               hirarchicalPk);
+
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            VerifyExpectedDocResponse(testDoc, readResponse.Resource);
+
+            PartitionKey fullHirarchicalPk = new PartitionKeyBuilder()
+                .Add(testDoc.State)
+                .Build();
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                PartitionKey = fullHirarchicalPk
+            };
+
+            using FeedIterator<HirarchicalPkTestDoc> setIterator = encryptionContainer.GetItemQueryIterator<HirarchicalPkTestDoc>("select * from c", requestOptions: queryRequestOptions);
+
+            while (setIterator.HasMoreResults)
+            {
+                FeedResponse<HirarchicalPkTestDoc> response = await setIterator.ReadNextAsync().ConfigureAwait(false);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                VerifyExpectedDocResponse(testDoc, response.First());
             }
         }
 #endif

@@ -3,7 +3,8 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption</AssemblyName>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption</RootNamespace>
-    <LangVersion>$(LangVersion)</LangVersion>
+      <IsPreview>TRUE</IsPreview>
+      <LangVersion>$(LangVersion)</LangVersion>
     <EncryptionVersion Condition=" '$(IsPreview)' != 'true' ">$(EncryptionOfficialVersion)</EncryptionVersion>
     <EncryptionVersion Condition=" '$(IsPreview)' == 'true' ">$(EncryptionPreviewVersion)</EncryptionVersion>
     <EncryptionVersionSuffix Condition=" '$(IsPreview)' == 'true' ">$(EncryptionPreviewSuffixVersion)</EncryptionVersionSuffix>
