@@ -964,7 +964,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (jArray.Count() > encryptionSettings.PartitionKeyPaths.Count())
                 {
-                    throw new NotSupportedException($"{nameof(partitionKey)} size cannout be greater than number of Hirarchical Partition keys set in {nameof(EncryptionContainer)}.");
+                    throw new NotSupportedException("The number of partition keys passed in the query exceeds the number of keys initialized in the container. Container Id: "+encryptionSettings.ContainerRidValue);
                 }
                 bool isPkEncrypted = false;
 

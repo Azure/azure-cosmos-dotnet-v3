@@ -3527,7 +3527,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(expectedDoc.City, verifyDoc.City);
             Assert.AreEqual(expectedDoc.ZipCode, verifyDoc.ZipCode);
         }
-            private static void VerifyExpectedDocResponse(TestDoc expectedDoc, TestDoc verifyDoc)
+
+        private static void VerifyExpectedDocResponse(TestDoc expectedDoc, TestDoc verifyDoc)
         {
             Assert.AreEqual(expectedDoc.Id, verifyDoc.Id);
             Assert.AreEqual(expectedDoc.Sensitive_StringFormat, verifyDoc.Sensitive_StringFormat);
