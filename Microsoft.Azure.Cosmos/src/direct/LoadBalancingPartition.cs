@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private readonly SemaphoreSlim concurrentOpeningChannelSlim;
 
-        private readonly RntbdServerErrorInjector serverErrorInjector;
+        private RntbdServerErrorInjector serverErrorInjector;
 
         public LoadBalancingPartition(Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest)
         {
@@ -178,7 +178,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                             {
                                 await this.OpenChannelAndIncrementCapacity(
                                     activityId: activityId,
-                                    waitForBackgroundInitializationComplete: false);
+                                    waitForBackgroundInitializationComplete: false, 
+                                    this.serverErrorInjector);
                             }
                             Debug.Assert(
                                 this.capacity ==
@@ -214,12 +215,13 @@ namespace Microsoft.Azure.Documents.Rntbd
         internal Task OpenChannelAsync(Guid activityId, RntbdServerErrorInjector serverErrorInjector)
         {
             this.capacityLock.EnterWriteLock();
+            this.serverErrorInjector = serverErrorInjector;
             try
             {
                 return this.OpenChannelAndIncrementCapacity(
                     activityId: activityId,
                     waitForBackgroundInitializationComplete: true, 
-                    serverErrorInjector: serverErrorInjector;
+                    serverErrorInjector: serverErrorInjector);
             }
             finally
             {
