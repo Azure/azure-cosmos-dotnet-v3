@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             if (!this.IsValid())
             {
-                args.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(args.PreparedCall.RequestId,
+                args.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(args.CommonArguments.ActivityId,
                     String.Format(
                         "{0}{Disable or duration reached. StartTime: {1}, ExpireTime: {2}]",
                         this.id,
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             if (!this.result.IsApplicable(this.id, args))
             {
                 args.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
-                    args.PreparedCall.RequestId,
+                    args.CommonArguments.ActivityId,
                     this.id + "[Per operation apply limit reached]");
                 return false;
             }
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             if (!withinHitLimit)
             {
                 args.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
-                    args.PreparedCall.RequestId,
+                    args.CommonArguments.ActivityId,
                     this.id + "[Hit limit reached]");
                 return false;
             }
@@ -102,6 +102,63 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     key, 
                     1L, 
                     (k, v) => v ++);
+
+                return true;
+            }
+        }
+
+        //Used for Connection Delay
+        public bool IsApplicable(
+            Guid activityId, 
+            string callUri, 
+            DocumentServiceRequest request)
+        {
+            if (!this.IsValid())
+            {
+                request.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(activityId,
+                    String.Format(
+                        "{0}{Disable or duration reached. StartTime: {1}, ExpireTime: {2}]",
+                        this.id,
+                        this.startTime,
+                        this.expireTime));
+
+                return false;
+            }
+
+            // the failure reason will be populated during condition evaluation
+            if (!this.condition.IsApplicable(this.id, activityId, callUri, request))
+            {
+                return false;
+            }
+
+            if (!this.result.IsApplicable(this.id, request))
+            {
+                request.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
+                    activityId,
+                    this.id + "[Per operation apply limit reached]");
+                return false;
+            }
+
+            long evaluationCount = this.evaluationCount + 1;
+            Interlocked.Increment(ref this.evaluationCount);
+            bool withinHitLimit = this.hitLimit == 0 || evaluationCount <= this.hitLimit;
+            if (!withinHitLimit)
+            {
+                request.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
+                    activityId,
+                    this.id + "[Hit limit reached]");
+                return false;
+            }
+            else
+            {
+                Interlocked.Increment(ref this.hitCount);
+
+                // track hit count details, keay is operationType-ResourceType
+                String key = request.OperationType.ToString() + "-" + request.ResourceType.ToString();
+                this.hitCountDetails.AddOrUpdate(
+                    key,
+                    1L,
+                    (k, v) => v++);
 
                 return true;
             }
@@ -140,6 +197,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public FaultInjectionServerErrorResultInternal GetResult()
         {
             return this.result;
+        }
+
+        public TimeSpan GetDelay()
+        {
+            return this.result.GetDelay();
         }
 
         public bool IsValid()

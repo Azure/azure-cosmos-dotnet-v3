@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     /// <summary>
     /// Provides a client-side logical representation of the Azure Cosmos DB account.
@@ -1414,6 +1415,17 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return 0;
+        }
+
+        /// <summary>
+        /// Configure the fault injector provider
+        /// </summary>
+        /// <param name="faultInjectorProvider"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public void ConfigureFaultInjectorProvider(IFaultInjectorProvider faultInjectorProvider)
+        {
+            _ = faultInjectorProvider ?? throw new ArgumentNullException(nameof(faultInjectorProvider));
+            this.DocumentClient.ConfigureFaultInjectorProvider(faultInjectorProvider);
         }
 
         /// <summary>

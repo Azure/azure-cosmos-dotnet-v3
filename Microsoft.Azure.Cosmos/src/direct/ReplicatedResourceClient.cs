@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Documents
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Documents.FaultInjection;
+    using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
     /// ReplicatedResourceClient uses the ConsistencyReader to make requests to backend
@@ -26,7 +28,7 @@ namespace Microsoft.Azure.Documents
         private readonly ConsistencyReader consistencyReader;
         private readonly ConsistencyWriter consistencyWriter;
         private readonly Protocol protocol;
-        private readonly TransportClient transportClient;
+        private readonly Rntbd.TransportClient transportClient;
         private readonly IServiceConfigurationReader serviceConfigReader;
         private readonly bool enableReadRequestsFallback;
         private readonly bool useMultipleWriteLocations;
@@ -339,6 +341,11 @@ namespace Microsoft.Azure.Documents
             }
 
             return isRetryable;
+        }
+
+        public void ConfigureFaultInjectorProvider(IFaultInjectorProvider faultInjectorProvider)
+        {
+            this.transportClient.ConfigureFaultInjectorProvider(faultInjectorProvider);
         }
 
         internal static bool IsGlobalStrongEnabled()

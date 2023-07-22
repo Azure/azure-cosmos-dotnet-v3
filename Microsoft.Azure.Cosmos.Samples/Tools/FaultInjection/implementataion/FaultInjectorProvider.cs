@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using Microsoft.Azure.Documents.FaultInjection;
+    using Microsoft.Azure.Documents.Rntbd;
     using System;
     using System.Collections.Generic;
     using System.Text;
@@ -12,9 +13,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     {
         private readonly FaultInjectionRuleStore ruleStore;
         private readonly RntbdServerErrorInjector serverErrorInjector;
+        private RntbdConnectionErrorInjector? connectionErrorInjector;
         private readonly string containerUri;
-
-        //private RntbdConnectionErrorInjector connectionErrorInjector;
 
         public FaultInjectorProvider(string containerLink, DocumentClient client)
         {
@@ -24,22 +24,27 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.containerUri = containerLink;
             this.ruleStore = new FaultInjectionRuleStore(client);
             this.serverErrorInjector = new RntbdServerErrorInjector(this.ruleStore);
+            this.connectionErrorInjector = null;
         }
 
         public void ConfigureFaultInjectionRules(List<FaultInjectionRule> rules)
         {
-            rules.Select(
+            rules.ForEach(
                 rule =>
                 {
                     IFaultInjectionRuleInternal effectiveRule = this.ruleStore.ConfigureFaultInjectionRule(rule, this.containerUri);
-
-                    //this.conectionErrorInjector.Accept(effectiveRule);
-                })
+                    this.connectionErrorInjector?.Accept(effectiveRule);
+                });
         }
 
-        public IRntbdServerErrorInjector GetServerErrorInjector()
+        public IRntbdServerErrorInjector GetRntbdServerErrorInjector()
         {
             return this.serverErrorInjector;
+        }
+
+        public void RegisterConnectionErrorInjector(ChannelDictionary channelDictonary)
+        {
+            this.connectionErrorInjector = new RntbdConnectionErrorInjector(this.ruleStore, channelDictonary);
         }
 
     }

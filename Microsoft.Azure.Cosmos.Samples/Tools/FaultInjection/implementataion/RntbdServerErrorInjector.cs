@@ -18,11 +18,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         public RntbdServerErrorInjector(FaultInjectionRuleStore ruleStore)
         {
-            if (ruleStore == null)
-            {
-                throw new ArgumentNullExcpetion(paramName: "ruleStore");
-            }
-            this.ruleStore = ruleStore;
+            this.ruleStore = ruleStore ?? throw new ArgumentNullException(paramName: "ruleStore");
         }
 
         /// <summary>
@@ -31,19 +27,20 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="request"></param>
         /// <param name="delay"></param>
         /// <returns>a bool representing if the injection was sucessfull.</returns>
-        public void InjectRntbdServerResponseDelay(
+        public bool InjectRntbdServerResponseDelay(
             ChannelCallArguments args,
             TransportRequestStats transportRequestStats)
         {
-            FaultInjectionServerErrorRule serverResponseDelayRule = this.ruleStore.FindRntbdServerResponseDelayRule(request);
+            FaultInjectionServerErrorRule? serverResponseDelayRule = this.ruleStore.FindRntbdServerResponseDelayRule(args);
             if (serverResponseDelayRule != null)
             {
-                request.FaultInjectionRequestContext
+                args.FaultInjectionRequestContext
                     .ApplyFaultInjectionRule(
-                        serverResponseDelayRule.GetId());
+                        activityId: args.CommonArguments.ActivityId,//args.PreparedCall.RequestId,
+                        ruleId: serverResponseDelayRule.GetId());
 
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
-                transportRequestStats.FaultInjectionDelay = serverResponseDelayRule.GetResult().GetDelay();
+                transportRequestStats.FaultInjectionDelay = serverResponseDelayRule.GetDelay();
                 return true;
             }
 
@@ -60,12 +57,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             ChannelCallArguments args,
             TransportRequestStats transportRequestStats)
         {
-            FaultInjectionServerErrorRule serverResponseErrorRule = this.ruleStore.FindRntbdServerResponseErrorRule(args);
+            FaultInjectionServerErrorRule? serverResponseErrorRule = this.ruleStore.FindRntbdServerResponseErrorRule(args);
             if (serverResponseErrorRule != null)
             {
                 args.FaultInjectionRequestContext
                     .ApplyFaultInjectionRule(
-                        requestId: args.PreparedCall.RequestId,
+                        activityId: args.CommonArguments.ActivityId,//args.PreparedCall.RequestId,
                         ruleId: serverResponseErrorRule.GetId());
 
                 serverResponseErrorRule.SetInjectedServerError(
@@ -81,22 +78,29 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <summary>
         /// Injects a delay in the RNTBD server connection
         /// </summary>
+        /// <param name="activityId"></param>
+        /// <param name="callUri"></param>
         /// <param name="request"></param>
-        /// <param name="delay"></param>
         /// <returns>a bool representing if the injection was sucessfull.</returns>
         public bool InjectRntbdServerConnectionDelay(
-            DocumentServiceRequest request,
-            Action<TimeSpan> delay)
+            Guid activityId,
+            string callUri,
+            DocumentServiceRequest request)
         {
-            FaultInjectionServerErrorRule serverConnectionDelayRule = this.ruleStore.FindRntbdServerConnectionDelayRule(request);
+            FaultInjectionServerErrorRule? serverConnectionDelayRule = this.ruleStore.FindRntbdServerConnectionDelayRule(
+                activityId,
+                callUri,
+                request);
 
             if (serverConnectionDelayRule != null)
             {
                 request.FaultInjectionRequestContext
                     .ApplyFaultInjectionRule(
-                        serverConnectionDelayRule.GetId());
+                        activityId: activityId,
+                        ruleId: serverConnectionDelayRule.GetId());
 
-                delay.Invoke(serverConnectionDelayRule.Delay); ///or something like that
+                TimeSpan connectionDelay = serverConnectionDelayRule.GetDelay();
+                Thread.Sleep(connectionDelay);
                 return true;
             }
             return false;

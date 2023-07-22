@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.FaultInjection;
 
 #if NETSTANDARD15 || NETSTANDARD16
     using Trace = Microsoft.Azure.Documents.Trace;
@@ -29,11 +30,13 @@ namespace Microsoft.Azure.Documents.Rntbd
         private State state = State.New;  // Guarded by stateLock.
         private Task initializationTask = null;  // Guarded by stateLock.
         private volatile bool isInitializationComplete = false;
+        private bool isFaultInjectionedConnectionError = false;
 
         private ChannelOpenArguments openArguments;
         private readonly SemaphoreSlim openingSlim;
+        private readonly RntbdServerErrorInjector serverErrorInjector;
 
-        public Channel(Guid activityId, Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest, SemaphoreSlim openingSlim)
+        public Channel(Guid activityId, Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest, SemaphoreSlim openingSlim, RntbdServerErrorInjector serverErrorInjector)
         {
             Debug.Assert(channelProperties != null);
             this.dispatcher = new Dispatcher(serverUri,
@@ -47,11 +50,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                 channelProperties.EnableChannelMultiplexing,
                 channelProperties.MemoryStreamPool,
                 channelProperties.RemoteCertificateValidationCallback,
-                channelProperties.DnsResolutionFunction);
+                channelProperties.DnsResolutionFunction,
+                serverErrorInjector);
             this.timerPool = channelProperties.RequestTimerPool;
             this.requestTimeoutSeconds = (int) channelProperties.RequestTimeout.TotalSeconds;
             this.serverUri = serverUri;
             this.localRegionRequest = localRegionRequest;
+            this.serverErrorInjector = serverErrorInjector;
 
             TimeSpan openTimeout = localRegionRequest ? channelProperties.LocalRegionOpenTimeout : channelProperties.OpenTimeout;
 
@@ -66,12 +71,33 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.Initialize();
         }
 
+        public void InjectFaultInjectionConnectionError(string ruleId, FaultInjectionConnectionErrorType errorType)
+        {
+            if (errorType != FaultInjectionConnectionErrorType.UNHEALTHY_CONNECTION_CLOSE)
+            {
+                throw new ArgumentException($"FaultInjectionConnectionErrorType {errorType} is not supported");
+            }
+            this.isFaultInjectionedConnectionError = true;
+            DefaultTrace.TraceInformation(
+                    $"Inserted RNTBD Connection Error rule {0} of type {1}", ruleId, errorType);
+        }
+
+        public Uri GetServerUri()
+        {
+            this.ThrowIfDisposed();
+            return this.serverUri;
+        }
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public bool Healthy
         {
             get
             {
                 this.ThrowIfDisposed();
+                if (this.isFaultInjectionedConnectionError)
+                {
+                    return false;
+                }
                 Dispatcher dispatcher = null;
                 this.stateLock.EnterReadLock();
                 try
@@ -148,6 +174,17 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             this.ThrowIfDisposed();
 
+            if (this.serverErrorInjector != null)
+            {
+                if (this.serverErrorInjector.InjectRntbdServerConnectionDelay(
+                    activityId,
+                    physicalAddress.Uri.ToString(),
+                    request))
+                {
+                    DefaultTrace.TraceInformation(
+                    "Inserted RNTBD channel acquisition delay");
+                }
+            }
             if (!this.isInitializationComplete)
             {
                 transportRequestStats.RequestWaitingForConnectionInitialization = true;
@@ -250,7 +287,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             return this.initializationTask;
-        }
+        }    
 
         public override string ToString()
         {

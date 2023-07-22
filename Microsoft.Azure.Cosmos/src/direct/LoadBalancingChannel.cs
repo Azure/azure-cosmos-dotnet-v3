@@ -4,8 +4,11 @@
 namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     // LoadBalancingChannel encapsulates the management of channels that connect to a single
     // back-end server. It assigns load to each channel, decides when to open more
@@ -117,22 +120,41 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// Attempts to open the Rntbd channel to the backend replica nodes.
         /// </summary>
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
+        /// <param name="serverErrorInjector">a server error injector for fault injection, can be null if not suing fault injection.</param>
         /// <returns>A completed task once the channel is opened.</returns>
         public Task OpenChannelAsync(
-            Guid activityId)
+            Guid activityId,
+            RntbdServerErrorInjector serverErrorInjector)
         {
             this.ThrowIfDisposed();
             if (this.singlePartition != null)
             {
                 Debug.Assert(this.partitions == null);
-                return this.singlePartition.OpenChannelAsync(activityId);
+                return this.singlePartition.OpenChannelAsync(activityId, serverErrorInjector);
             }
             else
             {
                 Debug.Assert(this.partitions != null);
                 LoadBalancingPartition partition = this.GetLoadBalancedPartition(activityId);
                 return partition.OpenChannelAsync(
-                    activityId);
+                    activityId,
+                    serverErrorInjector);
+            }
+        }
+
+        public List<Channel> GetAllChannels()
+        {
+            this.ThrowIfDisposed();
+            if (this.singlePartition != null)
+            {
+                Debug.Assert(this.partitions == null);
+                return this.singlePartition.GetAllChannels();
+            }
+            else
+            {
+                Debug.Assert(this.partitions != null);
+                List<Channel> allChannels = new List<Channel>();
+                return this.partitions.SelectMany(partition => partition.GetAllChannels()).ToList();
             }
         }
 

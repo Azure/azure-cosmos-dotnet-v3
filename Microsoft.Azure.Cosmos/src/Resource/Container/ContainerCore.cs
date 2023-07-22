@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
@@ -22,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
@@ -37,6 +39,7 @@ namespace Microsoft.Azure.Cosmos
                             PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
                             isMinInclusive: true,
                             isMaxInclusive: false);
+        private IFaultInjectorProvider faultInjectorProvider;
 
         protected ContainerCore(
             CosmosClientContext clientContext,
@@ -699,6 +702,29 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorCore<T>(
                 changeFeedIteratorCore,
                 responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+        }
+
+        private void ConfigureFaultInjectorProvider(IFaultInjectorProvider faultInjectorProvider)
+        {
+            this.Database.Client.ConfigureFaultInjectorProvider(faultInjectorProvider);
+        }
+        public override IFaultInjectorProvider GetOrConfigureFaultInjectorProvider(Func<string, DocumentClient, IFaultInjectorProvider> providerCreator)
+        {
+            try
+            {
+                if (this.faultInjectorProvider == null)
+                {
+                    this.faultInjectorProvider = providerCreator(this.LinkUri, this.Database.Client.DocumentClient);
+                    this.ConfigureFaultInjectorProvider(this.faultInjectorProvider);
+                }
+
+                return this.faultInjectorProvider;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to create fault injector provider for {this.LinkUri}. Exception: {ex}");
+            }
+            
         }
     }
 }

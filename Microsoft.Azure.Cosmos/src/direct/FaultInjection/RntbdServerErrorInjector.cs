@@ -68,16 +68,21 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// <summary>
         /// Injects a delay in the RNTBD server connection
         /// </summary>
+        /// <param name="activityId"></param>
+        /// <param name="callUri"></param>
         /// <param name="request"></param>
-        /// <param name="delay"></param>
         /// <returns>a bool representing if the injection was sucessfull.</returns>
         public bool InjectRntbdServerConnectionDelay(
-            DocumentServiceRequest request,
-            Action<TimeSpan> delay)
+            Guid activityId,
+            string callUri,
+            DocumentServiceRequest request)
         {
             foreach (IRntbdServerErrorInjector injector in this.faultInjectors)
             {
-                if (injector.InjectRntbdServerConnectionDelay(request, delay))
+                if (injector.InjectRntbdServerConnectionDelay(
+                    activityId,
+                    callUri,
+                    request))
                 {
                     return true;
                 }

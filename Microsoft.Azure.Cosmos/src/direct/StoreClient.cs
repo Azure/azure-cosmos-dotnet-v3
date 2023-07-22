@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Documents
     using Microsoft.Azure.Cosmos.Rntbd;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -150,6 +151,11 @@ namespace Microsoft.Azure.Documents
             }
 
             return this.CompleteResponse(storeResponse, request);
+        }
+
+        public void ConfigureFaultInjectorProvider(IFaultInjectorProvider faultInjectorProvider)
+        {
+            this.replicatedResourceClient.ConfigureFaultInjectorProvider(faultInjectorProvider);
         }
 
         /// <inheritdoc/>>

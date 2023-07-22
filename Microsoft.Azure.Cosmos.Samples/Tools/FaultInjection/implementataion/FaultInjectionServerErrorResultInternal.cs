@@ -85,11 +85,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// Determins if the rule can be applied.
         /// </summary>
         /// <param name="ruleId"></param>
-        /// <param name="request"></param>
+        /// <param name="args"></param>
         /// <returns>if the rule can be applied.</returns>
         public bool IsApplicable(string ruleId, ChannelCallArguments args)
         {
             return args.FaultInjectionRequestContext.GetFaultInjectionRuleHitCount(ruleId) > this.times;
+        }
+
+        /// <summary>
+        /// Determins if the rule can be applied for connection delay
+        /// </summary>
+        /// <param name="ruleId"></param>
+        /// <param name="requestContext"></param>
+        /// <returns>if the rule can be applied.</returns>
+        public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+        {
+            return request.FaultInjectionRequestContext.GetFaultInjectionRuleHitCount(ruleId) > this.times;
         }
 
         /// <summary>

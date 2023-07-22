@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// The ammount of time the SDK will wait before returning the error.
         /// </summary>
         /// <returns>the Timespan</returns>
-        public TimeSpan GetInterval()
+        public TimeSpan GetTimespan()
         {
             return this.interval;
         }

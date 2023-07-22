@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Antlr4.Runtime.Misc;
@@ -209,14 +210,16 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// Open and initializes the <see cref="Channel"/>.
         /// </summary>
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
-        internal Task OpenChannelAsync(Guid activityId)
+        /// <param name="serverErrorInjector">a server error injector for fault injection, can be null if not suing fault injection.</param>
+        internal Task OpenChannelAsync(Guid activityId, RntbdServerErrorInjector serverErrorInjector)
         {
             this.capacityLock.EnterWriteLock();
             try
             {
                 return this.OpenChannelAndIncrementCapacity(
                     activityId: activityId,
-                    waitForBackgroundInitializationComplete: true);
+                    waitForBackgroundInitializationComplete: true, 
+                    serverErrorInjector: serverErrorInjector;
             }
             finally
             {
@@ -249,17 +252,20 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
         /// <param name="waitForBackgroundInitializationComplete">A boolean flag to indicate if the caller thread should
         /// wait until all the background tasks have finished.</param>
+        /// <param name="serverErrorInjector">a server error injector for fault injection, can be null if not suing fault injection.</param>
         private async Task OpenChannelAndIncrementCapacity(
             Guid activityId,
-            bool waitForBackgroundInitializationComplete)
+            bool waitForBackgroundInitializationComplete, 
+            RntbdServerErrorInjector serverErrorInjector)
         {
             Debug.Assert(this.capacityLock.IsWriteLockHeld);
-            Channel newChannel = new(
+            Channel newChannel = new (
                 activityId,
                 this.serverUri,
                 this.channelProperties,
                 this.localRegionRequest,
-                this.concurrentOpeningChannelSlim);
+                this.concurrentOpeningChannelSlim,
+                serverErrorInjector);
 
             if (waitForBackgroundInitializationComplete)
             {
@@ -271,6 +277,23 @@ namespace Microsoft.Azure.Documents.Rntbd
                     newChannel,
                     this.channelProperties.MaxRequestsPerChannel));
             this.capacity += this.channelProperties.MaxRequestsPerChannel;
+        }
+
+        /// <summary>
+        /// Returns all open channels. Used for fault injection
+        /// </summary>
+        /// <returns>a list of open channels.</returns>
+        public List<Channel> GetAllChannels()
+        {
+            this.capacityLock.EnterReadLock();
+            try
+            {
+                return this.openChannels.Select(channelState => (Channel)channelState.Channel).ToList();
+            }
+            finally
+            {
+                this.capacityLock.ExitReadLock();
+            }
         }
 
         private sealed class SequenceGenerator

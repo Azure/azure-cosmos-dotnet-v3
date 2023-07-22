@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing container or item in a container by id.
@@ -1636,6 +1637,13 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="IFaultInjectorProvider"/> for fault injecton testing.
+        /// /// </summary>
+        /// <param name="providerCreator">A function that creates a <see cref="IFaultInjectorProvider"/> instance.</param>"
+        /// <returns>the configured <see cref="IFaultInjectorProvider"/>.</returns>
+        public abstract IFaultInjectorProvider GetOrConfigureFaultInjectorProvider(Func<string, DocumentClient, IFaultInjectorProvider> providerCreator);
 
 #if PREVIEW
         /// <summary>

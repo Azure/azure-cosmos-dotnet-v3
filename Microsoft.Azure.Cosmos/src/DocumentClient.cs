@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
 
@@ -7055,6 +7056,19 @@ namespace Microsoft.Azure.Cosmos
                 headers.Set(HttpConstants.HttpHeaders.PreserveFullContent, bool.TrueString);
             }
             return headers;
+        }
+
+        public void ConfigureFaultInjectorProvider(IFaultInjectorProvider faultInjectorProvider)
+        {
+            _ = faultInjectorProvider ?? throw new ArgumentNullException(nameof(faultInjectorProvider));
+            if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Direct)
+            {
+                this.StoreModel.ConfigureFaultInjectorProvider(faultInjectorProvider);
+            }
+            else
+            {
+                throw new ArgumentException("Fault injection is only supported in Direct mode");
+            }
         }
 
         private class ResetSessionTokenRetryPolicyFactory : IRetryPolicyFactory

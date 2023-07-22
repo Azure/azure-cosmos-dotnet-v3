@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     internal sealed class ServerStoreModel : IStoreModelExtension
     {
@@ -123,6 +124,11 @@ namespace Microsoft.Azure.Documents
             DocumentServiceResponse response = await this.storeClient.ProcessMessageAsync(request, cancellationToken);
             this.receivedResponse?.Invoke(this, new ReceivedResponseEventArgs(request, response));
             return response;
+        }
+
+        public void ConfigureFaultInjectorProvider(IFaultInjectorProvider faultInjectorProvider)
+        {
+            this.storeClient.ConfigureFaultInjectorProvider(faultInjectorProvider);
         }
 
         public void Dispose()

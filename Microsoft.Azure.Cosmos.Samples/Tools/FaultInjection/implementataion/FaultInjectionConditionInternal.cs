@@ -80,9 +80,56 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             return true;
         }
+
+        //Used for connection delay
+        public bool IsApplicable(string ruleId, Guid activityId, string callUri, DocumentServiceRequest request)
+        {
+            foreach (IFaultInjectionConditionValidator validator in this.validators)
+            {
+                if (validator.GetType() == typeof(RegionEndpointValidator))
+                {
+                    RegionEndpointValidator regionEndpointValidator = (RegionEndpointValidator)validator;
+                    if (!regionEndpointValidator.IsApplicable(ruleId, activityId, request))
+                    {
+                        return false;
+                    }
+                }
+                else if (validator.GetType() == typeof(OperationTypeValidator))
+                {
+                    OperationTypeValidator operationTypeValidator = (OperationTypeValidator)validator;
+                    if (!operationTypeValidator.IsApplicable(ruleId, activityId, request))
+                    {
+                        return false;
+                    }
+                }
+                else if (validator.GetType() == typeof(ContainerValidator))
+                {
+                    ContainerValidator containerValidator = (ContainerValidator)validator;
+                    if (!containerValidator.IsApplicable(ruleId, activityId, request))
+                    {
+                        return false;
+                    }
+                }
+                else if (validator.GetType() == typeof(AddressValidator))
+                {
+                    AddressValidator addressValidator = (AddressValidator)validator;
+                    if (!addressValidator.IsApplicable(ruleId, activityId, callUri, request))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    throw new ArgumentException($"Unknown validator type {validator.GetType()}");
+                }
+            }
+
+            return true;
+        }
+
         private interface IFaultInjectionConditionValidator
         {
-            public bool IsApplicable(string ruleID, ChannelCallArguments args);
+            public bool IsApplicable(string ruleId, ChannelCallArguments args);
         }
 
         private class RegionEndpointValidator : IFaultInjectionConditionValidator
@@ -93,18 +140,36 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 this.regionEndpoints = regionEndpoints;
             }
-            public bool IsApplicable(string ruleID, ChannelCallArguments args)
+            public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
                 bool isApplicable = this.regionEndpoints.Contains(args.FaultInjectionRequestContext.GetLocationEndpointToRoute());
                 if (!isApplicable)
                 {
                     args.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
-                        args.PreparedCall.RequestId,
+                        args.CommonArguments.ActivityId,
                         String.Format(
                             "{0} [RegionEndpoint mistmatch: Excpected {1}, Actual {2}]",
-                            ruleID,
+                            ruleId,
                             this.regionEndpoints.Select(i => i.ToString()).ToList(),
                             args.FaultInjectionRequestContext.GetLocationEndpointToRoute()));
+                }
+
+                return isApplicable;
+            }
+
+            //Used for Connection Delay
+            public bool IsApplicable(string ruleId, Guid activityId, DocumentServiceRequest request)
+            {
+                bool isApplicable = this.regionEndpoints.Contains(request.FaultInjectionRequestContext.GetLocationEndpointToRoute());
+                if (!isApplicable)
+                {
+                    request.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
+                        activityId,
+                        String.Format(
+                            "{0} [RegionEndpoint mistmatch: Excpected {1}, Actual {2}]",
+                            ruleId,
+                            this.regionEndpoints.Select(i => i.ToString()).ToList(),
+                            request.FaultInjectionRequestContext.GetLocationEndpointToRoute()));
                 }
 
                 return isApplicable;
@@ -119,18 +184,36 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 this.operationType = operationType;
             }
-            public bool IsApplicable(string ruleID, ChannelCallArguments args)
+            public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
                 bool isApplicable = args.OperationType == this.operationType;
                 if (!isApplicable)
                 {
                     args.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
-                        args.PreparedCall.RequestId,
+                        args.CommonArguments.ActivityId,
                         String.Format(
                             "{0} [OperationType mistmatch: Excpected {1}, Actual {2}]",
-                            ruleID,
+                            ruleId,
                             this.operationType,
                             args.OperationType));
+                }
+
+                return isApplicable;
+            }
+
+            //Used for Connection Delay
+            public bool IsApplicable(string ruleId, Guid activityId, DocumentServiceRequest request)
+            {
+                bool isApplicable = request.OperationType == this.operationType;
+                if (!isApplicable)
+                {
+                    request.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
+                        activityId,
+                        String.Format(
+                            "{0} [OperationType mistmatch: Excpected {1}, Actual {2}]",
+                            ruleId,
+                            this.operationType,
+                            request.OperationType));
                 }
 
                 return isApplicable;
@@ -145,18 +228,36 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 this.containerResourceId = containerResourceId;
             }
-            public bool IsApplicable(string ruleID, ChannelCallArguments args)
+            public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
                 bool isApplicable = String.Equals(this.containerResourceId, args.ResolvedCollectionRid);
                 if (!isApplicable)
                 {
                     args.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
-                        args.PreparedCall.RequestId,
+                        args.CommonArguments.ActivityId,
                         String.Format(
                             "{0} [ContainerRid mistmatch: Excpected {1}, Actual {2}]",
-                            ruleID,
+                            ruleId,
                             this.containerResourceId,
                             args.ResolvedCollectionRid));
+                }
+
+                return isApplicable;
+            }
+
+            //Used for Connection Delay
+            public bool IsApplicable(string ruleId, Guid activityId, DocumentServiceRequest request)
+            {
+                bool isApplicable = String.Equals(this.containerResourceId, request.RequestContext.ResolvedCollectionRid);
+                if (!isApplicable)
+                {
+                    request.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
+                        activityId,
+                        String.Format(
+                            "{0} [ContainerRid mistmatch: Excpected {1}, Actual {2}]",
+                            ruleId,
+                            this.containerResourceId,
+                            request.RequestContext.ResolvedCollectionRid));
                 }
 
                 return isApplicable;
@@ -171,18 +272,36 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 this.addresses = addresses;
             }
-            public bool IsApplicable(string ruleID, ChannelCallArguments args)
+            public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
                 bool isApplicable = this.addresses.Exists(uri => args.PreparedCall.Uri.ToString().StartsWith(uri.ToString()));
                 if (!isApplicable)
                 {
                     args.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
-                        args.PreparedCall.RequestId,
+                        args.CommonArguments.ActivityId,
                         String.Format(
                             "{0} [Addresses mistmatch: Excpected {1}, Actual {2}]",
-                            ruleID,
+                            ruleId,
                             string.Join(",", this.addresses.Select(i => i.ToString()).ToList()),
                             args.PreparedCall.Uri.ToString()));
+                }
+
+                return isApplicable;
+            }
+
+            //Used for Connection Delay
+            public bool IsApplicable(string ruleId, Guid activityId, string callUri, DocumentServiceRequest request)
+            {
+                bool isApplicable = this.addresses.Exists(uri => callUri.StartsWith(uri.ToString()));
+                if (!isApplicable)
+                {
+                    request.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
+                        activityId,
+                        String.Format(
+                            "{0} [Addresses mistmatch: Excpected {1}, Actual {2}]",
+                            ruleId,
+                            string.Join(",", this.addresses.Select(i => i.ToString()).ToList()),
+                            callUri));
                 }
 
                 return isApplicable;

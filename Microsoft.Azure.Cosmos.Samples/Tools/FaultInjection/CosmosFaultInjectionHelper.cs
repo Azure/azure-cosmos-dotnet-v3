@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     /// <summary>
     /// Cosmos Fault Injection Helper
@@ -19,9 +20,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="container"> the container.</param>
         /// <param name="rules">the fault injection rules.</param>
         /// </summary>
-        public static Task<> ConfigureFaultInjectionRules(Container container, List<FaultInjectionRule> rules)
-        {
-            FaultInjectionProvider faultInjectionProvider = new FaultInjectionProvider();
+        public static void ConfigureFaultInjectionRules(Container container, List<FaultInjectionRule> rules)
+        {            
+            FaultInjectionProvider faultInjectionProvider = container.ConfigureFaultInjectorProvider((containerLink, client) => new IFaultInjectorProvider(containerLink, client));
+            faultInjectionProvider.ConfigureFaultInjectionRules(rules);
         }
     }
 }

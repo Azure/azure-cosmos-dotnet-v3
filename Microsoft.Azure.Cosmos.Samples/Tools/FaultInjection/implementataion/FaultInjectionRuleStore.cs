@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             return effectiveRule;
         }
-        public FaultInjectionServerErrorRule FindRntbdServerResponseErrorRule(ChannelCallArguments args)
+        public FaultInjectionServerErrorRule? FindRntbdServerResponseErrorRule(ChannelCallArguments args)
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseErrorRuleSet.Keys)
             {
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return null;
         }
 
-        public FaultInjectionServerErrorRule FindRntbdServerResponseDelayRule(ChannelCallArguments args)
+        public FaultInjectionServerErrorRule? FindRntbdServerResponseDelayRule(ChannelCallArguments args)
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseDelayRuleSet.Keys)
             {
@@ -95,12 +95,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return null;
         }
 
-        public FaultInjectionServerErrorRule FindRntbdServerResponseConnectionDelayRule(ChannelCallArguments args)
+        public FaultInjectionServerErrorRule? FindRntbdServerConnectionDelayRule(
+            Guid activityId,
+            string callUri, 
+            DocumentServiceRequest request)
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverConnectionDelayRuleSet.Keys)
             {
                 if (rule.GetConnectionType() == FaultInjectionConnectionType.DIRECT_MODE
-                    && rule.IsApplicable(args))
+                    && rule.IsApplicable(
+                        activityId,
+                        callUri,
+                        request))
                 {
                     return rule;
                 }

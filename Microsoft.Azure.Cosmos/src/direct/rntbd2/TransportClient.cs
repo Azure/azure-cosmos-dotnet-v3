@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.FaultInjection;
 #if NETSTANDARD2_0_OR_GREATER
     using Microsoft.Azure.Documents.Telemetry;
 #endif
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly ChannelDictionary channelDictionary;
         private bool disposed = false;
         private bool isDistributedTracingEnabled;
+        private RntbdServerErrorInjector serverErrorInjector;
         #region RNTBD Transition
 
         // Transitional state while migrating SDK users from the old RNTBD stack
@@ -71,6 +73,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.IdleTimerPool = null;
             }
 
+            this.serverErrorInjector = new RntbdServerErrorInjector();
             this.isDistributedTracingEnabled = clientOptions.IsDistributedTracingEnabled;
 
             this.channelDictionary = new ChannelDictionary(
@@ -145,6 +148,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     resourceOperation, activityId, transportRequestStats);
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
                 storeResponse.TransportRequestStats = transportRequestStats;
+                storeResponse.FaultInjectionRuleId = request.FaultInjectionRequestContext.GetFaultInjectionRuleId(activityId);
 
 #if NETSTANDARD2_0_OR_GREATER
                 recorder?.Record(physicalAddress.Uri, storeResponse: storeResponse);
@@ -266,6 +270,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             return storeResponse;
         }
 
+        public void ConfigureFaultInjectorProvider(IFaultInjectorProvider faultInjectorProvider)
+        {
+            faultInjectorProvider.RegisterConnectionErrorInjector(this.channelDictionary);
+            this.serverErrorInjector?.RegisterServerErrorInjector(faultInjectorProvider.GetRntbdServerErrorInjector());
+        }
+
         public override void Dispose()
         {
             this.ThrowIfDisposed();
@@ -329,7 +339,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             return this.channelDictionary.OpenChannelAsync(
                 physicalAddress: physicalAddress,
                 localRegionRequest: false,
-                activityId: activityId);
+                activityId: activityId,
+                serverErrorInjector: this.serverErrorInjector);
         }
 
 #region RNTBD Transition

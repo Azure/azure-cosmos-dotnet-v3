@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Documents
 
     internal sealed class StoreResponse : IRetriableResponse
     {
+        public string FaultInjectionRuleId { get; set; }
         public int Status { get; set; }
 
         public INameValueCollection Headers { get; set; }
@@ -148,5 +149,6 @@ namespace Microsoft.Azure.Documents
 
             return value;
         }
+
     }
 }

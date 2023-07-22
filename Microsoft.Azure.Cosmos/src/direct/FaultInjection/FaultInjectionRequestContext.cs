@@ -15,8 +15,9 @@ namespace Microsoft.Azure.Documents.FaultInjection
     public class FaultInjectionRequestContext
     {
         private readonly ConcurrentDictionary<string, int> hitCountByRule;
-        private readonly ConcurrentDictionary<uint, string> requestIdByRuleId;
-        private readonly ConcurrentDictionary<uint, List<string>> requestIdByRuleEvaluation;
+        //private readonly ConcurrentDictionary<uint, string> requestIdByRuleId;
+        private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<string, uint>> actvityIdByRuleIdCount;
+        private readonly ConcurrentDictionary<Guid, List<string>> activityIdByRuleEvaluation;
 
         private Uri locationEndpointToRoute;
 
@@ -26,7 +27,8 @@ namespace Microsoft.Azure.Documents.FaultInjection
         public FaultInjectionRequestContext()
         {
             this.hitCountByRule = new ConcurrentDictionary<string, int>();
-            //this.transportRequestIdByRuleId = new ConcurrentDictionary<long, string>();
+            this.actvityIdByRuleIdCount = new ConcurrentDictionary<Guid, ConcurrentDictionary<string, uint>>();
+            this.activityIdByRuleEvaluation = new ConcurrentDictionary<Guid, List<string>>();
         }
 
         /// <summary>
@@ -38,34 +40,46 @@ namespace Microsoft.Azure.Documents.FaultInjection
         public FaultInjectionRequestContext(FaultInjectionRequestContext cloneContext)
         {
             this.hitCountByRule = cloneContext.hitCountByRule;
-            this.requestIdByRuleId = new ConcurrentDictionary<uint, string>();
-            this.requestIdByRuleEvaluation = new ConcurrentDictionary<uint, List<string>>();
+            this.actvityIdByRuleIdCount = new ConcurrentDictionary<Guid, ConcurrentDictionary<string, uint>>();
+            //this.requestIdByRuleId = new ConcurrentDictionary<uint, string>();
+            this.activityIdByRuleEvaluation = new ConcurrentDictionary<Guid, List<string>>();
         }
 
         /// <summary>
         /// Applies a fault injection rule to the request context. If a rule has not been applied yet, it will be added to the context. If it has the hitcount will be incremented.
         /// </summary>
-        /// <param name="requestId"></param>
+        /// <param name="activityId"></param>
         /// <param name="ruleId"></param>
-        public void ApplyFaultInjectionRule(uint requestId, string ruleId)
+        public void ApplyFaultInjectionRule(Guid activityId, string ruleId)
         {
             this.hitCountByRule.AddOrUpdate(
                 ruleId,
                 1,
                 (id, hitcount) => hitcount + 1);
 
-            this.requestIdByRuleId.TryAdd(requestId, ruleId);
+            this.actvityIdByRuleIdCount.AddOrUpdate(
+                activityId,
+                new ConcurrentDictionary<string, uint>(new List<KeyValuePair<string, uint>> {new KeyValuePair<string, uint>(ruleId, 1) }),
+                (id, ruleIdCount) =>
+                {
+                    ruleIdCount.AddOrUpdate(
+                        ruleId,
+                        1,
+                        (rule, count) => count + 1);
+                    return ruleIdCount;
+                });
+            //this.requestIdByRuleId.TryAdd(requestId, ruleId);
         }
 
         /// <summary>
         /// Records the result of a rule evaluation. If a rule has not been evaluated, it will add it to the context. If it has, it will add the result to the list of results.
         /// </summary>
-        /// <param name="requestId"></param>
+        /// <param name="activityId"></param>
         /// <param name="ruleEvaluationResult"></param>
-        public void RecordFaultInjectionRuleEvaluation(uint requestId, string ruleEvaluationResult)
+        public void RecordFaultInjectionRuleEvaluation(Guid activityId, string ruleEvaluationResult)
         {
-            this.requestIdByRuleEvaluation.AddOrUpdate(
-                requestId,
+            this.activityIdByRuleEvaluation.AddOrUpdate(
+                activityId,
                 new List<string> { ruleEvaluationResult },
                 (id, ruleEvaluationResults) =>
                 {
@@ -78,7 +92,7 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// Gets the number of times a rule has been applied to an operation.
         /// </summary>
         /// <param name="ruleId">the id of the rule.</param>
-        /// <returns>the hit coutn.</returns>
+        /// <returns>the hit count.</returns>
         public int GetFaultInjectionRuleHitCount(string ruleId)
         {
             if (this.hitCountByRule.TryGetValue(ruleId, out int hitCount))
@@ -89,16 +103,21 @@ namespace Microsoft.Azure.Documents.FaultInjection
         }
 
         /// <summary>
-        /// Gets the rule id that was applied to a network request.
+        /// Gets the rule id that was applied to a request.
         /// </summary>
-        /// <param name="requestId"></param>
+        /// <param name="activityId"></param>
         /// <returns>the rule id.</returns>
-        public string GetFaultInjectionRuleId(uint requestId)
+        public string GetFaultInjectionRuleId(Guid activityId)
         {
-            if (this.requestIdByRuleId.TryGetValue(requestId, out string ruleId))
+            if (this.actvityIdByRuleIdCount.TryGetValue(activityId, out ConcurrentDictionary<string, uint> ruleIdCount))
             {
-                return ruleId;
+                return ruleIdCount.Keys.GetEnumerator().Current;
             }
+
+            //if (this.requestIdByRuleId.TryGetValue(requestId, out string ruleId))
+            //{
+            //    return ruleId;
+            //}
             return null;
         }
 
@@ -121,13 +140,13 @@ namespace Microsoft.Azure.Documents.FaultInjection
         }
 
         /// <summary>
-        /// Given a request id, returns the list of rule evaluation results.
+        /// Given a activity id, returns the list of rule evaluation results.
         /// </summary>
-        /// <param name="requestId"></param>
+        /// <param name="activityId"></param>
         /// <returns>a list of the evaulation results</returns>
-        public List<string> GetFaultInjectionRuleEvaluationResults(uint requestId)
+        public List<string> GetFaultInjectionRuleEvaluationResults(Guid activityId)
         {
-            if (this.requestIdByRuleEvaluation.TryGetValue(requestId, out List<string> ruleEvaluationResults))
+            if (this.activityIdByRuleEvaluation.TryGetValue(activityId, out List<string> ruleEvaluationResults))
             {
                 return ruleEvaluationResults;
             }
