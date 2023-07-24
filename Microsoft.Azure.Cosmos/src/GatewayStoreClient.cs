@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -320,8 +321,18 @@ namespace Microsoft.Azure.Cosmos
 
                     if (key.Equals(HttpConstants.HttpHeaders.DedicatedGatewayShardKey, StringComparison.OrdinalIgnoreCase) && request.Headers[key] != null)
                     {
-                        string useHttp2String = Environment.GetEnvironmentVariable("UseHttp2");
-                        bool useHttp2 = bool.Parse(string.IsNullOrEmpty(useHttp2String) ? "false" : useHttp2String);
+                        bool useHttp2;
+                        try
+                        {
+                            useHttp2 = ConfigurationManager.GetEnvironmentVariable("UseHttp2", false);
+                        }
+                        catch (Exception)
+                        {
+                            DefaultTrace.TraceInformation("Failed to get environment variable UseHtt2.");
+                            // Set to false when fail to get the environment variable.
+                            useHttp2 = false;
+                        }
+                        
                         if (useHttp2)
                         {
                             requestMessage.Version = new Version(2, 0);
