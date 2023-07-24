@@ -2570,7 +2570,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 PartitionKey = partialHirarchicalPk
             };
 
-            // query with more PKs grater than number of PK feilds set in the container settings.
+            // query with more PKs greater than number of PK feilds set in the container settings.
             try
             {
                 queryResponseIterator = encryptionContainer.GetItemQueryIterator<HirarchicalPkTestDoc>(withEncryptedParameter, requestOptions: queryRequestOptions);
@@ -2580,14 +2580,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                     Assert.AreEqual(0, response.Count());
                 }
-
-
             }
             catch (Exception ex)
             {
                 Assert.IsTrue(ex is NotSupportedException);
                 if (ex is NotSupportedException notSupportedException)
-                    Assert.IsTrue(notSupportedException.Message.Contains("size cannout be greater than number of Hirarchical Partition keys set"));
+                    Assert.IsTrue(notSupportedException.Message.Contains("The number of partition keys passed in the query exceeds the number of keys initialized in the container."));
             }
         }
 
