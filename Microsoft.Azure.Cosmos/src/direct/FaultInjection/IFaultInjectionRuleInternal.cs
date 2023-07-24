@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Documents.FaultInjection
     using System;
     using System.Collections.Generic;
 
+    /// <summary>
+    /// Interface for a Fault Injection Rule
+    /// </summary>
     public interface IFaultInjectionRuleInternal
     {
         /// <summary>

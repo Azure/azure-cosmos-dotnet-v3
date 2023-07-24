@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using Microsoft.Azure.Documents;
     using System.Diagnostics.Metrics;
 
-    public class FaultInjectionServerErrorRule : IFaultInjectionRuleInternal
+    internal class FaultInjectionServerErrorRule : IFaultInjectionRuleInternal
     {
         private readonly string id;
         private readonly DateTime startTime;

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System.Collections.Generic;
     using System.Text;
 
-    public class FaultInjectionProvider : IFaultInjectorProvider
+    internal class FaultInjectorProvider : IFaultInjectorProvider
     {
         private readonly FaultInjectionRuleStore ruleStore;
         private readonly RntbdServerErrorInjector serverErrorInjector;

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System.Threading;
     using System.Linq;
 
-    public class FaultInjectionRuleProcessor
+    internal class FaultInjectionRuleProcessor
     {
         private readonly ConnectionMode connectionMode;
         private readonly CollectionCache collectionCache;
@@ -90,10 +90,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 return this.GetEffectiveServerErrorRule(rule, containerProperties);
             }
 
-            //if (rule.GetResult().GetType() == typeof(FaultInjectionConnectionErrorRule))
-            //{
-            //    return this.GetEffectiveConnectionErrorRule(rule, resourceAddress);
-            //}
+            if (rule.GetResult().GetType() == typeof(FaultInjectionConnectionErrorRule))
+            {
+                return this.GetEffectiveConnectionErrorRule(rule, containerProperties);
+            }
 
             throw new Exception($"{rule.GetResult().GetType()} is not supported");
         }
@@ -158,6 +158,35 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     result.GetDelay(),
                     result.GetSuppressServiceRequests()));
 
+        }
+
+        private IFaultInjectionRuleInternal GetEffectiveConnectionErrorRule(FaultInjectionRule rule, ContainerProperties containerProperties)
+        {
+            List<Uri> regionEndpoints = this.GetRegionEndpoints(rule.GetCondition());
+
+            List<Uri> resolvedPhysicalAdresses = this.ResolvePhyicalAddresses(
+                regionEndpoints,
+                rule.GetCondition().GetEndpoint(),
+                this.IsWriteOnly(rule.GetCondition()),
+                containerProperties);
+
+            resolvedPhysicalAdresses.ForEach(address => 
+                new Uri(string.Format(
+                "{0}://{1}:{2}/",
+                address.Scheme.ToString(),
+                address.Host.ToString(),
+                address.Port.ToString())));
+
+            FaultInjectionConnectionErrorResult result = (FaultInjectionConnectionErrorResult)rule.GetResult();
+            return new FaultInjectionConnectionErrorRule(
+               rule.GetId(),
+               rule.IsEnabled(),
+               rule.GetStartDelay(),
+               rule.GetDuration(),
+               regionEndpoints,
+               resolvedPhysicalAdresses,
+               rule.GetCondition().GetConnectionType(),
+               result);
         }
 
         private bool CanErrorLimitToOperation(FaultInjectionServerErrorType errorType)
@@ -296,7 +325,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             private readonly ResourceThrottleRetryPolicy resourceThrottleRetryPolicy;
             private readonly WebExceptionRetryPolicy webExceptionRetryPolicy;
 
-            FaultInjectionRuleProcessorRetryPolicy(RetryOptions retryOptions)
+            public FaultInjectionRuleProcessorRetryPolicy(RetryOptions retryOptions)
             {
                 this.resourceThrottleRetryPolicy = new ResourceThrottleRetryPolicy(
                     maxAttemptCount: retryOptions.MaxRetryAttemptsOnThrottledRequests,

@@ -1422,7 +1422,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="faultInjectorProvider"></param>
         /// <exception cref="ArgumentNullException"></exception>
-        public void ConfigureFaultInjectorProvider(IFaultInjectorProvider faultInjectorProvider)
+        internal void ConfigureFaultInjectorProvider(IFaultInjectorProvider faultInjectorProvider)
         {
             _ = faultInjectorProvider ?? throw new ArgumentNullException(nameof(faultInjectorProvider));
             this.DocumentClient.ConfigureFaultInjectorProvider(faultInjectorProvider);

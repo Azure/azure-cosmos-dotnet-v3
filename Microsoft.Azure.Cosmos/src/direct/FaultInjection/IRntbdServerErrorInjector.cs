@@ -3,8 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.FaultInjection
 {
-    using Microsoft.Azure.Documents.Rntbd;
     using System;
+    using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
     /// Interface for RNTBD server error injector

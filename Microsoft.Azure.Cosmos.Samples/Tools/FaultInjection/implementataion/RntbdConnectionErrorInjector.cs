@@ -10,7 +10,7 @@
     using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Rntbd;
 
-    public class RntbdConnectionErrorInjector
+    internal class RntbdConnectionErrorInjector
     {
         private readonly FaultInjectionRuleStore ruleStore;
         private readonly ChannelDictionary channelDictionary;

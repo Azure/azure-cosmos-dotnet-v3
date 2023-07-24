@@ -7063,7 +7063,7 @@ namespace Microsoft.Azure.Cosmos
             _ = faultInjectorProvider ?? throw new ArgumentNullException(nameof(faultInjectorProvider));
             if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Direct)
             {
-                this.StoreModel.ConfigureFaultInjectorProvider(faultInjectorProvider);
+                ((ServerStoreModel)this.StoreModel).ConfigureFaultInjectorProvider(faultInjectorProvider);
             }
             else
             {

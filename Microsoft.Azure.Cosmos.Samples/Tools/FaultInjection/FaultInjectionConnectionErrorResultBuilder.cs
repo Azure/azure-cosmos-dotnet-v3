@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     /// <summary>
     /// Used to build a <see cref="FaultInjectionConnectionErrorResult"/>.
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     public sealed class FaultInjectionConnectionErrorResultBuilder
     {
         private readonly FaultInjectionConnectionErrorType connectionErrorType;
-        private TimeSpan interval;
+        private readonly TimeSpan interval;
         private double threshold = 1.0;
 
         /// <summary>

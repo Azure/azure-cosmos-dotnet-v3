@@ -1643,7 +1643,7 @@ namespace Microsoft.Azure.Cosmos
         /// /// </summary>
         /// <param name="providerCreator">A function that creates a <see cref="IFaultInjectorProvider"/> instance.</param>"
         /// <returns>the configured <see cref="IFaultInjectorProvider"/>.</returns>
-        public abstract IFaultInjectorProvider GetOrConfigureFaultInjectorProvider(Func<string, DocumentClient, IFaultInjectorProvider> providerCreator);
+        internal abstract IFaultInjectorProvider GetOrConfigureFaultInjectorProvider(Func<string, DocumentClient, IFaultInjectorProvider> providerCreator);
 
 #if PREVIEW
         /// <summary>

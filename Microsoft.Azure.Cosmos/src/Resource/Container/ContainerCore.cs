@@ -708,7 +708,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Database.Client.ConfigureFaultInjectorProvider(faultInjectorProvider);
         }
-        public override IFaultInjectorProvider GetOrConfigureFaultInjectorProvider(Func<string, DocumentClient, IFaultInjectorProvider> providerCreator)
+        internal override IFaultInjectorProvider GetOrConfigureFaultInjectorProvider(Func<string, DocumentClient, IFaultInjectorProvider> providerCreator)
         {
             try
             {

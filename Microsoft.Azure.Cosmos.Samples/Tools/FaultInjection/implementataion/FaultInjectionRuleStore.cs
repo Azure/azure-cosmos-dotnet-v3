@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    public class FaultInjectionRuleStore
+    internal class FaultInjectionRuleStore
     {
         private readonly ConcurrentDictionary<FaultInjectionServerErrorRule, byte> serverResponseDelayRuleSet = new ConcurrentDictionary<FaultInjectionServerErrorRule, byte>();
         private readonly ConcurrentDictionary<FaultInjectionServerErrorRule, byte> serverResponseErrorRuleSet = new ConcurrentDictionary<FaultInjectionServerErrorRule, byte>();

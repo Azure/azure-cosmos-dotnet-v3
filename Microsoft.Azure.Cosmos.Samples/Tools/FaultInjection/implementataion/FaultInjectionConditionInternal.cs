@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System.Runtime.CompilerServices;
     using System.Text;
 
-    public class FaultInjectionConditionInternal
+    internal class FaultInjectionConditionInternal
     {
         private readonly string containerResourceId;
 

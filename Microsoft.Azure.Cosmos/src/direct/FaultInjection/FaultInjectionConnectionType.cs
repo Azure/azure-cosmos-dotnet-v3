@@ -13,11 +13,9 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// </summary>
         DIRECT_MODE,
 
-#if PREVIEW
         /// <summary>
         /// Emulates a gateway mode connection
         /// </summary>
         GATEWAY_MODE
-#endif
     }
 }

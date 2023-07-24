@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// </summary>
         public static void ConfigureFaultInjectionRules(Container container, List<FaultInjectionRule> rules)
         {            
-            FaultInjectionProvider faultInjectionProvider = container.ConfigureFaultInjectorProvider((containerLink, client) => new IFaultInjectorProvider(containerLink, client));
+            FaultInjectorProvider faultInjectionProvider = (FaultInjectorProvider)container.GetOrConfigureFaultInjectorProvider((containerLink, client) => new FaultInjectorProvider(containerLink, client));
             faultInjectionProvider.ConfigureFaultInjectionRules(rules);
         }
     }

@@ -6,10 +6,21 @@ namespace Microsoft.Azure.Documents.FaultInjection
     using System;
     using Microsoft.Azure.Documents.Rntbd;
 
+    /// <summary>
+    /// Interface for FaultInjectorProvider
+    /// </summary>
     internal interface IFaultInjectorProvider
     {
-        IRntbdServerErrorInjector GetRntbdServerErrorInjector();
+        /// <summary>
+        /// Gets the providor's RNTBD server error injector
+        /// </summary>
+        /// <returns>the RNTBD server error injector.</returns>
+        public IRntbdServerErrorInjector GetRntbdServerErrorInjector();
 
-        void RegisterConnectionErrorInjector(ChannelDictionary channelDictionary);
+        /// <summary>
+        /// Registers connection error injectors
+        /// </summary>
+        /// <param name="channelDictionary"></param>
+        public void RegisterConnectionErrorInjector(ChannelDictionary channelDictionary);
     }
 }
