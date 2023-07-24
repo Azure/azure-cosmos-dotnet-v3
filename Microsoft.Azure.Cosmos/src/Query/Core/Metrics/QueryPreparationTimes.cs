@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="logicalPlanBuildTime">Query logical plan build time</param>
         /// <param name="physicalPlanBuildTime">Query physical plan build time</param>
         /// <param name="queryOptimizationTime">Query optimization time</param>
-        public QueryPreparationTimes(
+        internal QueryPreparationTimes(
             TimeSpan queryCompilationTime,
             TimeSpan logicalPlanBuildTime,
             TimeSpan physicalPlanBuildTime,

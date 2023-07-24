@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="queryEngineExecutionTime">Query end - to - end execution time</param>
         /// <param name="systemFunctionExecutionTime">Total time spent executing system functions</param>
         /// <param name="userDefinedFunctionExecutionTime">Total time spent executing user - defined functions</param>
-        public RuntimeExecutionTimes(
+        internal RuntimeExecutionTimes(
             TimeSpan queryEngineExecutionTime,
             TimeSpan systemFunctionExecutionTime,
             TimeSpan userDefinedFunctionExecutionTime)
