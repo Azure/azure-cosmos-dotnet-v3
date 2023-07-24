@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             this.isFaultInjectionedConnectionError = true;
             DefaultTrace.TraceInformation(
-                    $"Inserted RNTBD Connection Error rule {0} of type {1}", ruleId, errorType);
+                    $"Fault Injection: Inserted RNTBD Connection Error rule {0} of type {1}", ruleId, errorType);
         }
 
         public Uri GetServerUri()
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     request))
                 {
                     DefaultTrace.TraceInformation(
-                    "Inserted RNTBD channel acquisition delay");
+                    "FaultInjection: Inserted RNTBD channel acquisition delay");
                 }
             }
             if (!this.isInitializationComplete)

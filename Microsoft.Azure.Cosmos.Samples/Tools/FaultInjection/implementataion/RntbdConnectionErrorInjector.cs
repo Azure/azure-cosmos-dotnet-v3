@@ -5,6 +5,7 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Rntbd;
@@ -52,6 +53,7 @@
                             {
                                 if (random.NextDouble() < rule.GetResult().GetThreshold())
                                 {
+                                    DefaultTrace.TraceInformation("FaultInjection: Injecting connection error for address {0}", addressUri);
                                     channel.InjectFaultInjectionConnectionError(rule.GetId(), rule.GetResult().GetConnectionErrorType());
                                 }
                             }));

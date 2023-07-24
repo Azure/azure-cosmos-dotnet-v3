@@ -327,11 +327,16 @@ namespace Microsoft.Azure.Documents.Rntbd
                             if (transportRequestStats.FaultInjectionServerErrorType == FaultInjectionServerErrorType.TIMEOUT)
                             {
                                 callInfo.SendFailed();
+                                DefaultTrace.TraceError("FaultInjection: Inserted {0} error for request {1}",
+                                    transportRequestStats.FaultInjectionServerErrorType, requestId);
                                 throw transportRequestStats.FaultInjectionException;
                             }
                             else
                             {
-                                return Task.FromResult(transportRequestStats.FaultInjectionStoreResponse).Result;
+                                StoreResponse faultInjectionStoreResponse = transportRequestStats.FaultInjectionStoreResponse;
+                                DefaultTrace.TraceError("FaultInjection: Inserted {0} error for request {1}",
+                                    transportRequestStats.FaultInjectionServerErrorType, requestId);
+                                return faultInjectionStoreResponse;
                             }                                                      
                         }
 
@@ -339,6 +344,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                         {
                             try
                             {
+                                DefaultTrace.TraceInformation("FaultInjection: Inserted {0} delay for request {1}",
+                                    transportRequestStats.FaultInjectionDelay, requestId);
                                 await this.connection.WriteRequestWithResponseDelayAsync(
                                     args.CommonArguments,
                                     args.PreparedCall.SerializedRequest,
@@ -347,6 +354,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                             catch (Exception e)
                             {
                                 callInfo.SendFailed();
+                                DefaultTrace.TraceError("FaultInjection: Call failed with inserted {0} response delay for request {1}. Exception: {2}",
+                                    transportRequestStats.FaultInjectionDelay, requestId, e);
                                 throw new TransportException(
                                     TransportErrorCode.SendFailed, e,
                                     args.CommonArguments.ActivityId, args.PreparedCall.Uri,
