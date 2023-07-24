@@ -49,8 +49,8 @@
 
         private async Task<(Database, Container)> InitializeTest(CosmosClient cosmosClient)
         {
-            Database database = await this.CreateDatabaseAsync(cosmosClient);
-            Container container = await this.CreateContainerAsync(database);
+            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(cosmosDatabaseId);
+            Container container = await database.CreateContainerAsync(containerId, partitionKeyPath: "/name");
             await this.AddItemsToContainerAsync(container);
 
             if (File.Exists(RawDataPath))
@@ -65,18 +65,7 @@
 
             return (database, container);
         }
-
-        private async Task<Database> CreateDatabaseAsync(CosmosClient cosmosClient)
-        {
-            // Create a new database
-            return await cosmosClient.CreateDatabaseIfNotExistsAsync(cosmosDatabaseId);
-        }
-
-        private async Task<Container> CreateContainerAsync(Database database)
-        {
-            return await database.CreateContainerAsync(containerId, partitionKeyPath: "/name");
-        }
-
+        
         private async Task AddItemsToContainerAsync(Container container)
         {
             int totalItems = 5000;
