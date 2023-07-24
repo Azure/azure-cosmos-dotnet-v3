@@ -25,7 +25,7 @@
             this.database = await this.client.CreateDatabaseIfNotExistsAsync("mydb");
 
             this.containerProperties = new ContainerProperties("mycoll", new List<string> { "/ZipCode", "/City" });
-            this.container = await this.database.CreateContainerAsync(this.containerProperties);        
+            this.container = await this.database.CreateContainerAsync(this.containerProperties);
         }
 
         [TestCleanup]
