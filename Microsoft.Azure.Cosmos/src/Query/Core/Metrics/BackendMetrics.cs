@@ -10,19 +10,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Metrics received for queries from the backend.
     /// </summary>
-#if INTERNAL
-#pragma warning disable SA1600
-#pragma warning disable CS1591
-    public
-#else
-    internal
-#endif
-    sealed class BackendMetrics
+    public sealed class BackendMetrics
     {
         /// <summary>
         /// QueryMetrics that with all members having default (but not null) members.
         /// </summary>
-        public static readonly BackendMetrics Empty = new BackendMetrics(
+        internal static readonly BackendMetrics Empty = new BackendMetrics(
             retrievedDocumentCount: default,
             retrievedDocumentSize: default,
             outputDocumentCount: default,
@@ -36,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             runtimeExecutionTimes: RuntimeExecutionTimes.Empty,
             documentWriteTime: default);
 
-        public BackendMetrics(
+        internal BackendMetrics(
            long retrievedDocumentCount,
            long retrievedDocumentSize,
            long outputDocumentCount,
@@ -124,12 +117,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// </summary>
         public TimeSpan VMExecutionTime { get; }
 
-        public override string ToString()
+        /// <summary>
+        /// String representation of BackendMetric.
+        /// </summary>
+        /// <returns>BackendMetric text</returns>
+        public override string ToString() //todo move this logic elsewhere?
         {
             return $"totalExecutionTimeInMs={this.TotalTime.TotalMilliseconds};queryCompileTimeInMs={this.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds};queryLogicalPlanBuildTimeInMs={this.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds};queryPhysicalPlanBuildTimeInMs={this.QueryPreparationTimes.PhysicalPlanBuildTime.TotalMilliseconds};queryOptimizationTimeInMs={this.QueryPreparationTimes.QueryOptimizationTime.TotalMilliseconds};indexLookupTimeInMs={this.IndexLookupTime.TotalMilliseconds};documentLoadTimeInMs={this.DocumentLoadTime.TotalMilliseconds};systemFunctionExecuteTimeInMs={this.RuntimeExecutionTimes.SystemFunctionExecutionTime.TotalMilliseconds};userFunctionExecuteTimeInMs={this.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime.TotalMilliseconds};retrievedDocumentCount={this.RetrievedDocumentCount};retrievedDocumentSize={this.RetrievedDocumentSize};outputDocumentCount={this.OutputDocumentCount};outputDocumentSize={this.OutputDocumentSize};writeOutputTimeInMs={this.DocumentWriteTime.TotalMilliseconds};indexUtilizationRatio={this.IndexHitRatio}";
         }
 
-        public static BackendMetrics CreateFromIEnumerable(IEnumerable<BackendMetrics> backendMetricsEnumerable)
+        internal static BackendMetrics CreateFromIEnumerable(IEnumerable<BackendMetrics> backendMetricsEnumerable)
         {
             BackendMetrics.Accumulator accumulator = default;
             foreach (BackendMetrics backendMetrics in backendMetricsEnumerable)
@@ -140,12 +137,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             return BackendMetrics.Accumulator.ToBackendMetrics(accumulator);
         }
 
-        public static bool TryParseFromDelimitedString(string delimitedString, out BackendMetrics backendMetrics)
+        internal static bool TryParseFromDelimitedString(string delimitedString, out BackendMetrics backendMetrics)
         {
             return BackendMetricsParser.TryParse(delimitedString, out backendMetrics);
         }
 
-        public static BackendMetrics ParseFromDelimitedString(string delimitedString)
+        internal static BackendMetrics ParseFromDelimitedString(string delimitedString)
         {
             if (!BackendMetricsParser.TryParse(delimitedString, out BackendMetrics backendMetrics))
             {
@@ -155,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             return backendMetrics;
         }
 
-        public ref struct Accumulator
+        internal ref struct Accumulator
         {
             public Accumulator(
                 TimeSpan totalTime,

@@ -8,16 +8,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Query preparation metrics in the Azure DocumentDB database service.
     /// </summary>
-#if INTERNAL
-#pragma warning disable SA1600
-#pragma warning disable CS1591
-    public
-#else
-    internal
-#endif
-    sealed class QueryPreparationTimes
+    public sealed class QueryPreparationTimes
     {
-        public static readonly QueryPreparationTimes Zero = new QueryPreparationTimes(
+        internal static readonly QueryPreparationTimes Zero = new QueryPreparationTimes(
             queryCompilationTime: default,
             logicalPlanBuildTime: default,
             physicalPlanBuildTime: default,
@@ -62,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// </summary>
         public TimeSpan QueryOptimizationTime { get; }
 
-        public ref struct Accumulator
+        internal ref struct Accumulator
         {
             public Accumulator(TimeSpan queryCompliationTime, TimeSpan logicalPlanBuildTime, TimeSpan physicalPlanBuildTime, TimeSpan queryOptimizationTime)
             {

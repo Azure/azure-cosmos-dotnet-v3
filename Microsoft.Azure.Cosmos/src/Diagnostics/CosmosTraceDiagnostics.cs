@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -50,11 +49,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return this.Value?.Summary?.RegionsContacted;
         }
 
-        public override BackendAccumulatedMetrics GetQueryMetrics()
+        public override BackendMetrics GetQueryMetrics()
         {
-            QueryMetrics queryMetrics = QueryMetrics.Empty;
-            this.WalkTraceTreeForQueryMetrics(this.Value, ref queryMetrics);
-            return new BackendAccumulatedMetrics(queryMetrics);
+            BackendMetrics.Accumulator accumulator = this.WalkTraceTreeForQueryMetrics(this.Value, new BackendMetrics.Accumulator());
+            return BackendMetrics.Accumulator.ToBackendMetrics(accumulator);
+
         }
 
         internal bool IsGoneExceptionHit()
@@ -62,28 +61,28 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return this.WalkTraceTreeForGoneException(this.Value);
         }
 
-        private void WalkTraceTreeForQueryMetrics(ITrace currentTrace, ref QueryMetrics queryMetrics)
+        private BackendMetrics.Accumulator WalkTraceTreeForQueryMetrics(ITrace currentTrace, BackendMetrics.Accumulator accumulator)
         {
             if (currentTrace == null)
             {
-                return;
+                return accumulator;
             }
 
             foreach (object datum in currentTrace.Data.Values)
             {
                 if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
                 {
-                    queryMetrics += queryMetricsTraceDatum.QueryMetrics;
-                    return;
+                    accumulator = accumulator.Accumulate(queryMetricsTraceDatum.QueryMetrics.BackendMetrics);
+                    return accumulator;
                 }
             }
 
             foreach (ITrace childTrace in currentTrace.Children)
             {
-                this.WalkTraceTreeForQueryMetrics(childTrace, ref queryMetrics);
+                accumulator = this.WalkTraceTreeForQueryMetrics(childTrace, accumulator);
             }
 
-            return;
+            return accumulator;
         }
 
         private bool WalkTraceTreeForGoneException(ITrace currentTrace)
