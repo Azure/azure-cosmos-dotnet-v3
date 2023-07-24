@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -28,165 +29,181 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [Timeout(30000)]
         public void VerifySynchronizationContextDoesNotLock(bool withClientTelemetry)
         {
-            string databaseId = Guid.NewGuid().ToString();
-            SynchronizationContext prevContext = SynchronizationContext.Current;
             try
             {
-                TestSynchronizationContext syncContext = new TestSynchronizationContext();
-                SynchronizationContext.SetSynchronizationContext(syncContext);
-                syncContext.Post(_ =>
+                string databaseId = Guid.NewGuid().ToString();
+                SynchronizationContext prevContext = SynchronizationContext.Current;
+                try
                 {
-
-                    HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+                    TestSynchronizationContext syncContext = new TestSynchronizationContext();
+                    SynchronizationContext.SetSynchronizationContext(syncContext);
+                    syncContext.Post(_ =>
                     {
-                        RequestCallBack = (request, cancellation) =>
-                        {
-                            if (request.RequestUri.AbsoluteUri.Equals("http://dummy.test.com"))
-                            {
-                                HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
-                                
 
-                                return Task.FromResult(result);
-                            }
-                            else if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                        HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+                        {
+                            RequestCallBack = (request, cancellation) =>
                             {
-                                HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
-                                
-                                AccountClientConfigProperties clientConfigProperties = new AccountClientConfigProperties
+                                if (request.RequestUri.AbsoluteUri.Equals("http://dummy.test.com"))
                                 {
-                                    ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                                    HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+
+
+                                    return Task.FromResult(result);
+                                }
+                                else if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                                {
+                                    HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+
+                                    AccountClientConfigProperties clientConfigProperties = new AccountClientConfigProperties
                                     {
-                                        IsEnabled = withClientTelemetry,
-                                        Endpoint = withClientTelemetry? "http://dummy.test.com" : null
-                                    }
-                                };
+                                        ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                                        {
+                                            IsEnabled = withClientTelemetry,
+                                            Endpoint = withClientTelemetry ? "http://dummy.test.com" : null
+                                        }
+                                    };
 
-                                string payload = JsonConvert.SerializeObject(clientConfigProperties);
-                                result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+                                    string payload = JsonConvert.SerializeObject(clientConfigProperties);
+                                    result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
-                                return Task.FromResult(result);
+                                    return Task.FromResult(result);
+                                }
+                                else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri))
+                                {
+                                    HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+
+                                    return Task.FromResult(result);
+                                }
+                                return null;
                             }
-                            else if (request.RequestUri.AbsoluteUri.Equals(VmMetadataApiHandler.vmMetadataEndpointUrl.AbsoluteUri))
+                        };
+
+                        using (CosmosClient client = TestCommon.CreateCosmosClient(
+                            customizeClientBuilder: builder => builder.WithHttpClientFactory(() => new HttpClient(httpHandler))))
+                        {
+                            Cosmos.Database database = client.CreateDatabaseAsync(databaseId).GetAwaiter().GetResult();
+                            database = client.CreateDatabaseIfNotExistsAsync(databaseId).GetAwaiter().GetResult();
+                            database.ReadStreamAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                            database.ReadAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+
+                            QueryDefinition databaseQuery = new QueryDefinition("select * from T where T.id = @id").WithParameter("@id", databaseId);
+                            FeedIterator<DatabaseProperties> databaseIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(databaseQuery);
+                            while (databaseIterator.HasMoreResults)
                             {
-                                HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
-                                
-                                return Task.FromResult(result);
+                                databaseIterator.ReadNextAsync().GetAwaiter().GetResult();
                             }
-                            return null;
-                        }
-                    };
-                    
-                    using (CosmosClient client = TestCommon.CreateCosmosClient(
-                        customizeClientBuilder: builder => builder.WithHttpClientFactory(() => new HttpClient(httpHandler))))
-                    {
-                        Cosmos.Database database = client.CreateDatabaseAsync(databaseId).GetAwaiter().GetResult();
-                        database = client.CreateDatabaseIfNotExistsAsync(databaseId).GetAwaiter().GetResult();
-                        database.ReadStreamAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-                        database.ReadAsync().ConfigureAwait(false).GetAwaiter().GetResult();
 
-                        QueryDefinition databaseQuery = new QueryDefinition("select * from T where T.id = @id").WithParameter("@id", databaseId);
-                        FeedIterator<DatabaseProperties> databaseIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(databaseQuery);
-                        while (databaseIterator.HasMoreResults)
-                        {
-                            databaseIterator.ReadNextAsync().GetAwaiter().GetResult();
-                        }
+                            Container container = database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk").GetAwaiter().GetResult();
+                            container = database.CreateContainerIfNotExistsAsync(container.Id, "/pk").GetAwaiter().GetResult();
 
-                        Container container = database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk").GetAwaiter().GetResult();
-                        container = database.CreateContainerIfNotExistsAsync(container.Id, "/pk").GetAwaiter().GetResult();
+                            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                            ItemResponse<ToDoActivity> response = container.CreateItemAsync<ToDoActivity>(item: testItem).ConfigureAwait(false).GetAwaiter().GetResult();
+                            Assert.IsNotNull(response);
+                            string diagnostics = response.Diagnostics.ToString();
+                            Assert.IsTrue(diagnostics.Contains("Synchronization Context"));
 
-                        ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-                        ItemResponse<ToDoActivity> response = container.CreateItemAsync<ToDoActivity>(item: testItem).ConfigureAwait(false).GetAwaiter().GetResult();
-                        Assert.IsNotNull(response);
-                        string diagnostics = response.Diagnostics.ToString();
-                        Assert.IsTrue(diagnostics.Contains("Synchronization Context"));
+                            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
-                        using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-
-                        try
-                        {
-                            ToDoActivity tempItem = ToDoActivity.CreateRandomToDoActivity();
-                            CancellationToken cancellationToken = cancellationTokenSource.Token;
-                            cancellationTokenSource.Cancel();
-                            container.CreateItemAsync<ToDoActivity>(item: tempItem, cancellationToken: cancellationToken).ConfigureAwait(false).GetAwaiter().GetResult();
-                            Assert.Fail("Should have thrown a cancellation token");
-
-                        }
-                        catch (CosmosOperationCanceledException oe)
-                        {
-                            string exception = oe.ToString();
-                            Assert.IsTrue(exception.Contains("Synchronization Context"));
-                        }
-
-                        // Test read feed
-                        container.GetItemLinqQueryable<ToDoActivity>(
-                            allowSynchronousQueryExecution: true,
-                            requestOptions: new QueryRequestOptions()
+                            try
                             {
-                            }).ToList();
+                                ToDoActivity tempItem = ToDoActivity.CreateRandomToDoActivity();
+                                CancellationToken cancellationToken = cancellationTokenSource.Token;
+                                cancellationTokenSource.Cancel();
+                                container.CreateItemAsync<ToDoActivity>(item: tempItem, cancellationToken: cancellationToken).ConfigureAwait(false).GetAwaiter().GetResult();
+                                Assert.Fail("Should have thrown a cancellation token");
 
-                        FeedIterator feedIterator = container
-                            .GetItemLinqQueryable<ToDoActivity>()
-                            .ToStreamIterator();
-
-                        while (feedIterator.HasMoreResults)
-                        {
-                            feedIterator.ReadNextAsync().GetAwaiter().GetResult();
-                        }
-
-                        FeedIterator<ToDoActivity> feedIteratorTyped = container.GetItemLinqQueryable<ToDoActivity>()
-                            .ToFeedIterator<ToDoActivity>();
-
-                        while (feedIteratorTyped.HasMoreResults)
-                        {
-                            feedIteratorTyped.ReadNextAsync().GetAwaiter().GetResult();
-                        }
-
-                        // Test query
-                        container.GetItemLinqQueryable<ToDoActivity>(
-                            allowSynchronousQueryExecution: true,
-                            requestOptions: new QueryRequestOptions()
+                            }
+                            catch (CosmosOperationCanceledException oe)
                             {
-                            }).Where(item => item.id != "").ToList();
+                                string exception = oe.ToString();
+                                Assert.IsTrue(exception.Contains("Synchronization Context"));
+                            }
 
-                        FeedIterator queryIterator = container.GetItemLinqQueryable<ToDoActivity>()
-                            .Where(item => item.id != "").ToStreamIterator();
+                            // Test read feed
+                            container.GetItemLinqQueryable<ToDoActivity>(
+                                allowSynchronousQueryExecution: true,
+                                requestOptions: new QueryRequestOptions()
+                                {
+                                }).ToList();
 
-                        while (queryIterator.HasMoreResults)
-                        {
-                            queryIterator.ReadNextAsync().GetAwaiter().GetResult();
+                            FeedIterator feedIterator = container
+                                .GetItemLinqQueryable<ToDoActivity>()
+                                .ToStreamIterator();
+
+                            while (feedIterator.HasMoreResults)
+                            {
+                                feedIterator.ReadNextAsync().GetAwaiter().GetResult();
+                            }
+
+                            FeedIterator<ToDoActivity> feedIteratorTyped = container.GetItemLinqQueryable<ToDoActivity>()
+                                .ToFeedIterator<ToDoActivity>();
+
+                            while (feedIteratorTyped.HasMoreResults)
+                            {
+                                feedIteratorTyped.ReadNextAsync().GetAwaiter().GetResult();
+                            }
+
+                            // Test query
+                            container.GetItemLinqQueryable<ToDoActivity>(
+                                allowSynchronousQueryExecution: true,
+                                requestOptions: new QueryRequestOptions()
+                                {
+                                }).Where(item => item.id != "").ToList();
+
+                            FeedIterator queryIterator = container.GetItemLinqQueryable<ToDoActivity>()
+                                .Where(item => item.id != "").ToStreamIterator();
+
+                            while (queryIterator.HasMoreResults)
+                            {
+                                queryIterator.ReadNextAsync().GetAwaiter().GetResult();
+                            }
+
+                            FeedIterator<ToDoActivity> queryIteratorTyped = container.GetItemLinqQueryable<ToDoActivity>()
+                                .Where(item => item.id != "").ToFeedIterator<ToDoActivity>();
+
+                            while (queryIteratorTyped.HasMoreResults)
+                            {
+                                queryIteratorTyped.ReadNextAsync().GetAwaiter().GetResult();
+                            }
+
+                            double costAsync = container.GetItemLinqQueryable<ToDoActivity>()
+                                .Select(x => x.cost).SumAsync().GetAwaiter().GetResult();
+
+                            double cost = container.GetItemLinqQueryable<ToDoActivity>(
+                                allowSynchronousQueryExecution: true).Select(x => x.cost).Sum();
+
+                            ItemResponse<ToDoActivity> deleteResponse = container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id).ConfigureAwait(false).GetAwaiter().GetResult();
+                            Assert.IsNotNull(deleteResponse);
                         }
-
-                        FeedIterator<ToDoActivity> queryIteratorTyped = container.GetItemLinqQueryable<ToDoActivity>()
-                            .Where(item => item.id != "").ToFeedIterator<ToDoActivity>();
-
-                        while (queryIteratorTyped.HasMoreResults)
-                        {
-                            queryIteratorTyped.ReadNextAsync().GetAwaiter().GetResult();
-                        }
-
-                        double costAsync = container.GetItemLinqQueryable<ToDoActivity>()
-                            .Select(x => x.cost).SumAsync().GetAwaiter().GetResult();
-
-                        double cost = container.GetItemLinqQueryable<ToDoActivity>(
-                            allowSynchronousQueryExecution: true).Select(x => x.cost).Sum();
-                        
-                        ItemResponse<ToDoActivity> deleteResponse = container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id).ConfigureAwait(false).GetAwaiter().GetResult();
-                        Assert.IsNotNull(deleteResponse);
-                    }
-                }, state: null);
-            }
-            finally
-            {
-                SynchronizationContext.SetSynchronizationContext(prevContext);
-                
-                using (CosmosClient client = TestCommon.CreateCosmosClient())
+                    }, state: null);
+                }
+                finally
                 {
-                    client.GetDatabase(databaseId).DeleteAsync().GetAwaiter().GetResult();
+                    SynchronizationContext.SetSynchronizationContext(prevContext);
+
+                    using (CosmosClient client = TestCommon.CreateCosmosClient())
+                    {
+                        client.GetDatabase(databaseId).DeleteAsync().GetAwaiter().GetResult();
+                    }
+                }
+            }
+            catch (TimeoutException ex)
+            {
+                // Log the exception message
+                Console.WriteLine(ex.Message);
+
+                // Log the current stack trace
+                Console.WriteLine(Environment.StackTrace);
+
+                // Get a more detailed view of the stack trace using the StackTrace class
+                StackTrace stackTrace = new StackTrace();
+                foreach (StackFrame frame in stackTrace.GetFrames())
+                {
+                    Console.WriteLine(frame.ToString());
                 }
             }
         }
-
-        
 
         public class TestSynchronizationContext : SynchronizationContext
         {

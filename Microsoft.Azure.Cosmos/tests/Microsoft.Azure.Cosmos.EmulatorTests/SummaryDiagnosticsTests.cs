@@ -45,7 +45,7 @@
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
 
             Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(201, 0)], 1);
-            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value.Keys.Count, 1);
+            Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value.Keys.Count, 1, "Summary contains : " + string.Join(", ", summaryDiagnostics.DirectRequestsSummary.Value));
 
             response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
@@ -53,7 +53,7 @@
 
             Assert.AreEqual(summaryDiagnostics.DirectRequestsSummary.Value[(200, 0)], 1);
             Assert.IsFalse(summaryDiagnostics.GatewayRequestsSummary.IsValueCreated);
-            Assert.AreEqual(trace.Summary.RegionsContacted.Count, 1);
+            Assert.AreEqual(trace.Summary.RegionsContacted.Count, 1, "Region Contacted contains : " + string.Join(", ", trace.Summary.RegionsContacted));
         }
 
         [TestMethod]
