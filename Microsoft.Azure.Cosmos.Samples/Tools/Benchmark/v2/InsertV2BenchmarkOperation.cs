@@ -38,6 +38,8 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Insert;
+
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             ResourceResponse<Document> itemResponse = await this.documentClient.CreateDocumentAsync(

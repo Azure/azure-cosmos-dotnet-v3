@@ -10,7 +10,6 @@ namespace CosmosBenchmark
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Newtonsoft.Json.Linq;
 
     internal class ReadTExistsV3BenchmarkOperation : IBenchmarkOperation
     {
@@ -40,6 +39,8 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
+
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             ItemResponse<Dictionary<string, object>> itemResponse = await this.container.ReadItemAsync<Dictionary<string, object>>(
@@ -47,7 +48,7 @@ namespace CosmosBenchmark
                         new PartitionKey(this.nextExecutionItemPartitionKey));
             if (itemResponse.StatusCode != HttpStatusCode.OK)
             {
-                throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                throw new Exception($"ReadItem failed with {itemResponse.StatusCode}");
             }
 
             return new OperationResult()
@@ -81,7 +82,7 @@ namespace CosmosBenchmark
 
                     if (itemResponse.StatusCode != HttpStatusCode.Created)
                     {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                        throw new Exception($"Create failed with status code: {itemResponse.StatusCode}");
                     }
                 }
             }

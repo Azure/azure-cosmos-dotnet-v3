@@ -51,6 +51,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CFPullModelAllVersionsAndDe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CFPullModelLatestVersionMode", "CFPullModelLatestVersionMode\CFPullModelLatestVersionMode.csproj", "{985B0E0A-D480-4C3C-A1FC-589F2EC4BBF6}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenTelemetry", "OpenTelemetry\OpenTelemetry.csproj", "{C6EF6948-C085-4013-A21F-99303ECBA7A9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApplicationInsights", "ApplicationInsights\ApplicationInsights.csproj", "{55149A3C-A263-4EE5-AD2D-02FE9AC4D291}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -153,6 +157,14 @@ Global
 		{985B0E0A-D480-4C3C-A1FC-589F2EC4BBF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{985B0E0A-D480-4C3C-A1FC-589F2EC4BBF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{985B0E0A-D480-4C3C-A1FC-589F2EC4BBF6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6EF6948-C085-4013-A21F-99303ECBA7A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6EF6948-C085-4013-A21F-99303ECBA7A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6EF6948-C085-4013-A21F-99303ECBA7A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6EF6948-C085-4013-A21F-99303ECBA7A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55149A3C-A263-4EE5-AD2D-02FE9AC4D291}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55149A3C-A263-4EE5-AD2D-02FE9AC4D291}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55149A3C-A263-4EE5-AD2D-02FE9AC4D291}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55149A3C-A263-4EE5-AD2D-02FE9AC4D291}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

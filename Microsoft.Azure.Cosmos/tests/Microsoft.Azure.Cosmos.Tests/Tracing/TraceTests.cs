@@ -97,7 +97,7 @@
             HashSet<string> storeResultProperties = typeof(StoreResult).GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(x => x.Name).ToHashSet<string>();
             string datumKey = "ClientStats";
             Trace trace = Trace.GetRootTrace("Test");
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary());
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
             trace.AddDatum(datumKey, datum);
 
             ReferenceCountedDisposable<StoreResult> storeResult = StoreResult.CreateForTesting(storeResponse: new StoreResponse());
@@ -125,8 +125,6 @@
             storeResultProperties.Remove(nameof(storeResult.Target.Exception));
             storeResultProperties.Add("transportRequestTimeline");
             storeResultProperties.Remove(nameof(storeResult.Target.TransportRequestStats));
-            storeResultProperties.Add("ReplicaHealthStatuses");
-            storeResultProperties.Remove(nameof(storeResult.Target.ReplicaHealthStatuses));
 
             foreach (string key in jsonPropertyNames)
             {
