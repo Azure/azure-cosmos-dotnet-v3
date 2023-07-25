@@ -83,6 +83,41 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 #endif
         }
 
+        public bool IsClientTelemetryJobNotRunning()
+        {
+            return this.clientTelemetry == null;
+        }
+
+        public void CollectCacheInfo(Func<CacheTelemetryData> functionFordata)
+        {
+            if (this.IsClientTelemetryJobNotRunning())
+            {
+                return;
+            }
+
+            CacheTelemetryData data = functionFordata();
+
+            if (data.collectionLink != null)
+            {
+                TelemetryToServiceHelper.GetDatabaseAndCollectionName(data.collectionLink, out string databaseName, out string collectionName);
+
+                data.databaseId = databaseName;
+                data.containerId = collectionName;
+            }
+
+            this.clientTelemetry.CollectCacheInfo(data);
+        }
+
+        public void CollectOperationInfo(Func<OperationTelemetryData> functionFordata)
+        {
+            if (this.IsClientTelemetryJobNotRunning())
+            {
+                return;
+            }
+
+            this.clientTelemetry.CollectOperationInfo(functionFordata());
+        }
+
         private void Initialize()
         {
             this.accountClientConfigTask = this.RefreshDatabaseAccountClientConfigInternalAsync();
@@ -194,44 +229,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     DefaultTrace.TraceInformation("Client Telemetry Disabled.");
                 }
             }
-        }
-
-        internal bool IsClientTelemetryJobNotRunning()
-        {
-            return this.clientTelemetry == null;
-        }
-
-        public void CollectCacheInfo(Func<CacheTelemetryData> functionFordata)
-        {
-            if (this.IsClientTelemetryJobNotRunning())
-            {
-                return;
-            }
-
-            CacheTelemetryData data = functionFordata();
-
-            if (data.collectionLink != null)
-            {
-                TelemetryToServiceHelper.GetDatabaseAndCollectionName(data.collectionLink, out string databaseName, out string collectionName);
-
-                data.databaseId = databaseName;
-                data.containerId = collectionName;
-
-            }
-
-            this.clientTelemetry.CollectCacheInfo(data);
-        }
-
-        public void CollectOperationInfo(Func<OperationTelemetryData> functionFordata)
-        {
-            if (this.IsClientTelemetryJobNotRunning())
-            {
-                return;
-            }
-
-            OperationTelemetryData data = functionFordata();
-
-            this.clientTelemetry.CollectOperationInfo(data);
         }
 
         private static void GetDatabaseAndCollectionName(string path, out string databaseName, out string collectionName)

@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Cache Telemetry Information.
         /// </summary>
-        public virtual void CollectCacheInfo(CacheTelemetryData data)
+        public void CollectCacheInfo(CacheTelemetryData data)
         {
             if (string.IsNullOrEmpty(data.cacheRefreshSource))
             {
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Telemetry Information.
         /// </summary>
-        public virtual void CollectOperationInfo(OperationTelemetryData data)
+        public void CollectOperationInfo(OperationTelemetryData data)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
