@@ -195,10 +195,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         }
                         finally
                         {
-                            if (this.capacityLock.IsUpgradeableReadLockHeld)
-                            {
-                                this.capacityLock.ExitUpgradeableReadLock();
-                            }
+                            this.capacityLock.ExitUpgradeableReadLock();
                         }
                         if (channelsCreated > 0)
                         {
@@ -253,10 +250,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             finally
             {
-                if (this.capacityLock.IsUpgradeableReadLockHeld)
-                {
-                    this.capacityLock.ExitUpgradeableReadLock();
-                }
+                this.capacityLock.ExitUpgradeableReadLock();
             }
         }
 
@@ -331,11 +325,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             finally
             {
-                if (this.capacityLock.IsWriteLockHeld)
-                {
-                    this.capacityLock.ExitWriteLock();
-                    Interlocked.Exchange(ref LoadBalancingPartition.openChannelsPending, 0);
-                }
+                Interlocked.Exchange(ref LoadBalancingPartition.openChannelsPending, 0);
+                this.capacityLock.ExitWriteLock();
             }
         }
 
