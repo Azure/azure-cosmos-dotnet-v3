@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Telemetry.Collector;
 
     internal class TelemetryHandler : RequestHandler
     {
@@ -28,23 +28,27 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
 
             // Check if this particular operation is eligible for client telemetry collection
-            if (this.IsEligibleForTelemetryCollection(request, out IClientTelemetryCollectors clientTelemetryJob))
+            if (this.IsEligibleForTelemetryCollection(request))
             {
                 try
                 {
-                    clientTelemetryJob
+                    this.TelemetryToServiceHelper
                         .CollectOperationInfo(
-                                cosmosDiagnostics: response.Diagnostics,
-                                statusCode: response.StatusCode,
-                                responseSizeInBytes: this.GetPayloadSize(response),
-                                containerId: request.ContainerId,
-                                databaseId: request.DatabaseId,
-                                operationType: request.OperationType,
-                                resourceType: request.ResourceType,
-                                consistencyLevel: request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
-                                requestCharge: response.Headers.RequestCharge,
-                                subStatusCode: response.Headers.SubStatusCode,
-                                trace: response.Trace);
+                        () =>
+                        new OperationTelemetryData
+                        {
+                            cosmosDiagnostics = response.Diagnostics,
+                            statusCode = response.StatusCode,
+                            responseSizeInBytes = this.GetPayloadSize(response),
+                            containerId = request.ContainerId,
+                            databaseId = request.DatabaseId,
+                            operationType = request.OperationType,
+                            resourceType = request.ResourceType,
+                            consistencyLevel = request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
+                            requestCharge = response.Headers.RequestCharge,
+                            subStatusCode = response.Headers.SubStatusCode,
+                            trace = response.Trace
+                        });
                 }
                 catch (Exception ex)
                 {
@@ -59,22 +63,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// Check if Collection should happen or not, if yes then return the client job instance where information needs to send
         /// </summary>
         /// <param name="request"></param>
-        /// <param name="clientTelemetryJob"></param>
         /// <returns>true/false</returns>
-        private bool IsEligibleForTelemetryCollection(RequestMessage request, out IClientTelemetryCollectors clientTelemetryJob)
+        private bool IsEligibleForTelemetryCollection(RequestMessage request)
         {
-            return this.IsClientTelemetryJobRunning(out clientTelemetryJob) && this.IsRequestAllowed(request);
-        }
-
-        /// <summary>
-        /// Check if Client Telemetry Job is running in background.
-        /// </summary>
-        /// <param name="clientTelemetryJob"></param>
-        /// <returns>true/false</returns>
-        private bool IsClientTelemetryJobRunning(out IClientTelemetryCollectors clientTelemetryJob)
-        {
-            clientTelemetryJob = this.TelemetryToServiceHelper.clientTelemetryCollector;
-            return clientTelemetryJob is not ClientTelemetryCollectorsNoOp;
+            return this.IsRequestAllowed(request);
         }
 
         /// <summary>

@@ -13,15 +13,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.Settings;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry.Collector;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal class TelemetryToServiceHelper : IDisposable
+    internal class TelemetryToServiceHelper : IClientTelemetryCollectors, IDisposable
     {
         internal static int DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 10 * 60 * 1000;
 
-        internal IClientTelemetryCollectors clientTelemetryCollector = new ClientTelemetryCollectorsNoOp();
+        internal ClientTelemetry clientTelemetry = null;
 
         private readonly AuthorizationTokenProvider cosmosAuthorization;
         private readonly CosmosHttpClient httpClient;
@@ -84,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private void Initialize()
         {
-            this.accountClientConfigTask = Task.Run(() => this.RefreshDatabaseAccountClientConfigInternalAsync());
+            this.accountClientConfigTask = this.RefreshDatabaseAccountClientConfigInternalAsync();
         }
 
         private async Task RefreshDatabaseAccountClientConfigInternalAsync()
@@ -151,11 +152,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (databaseAccountClientConfigs.IsClientTelemetryEnabled())
             {
-                if (this.clientTelemetryCollector is ClientTelemetryCollectorsNoOp)
+                if (this.IsClientTelemetryJobNotRunning())
                 {
                     try
                     {
-                        this.clientTelemetryCollector = ClientTelemetry.CreateAndStartBackgroundTelemetry(
+                        this.clientTelemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
                             clientId: this.clientId,
                             httpClient: this.httpClient,
                             userAgent: this.connectionPolicy.UserAgentContainer.BaseUserAgent,
@@ -180,13 +181,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             else
             {
-                if (this.clientTelemetryCollector is not ClientTelemetryCollectorsNoOp)
+                if (!this.IsClientTelemetryJobNotRunning())
                 {
                     DefaultTrace.TraceInformation("Stopping Client Telemetry Job.");
 
-                    this.clientTelemetryCollector.Dispose();
+                    this.clientTelemetry.Dispose();
 
-                    this.clientTelemetryCollector = new ClientTelemetryCollectorsNoOp();
+                    this.clientTelemetry = null;
                 }
                 else
                 {
@@ -195,15 +196,62 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
+        internal bool IsClientTelemetryJobNotRunning()
+        {
+            return this.clientTelemetry == null;
+        }
+
+        public void CollectCacheInfo(Func<CacheTelemetryData> functionFordata)
+        {
+            if (this.IsClientTelemetryJobNotRunning())
+            {
+                return;
+            }
+
+            CacheTelemetryData data = functionFordata();
+
+            if (data.collectionLink != null)
+            {
+                TelemetryToServiceHelper.GetDatabaseAndCollectionName(data.collectionLink, out string databaseName, out string collectionName);
+
+                data.databaseId = databaseName;
+                data.containerId = collectionName;
+
+            }
+
+            this.clientTelemetry.CollectCacheInfo(data);
+        }
+
+        public void CollectOperationInfo(Func<OperationTelemetryData> functionFordata)
+        {
+            if (this.IsClientTelemetryJobNotRunning())
+            {
+                return;
+            }
+
+            OperationTelemetryData data = functionFordata();
+
+            this.clientTelemetry.CollectOperationInfo(data);
+        }
+
+        private static void GetDatabaseAndCollectionName(string path, out string databaseName, out string collectionName)
+        {
+            string[] segments = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+            PathsHelper.ParseDatabaseNameAndCollectionNameFromUrlSegments(segments, out databaseName, out collectionName);
+        }
+
         public void Dispose()
         {
+            this.accountClientConfigTask = null;
             if (this.cancellationTokenSource != null && !this.cancellationTokenSource.IsCancellationRequested)
             {
                 this.cancellationTokenSource.Cancel();
                 this.cancellationTokenSource.Dispose();
             }
 
-            this.clientTelemetryCollector?.Dispose();
+            this.clientTelemetry?.Dispose();
         }
+
     }
 }

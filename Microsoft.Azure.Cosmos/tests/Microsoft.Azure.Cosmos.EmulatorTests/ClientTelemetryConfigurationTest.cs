@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient documentClient = this.GetClient().DocumentClient;
 
             Assert.IsNotNull(documentClient.TelemetryToServiceHelper);
-            Assert.IsTrue(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+            Assert.IsTrue(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
 
             ClientCollectionCache collCache = (ClientCollectionCache)documentClient
             .GetType()
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .GetValue(collCache);
 
             Assert.IsNotNull(telemetryToServiceHelper);
-            Assert.IsTrue(telemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+            Assert.IsTrue(telemetryToServiceHelper.IsClientTelemetryJobNotRunning());
         }
 
         [TestMethod]
@@ -154,20 +154,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (isEnabled)
             {
-                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryCollector);
-                Assert.IsNotNull(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector);
-
-
-                Assert.IsFalse(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
-                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+                Assert.IsFalse(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
+                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobNotRunning());
             }
             else
             {
-                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryCollector);
-                Assert.IsNotNull(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector);
-
-                Assert.IsTrue(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
-                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+                Assert.IsTrue(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
+                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobNotRunning());
             }
         }
         
@@ -248,19 +241,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (isEnabledInitially)
             {
-                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryCollector, "Before: Client Telemetry Job should be Running");
-                Assert.IsNotNull(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector);
-
-                Assert.IsFalse(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
-                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+                Assert.IsFalse(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
+                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobNotRunning());
             }
             else
             {
-                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryCollector, "Before: Client Telemetry Job should be Stopped");
-                Assert.IsNotNull(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector);
-
-                Assert.IsTrue(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
-                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+                Assert.IsTrue(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
+                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobNotRunning());
             }
 
             manualResetEvent.WaitOne(TimeSpan.FromMilliseconds(100));
@@ -279,19 +266,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (isEnabledInitially)
             {
-                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryCollector, "After: Client Telemetry Job should be Stopped");
-                Assert.IsNotNull(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector);
-
-                Assert.IsTrue(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
-                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+                Assert.IsTrue(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
+                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobNotRunning());
             }
             else
             {
-                Assert.IsNotNull(documentClient.TelemetryToServiceHelper.clientTelemetryCollector, "After: Client Telemetry Job should be Running");
-                Assert.IsNotNull(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector);
-
-                Assert.IsFalse(documentClient.TelemetryToServiceHelper.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
-                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.clientTelemetryCollector is ClientTelemetryCollectorsNoOp);
+                Assert.IsFalse(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
+                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobNotRunning());
             }
             
         }

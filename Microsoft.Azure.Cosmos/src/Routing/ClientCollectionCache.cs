@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Collector;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -215,21 +216,19 @@ namespace Microsoft.Azure.Cosmos.Routing
                             {
                                 ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
 
-                                IClientTelemetryCollectors telemetryInstance = this.telemetryToServiceHelper?.clientTelemetryCollector;
-                                if (telemetryInstance != null)
-                                {
-                                    ClientCollectionCache.GetDatabaseAndCollectionName(collectionLink, out string databaseName, out string collectionName);
-                                    telemetryInstance.CollectCacheInfo(
-                                                    cacheRefreshSource: ClientCollectionCache.TelemetrySourceName,
-                                                    regionsContactedList: response.RequestStats.RegionsContacted,
-                                                    requestLatency: response.RequestStats.RequestLatency,
-                                                    statusCode: response.StatusCode,
-                                                    containerId: collectionName,
-                                                    operationType: request.OperationType,
-                                                    resourceType: request.ResourceType,
-                                                    subStatusCode: response.SubStatusCode,
-                                                    databaseId: databaseName);
-                                }
+                                this.telemetryToServiceHelper.CollectCacheInfo(
+                                    () =>
+                                    new CacheTelemetryData
+                                    {
+                                        cacheRefreshSource = ClientCollectionCache.TelemetrySourceName,
+                                        regionsContactedList = response.RequestStats.RegionsContacted,
+                                        requestLatency = response.RequestStats.RequestLatency,
+                                        statusCode = response.StatusCode,
+                                        operationType = request.OperationType,
+                                        resourceType = request.ResourceType,
+                                        subStatusCode = response.SubStatusCode,
+                                        collectionLink = collectionLink
+                                    });
 
                                 return containerProperties;
                             }
@@ -242,13 +241,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
             }
-        }
-
-        private static void GetDatabaseAndCollectionName(string path, out string databaseName, out string collectionName)
-        {
-            string[] segments = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-
-            PathsHelper.ParseDatabaseNameAndCollectionNameFromUrlSegments(segments, out databaseName, out collectionName);
         }
     }
 }
