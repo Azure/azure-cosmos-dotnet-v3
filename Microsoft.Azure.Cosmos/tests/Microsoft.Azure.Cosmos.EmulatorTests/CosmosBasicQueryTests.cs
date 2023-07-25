@@ -786,7 +786,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task TesOdeTokenCompatibilityWithSpecializedPipeline()
+        public async Task TesOdeTokenCompatibilityWithNonOdePipeline()
         {
             using (ITrace rootTrace = Trace.GetRootTrace("Root Trace"))
             {
