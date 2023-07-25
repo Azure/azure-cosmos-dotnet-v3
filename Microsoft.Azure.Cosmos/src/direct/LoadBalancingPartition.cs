@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly int maxCapacity;  // maxChannels * maxRequestsPerChannel
 
         private int requestsPending = 0;  // Atomic.
+        private static int openChannelsPending = 0;  // Atomic.
         // Clock hand.
         private readonly SequenceGenerator sequenceGenerator =
             new SequenceGenerator();
@@ -174,7 +175,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         int targetChannels = targetCapacity / this.channelProperties.MaxRequestsPerChannel;
                         int channelsCreated = 0;
 
-                        this.capacityLock.EnterWriteLock();
+                        this.capacityLock.EnterUpgradeableReadLock();
                         try
                         {
                             if (this.openChannels.Count < targetChannels)
@@ -194,7 +195,10 @@ namespace Microsoft.Azure.Documents.Rntbd
                         }
                         finally
                         {
-                            this.capacityLock.ExitWriteLock();
+                            if (this.capacityLock.IsUpgradeableReadLockHeld)
+                            {
+                                this.capacityLock.ExitUpgradeableReadLock();
+                            }
                         }
                         if (channelsCreated > 0)
                         {
@@ -219,15 +223,21 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
         internal Task OpenChannelAsync(Guid activityId)
         {
-            this.capacityLock.EnterWriteLock();
+            this.capacityLock.EnterUpgradeableReadLock();
             try
             {
                 if (this.capacity < this.maxCapacity)
                 {
-                    return this.OpenChannelAndIncrementCapacity(
-                        activityId: activityId,
-                        waitForBackgroundInitializationComplete: true);
-
+                    if (Interlocked.Increment(ref LoadBalancingPartition.openChannelsPending) == 1)
+                    {
+                        return this.OpenChannelAndIncrementCapacity(
+                            activityId: activityId,
+                            waitForBackgroundInitializationComplete: true);
+                    }
+                    else
+                    {
+                        return Task.CompletedTask;
+                    }
                 }
                 else
                 {
@@ -243,7 +253,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             finally
             {
-                this.capacityLock.ExitWriteLock();
+                if (this.capacityLock.IsUpgradeableReadLockHeld)
+                {
+                    this.capacityLock.ExitUpgradeableReadLock();
+                }
             }
         }
 
@@ -266,7 +279,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 this.capacityLock.Dispose();
             }
-            catch(SynchronizationLockException)
+            catch (SynchronizationLockException)
             {
                 // SynchronizationLockException is thrown if there are inflight requests during the disposal of capacityLock
                 // suspend this exception to avoid crashing disposing other partitions/channels in hierarchical calls
@@ -286,7 +299,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             Guid activityId,
             bool waitForBackgroundInitializationComplete)
         {
-            Debug.Assert(this.capacityLock.IsWriteLockHeld);
+            Debug.Assert(this.capacityLock.IsUpgradeableReadLockHeld);
 
             IChannel newChannel = this.channelFactory(
                 activityId,
@@ -307,11 +320,23 @@ namespace Microsoft.Azure.Documents.Rntbd
                 await newChannel.OpenChannelAsync(activityId);
             }
 
-            this.openChannels.Add(
-                new LbChannelState(
-                    newChannel,
-                    this.channelProperties.MaxRequestsPerChannel));
-            this.capacity += this.channelProperties.MaxRequestsPerChannel;
+            try
+            {
+                this.capacityLock.EnterWriteLock();
+                this.openChannels.Add(
+                    new LbChannelState(
+                        newChannel,
+                        this.channelProperties.MaxRequestsPerChannel));
+                this.capacity += this.channelProperties.MaxRequestsPerChannel;
+            }
+            finally
+            {
+                if (this.capacityLock.IsWriteLockHeld)
+                {
+                    this.capacityLock.ExitWriteLock();
+                    Interlocked.Exchange(ref LoadBalancingPartition.openChannelsPending, 0);
+                }
+            }
         }
 
         /// <summary>
@@ -322,7 +347,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <param name="channelProperties">An instance of <see cref="ChannelProperties"/>.</param>
         /// <param name="localRegionRequest">A boolean flag indicating if the request is intendent for local region.</param>
         /// <param name="concurrentOpeningChannelSlim">An instance of <see cref="SemaphoreSlim"/>.</param>
-        /// <returns></returns>
+        /// <returns>An instance of <see cref="Channel"/>.</returns>
         private static IChannel CreateAndInitializeChannel(
             Guid activityId,
             Uri serverUri,
