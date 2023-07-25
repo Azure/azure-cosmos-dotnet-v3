@@ -22,8 +22,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         internal static int DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 10 * 60 * 1000;
 
-        internal ClientTelemetry clientTelemetry = null;
-
         private readonly AuthorizationTokenProvider cosmosAuthorization;
         private readonly CosmosHttpClient httpClient;
         private readonly Uri serviceEnpoint;
@@ -33,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly CancellationTokenSource cancellationTokenSource;
 
         private Task accountClientConfigTask = null;
+        private ClientTelemetry clientTelemetry = null;
 
         internal TelemetryToServiceHelper()
         {
