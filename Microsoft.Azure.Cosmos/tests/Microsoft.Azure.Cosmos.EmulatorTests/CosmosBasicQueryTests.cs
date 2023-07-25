@@ -791,12 +791,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (ITrace rootTrace = Trace.GetRootTrace("Root Trace"))
             {
                 ResponseMessage responseMessage = null;
-                int count = 0;
                 string query = "select top 200 * from c";
                 string expectedErrorMessage = "Operation cannot be resumed with the following token, as it requires Optimistic Direct Execution pipeline, which has been disabled for your SDK";
 
                 CosmosClient client = DirectCosmosClient;
                 Container container = client.GetContainer(DatabaseId, ContainerId);
+                
                 // Create items
                 for (int i = 0; i < 500; i++)
                 {
@@ -817,8 +817,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 responseMessage = await feedIterator.ReadNextAsync(rootTrace, CancellationToken.None);
                 string continuationToken = responseMessage.ContinuationToken;
-                Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
-                count += response.Count;
 
                 QueryRequestOptions newQueryRequestOptions = new QueryRequestOptions
                 {
@@ -836,11 +834,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 while (feedIteratorNew.HasMoreResults)
                 {
                     responseMessage = await feedIteratorNew.ReadNextAsync(rootTrace, CancellationToken.None);
-                    if (responseMessage.Content != null)
-                    {
-                        Collection<ToDoActivity> newResponse = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
-                        count += newResponse.Count;
-                    }
                 }
 
                 Assert.IsTrue(responseMessage.CosmosException.ToString().Contains(expectedErrorMessage));
