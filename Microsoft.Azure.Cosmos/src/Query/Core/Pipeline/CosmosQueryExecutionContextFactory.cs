@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     {
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
         private const string OptimisticDirectExecution = "OptimisticDirectExecution";
+        private const string OptimisticDirectExecutionToken = "OptimisticDirectExecutionToken";
         private const string Passthrough = "Passthrough";
         private const string Specialized = "Specialized";
         private const int PageSizeFactorForTop = 5;
@@ -307,6 +308,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else
             {
+                if (inputParameters.InitialUserContinuationToken != null)
+                {
+                    CosmosObject cosmosObjectContinuationToken = inputParameters.InitialUserContinuationToken as CosmosObject;
+                    if (cosmosObjectContinuationToken.ContainsKey(OptimisticDirectExecutionToken))
+                    {
+                        return TryCatch<IQueryPipelineStage>.FromException(
+                            new MalformedContinuationTokenException(
+                                $"Operation cannot be resumed with the following token, as it requires the Optimistic Direct Execution pipeline which has been disabled on your SDK. " +
+                                $"Enable Optimistic Direct Execution from QueryRequestOptions to avoid this issue." +
+                                $"{inputParameters.InitialUserContinuationToken}."));
+                    }
+                }
+
                 if (createPassthroughQuery)
                 {
                     SetTestInjectionPipelineType(inputParameters, Passthrough);
