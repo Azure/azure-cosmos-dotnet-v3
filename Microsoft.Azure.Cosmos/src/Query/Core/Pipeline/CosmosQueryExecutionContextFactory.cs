@@ -308,19 +308,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else
             {
-                if (inputParameters.InitialUserContinuationToken != null)
-                {
-                    CosmosObject cosmosObjectContinuationToken = inputParameters.InitialUserContinuationToken as CosmosObject;
-                    if (cosmosObjectContinuationToken.ContainsKey(OptimisticDirectExecutionToken))
-                    {
-                        return TryCatch<IQueryPipelineStage>.FromException(
-                            new MalformedContinuationTokenException(
-                                $"Operation cannot be resumed with the following token, as it requires the Optimistic Direct Execution pipeline which has been disabled on your SDK. " +
-                                $"Enable Optimistic Direct Execution from QueryRequestOptions to avoid this issue." +
-                                $"{inputParameters.InitialUserContinuationToken}."));
-                    }
-                }
-
                 if (createPassthroughQuery)
                 {
                     SetTestInjectionPipelineType(inputParameters, Passthrough);
@@ -766,7 +753,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ContainerQueryProperties containerQueryProperties,
             ITrace trace)
         {
-            if (!inputParameters.EnableOptimisticDirectExecution) return null;
+            if (!inputParameters.EnableOptimisticDirectExecution)
+            {
+                if (inputParameters.InitialUserContinuationToken != null)
+                {
+                    if (OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(inputParameters.InitialUserContinuationToken))
+                    {
+                        throw new MalformedContinuationTokenException($"The continuation token supplied requires the Optimistic Direct Execution flag to be enabled in QueryRequestOptions for the query execution to resume. " +
+                                    $"{inputParameters.InitialUserContinuationToken}");
+                    }
+                }
+                
+            }
 
             Debug.Assert(containerQueryProperties.ResourceId != null, "CosmosQueryExecutionContextFactory Assert!", "Container ResourceId cannot be null!");
 

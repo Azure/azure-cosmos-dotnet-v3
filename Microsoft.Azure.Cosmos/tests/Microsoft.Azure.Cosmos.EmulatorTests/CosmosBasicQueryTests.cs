@@ -792,7 +792,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ResponseMessage responseMessage = null;
                 string query = "select top 200 * from c";
-                string expectedErrorMessage = "Operation cannot be resumed with the following token, as it requires Optimistic Direct Execution pipeline, which has been disabled for your SDK";
+                string expectedErrorMessage = "The continuation token supplied requires the Optimistic Direct Execution flag to be enabled in QueryRequestOptions for the query execution to resume. ";
 
                 CosmosClient client = DirectCosmosClient;
                 Container container = client.GetContainer(DatabaseId, ContainerId);
