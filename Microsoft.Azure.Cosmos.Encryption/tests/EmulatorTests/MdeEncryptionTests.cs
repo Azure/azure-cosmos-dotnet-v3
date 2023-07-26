@@ -2585,7 +2585,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 Assert.IsTrue(ex is NotSupportedException);
                 if (ex is NotSupportedException notSupportedException)
-                    Assert.IsTrue(notSupportedException.Message.Contains("The number of partition keys passed in the query exceeds the number of keys initialized in the container"));
+                    Assert.IsTrue(notSupportedException.Message.Contains("The number of partition keys passed in the query exceeds the number of keys initialized on the container"));
             }
         }
 
