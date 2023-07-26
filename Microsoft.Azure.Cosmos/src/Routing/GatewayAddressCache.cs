@@ -309,7 +309,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 cachedAddresses: currentCachedValue,
                                 partitionKeyRangeIdentity.CollectionRid,
                                 partitionKeyRangeIdentity.PartitionKeyRangeId,
-                                forceRefresh: true)));
+                                forceRefresh: true)))
+                        .ContinueWith(t =>
+                                    // Flatten and loop (since there could have been multiple tasks)
+                                    throw t.Exception, TaskContinuationOptions.OnlyOnFaulted);
                 }
 
                 return addresses;
@@ -728,7 +731,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             headers.Set(HttpConstants.HttpHeaders.XDate, Rfc1123DateTimeCache.UtcNow());
             string token = null;
 
-            using (ITrace trace = Trace.GetRootTrace(nameof(GetMasterAddressesViaGatewayAsync), TraceComponent.Authorization, TraceLevel.Info))
+            using (ITrace trace = Trace.GetRootTrace(nameof(GetServerAddressesViaGatewayAsync), TraceComponent.Authorization, TraceLevel.Info))
             {
                 try
                 {
