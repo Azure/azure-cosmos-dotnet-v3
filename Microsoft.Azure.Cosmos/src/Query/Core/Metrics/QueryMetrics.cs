@@ -64,8 +64,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         public static QueryMetrics operator +(QueryMetrics queryMetrics1, QueryMetrics queryMetrics2)
         {
             QueryMetrics.Accumulator queryMetricsAccumulator = new QueryMetrics.Accumulator();
-            queryMetricsAccumulator = queryMetricsAccumulator.Accumulate(queryMetrics1);
-            queryMetricsAccumulator = queryMetricsAccumulator.Accumulate(queryMetrics2);
+            queryMetricsAccumulator.Accumulate(queryMetrics1);
+            queryMetricsAccumulator.Accumulate(queryMetrics2);
 
             return QueryMetrics.Accumulator.ToQueryMetrics(queryMetricsAccumulator);
         }
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             QueryMetrics.Accumulator queryMetricsAccumulator = new QueryMetrics.Accumulator();
             foreach (QueryMetrics queryMetrics in queryMetricsList)
             {
-                queryMetricsAccumulator = queryMetricsAccumulator.Accumulate(queryMetrics);
+                queryMetricsAccumulator.Accumulate(queryMetrics);
             }
 
             return QueryMetrics.Accumulator.ToQueryMetrics(queryMetricsAccumulator);
@@ -106,40 +106,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         public ref struct Accumulator
         {
             public Accumulator(
-                BackendMetrics.Accumulator backendMetricsAccumulator,
-                IndexUtilizationInfo.Accumulator indexUtilizationInfoAccumulator,
-                ClientSideMetrics.Accumulator clientSideMetricsAccumulator)
+                BackendMetricsAccumulator backendMetricsAccumulator,
+                IndexUtilizationInfoAccumulator indexUtilizationInfoAccumulator,
+                ClientSideMetricsAccumulator clientSideMetricsAccumulator)
             {
                 this.BackendMetricsAccumulator = backendMetricsAccumulator;
                 this.IndexUtilizationInfoAccumulator = indexUtilizationInfoAccumulator;
                 this.ClientSideMetricsAccumulator = clientSideMetricsAccumulator;
             }
 
-            public BackendMetrics.Accumulator BackendMetricsAccumulator { get; }
+            public BackendMetricsAccumulator BackendMetricsAccumulator { get; }
 
-            public IndexUtilizationInfo.Accumulator IndexUtilizationInfoAccumulator { get; }
+            public IndexUtilizationInfoAccumulator IndexUtilizationInfoAccumulator { get; }
 
-            public ClientSideMetrics.Accumulator ClientSideMetricsAccumulator { get; }
+            public ClientSideMetricsAccumulator ClientSideMetricsAccumulator { get; }
 
-            public Accumulator Accumulate(QueryMetrics queryMetrics)
+            public void Accumulate(QueryMetrics queryMetrics)
             {
                 if (queryMetrics == null)
                 {
                     throw new ArgumentNullException(nameof(queryMetrics));
                 }
-
-                return new Accumulator(
-                    backendMetricsAccumulator: this.BackendMetricsAccumulator.Accumulate(queryMetrics.BackendMetrics),
-                    indexUtilizationInfoAccumulator: this.IndexUtilizationInfoAccumulator.Accumulate(queryMetrics.IndexUtilizationInfo),
-                    clientSideMetricsAccumulator: this.ClientSideMetricsAccumulator.Accumulate(queryMetrics.ClientSideMetrics));
+                
+                this.BackendMetricsAccumulator.Accumulate(queryMetrics.BackendMetrics);
+                this.IndexUtilizationInfoAccumulator.Accumulate(queryMetrics.IndexUtilizationInfo);
+                this.ClientSideMetricsAccumulator.Accumulate(queryMetrics.ClientSideMetrics);
             }
 
             public static QueryMetrics ToQueryMetrics(Accumulator accumulator)
             {
                 return new QueryMetrics(
-                    BackendMetrics.Accumulator.ToBackendMetrics(accumulator.BackendMetricsAccumulator),
-                    IndexUtilizationInfo.Accumulator.ToIndexUtilizationInfo(accumulator.IndexUtilizationInfoAccumulator),
-                    ClientSideMetrics.Accumulator.ToClientSideMetrics(accumulator.ClientSideMetricsAccumulator));
+                    BackendMetricsAccumulator.ToBackendMetrics(accumulator.BackendMetricsAccumulator),
+                    IndexUtilizationInfoAccumulator.ToIndexUtilizationInfo(accumulator.IndexUtilizationInfoAccumulator),
+                    ClientSideMetricsAccumulator.ToClientSideMetrics(accumulator.ClientSideMetricsAccumulator));
             }
         }
     }

@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="logicalPlanBuildTime">Query logical plan build time</param>
         /// <param name="physicalPlanBuildTime">Query physical plan build time</param>
         /// <param name="queryOptimizationTime">Query optimization time</param>
-        internal QueryPreparationTimes(
+        public QueryPreparationTimes(
             TimeSpan queryCompilationTime,
             TimeSpan logicalPlanBuildTime,
             TimeSpan physicalPlanBuildTime,
@@ -54,44 +54,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// Gets the query optimization time in the Azure DocumentDB database service. 
         /// </summary>
         public TimeSpan QueryOptimizationTime { get; }
-
-        internal ref struct Accumulator
-        {
-            public Accumulator(TimeSpan queryCompliationTime, TimeSpan logicalPlanBuildTime, TimeSpan physicalPlanBuildTime, TimeSpan queryOptimizationTime)
-            {
-                this.QueryCompilationTime = queryCompliationTime;
-                this.LogicalPlanBuildTime = logicalPlanBuildTime;
-                this.PhysicalPlanBuildTime = physicalPlanBuildTime;
-                this.QueryOptimizationTime = queryOptimizationTime;
-            }
-
-            public TimeSpan QueryCompilationTime { get; }
-            public TimeSpan LogicalPlanBuildTime { get; }
-            public TimeSpan PhysicalPlanBuildTime { get; }
-            public TimeSpan QueryOptimizationTime { get; }
-
-            public Accumulator Accumulate(QueryPreparationTimes queryPreparationTimes)
-            {
-                if (queryPreparationTimes == null)
-                {
-                    throw new ArgumentNullException(nameof(queryPreparationTimes));
-                }
-
-                return new Accumulator(
-                    queryCompliationTime: this.QueryCompilationTime + queryPreparationTimes.QueryCompilationTime,
-                    logicalPlanBuildTime: this.LogicalPlanBuildTime + queryPreparationTimes.LogicalPlanBuildTime,
-                    physicalPlanBuildTime: this.PhysicalPlanBuildTime + queryPreparationTimes.PhysicalPlanBuildTime,
-                    queryOptimizationTime: this.QueryOptimizationTime + queryPreparationTimes.QueryOptimizationTime);
-            }
-
-            public static QueryPreparationTimes ToQueryPreparationTimes(QueryPreparationTimes.Accumulator accumulator)
-            {
-                return new QueryPreparationTimes(
-                    queryCompilationTime: accumulator.QueryCompilationTime,
-                    logicalPlanBuildTime: accumulator.LogicalPlanBuildTime,
-                    physicalPlanBuildTime: accumulator.PhysicalPlanBuildTime,
-                    queryOptimizationTime: accumulator.QueryOptimizationTime);
-            }
-        }
     }
 }

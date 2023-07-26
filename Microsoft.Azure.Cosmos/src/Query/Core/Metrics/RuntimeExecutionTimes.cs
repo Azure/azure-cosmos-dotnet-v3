@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="queryEngineExecutionTime">Query end - to - end execution time</param>
         /// <param name="systemFunctionExecutionTime">Total time spent executing system functions</param>
         /// <param name="userDefinedFunctionExecutionTime">Total time spent executing user - defined functions</param>
-        internal RuntimeExecutionTimes(
+        public RuntimeExecutionTimes(
             TimeSpan queryEngineExecutionTime,
             TimeSpan systemFunctionExecutionTime,
             TimeSpan userDefinedFunctionExecutionTime)
@@ -45,40 +45,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// Gets the query user defined function execution time in the Azure Cosmos DB service.
         /// </summary>
         public TimeSpan UserDefinedFunctionExecutionTime { get; }
-
-        internal ref struct Accumulator
-        {
-            public Accumulator(TimeSpan queryEngineExecutionTime, TimeSpan systemFunctionExecutionTime, TimeSpan userDefinedFunctionExecutionTimes)
-            {
-                this.QueryEngineExecutionTime = queryEngineExecutionTime;
-                this.SystemFunctionExecutionTime = systemFunctionExecutionTime;
-                this.UserDefinedFunctionExecutionTime = userDefinedFunctionExecutionTimes;
-            }
-
-            public TimeSpan QueryEngineExecutionTime { get; }
-            public TimeSpan SystemFunctionExecutionTime { get; }
-            public TimeSpan UserDefinedFunctionExecutionTime { get; }
-
-            public Accumulator Accumulate(RuntimeExecutionTimes runtimeExecutionTimes)
-            {
-                if (runtimeExecutionTimes == null)
-                {
-                    throw new ArgumentNullException(nameof(runtimeExecutionTimes));
-                }
-
-                return new Accumulator(
-                    queryEngineExecutionTime: this.QueryEngineExecutionTime + runtimeExecutionTimes.QueryEngineExecutionTime,
-                    systemFunctionExecutionTime: this.SystemFunctionExecutionTime + runtimeExecutionTimes.SystemFunctionExecutionTime,
-                    userDefinedFunctionExecutionTimes: this.UserDefinedFunctionExecutionTime + runtimeExecutionTimes.UserDefinedFunctionExecutionTime);
-            }
-
-            public static RuntimeExecutionTimes ToRuntimeExecutionTimes(Accumulator accumulator)
-            {
-                return new RuntimeExecutionTimes(
-                    queryEngineExecutionTime: accumulator.QueryEngineExecutionTime,
-                    systemFunctionExecutionTime: accumulator.SystemFunctionExecutionTime,
-                    userDefinedFunctionExecutionTime: accumulator.UserDefinedFunctionExecutionTime);
-            }
-        }
     }
 }

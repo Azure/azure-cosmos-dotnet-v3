@@ -54,42 +54,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// Gets the Fetch Execution Ranges for this continuation of the query.
         /// </summary>
         public IEnumerable<FetchExecutionRange> FetchExecutionRanges { get; }
-
-        public ref struct Accumulator
-        {
-            public Accumulator(long retries, double requestCharge, IEnumerable<FetchExecutionRange> fetchExecutionRanges)
-            {
-                this.Retries = retries;
-                this.RequestCharge = requestCharge;
-                this.FetchExecutionRanges = fetchExecutionRanges;
-            }
-
-            public long Retries { get; }
-
-            public double RequestCharge { get; }
-
-            public IEnumerable<FetchExecutionRange> FetchExecutionRanges { get; }
-
-            public Accumulator Accumulate(ClientSideMetrics clientSideMetrics)
-            {
-                if (clientSideMetrics == null)
-                {
-                    throw new ArgumentNullException(nameof(clientSideMetrics));
-                }
-
-                return new Accumulator(
-                    retries: this.Retries + clientSideMetrics.Retries,
-                    requestCharge: this.RequestCharge + clientSideMetrics.RequestCharge,
-                    fetchExecutionRanges: (this.FetchExecutionRanges ?? Enumerable.Empty<FetchExecutionRange>()).Concat(clientSideMetrics.FetchExecutionRanges));
-            }
-
-            public static ClientSideMetrics ToClientSideMetrics(Accumulator accumulator)
-            {
-                return new ClientSideMetrics(
-                    retries: accumulator.Retries,
-                    requestCharge: accumulator.RequestCharge,
-                    fetchExecutionRanges: accumulator.FetchExecutionRanges);
-            }
-        }
     }
 }

@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
     using VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using System.Collections.Generic;
-    using System.Text;
 
     [TestClass]
     public class IndexUtilizationInfoTests
@@ -35,11 +34,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         [TestMethod]
         public void TestAccumulator()
         {
-            IndexUtilizationInfo.Accumulator accumulator = new IndexUtilizationInfo.Accumulator();
-            accumulator = accumulator.Accumulate(MockIndexUtilizationInfo);
-            accumulator = accumulator.Accumulate(MockIndexUtilizationInfo);
+            IndexUtilizationInfoAccumulator accumulator = new IndexUtilizationInfoAccumulator();
+            accumulator.Accumulate(MockIndexUtilizationInfo);
+            accumulator.Accumulate(MockIndexUtilizationInfo);
 
-            IndexUtilizationInfo doubleInfo = IndexUtilizationInfo.Accumulator.ToIndexUtilizationInfo(accumulator);
+            IndexUtilizationInfo doubleInfo = IndexUtilizationInfoAccumulator.ToIndexUtilizationInfo(accumulator);
             Assert.AreEqual(2 * MockIndexUtilizationInfo.PotentialSingleIndexes.Count, doubleInfo.PotentialSingleIndexes.Count);
             Assert.AreEqual(2 * MockIndexUtilizationInfo.UtilizedSingleIndexes.Count, doubleInfo.UtilizedSingleIndexes.Count);
             Assert.AreEqual(2 * MockIndexUtilizationInfo.PotentialCompositeIndexes.Count, doubleInfo.PotentialCompositeIndexes.Count);

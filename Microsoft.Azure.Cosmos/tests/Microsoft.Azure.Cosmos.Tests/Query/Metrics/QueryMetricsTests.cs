@@ -20,8 +20,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         public void TestAccumulator()
         {
             QueryMetrics.Accumulator accumulator = new QueryMetrics.Accumulator();
-            accumulator = accumulator.Accumulate(MockQueryMetrics);
-            accumulator = accumulator.Accumulate(MockQueryMetrics);
+            accumulator.Accumulate(MockQueryMetrics);
+            accumulator.Accumulate(MockQueryMetrics);
 
             QueryMetrics doubleQueryMetrics = QueryMetrics.Accumulator.ToQueryMetrics(accumulator);
 

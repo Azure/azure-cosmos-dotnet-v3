@@ -29,7 +29,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             runtimeExecutionTimes: RuntimeExecutionTimes.Empty,
             documentWriteTime: default);
 
-        internal BackendMetrics(
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BackendMetrics"/> class.
+        /// </summary>
+        /// <param name="retrievedDocumentCount"></param>
+        /// <param name="retrievedDocumentSize"></param>
+        /// <param name="outputDocumentCount"></param>
+        /// <param name="outputDocumentSize"></param>
+        /// <param name="indexHitRatio"></param>
+        /// <param name="totalQueryExecutionTime"></param>
+        /// <param name="queryPreparationTimes"></param>
+        /// <param name="indexLookupTime"></param>
+        /// <param name="documentLoadTime"></param>
+        /// <param name="vmExecutionTime"></param>
+        /// <param name="runtimeExecutionTimes"></param>
+        /// <param name="documentWriteTime"></param>
+        public BackendMetrics(
            long retrievedDocumentCount,
            long retrievedDocumentSize,
            long outputDocumentCount,
@@ -128,13 +143,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         internal static BackendMetrics CreateFromIEnumerable(IEnumerable<BackendMetrics> backendMetricsEnumerable)
         {
-            BackendMetrics.Accumulator accumulator = default;
+            BackendMetricsAccumulator accumulator = default;
             foreach (BackendMetrics backendMetrics in backendMetricsEnumerable)
             {
-                accumulator = accumulator.Accumulate(backendMetrics);
+                accumulator.Accumulate(backendMetrics);
             }
 
-            return BackendMetrics.Accumulator.ToBackendMetrics(accumulator);
+            return BackendMetricsAccumulator.ToBackendMetrics(accumulator);
         }
 
         internal static bool TryParseFromDelimitedString(string delimitedString, out BackendMetrics backendMetrics)
@@ -150,85 +165,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             }
 
             return backendMetrics;
-        }
-
-        internal ref struct Accumulator
-        {
-            public Accumulator(
-                TimeSpan totalTime,
-                long retrievedDocumentCount,
-                long retrievedDocumentSize,
-                long outputDocumentCount,
-                long outputDocumentSize,
-                double indexHitRatio,
-                QueryPreparationTimes.Accumulator queryPreparationTimesAccumulator,
-                TimeSpan indexLookupTime,
-                TimeSpan documentLoadTime,
-                RuntimeExecutionTimes.Accumulator runtimeExecutionTimesAccumulator,
-                TimeSpan documentWriteTime,
-                TimeSpan vmExecutionTime)
-            {
-                this.TotalTime = totalTime;
-                this.RetrievedDocumentCount = retrievedDocumentCount;
-                this.RetrievedDocumentSize = retrievedDocumentSize;
-                this.OutputDocumentCount = outputDocumentCount;
-                this.OutputDocumentSize = outputDocumentSize;
-                this.IndexHitRatio = indexHitRatio;
-                this.QueryPreparationTimesAccumulator = queryPreparationTimesAccumulator;
-                this.IndexLookupTime = indexLookupTime;
-                this.DocumentLoadTime = documentLoadTime;
-                this.RuntimeExecutionTimesAccumulator = runtimeExecutionTimesAccumulator;
-                this.DocumentWriteTime = documentWriteTime;
-                this.VMExecutionTime = vmExecutionTime;
-            }
-
-            public TimeSpan TotalTime { get; }
-            public long RetrievedDocumentCount { get; }
-            public long RetrievedDocumentSize { get; }
-            public long OutputDocumentCount { get; }
-            public long OutputDocumentSize { get; }
-            public double IndexHitRatio { get; }
-            public QueryPreparationTimes.Accumulator QueryPreparationTimesAccumulator { get; }
-            public TimeSpan IndexLookupTime { get; }
-            public TimeSpan DocumentLoadTime { get; }
-            public RuntimeExecutionTimes.Accumulator RuntimeExecutionTimesAccumulator { get; }
-            public TimeSpan DocumentWriteTime { get; }
-            public TimeSpan VMExecutionTime { get; }
-
-            public Accumulator Accumulate(BackendMetrics backendMetrics)
-            {
-                return new Accumulator(
-                    totalTime: this.TotalTime + backendMetrics.TotalTime,
-                    retrievedDocumentCount: this.RetrievedDocumentCount + backendMetrics.RetrievedDocumentCount,
-                    retrievedDocumentSize: this.RetrievedDocumentSize + backendMetrics.RetrievedDocumentSize,
-                    outputDocumentCount: this.OutputDocumentCount + backendMetrics.OutputDocumentCount,
-                    outputDocumentSize: this.OutputDocumentSize + backendMetrics.OutputDocumentSize,
-                    indexHitRatio: ((this.OutputDocumentCount * this.IndexHitRatio) + (backendMetrics.OutputDocumentCount * backendMetrics.IndexHitRatio)) / (this.RetrievedDocumentCount + backendMetrics.RetrievedDocumentCount),
-                    queryPreparationTimesAccumulator: this.QueryPreparationTimesAccumulator.Accumulate(backendMetrics.QueryPreparationTimes),
-                    indexLookupTime: this.IndexLookupTime + backendMetrics.IndexLookupTime,
-                    documentLoadTime: this.DocumentLoadTime + backendMetrics.DocumentLoadTime,
-                    runtimeExecutionTimesAccumulator: this.RuntimeExecutionTimesAccumulator.Accumulate(backendMetrics.RuntimeExecutionTimes),
-                    documentWriteTime: this.DocumentWriteTime + backendMetrics.DocumentWriteTime,
-                    vmExecutionTime: this.VMExecutionTime + backendMetrics.VMExecutionTime);
-
-            }
-
-            public static BackendMetrics ToBackendMetrics(BackendMetrics.Accumulator accumulator)
-            {
-                return new BackendMetrics(
-                   retrievedDocumentCount: accumulator.RetrievedDocumentCount,
-                   retrievedDocumentSize: accumulator.RetrievedDocumentSize,
-                   outputDocumentCount: accumulator.OutputDocumentCount,
-                   outputDocumentSize: accumulator.OutputDocumentSize,
-                   indexHitRatio: accumulator.IndexHitRatio,
-                   totalQueryExecutionTime: accumulator.TotalTime,
-                   queryPreparationTimes: QueryPreparationTimes.Accumulator.ToQueryPreparationTimes(accumulator.QueryPreparationTimesAccumulator),
-                   indexLookupTime: accumulator.IndexLookupTime,
-                   documentLoadTime: accumulator.DocumentLoadTime,
-                   vmExecutionTime: accumulator.VMExecutionTime,
-                   runtimeExecutionTimes: RuntimeExecutionTimes.Accumulator.ToRuntimeExecutionTimes(accumulator.RuntimeExecutionTimesAccumulator),
-                   documentWriteTime: accumulator.DocumentWriteTime);
-            }
-        }
+        }    
     }
 }

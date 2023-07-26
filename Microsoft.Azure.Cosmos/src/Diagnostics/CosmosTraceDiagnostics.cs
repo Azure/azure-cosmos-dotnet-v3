@@ -51,38 +51,15 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override BackendMetrics GetQueryMetrics()
         {
-            BackendMetrics.Accumulator accumulator = this.WalkTraceTreeForQueryMetrics(this.Value, new BackendMetrics.Accumulator());
-            return BackendMetrics.Accumulator.ToBackendMetrics(accumulator);
+            BackendMetricsAccumulator accumulator = new BackendMetricsAccumulator();
+            BackendMetricsAccumulator.WalkTraceTreeForQueryMetrics(this.Value, accumulator);
+            return BackendMetricsAccumulator.ToBackendMetrics(accumulator);
 
         }
 
         internal bool IsGoneExceptionHit()
         {
             return this.WalkTraceTreeForGoneException(this.Value);
-        }
-
-        private BackendMetrics.Accumulator WalkTraceTreeForQueryMetrics(ITrace currentTrace, BackendMetrics.Accumulator accumulator)
-        {
-            if (currentTrace == null)
-            {
-                return accumulator;
-            }
-
-            foreach (object datum in currentTrace.Data.Values)
-            {
-                if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
-                {
-                    accumulator = accumulator.Accumulate(queryMetricsTraceDatum.QueryMetrics.BackendMetrics);
-                    return accumulator;
-                }
-            }
-
-            foreach (ITrace childTrace in currentTrace.Children)
-            {
-                accumulator = this.WalkTraceTreeForQueryMetrics(childTrace, accumulator);
-            }
-
-            return accumulator;
         }
 
         private bool WalkTraceTreeForGoneException(ITrace currentTrace)
