@@ -46,7 +46,6 @@ namespace CosmosBenchmark
                     .AddMeter("CosmosBenchmarkInsertOperationMeter")
                     .AddMeter("CosmosBenchmarkQueryOperationMeter")
                     .AddMeter("CosmosBenchmarkReadOperationMeter")
-                    .AddConsoleExporter()
                     .Build();
 
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
