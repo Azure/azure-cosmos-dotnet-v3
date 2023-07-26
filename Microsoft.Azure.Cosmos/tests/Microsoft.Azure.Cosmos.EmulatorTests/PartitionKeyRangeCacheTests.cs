@@ -42,6 +42,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string failedIfNoneMatchValue = null;
             httpHandlerHelper.RequestCallBack = (request, cancellationToken) =>
             {
+                Console.WriteLine("request.RequestUri.ToString()" + request.RequestUri.ToString());
+
                 if (!request.RequestUri.ToString().EndsWith("pkranges"))
                 {
                     return null;
@@ -94,6 +96,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Exception> exceptions = new();
             Task backgroundItemOperatios = Task.Factory.StartNew(() => this.CreateAndReadItemBackgroundLoop(container, exceptions));
 
+            Assert.AreEqual(0, exceptions.Count, $"Unexpected exceptions: {string.Join(';', exceptions)}");
+
             // Wait for the background job to start
             Documents.ValueStopwatch stopwatch = Documents.ValueStopwatch.StartNew();
             while (!this.loopBackgroundOperaitons && stopwatch.Elapsed.TotalSeconds < 30)
@@ -141,8 +145,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.AreEqual(failedIfNoneMatchValue, ifNoneValue, $"Multiple duplicates; split exception count: {countSplitExceptions}; {string.Join(';', ifNoneMatchValues)}");
                 }
             }
-
-            Assert.AreEqual(0, exceptions.Count, $"Unexpected exceptions: {string.Join(';', exceptions)}");
 
             await db.DeleteStreamAsync();
         }
