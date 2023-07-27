@@ -42,8 +42,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string failedIfNoneMatchValue = null;
             httpHandlerHelper.RequestCallBack = (request, cancellationToken) =>
             {
-                Console.WriteLine("request.RequestUri.ToString()" + request.RequestUri.ToString());
-
                 if (!request.RequestUri.ToString().EndsWith("pkranges"))
                 {
                     return null;
