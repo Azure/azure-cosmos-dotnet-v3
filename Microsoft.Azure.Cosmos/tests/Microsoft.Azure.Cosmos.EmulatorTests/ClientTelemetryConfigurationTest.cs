@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestCleanup();
             ClientTelemetryOptions.DefaultTimeStampInSeconds = TimeSpan.FromMinutes(10);
+            TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeIntervalInMS = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
         }
 
         [TestMethod]

@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal class TelemetryToServiceHelper : IClientTelemetryCollectors, IDisposable
     {
-        internal static int DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 10 * 60 * 1000;
+        internal static int DefaultBackgroundRefreshClientConfigTimeIntervalInMS = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
 
         private readonly AuthorizationTokenProvider cosmosAuthorization;
         private readonly CosmosHttpClient httpClient;
