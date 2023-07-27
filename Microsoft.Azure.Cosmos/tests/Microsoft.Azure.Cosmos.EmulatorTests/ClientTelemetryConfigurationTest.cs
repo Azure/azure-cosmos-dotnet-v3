@@ -171,6 +171,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task Validate_ClientTelemetryJob_When_Flag_Is_Switched(bool isEnabledInitially)
         {
+            TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 10;
+
             ManualResetEvent manualResetEvent = new ManualResetEvent(false);
             
             int counter = 0;
@@ -224,8 +226,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cosmosClientBuilder
                 .WithHttpClientFactory(() => new HttpClient(httpHandler));
             this.SetClient(this.cosmosClientBuilder.Build());
-
-            TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 10;
 
             this.database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
 
