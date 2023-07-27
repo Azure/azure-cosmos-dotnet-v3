@@ -14,6 +14,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
     [Serializable]
     internal sealed class MetricInfo
     {
+        private static readonly IReadOnlyDictionary<double, double> defaultPercentiles = new Dictionary<double, double>
+        {
+            { ClientTelemetryOptions.Percentile50,  0 },
+            { ClientTelemetryOptions.Percentile90,  0 },
+            { ClientTelemetryOptions.Percentile95,  0 },
+            { ClientTelemetryOptions.Percentile99,  0 },
+            { ClientTelemetryOptions.Percentile999, 0 }
+        };
+
         internal MetricInfo(string metricsName, string unitName)
         {
             this.MetricsName = metricsName;
@@ -65,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         /// <returns>MetricInfo</returns>
         internal MetricInfo SetAggregators(LongConcurrentHistogram histogram, double adjustment = 1)
         {
-            if (histogram != null)
+            if (histogram != null && histogram.TotalCount > 0)
             {
                 this.Count = histogram.TotalCount;
                 this.Max = histogram.GetMaxValue() / adjustment;
@@ -80,6 +89,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
                     { ClientTelemetryOptions.Percentile999, histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile999) / adjustment }
                 };
                 this.Percentiles = percentile;
+            }
+            else
+            {
+                this.Percentiles = MetricInfo.defaultPercentiles;
             }
             return this;
         }
