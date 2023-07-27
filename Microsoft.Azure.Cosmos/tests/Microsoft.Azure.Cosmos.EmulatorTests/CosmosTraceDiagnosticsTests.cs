@@ -59,7 +59,7 @@
                 requestOptions: requestOptions);
 
             bool found = false;
-            BackendMetricsAccumulator headerMetricsAccumulator = default;
+            BackendMetricsAccumulator headerMetricsAccumulator = new BackendMetricsAccumulator();
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();

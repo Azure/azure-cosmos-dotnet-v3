@@ -60,21 +60,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         private long OutputDocumentCount { get; set; }
         private long OutputDocumentSize { get; set; }
         private double IndexHitRatio { get; set; }
-        private QueryPreparationTimesAccumulator QueryPreparationTimesAccumulator { get; set; }
+        private QueryPreparationTimesAccumulator QueryPreparationTimesAccumulator { get; }
         private TimeSpan IndexLookupTime { get; set; }
         private TimeSpan DocumentLoadTime { get; set; }
-        private RuntimeExecutionTimesAccumulator RuntimeExecutionTimesAccumulator { get; set; }
+        private RuntimeExecutionTimesAccumulator RuntimeExecutionTimesAccumulator { get; }
         private TimeSpan DocumentWriteTime { get; set; }
         private TimeSpan VMExecutionTime { get; set; }
 
         public void Accumulate(BackendMetrics backendMetrics)
         {
+            this.IndexHitRatio = ((this.OutputDocumentCount * this.IndexHitRatio) + (backendMetrics.OutputDocumentCount * backendMetrics.IndexHitRatio)) / (this.RetrievedDocumentCount + backendMetrics.RetrievedDocumentCount);
             this.TotalTime += backendMetrics.TotalTime;
             this.RetrievedDocumentCount += backendMetrics.RetrievedDocumentCount;
             this.RetrievedDocumentSize += backendMetrics.RetrievedDocumentSize;
             this.OutputDocumentCount += backendMetrics.OutputDocumentCount;
             this.OutputDocumentSize += backendMetrics.OutputDocumentSize;
-            this.IndexHitRatio = ((this.OutputDocumentCount * this.IndexHitRatio) + (backendMetrics.OutputDocumentCount * backendMetrics.IndexHitRatio)) / (this.RetrievedDocumentCount + backendMetrics.RetrievedDocumentCount);
             this.QueryPreparationTimesAccumulator.Accumulate(backendMetrics.QueryPreparationTimes);
             this.IndexLookupTime += backendMetrics.IndexLookupTime;
             this.DocumentLoadTime += backendMetrics.DocumentLoadTime;

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override BackendMetrics GetQueryMetrics()
         {
-            BackendMetricsAccumulator accumulator = default;
+            BackendMetricsAccumulator accumulator = new BackendMetricsAccumulator();
             BackendMetricsAccumulator.WalkTraceTreeForQueryMetrics(this.Value, accumulator);
             return accumulator.GetBackendMetrics();
 
