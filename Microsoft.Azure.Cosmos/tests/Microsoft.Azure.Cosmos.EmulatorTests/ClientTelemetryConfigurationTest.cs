@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task Cleanup()
         {
             await base.TestCleanup();
+            ClientTelemetryOptions.DefaultTimeStampInSeconds = TimeSpan.FromMinutes(10);
         }
 
         [TestMethod]
