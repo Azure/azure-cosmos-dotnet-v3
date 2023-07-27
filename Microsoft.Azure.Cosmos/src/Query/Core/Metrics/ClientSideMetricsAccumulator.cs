@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Collections.Generic;
     using System.Linq;
 
-    internal ref struct ClientSideMetricsAccumulator
+    internal struct ClientSideMetricsAccumulator
     {
         public ClientSideMetricsAccumulator(long retries, double requestCharge, IEnumerable<FetchExecutionRange> fetchExecutionRanges)
         {

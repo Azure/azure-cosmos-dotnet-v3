@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
-    internal ref struct BackendMetricsAccumulator
+    internal struct BackendMetricsAccumulator
     {
         public BackendMetricsAccumulator(
             TimeSpan totalTime,

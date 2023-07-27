@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
 
-    internal ref struct RuntimeExecutionTimesAccumulator
+    internal struct RuntimeExecutionTimesAccumulator
     {
         public RuntimeExecutionTimesAccumulator(TimeSpan queryEngineExecutionTime, TimeSpan systemFunctionExecutionTime, TimeSpan userDefinedFunctionExecutionTimes)
         {

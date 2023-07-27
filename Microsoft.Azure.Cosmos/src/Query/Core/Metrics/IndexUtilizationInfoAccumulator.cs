@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Collections.Generic;
     using System.Linq;
 
-    internal ref struct IndexUtilizationInfoAccumulator
+    internal struct IndexUtilizationInfoAccumulator
     {
         public IndexUtilizationInfoAccumulator(
             IEnumerable<SingleIndexUtilizationEntity> utilizedSingleIndexes,

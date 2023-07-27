@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
 
-    internal ref struct QueryPreparationTimesAccumulator
+    internal struct QueryPreparationTimesAccumulator
     {
         public QueryPreparationTimesAccumulator(TimeSpan queryCompliationTime, TimeSpan logicalPlanBuildTime, TimeSpan physicalPlanBuildTime, TimeSpan queryOptimizationTime)
         {
