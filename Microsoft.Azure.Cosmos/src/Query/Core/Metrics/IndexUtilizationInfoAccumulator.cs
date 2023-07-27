@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Collections.Generic;
     using System.Linq;
 
-    internal struct IndexUtilizationInfoAccumulator
+    internal class IndexUtilizationInfoAccumulator
     {
         public IndexUtilizationInfoAccumulator(
             IEnumerable<SingleIndexUtilizationEntity> utilizedSingleIndexes,
@@ -21,10 +21,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.PotentialCompositeIndexes = potentialCompositeIndexes;
         }
 
-        public IEnumerable<SingleIndexUtilizationEntity> UtilizedSingleIndexes { get; set; }
-        public IEnumerable<SingleIndexUtilizationEntity> PotentialSingleIndexes { get; set; }
-        public IEnumerable<CompositeIndexUtilizationEntity> UtilizedCompositeIndexes { get; set; }
-        public IEnumerable<CompositeIndexUtilizationEntity> PotentialCompositeIndexes { get; set; }
+        public IndexUtilizationInfoAccumulator()
+        {
+            this.UtilizedSingleIndexes = default;
+            this.PotentialSingleIndexes = default;
+            this.UtilizedCompositeIndexes = default;
+            this.PotentialCompositeIndexes = default;
+        }
+
+        private IEnumerable<SingleIndexUtilizationEntity> UtilizedSingleIndexes { get; set; }
+        private IEnumerable<SingleIndexUtilizationEntity> PotentialSingleIndexes { get; set; }
+        private IEnumerable<CompositeIndexUtilizationEntity> UtilizedCompositeIndexes { get; set; }
+        private IEnumerable<CompositeIndexUtilizationEntity> PotentialCompositeIndexes { get; set; }
 
         public void Accumulate(IndexUtilizationInfo indexUtilizationInfo)
         {
@@ -35,13 +43,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             return;
         }
 
-        public static IndexUtilizationInfo ToIndexUtilizationInfo(IndexUtilizationInfoAccumulator accumulator)
+        public IndexUtilizationInfo GetIndexUtilizationInfo()
         {
             return new IndexUtilizationInfo(
-                utilizedSingleIndexes: accumulator.UtilizedSingleIndexes.ToList(),
-                potentialSingleIndexes: accumulator.PotentialSingleIndexes.ToList(),
-                utilizedCompositeIndexes: accumulator.UtilizedCompositeIndexes.ToList(),
-                potentialCompositeIndexes: accumulator.PotentialCompositeIndexes.ToList());
+                utilizedSingleIndexes: this.UtilizedSingleIndexes.ToList(),
+                potentialSingleIndexes: this.PotentialSingleIndexes.ToList(),
+                utilizedCompositeIndexes: this.UtilizedCompositeIndexes.ToList(),
+                potentialCompositeIndexes: this.PotentialCompositeIndexes.ToList());
         }
     }
 }

@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
 
-    internal struct QueryPreparationTimesAccumulator
+    internal class QueryPreparationTimesAccumulator
     {
         public QueryPreparationTimesAccumulator(TimeSpan queryCompliationTime, TimeSpan logicalPlanBuildTime, TimeSpan physicalPlanBuildTime, TimeSpan queryOptimizationTime)
         {
@@ -16,10 +16,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.QueryOptimizationTime = queryOptimizationTime;
         }
 
-        public TimeSpan QueryCompilationTime { get; set; }
-        public TimeSpan LogicalPlanBuildTime { get; set; }
-        public TimeSpan PhysicalPlanBuildTime { get; set; }
-        public TimeSpan QueryOptimizationTime { get; set; }
+        public QueryPreparationTimesAccumulator()
+        {
+            this.QueryCompilationTime = default;
+            this.LogicalPlanBuildTime = default;
+            this.PhysicalPlanBuildTime = default;
+            this.QueryOptimizationTime = default;
+        }
+
+        private TimeSpan QueryCompilationTime { get; set; }
+        private TimeSpan LogicalPlanBuildTime { get; set; }
+        private TimeSpan PhysicalPlanBuildTime { get; set; }
+        private TimeSpan QueryOptimizationTime { get; set; }
 
         public void Accumulate(QueryPreparationTimes queryPreparationTimes)
         {
@@ -34,13 +42,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.QueryOptimizationTime += queryPreparationTimes.QueryOptimizationTime;
         }
 
-        public static QueryPreparationTimes ToQueryPreparationTimes(QueryPreparationTimesAccumulator accumulator)
+        public QueryPreparationTimes GetQueryPreparationTimes()
         {
             return new QueryPreparationTimes(
-                queryCompilationTime: accumulator.QueryCompilationTime,
-                logicalPlanBuildTime: accumulator.LogicalPlanBuildTime,
-                physicalPlanBuildTime: accumulator.PhysicalPlanBuildTime,
-                queryOptimizationTime: accumulator.QueryOptimizationTime);
+                queryCompilationTime: this.QueryCompilationTime,
+                logicalPlanBuildTime: this.LogicalPlanBuildTime,
+                physicalPlanBuildTime: this.PhysicalPlanBuildTime,
+                queryOptimizationTime: this.QueryOptimizationTime);
         }
     }
 }

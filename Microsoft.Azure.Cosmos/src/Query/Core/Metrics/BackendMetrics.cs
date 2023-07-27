@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 accumulator.Accumulate(backendMetrics);
             }
 
-            return BackendMetricsAccumulator.ToBackendMetrics(accumulator);
+            return accumulator.GetBackendMetrics();
         }
 
         internal static bool TryParseFromDelimitedString(string delimitedString, out BackendMetrics backendMetrics)

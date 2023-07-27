@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
 
-    internal struct RuntimeExecutionTimesAccumulator
+    internal class RuntimeExecutionTimesAccumulator
     {
         public RuntimeExecutionTimesAccumulator(TimeSpan queryEngineExecutionTime, TimeSpan systemFunctionExecutionTime, TimeSpan userDefinedFunctionExecutionTimes)
         {
@@ -15,9 +15,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.UserDefinedFunctionExecutionTime = userDefinedFunctionExecutionTimes;
         }
 
-        public TimeSpan QueryEngineExecutionTime { get; set; }
-        public TimeSpan SystemFunctionExecutionTime { get; set; }
-        public TimeSpan UserDefinedFunctionExecutionTime { get; set; }
+        public RuntimeExecutionTimesAccumulator()
+        {
+            this.QueryEngineExecutionTime = default;
+            this.SystemFunctionExecutionTime = default;
+            this.UserDefinedFunctionExecutionTime = default;
+        }
+
+        private TimeSpan QueryEngineExecutionTime { get; set; }
+        private TimeSpan SystemFunctionExecutionTime { get; set; }
+        private TimeSpan UserDefinedFunctionExecutionTime { get; set; }
         public void Accumulate(RuntimeExecutionTimes runtimeExecutionTimes)
         {
             if (runtimeExecutionTimes == null)
@@ -30,12 +37,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.UserDefinedFunctionExecutionTime += runtimeExecutionTimes.UserDefinedFunctionExecutionTime;
         }
 
-        public static RuntimeExecutionTimes ToRuntimeExecutionTimes(RuntimeExecutionTimesAccumulator accumulator)
+        public RuntimeExecutionTimes GetRuntimeExecutionTimes()
         {
             return new RuntimeExecutionTimes(
-                queryEngineExecutionTime: accumulator.QueryEngineExecutionTime,
-                systemFunctionExecutionTime: accumulator.SystemFunctionExecutionTime,
-                userDefinedFunctionExecutionTime: accumulator.UserDefinedFunctionExecutionTime);
+                queryEngineExecutionTime: this.QueryEngineExecutionTime,
+                systemFunctionExecutionTime: this.SystemFunctionExecutionTime,
+                userDefinedFunctionExecutionTime: this.UserDefinedFunctionExecutionTime);
         }
     }
 }

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             accumulator.Accumulate(MockClientSideMetrics);
             accumulator.Accumulate(MockClientSideMetrics);
 
-            ClientSideMetrics doubleMetrics = ClientSideMetricsAccumulator.ToClientSideMetrics(accumulator);
+            ClientSideMetrics doubleMetrics = accumulator.GetClientSideMetrics();
             Assert.AreEqual(2 * MockClientSideMetrics.Retries, doubleMetrics.Retries);
             Assert.AreEqual(2 * MockClientSideMetrics.RequestCharge, doubleMetrics.RequestCharge);
             Assert.AreEqual(2 * MockClientSideMetrics.FetchExecutionRanges.Count(), doubleMetrics.FetchExecutionRanges.Count());

@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             accumulator.Accumulate(MockBackendMetrics);
             accumulator.Accumulate(MockBackendMetrics);
 
-            BackendMetrics backendMetricsFromAddition = BackendMetricsAccumulator.ToBackendMetrics(accumulator);
+            BackendMetrics backendMetricsFromAddition = accumulator.GetBackendMetrics();
             BackendMetrics expected = new BackendMetrics(
                 retrievedDocumentCount * 2,
                 retrievedDocumentSize * 2,

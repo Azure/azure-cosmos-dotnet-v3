@@ -76,7 +76,7 @@
                 Assert.IsTrue(tryParseResult);
 
                 headerMetricsAccumulator.Accumulate(backendMetricsFromTrace);
-                Assert.IsTrue(BackendMetricsAccumulator.ToBackendMetrics(headerMetricsAccumulator).Equals(backendMetricsFromDiagnostics));
+                Assert.IsTrue(headerMetricsAccumulator.GetBackendMetrics().Equals(backendMetricsFromDiagnostics));
             }
 
             Assert.IsTrue(found);

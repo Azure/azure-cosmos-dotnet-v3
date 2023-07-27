@@ -19,11 +19,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         [TestMethod]
         public void TestAccumulator()
         {
-            QueryMetrics.Accumulator accumulator = new QueryMetrics.Accumulator();
+            QueryMetricsAccumulator accumulator = new QueryMetricsAccumulator();
             accumulator.Accumulate(MockQueryMetrics);
             accumulator.Accumulate(MockQueryMetrics);
 
-            QueryMetrics doubleQueryMetrics = QueryMetrics.Accumulator.ToQueryMetrics(accumulator);
+            QueryMetrics doubleQueryMetrics = accumulator.GetQueryMetrics();
 
             // Spot check
             Assert.AreEqual(2 * BackendMetricsTests.MockBackendMetrics.IndexLookupTime, doubleQueryMetrics.BackendMetrics.IndexLookupTime);

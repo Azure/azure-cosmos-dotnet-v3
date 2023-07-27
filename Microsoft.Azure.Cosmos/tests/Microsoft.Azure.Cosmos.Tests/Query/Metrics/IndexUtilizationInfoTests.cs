@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             accumulator.Accumulate(MockIndexUtilizationInfo);
             accumulator.Accumulate(MockIndexUtilizationInfo);
 
-            IndexUtilizationInfo doubleInfo = IndexUtilizationInfoAccumulator.ToIndexUtilizationInfo(accumulator);
+            IndexUtilizationInfo doubleInfo = accumulator.GetIndexUtilizationInfo();
             Assert.AreEqual(2 * MockIndexUtilizationInfo.PotentialSingleIndexes.Count, doubleInfo.PotentialSingleIndexes.Count);
             Assert.AreEqual(2 * MockIndexUtilizationInfo.UtilizedSingleIndexes.Count, doubleInfo.UtilizedSingleIndexes.Count);
             Assert.AreEqual(2 * MockIndexUtilizationInfo.PotentialCompositeIndexes.Count, doubleInfo.PotentialCompositeIndexes.Count);

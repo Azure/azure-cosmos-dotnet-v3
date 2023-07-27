@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
-    internal struct BackendMetricsAccumulator
+    internal class BackendMetricsAccumulator
     {
         public BackendMetricsAccumulator(
             TimeSpan totalTime,
@@ -38,18 +38,34 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.VMExecutionTime = vmExecutionTime;
         }
 
-        public TimeSpan TotalTime { get; set; }
-        public long RetrievedDocumentCount { get; set; }
-        public long RetrievedDocumentSize { get; set; }
-        public long OutputDocumentCount { get; set; }
-        public long OutputDocumentSize { get; set; }
-        public double IndexHitRatio { get; set; }
-        public QueryPreparationTimesAccumulator QueryPreparationTimesAccumulator { get; set; }
-        public TimeSpan IndexLookupTime { get; set; }
-        public TimeSpan DocumentLoadTime { get; set; }
-        public RuntimeExecutionTimesAccumulator RuntimeExecutionTimesAccumulator { get; set; }
-        public TimeSpan DocumentWriteTime { get; set; }
-        public TimeSpan VMExecutionTime { get; set; }
+        public BackendMetricsAccumulator()
+        {
+            this.TotalTime = default;
+            this.RetrievedDocumentCount = default;
+            this.RetrievedDocumentSize = default;
+            this.OutputDocumentCount = default;
+            this.OutputDocumentSize = default;
+            this.IndexHitRatio = default;
+            this.QueryPreparationTimesAccumulator = new QueryPreparationTimesAccumulator();
+            this.IndexLookupTime = default;
+            this.DocumentLoadTime = default;
+            this.RuntimeExecutionTimesAccumulator = new RuntimeExecutionTimesAccumulator();
+            this.DocumentWriteTime = default;
+            this.VMExecutionTime = default;
+        }
+
+        private TimeSpan TotalTime { get; set; }
+        private long RetrievedDocumentCount { get; set; }
+        private long RetrievedDocumentSize { get; set; }
+        private long OutputDocumentCount { get; set; }
+        private long OutputDocumentSize { get; set; }
+        private double IndexHitRatio { get; set; }
+        private QueryPreparationTimesAccumulator QueryPreparationTimesAccumulator { get; set; }
+        private TimeSpan IndexLookupTime { get; set; }
+        private TimeSpan DocumentLoadTime { get; set; }
+        private RuntimeExecutionTimesAccumulator RuntimeExecutionTimesAccumulator { get; set; }
+        private TimeSpan DocumentWriteTime { get; set; }
+        private TimeSpan VMExecutionTime { get; set; }
 
         public void Accumulate(BackendMetrics backendMetrics)
         {
@@ -67,21 +83,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.VMExecutionTime += backendMetrics.VMExecutionTime;
         }
 
-        public static BackendMetrics ToBackendMetrics(BackendMetricsAccumulator accumulator)
+        public BackendMetrics GetBackendMetrics()
         {
             return new BackendMetrics(
-                retrievedDocumentCount: accumulator.RetrievedDocumentCount,
-                retrievedDocumentSize: accumulator.RetrievedDocumentSize,
-                outputDocumentCount: accumulator.OutputDocumentCount,
-                outputDocumentSize: accumulator.OutputDocumentSize,
-                indexHitRatio: accumulator.IndexHitRatio,
-                totalQueryExecutionTime: accumulator.TotalTime,
-                queryPreparationTimes: QueryPreparationTimesAccumulator.ToQueryPreparationTimes(accumulator.QueryPreparationTimesAccumulator),
-                indexLookupTime: accumulator.IndexLookupTime,
-                documentLoadTime: accumulator.DocumentLoadTime,
-                vmExecutionTime: accumulator.VMExecutionTime,
-                runtimeExecutionTimes: RuntimeExecutionTimesAccumulator.ToRuntimeExecutionTimes(accumulator.RuntimeExecutionTimesAccumulator),
-                documentWriteTime: accumulator.DocumentWriteTime);
+                retrievedDocumentCount: this.RetrievedDocumentCount,
+                retrievedDocumentSize: this.RetrievedDocumentSize,
+                outputDocumentCount: this.OutputDocumentCount,
+                outputDocumentSize: this.OutputDocumentSize,
+                indexHitRatio: this.IndexHitRatio,
+                totalQueryExecutionTime: this.TotalTime,
+                queryPreparationTimes: this.QueryPreparationTimesAccumulator.GetQueryPreparationTimes(),
+                indexLookupTime: this.IndexLookupTime,
+                documentLoadTime: this.DocumentLoadTime,
+                vmExecutionTime: this.VMExecutionTime,
+                runtimeExecutionTimes: this.RuntimeExecutionTimesAccumulator.GetRuntimeExecutionTimes(),
+                documentWriteTime: this.DocumentWriteTime);
         }
 
         public static void WalkTraceTreeForQueryMetrics(ITrace currentTrace, BackendMetricsAccumulator accumulator)
