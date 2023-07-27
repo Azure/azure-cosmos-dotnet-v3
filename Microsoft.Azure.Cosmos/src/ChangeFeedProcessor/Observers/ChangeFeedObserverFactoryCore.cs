@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly ChangesHandler<T> legacyOnChanges;
         private readonly ChangeFeedHandler<T> onChanges;
         private readonly ChangeFeedHandlerWithManualCheckpoint<T> onChangesWithManualCheckpoint;
-        private readonly AllVersionsAndDeleteChangesHandler<T> onAllVersionsAndDeleteChanges;
+        private readonly ChangeFeedHandler<ChangeFeedItemChange<T>> onAllVersionsAndDeletesChanges;
         private readonly CosmosSerializerCore serializerCore;
 
         public ChangeFeedObserverFactoryCore(
@@ -72,11 +72,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         public ChangeFeedObserverFactoryCore(
-            AllVersionsAndDeleteChangesHandler<T> onChanges,
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChanges,
             CosmosSerializerCore serializerCore)
             : this(serializerCore)
         {
-            this.onAllVersionsAndDeleteChanges = onChanges ?? throw new ArgumentNullException(nameof(onChanges));
+            this.onAllVersionsAndDeletesChanges = onChanges ?? throw new ArgumentNullException(nameof(onChanges));
         }
 
         public ChangeFeedObserverFactoryCore(
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             Stream stream,
             CancellationToken cancellationToken)
         {
-            if (this.onAllVersionsAndDeleteChanges != null)
+            if (this.onAllVersionsAndDeletesChanges != null)
             {
                 return this.AllVersionsAndDeleteStreamHandlerAsync(context, stream, cancellationToken);
             }
@@ -130,18 +130,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             Stream stream,
             CancellationToken cancellationToken)
         {
-            using (StreamReader reader = new StreamReader(stream))
-            {
-                string str = reader.ReadToEnd();
-                stream.Position = 0;
-            }
-            IReadOnlyCollection<ChangeFeedProcessorItem<T>> changes = this.AllVersionsAsIReadOnlyCollection(stream, context);
+            IReadOnlyCollection<ChangeFeedItemChange<T>> changes = this.AllVersionsAsIReadOnlyCollection(stream, context);
             if (changes.Count == 0)
             {
                 return Task.CompletedTask;
             }
 
-            return this.onAllVersionsAndDeleteChanges(changes, cancellationToken);
+            return this.onAllVersionsAndDeletesChanges(context, changes, cancellationToken);
         }
 
         private IReadOnlyCollection<T> AsIReadOnlyCollection(
@@ -161,13 +156,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
-        private IReadOnlyCollection<ChangeFeedProcessorItem<T>> AllVersionsAsIReadOnlyCollection(
+        private IReadOnlyCollection<ChangeFeedItemChange<T>> AllVersionsAsIReadOnlyCollection(
             Stream stream,
             ChangeFeedObserverContextCore context)
         {
             try
             {
-                 return CosmosFeedResponseSerializer.FromFeedResponseStream<ChangeFeedProcessorItem<T>>(
+                 return CosmosFeedResponseSerializer.FromFeedResponseStream<ChangeFeedItemChange<T>>(
                     this.serializerCore,
                     stream);
             }

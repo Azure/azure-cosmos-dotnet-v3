@@ -602,9 +602,14 @@ namespace Microsoft.Azure.Cosmos
                 observerFactory, ChangeFeedMode.Incremental);
         }
 
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        override ChangeFeedProcessorBuilder GetAllVersionsChangeFeedProcessorBuilder<T>(
             string processorName,
-            AllVersionsAndDeleteChangesHandler<T> onChangesDelegate)
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
         {
             if (processorName == null)
             {
