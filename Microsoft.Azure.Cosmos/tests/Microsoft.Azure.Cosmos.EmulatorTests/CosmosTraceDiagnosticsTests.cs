@@ -86,10 +86,10 @@
                 BackendMetrics backendMetricsFromDiagnostics = iter.Diagnostics.GetQueryMetrics();
                 string diag = iter.Diagnostics.ToString();
                 Assert.IsNotNull(diag);
-                bool tryParseResult = BackendMetrics.TryParseFromDelimitedString(iter.Headers.QueryMetricsText, out BackendMetrics backendMetricsFromTrace);
+                bool tryParseResult = BackendMetrics.TryParseFromDelimitedString(iter.Headers.QueryMetricsText, out BackendMetrics backendMetricsFromHeaders);
                 Assert.IsTrue(tryParseResult);
 
-                headerMetricsAccumulator.Accumulate(backendMetricsFromTrace);
+                headerMetricsAccumulator.Accumulate(backendMetricsFromHeaders);
                 Assert.IsTrue(headerMetricsAccumulator.GetBackendMetrics().FormatTrace() == backendMetricsFromDiagnostics.FormatTrace());
             }
 

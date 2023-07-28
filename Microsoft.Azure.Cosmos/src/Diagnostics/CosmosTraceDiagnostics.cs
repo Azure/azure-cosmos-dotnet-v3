@@ -54,7 +54,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             BackendMetricsAccumulator accumulator = new BackendMetricsAccumulator();
             BackendMetricsAccumulator.WalkTraceTreeForQueryMetrics(this.Value, accumulator);
             return accumulator.GetBackendMetrics();
-
         }
 
         internal bool IsGoneExceptionHit()
