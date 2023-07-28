@@ -10,23 +10,10 @@
     [TestClass]
     public class CosmosTraceDiagnosticsTests : BaseCosmosClientHelper
     {
-        private Container Container = null;
-        private ContainerProperties containerSettings = null;
-
         [TestInitialize]
         public async Task TestInitialize()
         {
             await base.TestInit(validateSinglePartitionKeyRangeCacheCall: true);
-            string PartitionKey = "/pk";
-            this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                this.containerSettings,
-                throughput: 15000,
-                cancellationToken: this.cancellationToken);
-            Assert.IsNotNull(response);
-            Assert.IsNotNull(response.Container);
-            Assert.IsNotNull(response.Resource);
-            this.Container = response;
         }
 
         [TestCleanup]
@@ -36,12 +23,37 @@
         }
 
         /// <summary>
+        /// Validate QueryMetrics retrieved from Diagnostics for single partition query.
+        /// </summary>
+        [TestMethod]
+        public async Task ValidateMetricsSinglePartitionQuery()
+        {
+            await this.ValidateMetrics(throughput: 5000);
+        }
+
+        /// <summary>
         /// Validate QueryMetrics retrieved from Diagnostics for multi-partition query.
         /// </summary>
         [TestMethod]
         public async Task ValidateMetricsMultiplePartitionQuery()
         {
-            IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(this.Container, 3, randomPartitionKey: true);
+            await this.ValidateMetrics(throughput: 15000);
+        }
+
+        private async Task ValidateMetrics(int throughput)
+        {
+            string PartitionKey = "/pk";
+            ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                containerSettings,
+                throughput: throughput,
+                cancellationToken: this.cancellationToken);
+            Assert.IsNotNull(containerResponse);
+            Assert.IsNotNull(containerResponse.Container);
+            Assert.IsNotNull(containerResponse.Resource);
+            Container container = containerResponse;
+
+            IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(container, 3, randomPartitionKey: true);
 
             ToDoActivity find = deleteList.First();
             QueryDefinition sql = new QueryDefinition("select * from toDoActivity t where t.id = '" + find.id + "'");
@@ -54,7 +66,7 @@
                 MaxConcurrency = 1,
             };
 
-            FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
+            FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
                 sql,
                 requestOptions: requestOptions);
 
@@ -72,11 +84,13 @@
                 }
 
                 BackendMetrics backendMetricsFromDiagnostics = iter.Diagnostics.GetQueryMetrics();
+                string diag = iter.Diagnostics.ToString();
+                Assert.IsNotNull(diag);
                 bool tryParseResult = BackendMetrics.TryParseFromDelimitedString(iter.Headers.QueryMetricsText, out BackendMetrics backendMetricsFromTrace);
                 Assert.IsTrue(tryParseResult);
 
                 headerMetricsAccumulator.Accumulate(backendMetricsFromTrace);
-                Assert.IsTrue(headerMetricsAccumulator.GetBackendMetrics().Equals(backendMetricsFromDiagnostics));
+                Assert.IsTrue(headerMetricsAccumulator.GetBackendMetrics().FormatTrace() == backendMetricsFromDiagnostics.FormatTrace());
             }
 
             Assert.IsTrue(found);
