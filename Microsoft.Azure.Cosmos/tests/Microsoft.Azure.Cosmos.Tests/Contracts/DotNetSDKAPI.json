@@ -3124,6 +3124,11 @@
           "Attributes": [],
           "MethodInfo": "Int32 GetFailedRequestCount();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Query.Core.Metrics.BackendMetrics GetQueryMetrics()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Query.Core.Metrics.BackendMetrics GetQueryMetrics();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.Uri]] GetContactedRegions()": {
           "Type": "Method",
           "Attributes": [],
@@ -6232,6 +6237,267 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.PortReuseMode ReuseUnicastPort;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Query.Core.Metrics.BackendMetrics;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Double get_IndexHitRatio()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Double get_IndexHitRatio();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Double IndexHitRatio": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Double IndexHitRatio;CanRead:True;CanWrite:False;Double get_IndexHitRatio();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 get_OutputDocumentCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int64 get_OutputDocumentCount();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 get_OutputDocumentSize()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int64 get_OutputDocumentSize();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 get_RetrievedDocumentCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int64 get_RetrievedDocumentCount();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 get_RetrievedDocumentSize()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int64 get_RetrievedDocumentSize();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 OutputDocumentCount": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Int64 OutputDocumentCount;CanRead:True;CanWrite:False;Int64 get_OutputDocumentCount();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 OutputDocumentSize": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Int64 OutputDocumentSize;CanRead:True;CanWrite:False;Int64 get_OutputDocumentSize();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 RetrievedDocumentCount": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Int64 RetrievedDocumentCount;CanRead:True;CanWrite:False;Int64 get_RetrievedDocumentCount();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int64 RetrievedDocumentSize": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Int64 RetrievedDocumentSize;CanRead:True;CanWrite:False;Int64 get_RetrievedDocumentSize();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Query.Core.Metrics.QueryPreparationTimes get_QueryPreparationTimes()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Query.Core.Metrics.QueryPreparationTimes get_QueryPreparationTimes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Query.Core.Metrics.QueryPreparationTimes QueryPreparationTimes": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Query.Core.Metrics.QueryPreparationTimes QueryPreparationTimes;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Query.Core.Metrics.QueryPreparationTimes get_QueryPreparationTimes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Query.Core.Metrics.RuntimeExecutionTimes get_RuntimeExecutionTimes()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Query.Core.Metrics.RuntimeExecutionTimes get_RuntimeExecutionTimes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Query.Core.Metrics.RuntimeExecutionTimes RuntimeExecutionTimes": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Query.Core.Metrics.RuntimeExecutionTimes RuntimeExecutionTimes;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Query.Core.Metrics.RuntimeExecutionTimes get_RuntimeExecutionTimes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan DocumentLoadTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan DocumentLoadTime;CanRead:True;CanWrite:False;System.TimeSpan get_DocumentLoadTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan DocumentWriteTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan DocumentWriteTime;CanRead:True;CanWrite:False;System.TimeSpan get_DocumentWriteTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_DocumentLoadTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_DocumentLoadTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_DocumentWriteTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_DocumentWriteTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_IndexLookupTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_IndexLookupTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_TotalTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_TotalTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_VMExecutionTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_VMExecutionTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan IndexLookupTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan IndexLookupTime;CanRead:True;CanWrite:False;System.TimeSpan get_IndexLookupTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan TotalTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan TotalTime;CanRead:True;CanWrite:False;System.TimeSpan get_TotalTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan VMExecutionTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan VMExecutionTime;CanRead:True;CanWrite:False;System.TimeSpan get_VMExecutionTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(Int64, Int64, Int64, Int64, Double, System.TimeSpan, Microsoft.Azure.Cosmos.Query.Core.Metrics.QueryPreparationTimes, System.TimeSpan, System.TimeSpan, System.TimeSpan, Microsoft.Azure.Cosmos.Query.Core.Metrics.RuntimeExecutionTimes, System.TimeSpan)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(Int64, Int64, Int64, Int64, Double, System.TimeSpan, Microsoft.Azure.Cosmos.Query.Core.Metrics.QueryPreparationTimes, System.TimeSpan, System.TimeSpan, System.TimeSpan, Microsoft.Azure.Cosmos.Query.Core.Metrics.RuntimeExecutionTimes, System.TimeSpan), Void .ctor(Int64, Int64, Int64, Int64, Double, System.TimeSpan, Microsoft.Azure.Cosmos.Query.Core.Metrics.QueryPreparationTimes, System.TimeSpan, System.TimeSpan, System.TimeSpan, Microsoft.Azure.Cosmos.Query.Core.Metrics.RuntimeExecutionTimes, System.TimeSpan)]"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Query.Core.Metrics.QueryPreparationTimes;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.TimeSpan get_LogicalPlanBuildTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_LogicalPlanBuildTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_PhysicalPlanBuildTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_PhysicalPlanBuildTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_QueryCompilationTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_QueryCompilationTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_QueryOptimizationTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_QueryOptimizationTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan LogicalPlanBuildTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan LogicalPlanBuildTime;CanRead:True;CanWrite:False;System.TimeSpan get_LogicalPlanBuildTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan PhysicalPlanBuildTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan PhysicalPlanBuildTime;CanRead:True;CanWrite:False;System.TimeSpan get_PhysicalPlanBuildTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan QueryCompilationTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan QueryCompilationTime;CanRead:True;CanWrite:False;System.TimeSpan get_QueryCompilationTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan QueryOptimizationTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan QueryOptimizationTime;CanRead:True;CanWrite:False;System.TimeSpan get_QueryOptimizationTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.TimeSpan, System.TimeSpan, System.TimeSpan, System.TimeSpan)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.TimeSpan, System.TimeSpan, System.TimeSpan, System.TimeSpan), Void .ctor(System.TimeSpan, System.TimeSpan, System.TimeSpan, System.TimeSpan)]"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Query.Core.Metrics.RuntimeExecutionTimes;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.TimeSpan get_QueryEngineExecutionTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_QueryEngineExecutionTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_SystemFunctionExecutionTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_SystemFunctionExecutionTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan get_UserDefinedFunctionExecutionTime()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.TimeSpan get_UserDefinedFunctionExecutionTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan QueryEngineExecutionTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan QueryEngineExecutionTime;CanRead:True;CanWrite:False;System.TimeSpan get_QueryEngineExecutionTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan SystemFunctionExecutionTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan SystemFunctionExecutionTime;CanRead:True;CanWrite:False;System.TimeSpan get_SystemFunctionExecutionTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.TimeSpan UserDefinedFunctionExecutionTime": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.TimeSpan UserDefinedFunctionExecutionTime;CanRead:True;CanWrite:False;System.TimeSpan get_UserDefinedFunctionExecutionTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.TimeSpan, System.TimeSpan, System.TimeSpan)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.TimeSpan, System.TimeSpan, System.TimeSpan), Void .ctor(System.TimeSpan, System.TimeSpan, System.TimeSpan)]"
         }
       },
       "NestedTypes": {}
