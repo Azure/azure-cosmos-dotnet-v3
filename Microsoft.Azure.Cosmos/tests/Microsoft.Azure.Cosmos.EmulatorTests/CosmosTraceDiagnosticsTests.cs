@@ -84,8 +84,6 @@
                 }
 
                 BackendMetrics backendMetricsFromDiagnostics = iter.Diagnostics.GetQueryMetrics();
-                string diag = iter.Diagnostics.ToString();
-                Assert.IsNotNull(diag);
                 bool tryParseResult = BackendMetrics.TryParseFromDelimitedString(iter.Headers.QueryMetricsText, out BackendMetrics backendMetricsFromHeaders);
                 Assert.IsTrue(tryParseResult);
 
