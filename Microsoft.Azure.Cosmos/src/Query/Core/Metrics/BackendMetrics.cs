@@ -132,15 +132,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// </summary>
         public TimeSpan VMExecutionTime { get; }
 
-        /// <summary>
-        /// String representation of BackendMetric.
-        /// </summary>
-        /// <returns>BackendMetric text</returns>
-        public override string ToString() //todo move this logic elsewhere?
-        {
-            return $"totalExecutionTimeInMs={this.TotalTime.TotalMilliseconds};queryCompileTimeInMs={this.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds};queryLogicalPlanBuildTimeInMs={this.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds};queryPhysicalPlanBuildTimeInMs={this.QueryPreparationTimes.PhysicalPlanBuildTime.TotalMilliseconds};queryOptimizationTimeInMs={this.QueryPreparationTimes.QueryOptimizationTime.TotalMilliseconds};indexLookupTimeInMs={this.IndexLookupTime.TotalMilliseconds};documentLoadTimeInMs={this.DocumentLoadTime.TotalMilliseconds};systemFunctionExecuteTimeInMs={this.RuntimeExecutionTimes.SystemFunctionExecutionTime.TotalMilliseconds};userFunctionExecuteTimeInMs={this.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime.TotalMilliseconds};retrievedDocumentCount={this.RetrievedDocumentCount};retrievedDocumentSize={this.RetrievedDocumentSize};outputDocumentCount={this.OutputDocumentCount};outputDocumentSize={this.OutputDocumentSize};writeOutputTimeInMs={this.DocumentWriteTime.TotalMilliseconds};indexUtilizationRatio={this.IndexHitRatio}";
-        }
-
         internal static BackendMetrics CreateFromIEnumerable(IEnumerable<BackendMetrics> backendMetricsEnumerable)
         {
             BackendMetricsAccumulator accumulator = default;
