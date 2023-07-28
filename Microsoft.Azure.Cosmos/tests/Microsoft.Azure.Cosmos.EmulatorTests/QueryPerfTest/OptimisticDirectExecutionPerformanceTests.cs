@@ -13,11 +13,12 @@
     [TestClass]
     public class OptimisticDirectExecutionPerformanceTests
     {
+        private Container Container;
         private const string RawDataFileName = "OptimisticDirectExecutionPerformanceTestsRawData.csv";
         private const string DiagnosticsDataFileName = "OptimisticDirectExecutionPerformanceTestsAggregatedData.csv";
+        private const string PrintQueryMetrics = "QueryMetrics";
         private static readonly string RawDataPath = Path.GetFullPath(RawDataFileName);
         private static readonly string AggregateDataPath = Path.GetFullPath(DiagnosticsDataFileName);
-        private static readonly List<CustomOdeStats> customOdeStatisticsList = new List<CustomOdeStats>();
         private static readonly string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
         private static readonly string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
         private static readonly string cosmosDatabaseId = Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.CosmosDatabaseId"];
@@ -26,15 +27,8 @@
         private static readonly int numberOfIterations = int.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.NumberOfIterations"]);
         private static readonly int warmupIterations = int.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.WarmupIterations"]);
 
-        internal class CustomOdeStats
-        { 
-            public string Query { get; set; }
-            public bool EnableOde { get; set; }
-            public QueryStatisticsDatumVisitor QueryStatisticsDatumVisitor { get; set; }
-        }
-
-        [TestMethod]
-        public async Task OptimisticDirectExecutionPerformanceTest()
+        [TestInitialize]
+        public async Task InitializeTest()
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
@@ -42,16 +36,9 @@
             };
 
             CosmosClient cosmosClient = new CosmosClient(endpoint, authKey, clientOptions);
-            (Database database, Container container) = await this.InitializeTest(cosmosClient);
-            await this.RunAsync(container);
-            await this.TestCleanup(database);
-        }
-
-        private async Task<(Database, Container)> InitializeTest(CosmosClient cosmosClient)
-        {
-            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(cosmosDatabaseId);
-            Container container = await database.CreateContainerAsync(containerId, partitionKeyPath: "/name");
-            await this.AddItemsToContainerAsync(container);
+            Database database = await cosmosClient.CreateDatabaseAsync(cosmosDatabaseId);
+            this.Container = await database.CreateContainerAsync(containerId, partitionKeyPath: "/name");
+            await this.AddItemsToContainerAsync(this.Container);
 
             if (File.Exists(RawDataPath))
             {
@@ -62,10 +49,18 @@
             {
                 File.Delete(AggregateDataPath);
             }
-
-            return (database, container);
         }
-        
+
+        [TestCleanup]
+        public async Task CleanupAsync()
+        {
+            if (this.Container != null)
+            {
+                await this.Container.Database.DeleteAsync();
+                this.Container = null;
+            }
+        }
+
         private async Task AddItemsToContainerAsync(Container container)
         {
             int totalItems = 5000;
@@ -106,11 +101,14 @@
                 Console.WriteLine("Created item in database with id: {0} Operation consumed {1} RUs.\n", andersenFamilyResponse.Resource.Id, andersenFamilyResponse.RequestCharge);
             }
         }
-        
-        private async Task RunAsync(Container container)
+
+        [TestMethod]
+        [Owner("akotalwar")]
+        public async Task RunAsync()
         {
             string highPrepTimeSumQuery = CreateHighPrepTimeSumQuery();
             string highPrepTimeConditionalQuery = CreateHighPrepTimeConditionalQuery();
+            List<CustomOdeStats> globalCustomOdeStatisticsList = new List<CustomOdeStats>();
 
             List<DirectExecutionTestCase> odeTestCases = new List<DirectExecutionTestCase>()
             {
@@ -208,22 +206,24 @@
 
             foreach (DirectExecutionTestCase testCase in odeTestCases)
             {
-                await this.RunQueryAsync(container, testCase);
+                List<CustomOdeStats> customOdeStats = await this.RunQueryAsync(testCase);
+                globalCustomOdeStatisticsList.AddRange(customOdeStats);
             }
 
             using (StreamWriter writer = new StreamWriter(new FileStream(RawDataPath, FileMode.Append, FileAccess.Write)))
             {
-                SerializeODEQueryMetrics(writer, customOdeStatisticsList, numberOfIterations, rawData: true);
+                SerializeODEQueryMetrics(writer, globalCustomOdeStatisticsList, numberOfIterations, rawData: true);
             }
 
             using (StreamWriter writer = new StreamWriter(new FileStream(AggregateDataPath, FileMode.Append, FileAccess.Write)))
             {
-                SerializeODEQueryMetrics(writer, customOdeStatisticsList, numberOfIterations, rawData: false);
+                SerializeODEQueryMetrics(writer, globalCustomOdeStatisticsList, numberOfIterations, rawData: false);
             }
         }
 
-        private async Task RunQueryAsync(Container container, DirectExecutionTestCase queryInput)
+        private async Task<List<CustomOdeStats>> RunQueryAsync(DirectExecutionTestCase queryInput)
         {
+            List<CustomOdeStats> customOdeStats = new List<CustomOdeStats>();
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
                 MaxItemCount = queryInput.PageSizeOption,
@@ -234,7 +234,7 @@
             for (int i = 0; i < numberOfIterations + warmupIterations; i++)
             {
                 bool isWarmUpIteration = i < warmupIterations;
-                using (FeedIterator<States> iterator = container.GetItemQueryIterator<States>(
+                using (FeedIterator<States> iterator = this.Container.GetItemQueryIterator<States>(
                         queryText: queryInput.Query,
                         requestOptions: requestOptions))
                 {
@@ -247,14 +247,16 @@
                     }
                     else
                     {
-                        await this.GetIteratorResponse(iterator, queryInput);
+                        customOdeStats = await this.GetIteratorStatistics(iterator, queryInput);
                     }
                     
                 }
             }
+
+            return customOdeStats;
         }
 
-        private async Task GetIteratorResponse<T>(FeedIterator<T> feedIterator, DirectExecutionTestCase queryInput)
+        private async Task<List<CustomOdeStats>> GetIteratorStatistics<T>(FeedIterator<T> feedIterator, DirectExecutionTestCase queryInput)
         {
             MetricsAccumulator metricsAccumulator = new MetricsAccumulator();
             Documents.ValueStopwatch totalTime = new Documents.ValueStopwatch();
@@ -264,6 +266,7 @@
             int totalDocumentCount = 0;
             string query;
             bool enableOde;
+            List<CustomOdeStats> customOdeStats = new List<CustomOdeStats>();
 
             while (feedIterator.HasMoreResults)
             {
@@ -282,15 +285,18 @@
                 {
                     query = queryInput.Query;
                     enableOde = queryInput.EnableOptimisticDirectExecution;
-                    queryStatisticsDatumVisitor.AddCorrelatedActivityId(correlatedActivityId);
-                    queryStatisticsDatumVisitor.AddRuCharge(response.RequestCharge);
                     queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds);
                     queryStatisticsDatumVisitor.PopulateMetrics();
-                    customOdeStatisticsList.Add(new CustomOdeStats
+
+                    QueryStatisticsMetrics queryStatistics = queryStatisticsDatumVisitor.QueryMetricsList[0];
+                    queryStatistics.RUCharge = response.RequestCharge;
+                    queryStatistics.CorrelatedActivityId = correlatedActivityId;
+
+                    customOdeStats.Add(new CustomOdeStats
                     {
                         Query = query,
                         EnableOde = enableOde,
-                        QueryStatisticsDatumVisitor = queryStatisticsDatumVisitor
+                        QueryStatisticsMetrics = queryStatistics
                     });
                 }
 
@@ -301,18 +307,8 @@
             }
 
             Assert.AreEqual(queryInput.ExpectedResultCount, totalDocumentCount);
-        }
 
-        private static void SerializeODEQueryMetrics(TextWriter textWriter, List<CustomOdeStats> customOdeStatisticsList, int numberOfIterations, bool rawData)
-        {
-            if (rawData)
-            {
-                MetricsSerializer.SerializeODERawDataQueryMetrics(textWriter, customOdeStatisticsList);
-            }
-            else
-            {
-                MetricsSerializer.SerializeODEProcessedDataQueryMetrics(textWriter, customOdeStatisticsList, numberOfIterations);
-            }
+            return customOdeStats;
         }
 
         private static string CreateHighPrepTimeSumQuery()
@@ -348,9 +344,106 @@
             return sb.ToString();
         }
 
-        private async Task TestCleanup(Database database)
+        private static void SerializeODEQueryMetrics(TextWriter textWriter, List<CustomOdeStats> customOdeStatisticsList, int numberOfIterations, bool rawData)
         {
-            await database.DeleteAsync();
+            if (rawData)
+            {
+                SerializeODERawDataQueryMetrics(textWriter, customOdeStatisticsList);
+            }
+            else
+            {
+                SerializeODEProcessedDataQueryMetrics(textWriter, customOdeStatisticsList, numberOfIterations);
+            }
+        }
+
+        private static void SerializeODERawDataQueryMetrics(TextWriter textWriter, List<OptimisticDirectExecutionPerformanceTests.CustomOdeStats> customOdeStatsList)
+        {
+            textWriter.WriteLine();
+            textWriter.WriteLine(PrintQueryMetrics);
+            textWriter.Write("\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\"", "Query", "ODE", "RUCharge", "BackendTime", "TransitTime", "ClientTime", "EndToEndTime");
+            textWriter.WriteLine();
+            double totalClientTime = 0;
+            double totalBackendTime = 0;
+            double totalEndToEndTime = 0;
+            double totalTransitTime = 0;
+            double totalRU = 0;
+            string prevQuery = "";
+            bool prevOde = default;
+            Guid prevCorrelatedActivityId = customOdeStatsList[0].QueryStatisticsMetrics.CorrelatedActivityId;
+
+            foreach (OptimisticDirectExecutionPerformanceTests.CustomOdeStats customOdeStats in customOdeStatsList)
+            {
+                QueryStatisticsMetrics metrics = customOdeStats.QueryStatisticsMetrics;
+                double transitTime = metrics.Created + metrics.ChannelAcquisitionStarted + metrics.Pipelined + metrics.Received + metrics.Completed;
+                double backendTime = metrics.TotalQueryExecutionTime;
+
+                if (metrics.CorrelatedActivityId == prevCorrelatedActivityId)
+                {
+                    totalClientTime += metrics.EndToEndTime - (backendTime + transitTime);
+                    totalBackendTime += backendTime;
+                    totalEndToEndTime += metrics.EndToEndTime;
+                    totalTransitTime += transitTime;
+                    totalRU += metrics.RUCharge;
+                    prevQuery = customOdeStats.Query;
+                    prevOde = customOdeStats.EnableOde;
+                    prevCorrelatedActivityId = metrics.CorrelatedActivityId;
+
+                }
+                else
+                {
+                    textWriter.WriteLine($"{prevQuery},{prevOde},{totalRU},{totalBackendTime},{totalTransitTime},{totalClientTime},{totalEndToEndTime}");
+                    totalClientTime = metrics.EndToEndTime - (backendTime + transitTime);
+                    totalBackendTime = backendTime;
+                    totalEndToEndTime = metrics.EndToEndTime;
+                    totalTransitTime = transitTime;
+                    totalRU = metrics.RUCharge;
+                    prevCorrelatedActivityId = metrics.CorrelatedActivityId;
+                    prevQuery = customOdeStats.Query;
+                    prevOde = customOdeStats.EnableOde;
+                }
+            }
+
+            textWriter.WriteLine($"{prevQuery},{prevOde},{totalRU},{totalBackendTime},{totalTransitTime},{totalClientTime},{totalEndToEndTime}");
+        }
+
+        private static void SerializeODEProcessedDataQueryMetrics(TextWriter textWriter, List<OptimisticDirectExecutionPerformanceTests.CustomOdeStats> customOdeStatsList, int numberOfIterations)
+        {
+            textWriter.WriteLine();
+            textWriter.WriteLine(PrintQueryMetrics);
+            textWriter.Write("\"{0}\",\"{1}\",\"{2}\",\"{3}\"", "Query", "ODE", "RUCharge", "EndToEndTime");
+            textWriter.WriteLine();
+
+            string prevQuery = customOdeStatsList[0].Query;
+            bool prevOde = customOdeStatsList[0].EnableOde;
+            double totalEndToEndTime = 0;
+            double totalRU = 0;
+
+            foreach (OptimisticDirectExecutionPerformanceTests.CustomOdeStats customOdeStats in customOdeStatsList)
+            {
+                QueryStatisticsMetrics metrics = customOdeStats.QueryStatisticsMetrics;
+                if (customOdeStats.Query == prevQuery && customOdeStats.EnableOde == prevOde)
+                {
+                    totalEndToEndTime += metrics.EndToEndTime;
+                    totalRU += metrics.RUCharge;
+                }
+                else
+                {
+                    textWriter.WriteLine($"{prevQuery},{prevOde},{totalRU / numberOfIterations},{totalEndToEndTime / numberOfIterations}");
+                    totalEndToEndTime = metrics.EndToEndTime;
+                    totalRU = metrics.RUCharge;
+                    prevQuery = customOdeStats.Query;
+                    prevOde = customOdeStats.EnableOde;
+                }
+            }
+
+            textWriter.WriteLine($"{prevQuery},{prevOde},{totalRU / numberOfIterations},{totalEndToEndTime / numberOfIterations}");
+        }
+
+        private class CustomOdeStats
+        {
+            public string Query { get; set; }
+            public bool EnableOde { get; set; }
+            public QueryStatisticsMetrics QueryStatisticsMetrics { get; set; }
         }
 
         private static DirectExecutionTestCase CreateInput(
