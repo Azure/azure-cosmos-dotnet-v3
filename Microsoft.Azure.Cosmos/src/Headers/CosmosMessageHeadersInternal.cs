@@ -159,6 +159,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.SetProperty(HttpConstants.HttpHeaders.ContentSerializationFormat, value);
         }
 
+        public virtual string SupportedSerializationFormats
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.SupportedSerializationFormats);
+            set => this.SetProperty(HttpConstants.HttpHeaders.SupportedSerializationFormats, value);
+        }
+
         public virtual string ReadFeedKeyType
         {
             get => this.GetValueOrDefault(HttpConstants.HttpHeaders.ReadFeedKeyType);
@@ -175,6 +181,18 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.GetValueOrDefault(HttpConstants.HttpHeaders.EndEpk);
             set => this.SetProperty(HttpConstants.HttpHeaders.EndEpk, value);
+        }
+
+        public virtual string OptimisticDirectExecute
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.OptimisticDirectExecute);
+            set => this.SetProperty(HttpConstants.HttpHeaders.OptimisticDirectExecute, value);
+        }
+
+        public virtual string RequiresDistribution
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.RequiresDistribution);
+            set => this.SetProperty(HttpConstants.HttpHeaders.RequiresDistribution, value);
         }
 
         public abstract INameValueCollection INameValueCollection { get; }

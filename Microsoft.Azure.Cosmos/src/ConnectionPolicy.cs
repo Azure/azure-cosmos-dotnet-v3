@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class ConnectionPolicy
     {
-        private const int defaultRequestTimeout = 10;
+        private const int defaultRequestTimeout = 6;
         // defaultMediaRequestTimeout is based upon the blob client timeout and the retry policy.
         private const int defaultMediaRequestTimeout = 300;
         private const int defaultMaxConcurrentFanoutRequests = 32;
@@ -454,6 +454,18 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
         /// </summary>
         public Func<HttpClient> HttpClientFactory
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the boolean flag to enable replica validation.
+        /// </summary>
+        /// <value>
+        /// The default value for this parameter is false.
+        /// </value>
+        public bool? EnableAdvancedReplicaSelectionForTcp
         {
             get;
             set;

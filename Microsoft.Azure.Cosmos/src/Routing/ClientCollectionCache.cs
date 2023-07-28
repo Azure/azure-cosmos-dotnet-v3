@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     headers.XDate = Rfc1123DateTimeCache.UtcNow();
 
-                    request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
+                    request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
                     if (clientSideRequestStatistics == null)
                     {
                         childTrace.AddDatum(

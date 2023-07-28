@@ -39,6 +39,8 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
+
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             FeedIterator feedIterator = this.container
@@ -50,7 +52,7 @@ namespace CosmosBenchmark
             ResponseMessage feedResponse = await feedIterator.ReadNextAsync();
             if (feedResponse.StatusCode != HttpStatusCode.OK)
             {
-                throw new Exception($"ReadItem failed wth {feedResponse.StatusCode}");
+                throw new Exception($"ReadItem failed with {feedResponse.StatusCode}");
             }
 
             return new OperationResult()
@@ -84,7 +86,7 @@ namespace CosmosBenchmark
 
                     if (itemResponse.StatusCode != HttpStatusCode.Created)
                     {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                        throw new Exception($"Create failed with status code: {itemResponse.StatusCode}");
                     }
                 }
             }

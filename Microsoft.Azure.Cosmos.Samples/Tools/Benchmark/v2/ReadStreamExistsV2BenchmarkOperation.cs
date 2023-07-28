@@ -25,6 +25,8 @@ namespace CosmosBenchmark
 
         private readonly DocumentClient documentClient;
 
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
+
         public ReadStreamExistsV2BenchmarkOperation(
             DocumentClient documentClient,
             string dbName,
@@ -84,7 +86,7 @@ namespace CosmosBenchmark
 
                     if (itemResponse.StatusCode != HttpStatusCode.Created)
                     {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                        throw new Exception($"Create failed with status code: {itemResponse.StatusCode}");
                     }
                 }
             }
