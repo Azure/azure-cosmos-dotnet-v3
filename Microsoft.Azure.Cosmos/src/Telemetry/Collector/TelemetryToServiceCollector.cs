@@ -2,23 +2,24 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos.Telemetry.Collector
 {
     using System;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.Settings;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Telemetry.Collector;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
-    internal class TelemetryToServiceHelper : IClientTelemetryCollectors, IDisposable
+    internal class TelemetryToServiceCollector : IClientTelemetryCollectors, IDisposable
     {
         internal static int DefaultBackgroundRefreshClientConfigTimeIntervalInMS = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
 
@@ -33,12 +34,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private Task accountClientConfigTask = null;
         private ClientTelemetry clientTelemetry = null;
 
-        internal TelemetryToServiceHelper()
+        internal TelemetryToServiceCollector()
         {
             //NoOp constructor
         }
 
-        private TelemetryToServiceHelper(
+        private TelemetryToServiceCollector(
             string clientId,
             ConnectionPolicy connectionPolicy,
             AuthorizationTokenProvider cosmosAuthorization,
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.cancellationTokenSource = cancellationTokenSource;
         }
 
-        public static TelemetryToServiceHelper CreateAndInitializeClientConfigAndTelemetryJob(string clientId,
+        public static TelemetryToServiceCollector CreateAndInitializeClientConfigAndTelemetryJob(string clientId,
             ConnectionPolicy connectionPolicy,
             AuthorizationTokenProvider cosmosAuthorization,
             CosmosHttpClient httpClient,
@@ -70,10 +71,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             if (connectionPolicy.DisableClientTelemetryToService)
             {
-                return new TelemetryToServiceHelper(); //NoOpscontructor
+                return new TelemetryToServiceCollector(); //NoOpscontructor
             }
 
-            TelemetryToServiceHelper telemetryToServiceHelper = new TelemetryToServiceHelper(
+            TelemetryToServiceCollector telemetryToServiceHelper = new TelemetryToServiceCollector(
                 clientId, connectionPolicy, cosmosAuthorization, httpClient, serviceEndpoint, globalEndpointManager, cancellationTokenSource);
 
             telemetryToServiceHelper.Initialize();
@@ -87,18 +88,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return this.clientTelemetry == null;
         }
 
-        public void CollectCacheInfo(Func<CacheTelemetryData> functionFordata)
+        public void CollectCacheInfo(Func<CacheTelemetryInformation> functionFordata)
         {
             if (this.IsClientTelemetryJobNotRunning())
             {
                 return;
             }
 
-            CacheTelemetryData data = functionFordata();
+            CacheTelemetryInformation data = functionFordata();
 
             if (data.collectionLink != null)
             {
-                TelemetryToServiceHelper.GetDatabaseAndCollectionName(data.collectionLink, out string databaseName, out string collectionName);
+                GetDatabaseAndCollectionName(data.collectionLink, out string databaseName, out string collectionName);
 
                 data.databaseId = databaseName;
                 data.containerId = collectionName;
@@ -107,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.clientTelemetry.CollectCacheInfo(data);
         }
 
-        public void CollectOperationInfo(Func<OperationTelemetryData> functionFordata)
+        public void CollectOperationInfo(Func<OperationTelemetryInformation> functionFordata)
         {
             if (this.IsClientTelemetryJobNotRunning())
             {
@@ -138,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     DefaultTrace.TraceWarning($"Exception while calling client config " + databaseAccountClientConfigs.Exception.ToString());
                 }
 
-                await Task.Delay(TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeIntervalInMS);
+                await Task.Delay(DefaultBackgroundRefreshClientConfigTimeIntervalInMS);
             }
         }
 

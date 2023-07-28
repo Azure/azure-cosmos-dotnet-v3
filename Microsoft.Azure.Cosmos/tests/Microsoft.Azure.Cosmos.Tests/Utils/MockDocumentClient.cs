@@ -264,7 +264,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
             SessionContainer sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             this.sessionContainer = sessionContainer;
 
-            this.TelemetryToServiceHelper = new TelemetryToServiceHelper();
+            this.TelemetryToServiceHelper = new TelemetryToServiceCollector();
 
         }
     }

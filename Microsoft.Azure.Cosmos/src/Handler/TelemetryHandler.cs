@@ -14,9 +14,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
     internal class TelemetryHandler : RequestHandler
     {
-        private readonly TelemetryToServiceHelper TelemetryToServiceHelper;
+        private readonly TelemetryToServiceCollector TelemetryToServiceHelper;
         
-        public TelemetryHandler(TelemetryToServiceHelper telemetryHelper)
+        public TelemetryHandler(TelemetryToServiceCollector telemetryHelper)
         {
             this.TelemetryToServiceHelper = telemetryHelper ?? throw new ArgumentNullException(nameof(telemetryHelper));
         }
@@ -28,27 +28,25 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
 
             // Check if this particular operation is eligible for client telemetry collection
-            if (this.IsEligibleForTelemetryCollection(request))
+            if (TelemetryHandler.IsRequestAllowed(request))
             {
                 try
                 {
-                    this.TelemetryToServiceHelper
-                        .CollectOperationInfo(
-                        () =>
-                        new OperationTelemetryData
-                        {
-                            cosmosDiagnostics = response.Diagnostics,
-                            statusCode = response.StatusCode,
-                            responseSizeInBytes = this.GetPayloadSize(response),
-                            containerId = request.ContainerId,
-                            databaseId = request.DatabaseId,
-                            operationType = request.OperationType,
-                            resourceType = request.ResourceType,
-                            consistencyLevel = request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
-                            requestCharge = response.Headers.RequestCharge,
-                            subStatusCode = response.Headers.SubStatusCode,
-                            trace = response.Trace
-                        });
+                    this.TelemetryToServiceHelper.CollectOperationInfo(
+                        () => new OperationTelemetryInformation
+                            {
+                                cosmosDiagnostics = response.Diagnostics,
+                                statusCode = response.StatusCode,
+                                responseSizeInBytes = TelemetryHandler.GetPayloadSize(response),
+                                containerId = request.ContainerId,
+                                databaseId = request.DatabaseId,
+                                operationType = request.OperationType,
+                                resourceType = request.ResourceType,
+                                consistencyLevel = request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
+                                requestCharge = response.Headers.RequestCharge,
+                                subStatusCode = response.Headers.SubStatusCode,
+                                trace = response.Trace
+                            });
                 }
                 catch (Exception ex)
                 {
@@ -60,21 +58,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         /// <summary>
-        /// Check if Collection should happen or not, if yes then return the client job instance where information needs to send
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns>true/false</returns>
-        private bool IsEligibleForTelemetryCollection(RequestMessage request)
-        {
-            return this.IsRequestAllowed(request);
-        }
-
-        /// <summary>
         /// Check if Passed request id eligible for client telemetry collection
         /// </summary>
         /// <param name="request"></param>
         /// <returns>true/false</returns>
-        private bool IsRequestAllowed(RequestMessage request)
+        private static bool IsRequestAllowed(RequestMessage request)
         { 
             return ClientTelemetryOptions.AllowedResourceTypes.Equals(request.ResourceType);
         }
@@ -86,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// </summary>
         /// <param name="response"></param>
         /// <returns>Size of Payload</returns>
-        private long GetPayloadSize(ResponseMessage response)
+        private static long GetPayloadSize(ResponseMessage response)
         {
             if (response != null)
             {

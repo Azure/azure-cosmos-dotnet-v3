@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.Collector;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -26,14 +25,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly IRetryPolicyFactory retryPolicy;
         private readonly ISessionContainer sessionContainer;
-        private readonly TelemetryToServiceHelper telemetryToServiceHelper;
+        private readonly TelemetryToServiceCollector telemetryToServiceHelper;
 
         public ClientCollectionCache(
             ISessionContainer sessionContainer,
             IStoreModel storeModel,
             ICosmosAuthorizationTokenProvider tokenProvider,
             IRetryPolicyFactory retryPolicy,
-            TelemetryToServiceHelper telemetryToServiceHelper)
+            TelemetryToServiceCollector telemetryToServiceHelper)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
             this.tokenProvider = tokenProvider;
@@ -217,18 +216,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
 
                                 this.telemetryToServiceHelper.CollectCacheInfo(
-                                    () =>
-                                    new CacheTelemetryData
-                                    {
-                                        cacheRefreshSource = ClientCollectionCache.TelemetrySourceName,
-                                        regionsContactedList = response.RequestStats.RegionsContacted,
-                                        requestLatency = response.RequestStats.RequestLatency,
-                                        statusCode = response.StatusCode,
-                                        operationType = request.OperationType,
-                                        resourceType = request.ResourceType,
-                                        subStatusCode = response.SubStatusCode,
-                                        collectionLink = collectionLink
-                                    });
+                                    () => new CacheTelemetryInformation
+                                        {
+                                            cacheRefreshSource = ClientCollectionCache.TelemetrySourceName,
+                                            regionsContactedList = response.RequestStats.RegionsContacted,
+                                            requestLatency = response.RequestStats.RequestLatency,
+                                            statusCode = response.StatusCode,
+                                            operationType = request.OperationType,
+                                            resourceType = request.ResourceType,
+                                            subStatusCode = response.SubStatusCode,
+                                            collectionLink = collectionLink
+                                        });
 
                                 return containerProperties;
                             }

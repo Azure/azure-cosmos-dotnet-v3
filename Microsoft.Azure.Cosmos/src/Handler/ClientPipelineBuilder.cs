@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Collector;
 
     internal class ClientPipelineBuilder
     {
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosClient client,
             ConsistencyLevel? requestedClientConsistencyLevel,
             IReadOnlyCollection<RequestHandler> customHandlers,
-            TelemetryToServiceHelper telemetryToServiceHelper)
+            TelemetryToServiceCollector telemetryToServiceHelper)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
@@ -42,7 +42,10 @@ namespace Microsoft.Azure.Cosmos
 
             // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
             // the system information so no need to track it.
-#if !INTERNAL
+#if INTERNAL
+            this.diagnosticsHandler = null;
+            this.telemetryHandler = null;
+#else
             this.diagnosticsHandler = new DiagnosticsHandler();
             Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
 
@@ -51,9 +54,6 @@ namespace Microsoft.Azure.Cosmos
                 this.telemetryHandler = new TelemetryHandler(telemetryToServiceHelper);
                 Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
             }
-#else
-            this.diagnosticsHandler = null;
-            this.telemetryHandler = null;
 #endif
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);

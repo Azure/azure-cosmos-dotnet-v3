@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
-    internal class OperationTelemetryData
+    internal class OperationTelemetryInformation
     {
         internal CosmosDiagnostics cosmosDiagnostics { get; set; }
         internal HttpStatusCode statusCode { get; set; }

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
     using System.Net;
     using Microsoft.Azure.Documents;
 
-    internal class CacheTelemetryData
+    internal class CacheTelemetryInformation
     {
         internal string cacheRefreshSource { get; set; }
         internal HashSet<(string regionName, Uri uri)> regionsContactedList { get; set; }

@@ -48,14 +48,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
 
         /// <summary>
-        /// Only for Mocking in tests
-        /// </summary>
-        internal ClientTelemetry()
-        {
-            this.cancellationTokenSource = new CancellationTokenSource();
-        }
-
-        /// <summary>
         /// Factory method to intiakize telemetry object and start observer task
         /// </summary>
         /// <param name="clientId"></param>
@@ -237,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Cache Telemetry Information.
         /// </summary>
-        public void CollectCacheInfo(CacheTelemetryData data)
+        public void CollectCacheInfo(CacheTelemetryInformation data)
         {
             if (string.IsNullOrEmpty(data.cacheRefreshSource))
             {
@@ -277,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Telemetry Information.
         /// </summary>
-        public void CollectOperationInfo(OperationTelemetryData data)
+        public void CollectOperationInfo(OperationTelemetryInformation data)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 

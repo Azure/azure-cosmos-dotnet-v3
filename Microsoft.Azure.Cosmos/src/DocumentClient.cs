@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Collector;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -938,7 +939,7 @@ namespace Microsoft.Azure.Cosmos
             VmMetadataApiHandler.TryInitialize(this.httpClient);
 
             // Starting ClientTelemetry Job
-            this.TelemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob(this.clientId,
+            this.TelemetryToServiceHelper = TelemetryToServiceCollector.CreateAndInitializeClientConfigAndTelemetryJob(this.clientId,
                                                                  this.ConnectionPolicy,
                                                                  this.cosmosAuthorization,
                                                                  this.httpClient,
@@ -1370,8 +1371,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual Task<QueryPartitionProvider> QueryPartitionProvider => this.queryPartitionProvider.Value;
 
-        internal TelemetryToServiceHelper TelemetryToServiceHelper { get; set; }
-        TelemetryToServiceHelper IDocumentClient.TelemetryToServiceHelper { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        internal TelemetryToServiceCollector TelemetryToServiceHelper { get; set; }
 
         internal virtual async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {

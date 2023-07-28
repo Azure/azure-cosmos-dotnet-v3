@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Reflection;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Collector;
 
     [TestClass]
     public class ClientTelemetryConfigurationTest : BaseCosmosClientHelper
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await base.TestCleanup();
             ClientTelemetryOptions.DefaultTimeStampInSeconds = TimeSpan.FromMinutes(10);
-            TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeIntervalInMS = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
+            TelemetryToServiceCollector.DefaultBackgroundRefreshClientConfigTimeIntervalInMS = (int)TimeSpan.FromMinutes(10).TotalMilliseconds;
         }
 
         [TestMethod]
@@ -91,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
             .GetValue(documentClient);
 
-            TelemetryToServiceHelper telemetryToServiceHelper = (TelemetryToServiceHelper)collCache
+            TelemetryToServiceCollector telemetryToServiceHelper = (TelemetryToServiceCollector)collCache
                 .GetType()
                 .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
                 .GetValue(collCache);
@@ -149,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
             .GetValue(documentClient);
 
-            TelemetryToServiceHelper telemetryToServiceHelperFromCollectionCache = (TelemetryToServiceHelper)collCache
+            TelemetryToServiceCollector telemetryToServiceHelperFromCollectionCache = (TelemetryToServiceCollector)collCache
                .GetType()
                .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
                .GetValue(collCache);
@@ -171,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task Validate_ClientTelemetryJob_When_Flag_Is_Switched(bool isEnabledInitially)
         {
-            TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 10;
+            TelemetryToServiceCollector.DefaultBackgroundRefreshClientConfigTimeIntervalInMS = 10;
 
             ManualResetEvent manualResetEvent = new ManualResetEvent(false);
             
@@ -236,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                 .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
                                                 .GetValue(documentClient);
 
-            TelemetryToServiceHelper telemetryToServiceHelperFromCollectionCache = (TelemetryToServiceHelper)collCache
+            TelemetryToServiceCollector telemetryToServiceHelperFromCollectionCache = (TelemetryToServiceCollector)collCache
                .GetType()
                .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
                .GetValue(collCache);
@@ -261,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                 .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
                                                 .GetValue(documentClient);
 
-            telemetryToServiceHelperFromCollectionCache = (TelemetryToServiceHelper)collCache
+            telemetryToServiceHelperFromCollectionCache = (TelemetryToServiceCollector)collCache
                .GetType()
                .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
                .GetValue(collCache);

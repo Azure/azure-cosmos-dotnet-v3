@@ -9,8 +9,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal interface IClientTelemetryCollectors : IDisposable
     {
-        public void CollectCacheInfo(Func<CacheTelemetryData> functionFordata);
+        /// <summary>
+        /// Collect information required to collect the telemetry information for the cache.
+        /// </summary>
+        /// <param name="functionFordata"> delegate that encapsulates a method that returns a CacheTelemetryInformation object</param>
+        public void CollectCacheInfo(Func<CacheTelemetryInformation> functionFordata);
 
-        public void CollectOperationInfo(Func<OperationTelemetryData> functionFordata);
+        /// <summary>
+        /// Collect information required to collect the telemetry information for the operation.
+        /// </summary>
+        /// <param name="functionFordata"> delegate that encapsulates a method that returns a OperationTelemetryInformation object</param>
+        public void CollectOperationInfo(Func<OperationTelemetryInformation> functionFordata);
     }
 }

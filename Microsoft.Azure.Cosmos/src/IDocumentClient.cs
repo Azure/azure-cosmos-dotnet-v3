@@ -78,11 +78,6 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <seealso cref="Microsoft.Azure.Cosmos.ConsistencyLevel"/>
         Documents.ConsistencyLevel ConsistencyLevel { get; }
-
-        /// <summary>
-        /// Gets Client Telemetry Instance with Task
-        /// </summary>
-        TelemetryToServiceHelper TelemetryToServiceHelper { get; set; }
         
         #endregion
 
