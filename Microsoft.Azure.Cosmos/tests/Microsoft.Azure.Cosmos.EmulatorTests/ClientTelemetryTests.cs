@@ -438,6 +438,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
             {
+                EnableOptimisticDirectExecution = false,
                 ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix,
             };
 
@@ -509,6 +510,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     queryDefinition: queryDefinition,
                     requestOptions: new QueryRequestOptions()
                     {
+                        EnableOptimisticDirectExecution = false,
                         ConsistencyLevel = Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix,
                         MaxItemCount = 1
                     }))
@@ -621,6 +623,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  queryDefinition: queryDefinition,
                  requestOptions: new QueryRequestOptions()
                  {
+                     EnableOptimisticDirectExecution = false,
                      MaxItemCount = 1
                  }))
             {
@@ -852,15 +855,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
            
             ClientTelemetryTests.AssertSystemLevelInformation(actualSystemInformation, this.expectedMetricNameUnitMap);
-            if (localCopyOfActualInfo.First().ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant() 
-                && isExpectedNetworkTelemetry)
+            if (localCopyOfActualInfo.First().ConnectionMode == ConnectionMode.Direct.ToString().ToUpperInvariant())
             {
-                ClientTelemetryTests.AssertNetworkLevelInformation(actualRequestInformation);
+                if (isExpectedNetworkTelemetry)
+                {
+                    ClientTelemetryTests.AssertNetworkLevelInformation(actualRequestInformation);
+                }
             }
             else
             {
                 //TODO: revert
-                Assert.IsFalse(actualRequestInformation == null || actualRequestInformation.Count == 0, "Request Information is not expected in Gateway mode");
+                Assert.IsTrue(actualRequestInformation == null || actualRequestInformation.Count == 0, $"Request Information is not expected in {localCopyOfActualInfo.First().ConnectionMode} mode");
             }
         }
         
