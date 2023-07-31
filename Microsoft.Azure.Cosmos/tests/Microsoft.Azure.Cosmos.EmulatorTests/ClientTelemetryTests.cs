@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     if (response.RequestMessage.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
                     {
-                        Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                        Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     }
                     return Task.FromResult(response);
                 }
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     if (response.RequestMessage.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
                     {
-                        Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                        Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     }
                     return Task.FromResult(response);
                 }
