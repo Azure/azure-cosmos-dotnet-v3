@@ -13,6 +13,25 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.35.2-preview"/> [3.35.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.2-preview) - 2023-07-17
+
+#### Fixed
+- [3973](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3973) Application Insights Integration: Fixes event generation for failed requests
+
+#### Added
+- [3951](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3951) Upgrade Resiliency: Adds Code to Enable Replica Validation Feature By Default for Preview
+
+### <a name="3.35.2"/> [3.35.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.2) - 2023-07-17
+
+#### Fixed
+- [3917](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3917) Query: Fixes malformed continuation token exception type and message
+- [3969](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3969) Diagnostics: Fixes verbose levels for "Operation will NOT be retried"
+
+#### Added
+- [3668](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3668) Query : Adds string comparison alternative when converting LINQ to SQL (Thanks [@ernesto1596](https://github.com/ernesto1596))
+- [3834](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3834) Query : Adds support for newtonsoft member access via ExtensionData (Thanks [@onionhammer](https://github.com/onionhammer))
+- [3939](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3939) CreateAndInitializeAsync: Adds Code to Optimize Rntbd Open Connection Logic to Open Connections in Parallel
+
 ### <a name="3.35.1-preview"/> [3.35.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.1-preview) - 2023-06-27
 ### <a name="3.35.1"/> [3.35.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.1) - 2023-06-27
 

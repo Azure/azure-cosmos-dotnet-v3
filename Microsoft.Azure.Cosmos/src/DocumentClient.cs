@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
-            this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled();
+            this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
         }
 
         /// <summary>
