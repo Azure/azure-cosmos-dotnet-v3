@@ -5,31 +5,16 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
+    using System.Collections.Generic;
 
     internal class QueryMetricsAccumulator
     {
-        public QueryMetricsAccumulator(
-            BackendMetricsAccumulator backendMetricsAccumulator,
-            IndexUtilizationInfoAccumulator indexUtilizationInfoAccumulator,
-            ClientSideMetricsAccumulator clientSideMetricsAccumulator)
-        {
-            this.BackendMetricsAccumulator = backendMetricsAccumulator;
-            this.IndexUtilizationInfoAccumulator = indexUtilizationInfoAccumulator;
-            this.ClientSideMetricsAccumulator = clientSideMetricsAccumulator;
-        }
-
         public QueryMetricsAccumulator()
         {
-            this.BackendMetricsAccumulator = new BackendMetricsAccumulator();
-            this.IndexUtilizationInfoAccumulator = new IndexUtilizationInfoAccumulator();
-            this.ClientSideMetricsAccumulator = new ClientSideMetricsAccumulator();
+            this.QueryMetricsList = new List<QueryMetrics>();
         }
 
-        private BackendMetricsAccumulator BackendMetricsAccumulator { get; }
-
-        private IndexUtilizationInfoAccumulator IndexUtilizationInfoAccumulator { get; }
-
-        private ClientSideMetricsAccumulator ClientSideMetricsAccumulator { get; }
+        private readonly List<QueryMetrics> QueryMetricsList;
 
         public void Accumulate(QueryMetrics queryMetrics)
         {
@@ -38,17 +23,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 throw new ArgumentNullException(nameof(queryMetrics));
             }
 
-            this.BackendMetricsAccumulator.Accumulate(queryMetrics.BackendMetrics);
-            this.IndexUtilizationInfoAccumulator.Accumulate(queryMetrics.IndexUtilizationInfo);
-            this.ClientSideMetricsAccumulator.Accumulate(queryMetrics.ClientSideMetrics);
+            this.QueryMetricsList.Add(queryMetrics);
         }
 
         public QueryMetrics GetQueryMetrics()
         {
+            BackendMetricsAccumulator backendMetricsAccumulator = new BackendMetricsAccumulator();
+            IndexUtilizationInfoAccumulator indexUtilizationInfoAccumulator = new IndexUtilizationInfoAccumulator();
+            ClientSideMetricsAccumulator clientSideMetricsAccumulator = new ClientSideMetricsAccumulator();
+
+            foreach (QueryMetrics queryMetrics in this.QueryMetricsList)
+            {
+                backendMetricsAccumulator.Accumulate(queryMetrics.BackendMetrics);
+                indexUtilizationInfoAccumulator.Accumulate(queryMetrics.IndexUtilizationInfo);
+                clientSideMetricsAccumulator.Accumulate(queryMetrics.ClientSideMetrics);
+            }
+
             return new QueryMetrics(
-                this.BackendMetricsAccumulator.GetBackendMetrics(),
-                this.IndexUtilizationInfoAccumulator.GetIndexUtilizationInfo(),
-                this.ClientSideMetricsAccumulator.GetClientSideMetrics());
+                backendMetricsAccumulator.GetBackendMetrics(),
+                indexUtilizationInfoAccumulator.GetIndexUtilizationInfo(),
+                clientSideMetricsAccumulator.GetClientSideMetrics());
         }
     }
 }

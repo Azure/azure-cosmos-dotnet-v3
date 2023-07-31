@@ -9,25 +9,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal class ClientSideMetricsAccumulator
     {
-        public ClientSideMetricsAccumulator(long retries, double requestCharge, IEnumerable<FetchExecutionRange> fetchExecutionRanges)
-        {
-            this.Retries = retries;
-            this.RequestCharge = requestCharge;
-            this.FetchExecutionRanges = fetchExecutionRanges;
-        }
-
         public ClientSideMetricsAccumulator()
         {
-            this.Retries = default;
-            this.RequestCharge = default;
-            this.FetchExecutionRanges = default;
+            this.ClientSideMetricsList = new List<ClientSideMetrics>();
         }
 
-        private long Retries { get; set; }
-
-        private double RequestCharge { get; set; }
-
-        private IEnumerable<FetchExecutionRange> FetchExecutionRanges { get; set; }
+        private readonly List<ClientSideMetrics> ClientSideMetricsList;
 
         public void Accumulate(ClientSideMetrics clientSideMetrics)
         {
@@ -36,19 +23,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 throw new ArgumentNullException(nameof(clientSideMetrics));
             }
 
-            this.Retries += clientSideMetrics.Retries;
-            this.RequestCharge += clientSideMetrics.RequestCharge;
-            this.FetchExecutionRanges = (this.FetchExecutionRanges ?? Enumerable.Empty<FetchExecutionRange>()).Concat(clientSideMetrics.FetchExecutionRanges);
+            this.ClientSideMetricsList.Add(clientSideMetrics);
 
             return;
         }
 
         public ClientSideMetrics GetClientSideMetrics()
         {
+            long retries = default;
+            double requestCharge = default;
+            IEnumerable<FetchExecutionRange> fetchExecutionRanges = default;
+
+            foreach (ClientSideMetrics clientSideMetrics in this.ClientSideMetricsList)
+            {
+                retries += clientSideMetrics.Retries;
+                requestCharge += clientSideMetrics.RequestCharge;
+                fetchExecutionRanges = (fetchExecutionRanges ?? Enumerable.Empty<FetchExecutionRange>()).Concat(clientSideMetrics.FetchExecutionRanges);
+            }
+
             return new ClientSideMetrics(
-                retries: this.Retries,
-                requestCharge: this.RequestCharge,
-                fetchExecutionRanges: this.FetchExecutionRanges);
+                retries: retries,
+                requestCharge: requestCharge,
+                fetchExecutionRanges: fetchExecutionRanges);
         }
     }
 }

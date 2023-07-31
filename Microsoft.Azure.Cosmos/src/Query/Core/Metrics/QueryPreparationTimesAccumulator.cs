@@ -5,29 +5,16 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
+    using System.Collections.Generic;
 
     internal class QueryPreparationTimesAccumulator
     {
-        public QueryPreparationTimesAccumulator(TimeSpan queryCompliationTime, TimeSpan logicalPlanBuildTime, TimeSpan physicalPlanBuildTime, TimeSpan queryOptimizationTime)
-        {
-            this.QueryCompilationTime = queryCompliationTime;
-            this.LogicalPlanBuildTime = logicalPlanBuildTime;
-            this.PhysicalPlanBuildTime = physicalPlanBuildTime;
-            this.QueryOptimizationTime = queryOptimizationTime;
-        }
-
         public QueryPreparationTimesAccumulator()
         {
-            this.QueryCompilationTime = default;
-            this.LogicalPlanBuildTime = default;
-            this.PhysicalPlanBuildTime = default;
-            this.QueryOptimizationTime = default;
+            this.QueryPreparationTimesList = new List<QueryPreparationTimes>();
         }
 
-        private TimeSpan QueryCompilationTime { get; set; }
-        private TimeSpan LogicalPlanBuildTime { get; set; }
-        private TimeSpan PhysicalPlanBuildTime { get; set; }
-        private TimeSpan QueryOptimizationTime { get; set; }
+        private readonly List<QueryPreparationTimes> QueryPreparationTimesList;
 
         public void Accumulate(QueryPreparationTimes queryPreparationTimes)
         {
@@ -36,19 +23,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 throw new ArgumentNullException(nameof(queryPreparationTimes));
             }
 
-            this.QueryCompilationTime += queryPreparationTimes.QueryCompilationTime;
-            this.LogicalPlanBuildTime += queryPreparationTimes.LogicalPlanBuildTime;
-            this.PhysicalPlanBuildTime += queryPreparationTimes.PhysicalPlanBuildTime;
-            this.QueryOptimizationTime += queryPreparationTimes.QueryOptimizationTime;
+            this.QueryPreparationTimesList.Add(queryPreparationTimes);
         }
 
         public QueryPreparationTimes GetQueryPreparationTimes()
         {
+            TimeSpan queryCompilationTime;
+            TimeSpan logicalPlanBuildTime;
+            TimeSpan physicalPlanBuildTime;
+            TimeSpan queryOptimizationTime;
+
+            foreach (QueryPreparationTimes queryPreparationTimes in this.QueryPreparationTimesList)
+            {
+                queryCompilationTime += queryPreparationTimes.QueryCompilationTime;
+                logicalPlanBuildTime += queryPreparationTimes.LogicalPlanBuildTime;
+                physicalPlanBuildTime += queryPreparationTimes.PhysicalPlanBuildTime;
+                queryOptimizationTime += queryPreparationTimes.QueryOptimizationTime;
+            }
+
             return new QueryPreparationTimes(
-                queryCompilationTime: this.QueryCompilationTime,
-                logicalPlanBuildTime: this.LogicalPlanBuildTime,
-                physicalPlanBuildTime: this.PhysicalPlanBuildTime,
-                queryOptimizationTime: this.QueryOptimizationTime);
+                queryCompilationTime: queryCompilationTime,
+                logicalPlanBuildTime: logicalPlanBuildTime,
+                physicalPlanBuildTime: physicalPlanBuildTime,
+                queryOptimizationTime: queryOptimizationTime);
         }
     }
 }

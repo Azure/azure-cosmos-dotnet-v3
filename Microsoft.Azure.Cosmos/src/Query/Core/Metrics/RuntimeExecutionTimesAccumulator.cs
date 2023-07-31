@@ -5,26 +5,17 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
+    using System.Collections.Generic;
 
     internal class RuntimeExecutionTimesAccumulator
     {
-        public RuntimeExecutionTimesAccumulator(TimeSpan queryEngineExecutionTime, TimeSpan systemFunctionExecutionTime, TimeSpan userDefinedFunctionExecutionTimes)
-        {
-            this.QueryEngineExecutionTime = queryEngineExecutionTime;
-            this.SystemFunctionExecutionTime = systemFunctionExecutionTime;
-            this.UserDefinedFunctionExecutionTime = userDefinedFunctionExecutionTimes;
-        }
-
         public RuntimeExecutionTimesAccumulator()
         {
-            this.QueryEngineExecutionTime = default;
-            this.SystemFunctionExecutionTime = default;
-            this.UserDefinedFunctionExecutionTime = default;
+            this.RuntimeExecutionTimesList = new List<RuntimeExecutionTimes>();
         }
 
-        private TimeSpan QueryEngineExecutionTime { get; set; }
-        private TimeSpan SystemFunctionExecutionTime { get; set; }
-        private TimeSpan UserDefinedFunctionExecutionTime { get; set; }
+        private readonly List<RuntimeExecutionTimes> RuntimeExecutionTimesList;
+
         public void Accumulate(RuntimeExecutionTimes runtimeExecutionTimes)
         {
             if (runtimeExecutionTimes == null)
@@ -32,17 +23,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 throw new ArgumentNullException(nameof(runtimeExecutionTimes));
             }
 
-            this.QueryEngineExecutionTime += runtimeExecutionTimes.QueryEngineExecutionTime;
-            this.SystemFunctionExecutionTime += runtimeExecutionTimes.SystemFunctionExecutionTime;
-            this.UserDefinedFunctionExecutionTime += runtimeExecutionTimes.UserDefinedFunctionExecutionTime;
+            this.RuntimeExecutionTimesList.Add(runtimeExecutionTimes);
         }
 
         public RuntimeExecutionTimes GetRuntimeExecutionTimes()
         {
+            TimeSpan queryEngineExecutionTime = default;
+            TimeSpan systemFunctionExecutionTime = default;
+            TimeSpan userDefinedFunctionExecutionTime = default;
+
+            foreach (RuntimeExecutionTimes runtimeExecutionTimes in this.RuntimeExecutionTimesList)
+            {
+                queryEngineExecutionTime += runtimeExecutionTimes.QueryEngineExecutionTime;
+                systemFunctionExecutionTime += runtimeExecutionTimes.SystemFunctionExecutionTime;
+                userDefinedFunctionExecutionTime += runtimeExecutionTimes.UserDefinedFunctionExecutionTime;
+            }
+
             return new RuntimeExecutionTimes(
-                queryEngineExecutionTime: this.QueryEngineExecutionTime,
-                systemFunctionExecutionTime: this.SystemFunctionExecutionTime,
-                userDefinedFunctionExecutionTime: this.UserDefinedFunctionExecutionTime);
+                queryEngineExecutionTime: queryEngineExecutionTime,
+                systemFunctionExecutionTime: systemFunctionExecutionTime,
+                userDefinedFunctionExecutionTime: userDefinedFunctionExecutionTime);
         }
     }
 }
