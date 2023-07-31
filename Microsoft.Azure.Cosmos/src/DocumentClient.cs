@@ -1301,6 +1301,12 @@ namespace Microsoft.Azure.Cosmos
                 this.cosmosAuthorization.Dispose();
             }
 
+            if (this.TelemetryToServiceHelper != null)
+            {
+                this.TelemetryToServiceHelper.Dispose();
+                this.TelemetryToServiceHelper = null;
+            }
+
             if (this.GlobalEndpointManager != null)
             {
                 this.GlobalEndpointManager.Dispose();
@@ -1316,12 +1322,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.initTaskCache.Dispose();
                 this.initTaskCache = null;
-            }
-
-            if (this.TelemetryToServiceHelper != null)
-            {
-                this.TelemetryToServiceHelper.Dispose();
-                this.TelemetryToServiceHelper = null;
             }
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);

@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
             CancellationTokenSource cancellationTokenSource)
         {
 #if INTERNAL
-            return new TelemetryToServiceHelper();
+            return new TelemetryToServiceCollector();
 #else
 
             if (connectionPolicy.DisableClientTelemetryToService)
@@ -125,30 +125,35 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
 
         private async Task RefreshDatabaseAccountClientConfigInternalAsync()
         {
-            while (!this.cancellationTokenSource.IsCancellationRequested)
+            try
             {
-                Uri serviceEndpointWithPath = new Uri(this.serviceEnpoint + Paths.ClientConfigPathSegment);
-
-                TryCatch<AccountClientConfigProperties> databaseAccountClientConfigs = await this.GetDatabaseAccountClientConfigAsync(this.cosmosAuthorization, this.httpClient, serviceEndpointWithPath);
-                if (databaseAccountClientConfigs.Succeeded)
+                while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
-                    this.InitializeClientTelemetry(databaseAccountClientConfigs.Result);
-                }
-                else if (!this.cancellationTokenSource.IsCancellationRequested)
-                {
-                    DefaultTrace.TraceWarning($"Exception while calling client config " + databaseAccountClientConfigs.Exception.ToString());
-                }
+                    Uri serviceEndpointWithPath = new Uri(this.serviceEnpoint + Paths.ClientConfigPathSegment);
 
-                await Task.Delay(DefaultBackgroundRefreshClientConfigTimeIntervalInMS);
+                    TryCatch<AccountClientConfigProperties> databaseAccountClientConfigs = await this.GetDatabaseAccountClientConfigAsync(this.cosmosAuthorization, this.httpClient, serviceEndpointWithPath);
+                    if (databaseAccountClientConfigs.Succeeded)
+                    {
+                        this.InitializeClientTelemetry(databaseAccountClientConfigs.Result);
+                    }
+                    else if (!this.cancellationTokenSource.IsCancellationRequested)
+                    {
+                        DefaultTrace.TraceWarning($"Exception while calling client config " + databaseAccountClientConfigs.Exception.ToString());
+                    }
+
+                    await Task.Delay(DefaultBackgroundRefreshClientConfigTimeIntervalInMS, this.cancellationTokenSource.Token);
+                }
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning($"Exception while running client config job " + ex.ToString());
             }
         }
 
         private async Task<TryCatch<AccountClientConfigProperties>> GetDatabaseAccountClientConfigAsync(AuthorizationTokenProvider cosmosAuthorization,
             CosmosHttpClient httpClient,
-            Uri serviceEndpoint)
+            Uri clientConfigEndpoint)
         {
-            Uri clientConfigEndpoint = new Uri(serviceEndpoint + Paths.ClientConfigPathSegment);
-
             INameValueCollection headers = new RequestNameValueCollection();
             await cosmosAuthorization.AddAuthorizationHeaderAsync(
                 headersCollection: headers,

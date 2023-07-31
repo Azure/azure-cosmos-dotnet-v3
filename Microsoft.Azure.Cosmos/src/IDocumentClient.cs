@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -78,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <seealso cref="Microsoft.Azure.Cosmos.ConsistencyLevel"/>
         Documents.ConsistencyLevel ConsistencyLevel { get; }
-        
+
         #endregion
 
         #region Account operation
