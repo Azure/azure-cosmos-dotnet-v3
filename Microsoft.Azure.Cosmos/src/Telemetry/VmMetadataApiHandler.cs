@@ -100,6 +100,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return null;
             }
             string jsonVmInfo = await httpResponseMessage.Content.ReadAsStringAsync();
+
+            DefaultTrace.TraceVerbose(jsonVmInfo);
+
             return JObject.Parse(jsonVmInfo).ToObject<AzureVMMetadata>();
         }
 
