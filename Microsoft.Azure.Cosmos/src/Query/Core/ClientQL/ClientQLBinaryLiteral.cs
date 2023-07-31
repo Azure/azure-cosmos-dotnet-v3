@@ -4,11 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.ClientQL
 {
-    internal class ClientQLArrayIndexerScalarExpression : ClientQLScalarExpression
+    internal class ClientQLBinaryLiteral : ClientQLLiteral
     {
-        public ClientQLScalarExpression Expression { get; set; }
-        
-        public int Index { get; set; }
+        // Dont know what should go inside
+        //const LinearAllocBuffer m_value;
     }
-
 }

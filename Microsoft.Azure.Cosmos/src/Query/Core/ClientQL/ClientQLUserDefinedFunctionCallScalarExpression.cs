@@ -4,13 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.ClientQL
 {
-    using System.Collections.Generic;
-
-    internal class ClientQLSystemFunctionCallScalarExpression : ClientQLScalarExpression
+    internal class ClientQLUserDefinedFunctionCallScalarExpression : ClientQLScalarExpression
     {
-        public ClientQLBuiltinScalarFunctionKind FunctionKind { get; set; }
-        
+        public ClientQLFunctionIdentifier Identifier { get; set; }
+
         public List<ClientQLScalarExpression> VecArguments { get; set; }
+        
+        public bool Builtin { get; set; }
     }
 
 }

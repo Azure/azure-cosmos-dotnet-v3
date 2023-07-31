@@ -4,15 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.ClientQL
 {
-    using System.Collections.Generic;
+    using System;
 
-    internal class ClientQLGroupByEnumerableExpression : ClientQLEnumerableExpression
+    internal class ClientQLWhereEnumerableExpression : ClientQLEnumerableExpression
     {
         public ClientQLEnumerableExpression SourceExpression { get; set; }
-
-        public List<ClientQLGroupByKey> VecKeys { get; set; }
         
-        public List<ClientQLAggregate> VecAggregates { get; set; }
+        public ClientQLDelegate Delegate { get; set; }
     }
 
 }

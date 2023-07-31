@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientQL
     internal class ClientQLAggregateEnumerableExpression : ClientQLEnumerableExpression
     {
         public ClientQLEnumerableExpression SourceExpression { get; set; }
+        
         public ClientQLAggregate Aggregate { get; set; }
     }
 

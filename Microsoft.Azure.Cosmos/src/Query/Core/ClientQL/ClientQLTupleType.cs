@@ -4,11 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.ClientQL
 {
-    internal class ClientQLArrayIndexerScalarExpression : ClientQLScalarExpression
+    internal class ClientQLTupleType : ClientQLType
     {
-        public ClientQLScalarExpression Expression { get; set; }
-        
-        public int Index { get; set; }
+        public List<ClientQLType> VecTypes { get; set; }
     }
 
 }

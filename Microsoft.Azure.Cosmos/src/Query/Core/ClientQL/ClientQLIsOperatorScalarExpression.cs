@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientQL
     internal class ClientQLIsOperatorScalarExpression : ClientQLScalarExpression
     {
         public ClientQLIsOperatorKind OperatorKind { get; set; }
+        
         public ClientQLScalarExpression Expression { get; set; }
     }
 

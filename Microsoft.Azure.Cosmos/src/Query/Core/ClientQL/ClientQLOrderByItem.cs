@@ -4,11 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.ClientQL
 {
-    internal class ClientQLArrayIndexerScalarExpression : ClientQLScalarExpression
+    internal class ClientQLOrderByItem
     {
         public ClientQLScalarExpression Expression { get; set; }
         
-        public int Index { get; set; }
+        public ClientQLSortOrder SortOrder { get; set; }
     }
-
 }

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientQL
     internal class ClientQLPropertyRefScalarExpression : ClientQLScalarExpression
     {
         public ClientQLScalarExpression Expression { get; set; }
+        
         public string PropertyName { get; set; } //might need to be changed
     }
 

@@ -9,7 +9,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientQL
     internal class ClientQLDistinctEnumerableExpression : ClientQLEnumerableExpression
     {
         public ClientQLEnumerableExpression SourceExpression { get; set; }
+
         public ClientQLVariable DeclaredVariable { get; set; }
+        
         public List<ClientQLScalarExpression> VecExpression { get; set; }
     }
 

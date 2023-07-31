@@ -4,11 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.ClientQL
 {
-    internal class ClientQLArrayIndexerScalarExpression : ClientQLScalarExpression
+    internal class ClientQLScalarExpressionDelegate : ClientQLDelegate
     {
-        public ClientQLScalarExpression Expression { get; set; }
+        public ClientQLVariable DeclaredVariable { get; set; }
         
-        public int Index { get; set; }
+        public ClientQLScalarExpression Expression { get; set; }
     }
-
 }
