@@ -43,8 +43,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassInitialize]
         public static void ClassInitialize(TestContext _)
         {
-            Util.EnableTracesForDebugging();
-
             SystemUsageMonitor oldSystemUsageMonitor = (SystemUsageMonitor)typeof(DiagnosticsHandlerHelper)
                 .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.Instance);
             oldSystemUsageMonitor.Stop();
