@@ -28,11 +28,11 @@
   </ItemGroup>
 	
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="[3.31.0,3.34.0]" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="[3.31.0,3.35.2]" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.34.0-preview" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.35.2-preview" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
