@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using System.Diagnostics;
 
     [TestClass]
     [TestCategory("ClientTelemetry")]
@@ -53,6 +54,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public void TestInitialize()
         {
+            Util.EnableTracesForDebugging();
+
             this.actualInfo = new List<ClientTelemetryProperties>();
 
             this.httpHandler = new HttpClientHandlerHelper
@@ -1095,6 +1098,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.SetClient(mode == ConnectionMode.Gateway
                 ? this.cosmosClientBuilder.WithConnectionModeGateway().Build()
                 : this.cosmosClientBuilder.Build());
+
+            // Making sure client telemetry is enabled
+            Assert.IsNotNull(this.GetClient().DocumentClient.clientTelemetry);
 
             this.database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
     
