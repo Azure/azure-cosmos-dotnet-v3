@@ -9,12 +9,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal class QueryMetricsAccumulator
     {
+        private readonly List<QueryMetrics> queryMetricsList;
+
         public QueryMetricsAccumulator()
         {
-            this.QueryMetricsList = new List<QueryMetrics>();
+            this.queryMetricsList = new List<QueryMetrics>();
         }
-
-        private readonly List<QueryMetrics> QueryMetricsList;
 
         public void Accumulate(QueryMetrics queryMetrics)
         {
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 throw new ArgumentNullException(nameof(queryMetrics));
             }
 
-            this.QueryMetricsList.Add(queryMetrics);
+            this.queryMetricsList.Add(queryMetrics);
         }
 
         public QueryMetrics GetQueryMetrics()
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             IndexUtilizationInfoAccumulator indexUtilizationInfoAccumulator = new IndexUtilizationInfoAccumulator();
             ClientSideMetricsAccumulator clientSideMetricsAccumulator = new ClientSideMetricsAccumulator();
 
-            foreach (QueryMetrics queryMetrics in this.QueryMetricsList)
+            foreach (QueryMetrics queryMetrics in this.queryMetricsList)
             {
                 backendMetricsAccumulator.Accumulate(queryMetrics.BackendMetrics);
                 indexUtilizationInfoAccumulator.Accumulate(queryMetrics.IndexUtilizationInfo);

@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal class IndexUtilizationInfoAccumulator
     {
+        private readonly List<IndexUtilizationInfo> indexUtilizationInfoList;
+
         public IndexUtilizationInfoAccumulator()
         {
-            this.IndexUtilizationInfoList = new List<IndexUtilizationInfo>();
+            this.indexUtilizationInfoList = new List<IndexUtilizationInfo>();
         }
-
-        private readonly List<IndexUtilizationInfo> IndexUtilizationInfoList;
 
         public void Accumulate(IndexUtilizationInfo indexUtilizationInfo)
         {
@@ -24,23 +24,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 throw new ArgumentNullException(nameof(indexUtilizationInfo));
             }
 
-            this.IndexUtilizationInfoList.Add(indexUtilizationInfo);
+            this.indexUtilizationInfoList.Add(indexUtilizationInfo);
         }
 
         public IndexUtilizationInfo GetIndexUtilizationInfo()
         {
-            IEnumerable<SingleIndexUtilizationEntity> utilizedSingleIndexes = default;
-            IEnumerable<SingleIndexUtilizationEntity> potentialSingleIndexes = default;
-            IEnumerable<CompositeIndexUtilizationEntity> utilizedCompositeIndexes = default;
-            IEnumerable<CompositeIndexUtilizationEntity> potentialCompositeIndexes = default;
+            List<SingleIndexUtilizationEntity> utilizedSingleIndexes = new List<SingleIndexUtilizationEntity>();
+            List<SingleIndexUtilizationEntity> potentialSingleIndexes = new List<SingleIndexUtilizationEntity>();
+            List<CompositeIndexUtilizationEntity> utilizedCompositeIndexes = new List<CompositeIndexUtilizationEntity>();
+            List<CompositeIndexUtilizationEntity> potentialCompositeIndexes = new List<CompositeIndexUtilizationEntity>();
 
-            foreach (IndexUtilizationInfo indexUtilizationInfo in this.IndexUtilizationInfoList)
+            foreach (IndexUtilizationInfo indexUtilizationInfo in this.indexUtilizationInfoList)
             {
-                utilizedSingleIndexes = (utilizedSingleIndexes ?? Enumerable.Empty<SingleIndexUtilizationEntity>()).Concat(indexUtilizationInfo.UtilizedSingleIndexes);
-                potentialSingleIndexes = (potentialSingleIndexes ?? Enumerable.Empty<SingleIndexUtilizationEntity>()).Concat(indexUtilizationInfo.PotentialSingleIndexes);
-                utilizedCompositeIndexes = (utilizedCompositeIndexes ?? Enumerable.Empty<CompositeIndexUtilizationEntity>()).Concat(indexUtilizationInfo.UtilizedCompositeIndexes);
-                potentialCompositeIndexes = (potentialCompositeIndexes ?? Enumerable.Empty<CompositeIndexUtilizationEntity>()).Concat(indexUtilizationInfo.PotentialCompositeIndexes);
-
+                utilizedSingleIndexes.AddRange(indexUtilizationInfo.UtilizedSingleIndexes);
+                potentialSingleIndexes.AddRange(indexUtilizationInfo.PotentialSingleIndexes);
+                utilizedCompositeIndexes.AddRange(indexUtilizationInfo.UtilizedCompositeIndexes);
+                potentialCompositeIndexes.AddRange(indexUtilizationInfo.PotentialCompositeIndexes);
             }
 
             return new IndexUtilizationInfo(

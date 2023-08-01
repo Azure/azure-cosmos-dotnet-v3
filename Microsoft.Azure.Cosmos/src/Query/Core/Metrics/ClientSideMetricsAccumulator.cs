@@ -9,12 +9,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal class ClientSideMetricsAccumulator
     {
+        private readonly List<ClientSideMetrics> clientSideMetricsList;
+
         public ClientSideMetricsAccumulator()
         {
-            this.ClientSideMetricsList = new List<ClientSideMetrics>();
+            this.clientSideMetricsList = new List<ClientSideMetrics>();
         }
-
-        private readonly List<ClientSideMetrics> ClientSideMetricsList;
 
         public void Accumulate(ClientSideMetrics clientSideMetrics)
         {
@@ -23,20 +23,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 throw new ArgumentNullException(nameof(clientSideMetrics));
             }
 
-            this.ClientSideMetricsList.Add(clientSideMetrics);
+            this.clientSideMetricsList.Add(clientSideMetrics);
         }
 
         public ClientSideMetrics GetClientSideMetrics()
         {
-            long retries = default;
-            double requestCharge = default;
-            IEnumerable<FetchExecutionRange> fetchExecutionRanges = default;
+            long retries = 0;
+            double requestCharge = 0;
+            List<FetchExecutionRange> fetchExecutionRanges = new List<FetchExecutionRange>();
 
-            foreach (ClientSideMetrics clientSideMetrics in this.ClientSideMetricsList)
+            foreach (ClientSideMetrics clientSideMetrics in this.clientSideMetricsList)
             {
                 retries += clientSideMetrics.Retries;
                 requestCharge += clientSideMetrics.RequestCharge;
-                fetchExecutionRanges = (fetchExecutionRanges ?? Enumerable.Empty<FetchExecutionRange>()).Concat(clientSideMetrics.FetchExecutionRanges);
+                fetchExecutionRanges.AddRange(clientSideMetrics.FetchExecutionRanges);
             }
 
             return new ClientSideMetrics(

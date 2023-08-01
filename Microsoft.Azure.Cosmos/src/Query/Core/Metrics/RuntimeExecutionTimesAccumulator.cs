@@ -9,12 +9,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal class RuntimeExecutionTimesAccumulator
     {
+        private readonly List<RuntimeExecutionTimes> runtimeExecutionTimesList;
+
         public RuntimeExecutionTimesAccumulator()
         {
-            this.RuntimeExecutionTimesList = new List<RuntimeExecutionTimes>();
+            this.runtimeExecutionTimesList = new List<RuntimeExecutionTimes>();
         }
-
-        private readonly List<RuntimeExecutionTimes> RuntimeExecutionTimesList;
 
         public void Accumulate(RuntimeExecutionTimes runtimeExecutionTimes)
         {
@@ -23,16 +23,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 throw new ArgumentNullException(nameof(runtimeExecutionTimes));
             }
 
-            this.RuntimeExecutionTimesList.Add(runtimeExecutionTimes);
+            this.runtimeExecutionTimesList.Add(runtimeExecutionTimes);
         }
 
         public RuntimeExecutionTimes GetRuntimeExecutionTimes()
         {
-            TimeSpan queryEngineExecutionTime = default;
-            TimeSpan systemFunctionExecutionTime = default;
-            TimeSpan userDefinedFunctionExecutionTime = default;
+            TimeSpan queryEngineExecutionTime = TimeSpan.Zero;
+            TimeSpan systemFunctionExecutionTime = TimeSpan.Zero;
+            TimeSpan userDefinedFunctionExecutionTime = TimeSpan.Zero;
 
-            foreach (RuntimeExecutionTimes runtimeExecutionTimes in this.RuntimeExecutionTimesList)
+            foreach (RuntimeExecutionTimes runtimeExecutionTimes in this.runtimeExecutionTimesList)
             {
                 queryEngineExecutionTime += runtimeExecutionTimes.QueryEngineExecutionTime;
                 systemFunctionExecutionTime += runtimeExecutionTimes.SystemFunctionExecutionTime;

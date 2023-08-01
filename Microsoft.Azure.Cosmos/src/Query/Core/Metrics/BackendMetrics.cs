@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// </summary>
         public TimeSpan VMExecutionTime { get; }
 
-        internal static BackendMetrics CreateFromIEnumerable(IEnumerable<BackendMetrics> backendMetricsEnumerable)
+        internal static BackendMetrics Create(IEnumerable<BackendMetrics> backendMetricsEnumerable)
         {
             BackendMetricsAccumulator accumulator = default;
             foreach (BackendMetrics backendMetrics in backendMetricsEnumerable)

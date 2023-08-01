@@ -9,12 +9,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal class QueryPreparationTimesAccumulator
     {
+        private readonly List<QueryPreparationTimes> queryPreparationTimesList;
+
         public QueryPreparationTimesAccumulator()
         {
-            this.QueryPreparationTimesList = new List<QueryPreparationTimes>();
+            this.queryPreparationTimesList = new List<QueryPreparationTimes>();
         }
-
-        private readonly List<QueryPreparationTimes> QueryPreparationTimesList;
 
         public void Accumulate(QueryPreparationTimes queryPreparationTimes)
         {
@@ -23,17 +23,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 throw new ArgumentNullException(nameof(queryPreparationTimes));
             }
 
-            this.QueryPreparationTimesList.Add(queryPreparationTimes);
+            this.queryPreparationTimesList.Add(queryPreparationTimes);
         }
 
         public QueryPreparationTimes GetQueryPreparationTimes()
         {
-            TimeSpan queryCompilationTime;
-            TimeSpan logicalPlanBuildTime;
-            TimeSpan physicalPlanBuildTime;
-            TimeSpan queryOptimizationTime;
+            TimeSpan queryCompilationTime = TimeSpan.Zero;
+            TimeSpan logicalPlanBuildTime = TimeSpan.Zero;
+            TimeSpan physicalPlanBuildTime = TimeSpan.Zero;
+            TimeSpan queryOptimizationTime = TimeSpan.Zero;
 
-            foreach (QueryPreparationTimes queryPreparationTimes in this.QueryPreparationTimesList)
+            foreach (QueryPreparationTimes queryPreparationTimes in this.queryPreparationTimesList)
             {
                 queryCompilationTime += queryPreparationTimes.QueryCompilationTime;
                 logicalPlanBuildTime += queryPreparationTimes.LogicalPlanBuildTime;

@@ -11,12 +11,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal class BackendMetricsAccumulator
     {
+        private readonly List<BackendMetrics> backendMetricsList;
+
         public BackendMetricsAccumulator()
         {
-            this.BackendMetricsList = new List<BackendMetrics>();
+            this.backendMetricsList = new List<BackendMetrics>();
         }
-
-        private readonly List<BackendMetrics> BackendMetricsList;
 
         public void Accumulate(BackendMetrics backendMetrics)
         {
@@ -25,25 +25,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 throw new ArgumentNullException(nameof(backendMetrics));
             }
 
-            this.BackendMetricsList.Add(backendMetrics);
+            this.backendMetricsList.Add(backendMetrics);
         }
 
         public BackendMetrics GetBackendMetrics()
         {
-            TimeSpan totalTime = default;
-            long retrievedDocumentCount = default;
-            long retrievedDocumentSize = default;
-            long outputDocumentCount = default;
-            long outputDocumentSize = default;
-            double indexHitRatio = default;
+            TimeSpan totalTime = TimeSpan.Zero;
+            long retrievedDocumentCount = 0;
+            long retrievedDocumentSize = 0;
+            long outputDocumentCount = 0;
+            long outputDocumentSize = 0;
+            double indexHitRatio = 0;
             QueryPreparationTimesAccumulator queryPreparationTimesAccumulator = new QueryPreparationTimesAccumulator();
-            TimeSpan indexLookupTime = default;
-            TimeSpan documentLoadTime = default;
+            TimeSpan indexLookupTime = TimeSpan.Zero;
+            TimeSpan documentLoadTime = TimeSpan.Zero;
             RuntimeExecutionTimesAccumulator runtimeExecutionTimesAccumulator = new RuntimeExecutionTimesAccumulator();
-            TimeSpan documentWriteTime = default;
-            TimeSpan vMExecutionTime = default;
+            TimeSpan documentWriteTime = TimeSpan.Zero;
+            TimeSpan vMExecutionTime = TimeSpan.Zero;
 
-            foreach (BackendMetrics backendMetrics in this.BackendMetricsList)
+            foreach (BackendMetrics backendMetrics in this.backendMetricsList)
             {
                 indexHitRatio = ((outputDocumentCount * indexHitRatio) + (backendMetrics.OutputDocumentCount * backendMetrics.IndexHitRatio)) / (retrievedDocumentCount + backendMetrics.RetrievedDocumentCount);
                 totalTime += backendMetrics.TotalTime;
