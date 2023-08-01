@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             }
 
             this.ClientSideMetricsList.Add(clientSideMetrics);
-
-            return;
         }
 
         public ClientSideMetrics GetClientSideMetrics()
