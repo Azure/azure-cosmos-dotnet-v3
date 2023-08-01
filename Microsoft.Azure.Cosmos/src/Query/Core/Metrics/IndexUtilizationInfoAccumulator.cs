@@ -43,10 +43,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             }
 
             return new IndexUtilizationInfo(
-                utilizedSingleIndexes: utilizedSingleIndexes.ToList(),
-                potentialSingleIndexes: potentialSingleIndexes.ToList(),
-                utilizedCompositeIndexes: utilizedCompositeIndexes.ToList(),
-                potentialCompositeIndexes: potentialCompositeIndexes.ToList());
+                utilizedSingleIndexes: utilizedSingleIndexes,
+                potentialSingleIndexes: potentialSingleIndexes,
+                utilizedCompositeIndexes: utilizedCompositeIndexes,
+                potentialCompositeIndexes: potentialCompositeIndexes);
         }
     }
 }
