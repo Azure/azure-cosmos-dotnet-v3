@@ -275,25 +275,23 @@
 
                 traceTime.Stop();
                 totalTime.Stop();
-                if (response.RequestCharge != 0)
+
+                query = queryInput.Query;
+                enableOde = queryInput.EnableOptimisticDirectExecution;
+                queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - traceTime.ElapsedMilliseconds);
+                queryStatisticsDatumVisitor.PopulateMetrics();
+
+                QueryStatisticsMetrics queryStatistics = queryStatisticsDatumVisitor.QueryMetricsList[0];
+                queryStatistics.RUCharge = response.RequestCharge;
+                queryStatistics.CorrelatedActivityId = correlatedActivityId;
+
+                // Each roundtrip is a new item in the list
+                odeQueryStatisticsList.Add(new OdeQueryStatistics
                 {
-                    query = queryInput.Query;
-                    enableOde = queryInput.EnableOptimisticDirectExecution;
-                    queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - traceTime.ElapsedMilliseconds);
-                    queryStatisticsDatumVisitor.PopulateMetrics();
-
-                    QueryStatisticsMetrics queryStatistics = queryStatisticsDatumVisitor.QueryMetricsList[0];
-                    queryStatistics.RUCharge = response.RequestCharge;
-                    queryStatistics.CorrelatedActivityId = correlatedActivityId;
-
-                    // Each roundtrip is a new item in the list
-                    odeQueryStatisticsList.Add(new OdeQueryStatistics
-                    {
-                        Query = query,
-                        EnableOde = enableOde,
-                        QueryStatisticsMetrics = queryStatistics
-                    });
-                }
+                    Query = query,
+                    EnableOde = enableOde,
+                    QueryStatisticsMetrics = queryStatistics
+                });
 
                 totalDocumentCount += response.Count;
             }
