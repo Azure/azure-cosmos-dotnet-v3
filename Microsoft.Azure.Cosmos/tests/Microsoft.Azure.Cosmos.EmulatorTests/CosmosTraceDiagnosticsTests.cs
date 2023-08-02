@@ -71,7 +71,7 @@
                 requestOptions: requestOptions);
 
             bool found = false;
-            BackendMetricsAccumulator headerMetricsAccumulator = new BackendMetricsAccumulator();
+            ServerSideMetricsAccumulator headerMetricsAccumulator = new ServerSideMetricsAccumulator();
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
@@ -83,8 +83,8 @@
                     Assert.AreEqual(find.id, response.id);
                 }
 
-                BackendMetrics backendMetricsFromDiagnostics = iter.Diagnostics.GetQueryMetrics();
-                bool tryParseResult = BackendMetrics.TryParseFromDelimitedString(iter.Headers.QueryMetricsText, out BackendMetrics backendMetricsFromHeaders);
+                ServerSideMetrics backendMetricsFromDiagnostics = iter.Diagnostics.GetQueryMetrics();
+                bool tryParseResult = ServerSideMetrics.TryParseFromDelimitedString(iter.Headers.QueryMetricsText, out ServerSideMetrics backendMetricsFromHeaders);
                 Assert.IsTrue(tryParseResult);
 
                 headerMetricsAccumulator.Accumulate(backendMetricsFromHeaders);

@@ -49,10 +49,10 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return this.Value?.Summary?.RegionsContacted;
         }
 
-        public override BackendMetrics GetQueryMetrics()
+        public override ServerSideMetrics GetQueryMetrics()
         {
-            BackendMetricsAccumulator accumulator = new BackendMetricsAccumulator();
-            BackendMetricsAccumulator.WalkTraceTreeForQueryMetrics(this.Value, accumulator);
+            ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
+            ServerSideMetricsAccumulator.WalkTraceTreeForQueryMetrics(this.Value, accumulator);
             return accumulator.GetBackendMetrics();
         }
 

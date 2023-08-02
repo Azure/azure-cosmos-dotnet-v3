@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         ///  This represents the accumulated backend query metrics for the request.
         /// </summary>
         /// <returns>The accumulated backend metrics for the request.</returns>
-        public virtual BackendMetrics GetQueryMetrics()
+        public virtual ServerSideMetrics GetQueryMetrics()
         {
             // Default implementation avoids breaking change for users upgrading.
             throw new NotImplementedException($"{nameof(CosmosDiagnostics)}.{nameof(GetQueryMetrics)}");

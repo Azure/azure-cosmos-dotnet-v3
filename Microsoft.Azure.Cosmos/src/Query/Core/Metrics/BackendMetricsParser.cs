@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Text;
 
     /// <summary>
-    /// Parser for <see cref="BackendMetrics"/>.
+    /// Parser for <see cref="ServerSideMetrics"/>.
     /// </summary>
 #if INTERNAL
 #pragma warning disable SA1600
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #endif
     static class BackendMetricsParser
     {
-        public static unsafe bool TryParse(string deliminatedString, out BackendMetrics backendMetrics)
+        public static unsafe bool TryParse(string deliminatedString, out ServerSideMetrics backendMetrics)
         {
             if (deliminatedString == null)
             {
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             {
                 // Stack allocating a zero length buffer returns a null pointer
                 // so we special case the zero length string.
-                backendMetrics = BackendMetrics.Empty;
+                backendMetrics = ServerSideMetrics.Empty;
                 return true;
             }
 
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 }
             }
 
-            backendMetrics = new BackendMetrics(
+            backendMetrics = new ServerSideMetrics(
                 retrievedDocumentCount: retrievedDocumentCount,
                 retrievedDocumentSize: retrievedDocumentSize,
                 outputDocumentCount: outputDocumentCount,

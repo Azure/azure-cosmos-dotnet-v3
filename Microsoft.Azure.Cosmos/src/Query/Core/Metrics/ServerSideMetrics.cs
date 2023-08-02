@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Metrics received for queries from the backend.
     /// </summary>
-    public sealed class BackendMetrics
+    public sealed class ServerSideMetrics
     {
         /// <summary>
         /// QueryMetrics that with all members having default (but not null) members.
         /// </summary>
-        internal static readonly BackendMetrics Empty = new BackendMetrics(
+        internal static readonly ServerSideMetrics Empty = new ServerSideMetrics(
             retrievedDocumentCount: default,
             retrievedDocumentSize: default,
             outputDocumentCount: default,
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             documentWriteTime: default);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BackendMetrics"/> class.
+        /// Initializes a new instance of the <see cref="ServerSideMetrics"/> class.
         /// </summary>
         /// <param name="retrievedDocumentCount"></param>
         /// <param name="retrievedDocumentSize"></param>
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="vmExecutionTime"></param>
         /// <param name="runtimeExecutionTimes"></param>
         /// <param name="documentWriteTime"></param>
-        public BackendMetrics(
+        public ServerSideMetrics(
            long retrievedDocumentCount,
            long retrievedDocumentSize,
            long outputDocumentCount,
@@ -132,10 +132,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// </summary>
         public TimeSpan VMExecutionTime { get; }
 
-        internal static BackendMetrics Create(IEnumerable<BackendMetrics> backendMetricsEnumerable)
+        internal static ServerSideMetrics Create(IEnumerable<ServerSideMetrics> backendMetricsEnumerable)
         {
-            BackendMetricsAccumulator accumulator = default;
-            foreach (BackendMetrics backendMetrics in backendMetricsEnumerable)
+            ServerSideMetricsAccumulator accumulator = default;
+            foreach (ServerSideMetrics backendMetrics in backendMetricsEnumerable)
             {
                 accumulator.Accumulate(backendMetrics);
             }
@@ -143,14 +143,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             return accumulator.GetBackendMetrics();
         }
 
-        internal static bool TryParseFromDelimitedString(string delimitedString, out BackendMetrics backendMetrics)
+        internal static bool TryParseFromDelimitedString(string delimitedString, out ServerSideMetrics backendMetrics)
         {
             return BackendMetricsParser.TryParse(delimitedString, out backendMetrics);
         }
 
-        internal static BackendMetrics ParseFromDelimitedString(string delimitedString)
+        internal static ServerSideMetrics ParseFromDelimitedString(string delimitedString)
         {
-            if (!BackendMetricsParser.TryParse(delimitedString, out BackendMetrics backendMetrics))
+            if (!BackendMetricsParser.TryParse(delimitedString, out ServerSideMetrics backendMetrics))
             {
                 throw new FormatException();
             }

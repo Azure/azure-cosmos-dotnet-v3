@@ -9,16 +9,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
-    internal class BackendMetricsAccumulator
+    internal class ServerSideMetricsAccumulator
     {
-        private readonly List<BackendMetrics> backendMetricsList;
+        private readonly List<ServerSideMetrics> backendMetricsList;
 
-        public BackendMetricsAccumulator()
+        public ServerSideMetricsAccumulator()
         {
-            this.backendMetricsList = new List<BackendMetrics>();
+            this.backendMetricsList = new List<ServerSideMetrics>();
         }
 
-        public void Accumulate(BackendMetrics backendMetrics)
+        public void Accumulate(ServerSideMetrics backendMetrics)
         {
             if (backendMetrics == null)
             {
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.backendMetricsList.Add(backendMetrics);
         }
 
-        public BackendMetrics GetBackendMetrics()
+        public ServerSideMetrics GetBackendMetrics()
         {
             TimeSpan totalTime = TimeSpan.Zero;
             long retrievedDocumentCount = 0;
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             TimeSpan documentWriteTime = TimeSpan.Zero;
             TimeSpan vMExecutionTime = TimeSpan.Zero;
 
-            foreach (BackendMetrics backendMetrics in this.backendMetricsList)
+            foreach (ServerSideMetrics backendMetrics in this.backendMetricsList)
             {
                 indexHitRatio = ((outputDocumentCount * indexHitRatio) + (backendMetrics.OutputDocumentCount * backendMetrics.IndexHitRatio)) / (retrievedDocumentCount + backendMetrics.RetrievedDocumentCount);
                 totalTime += backendMetrics.TotalTime;
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 vMExecutionTime += backendMetrics.VMExecutionTime;
             }
 
-            return new BackendMetrics(
+            return new ServerSideMetrics(
                 retrievedDocumentCount: retrievedDocumentCount,
                 retrievedDocumentSize: retrievedDocumentSize,
                 outputDocumentCount: outputDocumentCount,
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 documentWriteTime: documentWriteTime);
         }
 
-        public static void WalkTraceTreeForQueryMetrics(ITrace currentTrace, BackendMetricsAccumulator accumulator)
+        public static void WalkTraceTreeForQueryMetrics(ITrace currentTrace, ServerSideMetricsAccumulator accumulator)
         {
             if (currentTrace == null)
             {
