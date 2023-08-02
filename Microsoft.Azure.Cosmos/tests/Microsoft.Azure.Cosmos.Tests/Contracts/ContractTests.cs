@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
 #if INTERNAL
             int expected = 7;
 #else
-            int expected = 5;
+            int expected = 6;
 #endif
             ContractTests.NamespaceCountTest(typeof(CosmosClient), expected);
         }
