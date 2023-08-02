@@ -9,9 +9,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
 
-    internal sealed class ResumeValueToCosmosElementConverter
+    internal sealed class ResumeValueSerializer
     {
-        public static CosmosElement Convert(SqlQueryResumeFilter.ResumeValue resumeValue)
+        public static CosmosElement ToCosmosElement(SqlQueryResumeFilter.ResumeValue resumeValue)
         {
             return resumeValue switch
             {

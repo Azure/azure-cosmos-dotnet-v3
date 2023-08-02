@@ -7,7 +7,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using System;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
+    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter;
 
     /// <summary>
     /// Utility class used to compare all items that we get back from a query.
@@ -69,6 +72,71 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
 
             return element1.CompareTo(element2);
+        }
+
+        /// <summary>
+        /// Utility to compare order by value to the resume value from continuation.
+        /// </summary>
+        /// <param name="resumeValue">ResumeValue to compare against.</param>
+        /// <param name="cosmosElement">The value to compare as CosmosElement.</param>
+        /// <returns>
+        /// Less than zero if obj1 comes before obj2 in the sort order.
+        /// Zero if obj1 and obj2 are interchangeable in the sort order.
+        /// Greater than zero if obj2 comes before obj1 in the sort order.
+        /// </returns>
+        public int CompareToResumeValue(ResumeValue resumeValue, CosmosElement cosmosElement)
+        {
+            switch (resumeValue)
+            {
+                case UndefinedResumeValue:
+                    return ItemComparer.Instance.Compare(CosmosUndefined.Create(), cosmosElement);
+
+                case NullResumeValue:
+                    return ItemComparer.Instance.Compare(CosmosNull.Create(), cosmosElement);
+
+                case BooleanResumeValue booleanValue:
+                    return ItemComparer.Instance.Compare(CosmosBoolean.Create(booleanValue.Value), cosmosElement);
+
+                case NumberResumeValue numberValue:
+                    return ItemComparer.Instance.Compare(CosmosNumber64.Create(numberValue.Value), cosmosElement);
+
+                case StringResumeValue stringValue:
+                    return ItemComparer.Instance.Compare(CosmosString.Create(stringValue.Value), cosmosElement);
+
+                case ArrayResumeValue arrayValue:
+                    {
+                        // If the order by result is also of array type, then compare the hash values
+                        // For other types create an empty array and call CosmosElement comparer which
+                        // will take care of ordering based on types.
+                        if (cosmosElement is CosmosArray arrayResult)
+                        {
+                            return UInt128BinaryComparer.Singleton.Compare(arrayValue.HashValue, DistinctHash.GetHash(arrayResult));
+                        }
+                        else
+                        {
+                            return ItemComparer.Instance.Compare(CosmosArray.Empty, cosmosElement);
+                        }
+                    }
+
+                case ObjectResumeValue objectValue:
+                    {
+                        // If the order by result is also of object type, then compare the hash values
+                        // For other types create an empty object and call CosmosElement comparer which
+                        // will take care of ordering based on types.
+                        if (cosmosElement is CosmosObject objectResult)
+                        {
+                            // same type so compare the hash values
+                            return UInt128BinaryComparer.Singleton.Compare(objectValue.HashValue, DistinctHash.GetHash(objectResult));
+                        }
+                        else
+                        {
+                            return ItemComparer.Instance.Compare(CosmosObject.Create(new Dictionary<string, CosmosElement>()), cosmosElement);
+                        }
+                    }
+
+                default:
+                    throw new ArgumentException($"Invalid {nameof(ResumeValue)} type.");
+            }
         }
 
         public static bool IsMinOrMax(CosmosElement obj)

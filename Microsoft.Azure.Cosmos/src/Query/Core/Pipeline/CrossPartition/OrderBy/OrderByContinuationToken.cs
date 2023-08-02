@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 foreach (ResumeValue resumeValue in orderByContinuationToken.ResumeValues)
                 {
-                    resumeValuesRaw.Add(ResumeValueToCosmosElementConverter.Convert(resumeValue));
+                    resumeValuesRaw.Add(ResumeValueSerializer.ToCosmosElement(resumeValue));
                 }
             }
 

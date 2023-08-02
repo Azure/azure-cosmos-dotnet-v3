@@ -1209,7 +1209,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 for (int i = 0; (i < sortOrders.Count) && (sortOrderCompare == 0); ++i)
                 {
                     sortOrderCompare = continuationToken.ResumeValues != null
-                        ? ResumeValueComparer.Compare(orderByResult.OrderByItems[i].Item, continuationToken.ResumeValues[i])
+                        ? ItemComparer.Instance.CompareToResumeValue(
+                            continuationToken.ResumeValues[i],
+                            orderByResult.OrderByItems[i].Item)
                         : ItemComparer.Instance.Compare(
                             continuationToken.OrderByItems[i].Item,
                             orderByResult.OrderByItems[i].Item);
