@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using System.Diagnostics;
 
     [TestClass]
     [TestCategory("ClientTelemetry")]
@@ -414,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             await this.WaitAndAssert(
-                expectedOperationCount: 4,// 2 (read, requetLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
+                expectedOperationCount: 4,// 2 (read, requestLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
                 expectedOperationRecordCountMap: expectedRecordCountInOperation); 
         }
 
@@ -808,7 +807,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             else
             {
-                //TODO: revert
                 Assert.IsTrue(actualRequestInformation == null || actualRequestInformation.Count == 0, $"Request Information is not expected in {localCopyOfActualInfo.First().ConnectionMode} mode");
             }
         }
@@ -893,23 +891,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(operation.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
                 Assert.IsTrue(operation.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
                 Assert.IsTrue(operation.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
+
                 if (operation.MetricInfo.MetricsName.Equals(ClientTelemetryOptions.RequestLatencyName)) // putting this condition to avoid doubling of count as we have same information for each metrics
                 {
-                    if (!actualOperationRecordCountMap.TryGetValue(operation.Operation.ToString(), out long recordCount))
+                    if (!actualOperationRecordCountMap.TryGetValue(operation.Operation, out long recordCount))
                     {
-                        actualOperationRecordCountMap.Add(operation.Operation.ToString(), operation.MetricInfo.Count);
+                        actualOperationRecordCountMap.Add(operation.Operation, operation.MetricInfo.Count);
                     }
                     else
                     {
-                        actualOperationRecordCountMap.Remove(operation.Operation.ToString());
-                        actualOperationRecordCountMap.Add(operation.Operation.ToString(), recordCount + operation.MetricInfo.Count);
+                        actualOperationRecordCountMap.Remove(operation.Operation);
+                        actualOperationRecordCountMap.Add(operation.Operation, recordCount + operation.MetricInfo.Count);
                     }
                 }
             }
 
             if (expectedOperationRecordCountMap != null)
             {
-                    Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({string.Join(", ", actualOperationRecordCountMap)}) for operation does not match with expected record i.e. ({string.Join(", ", expectedOperationRecordCountMap)})");
+                Assert.IsTrue(expectedOperationRecordCountMap.EqualsTo<string,long>(actualOperationRecordCountMap), $"actual record i.e. ({string.Join(", ", actualOperationRecordCountMap)}) for operation does not match with expected record i.e. ({string.Join(", ", expectedOperationRecordCountMap)})");
             }
         }
 
