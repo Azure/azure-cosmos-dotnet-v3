@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQu
 
         public static bool IsOptimisticDirectExecutionContinuationToken(CosmosElement continuationToken)
         {
-            CosmosObject cosmosObjectContinuationToken = (CosmosObject)continuationToken;
+            CosmosObject cosmosObjectContinuationToken = continuationToken as CosmosObject;
             return !(cosmosObjectContinuationToken == null || !cosmosObjectContinuationToken.ContainsKey(OptimisticDirectExecutionToken));
         }
 
