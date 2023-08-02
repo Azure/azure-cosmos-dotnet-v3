@@ -32,7 +32,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     {
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
         private const string OptimisticDirectExecution = "OptimisticDirectExecution";
-        private const string OptimisticDirectExecutionToken = "OptimisticDirectExecutionToken";
         private const string Passthrough = "Passthrough";
         private const string Specialized = "Specialized";
         private const int PageSizeFactorForTop = 5;
