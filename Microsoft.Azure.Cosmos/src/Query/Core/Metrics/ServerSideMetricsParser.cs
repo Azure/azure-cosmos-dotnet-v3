@@ -17,9 +17,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #else
     internal
 #endif
-    static class BackendMetricsParser
+    static class ServerSideMetricsParser
     {
-        public static unsafe bool TryParse(string deliminatedString, out ServerSideMetrics backendMetrics)
+        public static unsafe bool TryParse(string deliminatedString, out ServerSideMetrics serverSideMetrics)
         {
             if (deliminatedString == null)
             {
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             {
                 // Stack allocating a zero length buffer returns a null pointer
                 // so we special case the zero length string.
-                backendMetrics = ServerSideMetrics.Empty;
+                serverSideMetrics = ServerSideMetrics.Empty;
                 return true;
             }
 
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
             while (!corpus.IsEmpty)
             {
-                (BackendMetricsTokenizer.TokenType? tokenType, ReadOnlyMemory<byte> buffer) = BackendMetricsTokenizer.Read(corpus);
+                (ServerSideMetricsTokenizer.TokenType? tokenType, ReadOnlyMemory<byte> buffer) = ServerSideMetricsTokenizer.Read(corpus);
                 int bytesConsumed;
 
                 if (!tokenType.HasValue)
@@ -95,162 +95,162 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 {
                     switch (tokenType.Value)
                     {
-                        case BackendMetricsTokenizer.TokenType.DocumentLoadTimeInMs:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.DocumentLoadTimeInMs.Length);
-                            if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out documentLoadTime, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.DocumentLoadTimeInMs:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.DocumentLoadTimeInMs.Length);
+                            if (!ServerSideMetricsParser.TryParseTimeSpanField(corpus, out documentLoadTime, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.WriteOutputTimeInMs:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.WriteOutputTimeInMs.Length);
-                            if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out documentWriteTime, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.WriteOutputTimeInMs:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.WriteOutputTimeInMs.Length);
+                            if (!ServerSideMetricsParser.TryParseTimeSpanField(corpus, out documentWriteTime, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.IndexLookupTimeInMs:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.IndexLookupTimeInMs.Length);
-                            if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out indexLookupTime, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.IndexLookupTimeInMs:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.IndexLookupTimeInMs.Length);
+                            if (!ServerSideMetricsParser.TryParseTimeSpanField(corpus, out indexLookupTime, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.IndexUtilizationRatio:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.IndexUtilizationRatio.Length);
-                            if (!BackendMetricsParser.TryParseDoubleField(corpus, out indexHitRatio, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.IndexUtilizationRatio:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.IndexUtilizationRatio.Length);
+                            if (!ServerSideMetricsParser.TryParseDoubleField(corpus, out indexHitRatio, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.QueryLogicalPlanBuildTimeInMs:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.QueryLogicalPlanBuildTimeInMs.Length);
-                            if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out logicalPlanBuildTime, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.QueryLogicalPlanBuildTimeInMs:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.QueryLogicalPlanBuildTimeInMs.Length);
+                            if (!ServerSideMetricsParser.TryParseTimeSpanField(corpus, out logicalPlanBuildTime, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.OutputDocumentCount:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.OutputDocumentCount.Length);
-                            if (!BackendMetricsParser.TryParseLongField(corpus, out outputDocumentCount, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.OutputDocumentCount:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.OutputDocumentCount.Length);
+                            if (!ServerSideMetricsParser.TryParseLongField(corpus, out outputDocumentCount, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.OutputDocumentSize:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.OutputDocumentSize.Length);
-                            if (!BackendMetricsParser.TryParseLongField(corpus, out outputDocumentSize, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.OutputDocumentSize:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.OutputDocumentSize.Length);
+                            if (!ServerSideMetricsParser.TryParseLongField(corpus, out outputDocumentSize, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.QueryPhysicalPlanBuildTimeInMs:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.QueryPhysicalPlanBuildTimeInMs.Length);
-                            if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out physicalPlanBuildTime, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.QueryPhysicalPlanBuildTimeInMs:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.QueryPhysicalPlanBuildTimeInMs.Length);
+                            if (!ServerSideMetricsParser.TryParseTimeSpanField(corpus, out physicalPlanBuildTime, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.QueryCompileTimeInMs:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.QueryCompileTimeInMs.Length);
-                            if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out queryCompilationTime, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.QueryCompileTimeInMs:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.QueryCompileTimeInMs.Length);
+                            if (!ServerSideMetricsParser.TryParseTimeSpanField(corpus, out queryCompilationTime, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.QueryOptimizationTimeInMs:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.QueryOptimizationTimeInMs.Length);
-                            if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out queryOptimizationTime, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.QueryOptimizationTimeInMs:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.QueryOptimizationTimeInMs.Length);
+                            if (!ServerSideMetricsParser.TryParseTimeSpanField(corpus, out queryOptimizationTime, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.RetrievedDocumentCount:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.RetrievedDocumentCount.Length);
-                            if (!BackendMetricsParser.TryParseLongField(corpus, out retrievedDocumentCount, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.RetrievedDocumentCount:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.RetrievedDocumentCount.Length);
+                            if (!ServerSideMetricsParser.TryParseLongField(corpus, out retrievedDocumentCount, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.RetrievedDocumentSize:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.RetrievedDocumentSize.Length);
-                            if (!BackendMetricsParser.TryParseLongField(corpus, out retrievedDocumentSize, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.RetrievedDocumentSize:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.RetrievedDocumentSize.Length);
+                            if (!ServerSideMetricsParser.TryParseLongField(corpus, out retrievedDocumentSize, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.SystemFunctionExecuteTimeInMs:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.SystemFunctionExecuteTimeInMs.Length);
-                            if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out systemFunctionExecutionTime, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.SystemFunctionExecuteTimeInMs:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.SystemFunctionExecuteTimeInMs.Length);
+                            if (!ServerSideMetricsParser.TryParseTimeSpanField(corpus, out systemFunctionExecutionTime, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.TotalExecutionTimeInMs:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.TotalExecutionTimeInMs.Length);
-                            if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out totalQueryExecutionTime, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.TotalExecutionTimeInMs:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.TotalExecutionTimeInMs.Length);
+                            if (!ServerSideMetricsParser.TryParseTimeSpanField(corpus, out totalQueryExecutionTime, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.UserFunctionExecuteTimeInMs:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.UserFunctionExecuteTimeInMs.Length);
-                            if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out userDefinedFunctionExecutionTime, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.UserFunctionExecuteTimeInMs:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.UserFunctionExecuteTimeInMs.Length);
+                            if (!ServerSideMetricsParser.TryParseTimeSpanField(corpus, out userDefinedFunctionExecutionTime, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
-                        case BackendMetricsTokenizer.TokenType.VMExecutionTimeInMs:
-                            corpus = corpus.Slice(BackendMetricsTokenizer.TokenBuffers.VMExecutionTimeInMs.Length);
-                            if (!BackendMetricsParser.TryParseTimeSpanField(corpus, out vmExecutionTime, out bytesConsumed))
+                        case ServerSideMetricsTokenizer.TokenType.VMExecutionTimeInMs:
+                            corpus = corpus.Slice(ServerSideMetricsTokenizer.TokenBuffers.VMExecutionTimeInMs.Length);
+                            if (!ServerSideMetricsParser.TryParseTimeSpanField(corpus, out vmExecutionTime, out bytesConsumed))
                             {
-                                backendMetrics = default;
+                                serverSideMetrics = default;
                                 return false;
                             }
                             break;
 
                         default:
-                            backendMetrics = default;
+                            serverSideMetrics = default;
                             return false;
                     }
                 }
                 corpus = corpus.Slice(bytesConsumed);
                 if (!corpus.IsEmpty)
                 {
-                    (BackendMetricsTokenizer.TokenType? semicolonToken, ReadOnlyMemory<byte> semicolonBuffer) = BackendMetricsTokenizer.Read(corpus);
-                    if (!semicolonToken.HasValue || (semicolonToken != BackendMetricsTokenizer.TokenType.SemiColonDelimiter))
+                    (ServerSideMetricsTokenizer.TokenType? semicolonToken, ReadOnlyMemory<byte> semicolonBuffer) = ServerSideMetricsTokenizer.Read(corpus);
+                    if (!semicolonToken.HasValue || (semicolonToken != ServerSideMetricsTokenizer.TokenType.SemiColonDelimiter))
                     {
-                        backendMetrics = default;
+                        serverSideMetrics = default;
                         return false;
                     }
 
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 }
             }
 
-            backendMetrics = new ServerSideMetrics(
+            serverSideMetrics = new ServerSideMetrics(
                 retrievedDocumentCount: retrievedDocumentCount,
                 retrievedDocumentSize: retrievedDocumentSize,
                 outputDocumentCount: outputDocumentCount,
@@ -283,8 +283,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private static bool TryParseTimeSpanField(ReadOnlySpan<byte> corpus, out TimeSpan timeSpan, out int bytesConsumed)
         {
-            (BackendMetricsTokenizer.TokenType? tokenType, ReadOnlyMemory<byte> buffer) = BackendMetricsTokenizer.Read(corpus);
-            if (!tokenType.HasValue || (tokenType.Value != BackendMetricsTokenizer.TokenType.EqualsDelimiter))
+            (ServerSideMetricsTokenizer.TokenType? tokenType, ReadOnlyMemory<byte> buffer) = ServerSideMetricsTokenizer.Read(corpus);
+            if (!tokenType.HasValue || (tokenType.Value != ServerSideMetricsTokenizer.TokenType.EqualsDelimiter))
             {
                 timeSpan = default;
                 bytesConsumed = default;
@@ -306,8 +306,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private static bool TryParseLongField(ReadOnlySpan<byte> corpus, out long value, out int bytesConsumed)
         {
-            (BackendMetricsTokenizer.TokenType? tokenType, ReadOnlyMemory<byte> buffer) = BackendMetricsTokenizer.Read(corpus);
-            if (!tokenType.HasValue || (tokenType.Value != BackendMetricsTokenizer.TokenType.EqualsDelimiter))
+            (ServerSideMetricsTokenizer.TokenType? tokenType, ReadOnlyMemory<byte> buffer) = ServerSideMetricsTokenizer.Read(corpus);
+            if (!tokenType.HasValue || (tokenType.Value != ServerSideMetricsTokenizer.TokenType.EqualsDelimiter))
             {
                 value = default;
                 bytesConsumed = default;
@@ -327,8 +327,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private static bool TryParseDoubleField(ReadOnlySpan<byte> corpus, out double value, out int bytesConsumed)
         {
-            (BackendMetricsTokenizer.TokenType? tokenType, ReadOnlyMemory<byte> buffer) = BackendMetricsTokenizer.Read(corpus);
-            if (!tokenType.HasValue || (tokenType.Value != BackendMetricsTokenizer.TokenType.EqualsDelimiter))
+            (ServerSideMetricsTokenizer.TokenType? tokenType, ReadOnlyMemory<byte> buffer) = ServerSideMetricsTokenizer.Read(corpus);
+            if (!tokenType.HasValue || (tokenType.Value != ServerSideMetricsTokenizer.TokenType.EqualsDelimiter))
             {
                 value = default;
                 bytesConsumed = default;

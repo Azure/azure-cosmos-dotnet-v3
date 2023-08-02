@@ -83,12 +83,12 @@
                     Assert.AreEqual(find.id, response.id);
                 }
 
-                ServerSideMetrics backendMetricsFromDiagnostics = iter.Diagnostics.GetQueryMetrics();
-                bool tryParseResult = ServerSideMetrics.TryParseFromDelimitedString(iter.Headers.QueryMetricsText, out ServerSideMetrics backendMetricsFromHeaders);
+                ServerSideMetrics serverSideMetricsFromDiagnostics = iter.Diagnostics.GetQueryMetrics();
+                bool tryParseResult = ServerSideMetrics.TryParseFromDelimitedString(iter.Headers.QueryMetricsText, out ServerSideMetrics serverSideMetricsFromHeaders);
                 Assert.IsTrue(tryParseResult);
 
-                headerMetricsAccumulator.Accumulate(backendMetricsFromHeaders);
-                Assert.IsTrue(headerMetricsAccumulator.GetBackendMetrics().FormatTrace() == backendMetricsFromDiagnostics.FormatTrace());
+                headerMetricsAccumulator.Accumulate(serverSideMetricsFromHeaders);
+                Assert.IsTrue(headerMetricsAccumulator.GetServerSideMetrics().FormatTrace() == serverSideMetricsFromDiagnostics.FormatTrace());
             }
 
             Assert.IsTrue(found);

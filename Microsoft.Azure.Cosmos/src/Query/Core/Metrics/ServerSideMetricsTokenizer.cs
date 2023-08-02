@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #else
     internal
 #endif
-    static class BackendMetricsTokenizer
+    static class ServerSideMetricsTokenizer
     {
         public enum TokenType
         {

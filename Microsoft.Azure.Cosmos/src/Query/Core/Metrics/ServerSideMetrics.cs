@@ -132,30 +132,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// </summary>
         public TimeSpan VMExecutionTime { get; }
 
-        internal static ServerSideMetrics Create(IEnumerable<ServerSideMetrics> backendMetricsEnumerable)
+        internal static ServerSideMetrics Create(IEnumerable<ServerSideMetrics> serverSideMetricsEnumerable)
         {
             ServerSideMetricsAccumulator accumulator = default;
-            foreach (ServerSideMetrics backendMetrics in backendMetricsEnumerable)
+            foreach (ServerSideMetrics serverSideMetrics in serverSideMetricsEnumerable)
             {
-                accumulator.Accumulate(backendMetrics);
+                accumulator.Accumulate(serverSideMetrics);
             }
 
-            return accumulator.GetBackendMetrics();
+            return accumulator.GetServerSideMetrics();
         }
 
-        internal static bool TryParseFromDelimitedString(string delimitedString, out ServerSideMetrics backendMetrics)
+        internal static bool TryParseFromDelimitedString(string delimitedString, out ServerSideMetrics serverSideMetrics)
         {
-            return BackendMetricsParser.TryParse(delimitedString, out backendMetrics);
+            return ServerSideMetricsParser.TryParse(delimitedString, out serverSideMetrics);
         }
 
         internal static ServerSideMetrics ParseFromDelimitedString(string delimitedString)
         {
-            if (!BackendMetricsParser.TryParse(delimitedString, out ServerSideMetrics backendMetrics))
+            if (!ServerSideMetricsParser.TryParse(delimitedString, out ServerSideMetrics serverSideMetrics))
             {
                 throw new FormatException();
             }
 
-            return backendMetrics;
+            return serverSideMetrics;
         }    
     }
 }

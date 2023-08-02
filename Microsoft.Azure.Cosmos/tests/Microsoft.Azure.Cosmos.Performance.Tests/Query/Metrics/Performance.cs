@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query.Metrics
             ValueStopwatch stopwatch = ValueStopwatch.StartNew();
             for (int i = 0; i < 100000; i++)
             {
-                BackendMetricsParser.TryParse(delimitedString, out ServerSideMetrics backendMetrics);
+                ServerSideMetricsParser.TryParse(delimitedString, out ServerSideMetrics serverSideMetrics);
             }
             stopwatch.Stop();
             Console.WriteLine(stopwatch.ElapsedMilliseconds);

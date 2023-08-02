@@ -11,24 +11,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal class ServerSideMetricsAccumulator
     {
-        private readonly List<ServerSideMetrics> backendMetricsList;
+        private readonly List<ServerSideMetrics> serverSideMetricsList;
 
         public ServerSideMetricsAccumulator()
         {
-            this.backendMetricsList = new List<ServerSideMetrics>();
+            this.serverSideMetricsList = new List<ServerSideMetrics>();
         }
 
-        public void Accumulate(ServerSideMetrics backendMetrics)
+        public void Accumulate(ServerSideMetrics serverSideMetrics)
         {
-            if (backendMetrics == null)
+            if (serverSideMetrics == null)
             {
-                throw new ArgumentNullException(nameof(backendMetrics));
+                throw new ArgumentNullException(nameof(serverSideMetrics));
             }
 
-            this.backendMetricsList.Add(backendMetrics);
+            this.serverSideMetricsList.Add(serverSideMetrics);
         }
 
-        public ServerSideMetrics GetBackendMetrics()
+        public ServerSideMetrics GetServerSideMetrics()
         {
             TimeSpan totalTime = TimeSpan.Zero;
             long retrievedDocumentCount = 0;
@@ -43,20 +43,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             TimeSpan documentWriteTime = TimeSpan.Zero;
             TimeSpan vMExecutionTime = TimeSpan.Zero;
 
-            foreach (ServerSideMetrics backendMetrics in this.backendMetricsList)
+            foreach (ServerSideMetrics serverSideMetrics in this.serverSideMetricsList)
             {
-                indexHitRatio = ((outputDocumentCount * indexHitRatio) + (backendMetrics.OutputDocumentCount * backendMetrics.IndexHitRatio)) / (retrievedDocumentCount + backendMetrics.RetrievedDocumentCount);
-                totalTime += backendMetrics.TotalTime;
-                retrievedDocumentCount += backendMetrics.RetrievedDocumentCount;
-                retrievedDocumentSize += backendMetrics.RetrievedDocumentSize;
-                outputDocumentCount += backendMetrics.OutputDocumentCount;
-                outputDocumentSize += backendMetrics.OutputDocumentSize;
-                queryPreparationTimesAccumulator.Accumulate(backendMetrics.QueryPreparationTimes);
-                indexLookupTime += backendMetrics.IndexLookupTime;
-                documentLoadTime += backendMetrics.DocumentLoadTime;
-                runtimeExecutionTimesAccumulator.Accumulate(backendMetrics.RuntimeExecutionTimes);
-                documentWriteTime += backendMetrics.DocumentWriteTime;
-                vMExecutionTime += backendMetrics.VMExecutionTime;
+                indexHitRatio = ((outputDocumentCount * indexHitRatio) + (serverSideMetrics.OutputDocumentCount * serverSideMetrics.IndexHitRatio)) / (retrievedDocumentCount + serverSideMetrics.RetrievedDocumentCount);
+                totalTime += serverSideMetrics.TotalTime;
+                retrievedDocumentCount += serverSideMetrics.RetrievedDocumentCount;
+                retrievedDocumentSize += serverSideMetrics.RetrievedDocumentSize;
+                outputDocumentCount += serverSideMetrics.OutputDocumentCount;
+                outputDocumentSize += serverSideMetrics.OutputDocumentSize;
+                queryPreparationTimesAccumulator.Accumulate(serverSideMetrics.QueryPreparationTimes);
+                indexLookupTime += serverSideMetrics.IndexLookupTime;
+                documentLoadTime += serverSideMetrics.DocumentLoadTime;
+                runtimeExecutionTimesAccumulator.Accumulate(serverSideMetrics.RuntimeExecutionTimes);
+                documentWriteTime += serverSideMetrics.DocumentWriteTime;
+                vMExecutionTime += serverSideMetrics.VMExecutionTime;
             }
 
             return new ServerSideMetrics(
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             {
                 if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
                 {
-                    accumulator.Accumulate(queryMetricsTraceDatum.QueryMetrics.BackendMetrics);
+                    accumulator.Accumulate(queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics);
                     return;
                 }
             }

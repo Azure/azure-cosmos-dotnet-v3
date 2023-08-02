@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
             ServerSideMetricsAccumulator.WalkTraceTreeForQueryMetrics(this.Value, accumulator);
-            return accumulator.GetBackendMetrics();
+            return accumulator.GetServerSideMetrics();
         }
 
         internal bool IsGoneExceptionHit()

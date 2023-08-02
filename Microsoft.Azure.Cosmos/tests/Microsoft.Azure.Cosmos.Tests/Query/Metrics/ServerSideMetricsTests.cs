@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
 
         private static readonly string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds};queryCompileTimeInMs={queryCompileTime.TotalMilliseconds};queryLogicalPlanBuildTimeInMs={logicalPlanBuildTime.TotalMilliseconds};queryPhysicalPlanBuildTimeInMs={physicalPlanBuildTime.TotalMilliseconds};queryOptimizationTimeInMs={queryOptimizationTime.TotalMilliseconds};VMExecutionTimeInMs={vmExecutionTime.TotalMilliseconds};indexLookupTimeInMs={indexLookupTime.TotalMilliseconds};documentLoadTimeInMs={documentLoadTime.TotalMilliseconds};systemFunctionExecuteTimeInMs={systemFunctionExecuteTime.TotalMilliseconds};userFunctionExecuteTimeInMs={userFunctionExecuteTime.TotalMilliseconds};retrievedDocumentCount={retrievedDocumentCount};retrievedDocumentSize={retrievedDocumentSize};outputDocumentCount={outputDocumentCount};outputDocumentSize={outputDocumentSize};writeOutputTimeInMs={documentWriteTime.TotalMilliseconds};indexUtilizationRatio={indexHitRatio}";
 
-        internal static readonly ServerSideMetrics MockBackendMetrics = new ServerSideMetrics(
+        internal static readonly ServerSideMetrics ServerSideMetrics = new ServerSideMetrics(
             retrievedDocumentCount,
             retrievedDocumentSize,
             outputDocumentCount,
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         [TestMethod]
         public void TestParse()
         {
-            ServerSideMetricsTests.ValidateParse(delimitedString, MockBackendMetrics);
+            ServerSideMetricsTests.ValidateParse(delimitedString, ServerSideMetrics);
         }
 
         [TestMethod]
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         [DataRow("totalExecutionTimeInMs=33.6+totalExecutionTimeInMs=33.6", DisplayName = "Wrong Delimiter")]
         public void TestNegativeCases(string delimitedString)
         {
-            Assert.IsFalse(BackendMetricsParser.TryParse(delimitedString, out ServerSideMetrics backendMetrics));
+            Assert.IsFalse(ServerSideMetricsParser.TryParse(delimitedString, out ServerSideMetrics serverSideMetrics));
         }
 
         [TestMethod]
@@ -163,10 +163,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         public void TestAccumulator()
         {
             ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
-            accumulator.Accumulate(MockBackendMetrics);
-            accumulator.Accumulate(MockBackendMetrics);
+            accumulator.Accumulate(ServerSideMetrics);
+            accumulator.Accumulate(ServerSideMetrics);
 
-            ServerSideMetrics backendMetricsFromAddition = accumulator.GetBackendMetrics();
+            ServerSideMetrics serverSideMetricsFromAddition = accumulator.GetServerSideMetrics();
             ServerSideMetrics expected = new ServerSideMetrics(
                 retrievedDocumentCount * 2,
                 retrievedDocumentSize * 2,
@@ -188,16 +188,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
                     userFunctionExecuteTime * 2),
                 documentWriteTime * 2);
 
-            ServerSideMetricsTests.ValidateBackendMetricsEquals(expected, backendMetricsFromAddition);
+            ServerSideMetricsTests.ValidateServerSideMetricsEquals(expected, serverSideMetricsFromAddition);
         }
 
         private static void ValidateParse(string delimitedString, ServerSideMetrics expected)
         {
-            Assert.IsTrue(BackendMetricsParser.TryParse(delimitedString, out ServerSideMetrics actual));
-            ServerSideMetricsTests.ValidateBackendMetricsEquals(expected, actual);
+            Assert.IsTrue(ServerSideMetricsParser.TryParse(delimitedString, out ServerSideMetrics actual));
+            ServerSideMetricsTests.ValidateServerSideMetricsEquals(expected, actual);
         }
 
-        private static void ValidateBackendMetricsEquals(ServerSideMetrics expected, ServerSideMetrics actual)
+        private static void ValidateServerSideMetricsEquals(ServerSideMetrics expected, ServerSideMetrics actual)
         {
             Assert.AreEqual(expected.DocumentLoadTime, actual.DocumentLoadTime);
             Assert.AreEqual(expected.DocumentWriteTime, actual.DocumentWriteTime);

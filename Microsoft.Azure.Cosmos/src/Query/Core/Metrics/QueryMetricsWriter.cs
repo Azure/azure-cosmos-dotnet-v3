@@ -23,25 +23,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.WriteBeforeQueryMetrics();
 
             // Top Level Properties
-            this.WriteRetrievedDocumentCount(queryMetrics.BackendMetrics.RetrievedDocumentCount);
-            this.WriteRetrievedDocumentSize(queryMetrics.BackendMetrics.RetrievedDocumentSize);
-            this.WriteOutputDocumentCount(queryMetrics.BackendMetrics.OutputDocumentCount);
-            this.WriteOutputDocumentSize(queryMetrics.BackendMetrics.OutputDocumentSize);
-            this.WriteIndexHitRatio(queryMetrics.BackendMetrics.IndexHitRatio);
+            this.WriteRetrievedDocumentCount(queryMetrics.ServerSideMetrics.RetrievedDocumentCount);
+            this.WriteRetrievedDocumentSize(queryMetrics.ServerSideMetrics.RetrievedDocumentSize);
+            this.WriteOutputDocumentCount(queryMetrics.ServerSideMetrics.OutputDocumentCount);
+            this.WriteOutputDocumentSize(queryMetrics.ServerSideMetrics.OutputDocumentSize);
+            this.WriteIndexHitRatio(queryMetrics.ServerSideMetrics.IndexHitRatio);
 
-            this.WriteTotalQueryExecutionTime(queryMetrics.BackendMetrics.TotalTime);
+            this.WriteTotalQueryExecutionTime(queryMetrics.ServerSideMetrics.TotalTime);
 
             // QueryPreparationTimes
-            this.WriteQueryPreparationTime(queryMetrics.BackendMetrics.QueryPreparationTimes);
+            this.WriteQueryPreparationTime(queryMetrics.ServerSideMetrics.QueryPreparationTimes);
 
-            this.WriteIndexLookupTime(queryMetrics.BackendMetrics.IndexLookupTime);
-            this.WriteDocumentLoadTime(queryMetrics.BackendMetrics.DocumentLoadTime);
-            this.WriteVMExecutionTime(queryMetrics.BackendMetrics.VMExecutionTime);
+            this.WriteIndexLookupTime(queryMetrics.ServerSideMetrics.IndexLookupTime);
+            this.WriteDocumentLoadTime(queryMetrics.ServerSideMetrics.DocumentLoadTime);
+            this.WriteVMExecutionTime(queryMetrics.ServerSideMetrics.VMExecutionTime);
 
             // RuntimesExecutionTimes
-            this.WriteRuntimeExecutionTime(queryMetrics.BackendMetrics.RuntimeExecutionTimes);
+            this.WriteRuntimeExecutionTime(queryMetrics.ServerSideMetrics.RuntimeExecutionTimes);
 
-            this.WriteDocumentWriteTime(queryMetrics.BackendMetrics.DocumentWriteTime);
+            this.WriteDocumentWriteTime(queryMetrics.ServerSideMetrics.DocumentWriteTime);
 #if false
             // ClientSideMetrics
             this.WriteClientSideMetrics(queryMetrics.ClientSideMetrics);

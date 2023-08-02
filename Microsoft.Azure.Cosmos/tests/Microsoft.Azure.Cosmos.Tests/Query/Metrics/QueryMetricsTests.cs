@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
     public class QueryMetricsTests
     {
         private static readonly QueryMetrics MockQueryMetrics = new QueryMetrics(
-            ServerSideMetricsTests.MockBackendMetrics,
+            ServerSideMetricsTests.ServerSideMetrics,
             IndexUtilizationInfoTests.MockIndexUtilizationInfo,
             ClientSideMetricsTests.MockClientSideMetrics);
 
@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             QueryMetrics doubleQueryMetrics = accumulator.GetQueryMetrics();
 
             // Spot check
-            Assert.AreEqual(2 * ServerSideMetricsTests.MockBackendMetrics.IndexLookupTime, doubleQueryMetrics.BackendMetrics.IndexLookupTime);
+            Assert.AreEqual(2 * ServerSideMetricsTests.ServerSideMetrics.IndexLookupTime, doubleQueryMetrics.ServerSideMetrics.IndexLookupTime);
             Assert.AreEqual(2 * IndexUtilizationInfoTests.MockIndexUtilizationInfo.PotentialSingleIndexes.Count, doubleQueryMetrics.IndexUtilizationInfo.PotentialSingleIndexes.Count);
             Assert.AreEqual(2 * ClientSideMetricsTests.MockClientSideMetrics.RequestCharge, doubleQueryMetrics.ClientSideMetrics.RequestCharge);
         }
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             QueryMetrics doubleQueryMetrics = MockQueryMetrics + MockQueryMetrics;
 
             // Spot check
-            Assert.AreEqual(2 * ServerSideMetricsTests.MockBackendMetrics.IndexLookupTime, doubleQueryMetrics.BackendMetrics.IndexLookupTime);
+            Assert.AreEqual(2 * ServerSideMetricsTests.ServerSideMetrics.IndexLookupTime, doubleQueryMetrics.ServerSideMetrics.IndexLookupTime);
             Assert.AreEqual(2 * IndexUtilizationInfoTests.MockIndexUtilizationInfo.PotentialSingleIndexes.Count, doubleQueryMetrics.IndexUtilizationInfo.PotentialSingleIndexes.Count);
             Assert.AreEqual(2 * ClientSideMetricsTests.MockClientSideMetrics.RequestCharge, doubleQueryMetrics.ClientSideMetrics.RequestCharge);
         }
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             QueryMetrics tripleQueryMetrics = QueryMetrics.CreateFromIEnumerable(new List<QueryMetrics>() { MockQueryMetrics, MockQueryMetrics, MockQueryMetrics });
 
             // Spot check
-            Assert.AreEqual(3 * ServerSideMetricsTests.MockBackendMetrics.IndexLookupTime, tripleQueryMetrics.BackendMetrics.IndexLookupTime);
+            Assert.AreEqual(3 * ServerSideMetricsTests.ServerSideMetrics.IndexLookupTime, tripleQueryMetrics.ServerSideMetrics.IndexLookupTime);
             Assert.AreEqual(3 * IndexUtilizationInfoTests.MockIndexUtilizationInfo.PotentialSingleIndexes.Count, tripleQueryMetrics.IndexUtilizationInfo.PotentialSingleIndexes.Count);
             Assert.AreEqual(3 * ClientSideMetricsTests.MockClientSideMetrics.RequestCharge, tripleQueryMetrics.ClientSideMetrics.RequestCharge);
         }

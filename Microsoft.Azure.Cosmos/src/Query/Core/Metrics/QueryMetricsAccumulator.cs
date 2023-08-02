@@ -28,19 +28,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         public QueryMetrics GetQueryMetrics()
         {
-            ServerSideMetricsAccumulator backendMetricsAccumulator = new ServerSideMetricsAccumulator();
+            ServerSideMetricsAccumulator serverSideMetricsAccumulator = new ServerSideMetricsAccumulator();
             IndexUtilizationInfoAccumulator indexUtilizationInfoAccumulator = new IndexUtilizationInfoAccumulator();
             ClientSideMetricsAccumulator clientSideMetricsAccumulator = new ClientSideMetricsAccumulator();
 
             foreach (QueryMetrics queryMetrics in this.queryMetricsList)
             {
-                backendMetricsAccumulator.Accumulate(queryMetrics.BackendMetrics);
+                serverSideMetricsAccumulator.Accumulate(queryMetrics.ServerSideMetrics);
                 indexUtilizationInfoAccumulator.Accumulate(queryMetrics.IndexUtilizationInfo);
                 clientSideMetricsAccumulator.Accumulate(queryMetrics.ClientSideMetrics);
             }
 
             return new QueryMetrics(
-                backendMetricsAccumulator.GetBackendMetrics(),
+                serverSideMetricsAccumulator.GetServerSideMetrics(),
                 indexUtilizationInfoAccumulator.GetIndexUtilizationInfo(),
                 clientSideMetricsAccumulator.GetClientSideMetrics());
         }

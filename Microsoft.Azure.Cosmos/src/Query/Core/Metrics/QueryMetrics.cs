@@ -29,11 +29,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             clientSideMetrics: ClientSideMetrics.Empty);
 
         public QueryMetrics(
-        ServerSideMetrics backendMetrics,
+        ServerSideMetrics serverSideMetrics,
         IndexUtilizationInfo indexUtilizationInfo,
         ClientSideMetrics clientSideMetrics)
         {
-            this.BackendMetrics = backendMetrics ?? throw new ArgumentNullException(nameof(backendMetrics));
+            this.ServerSideMetrics = serverSideMetrics ?? throw new ArgumentNullException(nameof(serverSideMetrics));
             this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
             this.ClientSideMetrics = clientSideMetrics ?? throw new ArgumentNullException(nameof(clientSideMetrics));
         }
@@ -43,13 +43,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             IndexUtilizationInfo indexUtilizationInfo,
             ClientSideMetrics clientSideMetrics)
             : this(!String.IsNullOrWhiteSpace(deliminatedString) &&
-                    BackendMetricsParser.TryParse(deliminatedString, out ServerSideMetrics backendMetrics)
-                ? backendMetrics
+                    ServerSideMetricsParser.TryParse(deliminatedString, out ServerSideMetrics serverSideMetrics)
+                ? serverSideMetrics
                 : ServerSideMetrics.Empty, indexUtilizationInfo, clientSideMetrics)
         {
         }
 
-        public ServerSideMetrics BackendMetrics { get; }
+        public ServerSideMetrics ServerSideMetrics { get; }
 
         public IndexUtilizationInfo IndexUtilizationInfo { get; }
 
