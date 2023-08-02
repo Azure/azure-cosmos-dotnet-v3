@@ -13,19 +13,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class RegionNameMapping
     {
-        private static readonly IDictionary<string, string> normalizedToCosmosDBRegionNameMapping;
-
-        static RegionNameMapping()
-        {
-            FieldInfo[] fields = typeof(Regions).GetFields(BindingFlags.Public | BindingFlags.Static);
-            normalizedToCosmosDBRegionNameMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (FieldInfo field in fields)
-            {
-                normalizedToCosmosDBRegionNameMapping[field.Name.ToLowerInvariant()] = field.GetValue(null).ToString();
-            }
-        }
-
         /// <summary>
         /// Given a normalized region name, this function retrieves the region name in the format that CosmosDB expects.
         /// If the region is not known, the same value as input is returned.
@@ -34,7 +21,20 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A string that contains the region name in the format that CosmosDB expects.</returns>
         public static string GetCosmosDBRegionName(string normalizedRegionName)
         {
-            if (normalizedRegionName != null && normalizedToCosmosDBRegionNameMapping.TryGetValue(normalizedRegionName, out string cosmosDBRegionName))
+            if (string.IsNullOrEmpty(normalizedRegionName))
+            {
+                return string.Empty;
+            }
+
+            FieldInfo[] fields = typeof(Regions).GetFields(BindingFlags.Public | BindingFlags.Static);
+            Dictionary<string, string> normalizedToCosmosDBRegionNameMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (FieldInfo field in fields)
+            {
+                normalizedToCosmosDBRegionNameMapping[field.Name.ToLowerInvariant()] = field.GetValue(null).ToString();
+            }
+
+            if (normalizedToCosmosDBRegionNameMapping.TryGetValue(normalizedRegionName, out string cosmosDBRegionName))
             {
                 return cosmosDBRegionName;
             }
