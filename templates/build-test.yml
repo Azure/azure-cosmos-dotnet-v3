@@ -205,38 +205,4 @@ jobs:
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
-
-- job:
-  displayName: TelemetryToService IntegrationTests ${{ parameters.BuildConfiguration }}
-  timeoutInMinutes: 120
-  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
-  pool:
-    vmImage: windows-2019
-
-  steps:
-  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
-    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
-
-  # Add this Command to Include the .NET 6 SDK
-  - task: UseDotNet@2
-    displayName: Use .NET 6.0
-    inputs:
-      packageType: 'sdk'
-      version: '6.x'
-      
-  - task: DotNetCoreCLI@2
-    displayName: Microsoft.Azure.Cosmos.EmulatorTests
-    condition: succeeded()
-    inputs:
-      command: test
-      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: --filter "TestCategory=ClientTelemetry" --verbosity normal --configuration Debug /p:OS=${{ parameters.OS }}
-      nugetConfigPath: NuGet.config
-      publishTestResults: true
-      testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
-    env:
-      COSMOS.CLIENT_TELEMETRY_ENABLED: $(TELEMETRY_ENABLED)
-      COSMOS.CLIENT_TELEMETRY_SCHEDULING_IN_SECONDS: $(TELEMETRY_SCHEDULING_IN_SECONDS)
-      COSMOS.CLIENT_TELEMETRY_ENDPOINT: $(TELEMETRY_ENDPOINT)
-      COSMOS.DB_CONNECTION_STRING: $(COSMOSDB_ACCOUNT_CONNECTION_STRING)
       

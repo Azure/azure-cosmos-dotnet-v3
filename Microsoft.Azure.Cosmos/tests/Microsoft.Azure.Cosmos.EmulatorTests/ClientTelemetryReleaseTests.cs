@@ -4,31 +4,24 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using System;
     using System.Net.Http;
-    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    [TestCategory("ClientTelemetryEmulator")]
-    public class ClientTelemetryTests : ClientTelemetryBaseTests
+    [TestCategory("ClientTelemetryRelease")]
+    public class ClientTelemetryReleaseTests : ClientTelemetryBaseTests
     {
         protected override CosmosClientBuilder GetBuilder()
         {
-            return TestCommon.GetDefaultConfiguration();
+            string connectionString = Environment.GetEnvironmentVariable("COSMOS.DB_CONNECTION_STRING");
+            return new CosmosClientBuilder(connectionString: connectionString);
         }
 
         protected override Task<HttpResponseMessage> HttpHandlerRequestCallbackChecks(HttpRequestMessage request)
         {
-            if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
-            {
-                HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.NoContent); // In Emulator test, send hardcoded response status code
-
-                return Task.FromResult(result);
-            }
-
             return null;
         }
     }
