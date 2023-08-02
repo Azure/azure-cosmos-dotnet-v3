@@ -788,56 +788,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TesOdeTokenCompatibilityWithNonOdePipeline()
         {
-            using (ITrace rootTrace = Trace.GetRootTrace("Root Trace"))
-            {
-                ResponseMessage responseMessage = null;
-                string query = "select top 200 * from c";
-                string expectedErrorMessage = "The continuation token supplied requires the Optimistic Direct Execution flag to be enabled in QueryRequestOptions for the query execution to resume. ";
-
-                CosmosClient client = DirectCosmosClient;
-                Container container = client.GetContainer(DatabaseId, ContainerId);
+            string query = "select top 200 * from c";
+            CosmosClient client = DirectCosmosClient;
+            Container container = client.GetContainer(DatabaseId, ContainerId);
                 
-                // Create items
-                for (int i = 0; i < 500; i++)
-                {
-                    await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity());
-                }
-
-                QueryRequestOptions queryRequestOptions = new QueryRequestOptions
-                {
-                    MaxItemCount = 50,
-                    EnableOptimisticDirectExecution = true
-                };
-
-                FeedIteratorInternal feedIterator =
-                    (FeedIteratorInternal)container.GetItemQueryStreamIterator(
-                    query,
-                    null,
-                    queryRequestOptions);
-
-                responseMessage = await feedIterator.ReadNextAsync(rootTrace, CancellationToken.None);
-                string continuationToken = responseMessage.ContinuationToken;
-
-                QueryRequestOptions newQueryRequestOptions = new QueryRequestOptions
-                {
-                    MaxItemCount = 50,
-                    EnableOptimisticDirectExecution = false
-                };
-
-                // use Continuation Token to create new iterator and use same trace
-                FeedIteratorInternal feedIteratorNew =
-                    (FeedIteratorInternal)container.GetItemQueryStreamIterator(
-                    query,
-                    continuationToken,
-                    newQueryRequestOptions);
-
-                while (feedIteratorNew.HasMoreResults)
-                {
-                    responseMessage = await feedIteratorNew.ReadNextAsync(rootTrace, CancellationToken.None);
-                }
-
-                Assert.IsTrue(responseMessage.CosmosException.ToString().Contains(expectedErrorMessage));
+            // Create items
+            for (int i = 0; i < 500; i++)
+            {
+                await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity());
             }
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                MaxItemCount = 50,
+                EnableOptimisticDirectExecution = true
+            };
+
+            FeedIteratorInternal feedIterator =
+                (FeedIteratorInternal)container.GetItemQueryStreamIterator(
+                query,
+                null,
+                queryRequestOptions);
+
+            ResponseMessage responseMessage = await feedIterator.ReadNextAsync(CancellationToken.None);
+            string continuationToken = responseMessage.ContinuationToken;
+
+            QueryRequestOptions newQueryRequestOptions = new QueryRequestOptions
+            {
+                MaxItemCount = 50,
+                EnableOptimisticDirectExecution = false
+            };
+
+            // use Continuation Token to create new iterator and use same trace
+            FeedIterator feedIteratorNew =
+                container.GetItemQueryStreamIterator(
+                query,
+                continuationToken,
+                newQueryRequestOptions);
+
+            while (feedIteratorNew.HasMoreResults)
+            {
+                responseMessage = await feedIteratorNew.ReadNextAsync(CancellationToken.None);
+            }
+
+            string expectedErrorMessage = "The continuation token supplied requires the Optimistic Direct Execution flag to be enabled in QueryRequestOptions for the query execution to resume. ";
+            Assert.IsTrue(responseMessage.CosmosException.ToString().Contains(expectedErrorMessage));
         }
 
         private class CustomHandler : RequestHandler
