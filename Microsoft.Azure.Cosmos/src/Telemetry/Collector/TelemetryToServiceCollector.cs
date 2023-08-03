@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
                 data.containerId = collectionName;
             }
 
-            this.clientTelemetry.CollectCacheInfo(data);
+            this.clientTelemetry?.CollectCacheInfo(data);
         }
 
         public void CollectOperationInfo(Func<OperationTelemetryInformation> functionFordata)
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
                 return;
             }
 
-            this.clientTelemetry.CollectOperationInfo(functionFordata());
+            this.clientTelemetry?.CollectOperationInfo(functionFordata());
         }
 
         private void Initialize()
@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
                 {
                     DefaultTrace.TraceInformation("Stopping Client Telemetry Job.");
 
-                    this.clientTelemetry.Dispose();
+                    this.clientTelemetry?.Dispose();
 
                     this.clientTelemetry = null;
                 }
