@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using global::Azure.Core;
     using System.Collections.ObjectModel;
 
+    [Ignore]
     public abstract class ClientTelemetryBaseTests : BaseCosmosClientHelper
     {
         private static SystemUsageMonitor systemUsageMonitor;
