@@ -6291,11 +6291,6 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.TimeSpan QueryOptimizationTime;CanRead:True;CanWrite:False;System.TimeSpan get_QueryOptimizationTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor(System.TimeSpan, System.TimeSpan, System.TimeSpan, System.TimeSpan)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.TimeSpan, System.TimeSpan, System.TimeSpan, System.TimeSpan), Void .ctor(System.TimeSpan, System.TimeSpan, System.TimeSpan, System.TimeSpan)]"
         }
       },
       "NestedTypes": {}
@@ -6338,11 +6333,6 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.TimeSpan UserDefinedFunctionExecutionTime;CanRead:True;CanWrite:False;System.TimeSpan get_UserDefinedFunctionExecutionTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor(System.TimeSpan, System.TimeSpan, System.TimeSpan)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.TimeSpan, System.TimeSpan, System.TimeSpan), Void .ctor(System.TimeSpan, System.TimeSpan, System.TimeSpan)]"
         }
       },
       "NestedTypes": {}
@@ -6493,11 +6483,6 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.TimeSpan VMExecutionTime;CanRead:True;CanWrite:False;System.TimeSpan get_VMExecutionTime();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor(Int64, Int64, Int64, Int64, Double, System.TimeSpan, Microsoft.Azure.Cosmos.Query.Core.Metrics.QueryPreparationTimes, System.TimeSpan, System.TimeSpan, System.TimeSpan, Microsoft.Azure.Cosmos.Query.Core.Metrics.RuntimeExecutionTimes, System.TimeSpan)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(Int64, Int64, Int64, Int64, Double, System.TimeSpan, Microsoft.Azure.Cosmos.Query.Core.Metrics.QueryPreparationTimes, System.TimeSpan, System.TimeSpan, System.TimeSpan, Microsoft.Azure.Cosmos.Query.Core.Metrics.RuntimeExecutionTimes, System.TimeSpan), Void .ctor(Int64, Int64, Int64, Int64, Double, System.TimeSpan, Microsoft.Azure.Cosmos.Query.Core.Metrics.QueryPreparationTimes, System.TimeSpan, System.TimeSpan, System.TimeSpan, Microsoft.Azure.Cosmos.Query.Core.Metrics.RuntimeExecutionTimes, System.TimeSpan)]"
         }
       },
       "NestedTypes": {}
