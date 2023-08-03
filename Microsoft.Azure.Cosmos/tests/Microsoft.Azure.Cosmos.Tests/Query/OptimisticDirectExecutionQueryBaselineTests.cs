@@ -194,6 +194,7 @@
         [TestMethod]
         public async Task TestOdeTokenWithSpecializedPipeline()
         {
+            int numItems = 100;
             ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
                     token: Guid.NewGuid().ToString(),
                     range: new Documents.Routing.Range<string>("A", "B", true, false));
@@ -209,13 +210,9 @@
                     partitionKeyValue: "a",
                     continuationToken: cosmosElementContinuationToken);
 
-            IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(input.PartitionKeyDefinition);
-            DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
-
+            DocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems, multiPartition: false);
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: input.ExpectedOptimisticDirectExecution);
-
             (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
-
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                       documentContainer,
                       cosmosQueryContextCore,
