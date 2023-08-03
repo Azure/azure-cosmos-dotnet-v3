@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         protected abstract void WriteTotalQueryExecutionTime(TimeSpan totalQueryExecutionTime);
 
-        protected abstract void WriteQueryPreparationTime(QueryPreparationTimes queryPreparationTimes);
+        protected abstract void WriteQueryPreparationTime(QueryPreparationTimesInternal queryPreparationTimes);
 
         protected abstract void WriteIndexLookupTime(TimeSpan indexLookupTime);
 
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         protected abstract void WriteVMExecutionTime(TimeSpan vMExecutionTime);
 
-        protected abstract void WriteRuntimeExecutionTime(RuntimeExecutionTimes runtimeExecutionTimes);
+        protected abstract void WriteRuntimeExecutionTime(RuntimeExecutionTimesInternal runtimeExecutionTimes);
 
         protected abstract void WriteDocumentWriteTime(TimeSpan documentWriteTime);
 

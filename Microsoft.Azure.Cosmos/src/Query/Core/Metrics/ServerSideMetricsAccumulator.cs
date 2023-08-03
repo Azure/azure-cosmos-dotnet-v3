@@ -11,14 +11,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal class ServerSideMetricsAccumulator
     {
-        private readonly List<ServerSideMetrics> serverSideMetricsList;
+        private readonly List<ServerSideMetricsInternal> serverSideMetricsList;
 
         public ServerSideMetricsAccumulator()
         {
-            this.serverSideMetricsList = new List<ServerSideMetrics>();
+            this.serverSideMetricsList = new List<ServerSideMetricsInternal>();
         }
 
-        public void Accumulate(ServerSideMetrics serverSideMetrics)
+        public void Accumulate(ServerSideMetricsInternal serverSideMetrics)
         {
             if (serverSideMetrics == null)
             {
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.serverSideMetricsList.Add(serverSideMetrics);
         }
 
-        public ServerSideMetrics GetServerSideMetrics()
+        public ServerSideMetricsInternal GetServerSideMetrics()
         {
             TimeSpan totalTime = TimeSpan.Zero;
             long retrievedDocumentCount = 0;
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             TimeSpan documentWriteTime = TimeSpan.Zero;
             TimeSpan vMExecutionTime = TimeSpan.Zero;
 
-            foreach (ServerSideMetrics serverSideMetrics in this.serverSideMetricsList)
+            foreach (ServerSideMetricsInternal serverSideMetrics in this.serverSideMetricsList)
             {
                 indexHitRatio = ((outputDocumentCount * indexHitRatio) + (serverSideMetrics.OutputDocumentCount * serverSideMetrics.IndexHitRatio)) / (retrievedDocumentCount + serverSideMetrics.RetrievedDocumentCount);
                 totalTime += serverSideMetrics.TotalTime;
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 vMExecutionTime += serverSideMetrics.VMExecutionTime;
             }
 
-            return new ServerSideMetrics(
+            return new ServerSideMetricsInternal(
                 retrievedDocumentCount: retrievedDocumentCount,
                 retrievedDocumentSize: retrievedDocumentSize,
                 outputDocumentCount: outputDocumentCount,

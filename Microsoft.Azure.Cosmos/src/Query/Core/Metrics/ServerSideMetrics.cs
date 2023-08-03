@@ -5,71 +5,30 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
-    using System.Collections.Generic;
 
     /// <summary>
-    /// Metrics received for queries from the backend.
+    /// internal implementation of metrics received for queries from the backend.
     /// </summary>
     public sealed class ServerSideMetrics
     {
         /// <summary>
-        /// QueryMetrics that with all members having default (but not null) members.
+        /// Initializes a new instance of the <see cref="ServerSideMetricsInternal"/> class.
         /// </summary>
-        internal static readonly ServerSideMetrics Empty = new ServerSideMetrics(
-            retrievedDocumentCount: default,
-            retrievedDocumentSize: default,
-            outputDocumentCount: default,
-            outputDocumentSize: default,
-            indexHitRatio: default,
-            totalQueryExecutionTime: default,
-            queryPreparationTimes: QueryPreparationTimes.Zero,
-            indexLookupTime: default,
-            documentLoadTime: default,
-            vmExecutionTime: default,
-            runtimeExecutionTimes: RuntimeExecutionTimes.Empty,
-            documentWriteTime: default);
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ServerSideMetrics"/> class.
-        /// </summary>
-        /// <param name="retrievedDocumentCount"></param>
-        /// <param name="retrievedDocumentSize"></param>
-        /// <param name="outputDocumentCount"></param>
-        /// <param name="outputDocumentSize"></param>
-        /// <param name="indexHitRatio"></param>
-        /// <param name="totalQueryExecutionTime"></param>
-        /// <param name="queryPreparationTimes"></param>
-        /// <param name="indexLookupTime"></param>
-        /// <param name="documentLoadTime"></param>
-        /// <param name="vmExecutionTime"></param>
-        /// <param name="runtimeExecutionTimes"></param>
-        /// <param name="documentWriteTime"></param>
-        public ServerSideMetrics(
-           long retrievedDocumentCount,
-           long retrievedDocumentSize,
-           long outputDocumentCount,
-           long outputDocumentSize,
-           double indexHitRatio,
-           TimeSpan totalQueryExecutionTime,
-           QueryPreparationTimes queryPreparationTimes,
-           TimeSpan indexLookupTime,
-           TimeSpan documentLoadTime,
-           TimeSpan vmExecutionTime,
-           RuntimeExecutionTimes runtimeExecutionTimes,
-           TimeSpan documentWriteTime)
+        /// <param name="serverSideMetricsInternal"></param>
+        internal ServerSideMetrics(ServerSideMetricsInternal serverSideMetricsInternal)
         {
-            this.RetrievedDocumentCount = retrievedDocumentCount;
-            this.RetrievedDocumentSize = retrievedDocumentSize;
-            this.OutputDocumentCount = outputDocumentCount;
-            this.OutputDocumentSize = outputDocumentSize;
-            this.IndexHitRatio = indexHitRatio;
-            this.TotalTime = totalQueryExecutionTime;
-            this.QueryPreparationTimes = queryPreparationTimes ?? throw new ArgumentNullException($"{nameof(queryPreparationTimes)} can not be null.");
-            this.IndexLookupTime = indexLookupTime;
-            this.DocumentLoadTime = documentLoadTime;
-            this.VMExecutionTime = vmExecutionTime;
-            this.RuntimeExecutionTimes = runtimeExecutionTimes ?? throw new ArgumentNullException($"{nameof(runtimeExecutionTimes)} can not be null.");
-            this.DocumentWriteTime = documentWriteTime;
+            this.RetrievedDocumentCount = serverSideMetricsInternal.RetrievedDocumentCount;
+            this.RetrievedDocumentSize = serverSideMetricsInternal.RetrievedDocumentSize;
+            this.OutputDocumentCount = serverSideMetricsInternal.OutputDocumentCount;
+            this.OutputDocumentSize = serverSideMetricsInternal.OutputDocumentSize;
+            this.IndexHitRatio = serverSideMetricsInternal.IndexHitRatio;
+            this.TotalTime = serverSideMetricsInternal.TotalTime;
+            this.QueryPreparationTimes = new QueryPreparationTimes(serverSideMetricsInternal.QueryPreparationTimes);
+            this.IndexLookupTime = serverSideMetricsInternal.IndexLookupTime;
+            this.DocumentLoadTime = serverSideMetricsInternal.DocumentLoadTime;
+            this.VMExecutionTime = serverSideMetricsInternal.VMExecutionTime;
+            this.RuntimeExecutionTimes = new RuntimeExecutionTimes(serverSideMetricsInternal.RuntimeExecutionTimes);
+            this.DocumentWriteTime = serverSideMetricsInternal.DocumentWriteTime;
         }
 
         /// <summary>
@@ -131,31 +90,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// Gets the VMExecution Time.
         /// </summary>
         public TimeSpan VMExecutionTime { get; }
-
-        internal static ServerSideMetrics Create(IEnumerable<ServerSideMetrics> serverSideMetricsEnumerable)
-        {
-            ServerSideMetricsAccumulator accumulator = default;
-            foreach (ServerSideMetrics serverSideMetrics in serverSideMetricsEnumerable)
-            {
-                accumulator.Accumulate(serverSideMetrics);
-            }
-
-            return accumulator.GetServerSideMetrics();
-        }
-
-        internal static bool TryParseFromDelimitedString(string delimitedString, out ServerSideMetrics serverSideMetrics)
-        {
-            return ServerSideMetricsParser.TryParse(delimitedString, out serverSideMetrics);
-        }
-
-        internal static ServerSideMetrics ParseFromDelimitedString(string delimitedString)
-        {
-            if (!ServerSideMetricsParser.TryParse(delimitedString, out ServerSideMetrics serverSideMetrics))
-            {
-                throw new FormatException();
-            }
-
-            return serverSideMetrics;
-        }    
     }
 }

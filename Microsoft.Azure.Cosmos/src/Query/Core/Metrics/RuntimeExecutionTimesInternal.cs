@@ -8,17 +8,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// Query runtime execution times in the Azure Cosmos DB service.
     /// </summary>
-    public sealed class RuntimeExecutionTimes
+    internal sealed class RuntimeExecutionTimesInternal
     {
+        public static readonly RuntimeExecutionTimesInternal Empty = new RuntimeExecutionTimesInternal(
+            queryEngineExecutionTime: default,
+            systemFunctionExecutionTime: default,
+            userDefinedFunctionExecutionTime: default);
+
         /// <summary>
         /// Initializes a new instance of the RuntimeExecutionTimes class.
         /// </summary>
-        /// <param name="runtimeExecutionTimesInternal"></param>
-        internal RuntimeExecutionTimes(RuntimeExecutionTimesInternal runtimeExecutionTimesInternal)
+        /// <param name="queryEngineExecutionTime">Query end - to - end execution time</param>
+        /// <param name="systemFunctionExecutionTime">Total time spent executing system functions</param>
+        /// <param name="userDefinedFunctionExecutionTime">Total time spent executing user - defined functions</param>
+        public RuntimeExecutionTimesInternal(
+            TimeSpan queryEngineExecutionTime,
+            TimeSpan systemFunctionExecutionTime,
+            TimeSpan userDefinedFunctionExecutionTime)
         {
-            this.QueryEngineExecutionTime = runtimeExecutionTimesInternal.QueryEngineExecutionTime;
-            this.SystemFunctionExecutionTime = runtimeExecutionTimesInternal.SystemFunctionExecutionTime;
-            this.UserDefinedFunctionExecutionTime = runtimeExecutionTimesInternal.UserDefinedFunctionExecutionTime;
+            this.QueryEngineExecutionTime = queryEngineExecutionTime;
+            this.SystemFunctionExecutionTime = systemFunctionExecutionTime;
+            this.UserDefinedFunctionExecutionTime = userDefinedFunctionExecutionTime;
         }
 
         /// <summary>

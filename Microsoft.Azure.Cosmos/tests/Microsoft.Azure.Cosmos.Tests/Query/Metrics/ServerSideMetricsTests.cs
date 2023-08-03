@@ -30,14 +30,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
 
         private static readonly string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds};queryCompileTimeInMs={queryCompileTime.TotalMilliseconds};queryLogicalPlanBuildTimeInMs={logicalPlanBuildTime.TotalMilliseconds};queryPhysicalPlanBuildTimeInMs={physicalPlanBuildTime.TotalMilliseconds};queryOptimizationTimeInMs={queryOptimizationTime.TotalMilliseconds};VMExecutionTimeInMs={vmExecutionTime.TotalMilliseconds};indexLookupTimeInMs={indexLookupTime.TotalMilliseconds};documentLoadTimeInMs={documentLoadTime.TotalMilliseconds};systemFunctionExecuteTimeInMs={systemFunctionExecuteTime.TotalMilliseconds};userFunctionExecuteTimeInMs={userFunctionExecuteTime.TotalMilliseconds};retrievedDocumentCount={retrievedDocumentCount};retrievedDocumentSize={retrievedDocumentSize};outputDocumentCount={outputDocumentCount};outputDocumentSize={outputDocumentSize};writeOutputTimeInMs={documentWriteTime.TotalMilliseconds};indexUtilizationRatio={indexHitRatio}";
 
-        internal static readonly ServerSideMetrics ServerSideMetrics = new ServerSideMetrics(
+        internal static readonly ServerSideMetricsInternal ServerSideMetrics = new ServerSideMetricsInternal(
             retrievedDocumentCount,
             retrievedDocumentSize,
             outputDocumentCount,
             outputDocumentSize,
             indexHitRatio,
             totalExecutionTime,
-            new QueryPreparationTimes(
+            new QueryPreparationTimesInternal(
                 queryCompileTime,
                 logicalPlanBuildTime,
                 physicalPlanBuildTime,
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             indexLookupTime,
             documentLoadTime,
             vmExecutionTime,
-            new RuntimeExecutionTimes(
+            new RuntimeExecutionTimesInternal(
                 totalExecutionTime - systemFunctionExecuteTime - userFunctionExecuteTime,
                 systemFunctionExecuteTime,
                 userFunctionExecuteTime),
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         [TestMethod]
         public void TestParseEmptyString()
         {
-            ServerSideMetricsTests.ValidateParse(string.Empty, ServerSideMetrics.Empty);
+            ServerSideMetricsTests.ValidateParse(string.Empty, ServerSideMetricsInternal.Empty);
         }
 
         [TestMethod]
@@ -70,14 +70,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             TimeSpan totalExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 33.67));
             string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds}";
 
-            ServerSideMetrics expected = new ServerSideMetrics(
+            ServerSideMetricsInternal expected = new ServerSideMetricsInternal(
                 default(long),
                 default(long),
                 default(long),
                 default(long),
                 default(double),
                 totalExecutionTime,
-                new QueryPreparationTimes(
+                new QueryPreparationTimesInternal(
                     default(TimeSpan),
                     default(TimeSpan),
                     default(TimeSpan),
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
                 default(TimeSpan),
                 default(TimeSpan),
                 default(TimeSpan),
-                new RuntimeExecutionTimes(
+                new RuntimeExecutionTimesInternal(
                     default(TimeSpan),
                     default(TimeSpan),
                     default(TimeSpan)),
@@ -98,14 +98,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         public void TestParseStringWithTrailingUnknownField()
         {
             string delimitedString = $"thisIsNotAKnownField=asdf";
-            ServerSideMetrics expected = new ServerSideMetrics(
+            ServerSideMetricsInternal expected = new ServerSideMetricsInternal(
                 default(long),
                 default(long),
                 default(long),
                 default(long),
                 default(double),
                 default(TimeSpan),
-                new QueryPreparationTimes(
+                new QueryPreparationTimesInternal(
                     default(TimeSpan),
                     default(TimeSpan),
                     default(TimeSpan),
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
                 default(TimeSpan),
                 default(TimeSpan),
                 default(TimeSpan),
-                new RuntimeExecutionTimes(
+                new RuntimeExecutionTimesInternal(
                     default(TimeSpan),
                     default(TimeSpan),
                     default(TimeSpan)),
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         [DataRow("totalExecutionTimeInMs=33.6+totalExecutionTimeInMs=33.6", DisplayName = "Wrong Delimiter")]
         public void TestNegativeCases(string delimitedString)
         {
-            Assert.IsFalse(ServerSideMetricsParser.TryParse(delimitedString, out ServerSideMetrics serverSideMetrics));
+            Assert.IsFalse(ServerSideMetricsParser.TryParse(delimitedString, out ServerSideMetricsInternal serverSideMetrics));
         }
 
         [TestMethod]
@@ -135,14 +135,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         {
             TimeSpan totalExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 33.67));
             string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds};thisIsNotAKnownField={totalExecutionTime.TotalMilliseconds};totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds}";
-            ServerSideMetrics expected = new ServerSideMetrics(
+            ServerSideMetricsInternal expected = new ServerSideMetricsInternal(
                 default(long),
                 default(long),
                 default(long),
                 default(long),
                 default(double),
                 totalExecutionTime,
-                new QueryPreparationTimes(
+                new QueryPreparationTimesInternal(
                     default(TimeSpan),
                     default(TimeSpan),
                     default(TimeSpan),
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
                 default(TimeSpan),
                 default(TimeSpan),
                 default(TimeSpan),
-                new RuntimeExecutionTimes(
+                new RuntimeExecutionTimesInternal(
                     default(TimeSpan),
                     default(TimeSpan),
                     default(TimeSpan)),
@@ -166,15 +166,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             accumulator.Accumulate(ServerSideMetrics);
             accumulator.Accumulate(ServerSideMetrics);
 
-            ServerSideMetrics serverSideMetricsFromAddition = accumulator.GetServerSideMetrics();
-            ServerSideMetrics expected = new ServerSideMetrics(
+            ServerSideMetricsInternal serverSideMetricsFromAddition = accumulator.GetServerSideMetrics();
+            ServerSideMetricsInternal expected = new ServerSideMetricsInternal(
                 retrievedDocumentCount * 2,
                 retrievedDocumentSize * 2,
                 outputDocumentCount * 2,
                 outputDocumentSize * 2,
                 indexHitRatio,
                 totalExecutionTime * 2,
-                new QueryPreparationTimes(
+                new QueryPreparationTimesInternal(
                     queryCompileTime * 2,
                     logicalPlanBuildTime * 2,
                     physicalPlanBuildTime * 2,
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
                 indexLookupTime * 2,
                 documentLoadTime * 2,
                 vmExecutionTime * 2,
-                new RuntimeExecutionTimes(
+                new RuntimeExecutionTimesInternal(
                     (totalExecutionTime - systemFunctionExecuteTime - userFunctionExecuteTime) * 2,
                     systemFunctionExecuteTime * 2,
                     userFunctionExecuteTime * 2),
@@ -191,13 +191,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             ServerSideMetricsTests.ValidateServerSideMetricsEquals(expected, serverSideMetricsFromAddition);
         }
 
-        private static void ValidateParse(string delimitedString, ServerSideMetrics expected)
+        private static void ValidateParse(string delimitedString, ServerSideMetricsInternal expected)
         {
-            Assert.IsTrue(ServerSideMetricsParser.TryParse(delimitedString, out ServerSideMetrics actual));
+            Assert.IsTrue(ServerSideMetricsParser.TryParse(delimitedString, out ServerSideMetricsInternal actual));
             ServerSideMetricsTests.ValidateServerSideMetricsEquals(expected, actual);
         }
 
-        private static void ValidateServerSideMetricsEquals(ServerSideMetrics expected, ServerSideMetrics actual)
+        private static void ValidateServerSideMetricsEquals(ServerSideMetricsInternal expected, ServerSideMetricsInternal actual)
         {
             Assert.AreEqual(expected.DocumentLoadTime, actual.DocumentLoadTime);
             Assert.AreEqual(expected.DocumentWriteTime, actual.DocumentWriteTime);

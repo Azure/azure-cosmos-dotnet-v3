@@ -9,14 +9,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal class QueryPreparationTimesAccumulator
     {
-        private readonly List<QueryPreparationTimes> queryPreparationTimesList;
+        private readonly List<QueryPreparationTimesInternal> queryPreparationTimesList;
 
         public QueryPreparationTimesAccumulator()
         {
-            this.queryPreparationTimesList = new List<QueryPreparationTimes>();
+            this.queryPreparationTimesList = new List<QueryPreparationTimesInternal>();
         }
 
-        public void Accumulate(QueryPreparationTimes queryPreparationTimes)
+        public void Accumulate(QueryPreparationTimesInternal queryPreparationTimes)
         {
             if (queryPreparationTimes == null)
             {
@@ -26,14 +26,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.queryPreparationTimesList.Add(queryPreparationTimes);
         }
 
-        public QueryPreparationTimes GetQueryPreparationTimes()
+        public QueryPreparationTimesInternal GetQueryPreparationTimes()
         {
             TimeSpan queryCompilationTime = TimeSpan.Zero;
             TimeSpan logicalPlanBuildTime = TimeSpan.Zero;
             TimeSpan physicalPlanBuildTime = TimeSpan.Zero;
             TimeSpan queryOptimizationTime = TimeSpan.Zero;
 
-            foreach (QueryPreparationTimes queryPreparationTimes in this.queryPreparationTimesList)
+            foreach (QueryPreparationTimesInternal queryPreparationTimes in this.queryPreparationTimesList)
             {
                 queryCompilationTime += queryPreparationTimes.QueryCompilationTime;
                 logicalPlanBuildTime += queryPreparationTimes.LogicalPlanBuildTime;
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 queryOptimizationTime += queryPreparationTimes.QueryOptimizationTime;
             }
 
-            return new QueryPreparationTimes(
+            return new QueryPreparationTimesInternal(
                 queryCompilationTime: queryCompilationTime,
                 logicalPlanBuildTime: logicalPlanBuildTime,
                 physicalPlanBuildTime: physicalPlanBuildTime,

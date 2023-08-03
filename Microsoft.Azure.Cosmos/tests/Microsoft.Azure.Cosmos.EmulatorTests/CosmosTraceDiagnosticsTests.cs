@@ -84,7 +84,7 @@
                 }
 
                 ServerSideMetrics serverSideMetricsFromDiagnostics = iter.Diagnostics.GetQueryMetrics();
-                bool tryParseResult = ServerSideMetrics.TryParseFromDelimitedString(iter.Headers.QueryMetricsText, out ServerSideMetrics serverSideMetricsFromHeaders);
+                bool tryParseResult = ServerSideMetricsInternal.TryParseFromDelimitedString(iter.Headers.QueryMetricsText, out ServerSideMetricsInternal serverSideMetricsFromHeaders);
                 Assert.IsTrue(tryParseResult);
 
                 headerMetricsAccumulator.Accumulate(serverSideMetricsFromHeaders);

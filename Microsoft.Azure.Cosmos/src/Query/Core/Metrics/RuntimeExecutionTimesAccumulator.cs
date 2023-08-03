@@ -9,14 +9,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal class RuntimeExecutionTimesAccumulator
     {
-        private readonly List<RuntimeExecutionTimes> runtimeExecutionTimesList;
+        private readonly List<RuntimeExecutionTimesInternal> runtimeExecutionTimesList;
 
         public RuntimeExecutionTimesAccumulator()
         {
-            this.runtimeExecutionTimesList = new List<RuntimeExecutionTimes>();
+            this.runtimeExecutionTimesList = new List<RuntimeExecutionTimesInternal>();
         }
 
-        public void Accumulate(RuntimeExecutionTimes runtimeExecutionTimes)
+        public void Accumulate(RuntimeExecutionTimesInternal runtimeExecutionTimes)
         {
             if (runtimeExecutionTimes == null)
             {
@@ -26,20 +26,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.runtimeExecutionTimesList.Add(runtimeExecutionTimes);
         }
 
-        public RuntimeExecutionTimes GetRuntimeExecutionTimes()
+        public RuntimeExecutionTimesInternal GetRuntimeExecutionTimes()
         {
             TimeSpan queryEngineExecutionTime = TimeSpan.Zero;
             TimeSpan systemFunctionExecutionTime = TimeSpan.Zero;
             TimeSpan userDefinedFunctionExecutionTime = TimeSpan.Zero;
 
-            foreach (RuntimeExecutionTimes runtimeExecutionTimes in this.runtimeExecutionTimesList)
+            foreach (RuntimeExecutionTimesInternal runtimeExecutionTimes in this.runtimeExecutionTimesList)
             {
                 queryEngineExecutionTime += runtimeExecutionTimes.QueryEngineExecutionTime;
                 systemFunctionExecutionTime += runtimeExecutionTimes.SystemFunctionExecutionTime;
                 userDefinedFunctionExecutionTime += runtimeExecutionTimes.UserDefinedFunctionExecutionTime;
             }
 
-            return new RuntimeExecutionTimes(
+            return new RuntimeExecutionTimesInternal(
                 queryEngineExecutionTime: queryEngineExecutionTime,
                 systemFunctionExecutionTime: systemFunctionExecutionTime,
                 userDefinedFunctionExecutionTime: userDefinedFunctionExecutionTime);

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Text;
 
     /// <summary>
-    /// Tokenizer for <see cref="ServerSideMetrics"/>
+    /// Tokenizer for <see cref="ServerSideMetricsInternal"/>
     /// </summary>
 #if INTERNAL
 #pragma warning disable SA1600

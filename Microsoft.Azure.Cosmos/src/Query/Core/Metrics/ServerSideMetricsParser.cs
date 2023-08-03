@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Text;
 
     /// <summary>
-    /// Parser for <see cref="ServerSideMetrics"/>.
+    /// Parser for <see cref="ServerSideMetricsInternal"/>.
     /// </summary>
 #if INTERNAL
 #pragma warning disable SA1600
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #endif
     static class ServerSideMetricsParser
     {
-        public static unsafe bool TryParse(string deliminatedString, out ServerSideMetrics serverSideMetrics)
+        public static unsafe bool TryParse(string deliminatedString, out ServerSideMetricsInternal serverSideMetrics)
         {
             if (deliminatedString == null)
             {
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             {
                 // Stack allocating a zero length buffer returns a null pointer
                 // so we special case the zero length string.
-                serverSideMetrics = ServerSideMetrics.Empty;
+                serverSideMetrics = ServerSideMetricsInternal.Empty;
                 return true;
             }
 
@@ -258,14 +258,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 }
             }
 
-            serverSideMetrics = new ServerSideMetrics(
+            serverSideMetrics = new ServerSideMetricsInternal(
                 retrievedDocumentCount: retrievedDocumentCount,
                 retrievedDocumentSize: retrievedDocumentSize,
                 outputDocumentCount: outputDocumentCount,
                 outputDocumentSize: outputDocumentSize,
                 indexHitRatio: indexHitRatio,
                 totalQueryExecutionTime: totalQueryExecutionTime,
-                queryPreparationTimes: new QueryPreparationTimes(
+                queryPreparationTimes: new QueryPreparationTimesInternal(
                     queryCompilationTime: queryCompilationTime,
                     logicalPlanBuildTime: logicalPlanBuildTime,
                     physicalPlanBuildTime: physicalPlanBuildTime,
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 indexLookupTime: indexLookupTime,
                 documentLoadTime: documentLoadTime,
                 vmExecutionTime: vmExecutionTime,
-                runtimeExecutionTimes: new RuntimeExecutionTimes(
+                runtimeExecutionTimes: new RuntimeExecutionTimesInternal(
                     queryEngineExecutionTime: vmExecutionTime - indexLookupTime - documentLoadTime - documentWriteTime,
                     systemFunctionExecutionTime: systemFunctionExecutionTime,
                     userDefinedFunctionExecutionTime: userDefinedFunctionExecutionTime),
