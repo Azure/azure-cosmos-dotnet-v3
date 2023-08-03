@@ -785,6 +785,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
+        //TODO: Remove Ignore flag once emulator is updated to 0415
+        [Ignore]
         [TestMethod]
         public async Task TesOdeTokenCompatibilityWithNonOdePipeline()
         {
