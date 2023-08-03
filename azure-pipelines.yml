@@ -19,7 +19,6 @@ variables:
   ReleaseArguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
-
 jobs:
 - template:  templates/static-tools.yml
   parameters:
@@ -50,6 +49,8 @@ jobs:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
+    ClientTelemetryTestName: EmulatorTests ClientTelemetry
+    ClientTelemetryTestCategory: ClientTelemetryEmulator
 
 - template:  templates/build-internal.yml
   parameters:

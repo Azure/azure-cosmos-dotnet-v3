@@ -11,6 +11,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>
+    /// In Emulator Mode, Run test against emulator and mock client telemetry service calls
+    /// </summary>
     [TestClass]
     [TestCategory("ClientTelemetryEmulator")]
     public class ClientTelemetryTests : ClientTelemetryBaseTests

@@ -10,6 +10,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>
+    /// In Release pipeline, no need to mock Client Telemetry Service Call and Test will talk to the real database account.
+    /// </summary>
     [TestClass]
     [TestCategory("ClientTelemetryRelease")]
     public class ClientTelemetryReleaseTests : ClientTelemetryBaseTests
