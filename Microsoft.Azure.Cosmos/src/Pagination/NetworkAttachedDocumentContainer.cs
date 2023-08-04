@@ -192,11 +192,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         request.Headers.ContinuationToken = ((CosmosString)readFeedContinuationState.ContinuationToken).Value;
                     }
 
-                    if (readFeedPaginationOptions.JsonSerializationFormat.HasValue)
-                    {
-                        request.Headers.ContentSerializationFormat = readFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
-                    }
-
                     foreach (KeyValuePair<string, string> kvp in readFeedPaginationOptions.AdditionalHeaders)
                     {
                         request.Headers[kvp.Key] = kvp.Value;
@@ -258,16 +253,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 
             QueryRequestOptions queryRequestOptions = this.queryRequestOptions == null ? new QueryRequestOptions() : this.queryRequestOptions;
+            AdditionalRequestHeaders additionalRequestHeaders = new AdditionalRequestHeaders(this.correlatedActivityId, isContinuationExpected: false, optimisticDirectExecute: queryPaginationOptions.OptimisticDirectExecute);
+
             TryCatch<QueryPage> monadicQueryPage = await this.cosmosQueryClient.ExecuteItemQueryAsync(
                 this.resourceLink,
                 this.resourceType,
                 Documents.OperationType.Query,
-                this.correlatedActivityId,
                 feedRangeState.FeedRange,
                 queryRequestOptions,
+                additionalRequestHeaders,
                 sqlQuerySpec,
                 feedRangeState.State == null ? null : ((CosmosString)feedRangeState.State.Value).Value,
-                isContinuationExpected: false,
                 queryPaginationOptions.PageSizeLimit ?? int.MaxValue,
                 trace,
                 cancellationToken);

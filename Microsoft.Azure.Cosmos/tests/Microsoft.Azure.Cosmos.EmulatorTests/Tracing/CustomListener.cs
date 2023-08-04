@@ -34,6 +34,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static ConcurrentBag<Activity> CollectedNetworkActivities { private set; get; } = new();
         private static ConcurrentBag<string> CollectedEvents { set; get; } = new();
 
+        private static List<EventSource> EventSources { set; get; } = new();
+
         public CustomListener(string name, string eventName)
             : this(n => Regex.Match(n, name).Success, eventName)
         {
@@ -43,6 +45,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             this.sourceNameFilter = filter;
             this.eventName = eventName;
+
+            foreach (EventSource eventSource in EventSources)
+            {
+                this.OnEventSourceCreated(eventSource);
+            }
             
             DiagnosticListener.AllListeners.Subscribe(this);
         }
@@ -152,6 +159,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
+            if(this.eventName == null)
+            {
+                EventSources.Add(eventSource);
+            }
+
             if (eventSource != null && eventSource.Name.Equals(this.eventName))
             {
                 this.EnableEvents(eventSource, EventLevel.Informational); // Enable information level events
@@ -230,9 +242,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "db.operation",
                 "db.system",
                 "net.peer.name",
+                "db.name",
+                "db.cosmosdb.container",
                 "db.cosmosdb.connection_mode",
                 "db.cosmosdb.operation_type",
-                "db.cosmosdb.regions_contacted"
+                "db.cosmosdb.regions_contacted",
+                "tcp.sub_status_code",
+                "tcp.status_code"
             };
             
             StringBuilder builder = new StringBuilder();
@@ -266,18 +282,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
             }
 
-          /*  List<Activity> collectedNetworkActivities = new List<Activity>(CustomListener.CollectedNetworkActivities);
-            collectedNetworkActivities = collectedNetworkActivities
+            HashSet<Activity> collectedNetworkActivities = new HashSet<Activity>(CustomListener.CollectedNetworkActivities, new NetworkActivityComparer());
+            List<Activity> orderedUniqueNetworkActivities = collectedNetworkActivities
                 .OrderBy(act => 
                             act.Source.Name + 
                             act.OperationName + 
-                            act.GetTagItem("rntbd.status_code") + 
-                            act.GetTagItem("rntbd.sub_status_code"))
+                            act.GetTagItem("tcp.status_code") + 
+                            act.GetTagItem("tcp.sub_status_code"))
                 .ToList();
-            foreach (Activity activity in collectedNetworkActivities)
+            foreach (Activity activity in orderedUniqueNetworkActivities)
             {
                 generatedActivityTagsForBaselineXmls.Add(this.GenerateTagForBaselineTest(activity));
-            }*/
+            }
 
             List<string> outputList = new List<string>();
             if(generatedActivityTagsForBaselineXmls != null && generatedActivityTagsForBaselineXmls.Count > 0)
@@ -333,5 +349,22 @@ namespace Microsoft.Azure.Cosmos.Tests
             public string Traceparent { get; set; }
             public string Tracestate { get; set; }
         }
+
+        public class NetworkActivityComparer : IEqualityComparer<Activity>
+        {
+            public bool Equals(Activity x, Activity y)
+            {
+                string xData = x.Source.Name + x.OperationName + x.GetTagItem("tcp.status_code") + x.GetTagItem("tcp.sub_status_code");
+                string yData = y.Source.Name + y.OperationName + y.GetTagItem("tcp.status_code") + y.GetTagItem("tcp.sub_status_code");
+
+                return xData.Equals(yData, StringComparison.OrdinalIgnoreCase);
+            }
+
+            public int GetHashCode(Activity obj)
+            {
+                return (obj.Source.Name + obj.OperationName + obj.GetTagItem("tcp.status_code") + obj.GetTagItem("tcp.sub_status_code")).GetHashCode() ;
+            }
+        }
+
     }
 }

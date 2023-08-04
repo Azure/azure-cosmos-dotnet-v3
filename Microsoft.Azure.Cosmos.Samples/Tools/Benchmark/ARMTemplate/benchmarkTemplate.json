@@ -1,0 +1,154 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "endpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Your account endpoint"
+      }
+    },
+    "key": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Your account key"
+      }
+    },
+    "throughput": {
+      "type": "string",
+      "metadata": {
+        "description": "The throughput for the container."
+      }
+    },
+    "documents": {
+      "type": "string",
+      "metadata": {
+        "description": "The amount of items to insert."
+      }
+    },
+    "parallelism": {
+      "type": "string",
+      "metadata": {
+        "description": "The degree of parallelism."
+      },
+      "defaultValue": "-1"
+    },
+    "cleanUpOnFinish": {
+      "type": "string",
+      "metadata": {
+        "description": "Whether to delete the container after the benchmark is run."
+      },
+      "defaultValue": "false"
+    },
+    "containerGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name for the container group"
+      },
+      "defaultValue":  "CosmosDBBenchmark"
+    },
+    "containerName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name for the container"
+      },
+      "defaultValue": "cosmosdbsdkperf"
+    },
+    "volumeName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name for the gitRepo volume"
+      },
+      "defaultValue": "cosmosdbsdk"
+    },
+    "port": {
+      "type": "string",
+      "metadata": {
+        "description": "Port to open on the container and the public IP address."
+      },
+      "defaultValue": "80"
+    },
+    "cpuCores": {
+      "type": "string",
+      "metadata": {
+        "description": "The number of CPU cores to allocate to the container."
+      },
+      "defaultValue": "4"
+    },
+    "memoryInGb": {
+      "type": "string",
+      "metadata": {
+        "description": "The amount of memory to allocate to the container in gigabytes."
+      },
+      "defaultValue": "8"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for all resources."
+      }
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "name": "[parameters('containerGroupName')]",
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "apiVersion": "2020-11-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "containers": [
+          {
+            "name": "[parameters('containerName')]",
+            "properties": {
+              "image": "mcr.microsoft.com/dotnet/sdk:6.0",
+              "ports": [
+                {
+                  "port": "[parameters('port')]"
+                }
+              ],
+              "resources": {
+                "requests": {
+                  "cpu": "[parameters('cpuCores')]",
+                  "memoryInGB": "[parameters('memoryInGb')]"
+                }
+              },
+              "volumeMounts": [
+                {
+                  "name": "[parameters('volumeName')]",
+                  "mountPath": "/mnt/gitrepos/",
+                  "readOnly": false
+                }
+              ],
+              "command": [
+                "/bin/bash",
+                "-c",
+                "[concat('cd /mnt/gitrepos/azure-cosmos-dotnet-v3/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/ARMTemplate;export ENDPOINT=\"', parameters('endpoint'),'\";export KEY=\"', parameters('key'),'\";export THROUGHPUT=\"', parameters('throughput'),'\";export DOCUMENTS=\"', parameters('documents'),'\";export PARALLELISM=\"', parameters('parallelism'),'\";export CLEANUPFINISH=\"', parameters('cleanUpOnFinish'),'\";chmod +x run.sh;./run.sh')]"
+              ]
+            }
+          }
+        ],
+        "osType": "Linux",
+        "restartPolicy": "Never",
+        "ipAddress": {
+          "type": "Public",
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": "[parameters('port')]"
+            }
+          ]
+        },
+        "volumes": [
+          {
+            "name": "[parameters('volumeName')]",
+            "gitRepo": {
+              "repository": "https://github.com/Azure/azure-cosmos-dotnet-v3"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -113,6 +113,8 @@ namespace Microsoft.Azure.Cosmos
         private const string DefaultInitTaskKey = "InitTaskKey";
 
         private readonly bool IsLocalQuorumConsistency = false;
+        private readonly bool isReplicaAddressValidationEnabled;
+
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
@@ -231,7 +233,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
-
+            this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
         }
 
         /// <summary>
@@ -6644,6 +6646,11 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
+                Documents.Telemetry.DistributedTracingOptions distributedTracingOptions = new ()
+                {
+                    IsDistributedTracingEnabled = this.isDistributedTracingEnabled
+                };
+
                 StoreClientFactory newClientFactory = new StoreClientFactory(
                     this.ConnectionPolicy.ConnectionProtocol,
                     (int)this.ConnectionPolicy.RequestTimeout.TotalSeconds,
@@ -6667,7 +6674,7 @@ namespace Microsoft.Azure.Cosmos
                     addressResolver: this.AddressResolver,
                     rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
-                    isDistributedTracingEnabled: this.isDistributedTracingEnabled);
+                    distributedTracingOptions: distributedTracingOptions);
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -6695,7 +6702,8 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnableReadRequestsFallback ?? (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.BoundedStaleness),
                 !this.enableRntbdChannel,
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
-                true);
+                true,
+                enableReplicaValidation: this.isReplicaAddressValidationEnabled);
 
             if (subscribeRntbdStatus)
             {

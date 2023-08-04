@@ -4,11 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// FeedRange that represents an exact Partition Key value.
@@ -31,8 +33,13 @@ namespace Microsoft.Azure.Cosmos
             return Task.FromResult(
                 new List<Documents.Routing.Range<string>>
                 {
-                    Documents.Routing.Range<string>.GetPointRange(
-                        this.PartitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition))
+                    Documents.Routing.PartitionKeyInternal.GetEffectivePartitionKeyRange(
+                        partitionKeyDefinition,
+                        new Documents.Routing.Range<Documents.Routing.PartitionKeyInternal>(
+                            min: this.PartitionKey.InternalKey,
+                            max: this.PartitionKey.InternalKey,
+                            isMinInclusive: true,
+                            isMaxInclusive: true))
                 });
         }
 
