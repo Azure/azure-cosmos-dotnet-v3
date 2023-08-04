@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -544,7 +545,27 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
             cosmosClientOptions.ApplicationRegion = "westus2";
-            Assert.AreEqual(Regions.WestUS2, cosmosClientOptions.ApplicationRegion);
+
+            ConnectionPolicy policy = cosmosClientOptions.GetConnectionPolicy(0);
+
+            // Need to see Regions.WestUS2 in the list, but not "westus2"
+            bool seenWestUS2 = false;
+            bool seenNormalized = false;
+
+            foreach (string region in policy.PreferredLocations)
+            {
+                if (region == "westus2")
+                {
+                    seenNormalized = true;
+                }
+
+                if (region == Regions.WestUS2)
+                {
+                    seenWestUS2 = true;
+                }
+            }
+            Assert.IsTrue(seenWestUS2);
+            Assert.IsFalse(seenNormalized);
         }
 
         [TestMethod]
@@ -558,13 +579,18 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Ignore unknown values.
             cosmosClientOptions.ApplicationRegion = null;
-            Assert.IsNull(cosmosClientOptions.ApplicationRegion);
+
+            ConnectionPolicy policy = cosmosClientOptions.GetConnectionPolicy(0);
+
+            Assert.AreEqual(0, policy.PreferredLocations.Count);
 
             cosmosClientOptions.ApplicationRegion = string.Empty;
-            Assert.AreEqual(string.Empty, cosmosClientOptions.ApplicationRegion);
+            policy = cosmosClientOptions.GetConnectionPolicy(0);
+
+            Assert.AreEqual(0, policy.PreferredLocations.Count);
 
             cosmosClientOptions.ApplicationRegion = "Invalid region";
-            Assert.AreEqual("Invalid region", cosmosClientOptions.ApplicationRegion);
+            Assert.ThrowsException<ArgumentException>(() => cosmosClientOptions.GetConnectionPolicy(0));
         }
 
         [TestMethod]
@@ -572,9 +598,48 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
             cosmosClientOptions.ApplicationPreferredRegions = new List<string> {"westus2", "usdodcentral", Regions.ChinaNorth3};
-            Assert.AreEqual(Regions.WestUS2, cosmosClientOptions.ApplicationPreferredRegions[0]);
-            Assert.AreEqual(Regions.USDoDCentral, cosmosClientOptions.ApplicationPreferredRegions[1]);
-            Assert.AreEqual(Regions.ChinaNorth3, cosmosClientOptions.ApplicationPreferredRegions[2]);
+
+            ConnectionPolicy policy = cosmosClientOptions.GetConnectionPolicy(0);
+
+            bool seenUSDodCentral = false;
+            bool seenWestUS2 = false;
+            bool seenChinaNorth3 = false;
+            bool seenNormalizedUSDodCentral = false;
+            bool seenNormalizedWestUS2 = false;
+
+            foreach (string region in policy.PreferredLocations)
+            {
+                if (region == Regions.USDoDCentral)
+                {
+                    seenUSDodCentral = true;
+                }
+
+                if (region == Regions.WestUS2)
+                {
+                    seenWestUS2 = true;
+                }
+
+                if (region == Regions.ChinaNorth3)
+                {
+                    seenChinaNorth3 = true;
+                }
+
+                if (region == "westus2")
+                {
+                    seenNormalizedWestUS2 = true;
+                }
+
+                if (region == "usdodcentral")
+                {
+                    seenNormalizedUSDodCentral = true;
+                }
+            }
+
+            Assert.IsTrue(seenChinaNorth3);
+            Assert.IsTrue(seenWestUS2);
+            Assert.IsTrue(seenUSDodCentral);
+            Assert.IsFalse(seenNormalizedUSDodCentral);
+            Assert.IsFalse(seenNormalizedWestUS2);
         }
 
         [TestMethod]
@@ -600,11 +665,43 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Invalid region"
             };
 
-            Assert.IsNull(cosmosClientOptions.ApplicationPreferredRegions[0]);
-            Assert.AreEqual(string.Empty, cosmosClientOptions.ApplicationPreferredRegions[1]);
-            Assert.AreEqual(Regions.JioIndiaCentral, cosmosClientOptions.ApplicationPreferredRegions[2]);
-            Assert.AreEqual(Regions.WestUS2, cosmosClientOptions.ApplicationPreferredRegions[3]);
-            Assert.AreEqual("Invalid region", cosmosClientOptions.ApplicationPreferredRegions[4]);
+            ConnectionPolicy policy = cosmosClientOptions.GetConnectionPolicy(0);
+
+            bool seenJioIndiaCentral = false;
+            bool seenWestUS2 = false;
+            bool seenNormalized = false;
+
+            foreach (string region in policy.PreferredLocations)
+            {
+                if (region == Regions.JioIndiaCentral)
+                {
+                    seenJioIndiaCentral = true;
+                }
+
+                if (region == Regions.WestUS2)
+                {
+                    seenWestUS2 = true;
+                }
+
+                if (region == "westus2")
+                {
+                    seenNormalized = true;
+                }
+            }
+
+            Assert.IsTrue(seenJioIndiaCentral);
+            Assert.IsTrue(seenWestUS2);
+            Assert.IsFalse(seenNormalized);
+        }
+
+        [TestMethod]
+        public void RegionNameMappingTest()
+        {
+            RegionNameMapping.PrepareCache();
+
+            Assert.AreEqual(Regions.WestUS2, RegionNameMapping.GetCosmosDBRegionName("westus2"));
+
+            RegionNameMapping.ClearCache();
         }
 
         [TestMethod]
