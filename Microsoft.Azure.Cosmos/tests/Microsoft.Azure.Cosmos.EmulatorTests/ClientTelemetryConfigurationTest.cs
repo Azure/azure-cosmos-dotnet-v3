@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DocumentClient documentClient = this.GetClient().DocumentClient;
 
             Assert.IsNotNull(documentClient.TelemetryToServiceHelper);
-            Assert.IsTrue(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
+            Assert.IsFalse(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobRunning());
 
             ClientCollectionCache collCache = (ClientCollectionCache)documentClient
             .GetType()
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .GetValue(collCache);
 
             Assert.IsNotNull(telemetryToServiceHelper);
-            Assert.IsTrue(telemetryToServiceHelper.IsClientTelemetryJobNotRunning());
+            Assert.IsFalse(telemetryToServiceHelper.IsClientTelemetryJobRunning());
         }
 
         [TestMethod]
@@ -157,13 +157,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (isEnabled)
             {
-                Assert.IsFalse(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
-                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobNotRunning());
+                Assert.IsTrue(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobRunning());
+                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobRunning());
             }
             else
             {
-                Assert.IsTrue(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
-                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobNotRunning());
+                Assert.IsFalse(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobRunning());
+                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobRunning());
             }
         }
         
@@ -244,13 +244,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (isEnabledInitially)
             {
-                Assert.IsFalse(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
-                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobNotRunning());
+                Assert.IsTrue(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobRunning());
+                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobRunning());
             }
             else
             {
-                Assert.IsTrue(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
-                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobNotRunning());
+                Assert.IsFalse(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobRunning());
+                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobRunning());
             }
 
             manualResetEvent.WaitOne(TimeSpan.FromMilliseconds(100));
@@ -269,13 +269,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (isEnabledInitially)
             {
-                Assert.IsTrue(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
-                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobNotRunning());
+                Assert.IsFalse(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobRunning());
+                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobRunning());
             }
             else
             {
-                Assert.IsFalse(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobNotRunning());
-                Assert.IsFalse(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobNotRunning());
+                Assert.IsTrue(documentClient.TelemetryToServiceHelper.IsClientTelemetryJobRunning());
+                Assert.IsTrue(telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobRunning());
             }
             
         }

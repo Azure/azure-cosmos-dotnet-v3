@@ -83,39 +83,35 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
 #endif
         }
 
-        public bool IsClientTelemetryJobNotRunning()
+        public bool IsClientTelemetryJobRunning()
         {
-            return this.clientTelemetry == null;
+            return this.clientTelemetry != null;
         }
 
         public void CollectCacheInfo(Func<CacheTelemetryInformation> functionFordata)
         {
-            if (this.IsClientTelemetryJobNotRunning())
+            if (this.IsClientTelemetryJobRunning())
             {
-                return;
+                CacheTelemetryInformation data = functionFordata();
+
+                if (data.collectionLink != null)
+                {
+                    GetDatabaseAndCollectionName(data.collectionLink, out string databaseName, out string collectionName);
+
+                    data.databaseId = databaseName;
+                    data.containerId = collectionName;
+                }
+
+                this.clientTelemetry?.CollectCacheInfo(data);
             }
-
-            CacheTelemetryInformation data = functionFordata();
-
-            if (data.collectionLink != null)
-            {
-                GetDatabaseAndCollectionName(data.collectionLink, out string databaseName, out string collectionName);
-
-                data.databaseId = databaseName;
-                data.containerId = collectionName;
-            }
-
-            this.clientTelemetry?.CollectCacheInfo(data);
         }
 
         public void CollectOperationInfo(Func<OperationTelemetryInformation> functionFordata)
         {
-            if (this.IsClientTelemetryJobNotRunning())
+            if (this.IsClientTelemetryJobRunning())
             {
-                return;
+                this.clientTelemetry?.CollectOperationInfo(functionFordata());
             }
-
-            this.clientTelemetry?.CollectOperationInfo(functionFordata());
         }
 
         private void Initialize()
@@ -192,46 +188,43 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
         {
             if (databaseAccountClientConfigs.IsClientTelemetryEnabled())
             {
-                if (this.IsClientTelemetryJobNotRunning())
-                {
-                    try
-                    {
-                        this.clientTelemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
-                            clientId: this.clientId,
-                            httpClient: this.httpClient,
-                            userAgent: this.connectionPolicy.UserAgentContainer.BaseUserAgent,
-                            connectionMode: this.connectionPolicy.ConnectionMode,
-                            authorizationTokenProvider: this.cosmosAuthorization,
-                            diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
-                            preferredRegions: this.connectionPolicy.PreferredLocations,
-                            globalEndpointManager: this.globalEndpointManager,
-                            databaseAccountClientConfigs: databaseAccountClientConfigs);
-
-                        DefaultTrace.TraceVerbose("Client Telemetry Enabled.");
-                    }
-                    catch (Exception ex)
-                    {
-                        DefaultTrace.TraceWarning($"Error While starting Telemetry Job : {ex.Message}");
-                    }
-                }
-                else
+                if (this.IsClientTelemetryJobRunning())
                 {
                     DefaultTrace.TraceVerbose("Client Telemetry Job already running.");
+
+                    return;
+                }
+
+                try
+                {
+                    this.clientTelemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
+                        clientId: this.clientId,
+                        httpClient: this.httpClient,
+                        userAgent: this.connectionPolicy.UserAgentContainer.BaseUserAgent,
+                        connectionMode: this.connectionPolicy.ConnectionMode,
+                        authorizationTokenProvider: this.cosmosAuthorization,
+                        diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
+                        preferredRegions: this.connectionPolicy.PreferredLocations,
+                        globalEndpointManager: this.globalEndpointManager,
+                        databaseAccountClientConfigs: databaseAccountClientConfigs);
+
+                    DefaultTrace.TraceVerbose("Client Telemetry Enabled.");
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceWarning($"Error While starting Telemetry Job : {ex.Message}");
                 }
             }
             else
             {
-                if (!this.IsClientTelemetryJobNotRunning())
+                if (this.IsClientTelemetryJobRunning())
                 {
                     DefaultTrace.TraceInformation("Stopping Client Telemetry Job.");
-
-                    this.clientTelemetry?.Dispose();
-
-                    this.clientTelemetry = null;
+                    this.StopClientTelemetry();
                 }
                 else
                 {
-                    DefaultTrace.TraceInformation("Client Telemetry Disabled.");
+                    DefaultTrace.TraceInformation("Client Telemetry already Disabled.");
                 }
             }
         }
@@ -252,7 +245,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
                 this.cancellationTokenSource.Dispose();
             }
 
+            this.StopClientTelemetry();
+        }
+
+        private void StopClientTelemetry()
+        {
             this.clientTelemetry?.Dispose();
+            this.clientTelemetry = null;
         }
 
     }
