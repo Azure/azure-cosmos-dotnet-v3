@@ -16,8 +16,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry.Collector;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Util;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     /// <summary>
     /// This class collects and send all the telemetry information.
@@ -229,19 +229,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Cache Telemetry Information.
         /// </summary>
-        public void CollectCacheInfo(CacheTelemetryInformation data)
+        public void CollectCacheInfo(string cacheName, TelemetryInformation data)
         {
-            if (string.IsNullOrEmpty(data.cacheRefreshSource))
+            if (string.IsNullOrEmpty(cacheName))
             {
-                throw new ArgumentNullException(nameof(data.cacheRefreshSource));
+                throw new ArgumentNullException(nameof(cacheName));
             }
 
-            DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {0} data for Telemetry.", data.cacheRefreshSource);
+            if (!data.requestLatency.HasValue)
+            {
+                DefaultTrace.TraceError($"No latency to record for {cacheName}");
+            }
+
+            DefaultTrace.TraceVerbose($"Collecting cacheRefreshSource {0} data for Telemetry.", cacheName);
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(data.regionsContactedList);
 
             // Recording Request Latency
-            CacheRefreshInfo payloadKey = new CacheRefreshInfo(cacheRefreshSource: data.cacheRefreshSource,
+            CacheRefreshInfo payloadKey = new CacheRefreshInfo(cacheRefreshSource: cacheName,
                                             regionsContacted: regionsContacted?.ToString(),
                                             responseSizeInBytes: data.responseSizeInBytes,
                                             consistency: data.consistencyLevel,
@@ -267,22 +272,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// Collects Telemetry Information.
+        /// Collects Operation Telemetry Information.
         /// </summary>
-        public void CollectOperationInfo(OperationTelemetryInformation data)
+        public void CollectOperationInfo(TelemetryInformation data)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
-            if (data.cosmosDiagnostics == null)
-            {
-                throw new ArgumentNullException(nameof(data.cosmosDiagnostics));
-            }
-
-            // Record Network/Replica Information
-            SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(data.trace);
-            this.networkDataRecorder.Record(summaryDiagnostics.StoreResponseStatistics.Value, data.databaseId, data.containerId);
-
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(data.cosmosDiagnostics.GetContactedRegions());
+            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(data.regionsContactedList);
 
             // Recording Request Latency and Request Charge
             OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
@@ -302,13 +298,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                         ClientTelemetryOptions.RequestChargeMax,
                                                         ClientTelemetryOptions.RequestChargePrecision)));
-            try
+            if (data.requestLatency.HasValue)
             {
-                latency.RecordValue(data.cosmosDiagnostics.GetClientElapsedTime().Ticks);
-            }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex);
+                try
+                {
+                    latency.RecordValue(data.requestLatency.Value.Ticks);
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex);
+                }
             }
 
             long requestChargeToRecord = (long)(data.requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
@@ -320,6 +319,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex);
             }
+        }
+
+        /// <summary>
+        /// Record Network Request Telemetry Information
+        /// </summary>
+        /// <param name="storeResponseStatistics"></param>
+        /// <param name="databaseId"></param>
+        /// <param name="containerId"></param>
+        public void CollectNetworkInfo(List<StoreResponseStatistics> storeResponseStatistics, string databaseId, string containerId)
+        {
+            // Record Network/Replica Information
+            this.networkDataRecorder.Record(storeResponseStatistics, databaseId, containerId);
+
         }
 
         /// <summary>

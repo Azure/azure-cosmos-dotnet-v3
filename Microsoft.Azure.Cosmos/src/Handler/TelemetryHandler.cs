@@ -32,10 +32,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    this.TelemetryToServiceHelper.CollectOperationInfo(
-                        () => new OperationTelemetryInformation
+                    this.TelemetryToServiceHelper.CollectOperationAndNetworkInfo(
+                        () => new TelemetryInformation
                             {
-                                cosmosDiagnostics = response.Diagnostics,
+                                regionsContactedList = response.Diagnostics.GetContactedRegions(),
+                                requestLatency = response.Diagnostics.GetClientElapsedTime(),
                                 statusCode = response.StatusCode,
                                 responseSizeInBytes = TelemetryHandler.GetPayloadSize(response),
                                 containerId = request.ContainerId,

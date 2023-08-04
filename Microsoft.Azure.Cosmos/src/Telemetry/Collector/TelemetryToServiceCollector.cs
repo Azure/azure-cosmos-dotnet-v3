@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -88,29 +89,53 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
             return this.clientTelemetry != null;
         }
 
-        public void CollectCacheInfo(Func<CacheTelemetryInformation> functionFordata)
+        public void CollectCacheInfo(string cacheName, Func<TelemetryInformation> functionFordata)
         {
             if (this.IsClientTelemetryJobRunning())
             {
-                CacheTelemetryInformation data = functionFordata();
-
-                if (data.collectionLink != null)
+                try
                 {
-                    GetDatabaseAndCollectionName(data.collectionLink, out string databaseName, out string collectionName);
+                    TelemetryInformation data = functionFordata();
 
-                    data.databaseId = databaseName;
-                    data.containerId = collectionName;
+                    if (data.collectionLink != null)
+                    {
+                        GetDatabaseAndCollectionName(data.collectionLink, out string databaseName, out string collectionName);
+
+                        data.databaseId = databaseName;
+                        data.containerId = collectionName;
+                    }
+
+                    this.clientTelemetry?.CollectCacheInfo(cacheName, data);
                 }
-
-                this.clientTelemetry?.CollectCacheInfo(data);
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceError($"Error while collecting cache {cacheName} telemetry. Exception : {ex}");
+                }
+                
             }
         }
 
-        public void CollectOperationInfo(Func<OperationTelemetryInformation> functionFordata)
+        public void CollectOperationAndNetworkInfo(Func<TelemetryInformation> functionFordata)
         {
             if (this.IsClientTelemetryJobRunning())
             {
-                this.clientTelemetry?.CollectOperationInfo(functionFordata());
+                try
+                {
+                    TelemetryInformation data = functionFordata();
+
+                    this.clientTelemetry?.CollectOperationInfo(data);
+
+                    // Collect network level telemetry only in Direct Mode
+                    if (this.connectionPolicy.ConnectionMode == ConnectionMode.Direct)
+                    {
+                        SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(data.trace);
+                        this.clientTelemetry?.CollectNetworkInfo(summaryDiagnostics.StoreResponseStatistics.Value, data.databaseId, data.containerId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceError($"Error while collecting operation telemetry. Exception : {ex}");
+                }
             }
         }
 
