@@ -15,15 +15,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// </summary>
     [TestClass]
     [TestCategory("ClientTelemetryRelease")]
-    public class ClientTelemetryReleaseTests : ClientTelemetryBaseTests
+    public class ClientTelemetryReleaseTests : ClientTelemetryTests
     {
-        protected override CosmosClientBuilder GetBuilder()
+        public override CosmosClientBuilder GetBuilder()
         {
-            string connectionString = Environment.GetEnvironmentVariable("COSMOS.DB_CONNECTION_STRING");
-            return new CosmosClientBuilder(connectionString: connectionString);
+            return new CosmosClientBuilder(connectionString: Environment.GetEnvironmentVariable("COSMOS.DB_CONNECTION_STRING"));
         }
 
-        protected override Task<HttpResponseMessage> HttpHandlerRequestCallbackChecks(HttpRequestMessage request)
+        public override Task<HttpResponseMessage> HttpHandlerRequestCallbackChecks(HttpRequestMessage request)
         {
             return null;
         }

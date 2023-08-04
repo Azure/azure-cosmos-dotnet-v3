@@ -49,8 +49,6 @@ jobs:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
-    ClientTelemetryTestName: EmulatorTests ClientTelemetry
-    ClientTelemetryTestCategory: ClientTelemetryEmulator
 
 - template:  templates/build-internal.yml
   parameters:
