@@ -19,7 +19,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         public override CosmosClientBuilder GetBuilder()
         {
-            return new CosmosClientBuilder(connectionString: Environment.GetEnvironmentVariable("COSMOS.DB_CONNECTION_STRING"));
+            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOS.DB_CONNECTION_STRING", null);
+
+            Console.WriteLine(connectionString);
+            return new CosmosClientBuilder(connectionString: connectionString);
         }
 
         public override Task<HttpResponseMessage> HttpHandlerRequestCallbackChecks(HttpRequestMessage request)
