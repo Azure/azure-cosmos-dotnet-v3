@@ -76,7 +76,7 @@
             {
                 if (metrics.Item2 != null)
                 {
-                    Debug.Assert(metrics.Item1 != null, "'Get Cosmos Element Response' is null");
+                    Debug.Assert(metrics.Item1 == null, "'Get Cosmos Element Response' is null");
                     queryStatisticsDatumVisitor.AddGetCosmosElementResponseTime(metrics.Item1.Duration.TotalMilliseconds);
                     foreach (KeyValuePair<string, object> kvp in metrics.Item2.Data)
                     {
