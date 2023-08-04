@@ -72,8 +72,6 @@ namespace Microsoft.Azure.Cosmos
         private IWebProxy webProxy;
         private Func<HttpClient> httpClientFactory;
         private string applicationName;
-        private string applicationRegion;
-        private IReadOnlyList<string> applicationPreferredRegions;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -156,11 +154,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="CosmosClientBuilder.WithApplicationRegion(string)"/>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
-        public string ApplicationRegion
-        {
-            get => this.applicationRegion;
-            set => this.applicationRegion = RegionNameMapping.GetCosmosDBRegionName(value);
-        }
+        public string ApplicationRegion { get; set; }
 
         /// <summary>
         /// Gets and sets the preferred regions for geo-replicated database accounts in the Azure Cosmos DB service. 
@@ -195,11 +189,7 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/high-availability#high-availability-with-cosmos-db-in-the-event-of-regional-outages">High availability on regional outages</seealso>
-        public IReadOnlyList<string> ApplicationPreferredRegions
-        {
-            get => this.applicationPreferredRegions;
-            set => this.applicationPreferredRegions = value?.Select(RegionNameMapping.GetCosmosDBRegionName).ToList();
-        }
+        public IReadOnlyList<string> ApplicationPreferredRegions { get; set; }
 
         /// <summary>
         /// Get or set the maximum number of concurrent connections allowed for the target
@@ -777,14 +767,24 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy.EnableClientTelemetry = this.EnableClientTelemetry.Value;
             }
 
-            if (this.ApplicationRegion != null)
+            RegionNameMapping.PrepareCache();
+            try
             {
-                connectionPolicy.SetCurrentLocation(this.ApplicationRegion);
-            }
+                if (!string.IsNullOrEmpty(this.ApplicationRegion))
+                {
+                   connectionPolicy.SetCurrentLocation(RegionNameMapping.GetCosmosDBRegionName(this.ApplicationRegion));
+                }
 
-            if (this.ApplicationPreferredRegions != null)
+                if (this.ApplicationPreferredRegions != null)
+                {
+                    List<string> mappedRegions = this.ApplicationPreferredRegions.Select(s => RegionNameMapping.GetCosmosDBRegionName(s)).ToList();
+
+                    connectionPolicy.SetPreferredLocations(mappedRegions);
+                }
+            }
+            finally
             {
-                connectionPolicy.SetPreferredLocations(this.ApplicationPreferredRegions);
+                RegionNameMapping.ClearCache();
             }
 
             if (this.MaxRetryAttemptsOnRateLimitedRequests != null)

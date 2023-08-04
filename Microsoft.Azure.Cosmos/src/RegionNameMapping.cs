@@ -13,6 +13,24 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class RegionNameMapping
     {
+        private static Dictionary<string, string> normalizedToCosmosDBRegionNameMapping;
+
+        internal static void PrepareCache()
+        {
+            FieldInfo[] fields = typeof(Regions).GetFields(BindingFlags.Public | BindingFlags.Static);
+            normalizedToCosmosDBRegionNameMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (FieldInfo field in fields)
+            {
+                normalizedToCosmosDBRegionNameMapping[field.Name.ToLowerInvariant()] = field.GetValue(null).ToString();
+            }
+        }
+
+        internal static void ClearCache()
+        {
+            normalizedToCosmosDBRegionNameMapping = null;
+        }
+
         /// <summary>
         /// Given a normalized region name, this function retrieves the region name in the format that CosmosDB expects.
         /// If the region is not known, the same value as input is returned.
@@ -26,12 +44,9 @@ namespace Microsoft.Azure.Cosmos
                 return string.Empty;
             }
 
-            FieldInfo[] fields = typeof(Regions).GetFields(BindingFlags.Public | BindingFlags.Static);
-            Dictionary<string, string> normalizedToCosmosDBRegionNameMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (FieldInfo field in fields)
+            if (normalizedToCosmosDBRegionNameMapping == null)
             {
-                normalizedToCosmosDBRegionNameMapping[field.Name.ToLowerInvariant()] = field.GetValue(null).ToString();
+                throw new ApplicationException("Name mapping cache has not been initialized");
             }
 
             if (normalizedToCosmosDBRegionNameMapping.TryGetValue(normalizedRegionName, out string cosmosDBRegionName))
