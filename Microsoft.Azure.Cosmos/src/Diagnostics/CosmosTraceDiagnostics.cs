@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
+        private ServerSideMetrics cachedServerSideMetrics { get; set; }
         public CosmosTraceDiagnostics(ITrace trace)
         {
             if (trace == null)
@@ -30,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             this.Value = rootTrace;
+            this.cachedServerSideMetrics = null;
         }
 
         public ITrace Value { get; }
@@ -51,9 +53,15 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override ServerSideMetrics GetQueryMetrics()
         {
+            if (this.cachedServerSideMetrics != null)
+            {
+                return this.cachedServerSideMetrics;
+            }
+
             ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
             ServerSideMetricsAccumulator.WalkTraceTreeForQueryMetrics(this.Value, accumulator);
-            return new ServerSideMetrics(accumulator.GetServerSideMetrics());
+            this.cachedServerSideMetrics = new ServerSideMetrics(accumulator.GetServerSideMetrics());
+            return this.cachedServerSideMetrics;
         }
 
         internal bool IsGoneExceptionHit()

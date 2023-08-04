@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Reflection;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -1261,6 +1262,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             do
             {
                 iterationCount++;
+                ServerSideMetricsAccumulator headerMetricsAccumulator = new ServerSideMetricsAccumulator();
                 FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
                     sql,
                     continuationToken: lastContinuationToken,
@@ -1277,6 +1279,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 System.Diagnostics.Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
                 Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
+
+                // verify ServerSideMetrics matches metrics retrieved from header
+                ServerSideMetrics serverSideMetricsFromDiagnostics = response.Diagnostics.GetQueryMetrics();
+                bool tryParseResult = ServerSideMetricsInternal.TryParseFromDelimitedString(response.Headers.QueryMetricsText, out ServerSideMetricsInternal serverSideMetricsFromHeaders);
+                Assert.IsTrue(tryParseResult);
+                headerMetricsAccumulator.Accumulate(serverSideMetricsFromHeaders);
+                Assert.IsTrue(headerMetricsAccumulator.GetServerSideMetrics().FormatTrace() == serverSideMetricsFromDiagnostics.FormatTrace());
 
                 using (StreamReader sr = new StreamReader(response.Content))
                 using (JsonTextReader jtr = new JsonTextReader(sr))
