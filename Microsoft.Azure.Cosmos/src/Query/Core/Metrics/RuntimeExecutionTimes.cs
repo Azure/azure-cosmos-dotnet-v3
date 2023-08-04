@@ -1,9 +1,10 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
+namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     /// <summary>
     /// Query runtime execution times in the Azure Cosmos DB service.

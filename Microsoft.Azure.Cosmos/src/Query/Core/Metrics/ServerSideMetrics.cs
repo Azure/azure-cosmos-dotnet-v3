@@ -2,9 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
+namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     /// <summary>
     /// internal implementation of metrics received for queries from the backend.
