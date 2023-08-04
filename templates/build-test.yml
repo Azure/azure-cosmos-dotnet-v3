@@ -5,12 +5,12 @@ parameters:
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
-  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!~ClientTelemetry & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
-  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!~ClientTelemetry & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed" --verbosity normal '
+  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & CLassName!~Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryTests & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
+  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & ClassName!~Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryTests & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed" --verbosity normal '
   EmulatorPipeline1CategoryListName: ' Query, ChangeFeed, ReadFeed, Batch ' # Divided in 2 categories to run them in parallel and reduce the PR feedback time
   EmulatorPipeline2CategoryListName: ' Others '
   ClientTelemetryTestName: 'EmulatorTests ClientTelemetry'
-  ClientTelemetryTestCategory: 'ClientTelemetryEmulator'
+  ClientTelemetryTestClassName: 'Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryTests'
   
 jobs:
 - job:
@@ -232,7 +232,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: --filter "TestCategory=${{ parameters.ClientTelemetryTestCategory }}" --verbosity normal --configuration Debug /p:OS=${{ parameters.OS }}
+      arguments: --filter "ClassName=${{ parameters.ClientTelemetryTestClassName }}" --verbosity normal --configuration Debug /p:OS=${{ parameters.OS }}
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
