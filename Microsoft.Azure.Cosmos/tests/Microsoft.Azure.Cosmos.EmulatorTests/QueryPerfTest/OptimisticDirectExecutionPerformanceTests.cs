@@ -97,6 +97,8 @@
             }
         }
 
+        //Set Ode perf tests to ignore so that they dont run on every loop build. 
+        //Ignore flag can be removed when checking for Ode performance.
         [Ignore]
         [TestMethod]
         [Owner("akotalwar")]
