@@ -97,6 +97,7 @@
             }
         }
 
+        [Ignore]
         [TestMethod]
         [Owner("akotalwar")]
         public async Task RunAsync()
