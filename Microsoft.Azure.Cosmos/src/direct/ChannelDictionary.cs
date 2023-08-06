@@ -65,7 +65,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                 physicalAddress,
                 localRegionRequest);
 
-            return channel.OpenChannelAsync(activityId);
+            return channel.Healthy
+                ? Task.FromResult(0)
+                : channel.OpenChannelAsync(activityId);
         }
 
         public void Dispose()
