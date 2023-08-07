@@ -57,8 +57,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassInitialize]
         public static void ClassInitialize(TestContext _)
         {
-            Util.EnableClientTelemetryEnvironmentVariables();
-
             SystemUsageMonitor oldSystemUsageMonitor = (SystemUsageMonitor)typeof(DiagnosticsHandlerHelper)
                 .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.Instance);
             oldSystemUsageMonitor.Stop();
@@ -139,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
             {
-                HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.NoContent); // In Emulator test, send hardcoded response status code
+                HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.NoContent); // In Emulator test, send hardcoded response status code as there is no real communication happens with client telemetry service
 
                 return Task.FromResult(result);
             }
