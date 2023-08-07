@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         public override CosmosClientBuilder GetBuilder()
         {
-            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOS.DB_CONNECTION_STRING", null);
+            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_ACCOUNT_CONNECTION_STRING", null);
 
             Console.WriteLine(connectionString);
             return new CosmosClientBuilder(connectionString: connectionString);
