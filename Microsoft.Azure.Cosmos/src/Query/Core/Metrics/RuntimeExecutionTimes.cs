@@ -23,6 +23,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Initializes a new instance of the RuntimeExecutionTimes class.
+        /// </summary>
+        /// <param name="queryEngineExecutionTime">Query end - to - end execution time</param>
+        /// <param name="systemFunctionExecutionTime">Total time spent executing system functions</param>
+        /// <param name="userDefinedFunctionExecutionTime">Total time spent executing user - defined functions</param>
+        public RuntimeExecutionTimes(
+            TimeSpan queryEngineExecutionTime,
+            TimeSpan systemFunctionExecutionTime,
+            TimeSpan userDefinedFunctionExecutionTime)
+        {
+            this.QueryEngineExecutionTime = queryEngineExecutionTime;
+            this.SystemFunctionExecutionTime = systemFunctionExecutionTime;
+            this.UserDefinedFunctionExecutionTime = userDefinedFunctionExecutionTime;
+        }
+
+        /// <summary>
         /// Gets the total query runtime execution time in the Azure Cosmos DB service.
         /// </summary>
         public TimeSpan QueryEngineExecutionTime { get; }

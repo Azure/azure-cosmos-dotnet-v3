@@ -33,6 +33,49 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ServerSideMetrics"/> class.
+        /// </summary>
+        /// <param name="retrievedDocumentCount"></param>
+        /// <param name="retrievedDocumentSize"></param>
+        /// <param name="outputDocumentCount"></param>
+        /// <param name="outputDocumentSize"></param>
+        /// <param name="indexHitRatio"></param>
+        /// <param name="totalQueryExecutionTime"></param>
+        /// <param name="queryPreparationTimes"></param>
+        /// <param name="indexLookupTime"></param>
+        /// <param name="documentLoadTime"></param>
+        /// <param name="vmExecutionTime"></param>
+        /// <param name="runtimeExecutionTimes"></param>
+        /// <param name="documentWriteTime"></param>
+        public ServerSideMetrics(
+           long retrievedDocumentCount,
+           long retrievedDocumentSize,
+           long outputDocumentCount,
+           long outputDocumentSize,
+           double indexHitRatio,
+           TimeSpan totalQueryExecutionTime,
+           QueryPreparationTimes queryPreparationTimes,
+           TimeSpan indexLookupTime,
+           TimeSpan documentLoadTime,
+           TimeSpan vmExecutionTime,
+           RuntimeExecutionTimes runtimeExecutionTimes,
+           TimeSpan documentWriteTime)
+        {
+            this.RetrievedDocumentCount = retrievedDocumentCount;
+            this.RetrievedDocumentSize = retrievedDocumentSize;
+            this.OutputDocumentCount = outputDocumentCount;
+            this.OutputDocumentSize = outputDocumentSize;
+            this.IndexHitRatio = indexHitRatio;
+            this.TotalTime = totalQueryExecutionTime;
+            this.QueryPreparationTimes = queryPreparationTimes ?? throw new ArgumentNullException($"{nameof(queryPreparationTimes)} can not be null.");
+            this.IndexLookupTime = indexLookupTime;
+            this.DocumentLoadTime = documentLoadTime;
+            this.VMExecutionTime = vmExecutionTime;
+            this.RuntimeExecutionTimes = runtimeExecutionTimes ?? throw new ArgumentNullException($"{nameof(runtimeExecutionTimes)} can not be null.");
+            this.DocumentWriteTime = documentWriteTime;
+        }
+
+        /// <summary>
         /// Gets the total query time in the Azure Cosmos database service.
         /// </summary>
         public TimeSpan TotalTime { get; }

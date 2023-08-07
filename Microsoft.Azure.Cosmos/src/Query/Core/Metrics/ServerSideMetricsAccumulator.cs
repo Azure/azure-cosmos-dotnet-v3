@@ -45,7 +45,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
             foreach (ServerSideMetricsInternal serverSideMetrics in this.serverSideMetricsList)
             {
-                indexHitRatio = ((outputDocumentCount * indexHitRatio) + (serverSideMetrics.OutputDocumentCount * serverSideMetrics.IndexHitRatio)) / (retrievedDocumentCount + serverSideMetrics.RetrievedDocumentCount);
+                indexHitRatio = (retrievedDocumentCount + serverSideMetrics.RetrievedDocumentCount) != 0 ?
+                    ((outputDocumentCount * indexHitRatio) + (serverSideMetrics.OutputDocumentCount * serverSideMetrics.IndexHitRatio)) / (retrievedDocumentCount + serverSideMetrics.RetrievedDocumentCount) :
+                    0;
                 totalTime += serverSideMetrics.TotalTime;
                 retrievedDocumentCount += serverSideMetrics.RetrievedDocumentCount;
                 retrievedDocumentSize += serverSideMetrics.RetrievedDocumentSize;

@@ -24,6 +24,25 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Initializes a new instance of the QueryPreparationTimes class.
+        /// </summary>
+        /// <param name="queryCompilationTime">Query compile and optimization time</param>
+        /// <param name="logicalPlanBuildTime">Query logical plan build time</param>
+        /// <param name="physicalPlanBuildTime">Query physical plan build time</param>
+        /// <param name="queryOptimizationTime">Query optimization time</param>
+        public QueryPreparationTimes(
+            TimeSpan queryCompilationTime,
+            TimeSpan logicalPlanBuildTime,
+            TimeSpan physicalPlanBuildTime,
+            TimeSpan queryOptimizationTime)
+        {
+            this.QueryCompilationTime = queryCompilationTime;
+            this.LogicalPlanBuildTime = logicalPlanBuildTime;
+            this.PhysicalPlanBuildTime = physicalPlanBuildTime;
+            this.QueryOptimizationTime = queryOptimizationTime;
+        }
+
+        /// <summary>
         /// Gets the query compile time in the Azure DocumentDB database service. 
         /// </summary>
         public TimeSpan QueryCompilationTime { get; }

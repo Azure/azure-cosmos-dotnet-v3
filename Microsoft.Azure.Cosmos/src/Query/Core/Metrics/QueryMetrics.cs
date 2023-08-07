@@ -29,9 +29,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             clientSideMetrics: ClientSideMetrics.Empty);
 
         public QueryMetrics(
-        ServerSideMetricsInternal serverSideMetrics,
-        IndexUtilizationInfo indexUtilizationInfo,
-        ClientSideMetrics clientSideMetrics)
+            ServerSideMetricsInternal serverSideMetrics,
+            IndexUtilizationInfo indexUtilizationInfo,
+            ClientSideMetrics clientSideMetrics)
         {
             this.ServerSideMetrics = serverSideMetrics ?? throw new ArgumentNullException(nameof(serverSideMetrics));
             this.IndexUtilizationInfo = indexUtilizationInfo ?? throw new ArgumentNullException(nameof(indexUtilizationInfo));
