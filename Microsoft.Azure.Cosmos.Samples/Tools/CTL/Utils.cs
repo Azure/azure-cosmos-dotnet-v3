@@ -173,17 +173,7 @@ namespace CosmosCTL
             CosmosDiagnostics cosmosDiagnostics)
         {
 
-            if (timerContextLatency > config.DiagnosticsThresholdDurationAsTimespan)
-            {
-                logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request took more than latency threshold {config.DiagnosticsThresholdDuration}, diagnostics: {cosmosDiagnostics}");
-            }
-
-            CosmosTraceDiagnostics traceDiagnostics = (CosmosTraceDiagnostics)cosmosDiagnostics;
-            if (traceDiagnostics.IsGoneExceptionHit())
-            {
-                logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; request contains 410(GoneExceptions), diagnostics:{cosmosDiagnostics}");
-                return;
-            }
+            logger.LogInformation($"{operationName}; LatencyInMs:{timerContextLatency.TotalMilliseconds}; diagnostics: {cosmosDiagnostics}");
         }
 
         public static void LogError(
