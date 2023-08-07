@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System.Collections.Concurrent;
 
     /// <summary>
-    /// Tests for <see cref="ClientTelemetry"/>.
+    /// Tests for <see cref="ClientTelemetryJob"/>.
     /// </summary>
     [TestClass]
     public class ClientTelemetryTests
@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                     cts.Token);
             });
 
-            await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => ClientTelemetry.RunProcessorTaskAsync(
+            await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => ClientTelemetryJob.RunProcessorTaskAsync(
                                                                                                     telemetryDate: DateTime.Now.ToString(), 
                                                                                                     processingTask: processorTask, 
                                                                                                     timeout: TimeSpan.FromTicks(1)));

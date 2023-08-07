@@ -939,7 +939,7 @@ namespace Microsoft.Azure.Cosmos
             VmMetadataApiHandler.TryInitialize(this.httpClient);
 
             // Starting ClientTelemetry Job
-            this.TelemetryToServiceHelper = TelemetryToServiceCollector.CreateAndInitializeClientConfigAndTelemetryJob(this.clientId,
+            this.TelemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob(this.clientId,
                                                                  this.ConnectionPolicy,
                                                                  this.cosmosAuthorization,
                                                                  this.httpClient,
@@ -1371,7 +1371,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual Task<QueryPartitionProvider> QueryPartitionProvider => this.queryPartitionProvider.Value;
 
-        internal TelemetryToServiceCollector TelemetryToServiceHelper { get; set; }
+        internal TelemetryToServiceHelper TelemetryToServiceHelper { get; set; }
 
         internal virtual async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// Dividing these same values with 1000 during Serialization.
     /// This Class get initiated with the client and get disposed with client.
     /// </summary>
-    internal class ClientTelemetry
+    internal class ClientTelemetryJob
     {
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.DefaultTimeStampInSeconds;
 
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="globalEndpointManager"></param>
         /// <param name="databaseAccountClientConfigs"></param>
         /// <returns>ClientTelemetry</returns>
-        public static ClientTelemetry CreateAndStartBackgroundTelemetry(
+        public static ClientTelemetryJob CreateAndStartBackgroundTelemetry(
             string clientId,
             CosmosHttpClient httpClient,
             string userAgent,
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
 
-            ClientTelemetry clientTelemetry = new ClientTelemetry(
+            ClientTelemetryJob clientTelemetry = new ClientTelemetryJob(
                 clientId,
                 httpClient,
                 userAgent,
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return clientTelemetry;
         }
 
-        private ClientTelemetry(
+        private ClientTelemetryJob(
             string clientId,
             CosmosHttpClient httpClient,
             string userAgent,
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                         // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service
                         // Not disposing this task. If we dispose a client then, telemetry job(telemetryTask) should stop but processor task(processorTask) should make best effort to finish the job in background.
-                        _ = ClientTelemetry.RunProcessorTaskAsync(this.clientTelemetryInfo.DateTimeUtc, processorTask, ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
+                        _ = ClientTelemetryJob.RunProcessorTaskAsync(this.clientTelemetryInfo.DateTimeUtc, processorTask, ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
 
                     }
                     catch (Exception ex)
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Cache Telemetry Information.
         /// </summary>
-        public void CollectCacheInfo(string cacheName, TelemetryInformation data)
+        public void PushCacheInfo(string cacheName, TelemetryInformation data)
         {
             if (string.IsNullOrEmpty(cacheName))
             {
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Collects Operation Telemetry Information.
         /// </summary>
-        public void CollectOperationInfo(TelemetryInformation data)
+        public void PushOperationInfo(TelemetryInformation data)
         {
             DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
@@ -327,7 +327,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="storeResponseStatistics"></param>
         /// <param name="databaseId"></param>
         /// <param name="containerId"></param>
-        public void CollectNetworkInfo(List<StoreResponseStatistics> storeResponseStatistics, string databaseId, string containerId)
+        public void PushNetworkInfo(List<StoreResponseStatistics> storeResponseStatistics, string databaseId, string containerId)
         {
             // Record Network/Replica Information
             this.networkDataRecorder.Record(storeResponseStatistics, databaseId, containerId);

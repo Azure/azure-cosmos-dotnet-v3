@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.Collector;
 
     internal class ClientPipelineBuilder
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosClient client,
             ConsistencyLevel? requestedClientConsistencyLevel,
             IReadOnlyCollection<RequestHandler> customHandlers,
-            TelemetryToServiceCollector telemetryToServiceHelper)
+            TelemetryToServiceHelper telemetryToServiceHelper)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.Collector;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -25,14 +26,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly IRetryPolicyFactory retryPolicy;
         private readonly ISessionContainer sessionContainer;
-        private readonly TelemetryToServiceCollector telemetryToServiceHelper;
+        private readonly TelemetryToServiceHelper telemetryToServiceHelper;
 
         public ClientCollectionCache(
             ISessionContainer sessionContainer,
             IStoreModel storeModel,
             ICosmosAuthorizationTokenProvider tokenProvider,
             IRetryPolicyFactory retryPolicy,
-            TelemetryToServiceCollector telemetryToServiceHelper)
+            TelemetryToServiceHelper telemetryToServiceHelper)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
             this.tokenProvider = tokenProvider;
@@ -215,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             {
                                 ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
 
-                                this.telemetryToServiceHelper.CollectCacheInfo(
+                                this.telemetryToServiceHelper.GetCollector().CollectCacheInfo(
                                     ClientCollectionCache.TelemetrySourceName,
                                     () => new TelemetryInformation
                                     {

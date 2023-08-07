@@ -14,9 +14,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
     internal class TelemetryHandler : RequestHandler
     {
-        private readonly TelemetryToServiceCollector TelemetryToServiceHelper;
+        private readonly TelemetryToServiceHelper TelemetryToServiceHelper;
         
-        public TelemetryHandler(TelemetryToServiceCollector telemetryHelper)
+        public TelemetryHandler(TelemetryToServiceHelper telemetryHelper)
         {
             this.TelemetryToServiceHelper = telemetryHelper ?? throw new ArgumentNullException(nameof(telemetryHelper));
         }
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 try
                 {
-                    this.TelemetryToServiceHelper.CollectOperationAndNetworkInfo(
+                    this.TelemetryToServiceHelper.GetCollector().CollectOperationAndNetworkInfo(
                         () => new TelemetryInformation
                             {
                                 regionsContactedList = response.Diagnostics.GetContactedRegions(),

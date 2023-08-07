@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using Microsoft.Azure.Cosmos.Telemetry.Collector;
 
-    internal interface IClientTelemetryCollectors : IDisposable
+    internal interface IClientTelemetryCollectors
     {
         /// <summary>
         /// Collect information required to collect the telemetry information for the cache.
