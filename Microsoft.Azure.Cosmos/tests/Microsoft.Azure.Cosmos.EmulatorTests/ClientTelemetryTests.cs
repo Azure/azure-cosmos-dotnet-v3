@@ -54,6 +54,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         protected HttpClientHandlerHelper httpHandler;
         protected HttpClientHandlerHelper httpHandlerForNonAzureInstance;
 
+        private bool isClientTelemetryAPICallFailed = false;
+
         [ClassInitialize]
         public static void ClassInitialize(TestContext _)
         {
@@ -84,7 +86,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
                         }
                     }
-
                     return this.HttpHandlerRequestCallbackChecks(request);
                 },
                 ResponseIntercepter = (response) =>
@@ -93,7 +94,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     }
+
                     return Task.FromResult(response);
+                },
+                ExceptionIntercepter = (request, exception) =>
+                {
+                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    {
+                        Console.WriteLine(exception.ToString());
+                        this.isClientTelemetryAPICallFailed = true;
+                    }
                 }
             };
 
@@ -107,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         return Task.FromResult(result);
                     }
 
-                     if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
                     {
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
@@ -126,6 +136,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     }
                     return Task.FromResult(response);
+                },
+                ExceptionIntercepter = (request, exception) =>
+                {
+                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    {
+                        this.isClientTelemetryAPICallFailed = true;
+                    }
                 }
             };
 
@@ -137,9 +154,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
             {
-                HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.NoContent); // In Emulator test, send hardcoded response status code as there is no real communication happens with client telemetry service
-
-                return Task.FromResult(result);
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));  // In Emulator test, send hardcoded response status code as there is no real communication happens with client telemetry service
             }
 
             return null;
@@ -190,8 +205,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                BindingFlags.Static |
                BindingFlags.NonPublic);
             azMetadataField.SetValue(null, null);
-
             await base.TestCleanup();
+
+            Assert.IsFalse(this.isClientTelemetryAPICallFailed, $"Call to client telemetry service endpoint (i.e. {ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri}) failed");
         }
 
         [ClassCleanup]
