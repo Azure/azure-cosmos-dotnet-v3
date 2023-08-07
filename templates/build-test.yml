@@ -239,4 +239,4 @@ jobs:
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
     env:
-      COSMOS.DB_CONNECTION_STRING: $(COSMOSDB_ACCOUNT_CONNECTION_STRING)
+      COSMOSDB_ACCOUNT_CONNECTION_STRING: $(COSMOSDB_ACCOUNT_CONNECTION_STRING)
