@@ -22,9 +22,12 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private bool disposed = false;
 
+        private volatile bool healthy;
+
         public LoadBalancingChannel(Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest)
         {
             this.serverUri = serverUri;
+            this.healthy = false;
 
             if ((channelProperties.PartitionCount < 1) ||
                 (channelProperties.PartitionCount > 8))
@@ -82,8 +85,15 @@ namespace Microsoft.Azure.Documents.Rntbd
             get
             {
                 this.ThrowIfDisposed();
-                return true;
+                return this.healthy;
             }
+        }
+
+        /// <inheritdoc/>
+        public void SetHealthState(
+            bool isHealthy)
+        {
+            this.healthy = isHealthy;
         }
 
         public Task<StoreResponse> RequestAsync(
@@ -118,21 +128,46 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// </summary>
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
         /// <returns>A completed task once the channel is opened.</returns>
-        public Task OpenChannelAsync(
+        public async Task OpenChannelAsync(
             Guid activityId)
         {
             this.ThrowIfDisposed();
             if (this.singlePartition != null)
             {
                 Debug.Assert(this.partitions == null);
-                return this.singlePartition.OpenChannelAsync(activityId);
+                await this.OpenChannelToPartitionAsync(
+                    partition: this.singlePartition,
+                    activityId: activityId);
             }
             else
             {
                 Debug.Assert(this.partitions != null);
                 LoadBalancingPartition partition = this.GetLoadBalancedPartition(activityId);
-                return partition.OpenChannelAsync(
-                    activityId);
+                await this.OpenChannelToPartitionAsync(
+                    partition: partition,
+                    activityId: activityId);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to open the Rntbd channel to the backend replica nodes.
+        /// </summary>
+        /// <param name="partition">An instance of <see cref="LoadBalancingPartition"/></param>
+        /// <param name="activityId">An unique identifier indicating the current activity id.</param>
+        /// <returns>A completed task once the channel is opened.</returns>
+        private async Task OpenChannelToPartitionAsync(
+            LoadBalancingPartition partition,
+            Guid activityId)
+        {
+            try
+            {
+                await partition.OpenChannelAsync(activityId);
+                this.healthy = true;
+            }
+            catch (Exception)
+            {
+                this.healthy = false;
+                throw;
             }
         }
 

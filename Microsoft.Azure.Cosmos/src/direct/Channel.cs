@@ -529,6 +529,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             TaskContinuationOptions.OnlyOnFaulted);
         }
 
+        /// <inheritdoc/>
+        public void SetHealthState(
+            bool isHealthy)
+        {
+            // Do Nothing.
+        }
+
         private enum State
         {
             New,
