@@ -577,11 +577,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <summary>
         /// Enables traces for local debugging
         /// </summary>
-        internal static void EnableTracesForDebugging(SourceLevels level = SourceLevels.All)
+        internal static void EnableTracesForDebugging()
         {
             Type defaultTrace = Type.GetType("Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace,Microsoft.Azure.Cosmos.Direct");
             TraceSource traceSource = (TraceSource)defaultTrace.GetProperty("TraceSource").GetValue(null);
-            traceSource.Switch.Level = level;
+            traceSource.Switch.Level = SourceLevels.All;
             traceSource.Listeners.Clear();
             traceSource.Listeners.Add(new DirectToConsoleTraceListener());
         }

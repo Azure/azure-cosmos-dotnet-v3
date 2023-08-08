@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
-                        lock(this.actualInfo)
+                        lock (this.actualInfo)
                         {
                             this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
                         }
@@ -101,7 +101,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
                     {
-                        Console.WriteLine(exception.ToString());
                         this.isClientTelemetryAPICallFailed = true;
                     }
                 }
@@ -627,6 +626,60 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.WaitAndAssert(
                             expectedOperationCount: 4,
                             expectedOperationRecordCountMap: expectedRecordCountInOperation);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public virtual async Task QueryOperationMutiplePageCrossPartitionTest(ConnectionMode mode)
+        {
+            ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
+                mode: mode,
+                isLargeContainer: true);
+
+            // Verify container has multiple partitions
+            int pkRangesCount = (await itemsCore.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(itemsCore.LinkUri)).Count;
+            Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
+
+            Container container = (Container)itemsCore;
+
+            await ToDoActivity.CreateRandomItems(
+                container: container,
+                pkCount: 2,
+                perPKItemCount: 5);
+
+            string sqlQueryText = "SELECT * FROM c";
+
+            List<object> families = new List<object>();
+            QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+            using (FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(
+                 queryDefinition: queryDefinition,
+                 requestOptions: new QueryRequestOptions()
+                 {
+                     MaxItemCount = 1
+                 }))
+            {
+                while (queryResultSetIterator.HasMoreResults)
+                {
+                    FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                    foreach (object family in currentResultSet)
+                    {
+                        families.Add(family);
+                    }
+                }
+            }
+
+            Assert.AreEqual(10, families.Count);
+
+            IDictionary<string, long> expectedRecordCountInOperation = new Dictionary<string, long>
+            {
+                { Documents.OperationType.Query.ToString(), pkRangesCount + 10}, // 10 is number of items
+                { Documents.OperationType.Create.ToString(), 10}
+            };
+
+            await this.WaitAndAssert(
+                expectedOperationCount: 4,
+                expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
         [TestMethod]
