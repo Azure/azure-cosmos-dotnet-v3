@@ -49,8 +49,6 @@ jobs:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
-    ClientTelemetryTestName: IntegrationTest ClientTelemetry
-    ClientTelemetryTestClassName: Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryReleaseTests
 
 - template:  templates/build-internal.yml
   parameters:
