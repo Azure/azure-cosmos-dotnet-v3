@@ -1006,7 +1006,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 .Where(address => address
                         .GetCurrentHealthState()
                         .GetHealthStatus() is
-                            TransportAddressHealthState.HealthStatus.Unknown or
                             TransportAddressHealthState.HealthStatus.UnhealthyPending);
         }
 

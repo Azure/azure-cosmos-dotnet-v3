@@ -147,8 +147,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     resourceOperation, activityId, transportRequestStats);
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
                 storeResponse.TransportRequestStats = transportRequestStats;
-                channel?.SetHealthState(
-                    isHealthy: true);
             }
             catch (TransportException ex)
             {

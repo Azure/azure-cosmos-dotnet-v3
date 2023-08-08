@@ -243,21 +243,17 @@ namespace Microsoft.Azure.Documents
             IEnumerable<TransportAddressUri> addresses,
             HashSet<TransportAddressUri> failedReplicasPerRequest)
         {
-            List<TransportAddressUri> unknownReplicas = null, failedReplicas = null, pendingReplicas = null;
+            List<TransportAddressUri> failedReplicas = null, pendingReplicas = null;
             foreach (TransportAddressUri transportAddressUri in addresses)
             {
                 TransportAddressHealthState.HealthStatus status = AddressEnumerator.GetEffectiveStatus(
                     addressUri: transportAddressUri,
                     failedEndpoints: failedReplicasPerRequest);
 
-                if (status == TransportAddressHealthState.HealthStatus.Connected)
+                if (status == TransportAddressHealthState.HealthStatus.Connected
+                    || status == TransportAddressHealthState.HealthStatus.Unknown)
                 {
                     yield return transportAddressUri;
-                }
-                else if (status == TransportAddressHealthState.HealthStatus.Unknown)
-                {
-                    unknownReplicas ??= new ();
-                    unknownReplicas.Add(transportAddressUri);
                 }
                 else if (status == TransportAddressHealthState.HealthStatus.UnhealthyPending)
                 {
@@ -268,14 +264,6 @@ namespace Microsoft.Azure.Documents
                 {
                     failedReplicas ??= new ();
                     failedReplicas.Add(transportAddressUri);
-                }
-            }
-
-            if (unknownReplicas != null)
-            {
-                foreach (TransportAddressUri transportAddressUri in unknownReplicas)
-                {
-                    yield return transportAddressUri;
                 }
             }
 

@@ -533,7 +533,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         public void SetHealthState(
             bool isHealthy)
         {
-            // Do Nothing.
+            // No implementation is required since the channel health state is managed
+            // using the State enumeration.
         }
 
         private enum State

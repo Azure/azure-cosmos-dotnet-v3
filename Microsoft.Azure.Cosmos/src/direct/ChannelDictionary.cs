@@ -12,11 +12,19 @@ namespace Microsoft.Azure.Documents.Rntbd
     // one load-balanced channel per back-end server.
     internal sealed class ChannelDictionary : IDisposable
     {
+        private readonly LoadBalancingPartition singleLoadBalancedPartitionForTest;
         private readonly ChannelProperties channelProperties;
         private bool disposed = false;
 
         private ConcurrentDictionary<ServerKey, IChannel> channels =
             new ConcurrentDictionary<ServerKey, IChannel>();
+
+        internal ChannelDictionary(
+            LoadBalancingPartition singleLoadBalancedPartitionForTest,
+            ChannelProperties channelProperties) : this(channelProperties)
+        {
+            this.singleLoadBalancedPartitionForTest = singleLoadBalancedPartitionForTest;
+        }
 
         public ChannelDictionary(ChannelProperties channelProperties)
         {
@@ -24,7 +32,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.channelProperties = channelProperties;
         }
 
-        public IChannel GetChannel(Uri requestUri, bool localRegionRequest)
+        public IChannel GetChannel(
+            Uri requestUri,
+            bool localRegionRequest,
+            bool validationRequired = false)
         {
             this.ThrowIfDisposed();
             ServerKey key = new ServerKey(requestUri);
@@ -37,7 +48,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             value = new LoadBalancingChannel(
                 new Uri(requestUri.GetLeftPart(UriPartial.Authority)),
                 this.channelProperties,
-                localRegionRequest);
+                localRegionRequest,
+                validationRequired,
+                this.singleLoadBalancedPartitionForTest);
             if (this.channels.TryAdd(key, value))
             {
                 return value;
@@ -62,8 +75,9 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             this.ThrowIfDisposed();
             IChannel channel = this.GetChannel(
-                physicalAddress,
-                localRegionRequest);
+                requestUri: physicalAddress,
+                localRegionRequest: localRegionRequest,
+                validationRequired: true);
 
             return channel.Healthy
                 ? Task.FromResult(0)

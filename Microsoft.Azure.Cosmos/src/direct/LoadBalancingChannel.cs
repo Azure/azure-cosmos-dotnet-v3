@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
     using System.Diagnostics;
+    using System.Threading;
     using System.Threading.Tasks;
 
     // LoadBalancingChannel encapsulates the management of channels that connect to a single
@@ -22,12 +23,19 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private bool disposed = false;
 
+        private readonly ReaderWriterLockSlim healthStateLock = new(LockRecursionPolicy.NoRecursion);
+
         private volatile bool healthy;
 
-        public LoadBalancingChannel(Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest)
+        public LoadBalancingChannel(
+            Uri serverUri,
+            ChannelProperties channelProperties,
+            bool localRegionRequest,
+            bool validationRequired = false,
+            LoadBalancingPartition singleLoadBalancedPartitionForTest = null)
         {
             this.serverUri = serverUri;
-            this.healthy = false;
+            this.SetHealthState(!validationRequired);
 
             if ((channelProperties.PartitionCount < 1) ||
                 (channelProperties.PartitionCount > 8))
@@ -75,7 +83,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             else
             {
                 Debug.Assert(channelProperties.PartitionCount == 1);
-                this.singlePartition = new LoadBalancingPartition(
+                this.singlePartition = singleLoadBalancedPartitionForTest ?? new LoadBalancingPartition(
                     serverUri, channelProperties, localRegionRequest);
             }
         }
@@ -85,7 +93,15 @@ namespace Microsoft.Azure.Documents.Rntbd
             get
             {
                 this.ThrowIfDisposed();
-                return this.healthy;
+                this.healthStateLock.EnterReadLock();
+                try
+                {
+                    return this.healthy;
+                }
+                finally
+                {
+                    this.healthStateLock.ExitReadLock();
+                }
             }
         }
 
@@ -93,7 +109,15 @@ namespace Microsoft.Azure.Documents.Rntbd
         public void SetHealthState(
             bool isHealthy)
         {
-            this.healthy = isHealthy;
+            this.healthStateLock.EnterWriteLock();
+            try
+            {
+                this.healthy = isHealthy;
+            }
+            finally
+            {
+                this.healthStateLock.ExitWriteLock();
+            }
         }
 
         public Task<StoreResponse> RequestAsync(
@@ -162,11 +186,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             try
             {
                 await partition.OpenChannelAsync(activityId);
-                this.healthy = true;
+                this.SetHealthState(
+                    isHealthy: true);
             }
             catch (Exception)
             {
-                this.healthy = false;
+                this.SetHealthState(
+                    isHealthy: false);
                 throw;
             }
         }
@@ -208,6 +234,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.partitions[i].Dispose();
                 }
             }
+
+            this.healthStateLock.Dispose();
         }
 
         private void ThrowIfDisposed()
