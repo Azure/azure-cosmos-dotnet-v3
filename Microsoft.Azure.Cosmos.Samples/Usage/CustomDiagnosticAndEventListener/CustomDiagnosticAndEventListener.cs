@@ -1,0 +1,167 @@
+﻿namespace Sample.Listeners
+{
+    using System.Diagnostics.Tracing;
+    using System.Diagnostics;
+    using System.Collections.Concurrent;
+
+    internal class CustomDiagnosticAndEventListener :
+        EventListener, // Override Event Listener to capture Event source events
+        IObserver<KeyValuePair<string, object>>, // Override IObserver to capture Activity events
+        IObserver<DiagnosticListener>,
+        IDisposable
+    {
+        private readonly string diagnosticSourceName;
+        private readonly string eventSourceName;
+
+        private ConcurrentBag<IDisposable>? Subscriptions = new();
+        private ConcurrentBag<Activity> Activities { get; } = new();
+
+        public CustomDiagnosticAndEventListener(string diagnosticSourceName, string eventSourceName)
+        {
+            this.diagnosticSourceName = diagnosticSourceName;
+            this.eventSourceName = eventSourceName;
+
+            DiagnosticListener.AllListeners.Subscribe(this);
+        }
+
+        /// <summary>
+        /// IObserver Override
+        /// </summary>
+        public void OnCompleted() {
+            throw new NotImplementedException(); 
+        }
+
+        /// <summary>
+        /// IObserver Override
+        /// </summary>
+        public void OnError(Exception error) {
+            throw new NotImplementedException(); 
+        }
+
+        /// <summary>
+        /// IObserver Override
+        /// </summary>
+        public void OnNext(KeyValuePair<string, object> value)
+        {
+            lock (this.Activities)
+            {
+                // Check for disposal
+                if (this.Subscriptions == null) return;
+
+                string startSuffix = ".Start";
+                string stopSuffix = ".Stop";
+                string exceptionSuffix = ".Exception";
+
+                if (Activity.Current == null)
+                {
+                    return;
+                }
+
+                if (value.Key.EndsWith(startSuffix))
+                {
+                    this.Activities.Add(Activity.Current);
+                }
+                else if (value.Key.EndsWith(stopSuffix) || value.Key.EndsWith(exceptionSuffix))
+                {
+                    foreach (Activity activity in this.Activities)
+                    {
+                        if (activity.Id == Activity.Current.Id)
+                        {
+                            Console.WriteLine();
+                            Console.WriteLine("---------------------------------------------------------------------------------------------------------");
+                            Console.WriteLine($"    Activity Name: {activity.DisplayName}");
+                            Console.WriteLine($"    Activity Operation Name: {activity.OperationName}");
+                            foreach (KeyValuePair<string, string?> actualTag in activity.Tags)
+                            {
+                                Console.WriteLine($"    {actualTag.Key} ==> {actualTag.Value}");
+                            }
+                            Console.WriteLine("---------------------------------------------------------------------------------------------------------");
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// IObserver Override
+        /// </summary>
+        public void OnNext(DiagnosticListener value)
+        {
+            if (value.Name == this.diagnosticSourceName && this.Subscriptions != null)
+            {
+                Console.WriteLine();
+                Console.WriteLine($"CustomDiagnosticAndEventListener : OnNext : {value.Name}");
+                lock (this.Activities)
+                {
+                    this.Subscriptions?.Add(value.Subscribe(this));
+                }
+            }
+        }
+
+        /// <summary>
+        /// EventListener Override
+        /// </summary>
+        protected override void OnEventSourceCreated(EventSource eventSource)
+        {
+            if (eventSource != null && eventSource.Name.Equals(this.eventSourceName))
+            {
+                Console.WriteLine();
+                Console.WriteLine($"CustomDiagnosticAndEventListener : OnEventSourceCreated : {eventSource.Name}");
+                this.EnableEvents(eventSource, EventLevel.Informational); // Enable information level events
+            }
+        }
+
+        /// <summary>
+        /// EventListener Override
+        /// </summary>
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            Console.WriteLine();
+            Console.WriteLine("---------------------------------------------------------------------------------------------------------");
+            Console.WriteLine($"    Event Name: {eventData.EventName}");
+            Console.WriteLine($"    Event Level: {eventData.Level}");
+            if(eventData.Payload != null)
+            {
+                int counter = 0;
+                foreach (object? payload in eventData.Payload)
+                {
+                    Console.WriteLine($"    Event Payload {counter++}: {payload}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"    Event Payload: NULL");
+            }
+            Console.WriteLine("---------------------------------------------------------------------------------------------------------");
+        }
+
+        public override void Dispose()
+        {
+            Console.WriteLine("CustomDiagnosticAndEventListener : Dispose");
+            base.Dispose();
+
+            if (this.Subscriptions == null)
+            {
+                return;
+            }
+
+            ConcurrentBag<IDisposable> subscriptions;
+            lock (this.Activities)
+            {
+                subscriptions = this.Subscriptions;
+                this.Subscriptions = null;
+            }
+
+            foreach (IDisposable subscription in subscriptions)
+            {
+                subscription.Dispose(); // Dispose of DiagnosticListener subscription
+            }
+
+            foreach (Activity activity in this.Activities)
+            {
+                activity.Dispose(); // Dispose of Activity
+            }
+        }
+    }
+}
