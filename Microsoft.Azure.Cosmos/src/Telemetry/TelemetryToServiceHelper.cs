@@ -36,6 +36,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private ClientTelemetryJob clientTelemetry = null;
 
+        private TelemetryToServiceHelper()
+        {
+            //NoOpConstructor
+        }
+
         private TelemetryToServiceHelper(
              string clientId,
              ConnectionPolicy connectionPolicy,
@@ -62,12 +67,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
            GlobalEndpointManager globalEndpointManager,
            CancellationTokenSource cancellationTokenSource)
         {
+#if INTERNAL
+            return new TelemetryToServiceHelper();
+#else
+            if (connectionPolicy.DisableClientTelemetryToService)
+            {
+                return new TelemetryToServiceHelper();
+            }
+
             TelemetryToServiceHelper helper = new TelemetryToServiceHelper(
                 clientId, connectionPolicy, cosmosAuthorization, httpClient, serviceEndpoint, globalEndpointManager, cancellationTokenSource);
 
             helper.Initialize();
 
             return helper;
+#endif
         }
 
         public IClientTelemetryCollectors GetCollector()
@@ -82,15 +96,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private async Task RefreshDatabaseAccountClientConfigInternalAsync()
         {
-#if INTERNAL
-            return;
-#endif
-
-            if (this.connectionPolicy.DisableClientTelemetryToService)
-            {
-                return;
-            }
-
             try
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
