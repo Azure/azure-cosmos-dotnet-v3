@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     /// <summary>
     ///  Contains the cosmos diagnostic information for the current request to Azure Cosmos DB service.
@@ -45,10 +44,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        ///  This represents the accumulated backend query metrics for the request.
+        ///  This represents the backend query metrics for the request.
         /// </summary>
         /// <returns>The accumulated backend metrics for the request.</returns>
-        public virtual ServerSideMetrics GetQueryMetrics()
+        public virtual ServerSideAccumulatedMetrics GetQueryMetrics()
         {
             // Default implementation avoids breaking change for users upgrading.
             throw new NotImplementedException($"{nameof(CosmosDiagnostics)}.{nameof(GetQueryMetrics)}");

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     /// <summary>
-    /// internal implementation of metrics received for queries from the backend.
+    /// Metrics received for queries from the backend.
     /// </summary>
     public sealed class ServerSideMetrics
     {

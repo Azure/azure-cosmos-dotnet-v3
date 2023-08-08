@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
     internal class ServerSideMetricsAccumulator
     {
-        private readonly List<ServerSideMetricsInternal> serverSideMetricsList;
+        internal readonly List<ServerSideMetricsInternal> serverSideMetricsList;
 
         public ServerSideMetricsAccumulator()
         {
@@ -76,6 +76,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 documentWriteTime: documentWriteTime);
         }
 
+        public List<ServerSideMetricsInternal> GetPartitionedServerSideMetrics()
+        {
+            return this.serverSideMetricsList;
+        }
+
         public static void WalkTraceTreeForQueryMetrics(ITrace currentTrace, ServerSideMetricsAccumulator accumulator)
         {
             if (currentTrace == null)
@@ -87,6 +92,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             {
                 if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
                 {
+                    queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.FeedRange = currentTrace.Name;
+                    queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.PartitionKeyRangeId = WalkTraceTreeForPartitionKeyRangeId(currentTrace);
                     accumulator.Accumulate(queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics);
                     return;
                 }
@@ -98,6 +105,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             }
 
             return;
+        }
+
+        private static string WalkTraceTreeForPartitionKeyRangeId(ITrace currentTrace)
+        {
+            if (currentTrace == null)
+            {
+                return null;
+            }
+
+            foreach (Object datum in currentTrace.Data.Values)
+            {
+                if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    return clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList[0].StoreResult.PartitionKeyRangeId;
+                }
+            }
+
+            foreach (ITrace childTrace in currentTrace.Children)
+            {
+                String partitionKeyRangeId = WalkTraceTreeForPartitionKeyRangeId(childTrace);
+                if (partitionKeyRangeId != null)
+                {
+                    return partitionKeyRangeId;
+                }
+            }
+
+            return null;
         }
     }
 }

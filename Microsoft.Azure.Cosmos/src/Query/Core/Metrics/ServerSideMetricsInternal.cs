@@ -44,6 +44,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="vmExecutionTime"></param>
         /// <param name="runtimeExecutionTimes"></param>
         /// <param name="documentWriteTime"></param>
+        /// <param name="feedRange"></param>
+        /// <param name="partitionKeyRangeId"></param>
         public ServerSideMetricsInternal(
            long retrievedDocumentCount,
            long retrievedDocumentSize,
@@ -56,7 +58,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
            TimeSpan documentLoadTime,
            TimeSpan vmExecutionTime,
            RuntimeExecutionTimesInternal runtimeExecutionTimes,
-           TimeSpan documentWriteTime)
+           TimeSpan documentWriteTime,
+           string feedRange = null,
+           string partitionKeyRangeId = null)
         {
             this.RetrievedDocumentCount = retrievedDocumentCount;
             this.RetrievedDocumentSize = retrievedDocumentSize;
@@ -70,6 +74,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.VMExecutionTime = vmExecutionTime;
             this.RuntimeExecutionTimes = runtimeExecutionTimes ?? throw new ArgumentNullException($"{nameof(runtimeExecutionTimes)} can not be null.");
             this.DocumentWriteTime = documentWriteTime;
+            this.FeedRange = feedRange;
+            this.PartitionKeyRangeId = partitionKeyRangeId;
         }
 
         /// <summary>
@@ -131,6 +137,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// Gets the VMExecution Time.
         /// </summary>
         public TimeSpan VMExecutionTime { get; }
+
+        /// <summary>
+        /// Gets the FeedRange for a single backend call.
+        /// </summary>
+        public string FeedRange { get; set; }
+
+        /// <summary>
+        /// Gets the partition key range id for a single backend call.
+        /// </summary>
+        public string PartitionKeyRangeId { get; set; }
 
         public static ServerSideMetricsInternal Create(IEnumerable<ServerSideMetricsInternal> serverSideMetricsEnumerable)
         {

@@ -1281,11 +1281,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
 
                 // verify ServerSideMetrics matches metrics retrieved from header
-                ServerSideMetrics serverSideMetricsFromDiagnostics = response.Diagnostics.GetQueryMetrics();
+                ServerSideAccumulatedMetrics serverSideMetricsFromDiagnostics = response.Diagnostics.GetQueryMetrics();
                 bool tryParseResult = ServerSideMetricsInternal.TryParseFromDelimitedString(response.Headers.QueryMetricsText, out ServerSideMetricsInternal serverSideMetricsFromHeaders);
                 Assert.IsTrue(tryParseResult);
                 headerMetricsAccumulator.Accumulate(serverSideMetricsFromHeaders);
-                Assert.IsTrue(headerMetricsAccumulator.GetServerSideMetrics().FormatTrace() == serverSideMetricsFromDiagnostics.FormatTrace());
+                Assert.IsTrue(headerMetricsAccumulator.GetServerSideMetrics().FormatTrace() == serverSideMetricsFromDiagnostics.ServerSideMetrics.FormatTrace());
 
                 using (StreamReader sr = new StreamReader(response.Content))
                 using (JsonTextReader jtr = new JsonTextReader(sr))

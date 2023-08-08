@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -15,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
-        private ServerSideMetrics cachedServerSideMetrics { get; set; }
+        private ServerSideAccumulatedMetrics cachedServerSideAccumulatedMetrics { get; set; }
         public CosmosTraceDiagnostics(ITrace trace)
         {
             if (trace == null)
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             this.Value = rootTrace;
-            this.cachedServerSideMetrics = null;
+            this.cachedServerSideAccumulatedMetrics = null;
         }
 
         public ITrace Value { get; }
@@ -51,17 +52,22 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return this.Value?.Summary?.RegionsContacted;
         }
 
-        public override ServerSideMetrics GetQueryMetrics()
+        public override ServerSideAccumulatedMetrics GetQueryMetrics()
         {
-            if (this.cachedServerSideMetrics != null)
+            if (this.cachedServerSideAccumulatedMetrics != null)
             {
-                return this.cachedServerSideMetrics;
+                return this.cachedServerSideAccumulatedMetrics;
             }
 
             ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
             ServerSideMetricsAccumulator.WalkTraceTreeForQueryMetrics(this.Value, accumulator);
-            this.cachedServerSideMetrics = new ServerSideMetrics(accumulator.GetServerSideMetrics());
-            return this.cachedServerSideMetrics;
+
+            ServerSideMetrics serverSideMetrics = new ServerSideMetrics(accumulator.GetServerSideMetrics());
+            List<PartitionedServerSideMetrics> partitionedServerSideMetrics = 
+                accumulator.GetPartitionedServerSideMetrics().Select(metrics => new PartitionedServerSideMetrics(metrics)).ToList();
+
+            this.cachedServerSideAccumulatedMetrics = new ServerSideAccumulatedMetrics(serverSideMetrics, partitionedServerSideMetrics);
+            return this.cachedServerSideAccumulatedMetrics;
         }
 
         internal bool IsGoneExceptionHit()
