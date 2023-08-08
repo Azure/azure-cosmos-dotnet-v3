@@ -65,15 +65,15 @@ namespace Microsoft.Azure.Cosmos.Query
                 token: "someToken",
                 range: new Range<string>("asdf", "asdf", false, false));
 
-            List<SqlQueryResumeFilter.ResumeValue> resumeValues = new List<SqlQueryResumeFilter.ResumeValue>()
+            List<SqlQueryResumeValue> resumeValues = new List<SqlQueryResumeValue>()
             {
-                new SqlQueryResumeFilter.UndefinedResumeValue(),
-                new SqlQueryResumeFilter.NullResumeValue(),
-                new SqlQueryResumeFilter.BooleanResumeValue(true),
-                new SqlQueryResumeFilter.StringResumeValue("asdf"),
-                new SqlQueryResumeFilter.NumberResumeValue(1337),
-                new SqlQueryResumeFilter.ArrayResumeValue(UInt128.Create(10000,20000)),
-                new SqlQueryResumeFilter.ObjectResumeValue(UInt128.Create(30000,40000))
+                SqlQueryResumeValue.FromCosmosElement(CosmosUndefined.Create()),
+                SqlQueryResumeValue.FromCosmosElement(CosmosNull.Create()),
+                SqlQueryResumeValue.FromCosmosElement(CosmosBoolean.Create(true)),
+                SqlQueryResumeValue.FromCosmosElement(CosmosString.Create("asdf")),
+                SqlQueryResumeValue.FromCosmosElement(CosmosNumber64.Create(1337)),
+                SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"array\",\"low\":10000,\"high\":20000}")),
+                SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"object\",\"low\":30000,\"high\":40000}"))
             };
 
             string rid = "someRid";

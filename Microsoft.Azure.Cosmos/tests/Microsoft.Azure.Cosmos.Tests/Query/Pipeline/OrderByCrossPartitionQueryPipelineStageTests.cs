@@ -47,18 +47,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             };
         }
 
-        private static IReadOnlyList<(string serializedToken, SqlQueryResumeFilter.ResumeValue resumeValue)> ResumeValueTestData()
+        private static IReadOnlyList<(string serializedToken, SqlQueryResumeValue resumeValue)> ResumeValueTestData()
         {
-            return new List<(string, SqlQueryResumeFilter.ResumeValue)>
+            return new List<(string, SqlQueryResumeValue)>
             {
-                ("[]", new SqlQueryResumeFilter.UndefinedResumeValue()),
-                ("null", new SqlQueryResumeFilter.NullResumeValue()),
-                ("false", new SqlQueryResumeFilter.BooleanResumeValue(false)),
-                ("true", new SqlQueryResumeFilter.BooleanResumeValue(true)),
-                ("1337", new SqlQueryResumeFilter.NumberResumeValue(1337)),
-                ("asdf", new SqlQueryResumeFilter.StringResumeValue("asdf")),
-                ("{\"type\":\"array\",\"low\":10000,\"high\":20000}", new SqlQueryResumeFilter.ArrayResumeValue(Cosmos.UInt128.Create(10000,20000))),
-                ("{\"type\":\"object\",\"low\":30000,\"high\":40000}", new SqlQueryResumeFilter.ObjectResumeValue(Cosmos.UInt128.Create(30000,40000)))
+                ("[]", SqlQueryResumeValue.FromCosmosElement(CosmosUndefined.Create())),
+                ("null", SqlQueryResumeValue.FromCosmosElement(CosmosNull.Create())),
+                ("false", SqlQueryResumeValue.FromCosmosElement(CosmosBoolean.Create(false))),
+                ("true", SqlQueryResumeValue.FromCosmosElement(CosmosBoolean.Create(true))),
+                ("1337", SqlQueryResumeValue.FromCosmosElement(CosmosNumber64.Create(1337))),
+                ("asdf", SqlQueryResumeValue.FromCosmosElement(CosmosString.Create("asdf"))),
+                ("{\"type\":\"array\",\"low\":10000,\"high\":20000}", SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"array\",\"low\":10000,\"high\":20000}"))),
+                ("{\"type\":\"object\",\"low\":30000,\"high\":40000}", SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"object\",\"low\":30000,\"high\":40000}")))
             };
         }
 
@@ -301,9 +301,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public void MonadicCreate_OrderByWithResumeValues()
         {
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
-            IReadOnlyList<(string serializedToken, SqlQueryResumeFilter.ResumeValue resumeValue)> tokens = ResumeValueTestData();
+            IReadOnlyList<(string serializedToken, SqlQueryResumeValue resumeValue)> tokens = ResumeValueTestData();
 
-            foreach ((string serializedToken, SqlQueryResumeFilter.ResumeValue resumeValue) in tokens)
+            foreach ((string serializedToken, SqlQueryResumeValue resumeValue) in tokens)
             {
                 ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
                     token: serializedToken,
@@ -312,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                     parallelContinuationToken,
                     orderByItems: null,
-                    resumeValues: new List<SqlQueryResumeFilter.ResumeValue>() { resumeValue},
+                    resumeValues: new List<SqlQueryResumeValue>() { resumeValue},
                     rid: "rid",
                     skipCount: 42,
                     filter: null);
@@ -338,9 +338,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
 
             // Multiple resume values
-            foreach ((string token1, SqlQueryResumeFilter.ResumeValue resumeValue1) in tokens)
+            foreach ((string token1, SqlQueryResumeValue resumeValue1) in tokens)
             {
-                foreach ((string token2, SqlQueryResumeFilter.ResumeValue resumeValue2) in tokens)
+                foreach ((string token2, SqlQueryResumeValue resumeValue2) in tokens)
                 {
                     ParallelContinuationToken parallelContinuationToken1 = new ParallelContinuationToken(
                         token: $"[{token1}, {token2}]",
@@ -349,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                         parallelContinuationToken1,
                         orderByItems: null,
-                        new List<SqlQueryResumeFilter.ResumeValue>() { resumeValue1, resumeValue2 },
+                        new List<SqlQueryResumeValue>() { resumeValue1, resumeValue2 },
                         rid: "rid",
                         skipCount: 42,
                         filter: null);

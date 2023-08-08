@@ -567,7 +567,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         CosmosObject document = (CosmosObject)queryResultEnumerator.Current;
                         CosmosElement orderByValue = ((CosmosObject)((CosmosArray)document["orderByItems"])[0])["item"];
 
-                        int sortOrderCompare = ItemComparer.Instance.CompareToResumeValue(sqlQuerySpec.ResumeFilter.ResumeValues[0], orderByValue);
+                        int sortOrderCompare = sqlQuerySpec.ResumeFilter.ResumeValues[0].CompareTo(orderByValue);
 
                         if (sortOrderCompare != 0)
                         {

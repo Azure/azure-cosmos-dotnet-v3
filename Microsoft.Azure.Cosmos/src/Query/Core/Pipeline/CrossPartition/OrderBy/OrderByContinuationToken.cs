@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         public OrderByContinuationToken(
             ParallelContinuationToken compositeContinuationToken,
             IReadOnlyList<OrderByItem> orderByItems,
-            IReadOnlyList<ResumeValue> resumeValues,
+            IReadOnlyList<SqlQueryResumeValue> resumeValues,
             string rid,
             int skipCount,
             string filter)
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         /// This is an array to support multi item order by.
         /// </remarks>>
         [JsonProperty(PropertyNames.ResumeValues)]
-        public IReadOnlyList<ResumeValue> ResumeValues
+        public IReadOnlyList<SqlQueryResumeValue> ResumeValues
         {
             get;
         }
@@ -260,9 +260,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             List<CosmosElement> resumeValuesRaw = new List<CosmosElement>();
             if (orderByContinuationToken.ResumeValues != null)
             {
-                foreach (ResumeValue resumeValue in orderByContinuationToken.ResumeValues)
+                foreach (SqlQueryResumeValue resumeValue in orderByContinuationToken.ResumeValues)
                 {
-                    resumeValuesRaw.Add(ResumeValueSerializer.ToCosmosElement(resumeValue));
+                    resumeValuesRaw.Add(SqlQueryResumeValue.ToCosmosElement(resumeValue));
                 }
             }
 
@@ -312,13 +312,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             ParallelContinuationToken compositeContinuationToken = tryCompositeContinuation.Result;
 
             // Try to get ResumeValues first, if it is not present then try to get order by items
-            List<ResumeValue> resumeValues;
+            List<SqlQueryResumeValue> resumeValues;
             if (cosmosObject.TryGetValue(PropertyNames.ResumeValues, out CosmosArray resumeValuesRaw))
             {
-                resumeValues = new List<ResumeValue>();
+                resumeValues = new List<SqlQueryResumeValue>();
                 foreach (CosmosElement resumeValue in resumeValuesRaw)
                 {
-                    resumeValues.Add(resumeValue.Accept(CosmosElementToResumeValueVisitor.Singleton));
+                    resumeValues.Add(SqlQueryResumeValue.FromCosmosElement(resumeValue));
                 }
             }
             else 
@@ -359,13 +359,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             int skipCount = (int)Number64.ToLong(skipCountRaw.GetValue());
 
             // filter will be present only when orderByItems is present. This property is not used for resumeValue base continuation
-            if (!cosmosObject.TryGetValue(PropertyNames.Filter, out CosmosElement filterRaw) && orderByItems != null)
+            if (!cosmosObject.TryGetValue(PropertyNames.Filter, out CosmosElement filterRaw) && (orderByItems != null))
             {
                 return TryCatch<OrderByContinuationToken>.FromException(
                     new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{PropertyNames.Filter}': {cosmosElement}"));
             }
 
-            string filter = filterRaw is CosmosString filterStringRaw ? (string)filterStringRaw.Value : null;
+            string filter;
+            if (filterRaw is CosmosString filterStringRaw)
+            {
+                filter = filterStringRaw.Value;
+            }
+            else
+            {
+                filter = null;
+            }
 
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                 compositeContinuationToken,
@@ -375,89 +383,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 skipCount,
                 filter);
             return TryCatch<OrderByContinuationToken>.FromResult(orderByContinuationToken);
-        }
-
-        private sealed class CosmosElementToResumeValueVisitor : ICosmosElementVisitor<ResumeValue>
-        {
-            public static readonly CosmosElementToResumeValueVisitor Singleton = new CosmosElementToResumeValueVisitor();
-
-            private CosmosElementToResumeValueVisitor()
-            {
-            }
-
-            public ResumeValue Visit(CosmosArray cosmosArray)
-            {
-                if (cosmosArray.Count != 0)
-                {
-                    throw new ArgumentException($"Only empty arrays can be converted to ResumeValue. Array has {cosmosArray.Count} elements.");
-                }
-
-                return new UndefinedResumeValue();
-            }
-
-            public ResumeValue Visit(CosmosBinary cosmosBinary)
-            {
-                throw new NotSupportedException($"Converting {nameof(CosmosBinary)} to {nameof(ResumeValue)} is not supported");
-            }
-
-            public ResumeValue Visit(CosmosBoolean cosmosBoolean)
-            {
-                return new BooleanResumeValue(cosmosBoolean.Value);
-            }
-
-            public ResumeValue Visit(CosmosGuid cosmosGuid)
-            {
-                throw new NotSupportedException($"Converting {nameof(CosmosGuid)} to {nameof(ResumeValue)} is not supported");
-            }
-
-            public ResumeValue Visit(CosmosNull cosmosNull)
-            {
-                return new NullResumeValue();
-            }
-
-            public ResumeValue Visit(CosmosUndefined cosmosUndefined)
-            {
-                return new UndefinedResumeValue();
-            }
-
-            public ResumeValue Visit(CosmosNumber cosmosNumber)
-            {
-                return new NumberResumeValue(cosmosNumber.Value);
-            }
-
-            public ResumeValue Visit(CosmosObject cosmosObject)
-            {
-                if (!cosmosObject.TryGetValue(ResumeValue.PropertyNames.Type, out CosmosString objectType)
-                    || !cosmosObject.TryGetValue(ResumeValue.PropertyNames.Low, out CosmosNumber64 lowValue)
-                    || !cosmosObject.TryGetValue(ResumeValue.PropertyNames.High, out CosmosNumber64 highValue))
-                {
-                    throw new ArgumentException($"Incorrect Array / Object Resume Value. One or more of the required properties are missing.");
-                }
-
-                if (string.Equals(objectType.Value, ResumeValue.PropertyNames.ArrayType))
-                {
-                    return new ArrayResumeValue(
-                        UInt128.Create(
-                            (ulong)Number64.ToLong(lowValue.Value),
-                            (ulong)Number64.ToLong(highValue.Value)));
-                }
-                else if (string.Equals(objectType.Value, ResumeValue.PropertyNames.ObjectType))
-                {
-                    return new ObjectResumeValue(
-                        UInt128.Create(
-                            (ulong)Number64.ToLong(lowValue.Value),
-                            (ulong)Number64.ToLong(highValue.Value)));
-                }
-                else
-                {
-                    throw new ArgumentException($"Incorrect value for {ResumeValue.PropertyNames.Type} property. Value is {objectType.Value}.");
-                }
-            }
-
-            public ResumeValue Visit(CosmosString cosmosString)
-            {
-                return new StringResumeValue(cosmosString.Value);
-            }
         }
     }
 }

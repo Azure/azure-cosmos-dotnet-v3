@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Net;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -274,15 +275,15 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         {
             // Test serializing of different types
             string queryText = "SELECT * FROM root r";
-            (SqlQueryResumeFilter.ResumeValue resumeValue, string resumeString)[] testValues = new (SqlQueryResumeFilter.ResumeValue resumeValue, string resumeString)[] {
-                (new SqlQueryResumeFilter.UndefinedResumeValue(), "[]"),
-                (new SqlQueryResumeFilter.NullResumeValue(), "null"),
-                (new SqlQueryResumeFilter.BooleanResumeValue(true), "true"),
-                (new SqlQueryResumeFilter.BooleanResumeValue(false), "false"),
-                (new SqlQueryResumeFilter.NumberResumeValue(10), "10"),
-                (new SqlQueryResumeFilter.StringResumeValue("testval"), "\"testval\""),
-                (new SqlQueryResumeFilter.ArrayResumeValue(UInt128.Create(10000,20000)), "{\"type\":\"array\",\"low\":10000,\"high\":20000}"),
-                (new SqlQueryResumeFilter.ObjectResumeValue(UInt128.Create(10000,20000)), "{\"type\":\"object\",\"low\":10000,\"high\":20000}")
+            (SqlQueryResumeValue resumeValue, string resumeString)[] testValues = new (SqlQueryResumeValue resumeValue, string resumeString)[] {
+                (SqlQueryResumeValue.FromCosmosElement(CosmosUndefined.Create()), "[]"),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosNull.Create()), "null"),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosBoolean.Create(true)), "true"),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosBoolean.Create(false)), "false"),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosNumber64.Create(10)), "10"),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosString.Create("testval")), "\"testval\""),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"array\",\"low\":10000,\"high\":20000}")), "{\"type\":\"array\",\"low\":10000,\"high\":20000}"),
+                (SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"object\",\"low\":10000,\"high\":20000}")), "{\"type\":\"object\",\"low\":10000,\"high\":20000}")
             };
 
             CosmosJsonDotNetSerializer userSerializer = new CosmosJsonDotNetSerializer();
@@ -292,14 +293,14 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 userSerializer,
                 propertiesSerializer);
 
-            foreach ((SqlQueryResumeFilter.ResumeValue resumeValue, string resumeString) in testValues)
+            foreach ((SqlQueryResumeValue resumeValue, string resumeString) in testValues)
             {
                 foreach(string rid in new string[] { "rid", null})
                 {
                     SqlQuerySpec querySpec = new SqlQuerySpec(
                         queryText,
                         new SqlParameterCollection(),
-                        new SqlQueryResumeFilter(new List<SqlQueryResumeFilter.ResumeValue>() { resumeValue }, rid, true));
+                        new SqlQueryResumeFilter(new List<SqlQueryResumeValue>() { resumeValue }, rid, true));
 
                     Stream stream = sqlQuerySpecSerializer.ToStream(querySpec);
                     using (StreamReader sr = new StreamReader(stream))

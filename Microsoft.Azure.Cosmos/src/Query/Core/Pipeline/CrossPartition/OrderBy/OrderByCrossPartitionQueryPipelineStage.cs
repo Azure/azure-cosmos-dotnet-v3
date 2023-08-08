@@ -412,8 +412,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                     token: ((CosmosString)currentEnumerator.FeedRangeState.State.Value).Value,
                                     range: ((FeedRangeEpk)currentEnumerator.FeedRangeState.FeedRange).Range),
                             orderByQueryResult,
-                            0,
-                            currentEnumerator.Filter);
+                            skipCount: 0,
+                            filter: currentEnumerator.Filter);
 
                         CosmosElement cosmosElementOrderByContinuationToken = OrderByContinuationToken.ToCosmosElement(orderByContinuationToken);
                         CosmosArray continuationTokenList = CosmosArray.Create(new List<CosmosElement>() { cosmosElementOrderByContinuationToken });
@@ -637,9 +637,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 PartitionMapper.PartitionMapping<OrderByContinuationToken> partitionMapping = monadicGetOrderByContinuationTokenMapping.Result;
 
                 OrderByContinuationToken targetContinuationToken = partitionMapping.TargetMapping.Values.First();
-                enumeratorsAndTokens = new List<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>();
-
-                (SqlQuerySpec leftQuerySpec, SqlQuerySpec targetQuerySpec, SqlQuerySpec rightQuerySpec) = OrderByCrossPartitionQueryPipelineStage.GetRewrittenQuerySpec(
+                (SqlQuerySpec leftQuerySpec, SqlQuerySpec targetQuerySpec, SqlQuerySpec rightQuerySpec) = GetRewrittenQuerySpec(
                     sqlQuerySpec,
                     targetContinuationToken,
                     orderByColumns);
@@ -651,6 +649,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     { (partitionMapping.MappingRightOfTarget, rightQuerySpec) },
                 };
 
+                enumeratorsAndTokens = new List<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>();
                 foreach ((IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken> tokenMapping, SqlQuerySpec rewrittenQueryForOrderBy) in tokenMappingAndQuerySpec)
                 {
                     foreach (KeyValuePair<FeedRangeEpk, OrderByContinuationToken> kvp in tokenMapping)
@@ -1053,7 +1052,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 }
 
                 // Check if the order by items have any C* types
-                if (HasNonJsonTypes(targetContinuationToken.OrderByItems))
+                if (ContainsSupportedResumeTypes(targetContinuationToken.OrderByItems))
+                {
+                    // Convert the order by items to SqlQueryResumeInfo
+                    List<SqlQueryResumeValue> resumeValues = new List<SqlQueryResumeValue>();
+                    foreach (CosmosElement orderByItem in orderByItems)
+                    {
+                        resumeValues.Add(SqlQueryResumeValue.FromOrderByValue(orderByItem));
+                    }
+
+                    (leftResumeFilter, targetResumeFilter, rightResumeFilter) = GetQueryResumeInfo(
+                        resumeValues,
+                        targetContinuationToken.SkipCount,
+                        targetContinuationToken.Rid);
+
+                    leftFilter = TrueFilter;
+                    targetFilter = TrueFilter;
+                    rightFilter = TrueFilter;
+                }
+                else
                 {
                     // If resume value contains a non-json type like CInt8, CGuid etc, we utilize the filter re-write logic for continuation
                     ReadOnlyMemory<(OrderByColumn, CosmosElement)> columnAndItems = orderByColumns.Zip(orderByItems, (column, item) => (column, item)).ToArray();
@@ -1066,24 +1083,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     leftResumeFilter = null;
                     targetResumeFilter = null;
                     rightResumeFilter = null;
-                }
-                else
-                {
-                    // Convert the order by items to SqlQueryResumeInfo
-                    List<ResumeValue> resumeValues = new List<ResumeValue>();
-                    foreach (CosmosElement orderByItem in orderByItems)
-                    {
-                        resumeValues.Add(orderByItem.Accept(OrderByValueToResumeValueVisitor.Singleton));
-                    }
-
-                    (leftResumeFilter, targetResumeFilter, rightResumeFilter) = GetQueryResumeInfo(
-                        resumeValues,
-                        targetContinuationToken.SkipCount,
-                        targetContinuationToken.Rid);
-
-                    leftFilter = TrueFilter;
-                    targetFilter = TrueFilter;
-                    rightFilter = TrueFilter;
                 }
             }
 
@@ -1113,22 +1112,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         {
             OrderByContinuationToken token;
             // If order by items have c* types then it cannot be converted to resume values
-            if (HasNonJsonTypes(orderByQueryResult.OrderByItems))
+            if (ContainsSupportedResumeTypes(orderByQueryResult.OrderByItems))
             {
-                token = new OrderByContinuationToken(
-                    parallelToken,
-                    orderByQueryResult.OrderByItems,
-                    resumeValues: null,
-                    orderByQueryResult.Rid,
-                    skipCount: skipCount,
-                    filter: filter);
-            }
-            else
-            {
-                List<ResumeValue> resumeValues = new List<ResumeValue>();
+                List<SqlQueryResumeValue> resumeValues = new List<SqlQueryResumeValue>(orderByQueryResult.OrderByItems.Count);
                 foreach (OrderByItem orderByItem in orderByQueryResult.OrderByItems)
                 {
-                    resumeValues.Add(orderByItem.Item.Accept(OrderByValueToResumeValueVisitor.Singleton));
+                    resumeValues.Add(SqlQueryResumeValue.FromOrderByValue(orderByItem.Item));
                 }
 
                 token = new OrderByContinuationToken(
@@ -1139,27 +1128,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     skipCount: skipCount,
                     filter: filter);
             }
+            else
+            {
+                token = new OrderByContinuationToken(
+                    parallelToken,
+                    orderByQueryResult.OrderByItems,
+                    resumeValues: null,
+                    orderByQueryResult.Rid,
+                    skipCount: skipCount,
+                    filter: filter);
+            }
 
             return token;
         }
 
-        private static bool HasNonJsonTypes(IReadOnlyList<OrderByItem> orderByItems)
+        // Helper method to check that resume values are of type that is supported by SqlQueryResumeValue
+        private static bool ContainsSupportedResumeTypes(IReadOnlyList<OrderByItem> orderByItems)
         {
             foreach (OrderByItem orderByItem in orderByItems)
             {
-                if (!(orderByItem.Item is CosmosUndefined
-                      || orderByItem.Item is CosmosNull
-                      || orderByItem.Item is CosmosBoolean
-                      || orderByItem.Item is CosmosNumber
-                      || orderByItem.Item is CosmosString
-                      || orderByItem.Item is CosmosArray
-                      || orderByItem.Item is CosmosObject))
+                if (!orderByItem.Item.Accept(SupportedResumeTypeVisitor.Singleton))
                 {
-                    return true;
+                    return false;
                 }
             }
 
-            return false;
+            return true;
         }
 
         private static async Task<TryCatch<(bool doneFiltering, int itemsLeftToSkip, TryCatch<OrderByQueryPage> monadicQueryByPage)>> FilterNextAsync(
@@ -1209,9 +1203,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 for (int i = 0; (i < sortOrders.Count) && (sortOrderCompare == 0); ++i)
                 {
                     sortOrderCompare = continuationToken.ResumeValues != null
-                        ? ItemComparer.Instance.CompareToResumeValue(
-                            continuationToken.ResumeValues[i],
-                            orderByResult.OrderByItems[i].Item)
+                        ? continuationToken.ResumeValues[i].CompareTo(orderByResult.OrderByItems[i].Item)
                         : ItemComparer.Instance.Compare(
                             continuationToken.OrderByItems[i].Item,
                             orderByResult.OrderByItems[i].Item);
@@ -1283,7 +1275,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         }
 
         private static (SqlQueryResumeFilter leftInfo, SqlQueryResumeFilter targetInfo, SqlQueryResumeFilter rightInfo) GetQueryResumeInfo(
-            IReadOnlyList<ResumeValue> resumeValues,
+            IReadOnlyList<SqlQueryResumeValue> resumeValues,
             int skipCount,
             string rid)
         {
@@ -1431,60 +1423,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
         }
 
-        private sealed class OrderByValueToResumeValueVisitor : ICosmosElementVisitor<SqlQueryResumeFilter.ResumeValue>
-        {
-            public static readonly OrderByValueToResumeValueVisitor Singleton = new OrderByValueToResumeValueVisitor();
-
-            private OrderByValueToResumeValueVisitor()
-            {
-            }
-
-            public ResumeValue Visit(CosmosArray cosmosArray)
-            {
-                return new ArrayResumeValue(DistinctHash.GetHash(cosmosArray));
-            }
-
-            public ResumeValue Visit(CosmosBinary cosmosBinary)
-            {
-                throw new NotSupportedException($"Converting {nameof(CosmosBinary)} to {nameof(ResumeValue)} is not supported");
-            }
-
-            public ResumeValue Visit(CosmosBoolean cosmosBoolean)
-            {
-                return new BooleanResumeValue(cosmosBoolean.Value);
-            }
-
-            public ResumeValue Visit(CosmosGuid cosmosGuid)
-            {
-                throw new NotSupportedException($"Converting {nameof(CosmosGuid)} to {nameof(ResumeValue)} is not supported");
-            }
-
-            public ResumeValue Visit(CosmosNull cosmosNull)
-            {
-                return new NullResumeValue();
-            }
-
-            public ResumeValue Visit(CosmosUndefined cosmosUndefined)
-            {
-                return new UndefinedResumeValue();
-            }
-
-            public ResumeValue Visit(CosmosNumber cosmosNumber)
-            {
-                return new NumberResumeValue(cosmosNumber.Value);
-            }
-
-            public ResumeValue Visit(CosmosObject cosmosObject)
-            {
-                return new ObjectResumeValue(DistinctHash.GetHash(cosmosObject));
-            }
-
-            public ResumeValue Visit(CosmosString cosmosString)
-            {
-                return new StringResumeValue(cosmosString.Value);
-            }
-        }
-
         private readonly struct ComparisionWithUndefinedFilters
         {
             public ComparisionWithUndefinedFilters(
@@ -1502,6 +1440,60 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             public string EqualTo { get; }
             public string GreaterThan { get; }
             public string GreaterThanOrEqualTo { get; }
+        }
+
+        private sealed class SupportedResumeTypeVisitor : ICosmosElementVisitor<bool>
+        {
+            public static readonly SupportedResumeTypeVisitor Singleton = new SupportedResumeTypeVisitor();
+
+            private SupportedResumeTypeVisitor()
+            {
+            }
+
+            public bool Visit(CosmosArray cosmosArray)
+            {
+                return true;
+            }
+
+            public bool Visit(CosmosBinary cosmosBinary)
+            {
+                return false;
+            }
+
+            public bool Visit(CosmosBoolean cosmosBoolean)
+            {
+                return true;
+            }
+
+            public bool Visit(CosmosGuid cosmosGuid)
+            {
+                return false;
+            }
+
+            public bool Visit(CosmosNull cosmosNull)
+            {
+                return true;
+            }
+
+            public bool Visit(CosmosUndefined cosmosUndefined)
+            {
+                return true;
+            }
+
+            public bool Visit(CosmosNumber cosmosNumber)
+            {
+                return true;
+            }
+
+            public bool Visit(CosmosObject cosmosObject)
+            {
+                return true;
+            }
+
+            public bool Visit(CosmosString cosmosString)
+            {
+                return true;
+            }
         }
     }
 }
