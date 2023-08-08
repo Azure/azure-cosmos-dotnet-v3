@@ -1212,7 +1212,7 @@ namespace Microsoft.Azure.Cosmos
         /// Simulating Dedicated Gateway with ShardKey set
         /// </summary>
         [TestMethod]
-        public async Task GatewayStoreModel_UseHttp2_WhenDedicatedGatewayShardKeyIsSetAndHttp2EnvVarIsSet()
+        public async Task GatewayStoreModel_UseHttp2_WhenDedicatedGatewayRequestAndHttp2EnvVarIsSet()
         {
             // Set environment variable to use http2.
             Environment.SetEnvironmentVariable("UseHttp2", "true");
@@ -1225,7 +1225,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
-            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
+            mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo.sqlx.cosmos.azure.com"));
 
             using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
             SessionContainer sessionContainer = new SessionContainer(string.Empty);

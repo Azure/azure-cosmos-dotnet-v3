@@ -318,26 +318,26 @@ namespace Microsoft.Azure.Cosmos
                             requestMessage.Headers.TryAddWithoutValidation(key, request.Headers[key]);
                         }
                     }
+                }
+            }
 
-                    if (key.Equals(HttpConstants.HttpHeaders.DedicatedGatewayShardKey, StringComparison.OrdinalIgnoreCase) && request.Headers[key] != null)
-                    {
-                        bool useHttp2;
-                        try
-                        {
-                            useHttp2 = ConfigurationManager.GetEnvironmentVariable("UseHttp2", false);
-                        }
-                        catch (Exception)
-                        {
-                            DefaultTrace.TraceInformation("Failed to get environment variable UseHtt2.");
-                            // Set to false when fail to get the environment variable.
-                            useHttp2 = false;
-                        }
-                        
-                        if (useHttp2)
-                        {
-                            requestMessage.Version = new Version(2, 0);
-                        }
-                    }
+            if (physicalAddress.Host.Contains("sqlx"))
+            {
+                bool useHttp2;
+                try
+                {
+                    useHttp2 = ConfigurationManager.GetEnvironmentVariable("UseHttp2", false);
+                }
+                catch (Exception)
+                {
+                    DefaultTrace.TraceInformation("Failed to get environment variable UseHtt2.");
+                    // Set to false when fail to get the environment variable.
+                    useHttp2 = false;
+                }
+
+                if (useHttp2)
+                {
+                    requestMessage.Version = new Version(2, 0);
                 }
             }
 
