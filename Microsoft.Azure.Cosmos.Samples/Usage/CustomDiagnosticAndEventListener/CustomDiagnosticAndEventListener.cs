@@ -28,14 +28,14 @@
         /// IObserver Override
         /// </summary>
         public void OnCompleted() {
-            throw new NotImplementedException(); 
+            Console.WriteLine("OnCompleted");
         }
 
         /// <summary>
         /// IObserver Override
         /// </summary>
         public void OnError(Exception error) {
-            throw new NotImplementedException(); 
+            Console.WriteLine($"OnError : {error}");
         }
 
         /// <summary>
@@ -67,15 +67,13 @@
                     {
                         if (activity.Id == Activity.Current.Id)
                         {
-                            Console.WriteLine();
-                            Console.WriteLine("---------------------------------------------------------------------------------------------------------");
                             Console.WriteLine($"    Activity Name: {activity.DisplayName}");
                             Console.WriteLine($"    Activity Operation Name: {activity.OperationName}");
                             foreach (KeyValuePair<string, string?> actualTag in activity.Tags)
                             {
                                 Console.WriteLine($"    {actualTag.Key} ==> {actualTag.Value}");
                             }
-                            Console.WriteLine("---------------------------------------------------------------------------------------------------------");
+                            Console.WriteLine();
                             return;
                         }
                     }
@@ -90,7 +88,6 @@
         {
             if (value.Name == this.diagnosticSourceName && this.Subscriptions != null)
             {
-                Console.WriteLine();
                 Console.WriteLine($"CustomDiagnosticAndEventListener : OnNext : {value.Name}");
                 lock (this.Activities)
                 {
@@ -106,7 +103,6 @@
         {
             if (eventSource != null && eventSource.Name.Equals(this.eventSourceName))
             {
-                Console.WriteLine();
                 Console.WriteLine($"CustomDiagnosticAndEventListener : OnEventSourceCreated : {eventSource.Name}");
                 this.EnableEvents(eventSource, EventLevel.Informational); // Enable information level events
             }
@@ -117,8 +113,6 @@
         /// </summary>
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            Console.WriteLine();
-            Console.WriteLine("---------------------------------------------------------------------------------------------------------");
             Console.WriteLine($"    Event Name: {eventData.EventName}");
             Console.WriteLine($"    Event Level: {eventData.Level}");
             if(eventData.Payload != null)
@@ -133,7 +127,7 @@
             {
                 Console.WriteLine($"    Event Payload: NULL");
             }
-            Console.WriteLine("---------------------------------------------------------------------------------------------------------");
+            Console.WriteLine();
         }
 
         public override void Dispose()
