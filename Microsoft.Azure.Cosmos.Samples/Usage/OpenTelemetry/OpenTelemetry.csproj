@@ -14,9 +14,11 @@
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.6.3" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="..\AppSettings.json">
+    <None Include="AppSettings.json" Link="AppSettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  
 </Project>

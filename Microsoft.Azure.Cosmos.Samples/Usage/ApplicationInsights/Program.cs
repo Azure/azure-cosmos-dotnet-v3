@@ -4,10 +4,12 @@
     using System.Threading.Tasks;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.ApplicationInsights;
     using Microsoft.ApplicationInsights.WorkerService;
+    using Microsoft.Extensions.Logging.ApplicationInsights;
 
     internal class Program
     {
@@ -24,13 +26,13 @@
                             .AddJsonFile("AppSettings.json")
                             .Build();
 
-                string endpoint = configuration["EndPointUrl"];
+                string endpoint = configuration["CosmosDBEndPointUrl"];
                 if (string.IsNullOrEmpty(endpoint))
                 {
                     throw new ArgumentNullException("Please specify a valid CosmosDBEndPointUrl in the appSettings.json");
                 }
 
-                string authKey = configuration["AuthorizationKey"];
+                string authKey = configuration["CosmosDBAuthorizationKey"];
                 if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
                 {
                     throw new ArgumentException("Please specify a valid CosmosDBAuthorizationKey in the appSettings.json");
