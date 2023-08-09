@@ -4,6 +4,12 @@
     using System.Diagnostics;
     using System.Collections.Concurrent;
 
+    /// <summary>
+    /// This listener can cover following aspects:
+    /// 1. Write its own monitoring library with the custom implementation of aggregation or whatever you want to do with this data.
+    /// 2. Support an APM tool which is not open telemetry compliant.
+    /// </summary>
+    /// <remarks>It is a simple sample. Anybody can get as creative as they want to make it better in terms of usability and performance.</remarks>
     internal class CustomDiagnosticAndEventListener :
         EventListener, // Override Event Listener to capture Event source events
         IObserver<KeyValuePair<string, object>>, // Override IObserver to capture Activity events
