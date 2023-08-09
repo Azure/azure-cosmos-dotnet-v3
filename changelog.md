@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [3979](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3979) Client Encryption: Adds fix for supporting Prefix Partition Key (Hierarchical partitioning)
 
 #### Added
-- [4019](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4019) Upgrade Resiliency: Refactors Code to Disable Replica Validation Feature in Preview
+- [4019](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4019) Upgrade Resiliency: Disables Replica Validation Feature By Default in Preview (The feature was previously enabled by default in the [`3.35.2-preview`](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.2-preview) release)
 
 ### <a name="3.35.2-preview"/> [3.35.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.2-preview) - 2023-07-17
 
