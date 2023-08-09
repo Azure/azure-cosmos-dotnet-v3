@@ -637,35 +637,153 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 PartitionMapper.PartitionMapping<OrderByContinuationToken> partitionMapping = monadicGetOrderByContinuationTokenMapping.Result;
 
                 OrderByContinuationToken targetContinuationToken = partitionMapping.TargetMapping.Values.First();
-                (SqlQuerySpec leftQuerySpec, SqlQuerySpec targetQuerySpec, SqlQuerySpec rightQuerySpec) = GetRewrittenQuerySpec(
-                    sqlQuerySpec,
-                    targetContinuationToken,
-                    orderByColumns);
-
-                List<(IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken>, SqlQuerySpec)> tokenMappingAndQuerySpec = new List<(IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken>, SqlQuerySpec)>()
+                IReadOnlyList<SqlQueryResumeValue> resumeValues;
+                if (targetContinuationToken.ResumeValues != null)
                 {
-                    { (partitionMapping.MappingLeftOfTarget, leftQuerySpec) },
-                    { (partitionMapping.TargetMapping, targetQuerySpec) },
-                    { (partitionMapping.MappingRightOfTarget, rightQuerySpec) },
-                };
+                    // Use resume value if it is present in continuation token
+                    resumeValues = targetContinuationToken.ResumeValues;
+                }
+                else
+                {
+                    // If continuation token has only OrderByItems, check if it can be converted to resume value. This will
+                    // help avoid re-writing the query. Conversion will work as long as the order by item type is a supported type. 
+                    IReadOnlyList<CosmosElement> orderByItems = targetContinuationToken.OrderByItems.Select(x => x.Item).ToList();
+
+                    if (orderByItems.Count != orderByColumns.Count)
+                    {
+                        throw new MalformedContinuationTokenException(
+                                $"Order By Items from continuation token did not match the query text. " +
+                                $"Order by item count: {orderByItems.Count()} did not match column count {orderByColumns.Count()}. " +
+                                $"Continuation token: {targetContinuationToken}");
+                    }
+
+                    if (ContainsSupportedResumeTypes(targetContinuationToken.OrderByItems))
+                    {
+                        // Convert the order by items to SqlQueryResumeValue
+                        List<SqlQueryResumeValue> generatedResumeValues = new List<SqlQueryResumeValue>(orderByItems.Count);
+                        foreach (CosmosElement orderByItem in orderByItems)
+                        {
+                            generatedResumeValues.Add(SqlQueryResumeValue.FromOrderByValue(orderByItem));
+                        }
+
+                        resumeValues = generatedResumeValues;
+                    }
+                    else
+                    {
+                        resumeValues = null;
+                    }
+                }
 
                 enumeratorsAndTokens = new List<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>();
-                foreach ((IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken> tokenMapping, SqlQuerySpec rewrittenQueryForOrderBy) in tokenMappingAndQuerySpec)
+                if (resumeValues != null)
                 {
-                    foreach (KeyValuePair<FeedRangeEpk, OrderByContinuationToken> kvp in tokenMapping)
+                    // Process Left of Target
+                    SqlQuerySpec leftQuerySpec = new SqlQuerySpec(
+                        sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: TrueFilter),
+                        sqlQuerySpec.Parameters,
+                        new SqlQueryResumeFilter(resumeValues, null, true));
+
+                    foreach (KeyValuePair<FeedRangeEpk, OrderByContinuationToken> kvp in partitionMapping.MappingLeftOfTarget)
                     {
                         FeedRangeEpk range = kvp.Key;
                         OrderByContinuationToken token = kvp.Value;
                         OrderByQueryPartitionRangePageAsyncEnumerator remoteEnumerator = new OrderByQueryPartitionRangePageAsyncEnumerator(
                             documentContainer,
-                            rewrittenQueryForOrderBy,
+                            leftQuerySpec,
                             new FeedRangeState<QueryState>(range, token?.ParallelContinuationToken?.Token != null ? new QueryState(CosmosString.Create(token.ParallelContinuationToken.Token)) : null),
                             partitionKey,
                             queryPaginationOptions,
-                            null,
+                            filter: null,
                             cancellationToken);
 
                         enumeratorsAndTokens.Add((remoteEnumerator, token));
+                    }
+
+                    // Process Target Partitions
+                    foreach (KeyValuePair<FeedRangeEpk, OrderByContinuationToken> kvp in partitionMapping.TargetMapping)
+                    {
+                        FeedRangeEpk range = kvp.Key;
+                        OrderByContinuationToken token = kvp.Value;
+
+                        SqlQuerySpec targetQuerySpec = new SqlQuerySpec(
+                            sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: TrueFilter),
+                            sqlQuerySpec.Parameters,
+                            new SqlQueryResumeFilter(resumeValues, token?.Rid, false));
+
+                        OrderByQueryPartitionRangePageAsyncEnumerator remoteEnumerator = new OrderByQueryPartitionRangePageAsyncEnumerator(
+                            documentContainer,
+                            targetQuerySpec,
+                            new FeedRangeState<QueryState>(range, token?.ParallelContinuationToken?.Token != null ? new QueryState(CosmosString.Create(token.ParallelContinuationToken.Token)) : null),
+                            partitionKey,
+                            queryPaginationOptions,
+                            filter: null,
+                            cancellationToken);
+
+                        enumeratorsAndTokens.Add((remoteEnumerator, token));
+                    }
+
+                    // Process Right of Target
+                    SqlQuerySpec rightQuerySpec = new SqlQuerySpec(
+                        sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: TrueFilter),
+                        sqlQuerySpec.Parameters,
+                        new SqlQueryResumeFilter(resumeValues, null, false));
+
+                    foreach (KeyValuePair<FeedRangeEpk, OrderByContinuationToken> kvp in partitionMapping.MappingRightOfTarget)
+                    {
+                        FeedRangeEpk range = kvp.Key;
+                        OrderByContinuationToken token = kvp.Value;
+                        OrderByQueryPartitionRangePageAsyncEnumerator remoteEnumerator = new OrderByQueryPartitionRangePageAsyncEnumerator(
+                            documentContainer,
+                            rightQuerySpec,
+                            new FeedRangeState<QueryState>(range, token?.ParallelContinuationToken?.Token != null ? new QueryState(CosmosString.Create(token.ParallelContinuationToken.Token)) : null),
+                            partitionKey,
+                            queryPaginationOptions,
+                            filter: null,
+                            cancellationToken);
+
+                        enumeratorsAndTokens.Add((remoteEnumerator, token));
+                    }
+                }
+                else
+                {
+                    // If continuation token doesn't have resume values or if order by items cannot be converted to resume values then
+                    // rewrite the query filter to get the correct resume point
+                    IReadOnlyList<CosmosElement> orderByItems = targetContinuationToken.OrderByItems.Select(x => x.Item).ToList();
+
+                    ReadOnlyMemory<(OrderByColumn, CosmosElement)> columnAndItems = orderByColumns.Zip(orderByItems, (column, item) => (column, item)).ToArray();
+
+                    // For ascending order-by, left of target partition has filter expression > value,
+                    // right of target partition has filter expression >= value, 
+                    // and target partition takes the previous filter from continuation (or true if no continuation)
+                    (string leftFilter, string targetFilter, string rightFilter) = OrderByCrossPartitionQueryPipelineStage.GetFormattedFilters(columnAndItems);
+                    List<(IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken>, string)> tokenMappingAndFilters = new List<(IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken>, string)>()
+                    {
+                        { (partitionMapping.MappingLeftOfTarget, leftFilter) },
+                        { (partitionMapping.TargetMapping, targetFilter) },
+                        { (partitionMapping.MappingRightOfTarget, rightFilter) },
+                    };
+
+                    foreach ((IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken> tokenMapping, string filter) in tokenMappingAndFilters)
+                    {
+                        SqlQuerySpec rewrittenQueryForOrderBy = new SqlQuerySpec(
+                            sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: filter),
+                            sqlQuerySpec.Parameters);
+
+                        foreach (KeyValuePair<FeedRangeEpk, OrderByContinuationToken> kvp in tokenMapping)
+                        {
+                            FeedRangeEpk range = kvp.Key;
+                            OrderByContinuationToken token = kvp.Value;
+                            OrderByQueryPartitionRangePageAsyncEnumerator remoteEnumerator = new OrderByQueryPartitionRangePageAsyncEnumerator(
+                                documentContainer,
+                                rewrittenQueryForOrderBy,
+                                new FeedRangeState<QueryState>(range, token?.ParallelContinuationToken?.Token != null ? new QueryState(CosmosString.Create(token.ParallelContinuationToken.Token)) : null),
+                                partitionKey,
+                                queryPaginationOptions,
+                                filter,
+                                cancellationToken);
+
+                            enumeratorsAndTokens.Add((remoteEnumerator, token));
+                        }
                     }
                 }
             }
@@ -1013,95 +1131,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
 
             return (left.ToString(), target.ToString(), right.ToString());
-        }
-
-        private static (SqlQuerySpec leftQuerySpec, SqlQuerySpec targetQuerySpec, SqlQuerySpec rightQuerySpec) GetRewrittenQuerySpec(
-            SqlQuerySpec originalSpec,
-            OrderByContinuationToken targetContinuationToken,
-            IReadOnlyList<OrderByColumn> orderByColumns)
-        {
-            string leftFilter;
-            string targetFilter;
-            string rightFilter;
-
-            SqlQueryResumeFilter leftResumeFilter;
-            SqlQueryResumeFilter targetResumeFilter;
-            SqlQueryResumeFilter rightResumeFilter;
-
-            if (targetContinuationToken.ResumeValues != null && targetContinuationToken.ResumeValues.Count > 0)
-            {
-                (leftResumeFilter, targetResumeFilter, rightResumeFilter) = GetQueryResumeInfo(
-                    targetContinuationToken.ResumeValues,
-                    targetContinuationToken.SkipCount,
-                    targetContinuationToken.Rid);
-
-                leftFilter = TrueFilter;
-                targetFilter = TrueFilter;
-                rightFilter = TrueFilter;
-            }
-            else
-            {
-                IReadOnlyList<CosmosElement> orderByItems = targetContinuationToken.OrderByItems.Select(x => x.Item).ToList();
-
-                if (orderByItems.Count != orderByColumns.Count)
-                {
-                    throw new MalformedContinuationTokenException(
-                            $"Order By Items from continuation token did not match the query text. " +
-                            $"Order by item count: {orderByItems.Count()} did not match column count {orderByColumns.Count()}. " +
-                            $"Continuation token: {targetContinuationToken}");
-                }
-
-                // Check if the order by items have any C* types
-                if (ContainsSupportedResumeTypes(targetContinuationToken.OrderByItems))
-                {
-                    // Convert the order by items to SqlQueryResumeInfo
-                    List<SqlQueryResumeValue> resumeValues = new List<SqlQueryResumeValue>();
-                    foreach (CosmosElement orderByItem in orderByItems)
-                    {
-                        resumeValues.Add(SqlQueryResumeValue.FromOrderByValue(orderByItem));
-                    }
-
-                    (leftResumeFilter, targetResumeFilter, rightResumeFilter) = GetQueryResumeInfo(
-                        resumeValues,
-                        targetContinuationToken.SkipCount,
-                        targetContinuationToken.Rid);
-
-                    leftFilter = TrueFilter;
-                    targetFilter = TrueFilter;
-                    rightFilter = TrueFilter;
-                }
-                else
-                {
-                    // If resume value contains a non-json type like CInt8, CGuid etc, we utilize the filter re-write logic for continuation
-                    ReadOnlyMemory<(OrderByColumn, CosmosElement)> columnAndItems = orderByColumns.Zip(orderByItems, (column, item) => (column, item)).ToArray();
-
-                    // For ascending order-by, left of target partition has filter expression > value,
-                    // right of target partition has filter expression >= value, 
-                    // and target partition takes the previous filter from continuation (or true if no continuation)
-                    (leftFilter, targetFilter, rightFilter) = GetFormattedFilters(columnAndItems);
-
-                    leftResumeFilter = null;
-                    targetResumeFilter = null;
-                    rightResumeFilter = null;
-                }
-            }
-
-            SqlQuerySpec leftQuerySpec = new SqlQuerySpec(
-                originalSpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: leftFilter),
-                originalSpec.Parameters,
-                leftResumeFilter);
-
-            SqlQuerySpec targetQuerySpec = new SqlQuerySpec(
-                originalSpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: targetFilter),
-                originalSpec.Parameters,
-                targetResumeFilter);
-
-            SqlQuerySpec rightQuerySpec = new SqlQuerySpec(
-                originalSpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: rightFilter),
-                originalSpec.Parameters,
-                rightResumeFilter);
-
-            return (leftQuerySpec, targetQuerySpec, rightQuerySpec);
         }
 
         private static OrderByContinuationToken CreateContinuationToken(
