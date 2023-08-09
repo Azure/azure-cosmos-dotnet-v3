@@ -17,13 +17,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Cosmos.GeospatialType geospatialType)
         {
             this.ResourceId = resourceId;
-            this.EffectivePartitionKeyRanges = effectivePartitionKeyRanges;
+            this.EffectiveRangesForPartitionKey = effectivePartitionKeyRanges;
             this.PartitionKeyDefinition = partitionKeyDefinition;
             this.GeospatialType = geospatialType;
         }
 
         public string ResourceId { get; }
-        public IReadOnlyList<Range<string>> EffectivePartitionKeyRanges { get; }
+
+        //A PartitionKey has one range when it is a full PartitionKey value.
+        //It can span many  it is a prefix PartitionKey for a sub-partitioned container.
+        public IReadOnlyList<Range<string>> EffectiveRangesForPartitionKey { get; }
         public PartitionKeyDefinition PartitionKeyDefinition { get; }
         public Cosmos.GeospatialType GeospatialType { get; }
     }

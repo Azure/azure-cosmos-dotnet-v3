@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                 List<Documents.PartitionKeyRange> targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
                                     cosmosQueryContext.ResourceLink,
                                     containerQueryProperties.ResourceId,
-                                    containerQueryProperties.EffectivePartitionKeyRanges,
+                                    containerQueryProperties.EffectiveRangesForPartitionKey,
                                     forceRefresh: false,
                                     createQueryPipelineTrace);
 
@@ -635,12 +635,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace)
         {
             List<Documents.PartitionKeyRange> targetRanges;
-            if (containerQueryProperties.EffectivePartitionKeyRanges != null)
+            if (containerQueryProperties.EffectiveRangesForPartitionKey != null)
             {
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     containerQueryProperties.ResourceId,
-                    containerQueryProperties.EffectivePartitionKeyRanges,
+                    containerQueryProperties.EffectiveRangesForPartitionKey,
                     forceRefresh: false,
                     trace);
             }
@@ -787,7 +787,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     targetRanges = await cosmosQueryContext.QueryClient.GetTargetPartitionKeyRangesAsync(
                         cosmosQueryContext.ResourceLink,
                         containerQueryProperties.ResourceId,
-                        containerQueryProperties.EffectivePartitionKeyRanges,
+                        containerQueryProperties.EffectiveRangesForPartitionKey,
                         forceRefresh: false,
                         trace);
                 }
