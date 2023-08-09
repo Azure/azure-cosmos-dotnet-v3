@@ -19,6 +19,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -188,6 +189,49 @@
             }
 
             Assert.AreEqual(100, documentCountInSinglePartition);
+        }
+
+        [TestMethod]
+        public async Task TestOdeTokenWithSpecializedPipeline()
+        {
+            int numItems = 100;
+            ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                    token: Guid.NewGuid().ToString(),
+                    range: new Documents.Routing.Range<string>("A", "B", true, false));
+
+            OptimisticDirectExecutionContinuationToken optimisticDirectExecutionContinuationToken = new OptimisticDirectExecutionContinuationToken(parallelContinuationToken);
+            CosmosElement cosmosElementContinuationToken = OptimisticDirectExecutionContinuationToken.ToCosmosElement(optimisticDirectExecutionContinuationToken);
+
+            OptimisticDirectExecutionTestInput input = CreateInput(
+                    description: @"Single Partition Key and Value Field",
+                    query: "SELECT VALUE COUNT(1) FROM c",
+                    expectedOptimisticDirectExecution: false,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: "a",
+                    continuationToken: cosmosElementContinuationToken);
+
+            DocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems, multiPartition: false);
+            QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: input.ExpectedOptimisticDirectExecution);
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
+            IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
+                      documentContainer,
+                      cosmosQueryContextCore,
+                      inputParameters,
+                      NoOpTrace.Singleton);
+
+            string expectedErrorMessage = "The continuation token supplied requires the Optimistic Direct Execution flag to be enabled in QueryRequestOptions for the query execution to resume. ";
+
+            while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
+            {
+                if (queryPipelineStage.Current.Failed)
+                {
+                    Assert.IsTrue(queryPipelineStage.Current.InnerMostException.ToString().Contains(expectedErrorMessage));
+                    return;
+                }
+
+                Assert.IsFalse(true);
+                break;
+            }
         }
 
         [TestMethod]
