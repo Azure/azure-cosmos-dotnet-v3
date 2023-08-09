@@ -1,6 +1,5 @@
 ﻿namespace Cosmos.Samples.ApplicationInsights
 {
-    using System.Net;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
     using Newtonsoft.Json;
@@ -17,13 +16,13 @@
                            .AddJsonFile("AppSettings.json")
                            .Build();
 
-            string endpoint = configuration["CosmosDBEndPointUrl"];
+            string endpoint = configuration["EndPointUrl"];
             if (string.IsNullOrEmpty(endpoint))
             {
                 throw new ArgumentNullException("Please specify a valid CosmosDBEndPointUrl in the appSettings.json");
             }
 
-            string authKey = configuration["CosmosDBAuthorizationKey"];
+            string authKey = configuration["AuthorizationKey"];
             if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
             {
                 throw new ArgumentException("Please specify a valid CosmosDBAuthorizationKey in the appSettings.json");

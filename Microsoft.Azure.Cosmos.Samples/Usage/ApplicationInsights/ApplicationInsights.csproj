@@ -1,10 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
-    <AssemblyName>Cosmos.Samples.ApplicationInsights</AssemblyName>
-    <RootNamespace>Cosmos.Samples.ApplicationInsights</RootNamespace>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
@@ -15,11 +13,9 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
   </ItemGroup>
-
   <ItemGroup>
-    <None Include="AppSettings.json" Link="AppSettings.json">
+    <None Include="..\AppSettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-
 </Project>
