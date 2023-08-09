@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.Azure.Documents.FaultInjection;
+    using System.Diagnostics;
 
     /// <summary>
     /// Rntbd server error injector
@@ -32,11 +33,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             TransportRequestStats transportRequestStats)
         {
             FaultInjectionServerErrorRule? serverResponseDelayRule = this.ruleStore.FindRntbdServerResponseDelayRule(args);
+            DefaultTrace.TraceInformation("FaultInjection: FaultInjection Rule {0} Inserted {1} response delay for request {2}",
+                                    serverResponseDelayRule.GetId(), transportRequestStats.FaultInjectionDelay, args.CommonArguments.ActivityId);
             if (serverResponseDelayRule != null)
             {
                 args.FaultInjectionRequestContext
                     .ApplyFaultInjectionRule(
-                        activityId: args.CommonArguments.ActivityId,//args.PreparedCall.RequestId,
+                        activityId: args.CommonArguments.ActivityId,
                         ruleId: serverResponseDelayRule.GetId());
 
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
@@ -57,17 +60,27 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             ChannelCallArguments args,
             TransportRequestStats transportRequestStats)
         {
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
+
             FaultInjectionServerErrorRule? serverResponseErrorRule = this.ruleStore.FindRntbdServerResponseErrorRule(args);
             if (serverResponseErrorRule != null)
             {
                 args.FaultInjectionRequestContext
                     .ApplyFaultInjectionRule(
-                        activityId: args.CommonArguments.ActivityId,//args.PreparedCall.RequestId,
+                        activityId: args.CommonArguments.ActivityId,
                         ruleId: serverResponseErrorRule.GetId());
 
                 serverResponseErrorRule.SetInjectedServerError(
                     args,
                     transportRequestStats);
+
+                DefaultTrace.TraceInformation("FaultInjection: FaultInjection Rule {0} Inserted {1} error for request {2}",
+                                    serverResponseErrorRule.GetId(), transportRequestStats.FaultInjectionDelay, args.CommonArguments.ActivityId);
+
+                if (transportRequestStats.FaultInjectionServerErrorType == FaultInjectionServerErrorType.TIMEOUT)
+                {
+                    Thread.Sleep(args.RequestTimeoutInSeconds * 1000);
+                }
 
                 return true;
             }
@@ -98,6 +111,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     .ApplyFaultInjectionRule(
                         activityId: activityId,
                         ruleId: serverConnectionDelayRule.GetId());
+
+                DefaultTrace.TraceInformation("FaultInjection: FaultInjection Rule {0} Inserted {1} connection delay for request {2}",
+                                    serverConnectionDelayRule.GetId(), transportRequestStats.FaultInjectionDelay, args.CommonArguments.ActivityId);
 
                 TimeSpan connectionDelay = serverConnectionDelayRule.GetDelay();
                 Thread.Sleep(connectionDelay);

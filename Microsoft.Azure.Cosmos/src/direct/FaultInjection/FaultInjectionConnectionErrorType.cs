@@ -9,8 +9,13 @@ namespace Microsoft.Azure.Documents.FaultInjection
     public enum FaultInjectionConnectionErrorType
     {
         /// <summary>
-        /// Emulates a connection close because of an unhealthy conection
+        /// Emulates a connection close because of a recieved stream close
         /// </summary>
-        UNHEALTHY_CONNECTION_CLOSE,
+        RECIEVED_STREAM_CLOSED,
+
+        /// <summary>
+        /// Emulates a connection close because of a failure to recieve a response
+        /// </summary>
+        RECIEVE_FAILED,
     }
 }

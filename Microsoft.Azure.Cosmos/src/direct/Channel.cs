@@ -30,7 +30,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         private State state = State.New;  // Guarded by stateLock.
         private Task initializationTask = null;  // Guarded by stateLock.
         private volatile bool isInitializationComplete = false;
-        private bool isFaultInjectionedConnectionError = false;
 
         private ChannelOpenArguments openArguments;
         private readonly SemaphoreSlim openingSlim;
@@ -71,15 +70,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.Initialize();
         }
 
-        public void InjectFaultInjectionConnectionError(string ruleId, FaultInjectionConnectionErrorType errorType)
+        public void InjectFaultInjectionConnectionError(string ruleId, FaultInjectionConnectionErrorType errorType, TransportException transportException)
         {
-            if (errorType != FaultInjectionConnectionErrorType.UNHEALTHY_CONNECTION_CLOSE)
-            {
-                throw new ArgumentException($"FaultInjectionConnectionErrorType {errorType} is not supported");
-            }
-            this.isFaultInjectionedConnectionError = true;
-            DefaultTrace.TraceInformation(
-                    $"Fault Injection: Inserted RNTBD Connection Error rule {0} of type {1}", ruleId, errorType);
+            this.dispatcher.InjectFaultInjectionConnectionError(ruleId, errorType, transportException);            
         }
 
         public Uri GetServerUri()
@@ -94,10 +87,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             get
             {
                 this.ThrowIfDisposed();
-                if (this.isFaultInjectionedConnectionError)
-                {
-                    return false;
-                }
                 Dispatcher dispatcher = null;
                 this.stateLock.EnterReadLock();
                 try
@@ -174,17 +163,11 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             this.ThrowIfDisposed();
 
-            if (this.serverErrorInjector != null)
-            {
-                if (this.serverErrorInjector.InjectRntbdServerConnectionDelay(
+            this.serverErrorInjector?.InjectRntbdServerConnectionDelay(
                     activityId,
                     physicalAddress.Uri.ToString(),
-                    request))
-                {
-                    DefaultTrace.TraceInformation(
-                    "FaultInjection: Inserted RNTBD channel acquisition delay");
-                }
-            }
+                    request);
+
             if (!this.isInitializationComplete)
             {
                 transportRequestStats.RequestWaitingForConnectionInitialization = true;
@@ -232,6 +215,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             callArguments.ResourceType = request.ResourceType;
             callArguments.ResolvedCollectionRid = request.RequestContext.ResolvedCollectionRid;
             callArguments.RequestHeaders = request.Headers;
+            callArguments.RequestTimeoutTimeInSeconds = this.requestTimeoutSeconds;
             PooledTimer timer = this.timerPool.GetPooledTimer(this.requestTimeoutSeconds);
             Task[] tasks = new Task[2];
             tasks[0] = timer.StartTimerAsync();

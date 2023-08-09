@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
     using System.Collections.Generic;
+    using System.Data;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
@@ -68,6 +69,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         private Task idleTimerTask;  // Guarded by connectionLock
 
         private readonly RntbdServerErrorInjector serverErrorInjector;
+        private TransportException faultInjectionTransportException;
+        private bool isFaultInjectionedConnectionError;
 
         public Dispatcher(
             Uri serverUri,
@@ -233,6 +236,14 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        public void InjectFaultInjectionConnectionError(string ruleId, FaultInjectionConnectionErrorType errorType, TransportException transportException)
+        {
+            this.isFaultInjectionedConnectionError = true;
+            this.faultInjectionTransportException = transportException;
+            DefaultTrace.TraceInformation(
+                    $"Fault Injection: Inserted RNTBD Connection Error rule {0} of type {1}", ruleId, errorType);
+        }
+
         public sealed class PrepareCallResult : IDisposable
         {
             private bool disposed = false;
@@ -318,59 +329,34 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.calls.Add(requestId, callInfo);
                 }
                 try
-                {
-                    if (this.serverErrorInjector != null)
-                    {
-                        if (this.serverErrorInjector.InjectRntbdServerResponseError(args, transportRequestStats))
-                        {
-                            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
-                            if (transportRequestStats.FaultInjectionServerErrorType == FaultInjectionServerErrorType.TIMEOUT)
-                            {
-                                callInfo.SendFailed();
-                                DefaultTrace.TraceError("FaultInjection: Inserted {0} error for request {1}",
-                                    transportRequestStats.FaultInjectionServerErrorType, requestId);
-                                throw transportRequestStats.FaultInjectionException;
-                            }
-                            else
-                            {
-                                StoreResponse faultInjectionStoreResponse = transportRequestStats.FaultInjectionStoreResponse;
-                                DefaultTrace.TraceError("FaultInjection: Inserted {0} error for request {1}",
-                                    transportRequestStats.FaultInjectionServerErrorType, requestId);
-                                return faultInjectionStoreResponse;
-                            }                                                      
-                        }
-
-                        if (this.serverErrorInjector.InjectRntbdServerResponseDelay(args, transportRequestStats))
-                        {
-                            try
-                            {
-                                DefaultTrace.TraceInformation("FaultInjection: Inserted {0} delay for request {1}",
-                                    transportRequestStats.FaultInjectionDelay, requestId);
-                                await this.connection.WriteRequestWithResponseDelayAsync(
-                                    args.CommonArguments,
-                                    args.PreparedCall.SerializedRequest,
-                                    transportRequestStats);
-                            }
-                            catch (Exception e)
-                            {
-                                callInfo.SendFailed();
-                                DefaultTrace.TraceError("FaultInjection: Call failed with inserted {0} response delay for request {1}. Exception: {2}",
-                                    transportRequestStats.FaultInjectionDelay, requestId, e);
-                                throw new TransportException(
-                                    TransportErrorCode.SendFailed, e,
-                                    args.CommonArguments.ActivityId, args.PreparedCall.Uri,
-                                    this.ToString(), args.CommonArguments.UserPayload,
-                                    args.CommonArguments.PayloadSent);
-                            }
-                        }
-                    }
+                {                   
                     try
                     {
-                        await this.connection.WriteRequestAsync(
-                            args.CommonArguments,
-                            args.PreparedCall.SerializedRequest,
-                            transportRequestStats);
-                        transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
+                        bool responseDelayInjected = false;
+                        if (this.serverErrorInjector != null)
+                        {
+                            if (this.serverErrorInjector.InjectRntbdServerResponseError(args, transportRequestStats))
+                            {
+                                return transportRequestStats.FaultInjectionStoreResponse;
+                            }
+                            
+                            if (this.serverErrorInjector.InjectRntbdServerResponseDelay(args, transportRequestStats))
+                            {
+                                responseDelayInjected = true;
+                                await this.connection.WriteRequestWithResponseDelayAsync(
+                                   args.CommonArguments,
+                                   args.PreparedCall.SerializedRequest,
+                                   transportRequestStats);
+                            }
+                        }
+                        else if (!responseDelayInjected)
+                        {
+                            await this.connection.WriteRequestAsync(
+                                args.CommonArguments,
+                                args.PreparedCall.SerializedRequest,
+                                transportRequestStats);
+                            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
+                        }                      
                     }
                     catch (Exception e)
                     {
@@ -752,6 +738,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
+                    if (this.isFaultInjectionedConnectionError)
+                    {
+                        throw this.faultInjectionTransportException;
+                    }
                     args.ActivityId = Guid.Empty;
                     response = ResponsePool.Instance.Get();
                     responseMd = await this.connection.ReadResponseMetadataAsync(args);

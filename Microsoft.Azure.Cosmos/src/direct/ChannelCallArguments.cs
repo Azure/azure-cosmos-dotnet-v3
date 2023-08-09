@@ -33,6 +33,8 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public INameValueCollection RequestHeaders { get; set; }
 
+        public int RequestTimeoutTimeInSeconds { get; set; }
+
         /// <inheritdoc />
         public void Dispose()
         {

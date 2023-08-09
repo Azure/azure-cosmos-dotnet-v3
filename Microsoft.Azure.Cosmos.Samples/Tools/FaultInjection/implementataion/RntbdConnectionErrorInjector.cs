@@ -44,9 +44,10 @@
 
                     {
                         List<Channel> allChannels = this.channelDictionary.GetAllChannels();
-                        Random random = new Random();
+                        Random random = new Random()
+                        FaultInjectionConnectionErrorType connectionErrorType = rule.GetResult().GetConnectionErrorType();
                         //Case 1: Inject connection error for specific physical address
-                        List<Uri> addresses = rule.GetAddresses();                    
+                        List<Uri> addresses = rule.GetAddresses();
                         if (addresses != null && addresses.Count > 0)
                         {
                             addresses.ForEach(addressUri => allChannels.Where(channel => channel.GetServerUri().Equals(addressUri)).ToList().ForEach(channel =>
@@ -54,7 +55,7 @@
                                 if (random.NextDouble() < rule.GetResult().GetThreshold())
                                 {
                                     DefaultTrace.TraceInformation("FaultInjection: Injecting connection error for address {0}", addressUri);
-                                    channel.InjectFaultInjectionConnectionError(rule.GetId(), rule.GetResult().GetConnectionErrorType());
+                                    channel.InjectFaultInjectionConnectionError(rule.GetId(), connectionErrorType, this.GetTransportException(connectionErrorType, channel));
                                 }
                             }));
 
@@ -65,12 +66,13 @@
                         List<Uri> regionEndpoints = rule.GetRegionEndpoints();
                         if (regionEndpoints != null && regionEndpoints.Count > 0)
                         {
-                            regionEndpoints.ForEach(regionEndpoint => allChannels.Where(channel => 
+                            regionEndpoints.ForEach(regionEndpoint => allChannels.Where(channel =>
                                 channel.GetServerUri().DnsSafeHost.Equals(regionEndpoint.DnsSafeHost)).ToList().ForEach(channel =>
                                 {
                                     if (random.NextDouble() < rule.GetResult().GetThreshold())
                                     {
-                                        channel.InjectFaultInjectionConnectionError(rule.GetId(), rule.GetResult().GetConnectionErrorType());
+                                        DefaultTrace.TraceInformation("FaultInjection: Injecting connection error for region {0}", regionEndpoint);
+                                        channel.InjectFaultInjectionConnectionError(rule.GetId(), connectionErrorType, this.GetTransportException(connectionErrorType, channel));
                                     }
                                 }));
 
@@ -82,7 +84,8 @@
                         {
                             if (random.NextDouble() < rule.GetResult().GetThreshold())
                             {
-                                channel.InjectFaultInjectionConnectionError(rule.GetId(), rule.GetResult().GetConnectionErrorType());
+                                DefaultTrace.TraceInformation("FaultInjection: Injecting connection error");
+                                channel.InjectFaultInjectionConnectionError(rule.GetId(), connectionErrorType, this.GetTransportException(connectionErrorType, channel));
                             }
                         });
 
@@ -90,7 +93,34 @@
                     }
 
                     return Task.CompletedTask;
-                });             
+                });
+        }
+
+        private TransportException GetTransportException(FaultInjectionConnectionErrorType errorType, Channel channel)
+        {
+            switch (errorType)
+            {
+                case FaultInjectionConnectionErrorType.RECIEVED_STREAM_CLOSED:
+                    return new TransportException(
+                        errorCode: TransportErrorCode.ReceiveStreamClosed,
+                        innerException: null,
+                        activityId: Guid.Empty,
+                        requestUri: channel.GetServerUri(),
+                        sourceDescription: "FaultInjectionConnectionError",
+                        userPayload: false,
+                        payloadSent: true);
+                case FaultInjectionConnectionErrorType.RECIEVE_FAILED:
+                    return new TransportException(
+                        errorCode: TransportErrorCode.ReceiveFailed,
+                        innerException: null,
+                        activityId: Guid.Empty,
+                        requestUri: channel.GetServerUri(),
+                        sourceDescription: "FaultInjectionConnectionError",
+                        userPayload: false,
+                        payloadSent: true);
+                default:
+                    throw new ArgumentException("Invalid connection error type");
+            }
         }
 
         private bool IsEffectiveRule(FaultInjectionConnectionErrorRule rule)
