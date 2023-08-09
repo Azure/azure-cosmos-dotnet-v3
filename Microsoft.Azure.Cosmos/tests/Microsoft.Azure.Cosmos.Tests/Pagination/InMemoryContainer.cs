@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
+    using UInt128 = UInt128;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
     internal class InMemoryContainer : IMonadicDocumentContainer
@@ -280,8 +281,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             requestCharge: 42)));
             }
 
-            PartitionKeyHash partitionKeyHash = GetHashFromPartitionKey(
-                partitionKey,
+            PartitionKeyHash partitionKeyHash = GetHashFromPartitionKeys(
+                new List<CosmosElement> { partitionKey },
                 this.partitionKeyDefinition);
 
             if (!this.partitionedRecords.TryGetValue(partitionKeyHash, out Records records))
@@ -797,9 +798,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             // Split the range space
-            PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(
-                parentRange,
-                rangeCount: 2);
+            PartitionKeyHashRanges partitionKeyHashRanges;
+            if (this.partitionKeyDefinition.Kind == PartitionKind.MultiHash &&
+                this.partitionKeyDefinition.Paths.Count > 1)
+            {
+                //For MultiHash, to help with testing we will split using the median partition key among documents.
+                PartitionKeyHash midPoint = this.ComputeMedianSplitPointAmongDocumentsInPKRange(parentRange);
+                partitionKeyHashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(parentRange, midPoint);
+            }
+            else
+            {
+                partitionKeyHashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(
+                    parentRange,
+                    rangeCount: 2);
+            }
 
             // Update the partition routing map
             int maxPartitionKeyRangeId = this.partitionKeyRangeIdToHashRange.Keys.Max();
@@ -1084,16 +1096,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             CosmosObject payload,
             PartitionKeyDefinition partitionKeyDefinition)
         {
-            CosmosElement partitionKey = GetPartitionKeyFromPayload(payload, partitionKeyDefinition);
-            return GetHashFromPartitionKey(partitionKey, partitionKeyDefinition);
+            IList<CosmosElement> partitionKey = GetPartitionKeysFromPayload(payload, partitionKeyDefinition);
+            return GetHashFromPartitionKeys(partitionKey, partitionKeyDefinition);
         }
 
         private static PartitionKeyHash GetHashFromObjectModel(
             Cosmos.PartitionKey payload,
             PartitionKeyDefinition partitionKeyDefinition)
         {
-            CosmosElement partitionKey = GetPartitionKeyFromObjectModel(payload);
-            return GetHashFromPartitionKey(partitionKey, partitionKeyDefinition);
+            IList<CosmosElement> partitionKeys = GetPartitionKeysFromObjectModel(payload);
+            return GetHashFromPartitionKeys(partitionKeys, partitionKeyDefinition);
         }
 
         private static CosmosElement GetPartitionKeyFromPayload(CosmosObject payload, PartitionKeyDefinition partitionKeyDefinition)
@@ -1131,23 +1143,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             return partitionKey;
         }
 
-        private static CosmosElement GetPartitionKeyFromObjectModel(Cosmos.PartitionKey payload)
-        {
-            CosmosArray partitionKeyPayload = CosmosArray.Parse(payload.ToJsonString());
-            if (partitionKeyPayload.Count != 1)
-            {
-                throw new ArgumentOutOfRangeException("Can only support a single partition key path.");
-            }
-
-            return partitionKeyPayload[0];
-        }
-
-        private static PartitionKeyHash GetHashFromPartitionKey(CosmosElement partitionKey, PartitionKeyDefinition partitionKeyDefinition)
+        private static IList<CosmosElement> GetPartitionKeysFromPayload(CosmosObject payload, PartitionKeyDefinition partitionKeyDefinition)
         {
             // Restrict the partition key definition for now to keep things simple
-            if (partitionKeyDefinition.Kind != PartitionKind.Hash)
+            if (partitionKeyDefinition.Kind != PartitionKind.MultiHash && partitionKeyDefinition.Kind != PartitionKind.Hash)
             {
-                throw new ArgumentOutOfRangeException("Can only support hash partitioning");
+                throw new ArgumentOutOfRangeException("Can only support Hash/MultiHash partitioning");
             }
 
             if (partitionKeyDefinition.Version != Documents.PartitionKeyDefinitionVersion.V2)
@@ -1155,21 +1156,62 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new ArgumentOutOfRangeException("Can only support hash v2");
             }
 
-            if (partitionKeyDefinition.Paths.Count != 1)
+            IList<CosmosElement> cosmosElements = new List<CosmosElement>();
+            foreach (string partitionKeyPath in partitionKeyDefinition.Paths)
             {
-                throw new ArgumentOutOfRangeException("Can only support a single partition key path.");
+                IEnumerable<string> tokens = partitionKeyPath.Split("/").Skip(1);
+                CosmosElement partitionKey = payload;
+                foreach (string token in tokens)
+                {
+                    if (partitionKey != default)
+                    {
+                        if (!payload.TryGetValue(token, out partitionKey))
+                        {
+                            partitionKey = default;
+                        }
+                    }
+                }
+                cosmosElements.Add(partitionKey);
+            }
+            return cosmosElements;
+        }
+
+        private static IList<CosmosElement> GetPartitionKeysFromObjectModel(Cosmos.PartitionKey payload)
+        {
+            CosmosArray partitionKeyPayload = CosmosArray.Parse(payload.ToJsonString());
+            return new List<CosmosElement>() { partitionKeyPayload };
+        }
+
+        private static PartitionKeyHash GetHashFromPartitionKeys(IList<CosmosElement> partitionKeys, PartitionKeyDefinition partitionKeyDefinition)
+        {
+            // Restrict the partition key definition for now to keep things simple
+            if (partitionKeyDefinition.Kind != PartitionKind.MultiHash && partitionKeyDefinition.Kind != PartitionKind.Hash)
+            {
+                throw new ArgumentOutOfRangeException("Can only support Hash/MultiHash partitioning");
             }
 
-            PartitionKeyHash partitionKeyHash = partitionKey switch
+            if (partitionKeyDefinition.Version != Documents.PartitionKeyDefinitionVersion.V2)
             {
-                null => PartitionKeyHash.V2.HashUndefined(),
-                CosmosString stringPartitionKey => PartitionKeyHash.V2.Hash(stringPartitionKey.Value),
-                CosmosNumber numberPartitionKey => PartitionKeyHash.V2.Hash(Number64.ToDouble(numberPartitionKey.Value)),
-                CosmosBoolean cosmosBoolean => PartitionKeyHash.V2.Hash(cosmosBoolean.Value),
-                CosmosNull _ => PartitionKeyHash.V2.HashNull(),
-                _ => throw new ArgumentOutOfRangeException(),
-            };
-            return partitionKeyHash;
+                throw new ArgumentOutOfRangeException("Can only support hash v2");
+            }
+
+            UInt128[] partitionKeyHashValues = new UInt128[partitionKeys.Count];
+            int i = 0;
+            foreach (CosmosElement partitionKey in partitionKeys)
+            {
+                PartitionKeyHash partitionKeyHash = partitionKey switch
+                {
+                    null => PartitionKeyHash.V2.HashUndefined(),
+                    CosmosString stringPartitionKey => PartitionKeyHash.V2.Hash(stringPartitionKey.Value),
+                    CosmosNumber numberPartitionKey => PartitionKeyHash.V2.Hash(Number64.ToDouble(numberPartitionKey.Value)),
+                    CosmosBoolean cosmosBoolean => PartitionKeyHash.V2.Hash(cosmosBoolean.Value),
+                    CosmosNull _ => PartitionKeyHash.V2.HashNull(),
+                    _ => throw new ArgumentOutOfRangeException(),
+                };
+                partitionKeyHashValues[i++] = partitionKeyHash.hashValues[0];
+            }
+
+            return new PartitionKeyHash(partitionKeyHashValues);
         }
 
         private static CosmosObject ConvertRecordToCosmosElement(Record record)
@@ -1196,9 +1238,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
             {
-                CosmosElement partitionKey = GetPartitionKeyFromObjectModel(feedRangePartitionKey.PartitionKey);
-                CosmosElement partitionKeyFromRecord = GetPartitionKeyFromPayload(record.Payload, partitionKeyDefinition);
-                return partitionKey.Equals(partitionKeyFromRecord);
+                IList<CosmosElement> partitionKey = GetPartitionKeysFromObjectModel(feedRangePartitionKey.PartitionKey);
+                IList<CosmosElement> partitionKeyFromRecord = GetPartitionKeysFromPayload(record.Payload, partitionKeyDefinition);
+                return partitionKey.SequenceEqual(partitionKeyFromRecord);
             }
             else if (feedRange is FeedRangeEpk feedRangeEpk)
             {
@@ -1301,6 +1343,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     isMaxInclusive: false));
         }
 
+        private PartitionKeyHash ComputeMedianSplitPointAmongDocumentsInPKRange(PartitionKeyHashRange hashRange)
+        {
+            if (!this.partitionedRecords.TryGetValue(hashRange, out Records parentRecords))
+            {
+                throw new InvalidOperationException("failed to find the range.");
+            }
+
+            List<PartitionKeyHash> partitionKeyHashes = new List<PartitionKeyHash>();
+            foreach (Record record in parentRecords)
+            {
+                PartitionKeyHash partitionKeyHash = GetHashFromPayload(record.Payload, this.partitionKeyDefinition);
+                partitionKeyHashes.Add(partitionKeyHash);
+            }
+
+            partitionKeyHashes.Sort();
+            PartitionKeyHash medianPkHash = partitionKeyHashes[partitionKeyHashes.Count / 2];
+
+            // For MultiHash Collection, split at top level to ensure documents for top level key exist across partitions
+            // after split
+            if (medianPkHash.hashValues.Length > 1)
+            {
+                return new PartitionKeyHash(medianPkHash.hashValues[0]);
+            }
+
+            return medianPkHash;
+        }
         public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
         {
             return Task.FromResult(TryCatch<string>.FromResult("AYIMAMmFOw8YAAAAAAAAAA=="));

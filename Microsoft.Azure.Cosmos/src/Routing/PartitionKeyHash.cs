@@ -36,11 +36,38 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal readonly struct PartitionKeyHash : IComparable<PartitionKeyHash>, IEquatable<PartitionKeyHash>
     {
         public PartitionKeyHash(UInt128 value)
+            : this(new UInt128[] { value })
         {
-            this.Value = value;
         }
 
-        public UInt128 Value { get; }
+        public PartitionKeyHash(UInt128[] values)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (UInt128 value in values)
+            {
+                byte[] hashBytes = UInt128.ToByteArray(value);
+                stringBuilder.Append(HexConvert.ToHex(hashBytes, 0, hashBytes.Length));
+            }
+
+            this.Value = stringBuilder.ToString();
+        }
+
+        public string Value { get; }
+
+        public UInt128[] hashValues
+        {
+            get
+            {
+                int components = this.Value.Length / 32;
+                UInt128[] returnValue = new UInt128[components];
+                for (int i = 0; i < components; i++)
+                {
+                    byte[] x = HexConvert.HexStringToByteArray(this.Value.Substring(i, i + 32 > this.Value.Length ? this.Value.Length : i + 32));
+                    returnValue[i] = UInt128.FromByteArray(x);
+                }
+                return returnValue;
+            }
+        }
 
         public int CompareTo(PartitionKeyHash other)
         {
@@ -66,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public override int GetHashCode() => this.Value.GetHashCode();
 
-        public override string ToString() => this.Value.ToString();
+        public override string ToString() => this.Value;
 
         public static bool TryParse(string value, out PartitionKeyHash parsedValue)
         {
@@ -215,6 +242,53 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 UInt128 hash = Cosmos.MurmurHash3.Hash128(bytesForHashing, seed: 0);
                 return new PartitionKeyHash(hash);
+            }
+        }
+
+        internal static class HexConvert
+        {
+            private static readonly ushort[] LookupTable = CreateLookupTable();
+
+            private static ushort[] CreateLookupTable()
+            {
+                ushort[] lookupTable = new ushort[256];
+                for (int byteValue = 0; byteValue < 256; byteValue++)
+                {
+                    string byteAsHexString = byteValue.ToString("X2");
+                    lookupTable[byteValue] = (ushort)(byteAsHexString[0] + (byteAsHexString[1] << 8));
+                }
+
+                return lookupTable;
+            }
+
+            public static string ToHex(byte[] bytes, int start, int length)
+            {
+                char[] result = new char[length * 2];
+                for (int i = 0; i < length; i++)
+                {
+                    ushort encodedByte = LookupTable[bytes[i + start]];
+                    result[2 * i] = (char)(encodedByte & 0xFF);
+                    result[(2 * i) + 1] = (char)(encodedByte >> 8);
+                }
+
+                return new string(result);
+            }
+
+            public static byte[] HexStringToByteArray(string hex)
+            {
+                int numberChars = hex.Length;
+                if (numberChars % 2 != 0)
+                {
+                    throw new ArgumentException("Hex string should be even length", "hex");
+                }
+
+                byte[] bytes = new byte[numberChars / 2];
+                for (int i = 0; i < numberChars; i += 2)
+                {
+                    bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
+                }
+
+                return bytes;
             }
         }
 
