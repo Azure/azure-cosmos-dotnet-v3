@@ -8,6 +8,10 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Azure.Core" Version="1.34.0" />
+	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
 	</ItemGroup>

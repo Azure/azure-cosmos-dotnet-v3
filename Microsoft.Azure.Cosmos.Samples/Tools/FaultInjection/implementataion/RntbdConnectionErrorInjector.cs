@@ -44,7 +44,7 @@
 
                     {
                         List<Channel> allChannels = this.channelDictionary.GetAllChannels();
-                        Random random = new Random()
+                        Random random = new Random();
                         FaultInjectionConnectionErrorType connectionErrorType = rule.GetResult().GetConnectionErrorType();
                         //Case 1: Inject connection error for specific physical address
                         List<Uri> addresses = rule.GetAddresses();
