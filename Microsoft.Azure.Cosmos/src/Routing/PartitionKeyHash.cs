@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </example>
     internal readonly struct PartitionKeyHash : IComparable<PartitionKeyHash>, IEquatable<PartitionKeyHash>
     {
+        internal readonly static PartitionKeyHash None = new PartitionKeyHash(0);
         public PartitionKeyHash(UInt128 value)
             : this(new UInt128[] { value })
         {
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 UInt128[] returnValue = new UInt128[components];
                 for (int i = 0; i < components; i++)
                 {
-                    byte[] x = HexConvert.HexStringToByteArray(this.Value.Substring(i, i + 32 > this.Value.Length ? this.Value.Length : i + 32));
+                    byte[] x = HexConvert.HexStringToByteArray(this.Value.Substring(i * 32, (i * 32) + 32 > this.Value.Length ? this.Value.Length - (i * 32) : 32));
                     returnValue[i] = UInt128.FromByteArray(x);
                 }
                 return returnValue;

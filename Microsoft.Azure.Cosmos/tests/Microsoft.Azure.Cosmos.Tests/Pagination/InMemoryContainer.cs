@@ -1195,10 +1195,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new ArgumentOutOfRangeException("Can only support hash v2");
             }
 
-            UInt128[] partitionKeyHashValues = new UInt128[partitionKeys.Count];
-            int i = 0;
+            IList<UInt128> partitionKeyHashValues = new List<UInt128>();
+
             foreach (CosmosElement partitionKey in partitionKeys)
             {
+                if (partitionKey is CosmosArray cosmosArray)
+                {
+                    foreach (CosmosElement element in cosmosArray)
+                    {
+                        PartitionKeyHash elementHash = element switch
+                        {
+                            null => PartitionKeyHash.V2.HashUndefined(),
+                            CosmosString stringPartitionKey => PartitionKeyHash.V2.Hash(stringPartitionKey.Value),
+                            CosmosNumber numberPartitionKey => PartitionKeyHash.V2.Hash(Number64.ToDouble(numberPartitionKey.Value)),
+                            CosmosBoolean cosmosBoolean => PartitionKeyHash.V2.Hash(cosmosBoolean.Value),
+                            CosmosNull _ => PartitionKeyHash.V2.HashNull(),
+                            _ => throw new ArgumentOutOfRangeException(),
+                        };
+                        partitionKeyHashValues.Add(elementHash.hashValues[0]);
+                    }
+                    continue;
+                }
+
                 PartitionKeyHash partitionKeyHash = partitionKey switch
                 {
                     null => PartitionKeyHash.V2.HashUndefined(),
@@ -1208,10 +1226,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     CosmosNull _ => PartitionKeyHash.V2.HashNull(),
                     _ => throw new ArgumentOutOfRangeException(),
                 };
-                partitionKeyHashValues[i++] = partitionKeyHash.hashValues[0];
+                partitionKeyHashValues.Add(partitionKeyHash.hashValues[0]);
             }
 
-            return new PartitionKeyHash(partitionKeyHashValues);
+            return new PartitionKeyHash(partitionKeyHashValues.ToArray());
         }
 
         private static CosmosObject ConvertRecordToCosmosElement(Record record)
@@ -1240,6 +1258,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 IList<CosmosElement> partitionKey = GetPartitionKeysFromObjectModel(feedRangePartitionKey.PartitionKey);
                 IList<CosmosElement> partitionKeyFromRecord = GetPartitionKeysFromPayload(record.Payload, partitionKeyDefinition);
+                if (partitionKeyDefinition.Kind == PartitionKind.MultiHash)
+                {
+                    PartitionKeyHash partitionKeyHash = GetHashFromPartitionKeys(partitionKey, partitionKeyDefinition);
+                    PartitionKeyHash partitionKeyFromRecordHash = GetHashFromPartitionKeys(partitionKeyFromRecord, partitionKeyDefinition);
+
+                    return partitionKeyHash.Equals(partitionKeyFromRecordHash) || partitionKeyFromRecordHash.Value.StartsWith(partitionKeyHash.Value);
+                }
                 return partitionKey.SequenceEqual(partitionKeyFromRecord);
             }
             else if (feedRange is FeedRangeEpk feedRangeEpk)

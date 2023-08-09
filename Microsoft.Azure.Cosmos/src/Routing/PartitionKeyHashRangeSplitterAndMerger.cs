@@ -98,8 +98,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public static SplitOutcome TrySplitRange(PartitionKeyHashRange partitionKeyHashRange, PartitionKeyHash explicitSplitPoint, out PartitionKeyHashRanges splitRanges)
         {
-            if (explicitSplitPoint > partitionKeyHashRange.StartInclusive ||
-                explicitSplitPoint < partitionKeyHashRange.EndExclusive)
+            if (explicitSplitPoint < (partitionKeyHashRange.StartInclusive != null ? partitionKeyHashRange.StartInclusive : PartitionKeyHash.None) ||
+                explicitSplitPoint > partitionKeyHashRange.EndExclusive)
             {
                 splitRanges = default;
                 return SplitOutcome.RangeNotWideEnough;
