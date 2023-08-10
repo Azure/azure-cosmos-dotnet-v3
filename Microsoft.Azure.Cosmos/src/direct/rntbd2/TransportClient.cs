@@ -351,11 +351,15 @@ namespace Microsoft.Azure.Documents.Rntbd
         internal override Task OpenConnectionAsync(
             Uri physicalAddress)
         {
-            Guid activityId = Trace.CorrelationManager.ActivityId;
-            return this.channelDictionary.OpenChannelAsync(
-                physicalAddress: physicalAddress,
+            IChannel channel = this.channelDictionary.GetChannel(
+                requestUri: physicalAddress,
                 localRegionRequest: false,
-                activityId: activityId);
+                validationRequired: true);
+
+            return channel.Healthy
+                ? Task.FromResult(0)
+                : channel.OpenChannelAsync(
+                    activityId: Trace.CorrelationManager.ActivityId);
         }
 
 #region RNTBD Transition

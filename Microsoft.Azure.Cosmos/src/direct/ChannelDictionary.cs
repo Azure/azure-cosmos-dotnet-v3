@@ -32,6 +32,14 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.channelProperties = channelProperties;
         }
 
+        /// <summary>
+        /// Creates or gets an instance of <see cref="LoadBalancingChannel"/> using the server's physical uri.
+        /// </summary>
+        /// <param name="requestUri">An instance of <see cref="Uri"/> containing the backend server URI.</param>
+        /// <param name="localRegionRequest">A boolean flag indicating if the request is targeting the local region.</param>
+        /// <param name="validationRequired">An optional boolean flag indicating if an attempt is required to open Rntbd
+        /// connection to the BE replica to validate the channel health. The default value for this flag is false.</param>
+        /// <returns>An instance of <see cref="IChannel"/> containing the <see cref="LoadBalancingChannel"/>.</returns>
         public IChannel GetChannel(
             Uri requestUri,
             bool localRegionRequest,
@@ -59,29 +67,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             Debug.Assert(found);
             Debug.Assert(value != null);
             return value;
-        }
-
-        /// <summary>
-        /// Opens the Rntbd context negotiation channel to the backend replica node, using the server's physical uri.
-        /// </summary>
-        /// <param name="physicalAddress">An instance of <see cref="Uri"/> containing the backend server URI.</param>
-        /// <param name="localRegionRequest">A boolean flag indicating if the request is targeting the local region.</param>
-        /// <param name="activityId">An unique identifier indicating the current activity id.</param>
-        /// <returns>An instance of <see cref="Task"/> indicating the channel has opened successfully.</returns>
-        public Task OpenChannelAsync(
-            Uri physicalAddress,
-            bool localRegionRequest,
-            Guid activityId)
-        {
-            this.ThrowIfDisposed();
-            IChannel channel = this.GetChannel(
-                requestUri: physicalAddress,
-                localRegionRequest: localRegionRequest,
-                validationRequired: true);
-
-            return channel.Healthy
-                ? Task.FromResult(0)
-                : channel.OpenChannelAsync(activityId);
         }
 
         public void Dispose()
