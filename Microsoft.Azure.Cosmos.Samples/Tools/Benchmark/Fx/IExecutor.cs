@@ -20,6 +20,7 @@ namespace CosmosBenchmark
                 bool traceFailures,
                 Action completionCallback,
                 BenchmarkConfig benchmarkConfig,
-                MeterProvider meterProvider);
+                MeterProvider meterProvider,
+                MetricsCollectorProvider metricsCollectorProvider);
     }
 }

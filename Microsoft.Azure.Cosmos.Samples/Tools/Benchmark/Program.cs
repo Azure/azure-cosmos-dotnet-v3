@@ -49,6 +49,8 @@ namespace CosmosBenchmark
                     .AddConsoleExporter()
                     .Build();
 
+                MetricsCollectorProvider metricsCollectorProvider = new MetricsCollectorProvider(config);
+
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
                 if (config.EnableLatencyPercentiles)
@@ -61,7 +63,7 @@ namespace CosmosBenchmark
 
                 Program program = new Program();
 
-                RunSummary runSummary = await program.ExecuteAsync(config, meterProvider);
+                RunSummary runSummary = await program.ExecuteAsync(config, meterProvider, metricsCollectorProvider);
             }
             finally
             {
@@ -110,7 +112,9 @@ namespace CosmosBenchmark
         /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, MeterProvider meterProvider)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, 
+            MeterProvider meterProvider, 
+            MetricsCollectorProvider metricsCollectorProvider)
         {
             // V3 SDK client initialization
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
@@ -162,7 +166,7 @@ namespace CosmosBenchmark
                     }
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, meterProvider);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, meterProvider, metricsCollectorProvider);
                 }
 
                 if (config.CleanupOnFinish)

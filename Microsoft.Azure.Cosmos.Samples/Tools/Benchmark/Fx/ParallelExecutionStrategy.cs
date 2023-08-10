@@ -30,7 +30,8 @@ namespace CosmosBenchmark
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
             double warmupFraction,
-            MeterProvider meterProvider)
+            MeterProvider meterProvider,
+            MetricsCollectorProvider metricsCollectorProvider)
         {
             IExecutor warmupExecutor = new SerialOperationExecutor(
                         executorId: "Warmup",
@@ -41,7 +42,8 @@ namespace CosmosBenchmark
                     traceFailures: benchmarkConfig.TraceFailures,
                     completionCallback: () => { },
                     benchmarkConfig,
-                    meterProvider);
+                    meterProvider,
+                    metricsCollectorProvider);
 
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
             for (int i = 0; i < serialExecutorConcurrency; i++)
@@ -60,11 +62,12 @@ namespace CosmosBenchmark
                         traceFailures: benchmarkConfig.TraceFailures,
                         completionCallback: () => Interlocked.Decrement(ref this.pendingExecutorCount),
                         benchmarkConfig,
-                        meterProvider);
+                        meterProvider,
+                        metricsCollectorProvider);
             }
 
             return await this.LogOutputStats(
-                benchmarkConfig, 
+                benchmarkConfig,
                 executors,
                 meterProvider);
         }

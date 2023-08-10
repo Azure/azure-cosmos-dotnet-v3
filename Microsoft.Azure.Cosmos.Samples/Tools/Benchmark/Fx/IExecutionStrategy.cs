@@ -21,6 +21,7 @@ namespace CosmosBenchmark
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
             double warmupFraction,
-            MeterProvider meterProvider);
+            MeterProvider meterProvider, 
+            MetricsCollectorProvider metricsCollectorProvider);
     }
 }
