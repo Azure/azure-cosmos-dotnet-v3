@@ -957,22 +957,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JArray jArray = JArray.Parse(partitionKey.ToString());
 
 #if ENCRYPTIONPREVIEW
-            if (encryptionSettings.PartitionKeyPaths.Count > 1)
+            if (jArray.Count > 1)
             {
-                int counter = 0;
+                int i = 0;
                 PartitionKeyBuilder partitionKeyBuilder = new PartitionKeyBuilder();
 
-                if (jArray.Count() > encryptionSettings.PartitionKeyPaths.Count())
-                {
-                    throw new NotSupportedException($"The number of partition keys passed in the query exceeds the number of keys initialized on the container. Container Id : {this.Id}");
-                }
                 bool isPkEncrypted = false;
-
                 // partitionKeyBuilder expects the paths and values to be in same order.
-                for(counter = 0; counter < jArray.Count(); counter++)
+                foreach (string path in encryptionSettings.PartitionKeyPaths)
                 {
-                    string path = encryptionSettings.PartitionKeyPaths[counter];
-
                     // case: partition key path is /a/b/c and the client encryption policy has /a in path.
                     // hence encrypt the partition key value with using its top level path /a since /c would have been encrypted in the document using /a's policy.
                     string partitionKeyPath = path.Split('/')[1];
@@ -982,12 +975,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     if (encryptionSettingForProperty == null)
                     {
-                        partitionKeyBuilder.Add(jArray[counter].ToString());
+                        partitionKeyBuilder.Add(jArray[i++].ToString());
                         continue;
                     }
 
                     isPkEncrypted = true;
-                    Stream valueStream = EncryptionProcessor.BaseSerializer.ToStream(jArray[counter]);
+                    Stream valueStream = EncryptionProcessor.BaseSerializer.ToStream(jArray[i++]);
 
                     Stream encryptedPartitionKey = await EncryptionProcessor.EncryptValueStreamAsync(
                         valueStreamToEncrypt: valueStream,
