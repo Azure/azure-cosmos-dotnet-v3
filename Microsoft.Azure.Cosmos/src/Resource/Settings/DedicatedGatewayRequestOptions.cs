@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     public class DedicatedGatewayRequestOptions
     {
         /// <summary> 
-        /// Gets or sets the staleness value associated with the request in the Azure CosmosDB service. 
+        /// Gets or sets the staleness value associated with the request in the Azure Cosmos DB service. 
         /// </summary> 
         /// <value>Default value is null.</value> 
         /// <remarks> 
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan? MaxIntegratedCacheStaleness { get; set; }
 
         /// <summary>
-        /// Gets or sets if bypass the integrated cache or not associated with the request in the Azure CosmosDB service.
+        /// Gets or sets if bypass the integrated cache or not associated with the request in the Azure Cosmos DB service.
         /// When set this value to true, the request will not be served from the integrated cache, and the response will not be cached either.
         /// </summary>
         /// <value>Default value is false.</value>
