@@ -60,6 +60,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="NJsonSchema" Version="10.9.0" />
   </ItemGroup>
   
   <ItemGroup>
