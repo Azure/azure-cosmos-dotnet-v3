@@ -13,6 +13,9 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// Represents Benchmark Configuration
+    /// </summary>
     public class BenchmarkConfig
     {
         private static readonly string UserAgentSuffix = "cosmosdbdotnetbenchmark";
