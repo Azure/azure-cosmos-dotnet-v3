@@ -36,62 +36,6 @@ namespace CosmosBenchmark
         }
 
         /// <summary>
-        /// The instance of <see cref="CosmosBenchmark.QueryOperationMetricsCollector"/>.
-        /// </summary>
-        public static QueryOperationMetricsCollector QueryOperationMetricsCollector
-        {
-            get
-            {
-                if (queryOperationMetricsCollector is null)
-                {
-                    lock (queryOperationMetricsCollectorLock)
-                    {
-                        queryOperationMetricsCollector ??= new QueryOperationMetricsCollector(queryOperationMeter);
-                    }
-                }
-
-                return queryOperationMetricsCollector;
-            }
-        }
-
-        /// <summary>
-        /// The instance of <see cref="CosmosBenchmark.ReadOperationMetricsCollector"/>.
-        /// </summary>
-        public static ReadOperationMetricsCollector ReadOperationMetricsCollector
-        {
-            get
-            {
-                if (readOperationMetricsCollector is null)
-                {
-                    lock (readOperationMetricsCollectorLock)
-                    {
-                        readOperationMetricsCollector ??= new ReadOperationMetricsCollector(readOperationMeter);
-                    }
-                }
-
-                return readOperationMetricsCollector;
-            }
-        }
-
-        /// <summary>
-        /// Gets the current metrics collection window.
-        /// </summary>
-        /// <param name="config">The instance of <see cref="BenchmarkConfig"/>.</param>
-        /// <returns>Current <see cref="MetricCollectionWindow"/></returns>
-        private static MetricCollectionWindow GetCurrentMetricCollectionWindow(BenchmarkConfig config)
-        {
-            if (metricCollectionWindow is null || !metricCollectionWindow.IsValid)
-            {
-                lock (metricCollectionWindowLock)
-                {
-                    metricCollectionWindow ??= new MetricCollectionWindow(config);
-                }
-            }
-
-            return metricCollectionWindow;
-        }
-
-        /// <summary>
         /// Gets the metric collector.
         /// </summary>
         /// <param name="benchmarkOperation">Benchmark operation.</param>
