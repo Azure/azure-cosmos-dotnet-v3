@@ -46,6 +46,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 httpResponse = await base.SendAsync(request, cancellationToken);
             }
             catch (Exception ex) {
+
+                if (this.ExceptionIntercepter == null)
+                {
+                    throw;
+                }
                 this.ExceptionIntercepter?.Invoke(request, ex);
             }
            
