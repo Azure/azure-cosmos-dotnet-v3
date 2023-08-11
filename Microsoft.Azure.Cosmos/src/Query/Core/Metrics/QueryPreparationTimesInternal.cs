@@ -11,10 +11,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     internal sealed class QueryPreparationTimesInternal
     {
         public static readonly QueryPreparationTimesInternal Zero = new QueryPreparationTimesInternal(
-            queryCompilationTime: default,
-            logicalPlanBuildTime: default,
-            physicalPlanBuildTime: default,
-            queryOptimizationTime: default);
+            queryCompilationTime: TimeSpan.Zero,
+            logicalPlanBuildTime: TimeSpan.Zero,
+            physicalPlanBuildTime: TimeSpan.Zero,
+            queryOptimizationTime: TimeSpan.Zero);
 
         /// <summary>
         /// Initializes a new instance of the QueryPreparationTimes class.

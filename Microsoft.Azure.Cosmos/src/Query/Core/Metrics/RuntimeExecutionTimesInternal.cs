@@ -11,9 +11,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     internal sealed class RuntimeExecutionTimesInternal
     {
         public static readonly RuntimeExecutionTimesInternal Empty = new RuntimeExecutionTimesInternal(
-            queryEngineExecutionTime: default,
-            systemFunctionExecutionTime: default,
-            userDefinedFunctionExecutionTime: default);
+            queryEngineExecutionTime: TimeSpan.Zero,
+            systemFunctionExecutionTime: TimeSpan.Zero,
+            userDefinedFunctionExecutionTime: TimeSpan.Zero);
 
         /// <summary>
         /// Initializes a new instance of the RuntimeExecutionTimes class.

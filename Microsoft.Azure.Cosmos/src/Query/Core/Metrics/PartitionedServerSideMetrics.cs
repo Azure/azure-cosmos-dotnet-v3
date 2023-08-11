@@ -7,15 +7,13 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     /// <summary>
-    /// Per-partition metrics for queries from the backend.
+    /// Represents server side metrics specific for a single partition.
     /// </summary>
     public sealed class PartitionedServerSideMetrics
     {
         internal PartitionedServerSideMetrics(ServerSideMetricsInternal serverSideMetricsInternal)
+            : this(new ServerSideMetrics(serverSideMetricsInternal), serverSideMetricsInternal.FeedRange, serverSideMetricsInternal.PartitionKeyRangeId)
         {
-            this.ServerSideMetrics = new ServerSideMetrics(serverSideMetricsInternal);
-            this.FeedRange = serverSideMetricsInternal.FeedRange;
-            this.PartitionKeyRangeId = serverSideMetricsInternal.PartitionKeyRangeId;
         }
 
         /// <summary>
@@ -37,12 +35,12 @@ namespace Microsoft.Azure.Cosmos
         public ServerSideMetrics ServerSideMetrics { get; }
 
         /// <summary>
-        /// Gets the FeedRange for a single backend call.
+        /// Gets the FeedRange for the partition.
         /// </summary>
         public string FeedRange { get; }
 
         /// <summary>
-        /// Gets the partition key range id for a single backend call.
+        /// Gets the partition key range id for the partition.
         /// </summary>
         public string PartitionKeyRangeId { get; }
     }

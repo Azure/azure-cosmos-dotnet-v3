@@ -16,7 +16,10 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
-        private ServerSideAccumulatedMetrics cachedServerSideAccumulatedMetrics { get; set; }
+        private readonly Lazy<ServerSideAccumulatedMetrics> accumulatedMetrics;
+
+        public ServerSideAccumulatedMetrics AccumulatedMetrics => this.accumulatedMetrics.Value;
+
         public CosmosTraceDiagnostics(ITrace trace)
         {
             if (trace == null)
@@ -32,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             this.Value = rootTrace;
-            this.cachedServerSideAccumulatedMetrics = null;
+            this.accumulatedMetrics = this.accumulatedMetrics = new Lazy<ServerSideAccumulatedMetrics>(() => this.GetQueryMetrics());
         }
 
         public ITrace Value { get; }
@@ -54,11 +57,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override ServerSideAccumulatedMetrics GetQueryMetrics()
         {
-            if (this.cachedServerSideAccumulatedMetrics != null)
-            {
-                return this.cachedServerSideAccumulatedMetrics;
-            }
-
             ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
             ServerSideMetricsAccumulator.WalkTraceTreeForQueryMetrics(this.Value, accumulator);
 
@@ -71,8 +69,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             ServerSideMetrics serverSideMetrics = new ServerSideMetrics(accumulator.GetServerSideMetrics());
-            this.cachedServerSideAccumulatedMetrics = new ServerSideAccumulatedMetrics(serverSideMetrics, partitionedServerSideMetrics);
-            return this.cachedServerSideAccumulatedMetrics;
+            ServerSideAccumulatedMetrics accumulatedMetrics = new ServerSideAccumulatedMetrics(serverSideMetrics, partitionedServerSideMetrics);
+            return accumulatedMetrics;
         }
 
         internal bool IsGoneExceptionHit()
