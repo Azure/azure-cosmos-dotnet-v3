@@ -43,7 +43,7 @@ namespace CosmosBenchmark
 
                 MeterProvider meterProvider = Sdk.CreateMeterProviderBuilder()
                     .AddAzureMonitorMetricExporter(configure: new Action<AzureMonitorExporterOptions>(
-                        (options) => options.ConnectionString = config.AppInsightsInstrumentationKey))
+                        (options) => options.ConnectionString = config.AppInsightsConnectionString))
                     .AddMeter("CosmosBenchmarkInsertOperationMeter")
                     .AddMeter("CosmosBenchmarkQueryOperationMeter")
                     .AddMeter("CosmosBenchmarkReadOperationMeter")

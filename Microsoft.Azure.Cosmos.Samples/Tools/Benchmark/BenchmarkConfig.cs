@@ -131,7 +131,7 @@ namespace CosmosBenchmark
         public int MetricsReportingIntervalInSec { get; set; } = 5;
 
         [Option(Required = false, HelpText = "Application Insights instrumentation key")]
-        public string AppInsightsInstrumentationKey { get; set; }
+        public string AppInsightsConnectionString { get; set; }
 
         internal int GetTaskCount(int containerThroughput)
         {
