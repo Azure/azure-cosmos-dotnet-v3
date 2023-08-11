@@ -1226,7 +1226,6 @@
             {
                 return ItemComparer.Instance.Compare(element1, element2);
             }
-
         }
 
         [Flags]
@@ -1295,34 +1294,6 @@
                             FROM c
                             WHERE {filter}
                             ORDER BY c.{nameof(MixedTypedDocument.MixedTypeField)} {orderString}";
-
-                    QueryRequestOptions feedOptions = new QueryRequestOptions()
-                    {
-                        MaxBufferedItemCount = 1000,
-                        MaxItemCount = 16,
-                        MaxConcurrency = 10,
-                    };
-
-#if false
-                        For now we can not serve the query through continuation tokens correctly.
-                        This is because we allow order by on mixed types but not comparisions across types
-                        For example suppose the following query:
-                            SELECT c.MixedTypeField FROM c ORDER BY c.MixedTypeField
-                        returns:
-                        [
-                            {"MixedTypeField":[]},
-                            {"MixedTypeField":[1, 2, 3]},
-                            {"MixedTypeField":{}},
-                        ]
-                        and we left off on [1, 2, 3] then at some point the cross partition code resumes the query by running the following:
-                            SELECT c.MixedTypeField FROM c WHERE c.MixedTypeField > [1, 2, 3] ORDER BY c.MixedTypeField
-                        And comparison on arrays and objects is undefined.
-#endif
-
-                    List<CosmosElement> actual = await QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosElement>(
-                        container,
-                        query,
-                        queryRequestOptions: feedOptions);
 
                     IEnumerable<CosmosObject> insertedDocs = documents
                         .Select(document => CosmosElement.CreateFromBuffer<CosmosObject>(Encoding.UTF8.GetBytes(document.ToString())))
@@ -1403,11 +1374,26 @@
                         }, MockOrderByComparer.Value);
                     }
 
-                    Assert.IsTrue(
-                        expected.SequenceEqual(actual),
-                        $@" queryWithoutContinuations: {query},
+                    foreach (int pageSize in new int[] { 1, documents.Count / 2, documents.Count })
+                    {
+                        QueryRequestOptions feedOptions = new QueryRequestOptions()
+                        {
+                            MaxBufferedItemCount = 1000,
+                            MaxItemCount = pageSize,
+                            MaxConcurrency = 10,
+                        };
+
+                        List<CosmosElement> actual = await RunQueryAsync(
+                            container,
+                            query,
+                            queryRequestOptions: feedOptions);
+
+                        Assert.IsTrue(
+                            expected.SequenceEqual(actual),
+                            $@" queryWithoutContinuations: {query},
                             expected:{JsonConvert.SerializeObject(expected)},
                             actual: {JsonConvert.SerializeObject(actual)}");
+                    }
                 }
             }
         }

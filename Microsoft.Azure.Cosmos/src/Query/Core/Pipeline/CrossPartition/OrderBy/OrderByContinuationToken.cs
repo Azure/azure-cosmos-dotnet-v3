@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
-    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter;
 
     /// <summary>
     /// <para>
@@ -98,14 +97,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             //// filter is allowed to be null.
             this.ParallelContinuationToken = compositeContinuationToken ?? throw new ArgumentNullException(nameof(compositeContinuationToken));
 
-            if (resumeValues != null && resumeValues.Count > 0)
+            if ((resumeValues != null) && (resumeValues.Count > 0))
             {
                 this.ResumeValues = resumeValues;
                 this.OrderByItems = null;
             }
             else
             {
-                if (orderByItems == null || orderByItems.Count == 0)
+                if ((orderByItems == null) || (orderByItems.Count == 0))
                 {
                     throw new ArgumentException($"{nameof(orderByItems)} can not be empty.");
                 }
@@ -257,18 +256,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 }
             }
 
-            List<CosmosElement> resumeValuesRaw = new List<CosmosElement>();
+            List<CosmosElement> resumeValuesRaw;
             if (orderByContinuationToken.ResumeValues != null)
             {
+                resumeValuesRaw = new List<CosmosElement>(orderByContinuationToken.ResumeValues.Count);
                 foreach (SqlQueryResumeValue resumeValue in orderByContinuationToken.ResumeValues)
                 {
                     resumeValuesRaw.Add(SqlQueryResumeValue.ToCosmosElement(resumeValue));
                 }
             }
+            else
+            {
+                resumeValuesRaw = null;
+            }
 
             CosmosElement filter = orderByContinuationToken.Filter == null ? CosmosNull.Create() : CosmosString.Create(orderByContinuationToken.Filter);
 
-            CosmosObject cosmosObject = resumeValuesRaw.Count == 0
+            CosmosObject cosmosObject = (resumeValuesRaw == null)
                 ? CosmosObject.Create(
                     new Dictionary<string, CosmosElement>()
                     {
@@ -315,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             List<SqlQueryResumeValue> resumeValues;
             if (cosmosObject.TryGetValue(PropertyNames.ResumeValues, out CosmosArray resumeValuesRaw))
             {
-                resumeValues = new List<SqlQueryResumeValue>();
+                resumeValues = new List<SqlQueryResumeValue>(resumeValuesRaw.Count);
                 foreach (CosmosElement resumeValue in resumeValuesRaw)
                 {
                     resumeValues.Add(SqlQueryResumeValue.FromCosmosElement(resumeValue));
@@ -359,16 +363,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             int skipCount = (int)Number64.ToLong(skipCountRaw.GetValue());
 
             // filter will be present only when orderByItems is present. This property is not used for resumeValue base continuation
-            if (!cosmosObject.TryGetValue(PropertyNames.Filter, out CosmosElement filterRaw) && (orderByItems != null))
-            {
-                return TryCatch<OrderByContinuationToken>.FromException(
-                    new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{PropertyNames.Filter}': {cosmosElement}"));
-            }
-
             string filter;
-            if (filterRaw is CosmosString filterStringRaw)
+            if (orderByItems != null)
             {
-                filter = filterStringRaw.Value;
+                if (!cosmosObject.TryGetValue(PropertyNames.Filter, out CosmosElement filterRaw))
+                {
+                    return TryCatch<OrderByContinuationToken>.FromException(
+                        new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{PropertyNames.Filter}': {cosmosElement}"));
+                }
+
+                if (filterRaw is CosmosString filterStringRaw)
+                {
+                    filter = filterStringRaw.Value;
+                }
+                else
+                {
+                    filter = null;
+                }
             }
             else
             {

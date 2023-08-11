@@ -13,17 +13,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
-    using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter;
     using ResourceId = Documents.ResourceId;
 
     /// <summary>
@@ -637,25 +634,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 PartitionMapper.PartitionMapping<OrderByContinuationToken> partitionMapping = monadicGetOrderByContinuationTokenMapping.Result;
 
                 OrderByContinuationToken targetContinuationToken = partitionMapping.TargetMapping.Values.First();
+
+                int orderByResumeValueCount = 0;
                 IReadOnlyList<SqlQueryResumeValue> resumeValues;
+                IReadOnlyList<CosmosElement> orderByItems;
                 if (targetContinuationToken.ResumeValues != null)
                 {
                     // Use resume value if it is present in continuation token
                     resumeValues = targetContinuationToken.ResumeValues;
+                    orderByItems = null;
+                    orderByResumeValueCount = resumeValues.Count;
                 }
                 else
                 {
                     // If continuation token has only OrderByItems, check if it can be converted to resume value. This will
                     // help avoid re-writing the query. Conversion will work as long as the order by item type is a supported type. 
-                    IReadOnlyList<CosmosElement> orderByItems = targetContinuationToken.OrderByItems.Select(x => x.Item).ToList();
-
-                    if (orderByItems.Count != orderByColumns.Count)
-                    {
-                        throw new MalformedContinuationTokenException(
-                                $"Order By Items from continuation token did not match the query text. " +
-                                $"Order by item count: {orderByItems.Count()} did not match column count {orderByColumns.Count()}. " +
-                                $"Continuation token: {targetContinuationToken}");
-                    }
+                    orderByItems = targetContinuationToken.OrderByItems.Select(x => x.Item).ToList();
+                    orderByResumeValueCount = orderByItems.Count;
 
                     if (ContainsSupportedResumeTypes(targetContinuationToken.OrderByItems))
                     {
@@ -674,10 +669,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     }
                 }
 
+                if (orderByResumeValueCount != orderByColumns.Count)
+                {
+                    return TryCatch<IQueryPipelineStage>.FromException(
+                        new MalformedContinuationTokenException(
+                            $"Order By Items from continuation token did not match the query text. " +
+                            $"Order by item count: {orderByResumeValueCount} did not match column count {orderByColumns.Count()}. " +
+                            $"Continuation token: {targetContinuationToken}"));
+                }
+
                 enumeratorsAndTokens = new List<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>();
                 if (resumeValues != null)
                 {
-                    // Process Left of Target
+                    // Continuation contains resume values, so update SqlQuerySpec to include SqlQueryResumeFilter which
+                    // will specify the resume point to the backend. This avoid having to re-write the query. 
+
+                    // Process partitions left of Target. The resume values in these partition have
+                    // already been processed so exclude flag is set to true.
                     SqlQuerySpec leftQuerySpec = new SqlQuerySpec(
                         sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: TrueFilter),
                         sqlQuerySpec.Parameters,
@@ -699,7 +707,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         enumeratorsAndTokens.Add((remoteEnumerator, token));
                     }
 
-                    // Process Target Partitions
+                    // Process Target Partitions which is the last partition from which data has been returned. 
+                    // For this partition the Rid value needs to be set if present. Exclude flag is not set as the document
+                    // matching the Rid will be skipped based on SkipCount value. 
+                    // Backend requests can contains both SqlQueryResumeFilter and ContinuationToken and the backend will pick
+                    // the resume point that is bigger i.e. most restrictive
                     foreach (KeyValuePair<FeedRangeEpk, OrderByContinuationToken> kvp in partitionMapping.TargetMapping)
                     {
                         FeedRangeEpk range = kvp.Key;
@@ -722,7 +734,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         enumeratorsAndTokens.Add((remoteEnumerator, token));
                     }
 
-                    // Process Right of Target
+                    // Process partitions right of target. The Resume value in these partitions have not been processed so the exclude value is set to false.
                     SqlQuerySpec rightQuerySpec = new SqlQuerySpec(
                         sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: TrueFilter),
                         sqlQuerySpec.Parameters,
@@ -748,8 +760,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 {
                     // If continuation token doesn't have resume values or if order by items cannot be converted to resume values then
                     // rewrite the query filter to get the correct resume point
-                    IReadOnlyList<CosmosElement> orderByItems = targetContinuationToken.OrderByItems.Select(x => x.Item).ToList();
-
                     ReadOnlyMemory<(OrderByColumn, CosmosElement)> columnAndItems = orderByColumns.Zip(orderByItems, (column, item) => (column, item)).ToArray();
 
                     // For ascending order-by, left of target partition has filter expression > value,
@@ -1301,19 +1311,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             // If we made it here it means we failed to find the resume order by item which is possible
             // if the user added documents inbetween continuations, so we need to yield and filter the next page of results also.
             return TryCatch<(bool, int, TryCatch<OrderByQueryPage>)>.FromResult((false, itemsToSkip, enumerator.Current));
-        }
-
-        private static (SqlQueryResumeFilter leftInfo, SqlQueryResumeFilter targetInfo, SqlQueryResumeFilter rightInfo) GetQueryResumeInfo(
-            IReadOnlyList<SqlQueryResumeValue> resumeValues,
-            int skipCount,
-            string rid)
-        {
-            // NOTE: SkipCount == 0 indicates that backend continuation token needs to be used so resume info is not set for the target partition
-            return (
-                new SqlQueryResumeFilter(resumeValues, null, true),
-                skipCount == 0 ? null : new SqlQueryResumeFilter(resumeValues, rid, false),
-                new SqlQueryResumeFilter(resumeValues, null, false)
-            );
         }
 
         private static bool IsSplitException(Exception exception)

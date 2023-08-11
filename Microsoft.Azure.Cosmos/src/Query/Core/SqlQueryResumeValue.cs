@@ -84,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
         public int CompareTo(CosmosElement cosmosElement)
         {
+            // Convert ResumeValue to CosmosElement and invoke ItemComparer to compare the cosmoselements
             switch (this)
             {
                 case UndefinedResumeValue:
@@ -137,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
         }
 
+        // Utility method that converts SqlQueryResumeValue to CosmosElement which can then be serialized to string
         public static CosmosElement ToCosmosElement(SqlQueryResumeValue resumeValue)
         {
             return resumeValue switch
@@ -150,15 +152,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     new Dictionary<string, CosmosElement>()
                     {
                         { PropertyNames.Type, CosmosString.Create(PropertyNames.ArrayType) },
-                        { PropertyNames.Low, CosmosNumber64.Create(arrayValue.HashValue.GetLow()) },
-                        { PropertyNames.High, CosmosNumber64.Create(arrayValue.HashValue.GetHigh()) }
+                        { PropertyNames.Low, CosmosNumber64.Create((long)arrayValue.HashValue.GetLow()) },
+                        { PropertyNames.High, CosmosNumber64.Create((long)arrayValue.HashValue.GetHigh()) }
                     }),
                 ObjectResumeValue objectValue => CosmosObject.Create(
                     new Dictionary<string, CosmosElement>()
                     {
                         { PropertyNames.Type, CosmosString.Create(PropertyNames.ObjectType) },
-                        { PropertyNames.Low, CosmosNumber64.Create(objectValue.HashValue.GetLow()) },
-                        { PropertyNames.High, CosmosNumber64.Create(objectValue.HashValue.GetHigh()) }
+                        { PropertyNames.Low, CosmosNumber64.Create((long)objectValue.HashValue.GetLow()) },
+                        { PropertyNames.High, CosmosNumber64.Create((long)objectValue.HashValue.GetHigh()) }
                     }),
                 _ => throw new ArgumentException($"Invalid {nameof(SqlQueryResumeValue)} type."),
             };
@@ -200,25 +202,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     break;
 
                 case ArrayResumeValue arrayValue:
-                    writer.WriteStartObject();
-                    writer.WritePropertyName(SqlQueryResumeValue.PropertyNames.Type);
-                    writer.WriteValue(SqlQueryResumeValue.PropertyNames.ArrayType);
-                    writer.WritePropertyName(SqlQueryResumeValue.PropertyNames.Low);
-                    writer.WriteValue(arrayValue.HashValue.GetLow());
-                    writer.WritePropertyName(SqlQueryResumeValue.PropertyNames.High);
-                    writer.WriteValue(arrayValue.HashValue.GetHigh());
-                    writer.WriteEndObject();
+                    {
+                        writer.WriteStartObject();
+                        writer.WritePropertyName(PropertyNames.Type);
+                        writer.WriteValue(PropertyNames.ArrayType);
+                        writer.WritePropertyName(PropertyNames.Low);
+                        writer.WriteValue((long)arrayValue.HashValue.GetLow());
+                        writer.WritePropertyName(PropertyNames.High);
+                        writer.WriteValue((long)arrayValue.HashValue.GetHigh());
+                        writer.WriteEndObject();
+                    }
                     break;
 
                 case ObjectResumeValue objectValue:
-                    writer.WriteStartObject();
-                    writer.WritePropertyName(SqlQueryResumeValue.PropertyNames.Type);
-                    writer.WriteValue(SqlQueryResumeValue.PropertyNames.ObjectType);
-                    writer.WritePropertyName(SqlQueryResumeValue.PropertyNames.Low);
-                    writer.WriteValue(objectValue.HashValue.GetLow());
-                    writer.WritePropertyName(SqlQueryResumeValue.PropertyNames.High);
-                    writer.WriteValue(objectValue.HashValue.GetHigh());
-                    writer.WriteEndObject();
+                    {
+                        writer.WriteStartObject();
+                        writer.WritePropertyName(PropertyNames.Type);
+                        writer.WriteValue(PropertyNames.ObjectType);
+                        writer.WritePropertyName(PropertyNames.Low);
+                        writer.WriteValue((long)objectValue.HashValue.GetLow());
+                        writer.WritePropertyName(PropertyNames.High);
+                        writer.WriteValue((long)objectValue.HashValue.GetHigh());
+                        writer.WriteEndObject();
+                    }
                     break;
 
                 default:
@@ -226,6 +232,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
         }
 
+        // Visitor to convert resume values that are represented as CosmosElement to ResumeValue
+        // This is the inverse of ToCosmosElement method
         private sealed class CosmosElementToResumeValueVisitor : ICosmosElementVisitor<SqlQueryResumeValue>
         {
             public static readonly CosmosElementToResumeValueVisitor Singleton = new CosmosElementToResumeValueVisitor();
@@ -276,21 +284,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosObject cosmosObject)
             {
-                if (!cosmosObject.TryGetValue(SqlQueryResumeValue.PropertyNames.Type, out CosmosString objectType)
-                    || !cosmosObject.TryGetValue(SqlQueryResumeValue.PropertyNames.Low, out CosmosNumber64 lowValue)
-                    || !cosmosObject.TryGetValue(SqlQueryResumeValue.PropertyNames.High, out CosmosNumber64 highValue))
+                if (!cosmosObject.TryGetValue(PropertyNames.Type, out CosmosString objectType)
+                    || !cosmosObject.TryGetValue(PropertyNames.Low, out CosmosNumber64 lowValue)
+                    || !cosmosObject.TryGetValue(PropertyNames.High, out CosmosNumber64 highValue))
                 {
                     throw new ArgumentException($"Incorrect Array / Object Resume Value. One or more of the required properties are missing.");
                 }
 
-                if (string.Equals(objectType.Value, SqlQueryResumeValue.PropertyNames.ArrayType))
+                if (string.Equals(objectType.Value, PropertyNames.ArrayType))
                 {
                     return new ArrayResumeValue(
                         UInt128.Create(
                             (ulong)Number64.ToLong(lowValue.Value),
                             (ulong)Number64.ToLong(highValue.Value)));
                 }
-                else if (string.Equals(objectType.Value, SqlQueryResumeValue.PropertyNames.ObjectType))
+                else if (string.Equals(objectType.Value, PropertyNames.ObjectType))
                 {
                     return new ObjectResumeValue(
                         UInt128.Create(
@@ -299,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 }
                 else
                 {
-                    throw new ArgumentException($"Incorrect value for {SqlQueryResumeValue.PropertyNames.Type} property. Value is {objectType.Value}.");
+                    throw new ArgumentException($"Incorrect value for {PropertyNames.Type} property. Value is {objectType.Value}.");
                 }
             }
 
@@ -309,6 +317,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
         }
 
+        // Visitor to convert OrderBy values received from the backend to SqlQueryResumeValue
+        // OrderBy values from backend are represented as CosmosElement
         private sealed class OrderByValueToResumeValueVisitor : ICosmosElementVisitor<SqlQueryResumeValue>
         {
             public static readonly OrderByValueToResumeValueVisitor Singleton = new OrderByValueToResumeValueVisitor();
@@ -362,6 +372,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 return new StringResumeValue(cosmosString.Value);
             }
         }
-
     }
 }
