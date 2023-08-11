@@ -103,6 +103,7 @@ namespace CosmosBenchmark
             }
         }
 
+
         /// <summary>
         /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
