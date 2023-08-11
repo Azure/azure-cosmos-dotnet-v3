@@ -42,7 +42,9 @@ namespace CosmosBenchmark
                     .AddAzureMonitorTraceExporter();
 
                 MeterProvider meterProvider = Sdk.CreateMeterProviderBuilder()
-                    .AddAzureMonitorMetricExporter(configure: new Action<AzureMonitorExporterOptions>((options) => Configure(options, config)))
+                    .AddAzureMonitorMetricExporter(configure: new Action<AzureMonitorExporterOptions>(
+                        (options) => options.ConnectionString = config.AppInsightsInstrumentationKey
+                    ))
                     .AddMeter("CosmosBenchmarkInsertOperationMeter")
                     .AddMeter("CosmosBenchmarkQueryOperationMeter")
                     .AddMeter("CosmosBenchmarkReadOperationMeter")
@@ -102,17 +104,12 @@ namespace CosmosBenchmark
             }
         }
 
-        private static void Configure(AzureMonitorExporterOptions options, BenchmarkConfig config)
-        {
-            options.ConnectionString = $"InstrumentationKey={config.AppInsightsInstrumentationKey}";
-        }
-
         /// <summary>
         /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config, 
-            MeterProvider meterProvider, 
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config,
+            MeterProvider meterProvider,
             MetricsCollectorProvider metricsCollectorProvider)
         {
             // V3 SDK client initialization
