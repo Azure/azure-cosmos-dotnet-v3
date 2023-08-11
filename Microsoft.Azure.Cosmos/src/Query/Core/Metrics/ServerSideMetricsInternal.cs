@@ -13,21 +13,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     internal sealed class ServerSideMetricsInternal
     {
         /// <summary>
-        /// QueryMetrics that with all members having default (but not null) members.
+        /// QueryMetrics with all members having default (but not null) members.
         /// </summary>
         public static readonly ServerSideMetricsInternal Empty = new ServerSideMetricsInternal(
-            retrievedDocumentCount: default,
-            retrievedDocumentSize: default,
-            outputDocumentCount: default,
-            outputDocumentSize: default,
-            indexHitRatio: default,
-            totalQueryExecutionTime: default,
+            retrievedDocumentCount: 0,
+            retrievedDocumentSize: 0,
+            outputDocumentCount: 0,
+            outputDocumentSize: 0,
+            indexHitRatio: 0,
+            totalQueryExecutionTime: TimeSpan.Zero,
             queryPreparationTimes: QueryPreparationTimesInternal.Zero,
-            indexLookupTime: default,
-            documentLoadTime: default,
-            vmExecutionTime: default,
+            indexLookupTime: TimeSpan.Zero,
+            documentLoadTime: TimeSpan.Zero,
+            vmExecutionTime: TimeSpan.Zero,
             runtimeExecutionTimes: RuntimeExecutionTimesInternal.Empty,
-            documentWriteTime: default);
+            documentWriteTime: TimeSpan.Zero);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServerSideMetricsInternal"/> class.
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         public static ServerSideMetricsInternal Create(IEnumerable<ServerSideMetricsInternal> serverSideMetricsEnumerable)
         {
-            ServerSideMetricsAccumulator accumulator = default;
+            ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
             foreach (ServerSideMetricsInternal serverSideMetrics in serverSideMetricsEnumerable)
             {
                 accumulator.Accumulate(serverSideMetrics);
