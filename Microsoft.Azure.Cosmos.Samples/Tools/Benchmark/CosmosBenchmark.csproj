@@ -21,7 +21,6 @@
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
     <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="*" />
-    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.5.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">

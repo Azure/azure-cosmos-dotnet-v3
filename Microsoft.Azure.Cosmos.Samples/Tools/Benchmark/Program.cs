@@ -46,7 +46,6 @@ namespace CosmosBenchmark
                     .AddMeter("CosmosBenchmarkInsertOperationMeter")
                     .AddMeter("CosmosBenchmarkQueryOperationMeter")
                     .AddMeter("CosmosBenchmarkReadOperationMeter")
-                    .AddConsoleExporter()
                     .Build();
 
                 MetricsCollectorProvider metricsCollectorProvider = new MetricsCollectorProvider(config);
@@ -207,7 +206,7 @@ namespace CosmosBenchmark
                     databaseId: config.ResultsDatabase ?? config.Database,
                     containerId: config.ResultsContainer);
 
-                await resultContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.id));
+                await resultContainer.CreateItemAsync(runSummary, new PartitionKey(runSummary.pk));
             }
             else
             {
