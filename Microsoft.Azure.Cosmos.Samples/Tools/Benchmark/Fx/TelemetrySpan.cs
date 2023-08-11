@@ -73,13 +73,13 @@ namespace CosmosBenchmark
 
         internal static void ResetLatencyHistogram(int totalNumberOfIterations)
         {
-            latencyHistogram = new double[totalNumberOfIterations];
+            TelemetrySpan.latencyHistogram = new double[totalNumberOfIterations];
             latencyIndex = -1;
         }
 
         internal static double? GetLatencyPercentile(int percentile)
         {
-            if (latencyHistogram == null)
+            if (TelemetrySpan.latencyHistogram == null)
             {
                 return null;
             }
@@ -89,7 +89,7 @@ namespace CosmosBenchmark
 
         internal static double? GetLatencyQuantile(double quantile)
         {
-            if (latencyHistogram == null)
+            if (TelemetrySpan.latencyHistogram == null)
             {
                 return null;
             }
