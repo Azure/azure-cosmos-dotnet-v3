@@ -13,18 +13,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="ServerSideAccumulatedMetrics"/> class.
         /// </summary>
-        /// <param name="serverSideMetrics"></param>
+        /// <param name="cumulativeServerSideMetrics"></param>
         /// <param name="serverSideMetricsList"></param>
-        internal ServerSideAccumulatedMetrics(ServerSideMetrics serverSideMetrics, List<PartitionedServerSideMetrics> serverSideMetricsList)
+        internal ServerSideAccumulatedMetrics(ServerSideMetrics cumulativeServerSideMetrics, List<PartitionedServerSideMetrics> serverSideMetricsList)
         {
-            this.ServerSideMetrics = serverSideMetrics;
+            this.CumulativeServerSideMetrics = cumulativeServerSideMetrics;
             this.PartitionedServerSideMetrics = serverSideMetricsList;
         }
 
         /// <summary>
         /// Gets the ServerSideMetrics accumulated for a single round trip.
         /// </summary>
-        public ServerSideMetrics ServerSideMetrics { get; }
+        public ServerSideMetrics CumulativeServerSideMetrics { get; }
 
         /// <summary>
         /// Gets the list of ServerSideMetrics, one for for each partition.

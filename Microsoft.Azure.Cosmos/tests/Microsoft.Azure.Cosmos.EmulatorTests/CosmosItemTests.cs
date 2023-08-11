@@ -142,6 +142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
             Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
             Assert.AreEqual(0, response.Diagnostics.GetFailedRequestCount());
+            Assert.IsNull(response.Diagnostics.GetQueryMetrics());
 
             response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response);
@@ -159,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             Assert.IsFalse(string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+            Assert.IsNull(response.Diagnostics.GetQueryMetrics());
         }
 
         [TestMethod]
@@ -604,6 +606,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(response);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
                 Assert.IsNotNull(response.Headers.Session);
+                Assert.IsNull(response.Diagnostics.GetQueryMetrics());
             }
 
             {
@@ -1281,11 +1284,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
 
                 // verify ServerSideMetrics matches metrics retrieved from header
-                ServerSideAccumulatedMetrics serverSideMetricsFromDiagnostics = response.Diagnostics.GetQueryMetrics();
-                bool tryParseResult = ServerSideMetricsInternal.TryParseFromDelimitedString(response.Headers.QueryMetricsText, out ServerSideMetricsInternal serverSideMetricsFromHeaders);
+                ServerSideAccumulatedMetrics metricsFromDiagnostics = response.Diagnostics.GetQueryMetrics();
+                bool tryParseResult = ServerSideMetricsInternal.TryParseFromDelimitedString(response.Headers.QueryMetricsText, out ServerSideMetricsInternal metricsFromHeaders);
                 Assert.IsTrue(tryParseResult);
-                headerMetricsAccumulator.Accumulate(serverSideMetricsFromHeaders);
-                Assert.IsTrue(headerMetricsAccumulator.GetServerSideMetrics().FormatTrace() == serverSideMetricsFromDiagnostics.ServerSideMetrics.FormatTrace());
+                headerMetricsAccumulator.Accumulate(metricsFromHeaders);
+                Assert.IsTrue(headerMetricsAccumulator.GetServerSideMetrics().FormatTrace() == metricsFromDiagnostics.CumulativeServerSideMetrics.FormatTrace());
+
+                Assert.IsTrue(metricsFromDiagnostics.PartitionedServerSideMetrics.Count == 1); // can we guarantee this?
 
                 using (StreamReader sr = new StreamReader(response.Content))
                 using (JsonTextReader jtr = new JsonTextReader(sr))
