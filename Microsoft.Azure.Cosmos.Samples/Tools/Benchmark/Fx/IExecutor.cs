@@ -6,7 +6,6 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Threading.Tasks;
-    using OpenTelemetry.Metrics;
 
     internal interface IExecutor
     {

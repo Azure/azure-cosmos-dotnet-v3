@@ -8,7 +8,6 @@ namespace CosmosBenchmark
     using System.Diagnostics;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using OpenTelemetry.Metrics;
 
     internal class SerialOperationExecutor : IExecutor
     {
@@ -118,6 +117,7 @@ namespace CosmosBenchmark
             finally
             {
                 completionCallback();
+                BenchmarkExecutionEventSource.Instance.Completed(isWarmup);
             }
         }
     }
