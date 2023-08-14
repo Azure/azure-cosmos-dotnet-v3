@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosAccountServiceConfiguration accountServiceConfiguration { get; private set; }
 
-        internal TelemetryToServiceHelper TelemetryToServiceHelper { get; set; }
+        internal TelemetryToServiceHelper telemetryToServiceHelper { get; set; }
 
         private ClientCollectionCache collectionCache;
 
@@ -661,7 +661,7 @@ namespace Microsoft.Azure.Cosmos
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
-                    telemetryToServiceHelper: this.TelemetryToServiceHelper);
+                    telemetryToServiceHelper: this.telemetryToServiceHelper);
                 this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
 
                 DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
@@ -941,7 +941,7 @@ namespace Microsoft.Azure.Cosmos
             VmMetadataApiHandler.TryInitialize(this.httpClient);
 
             // Starting ClientTelemetry Job
-            this.TelemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob(this.clientId,
+            this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob(this.clientId,
                                                                  this.ConnectionPolicy,
                                                                  this.cosmosAuthorization,
                                                                  this.httpClient,
@@ -1032,7 +1032,7 @@ namespace Microsoft.Azure.Cosmos
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
-                    telemetryToServiceHelper: this.TelemetryToServiceHelper);
+                    telemetryToServiceHelper: this.telemetryToServiceHelper);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
@@ -1303,10 +1303,10 @@ namespace Microsoft.Azure.Cosmos
                 this.cosmosAuthorization.Dispose();
             }
 
-            if (this.TelemetryToServiceHelper != null)
+            if (this.telemetryToServiceHelper != null)
             {
-                this.TelemetryToServiceHelper.Dispose();
-                this.TelemetryToServiceHelper = null;
+                this.telemetryToServiceHelper.Dispose();
+                this.telemetryToServiceHelper = null;
             }
 
             if (this.GlobalEndpointManager != null)
