@@ -68,13 +68,13 @@ namespace CosmosBenchmark
             this.meter = meter;
             this.rpsMetricNameHistogram = meter.CreateHistogram<double>($"{prefix}OperationRpsHistogram");
             this.operationLatencyHistogram = meter.CreateHistogram<double>($"{prefix}OperationLatencyInMsHistogram");
-            this.successOperationCounter = meter.CreateCounter<long>($"{prefix}InsertOperationSuccess");
-            this.failureOperationCounter = meter.CreateCounter<long>($"{prefix}InsertOperationFailure");
+            this.successOperationCounter = meter.CreateCounter<long>($"{prefix}OperationSuccess");
+            this.failureOperationCounter = meter.CreateCounter<long>($"{prefix}OperationFailure");
             
-            this.latencyInMsMetricNameGauge = this.meter.CreateObservableGauge($"{prefix}InsertOperationLatencyInMs",
+            this.latencyInMsMetricNameGauge = this.meter.CreateObservableGauge($"{prefix}OperationLatencyInMs",
                 () => new Measurement<double>(this.latencyInMs));
 
-            this.rpsNameGauge = this.meter.CreateObservableGauge($"{prefix}InsertOperationRps",
+            this.rpsNameGauge = this.meter.CreateObservableGauge($"{prefix}OperationRps",
                 () => new Measurement<double>(this.rps));
         }
 

@@ -27,8 +27,11 @@ namespace CosmosBenchmark
 
         private readonly Meter readOperationMeter = new("CosmosBenchmarkReadOperationMeter");
 
-        public MetricsCollectorProvider(BenchmarkConfig config)
+        private readonly MeterProvider meterProvider;
+
+        public MetricsCollectorProvider(BenchmarkConfig config, MeterProvider meterProvider)
         {
+            this.meterProvider = meterProvider;
             this.insertOperationMetricsCollector ??= new MetricsCollector(this.insertOperationMeter, "Insert");
             this.queryOperationMetricsCollector ??= new MetricsCollector(this.queryOperationMeter, "Query");
             this.readOperationMetricsCollector ??= new MetricsCollector(this.readOperationMeter, "Read");
@@ -39,18 +42,17 @@ namespace CosmosBenchmark
         /// Gets the metric collector.
         /// </summary>
         /// <param name="benchmarkOperation">Benchmark operation.</param>
-        /// <param name="meterProvider">Meter provider.</param>
         /// <param name="config">Benchmark configuration.</param>
         /// <returns>Metrics collector.</returns>
         /// <exception cref="NotSupportedException">Thrown if provided benchmark operation is not covered supported to collect metrics.</exception>
-        public IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, MeterProvider meterProvider, BenchmarkConfig config)
+        public IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, BenchmarkConfig config)
         {
             MetricCollectionWindow metricCollectionWindow = this.metricCollectionWindow;
 
             // Reset metricCollectionWindow and flush.
             if (!metricCollectionWindow.IsValid)
             {
-                meterProvider.ForceFlush();
+                this.meterProvider.ForceFlush();
                 metricCollectionWindow.Reset(config);
             }
 
