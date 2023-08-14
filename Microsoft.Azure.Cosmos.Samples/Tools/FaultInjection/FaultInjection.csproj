@@ -15,6 +15,12 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
 	</ItemGroup>
+
+	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+    	<PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
+    	<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" />
+  	</ItemGroup>
+
 	<PropertyGroup>
 		<SignAssembly>true</SignAssembly>
 		<DelaySign>true</DelaySign>
