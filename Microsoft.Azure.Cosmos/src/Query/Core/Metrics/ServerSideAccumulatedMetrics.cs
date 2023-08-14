@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cumulativeServerSideMetrics"></param>
         /// <param name="serverSideMetricsList"></param>
-        internal ServerSideAccumulatedMetrics(ServerSideMetrics cumulativeServerSideMetrics, List<PartitionedServerSideMetrics> serverSideMetricsList)
+        public ServerSideAccumulatedMetrics(ServerSideMetrics cumulativeServerSideMetrics, List<PartitionedServerSideMetrics> serverSideMetricsList)
         {
             this.CumulativeServerSideMetrics = cumulativeServerSideMetrics;
             this.PartitionedServerSideMetrics = serverSideMetricsList;

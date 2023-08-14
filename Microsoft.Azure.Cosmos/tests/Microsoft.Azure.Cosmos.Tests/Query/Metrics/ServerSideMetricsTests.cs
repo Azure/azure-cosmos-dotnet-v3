@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
     using System;
     using VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using System.Collections.Generic;
 
     [TestClass]
     public class ServerSideMetricsTests
@@ -165,8 +166,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
             accumulator.Accumulate(ServerSideMetrics);
             accumulator.Accumulate(ServerSideMetrics);
-
             ServerSideMetricsInternal serverSideMetricsFromAddition = accumulator.GetServerSideMetrics();
+
+            List<ServerSideMetricsInternal> metricsList = new List<ServerSideMetricsInternal> { ServerSideMetrics, ServerSideMetrics };
+            ServerSideMetricsInternal serverSideMetricsFromCreate = ServerSideMetricsInternal.Create(metricsList);
+
             ServerSideMetricsInternal expected = new ServerSideMetricsInternal(
                 retrievedDocumentCount * 2,
                 retrievedDocumentSize * 2,
@@ -189,8 +193,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
                 documentWriteTime * 2);
 
             ServerSideMetricsTests.ValidateServerSideMetricsEquals(expected, serverSideMetricsFromAddition);
+            ServerSideMetricsTests.ValidateServerSideMetricsEquals(expected, serverSideMetricsFromCreate);
         }
-
         private static void ValidateParse(string delimitedString, ServerSideMetricsInternal expected)
         {
             Assert.IsTrue(ServerSideMetricsParser.TryParse(delimitedString, out ServerSideMetricsInternal actual));

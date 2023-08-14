@@ -1288,9 +1288,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 bool tryParseResult = ServerSideMetricsInternal.TryParseFromDelimitedString(response.Headers.QueryMetricsText, out ServerSideMetricsInternal metricsFromHeaders);
                 Assert.IsTrue(tryParseResult);
                 headerMetricsAccumulator.Accumulate(metricsFromHeaders);
-                Assert.IsTrue(headerMetricsAccumulator.GetServerSideMetrics().FormatTrace() == metricsFromDiagnostics.CumulativeServerSideMetrics.FormatTrace());
+                Assert.IsTrue(headerMetricsAccumulator.GetServerSideMetrics().FormatTrace() == SerializeServerSideMetrics(metricsFromDiagnostics.CumulativeServerSideMetrics));
 
-                Assert.IsTrue(metricsFromDiagnostics.PartitionedServerSideMetrics.Count == 1); // can we guarantee this?
+                Assert.IsTrue(metricsFromDiagnostics.PartitionedServerSideMetrics.Count == 1); //TODO: can we guarantee this?
 
                 using (StreamReader sr = new StreamReader(response.Content))
                 using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -3156,6 +3156,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
             }
+        }
+
+        private static string SerializeServerSideMetrics(ServerSideMetrics serverSideMetrics)
+        {
+            return $"totalExecutionTimeInMs={serverSideMetrics.TotalTime.TotalMilliseconds};queryCompileTimeInMs={serverSideMetrics.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds};queryLogicalPlanBuildTimeInMs={serverSideMetrics.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds};queryPhysicalPlanBuildTimeInMs={serverSideMetrics.QueryPreparationTimes.PhysicalPlanBuildTime.TotalMilliseconds};queryOptimizationTimeInMs={serverSideMetrics.QueryPreparationTimes.QueryOptimizationTime.TotalMilliseconds};indexLookupTimeInMs={serverSideMetrics.IndexLookupTime.TotalMilliseconds};documentLoadTimeInMs={serverSideMetrics.DocumentLoadTime.TotalMilliseconds};systemFunctionExecuteTimeInMs={serverSideMetrics.RuntimeExecutionTimes.SystemFunctionExecutionTime.TotalMilliseconds};userFunctionExecuteTimeInMs={serverSideMetrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime.TotalMilliseconds};retrievedDocumentCount={serverSideMetrics.RetrievedDocumentCount};retrievedDocumentSize={serverSideMetrics.RetrievedDocumentSize};outputDocumentCount={serverSideMetrics.OutputDocumentCount};outputDocumentSize={serverSideMetrics.OutputDocumentSize};writeOutputTimeInMs={serverSideMetrics.DocumentWriteTime.TotalMilliseconds};indexUtilizationRatio={serverSideMetrics.IndexHitRatio}";
         }
     }
 }
