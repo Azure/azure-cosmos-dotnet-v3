@@ -23,7 +23,7 @@
         }
 #else
         [TestMethod]
-        public void ContractChanges()
+         public void ContractChanges()
         {
             ContractEnforcement.ValidateContractContainBreakingChanges(
                 dllName: DllName,

@@ -11,28 +11,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
     [Serializable]
     internal sealed class RequestInfo
     {
-        [JsonProperty("uri")]
+        [JsonProperty("uri", Required = Required.Always)]
         public string Uri { get; set; }
 
-        [JsonProperty("databaseName")]
+        [JsonProperty("databaseName", Required = Required.Always)]
         public string DatabaseName { get; set; }
 
-        [JsonProperty("containerName")]
+        [JsonProperty("containerName", Required = Required.Always)]
         public string ContainerName { get; set; }
 
-        [JsonProperty("operation")]
+        [JsonProperty("operation", Required = Required.Always)]
         public string Operation { get; set; }
 
-        [JsonProperty("resource")]
+        [JsonProperty("resource", Required = Required.Always)]
         public string Resource { get; set; }
 
-        [JsonProperty("statusCode")]
+        [JsonProperty("statusCode", Required = Required.Always)]
         public int? StatusCode { get; set; }
 
-        [JsonProperty("subStatusCode")]
+        [JsonProperty("subStatusCode", Required = Required.Always)]
         public int SubStatusCode { get; set; }
 
-        [JsonProperty("metricInfo")]
+        [JsonProperty("metricInfo", Required = Required.Always)]
         public List<MetricInfo> Metrics { get; set; } = new List<MetricInfo>();
 
         public override int GetHashCode()

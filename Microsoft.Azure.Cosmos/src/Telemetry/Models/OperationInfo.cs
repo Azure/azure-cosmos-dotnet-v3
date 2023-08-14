@@ -16,31 +16,31 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         [JsonProperty(PropertyName = "regionsContacted")]
         internal string RegionsContacted { get; }
 
-        [JsonProperty(PropertyName = "greaterThan1Kb")]
+        [JsonProperty(PropertyName = "greaterThan1Kb", Required = Required.Always)]
         internal bool? GreaterThan1Kb { get; set; }
 
-        [JsonProperty(PropertyName = "databaseName")]
+        [JsonProperty(PropertyName = "databaseName", Required = Required.Always)]
         internal string DatabaseName { get; }
 
-        [JsonProperty(PropertyName = "containerName")]
+        [JsonProperty(PropertyName = "containerName", Required = Required.Always)]
         internal string ContainerName { get; }
 
-        [JsonProperty(PropertyName = "operation")]
+        [JsonProperty(PropertyName = "operation", Required = Required.Always)]
         internal string Operation { get; }
 
-        [JsonProperty(PropertyName = "resource")]
+        [JsonProperty(PropertyName = "resource", Required = Required.Always)]
         internal string Resource { get; }
 
         [JsonProperty(PropertyName = "consistency")]
         internal string Consistency { get; }
 
-        [JsonProperty(PropertyName = "statusCode")]
+        [JsonProperty(PropertyName = "statusCode", Required = Required.Always)]
         public int? StatusCode { get; }
 
-        [JsonProperty(PropertyName = "subStatusCode")]
+        [JsonProperty(PropertyName = "subStatusCode", Required = Required.Always)]
         public int SubStatusCode { get; }
 
-        [JsonProperty(PropertyName = "metricInfo")]
+        [JsonProperty(PropertyName = "metricInfo", Required = Required.Always)]
         internal MetricInfo MetricInfo { get; set; }
 
         internal OperationInfo(string metricsName, string unitName)

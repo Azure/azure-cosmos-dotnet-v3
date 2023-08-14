@@ -4,28 +4,34 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Contracts
 {
-    using System;
+    using System.IO;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
     using NJsonSchema;
-    using static Microsoft.Azure.Cosmos.PatchConstants;
+    using NJsonSchema.Generation;
 
+    [TestCategory("Windows")]
+    [TestCategory("UpdateContract")]
     [TestClass]
     public class ClientTelemetryServiceContractTest
     {
-        [TestMethod]
-        public void TraceApiContractTest()
-        {
-            JsonSchema schema = JsonSchema.FromType(typeof(Schemas));
-            Console.WriteLine(schema.ToJson());
-        }
-    }
+        private const string ContractPath = "ClientTelemetryServiceAPI.json";
+        private const string ContractChangesPath = "ClientTelemetryServiceChangesAPI.json";
 
-    [Serializable]
-    internal class Schemas
-    {
-        [JsonProperty(PropertyName = "clientTelemetryProperties")]
-        internal ClientTelemetryProperties ClientTelemetryProperties { get; set; }
+        [TestMethod]
+        public void TraceApiContractTestAsync()
+        {
+            JsonSchema schema = JsonSchema.FromType<ClientTelemetryProperties>(new JsonSchemaGeneratorSettings()
+            {
+                UseXmlDocumentation = false,
+                DefaultDictionaryValueReferenceTypeNullHandling = ReferenceTypeNullHandling.Null
+
+            });
+            string localJson = schema.ToJson();
+            File.WriteAllText($"Contracts/{ContractChangesPath}", localJson);
+
+            string baselineJson = File.ReadAllText($"Contracts/{ContractPath}");
+            Assert.AreEqual(localJson, baselineJson);
+        }
     }
 }

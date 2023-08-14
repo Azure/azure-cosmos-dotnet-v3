@@ -12,30 +12,57 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
     [Serializable]
     internal sealed class ClientTelemetryProperties
     {
-        [JsonProperty(PropertyName = "timeStamp")]
+        /// <summary>
+        /// Timestamp when telemetry was start collecting telemetry
+        /// </summary>
+        [JsonProperty(PropertyName = "timeStamp", Required = Required.Always)]
         internal string DateTimeUtc { get; set; }
 
-        [JsonProperty(PropertyName = "clientId")]
+        /// <summary>
+        /// Unique Id for the client instance
+        /// </summary>
+        [JsonProperty(PropertyName = "clientId", Required = Required.Always)]
         internal string ClientId { get; }
 
-        [JsonProperty(PropertyName = "machineId")]
+        /// <summary>
+        /// Unique Id for the machine
+        /// </summary>
+        [JsonProperty(PropertyName = "machineId", Required = Required.Always)]
         internal string MachineId { get; set; }
 
-        [JsonProperty(PropertyName = "processId")]
+        /// <summary>
+        /// Unique Id for the process
+        /// </summary>
+        [JsonProperty(PropertyName = "processId", Required = Required.Always)]
         internal string ProcessId { get; }
 
-        [JsonProperty(PropertyName = "userAgent")]
+        /// <summary>
+        /// SDK userAgent
+        /// </summary>
+        [JsonProperty(PropertyName = "userAgent", Required = Required.Always)]
         internal string UserAgent { get; }
 
-        [JsonProperty(PropertyName = "connectionMode")]
+        /// <summary>
+        /// Gateway Modes i.e. GATEWAY or DIRECT
+        /// </summary>
+        [JsonProperty(PropertyName = "connectionMode", Required = Required.Always)]
         internal string ConnectionMode { get; }
 
-        [JsonProperty(PropertyName = "globalDatabaseAccountName")]
+        /// <summary>
+        /// Global Database Account Name
+        /// </summary>
+        [JsonProperty(PropertyName = "globalDatabaseAccountName", Required = Required.Always)]
         internal string GlobalDatabaseAccountName { get; set; }
 
+        /// <summary>
+        /// Region Information of the application using Azure Metadata API
+        /// </summary>
         [JsonProperty(PropertyName = "applicationRegion")]
         internal string ApplicationRegion { get; set; }
 
+        /// <summary>
+        ///  Host Information of the application using Azure Metadata API
+        /// </summary>
         [JsonProperty(PropertyName = "hostEnvInfo")]
         internal string HostEnvInfo { get; set; }
 
@@ -48,10 +75,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
         [JsonProperty(PropertyName = "preferredRegions")]
         internal IReadOnlyList<string> PreferredRegions { get; set; }
 
-        [JsonProperty(PropertyName = "aggregationIntervalInSec")]
+        [JsonProperty(PropertyName = "aggregationIntervalInSec", Required = Required.Always)]
         internal int AggregationIntervalInSec { get; set; }
 
-        [JsonProperty(PropertyName = "systemInfo")]
+        [JsonProperty(PropertyName = "systemInfo", Required = Required.Always)]
         internal List<SystemInfo> SystemInfo { get; set; }
 
         [JsonProperty(PropertyName = "cacheRefreshInfo")]

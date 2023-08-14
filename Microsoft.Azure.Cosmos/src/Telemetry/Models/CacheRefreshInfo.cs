@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
     [Serializable]
     internal sealed class CacheRefreshInfo : OperationInfo
     {
-        [JsonProperty(PropertyName = "cacheRefreshSource")]
+        [JsonProperty(PropertyName = "cacheRefreshSource", Required = Required.Always)]
         internal string CacheRefreshSource { get; }
 
         internal CacheRefreshInfo(string metricsName, string unitName)

@@ -36,25 +36,25 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
             this.Percentiles = percentiles;
         }
 
-        [JsonProperty(PropertyName = "metricsName")]
+        [JsonProperty(PropertyName = "metricsName", Required = Required.Always)]
         internal string MetricsName { get; }
 
         [JsonProperty(PropertyName = "unitName")]
         internal string UnitName { get; }
 
-        [JsonProperty(PropertyName = "mean")]
+        [JsonProperty(PropertyName = "mean", Required = Required.Always)]
         internal double Mean { get; set; }
 
-        [JsonProperty(PropertyName = "count")]
+        [JsonProperty(PropertyName = "count", Required = Required.Always)]
         internal long Count { get; set; }
 
-        [JsonProperty(PropertyName = "min")]
+        [JsonProperty(PropertyName = "min", Required = Required.Always)]
         internal double Min { get; set; }
 
-        [JsonProperty(PropertyName = "max")]
+        [JsonProperty(PropertyName = "max", Required = Required.Always)]
         internal double Max { get; set; }
 
-        [JsonProperty(PropertyName = "percentiles")]
+        [JsonProperty(PropertyName = "percentiles", Required = Required.Always)]
         internal IReadOnlyDictionary<double, double> Percentiles { get; set; }
 
         /// <summary>

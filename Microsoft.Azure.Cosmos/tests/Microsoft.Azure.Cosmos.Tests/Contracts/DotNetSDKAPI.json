@@ -95,7 +95,7 @@
           ],
           "MethodInfo": "System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.AccountRegion] WritableRegions;CanRead:True;CanWrite:False;System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.AccountRegion] get_WritableRegions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
+        "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"_etag\", NullValueHandling = 1)]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"

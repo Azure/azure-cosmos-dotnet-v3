@@ -11,10 +11,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Models
     [Serializable]
     internal sealed class SystemInfo
     {
-        [JsonProperty(PropertyName = "resource")]
+        [JsonProperty(PropertyName = "resource", Required = Required.Always)]
         internal string Resource => "HostMachine";
 
-        [JsonProperty(PropertyName = "metricInfo")]
+        [JsonProperty(PropertyName = "metricInfo", Required = Required.Always)]
         internal MetricInfo MetricInfo { get; set; }
 
         internal SystemInfo(string metricsName, string unitName)
