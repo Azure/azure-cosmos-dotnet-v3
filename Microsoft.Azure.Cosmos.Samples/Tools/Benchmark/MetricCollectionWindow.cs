@@ -33,7 +33,7 @@ namespace CosmosBenchmark
         /// <summary>
         /// Indicates whether the current window is valid.
         /// </summary>
-        public bool IsValid => DateTime.Now > this.ValidTill;
+        public bool IsValid => DateTime.UtcNow > this.ValidTill;
 
         /// <summary>
         /// Resets the started timestamp and valid till timespan.
@@ -41,7 +41,7 @@ namespace CosmosBenchmark
         /// <param name="config"></param>
         public void Reset(BenchmarkConfig config)
         {
-            this.Started = DateTime.Now;
+            this.Started = DateTime.UtcNow;
             this.ValidTill = this.Started.AddSeconds(config.MetricsReportingIntervalInSec);
         }
     }

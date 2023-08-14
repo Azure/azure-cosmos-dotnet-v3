@@ -18,7 +18,7 @@ namespace CosmosBenchmark
 
         private Stopwatch stopwatch;
         private Func<OperationResult> lazyOperationResult;
-        private Action<double> recordLatencyAction;
+        private Action<TimeSpan> recordLatencyAction;
         private bool disableTelemetry;
         private BenchmarkConfig benchmarkConfig;
 
@@ -26,7 +26,7 @@ namespace CosmosBenchmark
             BenchmarkConfig benchmarkConfig,
             Func<OperationResult> lazyOperationResult,
             bool disableTelemetry,
-            Action<double> recordLatencyAction)
+            Action<TimeSpan> recordLatencyAction)
         {
             if (disableTelemetry || !TelemetrySpan.IncludePercentile)
             {
@@ -54,7 +54,7 @@ namespace CosmosBenchmark
                 {
                     RecordLatency(this.stopwatch.Elapsed.TotalMilliseconds);
 
-                    this.recordLatencyAction?.Invoke(this.stopwatch.Elapsed.TotalMilliseconds);
+                    this.recordLatencyAction?.Invoke(TimeSpan.FromMilliseconds(this.stopwatch.Elapsed.TotalMilliseconds));
                 }
 
                 BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(

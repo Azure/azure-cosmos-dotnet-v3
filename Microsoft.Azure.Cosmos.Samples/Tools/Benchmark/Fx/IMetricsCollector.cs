@@ -4,6 +4,8 @@
 
 namespace CosmosBenchmark
 {
+    using System;
+
     /// <summary>
     /// Represents the metrics collector.
     /// </summary>
@@ -23,6 +25,6 @@ namespace CosmosBenchmark
         /// Records latency in milliseconda.
         /// </summary>
         /// <param name="milliseconds">The number of milliseconds to record.</param>
-        void RecordLatencyAndRps(double milliseconds);
+        void RecordLatencyAndRps(TimeSpan timeSpan);
     }
 }

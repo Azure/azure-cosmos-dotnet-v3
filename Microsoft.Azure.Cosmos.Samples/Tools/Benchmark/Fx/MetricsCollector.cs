@@ -4,6 +4,7 @@
 
 namespace CosmosBenchmark
 {
+    using System;
     using System.Diagnostics.Metrics;
 
     /// <summary>
@@ -98,10 +99,10 @@ namespace CosmosBenchmark
         /// </summary>
         /// <param name="milliseconds">The number of milliseconds to record.</param>
         public void RecordLatencyAndRps(
-            double milliseconds)
+            TimeSpan timeSpan)
         {
-            this.rps = 1000 / milliseconds;
-            this.latencyInMs = milliseconds;
+            this.rps = 1000 / timeSpan.Milliseconds;
+            this.latencyInMs = timeSpan.Milliseconds;
             this.rpsMetricNameHistogram.Record(this.rps);
             this.operationLatencyHistogram.Record(this.latencyInMs);
         }
