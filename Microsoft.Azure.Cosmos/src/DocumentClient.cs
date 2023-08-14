@@ -142,7 +142,8 @@ namespace Microsoft.Azure.Cosmos
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
 
         internal CosmosAccountServiceConfiguration accountServiceConfiguration { get; private set; }
-        internal ClientTelemetry clientTelemetry { get; set; }
+
+        internal TelemetryToServiceHelper TelemetryToServiceHelper { get; set; }
 
         private ClientCollectionCache collectionCache;
 
@@ -660,7 +661,7 @@ namespace Microsoft.Azure.Cosmos
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
-                    clientTelemetry: this.clientTelemetry);
+                    telemetryToServiceHelper: this.TelemetryToServiceHelper);
                 this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
 
                 DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
@@ -939,6 +940,16 @@ namespace Microsoft.Azure.Cosmos
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
 
+#if !INTERNAL
+            // Starting ClientTelemetry Job
+            this.TelemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob(this.clientId,
+                                                                 this.ConnectionPolicy,
+                                                                 this.cosmosAuthorization,
+                                                                 this.httpClient,
+                                                                 this.ServiceEndpoint,
+                                                                 this.GlobalEndpointManager,
+                                                                 this.cancellationTokenSource);
+#endif
             if (sessionContainer != null)
             {
                 this.sessionContainer = sessionContainer;
@@ -960,12 +971,6 @@ namespace Microsoft.Azure.Cosmos
             // For gateway: GatewayProxy.
             // For direct: WFStoreProxy [set in OpenAsync()].
             this.eventSource = DocumentClientEventSource.Instance;
-
-            // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
-            // the system information so no need to track it.
-#if !INTERNAL
-            this.InitializeClientTelemetry();
-#endif
 
             this.initializeTaskFactory = (_) => TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
@@ -1028,7 +1033,7 @@ namespace Microsoft.Azure.Cosmos
                     storeModel: this.GatewayStoreModel, 
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
-                    clientTelemetry: this.clientTelemetry);
+                    telemetryToServiceHelper: this.TelemetryToServiceHelper);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
@@ -1044,36 +1049,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return true;
-        }
-
-        private void InitializeClientTelemetry()
-        {
-            if (this.ConnectionPolicy.EnableClientTelemetry)
-            {
-                try
-                {
-                    this.clientTelemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
-                        clientId: this.clientId,
-                        httpClient: this.httpClient,
-                        userAgent: this.ConnectionPolicy.UserAgentContainer.BaseUserAgent,
-                        connectionMode: this.ConnectionPolicy.ConnectionMode,
-                        authorizationTokenProvider: this.cosmosAuthorization,
-                        diagnosticsHelper: DiagnosticsHandlerHelper.Instance,
-                        preferredRegions: this.ConnectionPolicy.PreferredLocations,
-                        globalEndpointManager: this.GlobalEndpointManager);
-
-                    DefaultTrace.TraceInformation("Client Telemetry Enabled.");
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
-                    this.ConnectionPolicy.EnableClientTelemetry = false;
-                }
-            }
-            else
-            {
-                DefaultTrace.TraceInformation("Client Telemetry Disabled.");
-            }
         }
 
         private async Task InitializeCachesAsync(string databaseName, DocumentCollection collection, CancellationToken cancellationToken)
@@ -1329,6 +1304,12 @@ namespace Microsoft.Azure.Cosmos
                 this.cosmosAuthorization.Dispose();
             }
 
+            if (this.TelemetryToServiceHelper != null)
+            {
+                this.TelemetryToServiceHelper.Dispose();
+                this.TelemetryToServiceHelper = null;
+            }
+
             if (this.GlobalEndpointManager != null)
             {
                 this.GlobalEndpointManager.Dispose();
@@ -1344,11 +1325,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.initTaskCache.Dispose();
                 this.initTaskCache = null;
-            }
-
-            if (this.clientTelemetry != null)
-            {
-                this.clientTelemetry.Dispose();
             }
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
