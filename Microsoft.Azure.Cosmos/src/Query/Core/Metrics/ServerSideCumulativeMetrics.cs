@@ -8,27 +8,27 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Metrics received for queries from the backend.
     /// </summary>
-    public sealed class ServerSideAccumulatedMetrics
+    public sealed class ServerSideCumulativeMetrics
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ServerSideAccumulatedMetrics"/> class.
+        /// Initializes a new instance of the <see cref="ServerSideCumulativeMetrics"/> class.
         /// </summary>
-        /// <param name="cumulativeServerSideMetrics"></param>
+        /// <param name="cumulativeMetrics"></param>
         /// <param name="serverSideMetricsList"></param>
-        public ServerSideAccumulatedMetrics(ServerSideMetrics cumulativeServerSideMetrics, List<PartitionedServerSideMetrics> serverSideMetricsList)
+        public ServerSideCumulativeMetrics(ServerSideMetrics cumulativeMetrics, List<ServerSidePartitionedMetrics> serverSideMetricsList)
         {
-            this.CumulativeServerSideMetrics = cumulativeServerSideMetrics;
-            this.PartitionedServerSideMetrics = serverSideMetricsList;
+            this.CumulativeMetrics = cumulativeMetrics;
+            this.PartitionedMetrics = serverSideMetricsList;
         }
 
         /// <summary>
         /// Gets the ServerSideMetrics accumulated for a single round trip.
         /// </summary>
-        public ServerSideMetrics CumulativeServerSideMetrics { get; }
+        public ServerSideMetrics CumulativeMetrics { get; }
 
         /// <summary>
         /// Gets the list of ServerSideMetrics, one for for each partition.
         /// </summary>
-        public List<PartitionedServerSideMetrics> PartitionedServerSideMetrics { get; }
+        public List<ServerSidePartitionedMetrics> PartitionedMetrics { get; }
     }
 }

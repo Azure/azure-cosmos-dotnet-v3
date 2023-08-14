@@ -9,20 +9,20 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents server side metrics specific for a single partition.
     /// </summary>
-    public sealed class PartitionedServerSideMetrics
+    public sealed class ServerSidePartitionedMetrics
     {
-        internal PartitionedServerSideMetrics(ServerSideMetricsInternal serverSideMetricsInternal)
+        internal ServerSidePartitionedMetrics(ServerSideMetricsInternal serverSideMetricsInternal)
             : this(new ServerSideMetrics(serverSideMetricsInternal), serverSideMetricsInternal.FeedRange, serverSideMetricsInternal.PartitionKeyRangeId)
         {
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PartitionedServerSideMetrics"/> class.
+        /// Initializes a new instance of the <see cref="ServerSidePartitionedMetrics"/> class.
         /// </summary>
         /// <param name="serverSideMetrics"></param>
         /// <param name="feedRange"></param>
         /// <param name="partitionKeyRangeId"></param>
-        public PartitionedServerSideMetrics(ServerSideMetrics serverSideMetrics, string feedRange, string partitionKeyRangeId)
+        public ServerSidePartitionedMetrics(ServerSideMetrics serverSideMetrics, string feedRange, string partitionKeyRangeId)
         {
             this.ServerSideMetrics = serverSideMetrics;
             this.FeedRange = feedRange;

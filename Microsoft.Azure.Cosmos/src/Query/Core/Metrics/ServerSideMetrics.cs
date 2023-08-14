@@ -24,11 +24,16 @@ namespace Microsoft.Azure.Cosmos
             this.OutputDocumentSize = serverSideMetricsInternal.OutputDocumentSize;
             this.IndexHitRatio = serverSideMetricsInternal.IndexHitRatio;
             this.TotalTime = serverSideMetricsInternal.TotalTime;
-            this.QueryPreparationTimes = new QueryPreparationTimes(serverSideMetricsInternal.QueryPreparationTimes);
+            this.QueryPreparationTimes = serverSideMetricsInternal.QueryPreparationTimes.LogicalPlanBuildTime 
+                + serverSideMetricsInternal.QueryPreparationTimes.PhysicalPlanBuildTime 
+                + serverSideMetricsInternal.QueryPreparationTimes.QueryCompilationTime 
+                + serverSideMetricsInternal.QueryPreparationTimes.QueryOptimizationTime;
             this.IndexLookupTime = serverSideMetricsInternal.IndexLookupTime;
             this.DocumentLoadTime = serverSideMetricsInternal.DocumentLoadTime;
             this.VMExecutionTime = serverSideMetricsInternal.VMExecutionTime;
-            this.RuntimeExecutionTimes = new RuntimeExecutionTimes(serverSideMetricsInternal.RuntimeExecutionTimes);
+            this.RuntimeExecutionTimes = serverSideMetricsInternal.RuntimeExecutionTimes.QueryEngineExecutionTime
+                + serverSideMetricsInternal.RuntimeExecutionTimes.SystemFunctionExecutionTime
+                + serverSideMetricsInternal.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime;
             this.DocumentWriteTime = serverSideMetricsInternal.DocumentWriteTime;
         }
 
@@ -54,11 +59,11 @@ namespace Microsoft.Azure.Cosmos
            long outputDocumentSize,
            double indexHitRatio,
            TimeSpan totalQueryExecutionTime,
-           QueryPreparationTimes queryPreparationTimes,
+           TimeSpan queryPreparationTimes,
            TimeSpan indexLookupTime,
            TimeSpan documentLoadTime,
            TimeSpan vmExecutionTime,
-           RuntimeExecutionTimes runtimeExecutionTimes,
+           TimeSpan runtimeExecutionTimes,
            TimeSpan documentWriteTime)
         {
             this.RetrievedDocumentCount = retrievedDocumentCount;
@@ -67,11 +72,11 @@ namespace Microsoft.Azure.Cosmos
             this.OutputDocumentSize = outputDocumentSize;
             this.IndexHitRatio = indexHitRatio;
             this.TotalTime = totalQueryExecutionTime;
-            this.QueryPreparationTimes = queryPreparationTimes ?? throw new ArgumentNullException($"{nameof(queryPreparationTimes)} can not be null.");
+            this.QueryPreparationTimes = queryPreparationTimes;
             this.IndexLookupTime = indexLookupTime;
             this.DocumentLoadTime = documentLoadTime;
             this.VMExecutionTime = vmExecutionTime;
-            this.RuntimeExecutionTimes = runtimeExecutionTimes ?? throw new ArgumentNullException($"{nameof(runtimeExecutionTimes)} can not be null.");
+            this.RuntimeExecutionTimes = runtimeExecutionTimes;
             this.DocumentWriteTime = documentWriteTime;
         }
 
@@ -101,9 +106,9 @@ namespace Microsoft.Azure.Cosmos
         public long OutputDocumentSize { get; }
 
         /// <summary>
-        /// Gets the query QueryPreparationTimes in the Azure Cosmos database service.
+        /// Gets the query preparation time in the Azure Cosmos database service.
         /// </summary>
-        public QueryPreparationTimes QueryPreparationTimes { get; }
+        public TimeSpan QueryPreparationTimes { get; }
 
         /// <summary>
         /// Gets the query index lookup time in the Azure Cosmos database service.
@@ -116,9 +121,9 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan DocumentLoadTime { get; }
 
         /// <summary>
-        /// Gets the query runtime execution times during query in the Azure Cosmos database service.
+        /// Gets the query runtime execution time during query in the Azure Cosmos database service.
         /// </summary>
-        public RuntimeExecutionTimes RuntimeExecutionTimes { get; }
+        public TimeSpan RuntimeExecutionTimes { get; }
 
         /// <summary>
         /// Gets the output writing/serializing time during query in the Azure Cosmos database service.

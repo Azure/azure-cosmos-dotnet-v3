@@ -389,6 +389,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<dynamic> response = await multiPartPkContainer.CreateItemAsync<dynamic>(item: testItem);
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            Assert.IsNull(response.Diagnostics.GetQueryMetrics());
 
             ItemResponse<dynamic> readResponse = await multiPartPkContainer.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: new Cosmos.PartitionKey("pk1"));
             Assert.IsNotNull(readResponse);
@@ -617,6 +618,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(response);
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.IsNotNull(response.Headers.Session);
+                Assert.IsNull(response.Diagnostics.GetQueryMetrics());
             }
         }
 
@@ -707,6 +709,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                     }
 
+                    Assert.IsNull(responseMessage.Diagnostics.GetQueryMetrics());
                 }
 
             }
@@ -846,7 +849,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ItemCustomSerialzierTest()
+        public async Task ItemCustomSerializerTest()
         {
             DateTime createDateTime = DateTime.UtcNow;
             Dictionary<string, int> keyValuePairs = new Dictionary<string, int>()
@@ -1283,14 +1286,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 System.Diagnostics.Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
                 Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
 
-                // verify ServerSideMetrics matches metrics retrieved from header
-                ServerSideAccumulatedMetrics metricsFromDiagnostics = response.Diagnostics.GetQueryMetrics();
-                bool tryParseResult = ServerSideMetricsInternal.TryParseFromDelimitedString(response.Headers.QueryMetricsText, out ServerSideMetricsInternal metricsFromHeaders);
-                Assert.IsTrue(tryParseResult);
-                headerMetricsAccumulator.Accumulate(metricsFromHeaders);
-                Assert.IsTrue(headerMetricsAccumulator.GetServerSideMetrics().FormatTrace() == SerializeServerSideMetrics(metricsFromDiagnostics.CumulativeServerSideMetrics));
+                ServerSideCumulativeMetrics metrics = response.Diagnostics.GetQueryMetrics();
+                Assert.IsTrue(metrics.PartitionedMetrics.Count == 1);
+                Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
+                Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTimes > TimeSpan.Zero);
 
-                Assert.IsTrue(metricsFromDiagnostics.PartitionedServerSideMetrics.Count == 1); //TODO: can we guarantee this?
+                if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)
+                {
+                    Assert.IsTrue(metrics.CumulativeMetrics.RetrievedDocumentSize > 0);
+                    Assert.IsTrue(metrics.CumulativeMetrics.DocumentLoadTime > TimeSpan.Zero);
+                    Assert.IsTrue(metrics.CumulativeMetrics.RuntimeExecutionTimes > TimeSpan.Zero);
+                }
+                else
+                {
+                    Assert.AreEqual(0, metrics.CumulativeMetrics.RetrievedDocumentSize);
+                }
 
                 using (StreamReader sr = new StreamReader(response.Content))
                 using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -1358,6 +1368,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     found = true;
                     ToDoActivity response = iter.First();
                     Assert.AreEqual(find.id, response.id);
+                }
+
+                ServerSideCumulativeMetrics metrics = iter.Diagnostics.GetQueryMetrics();
+
+                if (metrics != null)
+                {
+                    Assert.IsTrue(metrics.PartitionedMetrics.Count == 3);
+                    Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
+                    Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTimes > TimeSpan.Zero);
+
+                    if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)
+                    {
+                        Assert.IsTrue(metrics.CumulativeMetrics.RetrievedDocumentSize > 0);
+                        Assert.IsTrue(metrics.CumulativeMetrics.DocumentLoadTime > TimeSpan.Zero);
+                        Assert.IsTrue(metrics.CumulativeMetrics.RuntimeExecutionTimes > TimeSpan.Zero);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(0, metrics.CumulativeMetrics.RetrievedDocumentSize);
+                    }
                 }
             }
 
@@ -3156,11 +3186,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
             }
-        }
-
-        private static string SerializeServerSideMetrics(ServerSideMetrics serverSideMetrics)
-        {
-            return $"totalExecutionTimeInMs={serverSideMetrics.TotalTime.TotalMilliseconds};queryCompileTimeInMs={serverSideMetrics.QueryPreparationTimes.QueryCompilationTime.TotalMilliseconds};queryLogicalPlanBuildTimeInMs={serverSideMetrics.QueryPreparationTimes.LogicalPlanBuildTime.TotalMilliseconds};queryPhysicalPlanBuildTimeInMs={serverSideMetrics.QueryPreparationTimes.PhysicalPlanBuildTime.TotalMilliseconds};queryOptimizationTimeInMs={serverSideMetrics.QueryPreparationTimes.QueryOptimizationTime.TotalMilliseconds};indexLookupTimeInMs={serverSideMetrics.IndexLookupTime.TotalMilliseconds};documentLoadTimeInMs={serverSideMetrics.DocumentLoadTime.TotalMilliseconds};systemFunctionExecuteTimeInMs={serverSideMetrics.RuntimeExecutionTimes.SystemFunctionExecutionTime.TotalMilliseconds};userFunctionExecuteTimeInMs={serverSideMetrics.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime.TotalMilliseconds};retrievedDocumentCount={serverSideMetrics.RetrievedDocumentCount};retrievedDocumentSize={serverSideMetrics.RetrievedDocumentSize};outputDocumentCount={serverSideMetrics.OutputDocumentCount};outputDocumentSize={serverSideMetrics.OutputDocumentSize};writeOutputTimeInMs={serverSideMetrics.DocumentWriteTime.TotalMilliseconds};indexUtilizationRatio={serverSideMetrics.IndexHitRatio}";
         }
     }
 }

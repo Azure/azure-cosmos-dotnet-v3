@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
-        private readonly Lazy<ServerSideAccumulatedMetrics> accumulatedMetrics;
+        private readonly Lazy<ServerSideCumulativeMetrics> accumulatedMetrics;
 
-        public ServerSideAccumulatedMetrics AccumulatedMetrics => this.accumulatedMetrics.Value;
+        public ServerSideCumulativeMetrics AccumulatedMetrics => this.accumulatedMetrics.Value;
 
         public CosmosTraceDiagnostics(ITrace trace)
         {
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             this.Value = rootTrace;
-            this.accumulatedMetrics = this.accumulatedMetrics = new Lazy<ServerSideAccumulatedMetrics>(() => this.GetQueryMetrics());
+            this.accumulatedMetrics = this.accumulatedMetrics = new Lazy<ServerSideCumulativeMetrics>(() => this.GetQueryMetrics());
         }
 
         public ITrace Value { get; }
@@ -55,13 +55,13 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return this.Value?.Summary?.RegionsContacted;
         }
 
-        public override ServerSideAccumulatedMetrics GetQueryMetrics()
+        public override ServerSideCumulativeMetrics GetQueryMetrics()
         {
             ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
             ServerSideMetricsAccumulator.WalkTraceTreeForQueryMetrics(this.Value, accumulator);
 
-            List<PartitionedServerSideMetrics> partitionedServerSideMetrics = 
-                accumulator.GetPartitionedServerSideMetrics().Select(metrics => new PartitionedServerSideMetrics(metrics)).ToList();
+            List<ServerSidePartitionedMetrics> partitionedServerSideMetrics = 
+                accumulator.GetPartitionedServerSideMetrics().Select(metrics => new ServerSidePartitionedMetrics(metrics)).ToList();
 
             if (partitionedServerSideMetrics.Count == 0)
             {
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             ServerSideMetrics serverSideMetrics = new ServerSideMetrics(accumulator.GetServerSideMetrics());
-            ServerSideAccumulatedMetrics accumulatedMetrics = new ServerSideAccumulatedMetrics(serverSideMetrics, partitionedServerSideMetrics);
+            ServerSideCumulativeMetrics accumulatedMetrics = new ServerSideCumulativeMetrics(serverSideMetrics, partitionedServerSideMetrics);
             return accumulatedMetrics;
         }
 
