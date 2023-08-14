@@ -631,7 +631,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         [DataRow(ConnectionMode.Direct)]
         [DataRow(ConnectionMode.Gateway)]
-        public virtual async Task QueryOperationMutiplePageCrossPartitionTest(ConnectionMode mode)
+        public async Task QueryOperationMutiplePageCrossPartitionTest(ConnectionMode mode)
         {
             ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
