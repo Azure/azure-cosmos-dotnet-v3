@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         }
 
         public MockDocumentClient(ConnectionPolicy policy = null)
-            : base(new Uri("http://localhost"), authKeyOrResourceToken: null, policy)
+            : base(new Uri("http://localhost"), authKey: null, connectionPolicy: policy)
         {
             this.authKeyHashFunction = new StringHMACSHA256Hash(MockDocumentClient.GenerateRandomKey());
 
@@ -221,8 +221,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob("perf-test-client",
                                                                 this.ConnectionPolicy,
-                                                                this.cosmosAuthorization,
-                                                                this.httpClient,
+                                                                new Mock<AuthorizationTokenProvider>().Object,
+                                                                new Mock<CosmosHttpClient>().Object,
                                                                 this.ServiceEndpoint,
                                                                 this.GlobalEndpointManager,
                                                                 default);

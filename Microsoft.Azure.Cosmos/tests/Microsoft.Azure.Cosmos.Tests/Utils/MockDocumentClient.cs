@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         public MockDocumentClient(Cosmos.ConsistencyLevel accountConsistencyLevel, ConnectionPolicy connectionPolicy = null)
-            : base(new Uri("http://localhost"), authKeyOrResourceToken: null, connectionPolicy)
+            : base(new Uri("http://localhost"), authKey: null, connectionPolicy: connectionPolicy)
         {
             this.accountConsistencyLevel = accountConsistencyLevel;
             this.Init();
@@ -263,6 +263,13 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
             this.MockGlobalEndpointManager.Setup(gep => gep.InitializeAccountPropertiesAndStartBackgroundRefresh(It.IsAny<AccountProperties>()));
             SessionContainer sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
 
+            this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob("test-client",
+                                                                 this.ConnectionPolicy,
+                                                                 new Mock<AuthorizationTokenProvider>().Object,
+                                                                 new Mock<CosmosHttpClient>().Object,
+                                                                 this.ServiceEndpoint,
+                                                                 this.GlobalEndpointManager,
+                                                                 default);
             this.sessionContainer = sessionContainer;
 
         }
