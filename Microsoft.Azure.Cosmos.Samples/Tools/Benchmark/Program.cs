@@ -41,13 +41,7 @@ namespace CosmosBenchmark
                 OpenTelemetry.Trace.TracerProviderBuilder tracerProviderBuilder = Sdk.CreateTracerProviderBuilder()
                     .AddAzureMonitorTraceExporter();
 
-                MeterProvider meterProvider = Sdk.CreateMeterProviderBuilder()
-                    .AddAzureMonitorMetricExporter(configure: new Action<AzureMonitorExporterOptions>(
-                        (options) => options.ConnectionString = config.AppInsightsConnectionString))
-                    .AddMeter("CosmosBenchmarkInsertOperationMeter")
-                    .AddMeter("CosmosBenchmarkQueryOperationMeter")
-                    .AddMeter("CosmosBenchmarkReadOperationMeter")
-                    .Build();
+                MeterProvider meterProvider = BuildMeterProvider(config);
 
                 MetricsCollectorProvider metricsCollectorProvider = new MetricsCollectorProvider(config);
 
@@ -74,6 +68,25 @@ namespace CosmosBenchmark
                     Console.ReadLine();
                 }
             }
+        }
+
+        private static MeterProvider BuildMeterProvider(BenchmarkConfig config)
+        {
+            if (string.IsNullOrWhiteSpace(config.AppInsightsConnectionString))
+            {
+                return Sdk.CreateMeterProviderBuilder()
+                .AddMeter("CosmosBenchmarkInsertOperationMeter")
+                .AddMeter("CosmosBenchmarkQueryOperationMeter")
+                .AddMeter("CosmosBenchmarkReadOperationMeter")
+                .Build();
+            }
+            return Sdk.CreateMeterProviderBuilder()
+                .AddAzureMonitorMetricExporter(configure: new Action<AzureMonitorExporterOptions>(
+                    (options) => options.ConnectionString = config.AppInsightsConnectionString))
+                .AddMeter("CosmosBenchmarkInsertOperationMeter")
+                .AddMeter("CosmosBenchmarkQueryOperationMeter")
+                .AddMeter("CosmosBenchmarkReadOperationMeter")
+                .Build();
         }
 
         /// <summary>
