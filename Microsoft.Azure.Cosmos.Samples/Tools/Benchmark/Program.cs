@@ -38,9 +38,6 @@ namespace CosmosBenchmark
                 BenchmarkConfig config = BenchmarkConfig.From(args);
                 await AddAzureInfoToRunSummary();
 
-                OpenTelemetry.Trace.TracerProviderBuilder tracerProviderBuilder = Sdk.CreateTracerProviderBuilder()
-                    .AddAzureMonitorTraceExporter();
-
                 MeterProvider meterProvider = BuildMeterProvider(config);
 
                 MetricsCollectorProvider metricsCollectorProvider = new MetricsCollectorProvider(config);
@@ -84,6 +81,9 @@ namespace CosmosBenchmark
                 .AddMeter("CosmosBenchmarkReadOperationMeter")
                 .Build();
             }
+
+            OpenTelemetry.Trace.TracerProviderBuilder tracerProviderBuilder = Sdk.CreateTracerProviderBuilder()
+                .AddAzureMonitorTraceExporter();
 
             return Sdk.CreateMeterProviderBuilder()
                 .AddAzureMonitorMetricExporter(configure: new Action<AzureMonitorExporterOptions>(
