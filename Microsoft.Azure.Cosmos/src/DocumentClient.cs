@@ -940,7 +940,6 @@ namespace Microsoft.Azure.Cosmos
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
 
-#if !INTERNAL
             // Starting ClientTelemetry Job
             this.TelemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob(this.clientId,
                                                                  this.ConnectionPolicy,
@@ -949,7 +948,7 @@ namespace Microsoft.Azure.Cosmos
                                                                  this.ServiceEndpoint,
                                                                  this.GlobalEndpointManager,
                                                                  this.cancellationTokenSource);
-#endif
+
             if (sessionContainer != null)
             {
                 this.sessionContainer = sessionContainer;

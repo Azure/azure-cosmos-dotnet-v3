@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceInformation($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
+                DefaultTrace.TraceWarning($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
                 this.connectionPolicy.EnableClientTelemetry = false;
             }
         }
@@ -119,6 +119,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.StopClientTelemetry();
         }
 
+        /// <summary>
+        /// Stopping a client telemetry job means now there shouldn't be any valid collector available, Hence switch it to NoOp collector.
+        /// Along with it, send a signal to stop client telemetry job.
+        /// </summary>
         private void StopClientTelemetry()
         {
             this.collector = new TelemetryCollectorNoOp();

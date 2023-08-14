@@ -241,12 +241,5 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
         }
-
-        private static void GetDatabaseAndCollectionName(string path, out string databaseName, out string collectionName)
-        {
-            string[] segments = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-
-            PathsHelper.ParseDatabaseNameAndCollectionNameFromUrlSegments(segments, out databaseName, out collectionName);
-        }
     }
 }
