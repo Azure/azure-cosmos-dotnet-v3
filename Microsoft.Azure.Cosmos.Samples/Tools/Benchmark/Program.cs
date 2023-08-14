@@ -70,6 +70,10 @@ namespace CosmosBenchmark
             }
         }
 
+        /// <summary>
+        /// Create a MeterProvider. If the App Insights connection string is not set, do not create an AppInsights Exporter.
+        /// </summary>
+        /// <returns></returns>
         private static MeterProvider BuildMeterProvider(BenchmarkConfig config)
         {
             if (string.IsNullOrWhiteSpace(config.AppInsightsConnectionString))
@@ -80,6 +84,7 @@ namespace CosmosBenchmark
                 .AddMeter("CosmosBenchmarkReadOperationMeter")
                 .Build();
             }
+
             return Sdk.CreateMeterProviderBuilder()
                 .AddAzureMonitorMetricExporter(configure: new Action<AzureMonitorExporterOptions>(
                     (options) => options.ConnectionString = config.AppInsightsConnectionString))
