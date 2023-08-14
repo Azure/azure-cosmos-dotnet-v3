@@ -15,11 +15,11 @@ namespace CosmosBenchmark
     {
         private readonly MetricCollectionWindow metricCollectionWindow;
 
-        private readonly InsertOperationMetricsCollector insertOperationMetricsCollector;
+        private readonly MetricsCollector insertOperationMetricsCollector;
 
-        private readonly QueryOperationMetricsCollector queryOperationMetricsCollector;
+        private readonly MetricsCollector queryOperationMetricsCollector;
 
-        private readonly ReadOperationMetricsCollector readOperationMetricsCollector;
+        private readonly MetricsCollector readOperationMetricsCollector;
 
         private readonly Meter insertOperationMeter = new("CosmosBenchmarkInsertOperationMeter");
 
@@ -29,9 +29,9 @@ namespace CosmosBenchmark
 
         public MetricsCollectorProvider(BenchmarkConfig config)
         {
-            this.insertOperationMetricsCollector ??= new InsertOperationMetricsCollector(this.insertOperationMeter);
-            this.queryOperationMetricsCollector ??= new QueryOperationMetricsCollector(this.queryOperationMeter);
-            this.readOperationMetricsCollector ??= new ReadOperationMetricsCollector(this.readOperationMeter);
+            this.insertOperationMetricsCollector ??= new MetricsCollector(this.insertOperationMeter, "Insert");
+            this.queryOperationMetricsCollector ??= new MetricsCollector(this.queryOperationMeter, "Query");
+            this.readOperationMetricsCollector ??= new MetricsCollector(this.readOperationMeter, "Read");
             this.metricCollectionWindow ??= new MetricCollectionWindow(config);
         }
 

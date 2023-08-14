@@ -10,7 +10,7 @@ namespace CosmosBenchmark
     /// <summary>
     /// Represents the metrics collector.
     /// </summary>
-    internal abstract class MetricsCollector : IMetricsCollector
+    internal class MetricsCollector : IMetricsCollector
     {
         /// <summary>
         /// Represents the meter to collect metrics.
@@ -63,18 +63,18 @@ namespace CosmosBenchmark
         /// Initialize new  instance of <see cref="MetricsCollector"/>.
         /// </summary>
         /// <param name="meter">OpenTelemetry meter.</param>
-        public MetricsCollector(Meter meter)
+        public MetricsCollector(Meter meter, string prefix)
         {
             this.meter = meter;
-            this.rpsMetricNameHistogram = meter.CreateHistogram<double>(this.RpsHistogramName);
-            this.operationLatencyHistogram = meter.CreateHistogram<double>(this.LatencyInMsHistogramName);
-            this.successOperationCounter = meter.CreateCounter<long>(this.SuccessOperationMetricName);
-            this.failureOperationCounter = meter.CreateCounter<long>(this.FailureOperationMetricName);
+            this.rpsMetricNameHistogram = meter.CreateHistogram<double>($"{prefix}OperationRpsHistogram");
+            this.operationLatencyHistogram = meter.CreateHistogram<double>($"{prefix}OperationLatencyInMsHistogram");
+            this.successOperationCounter = meter.CreateCounter<long>($"{prefix}InsertOperationSuccess");
+            this.failureOperationCounter = meter.CreateCounter<long>($"{prefix}InsertOperationFailure");
             
-            this.latencyInMsMetricNameGauge = this.meter.CreateObservableGauge(this.LatencyInMsMetricName,
+            this.latencyInMsMetricNameGauge = this.meter.CreateObservableGauge($"{prefix}InsertOperationLatencyInMs",
                 () => new Measurement<double>(this.latencyInMs));
 
-            this.rpsNameGauge = this.meter.CreateObservableGauge(this.RpsMetricName,
+            this.rpsNameGauge = this.meter.CreateObservableGauge($"{prefix}InsertOperationRps",
                 () => new Measurement<double>(this.rps));
         }
 
@@ -106,35 +106,5 @@ namespace CosmosBenchmark
             this.rpsMetricNameHistogram.Record(this.rps);
             this.operationLatencyHistogram.Record(this.latencyInMs);
         }
-
-        /// <summary>
-        /// Gets the name of the histogram for requests per second (RPS) metric.
-        /// </summary>
-        protected abstract string RpsHistogramName { get; }
-
-        /// <summary>
-        /// Gets the name of the histogram for operation latency in milliseconds.
-        /// </summary>
-        protected abstract string LatencyInMsHistogramName { get; }
-
-        /// <summary>
-        /// Gets the name of the observable gauge for requests per second (RPS) metric.
-        /// </summary>
-        protected abstract string RpsMetricName { get; }
-
-        /// <summary>
-        /// Gets the name of the observable gauge for operation latency in milliseconds.
-        /// </summary>
-        protected abstract string LatencyInMsMetricName { get; }
-
-        /// <summary>
-        /// Gets the name of the counter for failed operations.
-        /// </summary>
-        protected abstract string FailureOperationMetricName { get; }
-
-        /// <summary>
-        /// Gets the name of the counter for successful operations.
-        /// </summary>
-        protected abstract string SuccessOperationMetricName { get; }
     }
 }
