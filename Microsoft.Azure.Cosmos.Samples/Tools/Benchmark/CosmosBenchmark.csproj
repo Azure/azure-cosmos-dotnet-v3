@@ -44,7 +44,4 @@
     <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" />
   </ItemGroup>
 	
-  <ItemGroup>
-    <Folder Include="AzureVmBenchmark\" />
-  </ItemGroup>
 </Project>
