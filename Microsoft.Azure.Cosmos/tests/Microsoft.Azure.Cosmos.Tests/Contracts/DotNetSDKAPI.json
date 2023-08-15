@@ -9239,6 +9239,18 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ServerSideMetrics ServerSideMetrics;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.ServerSideMetrics get_ServerSideMetrics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Nullable`1[System.Int32] get_PartitionKeyRangeId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_PartitionKeyRangeId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Int32] PartitionKeyRangeId": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Int32] PartitionKeyRangeId;CanRead:True;CanWrite:False;System.Nullable`1[System.Int32] get_PartitionKeyRangeId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.String FeedRange": {
           "Type": "Property",
           "Attributes": [],
@@ -9251,22 +9263,10 @@
           ],
           "MethodInfo": "System.String get_FeedRange();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_PartitionKeyRangeId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.String get_PartitionKeyRangeId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.String PartitionKeyRangeId": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.String PartitionKeyRangeId;CanRead:True;CanWrite:False;System.String get_PartitionKeyRangeId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor(Microsoft.Azure.Cosmos.ServerSideMetrics, System.String, System.String)": {
+        "Void .ctor(Microsoft.Azure.Cosmos.ServerSideMetrics, System.String, System.Nullable`1[System.Int32])": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.ServerSideMetrics, System.String, System.String), Void .ctor(Microsoft.Azure.Cosmos.ServerSideMetrics, System.String, System.String)]"
+          "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.ServerSideMetrics, System.String, System.Nullable`1[System.Int32]), Void .ctor(Microsoft.Azure.Cosmos.ServerSideMetrics, System.String, System.Nullable`1[System.Int32])]"
         }
       },
       "NestedTypes": {}

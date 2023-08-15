@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="serverSideMetrics"></param>
         /// <param name="feedRange"></param>
         /// <param name="partitionKeyRangeId"></param>
-        public ServerSidePartitionedMetrics(ServerSideMetrics serverSideMetrics, string feedRange, string partitionKeyRangeId)
+        public ServerSidePartitionedMetrics(ServerSideMetrics serverSideMetrics, string feedRange, int? partitionKeyRangeId)
         {
             this.ServerSideMetrics = serverSideMetrics;
             this.FeedRange = feedRange;
@@ -42,6 +42,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the partition key range id for the partition.
         /// </summary>
-        public string PartitionKeyRangeId { get; }
+        public int? PartitionKeyRangeId { get; }
     }
 }

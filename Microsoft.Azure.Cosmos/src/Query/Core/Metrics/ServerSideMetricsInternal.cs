@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
            RuntimeExecutionTimesInternal runtimeExecutionTimes,
            TimeSpan documentWriteTime,
            string feedRange = null,
-           string partitionKeyRangeId = null)
+           int? partitionKeyRangeId = null)
         {
             this.RetrievedDocumentCount = retrievedDocumentCount;
             this.RetrievedDocumentSize = retrievedDocumentSize;
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <summary>
         /// Gets the partition key range id for a single backend call.
         /// </summary>
-        public string PartitionKeyRangeId { get; set; }
+        public int? PartitionKeyRangeId { get; set; }
 
         public static ServerSideMetricsInternal Create(IEnumerable<ServerSideMetricsInternal> serverSideMetricsEnumerable)
         {

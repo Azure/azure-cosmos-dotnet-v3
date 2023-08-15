@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             return;
         }
 
-        private static string WalkTraceTreeForPartitionKeyRangeId(ITrace currentTrace)
+        private static int? WalkTraceTreeForPartitionKeyRangeId(ITrace currentTrace)
         {
             if (currentTrace == null)
             {
@@ -118,13 +118,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             {
                 if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
-                    return clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList[0].StoreResult.PartitionKeyRangeId;
+                    if (clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList.Count > 0)
+                    {
+                        return int.TryParse(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList[0].StoreResult.PartitionKeyRangeId, out int pKRangeId)
+                            ? pKRangeId
+                            : null;
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
             }
 
             foreach (ITrace childTrace in currentTrace.Children)
             {
-                String partitionKeyRangeId = WalkTraceTreeForPartitionKeyRangeId(childTrace);
+                int? partitionKeyRangeId = WalkTraceTreeForPartitionKeyRangeId(childTrace);
                 if (partitionKeyRangeId != null)
                 {
                     return partitionKeyRangeId;

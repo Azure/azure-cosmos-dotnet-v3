@@ -1341,9 +1341,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemMultiplePartitionQuery()
         {
-            IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(this.Container, 3, randomPartitionKey: true);
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(this.Container, 3, randomPartitionKey: true);
 
-            ToDoActivity find = deleteList.First();
+            ToDoActivity find = itemList.First();
             QueryDefinition sql = new QueryDefinition("select * from toDoActivity t where t.id = '" + find.id + "'");
 
             QueryRequestOptions requestOptions = new QueryRequestOptions()
@@ -1377,6 +1377,91 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(metrics.PartitionedMetrics.Count == 3);
                     Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
                     Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTimes > TimeSpan.Zero);
+
+                    foreach (ServerSidePartitionedMetrics partitionedMetrics in metrics.PartitionedMetrics)
+                    {
+                        Assert.IsNotNull(partitionedMetrics);
+                        Assert.IsNotNull(partitionedMetrics.PartitionKeyRangeId);
+                    }
+
+                    if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)
+                    {
+                        Assert.IsTrue(metrics.CumulativeMetrics.RetrievedDocumentSize > 0);
+                        Assert.IsTrue(metrics.CumulativeMetrics.DocumentLoadTime > TimeSpan.Zero);
+                        Assert.IsTrue(metrics.CumulativeMetrics.RuntimeExecutionTimes > TimeSpan.Zero);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(0, metrics.CumulativeMetrics.RetrievedDocumentSize);
+                    }
+                }
+                else
+                {
+                    string diag = iter.Diagnostics.ToString();
+                    Assert.IsNotNull(diag);
+                }
+            }
+
+            Assert.IsTrue(found);
+        }
+
+        /// <summary>
+        /// Validate single partition query using gateway mode.
+        /// </summary>
+        [TestMethod]
+        public async Task ItemSinglePartitionQueryGateway()
+        {
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+            new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"));
+
+            Container createdContainer = (ContainerInlineCore)containerResponse;
+            CosmosClient client1 = TestCommon.CreateCosmosClient(useGateway: true);
+
+            Container container = client1.GetContainer(this.database.Id, createdContainer.Id);
+
+            string findId = "id2002";
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity("pk2002", findId);
+            await container.CreateItemAsync<ToDoActivity>(item);
+
+            QueryDefinition sql = new QueryDefinition("select * from toDoActivity t where t.id = '" + findId + "'");
+
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxBufferedItemCount = 10,
+                ResponseContinuationTokenLimitInKb = 500,
+                MaxItemCount = 1,
+                MaxConcurrency = 1,
+            };
+
+            FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
+                    sql,
+                    requestOptions: requestOptions);
+
+            bool found = false;
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
+                Assert.IsTrue(iter.Count() <= 1);
+                if (iter.Count() == 1)
+                {
+                    found = true;
+                    ToDoActivity response = iter.First();
+                    Assert.AreEqual(findId, response.id);
+                }
+
+                ServerSideCumulativeMetrics metrics = iter.Diagnostics.GetQueryMetrics();
+
+                if (metrics != null)
+                {
+                    Assert.IsTrue(metrics.PartitionedMetrics.Count == 1);
+                    Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
+                    Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTimes > TimeSpan.Zero);
+
+                    foreach (ServerSidePartitionedMetrics partitionedMetrics in metrics.PartitionedMetrics)
+                    {
+                        Assert.IsNotNull(partitionedMetrics);
+                        Assert.IsNull(partitionedMetrics.PartitionKeyRangeId);
+                    }
 
                     if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)
                     {
