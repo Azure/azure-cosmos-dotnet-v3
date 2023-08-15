@@ -226,7 +226,7 @@ jobs:
       packageType: 'sdk'
       version: '6.x'
   
-  - ${{ if eq( parameters.ClientTelemetryTestClassName, 'Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryTests') }}:
+  - ${{ if eq(parameters.ReleasePackage, true) }}:
     - template:  emulator-setup.yml
 
   - task: DotNetCoreCLI@2
