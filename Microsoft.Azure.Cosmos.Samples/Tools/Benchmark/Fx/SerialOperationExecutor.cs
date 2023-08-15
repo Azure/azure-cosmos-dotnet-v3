@@ -120,7 +120,6 @@ namespace CosmosBenchmark
             finally
             {
                 completionCallback();
-                BenchmarkExecutionEventSource.Instance.Completed(isWarmup);
             }
         }
     }
