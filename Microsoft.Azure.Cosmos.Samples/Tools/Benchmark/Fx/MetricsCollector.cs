@@ -28,6 +28,16 @@ namespace CosmosBenchmark
         private readonly Histogram<double> rpsMetricNameHistogram;
 
         /// <summary>
+        /// Represents the histogram for failed operation latency.
+        /// </summary>
+        private readonly Histogram<double> operationFailedLatencyHistogram;
+
+        /// <summary>
+        /// Represents the histogram failed operations for records per second metric.
+        /// </summary>
+        private readonly Histogram<double> rpsFailedMetricNameHistogram;
+
+        /// <summary>
         /// Represents the success operation counter.
         /// </summary>
         private readonly Counter<long> successOperationCounter;
@@ -49,6 +59,19 @@ namespace CosmosBenchmark
         /// <remarks>Please do not remove this as it used when collecting metrics..</remarks>
         private readonly ObservableGauge<double> rpsNameGauge;
 
+
+        /// <summary>
+        /// Represents latency in milliseconds metric gauge for failed operations.
+        /// </summary>
+        /// <remarks>Please do not remove this as it used when collecting metrics..</remarks>
+        private readonly ObservableGauge<double> latencyInMsFailedMetricNameGauge;
+
+        /// <summary>
+        /// Represents records per second metric gauge for failed operations.
+        /// </summary>
+        /// <remarks>Please do not remove this as it used when collecting metrics..</remarks>
+        private readonly ObservableGauge<double> rpsFailedNameGauge;
+
         /// <summary>
         /// Latency in milliseconds.
         /// </summary>
@@ -60,6 +83,16 @@ namespace CosmosBenchmark
         private double rps;
 
         /// <summary>
+        /// Latency in milliseconds.
+        /// </summary>
+        private double latencyFailedInMs;
+
+        /// <summary>
+        /// Records per second.
+        /// </summary>
+        private double rpsFailed;
+
+        /// <summary>
         /// Initialize new  instance of <see cref="MetricsCollector"/>.
         /// </summary>
         /// <param name="meter">OpenTelemetry meter.</param>
@@ -68,6 +101,10 @@ namespace CosmosBenchmark
             this.meter = meter;
             this.rpsMetricNameHistogram = meter.CreateHistogram<double>($"{prefix}OperationRpsHistogram");
             this.operationLatencyHistogram = meter.CreateHistogram<double>($"{prefix}OperationLatencyInMsHistogram");
+
+            this.rpsFailedMetricNameHistogram = meter.CreateHistogram<double>($"{prefix}FailedOperationRpsHistogram");
+            this.operationFailedLatencyHistogram = meter.CreateHistogram<double>($"{prefix}FailedOperationLatencyInMsHistogram");
+
             this.successOperationCounter = meter.CreateCounter<long>($"{prefix}OperationSuccess");
             this.failureOperationCounter = meter.CreateCounter<long>($"{prefix}OperationFailure");
             
@@ -75,6 +112,12 @@ namespace CosmosBenchmark
                 () => new Measurement<double>(this.latencyInMs));
 
             this.rpsNameGauge = this.meter.CreateObservableGauge($"{prefix}OperationRps",
+                () => new Measurement<double>(this.rps));
+
+            this.latencyInMsFailedMetricNameGauge = this.meter.CreateObservableGauge($"{prefix}FailedOperationLatencyInMs",
+                () => new Measurement<double>(this.latencyInMs));
+
+            this.rpsFailedNameGauge = this.meter.CreateObservableGauge($"{prefix}FailedOperationRps",
                 () => new Measurement<double>(this.rps));
         }
 
@@ -95,16 +138,29 @@ namespace CosmosBenchmark
         }
 
         /// <summary>
-        /// Records latency in milliseconds.
+        /// Records success operation latency in milliseconds.
         /// </summary>
         /// <param name="milliseconds">The number of milliseconds to record.</param>
-        public void RecordLatencyAndRps(
+        public void RecordSuccessOpLatencyAndRps(
             TimeSpan timeSpan)
         {
             this.rps = 1000 / timeSpan.Milliseconds;
             this.latencyInMs = timeSpan.Milliseconds;
             this.rpsMetricNameHistogram.Record(this.rps);
             this.operationLatencyHistogram.Record(this.latencyInMs);
+        }
+        
+        /// <summary>
+        /// Records failed operation latency in milliseconds.
+        /// </summary>
+        /// <param name="milliseconds">The number of milliseconds to record.</param>
+        public void RecordFailedOpLatencyAndRps(
+            TimeSpan timeSpan)
+        {
+            this.rpsFailed = 1000 / timeSpan.Milliseconds;
+            this.latencyFailedInMs = timeSpan.Milliseconds;
+            this.rpsFailedMetricNameHistogram.Record(this.rpsFailed);
+            this.operationFailedLatencyHistogram.Record(this.latencyFailedInMs);
         }
     }
 }

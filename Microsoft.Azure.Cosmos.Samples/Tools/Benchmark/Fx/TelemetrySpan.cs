@@ -8,8 +8,9 @@ namespace CosmosBenchmark
     using System.Diagnostics;
     using System.Linq;
     using System.Threading;
+    using static CosmosBenchmark.TelemetrySpan;
 
-    internal struct TelemetrySpan : IDisposable
+    internal class TelemetrySpan : ITelemetrySpan
     {
         private static double[] latencyHistogram;
         private static int latencyIndex = -1;
@@ -18,15 +19,18 @@ namespace CosmosBenchmark
 
         private Stopwatch stopwatch;
         private Func<OperationResult> lazyOperationResult;
-        private Action<TimeSpan> recordLatencyAction;
+        private Action<TimeSpan> recordFailedOpLatencyAction;
+        private Action<TimeSpan> recordSuccessOpLatencyAction;
         private bool disableTelemetry;
+        private bool isFailed = false;
         private BenchmarkConfig benchmarkConfig;
 
-        public static IDisposable StartNew(
+        public static ITelemetrySpan StartNew(
             BenchmarkConfig benchmarkConfig,
             Func<OperationResult> lazyOperationResult,
             bool disableTelemetry,
-            Action<TimeSpan> recordLatencyAction)
+            Action<TimeSpan> recordSuccessOpLatencyAction,
+            Action<TimeSpan> recordFailedOpLatencyAction)
         {
             if (disableTelemetry || !TelemetrySpan.IncludePercentile)
             {
@@ -38,10 +42,13 @@ namespace CosmosBenchmark
                 benchmarkConfig = benchmarkConfig,
                 stopwatch = Stopwatch.StartNew(),
                 lazyOperationResult = lazyOperationResult,
-                recordLatencyAction = recordLatencyAction,
+                recordSuccessOpLatencyAction = recordSuccessOpLatencyAction,
+                recordFailedOpLatencyAction = recordFailedOpLatencyAction,
                 disableTelemetry = disableTelemetry
             };
         }
+
+        public void MarkFailed() { this.isFailed = true; }
 
         public void Dispose()
         {
@@ -54,7 +61,15 @@ namespace CosmosBenchmark
                 {
                     RecordLatency(this.stopwatch.Elapsed.TotalMilliseconds);
 
-                    this.recordLatencyAction?.Invoke(TimeSpan.FromMilliseconds(this.stopwatch.Elapsed.TotalMilliseconds));
+                    if(this.isFailed)
+                    {
+                        this.recordSuccessOpLatencyAction?.Invoke(TimeSpan.FromMilliseconds(this.stopwatch.Elapsed.TotalMilliseconds));
+                    }
+                    else
+                    {
+                        this.recordSuccessOpLatencyAction?.Invoke(TimeSpan.FromMilliseconds(this.stopwatch.Elapsed.TotalMilliseconds));
+
+                    }
                 }
 
                 BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(
@@ -97,13 +112,21 @@ namespace CosmosBenchmark
             return MathNet.Numerics.Statistics.Statistics.Quantile(latencyHistogram.Take(latencyIndex + 1), quantile);
         }
 
-        private class NoOpDisposable : IDisposable
+        private class NoOpDisposable : ITelemetrySpan
         {
             public static readonly NoOpDisposable Instance = new NoOpDisposable();
 
             public void Dispose()
             {
             }
+
+            public void MarkFailed()
+            {
+            }
+        }
+
+        public interface ITelemetrySpan : IDisposable {
+            void MarkFailed();
         }
     }
 }

@@ -22,9 +22,15 @@ namespace CosmosBenchmark
         void CollectMetricsOnFailure();
 
         /// <summary>
-        /// Records latency in milliseconda.
+        /// Records latency for success operations in milliseconda.
         /// </summary>
         /// <param name="milliseconds">The number of milliseconds to record.</param>
-        void RecordLatencyAndRps(TimeSpan timeSpan);
+        void RecordSuccessOpLatencyAndRps(TimeSpan timeSpan);
+
+        /// <summary>
+        /// Records latency for failed operations in milliseconda.
+        /// </summary>
+        /// <param name="milliseconds">The number of milliseconds to record.</param>
+        void RecordFailedOpLatencyAndRps(TimeSpan timeSpan);
     }
 }

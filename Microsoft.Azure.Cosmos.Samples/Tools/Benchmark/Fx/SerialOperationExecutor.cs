@@ -8,6 +8,7 @@ namespace CosmosBenchmark
     using System.Diagnostics;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using static CosmosBenchmark.TelemetrySpan;
 
     internal class SerialOperationExecutor : IExecutor
     {
@@ -55,11 +56,12 @@ namespace CosmosBenchmark
 
                     await this.operation.PrepareAsync();
 
-                    using (IDisposable telemetrySpan = TelemetrySpan.StartNew(
+                    using (ITelemetrySpan telemetrySpan = TelemetrySpan.StartNew(
                                 benchmarkConfig,
                                 () => operationResult.Value,
                                 disableTelemetry: isWarmup,
-                                metricsCollector.RecordLatencyAndRps))
+                                metricsCollector.RecordSuccessOpLatencyAndRps,
+                                metricsCollector.RecordFailedOpLatencyAndRps))
                     {
                         try
                         {
@@ -82,6 +84,7 @@ namespace CosmosBenchmark
                             {
                                 Trace.TraceInformation(ex.ToString());
                             }
+                            telemetrySpan.MarkFailed();
 
                             metricsCollector.CollectMetricsOnFailure();
 

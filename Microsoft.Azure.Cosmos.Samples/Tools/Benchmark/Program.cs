@@ -115,7 +115,7 @@ namespace CosmosBenchmark
                 RunSummary.Location = jObject["compute"]["location"].ToString();
                 Console.WriteLine($"Azure VM Location:{RunSummary.Location}");
             }
-            catch (Exception e)
+            catch(Exception e)
             {
                 Console.WriteLine("Failed to get Azure VM info:" + e.ToString());
             }
