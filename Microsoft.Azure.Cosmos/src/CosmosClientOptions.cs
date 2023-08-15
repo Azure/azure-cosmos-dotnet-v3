@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Routing.SpeculativeProcessing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
@@ -604,6 +605,11 @@ namespace Microsoft.Azure.Cosmos
                 this.httpClientFactory = value;
             }
         }
+
+        /// <summary>
+        /// Speculative processor to be used for periods of high latency, null if not using feature.
+        /// </summary>
+        public ISpeculativeProcessor SpeculativeProcessor { get; set; }
 
         /// <summary>
         /// Enable partition key level failover

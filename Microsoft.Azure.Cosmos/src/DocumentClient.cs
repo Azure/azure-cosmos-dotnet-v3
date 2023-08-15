@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Routing.SpeculativeProcessing;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -114,6 +115,8 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
+
+        private readonly ISpeculativeProcessor speculativeProcessor;
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -432,6 +435,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosClientId"></param>
         /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
         /// <param name="isDistributedTracingEnabled">This is distributed tracing flag</param>
+        /// <param name="speculativeProcessor">This is the speculative processor</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -459,7 +463,8 @@ namespace Microsoft.Azure.Cosmos
                               bool isLocalQuorumConsistency = false,
                               string cosmosClientId = null,
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
-                              bool isDistributedTracingEnabled = false)
+                              bool isDistributedTracingEnabled = false,
+                              ISpeculativeProcessor speculativeProcessor = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -482,6 +487,11 @@ namespace Microsoft.Azure.Cosmos
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
+            
+            if (speculativeProcessor != null)
+            {
+                this.speculativeProcessor = speculativeProcessor;
+            }
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -6352,7 +6362,67 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("request");
             }
 
+            if (this.ShouldSpeculate(request))
+            {
+                return this.SpeculativelyProcessRequestAsync(request, retryPolicy, cancellationToken);
+            }
+
             return this.ProcessRequestAsync(HttpConstants.HttpMethods.Get, request, retryPolicy, cancellationToken);
+        }
+
+        internal Task<DocumentServiceResponse> SpeculativelyProcessRequestAsync(
+            DocumentServiceRequest request,
+            IDocumentClientRetryPolicy retryPolicy,
+            CancellationToken cancellationToken)
+        {
+            CancellationTokenSource parallelRequestCancellationTokenSource = new CancellationTokenSource();
+            CancellationToken parallelRequestCancellationToken = parallelRequestCancellationTokenSource.Token;
+
+            List<DocumentServiceRequest> requests = new List<DocumentServiceRequest> { request };
+            List<Task<Task<DocumentServiceResponse>>> tasks = new List<Task<Task<DocumentServiceResponse>>>();
+
+            int i = 0;
+            foreach (Uri region in this.GlobalEndpointManager.ReadEndpoints)
+            {
+                DocumentServiceRequest speculativeRequest = request.Clone();
+                speculativeRequest.RequestContext.RouteToLocation(region);
+                requests.Add(speculativeRequest);
+
+                tasks.Add(
+                    Task.Delay(this.speculativeProcessor.GetThresholdStepDuration(i), parallelRequestCancellationToken)
+                        .ContinueWith(t => this.ProcessRequestAsync(speculativeRequest, retryPolicy, cancellationToken), parallelRequestCancellationToken));
+
+                i++;
+            }
+            
+            int completedResult = Task.WaitAny(tasks.ToArray(), parallelRequestCancellationToken);
+            parallelRequestCancellationTokenSource.Cancel();
+            return tasks[completedResult].Result;
+        }
+
+        internal bool ShouldSpeculate(DocumentServiceRequest request)
+        {
+            if (this.speculativeProcessor == null)
+            {
+                return false;
+            }
+            
+            if (!request.IsReadOnlyRequest && request.ResourceType != ResourceType.Document)
+            {
+                return false;
+            }
+
+            return this.speculativeProcessor.IsEnabled();
+        }
+
+        public void EnableSpeculation()
+        {
+            this.speculativeProcessor.Enable();
+        }
+
+        public void DisableSpeculation()
+        {
+            this.speculativeProcessor.Disable();
         }
 
         internal Task<DocumentServiceResponse> ReadFeedAsync(

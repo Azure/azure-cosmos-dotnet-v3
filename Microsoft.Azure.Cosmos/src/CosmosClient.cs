@@ -1435,6 +1435,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Enables speculative processing for all requests issued by this client.
+        /// </summary>
+        public void EnableSpeculation()
+        {
+            this.ClientContext.DocumentClient.EnableSpeculation();
+        }
+
+        /// <summary>
+        /// Disables speculative processing for all requests issued by this client.
+        /// </summary>
+        public void DisableSpeculation()
+        {
+            this.ClientContext.DocumentClient.DisableSpeculation();
+        }
+
+        /// <summary>
         /// Dispose of cosmos client
         /// </summary>
         public void Dispose()

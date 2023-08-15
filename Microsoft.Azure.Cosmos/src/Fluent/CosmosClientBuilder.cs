@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing.SpeculativeProcessing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Telemetry;
@@ -619,6 +620,31 @@ namespace Microsoft.Azure.Cosmos.Fluent
         {
             this.clientOptions.EnableContentResponseOnWrite = contentResponseOnWrite;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the speculator for the client.
+        /// </summary>
+        /// <param name="speculationType">The type of speculation to be used. Default is None.</param>
+        /// <param name="speculativeThreshold">The threshold for the speculation.</param>
+        /// <returns>The <see cref="CosmosClientBuilder"/></returns>
+        public CosmosClientBuilder WithSpeculativeProcessing(SpeculationType? speculationType = 0, TimeSpan? speculativeThreshold = null)
+        {
+            switch (speculationType)
+            {
+                case SpeculationType.NONE:
+                    return this;
+                case SpeculationType.THRESHOLD_BASED:
+                    if (speculativeThreshold == null )
+                    {
+                        throw new ArgumentNullException(nameof(speculativeThreshold));
+                    }
+
+                    this.clientOptions.SpeculativeProcessor = new ThresholdSpeculator((TimeSpan)speculativeThreshold);
+                    return this;
+                default:
+                    throw new ArgumentException("Invalid SpeculationType");
+            }
         }
 
         /// <summary>

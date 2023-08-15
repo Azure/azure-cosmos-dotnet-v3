@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Routing.SpeculativeProcessing;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -84,7 +85,8 @@ namespace Microsoft.Azure.Cosmos
                sessionContainer: clientOptions.SessionContainer,
                cosmosClientId: cosmosClient.Id,
                remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback),
-               isDistributedTracingEnabled: clientOptions.IsDistributedTracingEnabled);
+               isDistributedTracingEnabled: clientOptions.IsDistributedTracingEnabled,
+               speculativeProcessor: clientOptions.SpeculativeProcessor);
 
             return ClientContextCore.Create(
                 cosmosClient,
