@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents server side metrics specific for a single partition.
     /// </summary>
-    public sealed class ServerSidePartitionedMetrics
+    public class ServerSidePartitionedMetrics
     {
         internal ServerSidePartitionedMetrics(ServerSideMetricsInternal serverSideMetricsInternal)
             : this(new ServerSideMetrics(serverSideMetricsInternal), serverSideMetricsInternal.FeedRange, serverSideMetricsInternal.PartitionKeyRangeId)
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="serverSideMetrics"></param>
         /// <param name="feedRange"></param>
         /// <param name="partitionKeyRangeId"></param>
-        public ServerSidePartitionedMetrics(ServerSideMetrics serverSideMetrics, string feedRange, int? partitionKeyRangeId)
+        internal ServerSidePartitionedMetrics(ServerSideMetrics serverSideMetrics, string feedRange, int? partitionKeyRangeId)
         {
             this.ServerSideMetrics = serverSideMetrics;
             this.FeedRange = feedRange;
@@ -30,18 +30,25 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ServerSidePartitionedMetrics"/> class.
+        /// </summary>
+        public ServerSidePartitionedMetrics()
+        {
+        }
+
+        /// <summary>
         /// Gets the backend metrics for the request.
         /// </summary>
-        public ServerSideMetrics ServerSideMetrics { get; }
+        public virtual ServerSideMetrics ServerSideMetrics { get; }
 
         /// <summary>
         /// Gets the FeedRange for the partition.
         /// </summary>
-        public string FeedRange { get; }
+        public virtual string FeedRange { get; }
 
         /// <summary>
         /// Gets the partition key range id for the partition.
         /// </summary>
-        public int? PartitionKeyRangeId { get; }
+        public virtual int? PartitionKeyRangeId { get; }
     }
 }

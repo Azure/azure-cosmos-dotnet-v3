@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             this.Value = rootTrace;
-            this.accumulatedMetrics = this.accumulatedMetrics = new Lazy<ServerSideCumulativeMetrics>(() => this.GetQueryMetrics());
+            this.accumulatedMetrics = new Lazy<ServerSideCumulativeMetrics>(() => this.GetQueryMetrics());
         }
 
         public ITrace Value { get; }
@@ -60,17 +60,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
             ServerSideMetricsAccumulator.WalkTraceTreeForQueryMetrics(this.Value, accumulator);
 
-            List<ServerSidePartitionedMetrics> partitionedServerSideMetrics = 
-                accumulator.GetPartitionedServerSideMetrics().Select(metrics => new ServerSidePartitionedMetrics(metrics)).ToList();
-
-            if (partitionedServerSideMetrics.Count == 0)
-            {
-                return null;
-            }
-
-            ServerSideMetrics serverSideMetrics = new ServerSideMetrics(accumulator.GetServerSideMetrics());
-            ServerSideCumulativeMetrics accumulatedMetrics = new ServerSideCumulativeMetrics(serverSideMetrics, partitionedServerSideMetrics);
-            return accumulatedMetrics;
+            ServerSideCumulativeMetrics accumulatedMetrics = new ServerSideCumulativeMetrics(accumulator);
+            return accumulatedMetrics.PartitionedMetrics.Count != 0 ? accumulatedMetrics : null;
         }
 
         internal bool IsGoneExceptionHit()

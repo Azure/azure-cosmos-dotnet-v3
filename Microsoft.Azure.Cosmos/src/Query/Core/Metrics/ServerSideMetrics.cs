@@ -5,12 +5,13 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     /// <summary>
     /// Metrics received for queries from the backend.
     /// </summary>
-    public sealed class ServerSideMetrics
+    public class ServerSideMetrics
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ServerSideMetricsInternal"/> class.
@@ -40,104 +41,68 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="ServerSideMetrics"/> class.
         /// </summary>
-        /// <param name="retrievedDocumentCount"></param>
-        /// <param name="retrievedDocumentSize"></param>
-        /// <param name="outputDocumentCount"></param>
-        /// <param name="outputDocumentSize"></param>
-        /// <param name="indexHitRatio"></param>
-        /// <param name="totalQueryExecutionTime"></param>
-        /// <param name="queryPreparationTimes"></param>
-        /// <param name="indexLookupTime"></param>
-        /// <param name="documentLoadTime"></param>
-        /// <param name="vmExecutionTime"></param>
-        /// <param name="runtimeExecutionTimes"></param>
-        /// <param name="documentWriteTime"></param>
-        public ServerSideMetrics(
-           long retrievedDocumentCount,
-           long retrievedDocumentSize,
-           long outputDocumentCount,
-           long outputDocumentSize,
-           double indexHitRatio,
-           TimeSpan totalQueryExecutionTime,
-           TimeSpan queryPreparationTimes,
-           TimeSpan indexLookupTime,
-           TimeSpan documentLoadTime,
-           TimeSpan vmExecutionTime,
-           TimeSpan runtimeExecutionTimes,
-           TimeSpan documentWriteTime)
+        public ServerSideMetrics()
         {
-            this.RetrievedDocumentCount = retrievedDocumentCount;
-            this.RetrievedDocumentSize = retrievedDocumentSize;
-            this.OutputDocumentCount = outputDocumentCount;
-            this.OutputDocumentSize = outputDocumentSize;
-            this.IndexHitRatio = indexHitRatio;
-            this.TotalTime = totalQueryExecutionTime;
-            this.QueryPreparationTimes = queryPreparationTimes;
-            this.IndexLookupTime = indexLookupTime;
-            this.DocumentLoadTime = documentLoadTime;
-            this.VMExecutionTime = vmExecutionTime;
-            this.RuntimeExecutionTimes = runtimeExecutionTimes;
-            this.DocumentWriteTime = documentWriteTime;
         }
 
         /// <summary>
         /// Gets the total query time in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan TotalTime { get; }
+        public virtual TimeSpan TotalTime { get; }
 
         /// <summary>
         /// Gets the number of documents retrieved during query in the Azure Cosmos database service.
         /// </summary>
-        public long RetrievedDocumentCount { get; }
+        public virtual long RetrievedDocumentCount { get; }
 
         /// <summary>
         /// Gets the size of documents retrieved in bytes during query in the Azure Cosmos DB service.
         /// </summary>
-        public long RetrievedDocumentSize { get; }
+        public virtual long RetrievedDocumentSize { get; }
 
         /// <summary>
         /// Gets the number of documents returned by query in the Azure Cosmos DB service.
         /// </summary>
-        public long OutputDocumentCount { get; }
+        public virtual long OutputDocumentCount { get; }
 
         /// <summary>
         /// Gets the size of documents outputted in bytes during query in the Azure Cosmos database service.
         /// </summary>
-        public long OutputDocumentSize { get; }
+        public virtual long OutputDocumentSize { get; }
 
         /// <summary>
         /// Gets the query preparation time in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan QueryPreparationTimes { get; }
+        public virtual TimeSpan QueryPreparationTimes { get; }
 
         /// <summary>
         /// Gets the query index lookup time in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan IndexLookupTime { get; }
+        public virtual TimeSpan IndexLookupTime { get; }
 
         /// <summary>
         /// Gets the document loading time during query in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan DocumentLoadTime { get; }
+        public virtual TimeSpan DocumentLoadTime { get; }
 
         /// <summary>
         /// Gets the query runtime execution time during query in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan RuntimeExecutionTimes { get; }
+        public virtual TimeSpan RuntimeExecutionTimes { get; }
 
         /// <summary>
         /// Gets the output writing/serializing time during query in the Azure Cosmos database service.
         /// </summary>
-        public TimeSpan DocumentWriteTime { get; }
+        public virtual TimeSpan DocumentWriteTime { get; }
 
         /// <summary>
         /// Gets the index hit ratio by query in the Azure Cosmos database service.
         /// </summary>
-        public double IndexHitRatio { get; }
+        public virtual double IndexHitRatio { get; }
 
         /// <summary>
         /// Gets the VMExecution Time.
         /// </summary>
-        public TimeSpan VMExecutionTime { get; }
+        public virtual TimeSpan VMExecutionTime { get; }
     }
 }

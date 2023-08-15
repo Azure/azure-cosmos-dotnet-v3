@@ -10,7 +10,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     /// <summary>
     /// internal implementation of metrics received for queries from the backend.
     /// </summary>
-    internal sealed class ServerSideMetricsInternal
+#if INTERNAL
+#pragma warning disable SA1600
+#pragma warning disable CS1591
+    public
+#else
+    internal
+#endif
+     sealed class ServerSideMetricsInternal
     {
         /// <summary>
         /// QueryMetrics with all members having default (but not null) members.
