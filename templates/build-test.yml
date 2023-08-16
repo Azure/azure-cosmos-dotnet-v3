@@ -9,9 +9,8 @@ parameters:
   EmulatorPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & ClassName!~Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetry & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed" --verbosity normal '
   EmulatorPipeline1CategoryListName: ' Query, ChangeFeed, ReadFeed, Batch ' # Divided in 2 categories to run them in parallel and reduce the PR feedback time
   EmulatorPipeline2CategoryListName: ' Others '
-  ClientTelemetryTestName: 'EmulatorTests ClientTelemetry'
-  ClientTelemetryTestClassName: 'Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryTests'
-  
+  ReleasePackage: ''
+
 jobs:
 - job:
   displayName: Tests Debug
@@ -209,12 +208,19 @@ jobs:
       testRunTitle: Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
 - job:
-  displayName: ${{ parameters.ClientTelemetryTestName }} ${{ parameters.BuildConfiguration }}
+  variables:
+    ${{ if ne(parameters.ReleasePackage, true) }}:
+      TestName: Microsoft.Azure.Cosmos.EmulatorTests
+      ClientTelemetryTestClassName: Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryTests
+    ${{ if eq(parameters.ReleasePackage, true) }}:
+      TestName: Integration Test
+      ClientTelemetryTestClassName: Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryReleaseTests
+  displayName: TelemetryToService ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     vmImage: windows-2019
-
+  
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
@@ -235,7 +241,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: --filter "ClassName=${{ parameters.ClientTelemetryTestClassName }}" --verbosity normal --configuration Debug /p:OS=${{ parameters.OS }}
+      arguments: --filter "ClassName=$(ClientTelemetryTestClassName)" --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests

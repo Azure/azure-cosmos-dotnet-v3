@@ -22,8 +22,6 @@ stages:
         BuildConfiguration: $(BuildConfiguration)
         Arguments: $(ReleaseArguments)
         VmImage: $(VmImage)
-        ClientTelemetryTestName: IntegrationTest ClientTelemetry
-        ClientTelemetryTestClassName: Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryReleaseTests
 
 - stage:
   displayName: Publish 
