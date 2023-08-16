@@ -43,6 +43,7 @@ namespace CosmosBenchmark
                     benchmarkConfig,
                     metricsCollectorProvider);
 
+            Utility.TeePrint("Starting execution {0} tasks", serialExecutorConcurrency);
             IExecutor[] executors = new IExecutor[serialExecutorConcurrency];
             for (int i = 0; i < serialExecutorConcurrency; i++)
             {
