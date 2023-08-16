@@ -64,11 +64,11 @@ namespace CosmosBenchmark
 
                     if(this.isFailed)
                     {
-                        BenchmarkLatencyEventSource.Instance.NotifySuccess((int)operationResult.OperationType, (long)this.stopwatch.Elapsed.TotalMilliseconds);
+                        BenchmarkLatencyEventSource.Instance.OnOperationSuccess((int)operationResult.OperationType, (long)this.stopwatch.Elapsed.TotalMilliseconds);
                     }
                     else
                     {
-                        BenchmarkLatencyEventSource.Instance.NotifyFailure((int)operationResult.OperationType, (long)this.stopwatch.Elapsed.TotalMilliseconds);
+                        BenchmarkLatencyEventSource.Instance.OnOperationFailure((int)operationResult.OperationType, (long)this.stopwatch.Elapsed.TotalMilliseconds);
                     }
                 }
 
@@ -88,13 +88,13 @@ namespace CosmosBenchmark
 
         internal static void ResetLatencyHistogram(int totalNumberOfIterations)
         {
-            latencyHistogram = new double[totalNumberOfIterations];
+            TelemetrySpan.latencyHistogram = new double[totalNumberOfIterations];
             latencyIndex = -1;
         }
 
         internal static double? GetLatencyPercentile(int percentile)
         {
-            if (latencyHistogram == null)
+            if (TelemetrySpan.latencyHistogram == null)
             {
                 return null;
             }

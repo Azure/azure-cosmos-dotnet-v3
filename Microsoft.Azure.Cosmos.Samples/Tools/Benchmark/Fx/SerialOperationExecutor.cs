@@ -71,7 +71,7 @@ namespace CosmosBenchmark
                             telemetrySpan.MarkFailed();
                             if (traceFailures)
                             {
-                                Console.WriteLine(ex.ToString());
+                                Trace.TraceInformation(ex.ToString());
                             }
 
                             // failure case
