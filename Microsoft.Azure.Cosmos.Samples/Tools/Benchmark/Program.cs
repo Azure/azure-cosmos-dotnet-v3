@@ -15,9 +15,13 @@ namespace CosmosBenchmark
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure.Monitor.OpenTelemetry.Exporter;
     using CosmosBenchmark.Fx;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json.Linq;
+    using OpenTelemetry;
+    using OpenTelemetry.Metrics;
     using Container = Microsoft.Azure.Cosmos.Container;
 
     /// <summary>
@@ -34,7 +38,11 @@ namespace CosmosBenchmark
             try
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
-                await Program.AddAzureInfoToRunSummary();
+                await AddAzureInfoToRunSummary();
+
+                MeterProvider meterProvider = BuildMeterProvider(config);
+
+                MetricsCollectorProvider metricsCollectorProvider = new MetricsCollectorProvider(config, meterProvider);
 
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
@@ -54,7 +62,7 @@ namespace CosmosBenchmark
 
                 Program program = new Program();
 
-                RunSummary runSummary = await program.ExecuteAsync(config);
+                RunSummary runSummary = await program.ExecuteAsync(config, metricsCollectorProvider);
 
                 if (!string.IsNullOrEmpty(config.DiagnosticsStorageConnectionString))
                 {
@@ -76,6 +84,37 @@ namespace CosmosBenchmark
             }
         }
 
+        /// <summary>
+        /// Create a MeterProvider. If the App Insights connection string is not set, do not create an AppInsights Exporter.
+        /// </summary>
+        /// <returns></returns>
+        private static MeterProvider BuildMeterProvider(BenchmarkConfig config)
+        {
+            if (string.IsNullOrWhiteSpace(config.AppInsightsConnectionString))
+            {
+                return Sdk.CreateMeterProviderBuilder()
+                .AddMeter("CosmosBenchmarkInsertOperationMeter")
+                .AddMeter("CosmosBenchmarkQueryOperationMeter")
+                .AddMeter("CosmosBenchmarkReadOperationMeter")
+                .Build();
+            }
+
+            OpenTelemetry.Trace.TracerProviderBuilder tracerProviderBuilder = Sdk.CreateTracerProviderBuilder()
+                .AddAzureMonitorTraceExporter();
+
+            return Sdk.CreateMeterProviderBuilder()
+                .AddAzureMonitorMetricExporter(configure: new Action<AzureMonitorExporterOptions>(
+                    (options) => options.ConnectionString = config.AppInsightsConnectionString))
+                .AddMeter("CosmosBenchmarkInsertOperationMeter")
+                .AddMeter("CosmosBenchmarkQueryOperationMeter")
+                .AddMeter("CosmosBenchmarkReadOperationMeter")
+                .Build();
+        }
+
+        /// <summary>
+        /// Adds Azure VM information to run summary.
+        /// </summary>
+        /// <returns></returns>
         private static async Task AddAzureInfoToRunSummary()
         {
             using HttpClient httpClient = new HttpClient();
@@ -99,11 +138,13 @@ namespace CosmosBenchmark
             }
         }
 
+
         /// <summary>
         /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
         /// <returns>a Task object.</returns>
-        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
+        private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config,
+            MetricsCollectorProvider metricsCollectorProvider)
         {
             // V3 SDK client initialization
             using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
@@ -159,7 +200,7 @@ namespace CosmosBenchmark
                     }
 
                     IExecutionStrategy execution = IExecutionStrategy.StartNew(benchmarkOperationFactory);
-                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01);
+                    runSummary = await execution.ExecuteAsync(config, taskCount, opsPerTask, 0.01, metricsCollectorProvider);
                 }
 
                 if (config.CleanupOnFinish)
