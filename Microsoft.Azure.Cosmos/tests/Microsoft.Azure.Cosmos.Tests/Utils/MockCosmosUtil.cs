@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DocumentClient documentClient = accountConsistencyLevel.HasValue ? new MockDocumentClient(accountConsistencyLevel.Value, policy) : new MockDocumentClient(policy);
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
+            
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
             return cosmosClientBuilder.Build(documentClient);
         }

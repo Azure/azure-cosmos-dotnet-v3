@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
     using System;
     using System.Globalization;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -19,8 +18,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Moq;
     using System.Collections.ObjectModel;
     using System.Collections.Generic;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
-    using System.IO;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Newtonsoft.Json;
@@ -87,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         }
 
         public MockDocumentClient(ConnectionPolicy policy = null)
-            : base(new Uri("http://localhost"), authKey: null, connectionPolicy: policy)
+            : base(new Uri("http://localhost"), connectionPolicy: policy)
         {
             this.authKeyHashFunction = new StringHMACSHA256Hash(MockDocumentClient.GenerateRandomKey());
 

@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         public MockDocumentClient(Cosmos.ConsistencyLevel accountConsistencyLevel, ConnectionPolicy connectionPolicy = null)
-            : base(new Uri("http://localhost"), authKey: null, connectionPolicy: connectionPolicy)
+            : base(new Uri("http://localhost"), connectionPolicy)
         {
             this.accountConsistencyLevel = accountConsistencyLevel;
             this.Init();
