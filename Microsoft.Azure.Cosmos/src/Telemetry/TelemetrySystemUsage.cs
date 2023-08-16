@@ -41,11 +41,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
             }
 
-            if (histogram.TotalCount > 0)
-            {
-                systemInfo.SetAggregators(histogram, ClientTelemetryOptions.HistogramPrecisionFactor);
-            }
-            
+            systemInfo.SetAggregators(histogram, ClientTelemetryOptions.HistogramPrecisionFactor);
+
             return systemInfo;
         }
 
@@ -70,10 +67,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
             }
 
-            if (histogram.TotalCount > 0)
-            {
-                systemInfo.SetAggregators(histogram, ClientTelemetryOptions.KbToMbFactor);
-            }
+            systemInfo.SetAggregators(histogram, ClientTelemetryOptions.KbToMbFactor);
 
             return systemInfo;
         }
@@ -99,10 +93,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
             }
 
-            if (histogram.TotalCount > 0)
-            {
-                systemInfo.SetAggregators(histogram);
-            }
+            systemInfo.SetAggregators(histogram);
 
             return systemInfo;
         }
@@ -153,10 +144,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
             }
 
-            if (histogram.TotalCount > 0)
-            {
-                systemInfo.SetAggregators(histogram, ClientTelemetryOptions.TicksToMsFactor);
-            }
+            systemInfo.SetAggregators(histogram, ClientTelemetryOptions.TicksToMsFactor);
 
             return systemInfo;
         }
@@ -189,10 +177,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
             }
 
-            if (histogram.TotalCount > 0)
+            if (histogram.TotalCount == 0)
             {
-                systemInfo.SetAggregators(histogram);
+                return null;
             }
+
+            systemInfo.SetAggregators(histogram);
 
             return systemInfo;
         }

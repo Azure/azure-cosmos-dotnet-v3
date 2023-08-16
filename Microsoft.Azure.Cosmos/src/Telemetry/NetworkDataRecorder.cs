@@ -24,23 +24,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 if (NetworkDataRecorder.IsStatusCodeNotExcluded((int)storeStatistics.StoreResult.StatusCode, (int)storeStatistics.StoreResult.SubStatusCode))
                 {
-                    if (NetworkDataRecorder.IsUserOrServerError((int)storeStatistics.StoreResult.StatusCode))
-                    {
-                        RequestInfo requestInfo = this.CreateRequestInfo(storeStatistics, databaseId, containerId);
-                        LongConcurrentHistogram latencyHist = this.RequestInfoErrorBucket.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                                  ClientTelemetryOptions.RequestLatencyMax,
-                                                                  ClientTelemetryOptions.RequestLatencyPrecision));
-                        latencyHist.RecordValue(storeStatistics.RequestLatency.Ticks);
+                    RequestInfo requestInfo = this.CreateRequestInfo(storeStatistics, databaseId, containerId);
+                    ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> bucket = NetworkDataRecorder.IsUserOrServerError((int)storeStatistics.StoreResult.StatusCode) ? this.RequestInfoErrorBucket : this.RequestInfoHighLatencyBucket;
 
-                    }
-                    else
-                    {
-                        RequestInfo requestInfo = this.CreateRequestInfo(storeStatistics, databaseId, containerId);
-                        LongConcurrentHistogram latencyHist = this.RequestInfoHighLatencyBucket.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
+                    LongConcurrentHistogram latencyHist = bucket.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                                   ClientTelemetryOptions.RequestLatencyMax,
                                                                   ClientTelemetryOptions.RequestLatencyPrecision));
-                        latencyHist.RecordValue(storeStatistics.RequestLatency.Ticks);
-                    }
+                    latencyHist.RecordValue(storeStatistics.RequestLatency.Ticks);
                 }
             }
         }
@@ -53,6 +43,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             List<RequestInfo> allRequests = new List<RequestInfo>();
             foreach (KeyValuePair<RequestInfo, LongConcurrentHistogram> entry in requestInfoErrorList)
             {
+                // No metrics available to record
+                if (entry.Value == null || entry.Value.TotalCount == 0)
+                {
+                    continue;
+                }
+
                 MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
                 metricInfo.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
 
@@ -73,6 +69,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             List<RequestInfo> allRequests = new List<RequestInfo>();
             foreach (KeyValuePair<RequestInfo, LongConcurrentHistogram> entry in requestInfoHighLatencyList)
             {
+                // No metrics available to record
+                if (entry.Value == null || entry.Value.TotalCount == 0)
+                {
+                    continue;
+                }
+
                 MetricInfo metricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
                 metricInfo.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
 

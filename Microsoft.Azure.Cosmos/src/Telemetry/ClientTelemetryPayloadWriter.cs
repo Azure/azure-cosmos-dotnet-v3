@@ -38,17 +38,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in operationInfoSnapshot)
                 {
                     long lengthNow = stringBuilder.Length;
-                    
-                    OperationInfo payloadForLatency = entry.Key;
-                    payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                    payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
 
-                    OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
-                    payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                    payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
-                    
-                    string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
-                    string requestChargeMetrics = JsonConvert.SerializeObject(payloadForRequestCharge);
+                    // Latency Metrics is not captured then don't add it in payload
+                    string latencyMetrics = string.Empty;
+                    if (entry.Value.latency != null && entry.Value.latency.TotalCount > 0)
+                    {
+                        OperationInfo payloadForLatency = entry.Key;
+                        payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
+                        payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.TicksToMsFactor);
+
+                        latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
+                    }
+
+                    // RequestCharge Metrics is not captured then don't add it in payload
+                    string requestChargeMetrics = string.Empty;
+                    if (entry.Value.requestcharge != null && entry.Value.requestcharge.TotalCount > 0)
+                    {
+                        OperationInfo payloadForRequestCharge = entry.Key;
+                        payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
+                        payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
+
+                        requestChargeMetrics = JsonConvert.SerializeObject(payloadForRequestCharge);
+                    }
 
                     int thisSectionLength = latencyMetrics.Length + requestChargeMetrics.Length;
                     if (lengthNow + thisSectionLength > ClientTelemetryOptions.PayloadSizeThreshold)
@@ -64,7 +75,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     writer.WriteRawValue(latencyMetrics);
                     writer.WriteRawValue(requestChargeMetrics);
                 }
-
             }
             writer.WriteEndArray();
 
@@ -76,14 +86,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 foreach (KeyValuePair<CacheRefreshInfo, LongConcurrentHistogram> entry in cacheRefreshInfoSnapshot)
                 {
                     long lengthNow = stringBuilder.Length;
-                        
-                    CacheRefreshInfo payloadForLatency = entry.Key;
-                    payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                    payloadForLatency.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
 
-                    string latencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
+                    string cacheLatencyMetrics = string.Empty;
+                    if (entry.Value != null && entry.Value.TotalCount > 0)
+                    {
+                        CacheRefreshInfo payloadForLatency = entry.Key;
+                        payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
+                        payloadForLatency.SetAggregators(entry.Value, ClientTelemetryOptions.TicksToMsFactor);
 
-                    if (lengthNow + latencyMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
+                        cacheLatencyMetrics = JsonConvert.SerializeObject(payloadForLatency);
+                    }
+
+                    if (lengthNow + cacheLatencyMetrics.Length > ClientTelemetryOptions.PayloadSizeThreshold)
                     {
                         writer.WriteEndArray();
                         writer.WriteEndObject();
@@ -93,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         writer = ClientTelemetryPayloadWriter.GetWriterWithSectionStartTag(stringBuilder, properties, "cacheRefreshInfo");
                     }
 
-                    writer.WriteRawValue(latencyMetrics);
+                    writer.WriteRawValue(cacheLatencyMetrics);
                 }
                 writer.WriteEndArray();
 

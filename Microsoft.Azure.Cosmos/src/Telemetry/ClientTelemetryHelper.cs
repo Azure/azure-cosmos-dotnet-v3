@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 SystemUsageHistory systemUsageHistory, 
                 bool isDirectConnectionMode)
         {
-            if (systemUsageHistory.Values == null)
+            if (systemUsageHistory.Values == null || systemUsageHistory.Values.Count == 0)
             {
                 return null;
             }
