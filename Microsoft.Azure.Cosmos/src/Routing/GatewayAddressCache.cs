@@ -302,23 +302,26 @@ namespace Microsoft.Azure.Cosmos.Routing
                     .ReplicaTransportAddressUris
                     .Any(x => x.ShouldRefreshHealthStatus()))
                 {
-                    Task refreshAddressesInBackgroundTask = Task.Run(async () => await this.serverPartitionAddressCache.RefreshAsync(
-                        key: partitionKeyRangeIdentity,
-                        singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
-                                request,
-                                cachedAddresses: currentCachedValue,
-                                partitionKeyRangeIdentity.CollectionRid,
-                                partitionKeyRangeIdentity.PartitionKeyRangeId,
-                                forceRefresh: true)));
-
-                    refreshAddressesInBackgroundTask.Exception.Handle(ex =>
+                    Task refreshAddressesInBackgroundTask = Task.Run(async () =>
                     {
-                        DefaultTrace.TraceWarning("Failed to refresh addresses in the background for the collection rid: {0} with exception: {1}. '{2}'",
-                            partitionKeyRangeIdentity.CollectionRid,
-                            ex,
-                            System.Diagnostics.Trace.CorrelationManager.ActivityId);
-
-                        return true;
+                        try
+                        {
+                            await this.serverPartitionAddressCache.RefreshAsync(
+                                key: partitionKeyRangeIdentity,
+                                singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
+                                    request,
+                                    cachedAddresses: currentCachedValue,
+                                    partitionKeyRangeIdentity.CollectionRid,
+                                    partitionKeyRangeIdentity.PartitionKeyRangeId,
+                                    forceRefresh: true));
+                        }
+                        catch (Exception ex)
+                        {
+                            DefaultTrace.TraceWarning("Failed to refresh addresses in the background for the collection rid: {0} with exception: {1}. '{2}'",
+                                partitionKeyRangeIdentity.CollectionRid,
+                                ex,
+                                System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                        }
                     });
                 }
 
