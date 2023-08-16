@@ -115,7 +115,8 @@ namespace CosmosBenchmark
             }
             catch (Exception e)
             {
-                Utility.TraceError($"Error: {e.Message}");
+                Utility.TraceError($"Error: {e.StackTrace}");
+                
             }
             finally
             {
