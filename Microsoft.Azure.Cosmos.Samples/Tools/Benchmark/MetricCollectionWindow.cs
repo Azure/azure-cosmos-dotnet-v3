@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     internal class MetricCollectionWindow
     {
         private DateTime ValidTill { get; set; }
-
+        
         private int MetricsReportingIntervalInSec { get; set; }
 
         /// <summary>

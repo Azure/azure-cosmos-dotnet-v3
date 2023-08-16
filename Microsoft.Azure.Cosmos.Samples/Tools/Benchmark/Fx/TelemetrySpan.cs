@@ -8,9 +8,8 @@ namespace CosmosBenchmark
     using System.Diagnostics;
     using System.Linq;
     using System.Threading;
-    using static CosmosBenchmark.TelemetrySpan;
 
-    internal class TelemetrySpan : ITelemetrySpan
+    internal struct TelemetrySpan : IDisposable
     {
         private static double[] latencyHistogram;
         private static int latencyIndex = -1;
@@ -88,13 +87,13 @@ namespace CosmosBenchmark
 
         internal static void ResetLatencyHistogram(int totalNumberOfIterations)
         {
-            TelemetrySpan.latencyHistogram = new double[totalNumberOfIterations];
+            latencyHistogram = new double[totalNumberOfIterations];
             latencyIndex = -1;
         }
 
         internal static double? GetLatencyPercentile(int percentile)
         {
-            if (TelemetrySpan.latencyHistogram == null)
+            if (latencyHistogram == null)
             {
                 return null;
             }
@@ -102,17 +101,7 @@ namespace CosmosBenchmark
             return MathNet.Numerics.Statistics.Statistics.Percentile(latencyHistogram.Take(latencyIndex + 1), percentile);
         }
 
-        internal static double? GetLatencyQuantile(double quantile)
-        {
-            if (TelemetrySpan.latencyHistogram == null)
-            {
-                return null;
-            }
-
-            return MathNet.Numerics.Statistics.Statistics.Quantile(latencyHistogram.Take(latencyIndex + 1), quantile);
-        }
-
-        private class NoOpDisposable : ITelemetrySpan
+        private class NoOpDisposable : IDisposable
         {
             public static readonly NoOpDisposable Instance = new NoOpDisposable();
 

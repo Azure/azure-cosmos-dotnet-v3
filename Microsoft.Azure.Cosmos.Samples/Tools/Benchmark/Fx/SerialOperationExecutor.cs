@@ -8,12 +8,10 @@ namespace CosmosBenchmark
     using System.Diagnostics;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using static CosmosBenchmark.TelemetrySpan;
 
     internal class SerialOperationExecutor : IExecutor
     {
         private readonly IBenchmarkOperation operation;
-
         private readonly string executorId;
 
         public SerialOperationExecutor(
@@ -28,7 +26,6 @@ namespace CosmosBenchmark
         }
 
         public int SuccessOperationCount { get; private set; }
-
         public int FailedOperationCount { get; private set; }
 
         public double TotalRuCharges { get; private set; }
@@ -73,7 +70,7 @@ namespace CosmosBenchmark
                             telemetrySpan.MarkFailed();
                             if (traceFailures)
                             {
-                                Trace.TraceInformation(ex.ToString());
+                                Console.WriteLine(ex.ToString());
                             }
 
                             // failure case
@@ -100,10 +97,6 @@ namespace CosmosBenchmark
                 } while (currentIterationCount < iterationCount);
 
                 Trace.TraceInformation($"Executor {this.executorId} completed");
-            }
-            catch (Exception e)
-            {
-                Trace.TraceInformation($"Error: {e.Message}");
             }
             finally
             {

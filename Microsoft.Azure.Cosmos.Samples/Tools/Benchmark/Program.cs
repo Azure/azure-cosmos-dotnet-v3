@@ -123,7 +123,6 @@ namespace CosmosBenchmark
             }
         }
 
-
         /// <summary>
         /// Executing benchmarks for V2/V3 cosmosdb SDK.
         /// </summary>
@@ -197,12 +196,13 @@ namespace CosmosBenchmark
                 }
                 runSummary.ConsistencyLevel = consistencyLevel;
 
+
                 if (config.PublishResults)
                 {
                     runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
                     await this.PublishResults(
-                        config,
-                        runSummary,
+                        config, 
+                        runSummary, 
                         cosmosClient);
                 }
 
@@ -211,8 +211,8 @@ namespace CosmosBenchmark
         }
 
         private async Task PublishResults(
-            BenchmarkConfig config,
-            RunSummary runSummary,
+            BenchmarkConfig config, 
+            RunSummary runSummary, 
             CosmosClient benchmarkClient)
         {
             if (string.IsNullOrEmpty(config.ResultsEndpoint))
@@ -308,8 +308,8 @@ namespace CosmosBenchmark
             {
                 return await container.ReadContainerAsync();
             }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
+            catch(CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            { 
                 // Show user cost of running this test
                 double estimatedCostPerMonth = 0.06 * options.Throughput;
                 double estimatedCostPerHour = estimatedCostPerMonth / (24 * 30);
