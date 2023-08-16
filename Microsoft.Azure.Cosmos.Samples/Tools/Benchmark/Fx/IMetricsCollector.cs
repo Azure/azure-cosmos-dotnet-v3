@@ -12,25 +12,13 @@ namespace CosmosBenchmark
     public interface IMetricsCollector
     {
         /// <summary>
-        /// Collects the number of successful operations.
+        /// Successful operation with latency
         /// </summary>
-        void CollectMetricsOnSuccess();
+        void OnOperationSuccess(TimeSpan operationLatency);
 
         /// <summary>
-        /// Collects the number of failed operations.
+        /// Failed operation with latency
         /// </summary>
-        void CollectMetricsOnFailure();
-
-        /// <summary>
-        /// Records latency for success operations in milliseconda.
-        /// </summary>
-        /// <param name="milliseconds">The number of milliseconds to record.</param>
-        void RecordSuccessOpLatencyAndRps(TimeSpan timeSpan);
-
-        /// <summary>
-        /// Records latency for failed operations in milliseconda.
-        /// </summary>
-        /// <param name="milliseconds">The number of milliseconds to record.</param>
-        void RecordFailedOpLatencyAndRps(TimeSpan timeSpan);
+        void OnOperationFailure(TimeSpan operationLatency);
     }
 }

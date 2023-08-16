@@ -5,6 +5,7 @@
 namespace CosmosBenchmark
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.Metrics;
 
     /// <summary>
@@ -96,52 +97,62 @@ namespace CosmosBenchmark
         /// Initialize new  instance of <see cref="MetricsCollector"/>.
         /// </summary>
         /// <param name="meter">OpenTelemetry meter.</param>
-        public MetricsCollector(Meter meter, string prefix)
+        public MetricsCollector(BenchmarkOperationType operationType)
         {
-            this.meter = meter;
-            this.rpsMetricNameHistogram = meter.CreateHistogram<double>($"{prefix}OperationRpsHistogram");
-            this.operationLatencyHistogram = meter.CreateHistogram<double>($"{prefix}OperationLatencyInMsHistogram");
+            this.meter = new Meter($"CosmosBenchmark{operationType}OperationMeter");
+            this.rpsMetricNameHistogram = this.meter.CreateHistogram<double>($"{operationType}OperationRpsHistogram");
+            this.operationLatencyHistogram = this.meter.CreateHistogram<double>($"{operationType}OperationLatencyInMsHistogram");
 
-            this.rpsFailedMetricNameHistogram = meter.CreateHistogram<double>($"{prefix}FailedOperationRpsHistogram");
-            this.operationFailedLatencyHistogram = meter.CreateHistogram<double>($"{prefix}FailedOperationLatencyInMsHistogram");
+            this.rpsFailedMetricNameHistogram = this.meter.CreateHistogram<double>($"{operationType}FailedOperationRpsHistogram");
+            this.operationFailedLatencyHistogram = this.meter.CreateHistogram<double>($"{operationType}FailedOperationLatencyInMsHistogram");
 
-            this.successOperationCounter = meter.CreateCounter<long>($"{prefix}OperationSuccess");
-            this.failureOperationCounter = meter.CreateCounter<long>($"{prefix}OperationFailure");
+            this.successOperationCounter = this.meter.CreateCounter<long>($"{operationType}OperationSuccess");
+            this.failureOperationCounter = this.meter.CreateCounter<long>($"{operationType}OperationFailure");
             
-            this.latencyInMsMetricNameGauge = this.meter.CreateObservableGauge($"{prefix}OperationLatencyInMs",
+            this.latencyInMsMetricNameGauge = this.meter.CreateObservableGauge($"{operationType}OperationLatencyInMs",
                 () => new Measurement<double>(this.latencyInMs));
 
-            this.rpsNameGauge = this.meter.CreateObservableGauge($"{prefix}OperationRps",
+            this.rpsNameGauge = this.meter.CreateObservableGauge($"{operationType}OperationRps",
                 () => new Measurement<double>(this.rps));
 
-            this.latencyInMsFailedMetricNameGauge = this.meter.CreateObservableGauge($"{prefix}FailedOperationLatencyInMs",
+            this.latencyInMsFailedMetricNameGauge = this.meter.CreateObservableGauge($"{operationType}FailedOperationLatencyInMs",
                 () => new Measurement<double>(this.latencyInMs));
 
-            this.rpsFailedNameGauge = this.meter.CreateObservableGauge($"{prefix}FailedOperationRps",
+            this.rpsFailedNameGauge = this.meter.CreateObservableGauge($"{operationType}FailedOperationRps",
                 () => new Measurement<double>(this.rps));
         }
 
+        internal static IEnumerable<string> GetBenchmarkMeterNames()
+        {
+            foreach (BenchmarkOperationType entry in Enum.GetValues<BenchmarkOperationType>())
+            {
+                yield return $"CosmosBenchmark{entry}OperationMeter";
+            }
+        }
+
         /// <summary>
-        /// Collects the number of successful operations.
+        /// Successful operation with latency
         /// </summary>
-        public void CollectMetricsOnSuccess()
+        public void OnOperationSuccess(TimeSpan operationLatency)
         {
             this.successOperationCounter.Add(1);
+            this.RecordSuccessOpLatencyAndRps(operationLatency);
         }
 
         /// <summary>
-        /// Collects the number of failed operations.
+        /// Failed operation with latency
         /// </summary>
-        public void CollectMetricsOnFailure()
+        public void OnOperationFailure(TimeSpan operationLatency)
         {
             this.failureOperationCounter.Add(1);
+            this.RecordFailedOpLatencyAndRps(operationLatency);
         }
 
         /// <summary>
         /// Records success operation latency in milliseconds.
         /// </summary>
         /// <param name="milliseconds">The number of milliseconds to record.</param>
-        public void RecordSuccessOpLatencyAndRps(
+        private void RecordSuccessOpLatencyAndRps(
             TimeSpan timeSpan)
         {
             this.rps = 1000 / timeSpan.Milliseconds;
@@ -154,7 +165,7 @@ namespace CosmosBenchmark
         /// Records failed operation latency in milliseconds.
         /// </summary>
         /// <param name="milliseconds">The number of milliseconds to record.</param>
-        public void RecordFailedOpLatencyAndRps(
+        private void RecordFailedOpLatencyAndRps(
             TimeSpan timeSpan)
         {
             this.rpsFailed = 1000 / timeSpan.Milliseconds;

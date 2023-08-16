@@ -37,37 +37,27 @@ namespace CosmosBenchmark
                 int iterationCount,
                 bool isWarmup,
                 bool traceFailures,
-                Action completionCallback,
-                BenchmarkConfig benchmarkConfig,
-                MetricsCollectorProvider metricsCollectorProvider)
+                Action completionCallback)
         {
             Trace.TraceInformation($"Executor {this.executorId} started");
-
-            Trace.TraceInformation("Initializing counters and metrics.");
 
             try
             {
                 int currentIterationCount = 0;
                 do
                 {
-                    IMetricsCollector metricsCollector = metricsCollectorProvider.GetMetricsCollector(this.operation, benchmarkConfig);
-
                     OperationResult? operationResult = null;
 
                     await this.operation.PrepareAsync();
 
                     using (ITelemetrySpan telemetrySpan = TelemetrySpan.StartNew(
-                                benchmarkConfig,
                                 () => operationResult.Value,
-                                disableTelemetry: isWarmup,
-                                metricsCollector.RecordSuccessOpLatencyAndRps,
-                                metricsCollector.RecordFailedOpLatencyAndRps))
+                                disableTelemetry: isWarmup))
                     {
                         try
                         {
                             operationResult = await this.operation.ExecuteOnceAsync();
-
-                            metricsCollector.CollectMetricsOnSuccess();
+                            telemetrySpan.MarkFailed();
 
                             // Success case
                             this.SuccessOperationCount++;
@@ -80,13 +70,11 @@ namespace CosmosBenchmark
                         }
                         catch (Exception ex)
                         {
+                            telemetrySpan.MarkFailed();
                             if (traceFailures)
                             {
                                 Trace.TraceInformation(ex.ToString());
                             }
-                            telemetrySpan.MarkFailed();
-
-                            metricsCollector.CollectMetricsOnFailure();
 
                             // failure case
                             this.FailedOperationCount++;
@@ -120,7 +108,6 @@ namespace CosmosBenchmark
             finally
             {
                 completionCallback();
-                BenchmarkExecutionEventSource.Instance.Completed(isWarmup);
             }
         }
     }

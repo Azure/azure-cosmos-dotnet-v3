@@ -44,5 +44,17 @@ namespace CosmosBenchmark
                 this.WriteEvent(1, dbName, containerName, durationInMs, lazyDiagnostics());
             }
         }
+
+        [Event(2, Level = EventLevel.Informational)]
+        public void NotifySuccess(int operationType, long durationInMs)
+        {
+            this.WriteEvent(2, operationType, durationInMs);
+        }
+
+        [Event(3, Level = EventLevel.Informational)]
+        public void NotifyFailure(int operationType, long durationInMs)
+        {
+            this.WriteEvent(3, operationType, durationInMs);
+        }
     }
 }

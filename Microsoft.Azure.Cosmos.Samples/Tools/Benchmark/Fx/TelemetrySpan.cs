@@ -19,18 +19,12 @@ namespace CosmosBenchmark
 
         private Stopwatch stopwatch;
         private Func<OperationResult> lazyOperationResult;
-        private Action<TimeSpan> recordFailedOpLatencyAction;
-        private Action<TimeSpan> recordSuccessOpLatencyAction;
         private bool disableTelemetry;
         private bool isFailed = false;
-        private BenchmarkConfig benchmarkConfig;
 
         public static ITelemetrySpan StartNew(
-            BenchmarkConfig benchmarkConfig,
             Func<OperationResult> lazyOperationResult,
-            bool disableTelemetry,
-            Action<TimeSpan> recordSuccessOpLatencyAction,
-            Action<TimeSpan> recordFailedOpLatencyAction)
+            bool disableTelemetry)
         {
             if (disableTelemetry || !TelemetrySpan.IncludePercentile)
             {
@@ -39,20 +33,27 @@ namespace CosmosBenchmark
 
             return new TelemetrySpan
             {
-                benchmarkConfig = benchmarkConfig,
                 stopwatch = Stopwatch.StartNew(),
                 lazyOperationResult = lazyOperationResult,
-                recordSuccessOpLatencyAction = recordSuccessOpLatencyAction,
-                recordFailedOpLatencyAction = recordFailedOpLatencyAction,
                 disableTelemetry = disableTelemetry
             };
         }
 
-        public void MarkFailed() { this.isFailed = true; }
+        public void MarkFailed() 
+        { 
+            this.isFailed = true;
+            this.stopwatch.Stop();
+        }
+
+        public void MarkSuccess()
+        {
+            this.isFailed = false;
+            this.stopwatch.Stop();
+        }
 
         public void Dispose()
         {
-            this.stopwatch.Stop();
+            this.stopwatch.Stop(); // No-op in-case of MarkFailed or MarkSuccess prior call
             if (!this.disableTelemetry)
             {
                 OperationResult operationResult = this.lazyOperationResult();
@@ -63,12 +64,11 @@ namespace CosmosBenchmark
 
                     if(this.isFailed)
                     {
-                        this.recordSuccessOpLatencyAction?.Invoke(TimeSpan.FromMilliseconds(this.stopwatch.Elapsed.TotalMilliseconds));
+                        BenchmarkLatencyEventSource.Instance.NotifySuccess((int)operationResult.OperationType, (long)this.stopwatch.Elapsed.TotalMilliseconds);
                     }
                     else
                     {
-                        this.recordSuccessOpLatencyAction?.Invoke(TimeSpan.FromMilliseconds(this.stopwatch.Elapsed.TotalMilliseconds));
-
+                        BenchmarkLatencyEventSource.Instance.NotifyFailure((int)operationResult.OperationType, (long)this.stopwatch.Elapsed.TotalMilliseconds);
                     }
                 }
 
@@ -119,6 +119,10 @@ namespace CosmosBenchmark
             public void Dispose()
             {
             }
+            
+            public void MarkSuccess()
+            {
+            }
 
             public void MarkFailed()
             {
@@ -126,6 +130,7 @@ namespace CosmosBenchmark
         }
 
         public interface ITelemetrySpan : IDisposable {
+            void MarkSuccess();
             void MarkFailed();
         }
     }
