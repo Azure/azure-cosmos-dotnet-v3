@@ -8,6 +8,7 @@ namespace CosmosBenchmark
     using System.Diagnostics;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using static CosmosBenchmark.TelemetrySpan;
 
     internal class SerialOperationExecutor : IExecutor
     {
@@ -54,7 +55,7 @@ namespace CosmosBenchmark
                         try
                         {
                             operationResult = await this.operation.ExecuteOnceAsync();
-                            telemetrySpan.MarkFailed();
+                            telemetrySpan.MarkSuccess();
 
                             // Success case
                             this.SuccessOperationCount++;
