@@ -22,5 +22,7 @@ nohup dotnet run -c Release -e ${COSMOS_URI} -k ${COSMOS_KEY} -t ${THROUGHPUT} -
 --DiagnosticsStorageConnectionString ${DIAGNOSTICS_STORAGE_CONNECTION_STRING} \
 --DiagnosticLatencyThresholdInMs ${DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS} \
 --DiagnosticsStorageContainerPrefix ${DIAGNOSTICS_STORAGE_CONTAINER_PREFIX} \
+--MetricsReportingIntervalInSec ${METRICS_REPORTINT_INTERVAL_SEC} \
+--AppInsightsConnectionString ${APP_INSIGHT_CONN_STR} \
 -w ${WORKLOAD_TYPE} \
 > "/home/${ADMIN_USER_NAME}/agent.out" 2> "/home/${ADMIN_USER_NAME}/agent.err" &
