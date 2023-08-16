@@ -751,6 +751,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/partial-document-update#supported-modes">Supported partial document update modes</seealso>
         public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
             string id,
             PartitionKey partitionKey,
@@ -783,6 +784,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <see cref="Container.PatchItemAsync"/>
         /// </example>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/partial-document-update#supported-modes">Supported partial document update modes</seealso>
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
@@ -1342,6 +1344,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="partitionKey">The partition key for all items in the batch.</param>
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
+        /// <remarks>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/concepts-limits#per-request-limits">Limits on TransactionalBatch requests</seealso>
+        /// </remarks>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
         /// <summary>

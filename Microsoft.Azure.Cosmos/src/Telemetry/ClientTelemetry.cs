@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Util;
-    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     /// <summary>
     /// This class collects and send all the telemetry information.
@@ -29,16 +28,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        private const int allowedNumberOfFailures = 3;
-
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly ClientTelemetryProcessor processor;
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
-
+        private readonly NetworkDataRecorder networkDataRecorder;
+        
         private readonly CancellationTokenSource cancellationTokenSource;
-
         private readonly GlobalEndpointManager globalEndpointManager;
 
         private Task telemetryTask;
@@ -48,11 +45,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoMap 
             = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
-
-        private ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoMap
-            = new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>();
-
-        private int numberOfFailures = 0;
 
         /// <summary>
         /// Only for Mocking in tests
@@ -112,6 +104,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             GlobalEndpointManager globalEndpointManager)
         {
             this.diagnosticsHelper = diagnosticsHelper ?? throw new ArgumentNullException(nameof(diagnosticsHelper));
+            this.globalEndpointManager = globalEndpointManager;
+            
             this.processor = new ClientTelemetryProcessor(httpClient, authorizationTokenProvider);
 
             this.clientTelemetryInfo = new ClientTelemetryProperties(
@@ -122,8 +116,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 preferredRegions: preferredRegions,
                 aggregationIntervalInSec: (int)observingWindow.TotalSeconds);
 
+            this.networkDataRecorder = new NetworkDataRecorder();
             this.cancellationTokenSource = new CancellationTokenSource();
-            this.globalEndpointManager = globalEndpointManager;
         }
 
         /// <summary>
@@ -136,9 +130,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         /// <summary>
         /// Task which does below operations , periodically
-        ///  1. Set Account information (one time at the time of initialization)
-        ///  2. Load VM metedata information (one time at the time of initialization)
-        ///  3. Calculate and Send telemetry Information to juno service (never ending task)/// </summary>
+        ///  1. Set Account information (one time during initialization)
+        ///  2. Load VM metedata information (one time during initialization)
+        ///  3. Calculate and Send telemetry Information to Client Telemetry Service (never ending task)/// </summary>
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
@@ -148,18 +142,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
-                    if (this.numberOfFailures == allowedNumberOfFailures)
-                    {
-                        this.Dispose();
-                        break;
-                    }
-
                     if (string.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName))
                     {
                         AccountProperties accountProperties = await ClientTelemetryHelper.SetAccountNameAsync(this.globalEndpointManager);
                         this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
                     }
-                    
+
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
@@ -180,26 +168,27 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
                         = Interlocked.Exchange(ref this.cacheRefreshInfoMap, new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>());
 
-                    ConcurrentDictionary<RequestInfo, LongConcurrentHistogram> requestInfoSnapshot
-                      = Interlocked.Exchange(ref this.requestInfoMap, new ConcurrentDictionary<RequestInfo, LongConcurrentHistogram>());
+                    List<RequestInfo> requestInfoSnapshot = this.networkDataRecorder.GetRequests();
 
                     try
                     {
-                        await this.processor
-                        .ProcessAndSendAsync(
-                                clientTelemetryInfo: this.clientTelemetryInfo,
-                                operationInfoSnapshot: operationInfoSnapshot,
-                                cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
-                                requestInfoSnapshot: requestInfoSnapshot,
-                                cancellationToken: this.cancellationTokenSource.Token);
+                        CancellationTokenSource cancellationToken = new CancellationTokenSource(ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
+                        Task processorTask = Task.Run(() => this.processor
+                                                                    .ProcessAndSendAsync(
+                                                                            clientTelemetryInfo: this.clientTelemetryInfo,
+                                                                            operationInfoSnapshot: operationInfoSnapshot,
+                                                                            cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
+                                                                            requestInfoSnapshot: requestInfoSnapshot,
+                                                                            cancellationToken: cancellationToken.Token), cancellationToken.Token);
 
-                        this.numberOfFailures = 0;
+                        // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service
+                        // Not disposing this task. If we dispose a client then, telemetry job(telemetryTask) should stop but processor task(processorTask) should make best effort to finish the job in background.
+                        _ = ClientTelemetry.RunProcessorTaskAsync(this.clientTelemetryInfo.DateTimeUtc, processorTask, ClientTelemetryOptions.ClientTelemetryProcessorTimeOut);
+
                     }
                     catch (Exception ex)
                     {
-                        this.numberOfFailures++;
-
-                        DefaultTrace.TraceError("Telemetry Job Processor failed with error : {0}", ex);
+                        DefaultTrace.TraceError("Exception while initiating processing task : {0} with telemetry date as {1}", ex.Message, this.clientTelemetryInfo.DateTimeUtc);
                     }
                 }
             }
@@ -209,6 +198,33 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             DefaultTrace.TraceInformation("Telemetry Job Stopped.");
+        }
+
+        /// <summary>
+        /// This Task makes sure, processing task is timing out after 5 minute of timeout
+        /// </summary>
+        /// <param name="telemetryDate"></param>
+        /// <param name="processingTask"></param>
+        /// <param name="timeout"></param>
+        internal static async Task RunProcessorTaskAsync(string telemetryDate, Task processingTask, TimeSpan timeout)
+        {
+            using (CancellationTokenSource tokenForDelayTask = new CancellationTokenSource())
+            {
+                Task delayTask = Task.Delay(timeout, tokenForDelayTask.Token);
+                
+                Task resultTask = await Task.WhenAny(processingTask, delayTask);
+                if (resultTask == delayTask)
+                {
+                    DefaultTrace.TraceVerbose($"Processor task with date as {telemetryDate} is canceled as it did not finish in {timeout}");
+                    // Operation cancelled
+                    throw new OperationCanceledException($"Processor task with date as {telemetryDate} is canceled as it did not finish in {timeout}");
+                }
+                else
+                {
+                    // Cancel the timer task so that it does not fire
+                    tokenForDelayTask.Cancel();
+                }
+            }
         }
 
         /// <summary>
@@ -296,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             // Record Network/Replica Information
             SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(trace);
-            this.RecordRntbdResponses(containerId, databaseId, summaryDiagnostics.StoreResponseStatistics.Value);
+            this.networkDataRecorder.Record(summaryDiagnostics.StoreResponseStatistics.Value, databaseId, containerId);
 
             string regionsContacted = ClientTelemetryHelper.GetContactedRegions(cosmosDiagnostics.GetContactedRegions());
 
@@ -335,37 +351,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex);
-            }
-        }
-
-        /// <summary>
-        /// Records RNTBD calls statistics
-        /// </summary>
-        /// <param name="containerId"></param>
-        /// <param name="databaseId"></param>
-        /// <param name="storeResponseStatistics"></param>
-        private void RecordRntbdResponses(string containerId, string databaseId, List<StoreResponseStatistics> storeResponseStatistics)
-        {
-            foreach (StoreResponseStatistics storetatistics in storeResponseStatistics)
-            {
-                if (ClientTelemetryOptions.IsEligible((int)storetatistics.StoreResult.StatusCode, (int)storetatistics.StoreResult.SubStatusCode, storetatistics.RequestLatency))
-                {
-                    RequestInfo requestInfo = new RequestInfo()
-                    {
-                        DatabaseName = databaseId,
-                        ContainerName = containerId,
-                        Uri = storetatistics.StoreResult.StorePhysicalAddress.ToString(),
-                        StatusCode = (int)storetatistics.StoreResult.StatusCode,
-                        SubStatusCode = (int)storetatistics.StoreResult.SubStatusCode,
-                        Resource = storetatistics.RequestResourceType.ToString(),
-                        Operation = storetatistics.RequestOperationType.ToString(),
-                    };
-
-                    LongConcurrentHistogram latencyHist = this.requestInfoMap.GetOrAdd(requestInfo, x => new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
-                                                            ClientTelemetryOptions.RequestLatencyMax,
-                                                            ClientTelemetryOptions.RequestLatencyPrecision));
-                    latencyHist.RecordValue(storetatistics.RequestLatency.Ticks);
-                }
             }
         }
 

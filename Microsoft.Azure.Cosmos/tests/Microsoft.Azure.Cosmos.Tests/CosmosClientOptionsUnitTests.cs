@@ -81,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.HttpClientFactory);
             Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
+            Assert.IsFalse(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -97,6 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.HttpClientFactory);
             Assert.AreNotEqual(Cosmos.ConsistencyLevel.Session, clientOptions.ConsistencyLevel);
             Assert.IsFalse(policy.EnablePartitionLevelFailover);
+            Assert.IsFalse(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
@@ -112,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
+            clientOptions.EnableAdvancedReplicaSelectionForTcp = true;
 
             //Verify all the values are updated
             Assert.AreEqual(region, clientOptions.ApplicationRegion);
@@ -131,6 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
+            Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue && clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -145,7 +149,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
             Assert.AreEqual((Documents.ConsistencyLevel)consistencyLevel, clientOptions.GetDocumentsConsistencyLevel());
             Assert.IsTrue(policy.EnablePartitionLevelFailover);
-            
+            Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
+
             IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
             //Verify Direct Mode settings
             cosmosClientBuilder = new CosmosClientBuilder(
@@ -398,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build();
             CosmosHttpClient cosmosHttpClient = cosmosClient.DocumentClient.httpClient;
-            HttpClientHandler handler = (HttpClientHandler)cosmosHttpClient.HttpMessageHandler;
+            SocketsHttpHandler handler = (SocketsHttpHandler)cosmosHttpClient.HttpMessageHandler;
             
             Assert.IsTrue(object.ReferenceEquals(webProxy, handler.Proxy));
         }

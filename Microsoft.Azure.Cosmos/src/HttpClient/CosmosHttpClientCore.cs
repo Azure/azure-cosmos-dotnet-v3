@@ -5,15 +5,16 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Net.Security;
+    using System.Reflection;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -99,7 +100,87 @@ namespace Microsoft.Azure.Cosmos
                 eventSource: eventSource);
         }
 
-        public static HttpMessageHandler CreateHttpClientHandler(int gatewayModeMaxConnectionLimit, IWebProxy webProxy, Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        public static HttpMessageHandler CreateHttpClientHandler(
+            int gatewayModeMaxConnectionLimit, 
+            IWebProxy webProxy, 
+            Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        {
+            // TODO: Remove type check and use #if NET6_0_OR_GREATER when multitargetting is possible
+            Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
+
+            if (socketHandlerType != null)
+            {
+                try
+                {               
+                    return CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
+                }
+                catch (Exception e)
+                {
+                    DefaultTrace.TraceError("Failed to create SocketsHttpHandler: {0}", e);
+                }
+            }
+            
+            return CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
+        }
+
+        public static HttpMessageHandler CreateSocketsHttpHandlerHelper(
+            int gatewayModeMaxConnectionLimit, 
+            IWebProxy webProxy, 
+            Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        {
+            // TODO: Remove Reflection when multitargetting is possible
+            Type socketHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http");
+
+            object socketHttpHandler = Activator.CreateInstance(socketHandlerType);
+
+            PropertyInfo pooledConnectionLifetimeInfo = socketHandlerType.GetProperty("PooledConnectionLifetime");
+
+            //Sets the timeout for unused connections to a random time between 5 minutes and 5 minutes and 30 seconds.
+            //This is to avoid the issue where a large number of connections are closed at the same time.
+            TimeSpan connectionTimeSpan = TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(30 * CustomTypeExtensions.GetRandomNumber().NextDouble());
+            pooledConnectionLifetimeInfo.SetValue(socketHttpHandler, connectionTimeSpan);
+
+            // Proxy is only set by users and can cause not supported exception on some platforms
+            if (webProxy != null)
+            {
+                PropertyInfo webProxyInfo = socketHandlerType.GetProperty("Proxy");
+                webProxyInfo.SetValue(socketHttpHandler, webProxy);
+            }
+
+            // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
+            try
+            {
+                PropertyInfo maxConnectionsPerServerInfo = socketHandlerType.GetProperty("MaxConnectionsPerServer");
+                maxConnectionsPerServerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);              
+            }
+            // MaxConnectionsPerServer is not supported on some platforms.
+            catch (PlatformNotSupportedException)
+            {
+            }
+
+            if (serverCertificateCustomValidationCallback != null)
+            {
+                //Get SslOptions Property
+                PropertyInfo sslOptionsInfo = socketHandlerType.GetProperty("SslOptions");
+                object sslOptions = sslOptionsInfo.GetValue(socketHttpHandler);
+
+                //Set SslOptions Property with custom certificate validation
+                PropertyInfo remoteCertificateValidationCallbackInfo = sslOptions.GetType().GetProperty("RemoteCertificateValidationCallback");
+                remoteCertificateValidationCallbackInfo.SetValue(
+                    sslOptions,
+                    new RemoteCertificateValidationCallback((object _, X509Certificate certificate, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors) => serverCertificateCustomValidationCallback(
+                            certificate is { } ? new X509Certificate2(certificate) : null,
+                            x509Chain,
+                            sslPolicyErrors)));
+            }
+
+            return (HttpMessageHandler)socketHttpHandler;
+        }
+
+        public static HttpMessageHandler CreateHttpClientHandlerHelper(
+            int gatewayModeMaxConnectionLimit, 
+            IWebProxy webProxy, 
+            Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             HttpClientHandler httpClientHandler = new HttpClientHandler();
 
@@ -112,15 +193,16 @@ namespace Microsoft.Azure.Cosmos
             // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
             try
             {
-                httpClientHandler.MaxConnectionsPerServer = gatewayModeMaxConnectionLimit;
-                if (serverCertificateCustomValidationCallback != null)
-                {
-                    httpClientHandler.ServerCertificateCustomValidationCallback = (_, certificate2, x509Chain, sslPolicyErrors) => serverCertificateCustomValidationCallback(certificate2, x509Chain, sslPolicyErrors);
-                }
+                httpClientHandler.MaxConnectionsPerServer = gatewayModeMaxConnectionLimit;               
             }
             // MaxConnectionsPerServer is not supported on some platforms.
             catch (PlatformNotSupportedException)
             {
+            }
+
+            if (serverCertificateCustomValidationCallback != null)
+            {
+                httpClientHandler.ServerCertificateCustomValidationCallback = (_, certificate2, x509Chain, sslPolicyErrors) => serverCertificateCustomValidationCallback(certificate2, x509Chain, sslPolicyErrors);
             }
 
             return httpClientHandler;
@@ -280,9 +362,11 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (Exception e)
                     {
+                        ITrace trace = NoOpTrace.Singleton;
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
                             datum.RecordHttpException(requestMessage, e, resourceType, requestStartTime);
+                            trace = datum.Trace;
                         }
                         bool isOutOfRetries = CosmosHttpClientCore.IsOutOfRetries(timeoutPolicy, startDateTimeUtc, timeoutEnumerator);
 
@@ -313,6 +397,7 @@ namespace Microsoft.Azure.Cosmos
                                                 ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
                                                 SubStatusCode = SubStatusCodes.TransportGenerated503
                                             },
+                                            trace: trace,
                                             innerException: e);
                                     }
 
@@ -353,8 +438,7 @@ namespace Microsoft.Azure.Cosmos
             DateTime startDateTimeUtc,
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator)
         {
-            return (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
-                !timeoutEnumerator.MoveNext(); // No more retries are configured
+            return !timeoutEnumerator.MoveNext(); // No more retries are configured
         }
 
         private async Task<HttpResponseMessage> ExecuteHttpHelperAsync(

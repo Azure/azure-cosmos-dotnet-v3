@@ -5,10 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
-    using System.Text;
     using System.Threading.Tasks;
     using Cosmos.Telemetry;
     using Cosmos.Telemetry.Diagnostics;
@@ -49,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             Assert.IsFalse(
                 DiagnosticsFilterHelper
-                                .IsTracingNeeded(distributedTracingOptions, OperationType.Read, response), 
+                                .IsLatencyThresholdCrossed(distributedTracingOptions, OperationType.Read, response), 
                 $" Response time is {response.Diagnostics.GetClientElapsedTime().Milliseconds}ms " +
                 $"and Configured threshold value is {distributedTracingOptions.LatencyThresholdForDiagnosticEvent.Value.Milliseconds}ms " +
                 $"and Is response Success : {response.StatusCode.IsSuccess()}" );
@@ -73,8 +70,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             };
 
             Assert.IsTrue(
-                DiagnosticsFilterHelper
-                    .IsTracingNeeded(distributedTracingOptions, OperationType.Read, response),
+                !DiagnosticsFilterHelper
+                    .IsSuccessfulResponse(response),
                 $" Response time is {response.Diagnostics.GetClientElapsedTime().Milliseconds}ms " +
                 $"and Configured threshold value is {distributedTracingOptions.LatencyThresholdForDiagnosticEvent.Value.Milliseconds}ms " +
                 $"and Is response Success : {response.StatusCode.IsSuccess()}");

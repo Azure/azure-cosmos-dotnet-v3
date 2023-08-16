@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class ConnectionPolicy
     {
-        private const int defaultRequestTimeout = 10;
+        private const int defaultRequestTimeout = 6;
         // defaultMediaRequestTimeout is based upon the blob client timeout and the retry policy.
         private const int defaultMediaRequestTimeout = 300;
         private const int defaultMaxConcurrentFanoutRequests = 32;
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default value is <see cref="Cosmos.ConnectionMode.Gateway"/>
         /// </value>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         public ConnectionMode ConnectionMode
         {
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This setting is not used when <see cref="ConnectionMode"/> is set to <see cref="Cosmos.ConnectionMode.Gateway"/>.
         /// Gateway mode only supports HTTPS.
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#use-tcp">Connection policy: Use the TCP protocol</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#networking">Connection policy: Use the HTTPS protocol</see>.
         /// </remarks>
         public Protocol ConnectionProtocol
         {
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.Cosmos
         /// set to 9 and <see cref="Cosmos.RetryOptions.MaxRetryWaitTimeInSeconds"/> set to 30 seconds.
         /// </value>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#429">Handle rate limiting/request rate too large</see>.
         /// </remarks>
         public RetryOptions RetryOptions
         {
@@ -454,6 +454,18 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets a delegate to use to obtain an HttpClient instance to be used for HTTPS communication.
         /// </summary>
         public Func<HttpClient> HttpClientFactory
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the boolean flag to enable replica validation.
+        /// </summary>
+        /// <value>
+        /// The default value for this parameter is false.
+        /// </value>
+        public bool? EnableAdvancedReplicaSelectionForTcp
         {
             get;
             set;

@@ -22,6 +22,8 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
         └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
@@ -44,7 +46,8 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -88,11 +91,39 @@
       ]
     }
   ]
-}]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Operation.CreateItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>CreateItemStreamAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Create</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
-</OTelActivities>
-    </Output>
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="CreateItemStreamAsync" displayName="CreateItemStreamAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">CreateItemStreamAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Create</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Create Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">201</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="LatencyOverThreshold" />
+</OTelActivities></Output>
   </Result>
   <Result>
     <Input>
@@ -110,6 +141,8 @@
 └── ReadItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
@@ -133,7 +166,8 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -177,11 +211,39 @@
       ]
     }
   ]
-}]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Operation.ReadItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReadItemStreamAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Read</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
-</OTelActivities>
-    </Output>
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="ReadItemStreamAsync" displayName="ReadItemStreamAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">ReadItemStreamAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Read</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Read Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="LatencyOverThreshold" />
+</OTelActivities></Output>
   </Result>
   <Result>
     <Input>
@@ -208,6 +270,8 @@
     │   (
     │       [Client Configuration]
     │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
+    │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
         └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
@@ -230,7 +294,8 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -274,11 +339,39 @@
       ]
     }
   ]
-}]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Operation.ReplaceItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>ReplaceItemStreamAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Replace</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
-</OTelActivities>
-    </Output>
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="ReplaceItemStreamAsync" displayName="ReplaceItemStreamAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">ReplaceItemStreamAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Replace</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Replace Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">200</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="LatencyOverThreshold" />
+</OTelActivities></Output>
   </Result>
   <Result>
     <Input>
@@ -299,6 +392,8 @@
 └── DeleteItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
     │   (
     │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │       [DistributedTraceId]
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
@@ -322,7 +417,8 @@
   "start datetime": "0001-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
-    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run",
+    "DistributedTraceId": "Redacted To Not Change The Baselines From Run To Run"
   },
   "children": [
     {
@@ -366,10 +462,38 @@
       ]
     }
   ]
-}]]></Json>
-      <OTelActivities><ACTIVITY><OPERATION>Operation.DeleteItemStreamAsync</OPERATION><ATTRIBUTE-KEY>kind</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>client</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>az.namespace</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Microsoft.DocumentDB</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.operation</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>DeleteItemStreamAsync</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.name</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.container</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.system</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>cosmosdb</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.machine_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>net.peer.name</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>127.0.0.1</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.client_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.user_agent</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.connection_mode</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Direct</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.operation_type</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>Delete</ATTRIBUTE-VALUE><ATTRIBUTE-KEY>db.cosmosdb.request_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.response_content_length_bytes</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.sub_status_code</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.request_charge</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.item_count</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.correlated_activity_id</ATTRIBUTE-KEY><ATTRIBUTE-KEY>db.cosmosdb.regions_contacted</ATTRIBUTE-KEY><ATTRIBUTE-VALUE>South Central US</ATTRIBUTE-VALUE></ACTIVITY>
-<EVENT><EVENT-NAME>LatencyOverThreshold</EVENT-NAME><EVENT-TEXT>Ideally, this should contain request diagnostics but request diagnostics is subject to change with each request as it contains few unique id. So just putting this tag with this static text to make sure event is getting generated for each test.</EVENT-TEXT></EVENT>
-</OTelActivities>
-    </Output>
+}]]></Json><OTelActivities>
+  <ACTIVITY source="Azure.Cosmos.Operation" operationName="DeleteItemStreamAsync" displayName="DeleteItemStreamAsync containerName">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation">DeleteItemStreamAsync</ATTRIBUTE>
+    <ATTRIBUTE key="db.name">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.container">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="net.peer.name">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Delete</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_content_length_bytes">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.response_content_length_bytes">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+  </ACTIVITY>
+  <ACTIVITY source="Azure.Cosmos.Request" operationName="RequestAsync" displayName="Delete Document">
+    <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
+    <ATTRIBUTE key="az.schema_url">https://opentelemetry.io/schemas/1.17.0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.uri">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.sub_status_code">0</ATTRIBUTE>
+    <ATTRIBUTE key="tcp.status_code">204</ATTRIBUTE>
+  </ACTIVITY>
+  <EVENT name="LatencyOverThreshold" />
+</OTelActivities></Output>
   </Result>
 </Results>

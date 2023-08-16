@@ -4,13 +4,11 @@
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption.Custom</AssemblyName>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption.Custom</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
-    <IsPreview>true</IsPreview>
-    
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <Version>$(CustomEncryptionVersion)</Version>
     <Company>Microsoft Corporation</Company>
     <Authors>Microsoft</Authors>
-    <Description>This is an internal library that provides an implementation for client-side encryption for Azure Cosmos DB's SQL API for multi-tenant use case. For more information, refer to https://aka.ms/CosmosCustomClientEncryption</Description>
+    <Description>This is an internal library that provides an implementation for client-side encryption for Azure Cosmos DB for NoSQL for multi-tenant use case. For more information, refer to https://aka.ms/CosmosCustomClientEncryption</Description>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <Title>Microsoft Azure Cosmos DB client-side encryption library for multi-tenant</Title>
     <PackageId>Microsoft.Azure.Cosmos.Encryption.Custom</PackageId>
@@ -24,8 +22,12 @@
     <AdditionalFiles Include="..\..\Microsoft.Azure.Cosmos\src\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.26.0-preview" />
+  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
+      <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.32.3" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
+      <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.35.1-preview" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">

@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
     /// 
     /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
     /// of the application which enables efficient connection management and performance. Please refer to the
-    /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+    /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
     /// </summary>
     /// <example>
     /// This example create a <see cref="CosmosClient"/>, <see cref="Database"/>, and a <see cref="Container"/>.
@@ -92,9 +92,12 @@ namespace Microsoft.Azure.Cosmos
     /// ]]>
     /// </code>
     /// </example>
+    /// <remarks>
+    /// The returned not-initialized reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls
+    /// </remarks>
     /// <seealso cref="CosmosClientOptions"/>
     /// <seealso cref="Fluent.CosmosClientBuilder"/>
-    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
+    /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">Performance Tips</seealso>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/distribute-data-globally">Global data distribution</seealso>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/partitioning-overview">Partitioning and horizontal scaling</seealso>
@@ -157,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
         /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <param name="connectionString">The connection string to the cosmos account. ex: AccountEndpoint=https://XXXXX.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
         /// <param name="clientOptions">(Optional) client options</param>
@@ -179,9 +182,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls.
+        /// </remarks>
         /// <seealso cref="CosmosClientOptions"/>
         /// <seealso cref="Fluent.CosmosClientBuilder"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">Performance Tips</seealso>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
         public CosmosClient(
             string connectionString,
@@ -198,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
         /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
         /// <param name="authKeyOrResourceToken">The cosmos account key or resource token to use to create the client.</param>
@@ -221,9 +227,12 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls.
+        /// </remarks>
         /// <seealso cref="CosmosClientOptions"/>
         /// <seealso cref="Fluent.CosmosClientBuilder"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">Performance Tips</seealso>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
         public CosmosClient(
             string accountEndpoint,
@@ -241,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
         /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
         /// <param name="authKeyOrResourceTokenCredential">AzureKeyCredential with master-key or resource token..</param>
@@ -272,9 +281,12 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         /// <seealso cref="CosmosClientOptions"/>
         /// <seealso cref="Fluent.CosmosClientBuilder"/>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">Performance Tips</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">Performance Tips</seealso>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/troubleshoot-dot-net-sdk">Diagnose and troubleshoot issues</seealso>
-        /// <remarks>AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use.</remarks>
+        /// <remarks>
+        /// AzureKeyCredential enables changing/updating master-key/ResourceToken whle CosmosClient is still in use.
+        /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls.
+        /// </remarks>
         public CosmosClient(
             string accountEndpoint,
             AzureKeyCredential authKeyOrResourceTokenCredential,
@@ -290,8 +302,11 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
         /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
+        /// <remarks>
+        /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls.
+        /// </remarks>
         /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
         /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
         /// <param name="clientOptions">(Optional) client options</param>
@@ -342,7 +357,7 @@ namespace Microsoft.Azure.Cosmos
         /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
         /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
         /// <param name="authKeyOrResourceToken">The cosmos account key or resource token to use to create the client.</param>
@@ -368,6 +383,9 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        /// <remarks>
+        /// The returned reference doesn't guarantee credentials or connectivity validations because initialization doesn't make any network calls.
+        /// </remarks>
         public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
                                                                         string authKeyOrResourceToken,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
@@ -395,7 +413,7 @@ namespace Microsoft.Azure.Cosmos
         /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
         /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
         /// <param name="authKeyOrResourceTokenCredential">AzureKeyCredential with master-key or resource token.</param>
@@ -453,7 +471,7 @@ namespace Microsoft.Azure.Cosmos
         /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
         /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <param name="connectionString">The connection string to the cosmos account. ex: AccountEndpoint=https://XXXXX.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
@@ -500,7 +518,7 @@ namespace Microsoft.Azure.Cosmos
         /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
         /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
         /// of the application which enables efficient connection management and performance. Please refer to the
-        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
         /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>

@@ -33,15 +33,15 @@
             this.queryStatisticsDatumVisitor = new();
             this.endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
             this.authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
-            this.cosmosDatabaseId = Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.CosmosDatabaseId"];
-            this.containerId = Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.ContainerId"];
-            this.contentSerialization = Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.ContentSerialization"];
-            this.query = Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.Query"];
-            this.numberOfIterations = int.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.NumberOfIterations"]);
-            this.warmupIterations = int.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.WarmupIterations"]);
-            this.MaxConcurrency = int.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.MaxConcurrency"]);
-            this.MaxItemCount = int.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.MaxItemCount"]);
-            this.useStronglyTypedIterator = bool.Parse(Utils.ConfigurationManager.AppSettings["ContentSerializationPerformanceTests.UseStronglyTypedIterator"]);
+            this.cosmosDatabaseId = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.CosmosDatabaseId"];
+            this.containerId = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.ContainerId"];
+            this.contentSerialization = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.ContentSerialization"];
+            this.query = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.Query"];
+            this.numberOfIterations = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.NumberOfIterations"]);
+            this.warmupIterations = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.WarmupIterations"]);
+            this.MaxConcurrency = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.MaxConcurrency"]);
+            this.MaxItemCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.MaxItemCount"]);
+            this.useStronglyTypedIterator = bool.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.UseStronglyTypedIterator"]);
         }
 
         [TestMethod]
@@ -83,10 +83,6 @@
             {
                 MaxConcurrency = this.MaxConcurrency,
                 MaxItemCount = this.MaxItemCount,
-                CosmosSerializationFormatOptions = new CosmosSerializationFormatOptions(
-                            contentSerializationFormat: this.contentSerialization,
-                            createCustomNavigator: (content) => JsonNavigator.Create(content),
-                            createCustomWriter: () => JsonWriter.Create(this.contentSerialization == "JsonText" ? JsonSerializationFormat.Text : JsonSerializationFormat.Binary))
             };
 
             if (this.useStronglyTypedIterator)

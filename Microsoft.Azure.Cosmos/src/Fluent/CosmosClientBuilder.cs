@@ -167,9 +167,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         /// <summary>
         /// A method to create the cosmos client
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
+        /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls.
         /// </remarks>
         /// <returns>An instance of <see cref="CosmosClient"/>.</returns>
         public CosmosClient Build()
@@ -191,6 +195,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         /// <summary>
         /// A method to create the cosmos client and initialize the provided containers.
+        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
+        /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
@@ -214,9 +223,13 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         /// <summary>
         /// A method to create the cosmos client
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3">performance guide</see>.
         /// </summary>
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
+        /// The returned reference doesn't guarantee credentials or connectivity validations because creation doesn't make any network calls.
         /// </remarks>
         internal virtual CosmosClient Build(DocumentClient documentClient)
         {
@@ -336,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Sets the connection mode to Direct. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
@@ -383,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// The default value is false.
         /// </param>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
@@ -459,7 +472,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="maxConnectionLimit">The number specifies the number of connections that may be opened simultaneously. Default is 50 connections</param>
         /// <param name="webProxy">Get or set the proxy information used for web requests.</param>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
@@ -516,7 +529,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// If the cumulative wait time exceeds the this value, the client will stop retrying and return the error to the application.
         /// </para>
         /// <para>
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#429">Handle rate limiting/request rate too large</see>.
         /// </para>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.MaxRetryWaitTimeOnRateLimitedRequests"/>
