@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
 
-            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(responseMessageHeaders, false);
+            this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(responseMessageHeaders, isBase64Encoded: false);
             this.RequestMessage = requestMessage;
         }
 
