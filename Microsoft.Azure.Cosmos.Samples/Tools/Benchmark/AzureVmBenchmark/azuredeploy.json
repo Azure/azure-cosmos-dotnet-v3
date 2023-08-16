@@ -1,196 +1,203 @@
 {
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
-    "parameters": {
-        "projectName": {
-            "type": "string",
-            "defaultValue": "Benchmarking-dotnet-SDK",
-            "metadata": {
-                "description": "Specifies a name for generating resource names."
-            }
-        },
-        "location": {
-            "type": "string",
-            "defaultValue": "[resourceGroup().location]",
-            "metadata": {
-                "description": "Specifies the location for all resources."
-            }
-        },
-        "adminUsername": {
-            "type": "string",
-            "defaultValue": "benchmarking",
-            "metadata": {
-                "description": "Specifies a username for the Virtual Machine."
-            }
-        },
-        "adminPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Specifies a password for the Virtual Machine."
-            }
-        },
-        "vmSize": {
-            "type": "string",
-            "defaultValue": "Standard_D4s_v3",
-            "metadata": {
-                "description": "Specifies a Virtual Machine size"
-            }
-        },
-        "vNetName": {
-            "type": "string",
-            "defaultValue": "Benchmarking-dotnet-SDK-vnet",
-            "metadata": {
-                "description": "Specifies a Virtual Network name"
-            }
-        },
-        "vNetAddressPrefixes": {
-            "type": "string",
-            "defaultValue": "10.2.0.0/16",
-            "metadata": {
-                "description": "Specifies a Virtual Network Address Prefix"
-            }
-        },
-        "vNetSubnetName": {
-            "type": "string",
-            "defaultValue": "default",
-            "metadata": {
-                "description": "Specifies a Virtual Network Subnet name"
-            }
-        },
-        "vNetSubnetAddressPrefix": {
-            "type": "string",
-            "defaultValue": "10.2.0.0/24",
-            "metadata": {
-                "description": "Specifies a Virtual Network Subnet Address Prefix "
-            }
-        },
-        "cosmosURI": {
-            "type": "string",
-            "metadata": {
-                "description": "Specifies the URI of the Cosmos DB account"
-            }
-        },
-        "cosmosKey": {
-            "type": "securestring",
-            "metadata": {
-                "description": "Specifies the key for the Cosmos DB account"
-            }
-        },
-        "throughput": {
-            "type": "int",
-            "defaultValue": 100000,
-            "metadata": {
-                "description": "Specifies Collection throughput use"
-            }
-        },
-        "operationsCount": {
-            "type": "int",
-            "metadata": {
-                "description": "Specifies the number of operations to execute"
-            }
-        },
-        "parallelism": {
-            "type": "int",
-            "defaultValue": -1,
-            "metadata": {
-                "description": "Specifies the degree of parallelism"
-            }
-        },
-        "resultsContainer": {
-            "type": "string",
-            "defaultValue": "BenchmarkResult",
-            "metadata": {
-                "description": "Specifies the name of the container to which the results to be saved"
-            }
-        },
-        "vmCount": {
-            "type": "int",
-            "defaultValue": 1,
-            "metadata": {
-                "description": "Specifies the number of Virtual Machines that will part of the test bench"
-            }
-        },
-        "workloadType": {
-            "type": "string",
-            "allowedValues": [
-                "InsertV3BenchmarkOperation",
-                "QueryStreamCrossPkDistinctFullDrainV3BenchmarkOperation",
-                "QueryStreamCrossPkDistinctWithPaginationV3BenchmarkOperation",
-                "QueryStreamCrossPkGroupByFullDrainV3BenchmarkOperation",
-                "QueryStreamCrossPkGroupByWithPaginationV3BenchmarkOperation",
-                "QueryStreamCrossPkOrderByFullDrainV3BenchmarkOperation",
-                "QueryStreamCrossPkOrderByWithPaginationV3BenchmarkOperation",
-                "QueryStreamCrossPkV3BenchmarkOperation",
-                "QueryStreamCrossPkWithPaginationV3BenchmarkOperation",
-                "QueryStreamSinglePkDistinctFullDrainV3BenchmarkOperation",
-                "QueryStreamSinglePkDistinctWithPaginationV3BenchmarkOperation",
-                "QueryStreamSinglePkGroupByFullDrainV3BenchmarkOperation",
-                "QueryStreamSinglePkGroupByWithPaginationV3BenchmarkOperation",
-                "QueryStreamSinglePkGroupByWithPaginationV3BenchmarkOperation",
-                "QueryStreamSinglePkOrderByWithPaginationV3BenchmarkOperation",
-                "QueryStreamSinglePkV3BenchmarkOperation",
-                "QueryStreamSinglePkWithPaginationV3BenchmarkOperation",
-                "QueryTCrossPkDistinctFullDrainV3BenchmarkOperation",
-                "QueryTCrossPkDistinctWithPaginationV3BenchmarkOperation",
-                "QueryTCrossPkGroupByFullDrainV3BenchmarkOperation",
-                "QueryTCrossPkGroupByWithPaginationV3BenchmarkOperation",
-                "QueryTCrossPkOrderByFullDrainV3BenchmarkOperation",
-                "QueryTCrossPkOrderByWithPaginationV3BenchmarkOperation",
-                "QueryTCrossPkV3BenchmarkOperation",
-                "QueryTCrossPkWithPaginationV3BenchmarkOperation",
-                "QueryTSinglePkDistinctFullDrainV3BenchmarkOperation",
-                "QueryTSinglePkDistinctWithPaginationV3BenchmarkOperation",
-                "QueryTSinglePkGroupByFullDrainV3BenchmarkOperation",
-                "QueryTSinglePkGroupByWithPaginationV3BenchmarkOperation",
-                "QueryTSinglePkOrderByFullDrainV3BenchmarkOperation",
-                "QueryTSinglePkOrderByWithPaginationV3BenchmarkOperation",
-                "QueryTSinglePkV3BenchmarkOperation",
-                "QueryTSinglePkWithPaginationV3BenchmarkOperation",
-                "ReadFeedStreamV3BenchmarkOperation",
-                "ReadNotExistsV3BenchmarkOperation",
-                "ReadStreamExistsV3BenchmarkOperation",
-                "ReadStreamExistsWithDiagnosticsV3BenchmarkOperation",
-                "ReadTExistsV3BenchmarkOperation"
-            ],
-            "defaultValue": "ReadTExistsV3BenchmarkOperation",
-            "metadata": {
-                "description": "Specifies the workload"
-            }
-        },
-        "benchmarkingToolsBranchName": {
-            "type": "string",
-            "defaultValue": "master",
-            "metadata": {
-                "description": "Specifies the GitHub branch for the benchmark tool source code repository"
-            }
-        },
-        "diagnosticsLatencyThresholdInMS": {
-            "type": "int",
-            "defaultValue": 100
-        },
-        "storageAccountName": {
-            "type": "string",
-            "defaultValue": "dotnetbenchmark",
-            "metadata": {
-                "description": "Specifies Storage Account Nmae"
-            }
-        },
-        "metricsReportingIntervalInSec": {
-            "type": "int",
-            "defaultValue": 10
-        },
-        "applicationInsightsName": {
-            "type": "string",
-            "defaultValue": "CosmosDBBenchmarkTestAppInsights",
-            "metadata": {
-                "description": "Specifies Application Insights Account Name"
-            }
-        },
-        "startDate": {
-            "type": "int",
-            "defaultValue": "[dateTimeToEpoch(utcNow())]"
-        }
+  "parameters": {
+    "projectName": {
+      "type": "string",
+      "defaultValue": "Benchmarking-dotnet-SDK",
+      "metadata": {
+        "description": "Specifies a name for generating resource names."
+      }
     },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Specifies the location for all resources."
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "benchmarking",
+      "metadata": {
+        "description": "Specifies a username for the Virtual Machine."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Specifies a password for the Virtual Machine."
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D4s_v3",
+      "metadata": {
+        "description": "Specifies a Virtual Machine size"
+      }
+    },
+    "vNetName": {
+      "type": "string",
+      "defaultValue": "Benchmarking-dotnet-SDK-vnet",
+      "metadata": {
+        "description": "Specifies a Virtual Network name"
+      }
+    },
+    "vNetAddressPrefixes": {
+      "type": "string",
+      "defaultValue": "10.2.0.0/16",
+      "metadata": {
+        "description": "Specifies a Virtual Network Address Prefix"
+      }
+    },
+    "vNetSubnetName": {
+      "type": "string",
+      "defaultValue": "default",
+      "metadata": {
+        "description": "Specifies a Virtual Network Subnet name"
+      }
+    },
+    "vNetSubnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.2.0.0/24",
+      "metadata": {
+        "description": "Specifies a Virtual Network Subnet Address Prefix "
+      }
+    },
+    "cosmosURI": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the URI of the Cosmos DB account"
+      }
+    },
+    "cosmosKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Specifies the key for the Cosmos DB account"
+      }
+    },
+    "throughput": {
+      "type": "int",
+      "defaultValue": 100000,
+      "metadata": {
+        "description": "Specifies Collection throughput use"
+      }
+    },
+    "operationsCount": {
+      "type": "int",
+      "metadata": {
+        "description": "Specifies the number of operations to execute"
+      }
+    },
+    "parallelism": {
+      "type": "int",
+      "defaultValue": -1,
+      "metadata": {
+        "description": "Specifies the degree of parallelism"
+      }
+    },
+    "resultsContainer": {
+      "type": "string",
+      "defaultValue": "BenchmarkResult",
+      "metadata": {
+        "description": "Specifies the name of the container to which the results to be saved"
+      }
+    },
+    "vmCount": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Specifies the number of Virtual Machines that will part of the test bench"
+      }
+    },
+    "workloadType": {
+      "type": "string",
+      "allowedValues": [
+        "InsertV3BenchmarkOperation",
+        "QueryStreamCrossPkDistinctFullDrainV3BenchmarkOperation",
+        "QueryStreamCrossPkDistinctWithPaginationV3BenchmarkOperation",
+        "QueryStreamCrossPkGroupByFullDrainV3BenchmarkOperation",
+        "QueryStreamCrossPkGroupByWithPaginationV3BenchmarkOperation",
+        "QueryStreamCrossPkOrderByFullDrainV3BenchmarkOperation",
+        "QueryStreamCrossPkOrderByWithPaginationV3BenchmarkOperation",
+        "QueryStreamCrossPkV3BenchmarkOperation",
+        "QueryStreamCrossPkWithPaginationV3BenchmarkOperation",
+        "QueryStreamSinglePkDistinctFullDrainV3BenchmarkOperation",
+        "QueryStreamSinglePkDistinctWithPaginationV3BenchmarkOperation",
+        "QueryStreamSinglePkGroupByFullDrainV3BenchmarkOperation",
+        "QueryStreamSinglePkGroupByWithPaginationV3BenchmarkOperation",
+        "QueryStreamSinglePkGroupByWithPaginationV3BenchmarkOperation",
+        "QueryStreamSinglePkOrderByWithPaginationV3BenchmarkOperation",
+        "QueryStreamSinglePkV3BenchmarkOperation",
+        "QueryStreamSinglePkWithPaginationV3BenchmarkOperation",
+        "QueryTCrossPkDistinctFullDrainV3BenchmarkOperation",
+        "QueryTCrossPkDistinctWithPaginationV3BenchmarkOperation",
+        "QueryTCrossPkGroupByFullDrainV3BenchmarkOperation",
+        "QueryTCrossPkGroupByWithPaginationV3BenchmarkOperation",
+        "QueryTCrossPkOrderByFullDrainV3BenchmarkOperation",
+        "QueryTCrossPkOrderByWithPaginationV3BenchmarkOperation",
+        "QueryTCrossPkV3BenchmarkOperation",
+        "QueryTCrossPkWithPaginationV3BenchmarkOperation",
+        "QueryTSinglePkDistinctFullDrainV3BenchmarkOperation",
+        "QueryTSinglePkDistinctWithPaginationV3BenchmarkOperation",
+        "QueryTSinglePkGroupByFullDrainV3BenchmarkOperation",
+        "QueryTSinglePkGroupByWithPaginationV3BenchmarkOperation",
+        "QueryTSinglePkOrderByFullDrainV3BenchmarkOperation",
+        "QueryTSinglePkOrderByWithPaginationV3BenchmarkOperation",
+        "QueryTSinglePkV3BenchmarkOperation",
+        "QueryTSinglePkWithPaginationV3BenchmarkOperation",
+        "ReadFeedStreamV3BenchmarkOperation",
+        "ReadNotExistsV3BenchmarkOperation",
+        "ReadStreamExistsV3BenchmarkOperation",
+        "ReadStreamExistsWithDiagnosticsV3BenchmarkOperation",
+        "ReadTExistsV3BenchmarkOperation"
+      ],
+      "defaultValue": "ReadTExistsV3BenchmarkOperation",
+      "metadata": {
+        "description": "Specifies the workload"
+      }
+    },
+    "benchmarkingToolsBranchName": {
+      "type": "string",
+      "defaultValue": "master",
+      "metadata": {
+        "description": "Specifies the GitHub branch for the benchmark tool source code repository"
+      }
+    },
+    "diagnosticsLatencyThresholdInMS": {
+      "type": "int",
+      "defaultValue": 100
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "dotnetbenchmark",
+      "metadata": {
+        "description": "Specifies Storage Account Nmae"
+      }
+    },
+    "metricsReportingIntervalInSec": {
+      "type": "int",
+      "defaultValue": 10
+    },
+    "applicationInsightsName": {
+      "type": "string",
+      "defaultValue": "CosmosDBBenchmarkTestAppInsights",
+      "metadata": {
+        "description": "Specifies Application Insights Account Name"
+      }
+    },
+    "startDate": {
+      "type": "int",
+      "defaultValue": "[dateTimeToEpoch(utcNow())]"
+    },
+    "dashboardName": {
+      "type": "string",
+      "defaultValue": "Cosmos Benchmark Statistics",
+      "metadata": {
+        "description": "Specifies Application Insights Dashboard Name"
+      }
+    }
+  },
     "variables": {
         "vmName": "[concat(parameters('projectName'), '-vm')]",
         "publicIPAddressName": "[concat(parameters('projectName'), '-ip')]",
