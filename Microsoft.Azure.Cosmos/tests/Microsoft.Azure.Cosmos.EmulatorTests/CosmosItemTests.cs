@@ -1268,7 +1268,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             do
             {
                 iterationCount++;
-                ServerSideMetricsAccumulator headerMetricsAccumulator = new ServerSideMetricsAccumulator();
                 FeedIterator feedIterator = this.Container.GetItemQueryStreamIterator(
                     sql,
                     continuationToken: lastContinuationToken,
