@@ -213,7 +213,7 @@ jobs:
       TestName: Microsoft.Azure.Cosmos.EmulatorTests
       ClientTelemetryTestClassName: Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryTests
     ${{ if eq(parameters.ReleasePackage, true) }}:
-      TestName: Integration Test
+      TestName: Integration Test With Client Telemetry Service
       ClientTelemetryTestClassName: Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryReleaseTests
   displayName: TelemetryToService ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 120
@@ -236,7 +236,7 @@ jobs:
     - template:  emulator-setup.yml
 
   - task: DotNetCoreCLI@2
-    displayName: Microsoft.Azure.Cosmos.EmulatorTests
+    displayName: $(TestName)
     condition: succeeded()
     inputs:
       command: test

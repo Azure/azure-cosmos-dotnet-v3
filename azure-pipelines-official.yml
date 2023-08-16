@@ -7,6 +7,7 @@ variables:
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
   BuildConfiguration: Release
   Packaging.EnableSBOMSigning: true
+  ReleasePackage: true
 
 stages:
 - stage:
@@ -22,6 +23,7 @@ stages:
         BuildConfiguration: $(BuildConfiguration)
         Arguments: $(ReleaseArguments)
         VmImage: $(VmImage)
+        ReleasePackage: $(ReleasePackage)
 
 - stage:
   displayName: Publish 
@@ -30,6 +32,6 @@ stages:
       parameters:
         BuildConfiguration: Release
         VmImage: $(VmImage)
-        ReleasePackage: true
+        ReleasePackage: $(ReleasePackage)
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
         BlobVersion: $(BlobVersion)
