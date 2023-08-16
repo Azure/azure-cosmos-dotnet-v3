@@ -4,8 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
-    internal class ClientQLExpression
+    using System.Collections.Generic;
+
+    internal class ClientQLLiteralScalarlExpression : ClientQLScalarExpression
     {
-        // Decided to keep this empty as it does not provide new information
+        public ClientQLLiteral Literal { get; set; }
     }
 }
