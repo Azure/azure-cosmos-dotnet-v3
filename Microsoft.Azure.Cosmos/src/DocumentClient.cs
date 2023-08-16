@@ -565,11 +565,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Internal constructor purely for unit-testing
         /// </summary>
-        internal DocumentClient(Uri serviceEndpoint, string authKey, ConnectionPolicy connectionPolicy = null)
+        internal DocumentClient(Uri serviceEndpoint, string authKey)
         {
             // do nothing 
             this.ServiceEndpoint = serviceEndpoint;
-            this.ConnectionPolicy = connectionPolicy ?? new ConnectionPolicy();
+            this.ConnectionPolicy = new ConnectionPolicy();
         }
 
         internal virtual async Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
