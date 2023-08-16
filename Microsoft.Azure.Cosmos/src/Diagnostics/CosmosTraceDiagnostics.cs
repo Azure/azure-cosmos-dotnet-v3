@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -17,8 +16,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
         private readonly Lazy<ServerSideCumulativeMetrics> accumulatedMetrics;
-
-        public ServerSideCumulativeMetrics AccumulatedMetrics => this.accumulatedMetrics.Value;
 
         public CosmosTraceDiagnostics(ITrace trace)
         {
@@ -35,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             this.Value = rootTrace;
-            this.accumulatedMetrics = new Lazy<ServerSideCumulativeMetrics>(() => this.GetQueryMetrics());
+            this.accumulatedMetrics = new Lazy<ServerSideCumulativeMetrics>(() => PopulateServerSideCumulativeMetrics(this.Value));
         }
 
         public ITrace Value { get; }
@@ -57,11 +54,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override ServerSideCumulativeMetrics GetQueryMetrics()
         {
-            ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
-            ServerSideMetricsAccumulator.WalkTraceTreeForQueryMetrics(this.Value, accumulator);
-
-            ServerSideCumulativeMetrics accumulatedMetrics = new ServerSideCumulativeMetrics(accumulator);
-            return accumulatedMetrics.PartitionedMetrics.Count != 0 ? accumulatedMetrics : null;
+            return this.accumulatedMetrics.Value;
         }
 
         internal bool IsGoneExceptionHit()
@@ -112,6 +105,15 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             IJsonWriter jsonTextWriter = JsonWriter.Create(jsonSerializationFormat);
             TraceWriter.WriteTrace(jsonTextWriter, this.Value);
             return jsonTextWriter.GetResult();
+        }
+
+        private static ServerSideCumulativeMetrics PopulateServerSideCumulativeMetrics(ITrace trace)
+        {
+            ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
+            ServerSideMetricsAccumulator.WalkTraceTreeForQueryMetrics(trace, accumulator);
+
+            ServerSideCumulativeMetrics accumulatedMetrics = new ServerSideCumulativeMetrics(accumulator);
+            return accumulatedMetrics.PartitionedMetrics.Count != 0 ? accumulatedMetrics : null;
         }
 
         public override DateTime? GetStartTimeUtc()
