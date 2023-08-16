@@ -1288,13 +1288,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ServerSideCumulativeMetrics metrics = response.Diagnostics.GetQueryMetrics();
                 Assert.IsTrue(metrics.PartitionedMetrics.Count == 1);
                 Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
-                Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTimes > TimeSpan.Zero);
+                Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
 
                 if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)
                 {
                     Assert.IsTrue(metrics.CumulativeMetrics.RetrievedDocumentSize > 0);
                     Assert.IsTrue(metrics.CumulativeMetrics.DocumentLoadTime > TimeSpan.Zero);
-                    Assert.IsTrue(metrics.CumulativeMetrics.RuntimeExecutionTimes > TimeSpan.Zero);
+                    Assert.IsTrue(metrics.CumulativeMetrics.RuntimeExecutionTime > TimeSpan.Zero);
                 }
                 else
                 {
@@ -1375,7 +1375,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsTrue(metrics.PartitionedMetrics.Count == 3);
                     Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
-                    Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTimes > TimeSpan.Zero);
+                    Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
 
                     foreach (ServerSidePartitionedMetrics partitionedMetrics in metrics.PartitionedMetrics)
                     {
@@ -1387,7 +1387,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         Assert.IsTrue(metrics.CumulativeMetrics.RetrievedDocumentSize > 0);
                         Assert.IsTrue(metrics.CumulativeMetrics.DocumentLoadTime > TimeSpan.Zero);
-                        Assert.IsTrue(metrics.CumulativeMetrics.RuntimeExecutionTimes > TimeSpan.Zero);
+                        Assert.IsTrue(metrics.CumulativeMetrics.RuntimeExecutionTime > TimeSpan.Zero);
                     }
                     else
                     {
@@ -1454,7 +1454,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsTrue(metrics.PartitionedMetrics.Count == 1);
                     Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
-                    Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTimes > TimeSpan.Zero);
+                    Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
 
                     foreach (ServerSidePartitionedMetrics partitionedMetrics in metrics.PartitionedMetrics)
                     {
@@ -1466,7 +1466,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         Assert.IsTrue(metrics.CumulativeMetrics.RetrievedDocumentSize > 0);
                         Assert.IsTrue(metrics.CumulativeMetrics.DocumentLoadTime > TimeSpan.Zero);
-                        Assert.IsTrue(metrics.CumulativeMetrics.RuntimeExecutionTimes > TimeSpan.Zero);
+                        Assert.IsTrue(metrics.CumulativeMetrics.RuntimeExecutionTime > TimeSpan.Zero);
                     }
                     else
                     {

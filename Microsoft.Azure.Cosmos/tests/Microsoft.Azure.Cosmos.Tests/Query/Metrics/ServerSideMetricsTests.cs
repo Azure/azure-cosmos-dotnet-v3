@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         [TestMethod]
         public void TestAccumulator()
         {
-            ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
+            ServerSideMetricsInternalAccumulator accumulator = new ServerSideMetricsInternalAccumulator();
             accumulator.Accumulate(ServerSideMetrics);
             accumulator.Accumulate(ServerSideMetrics);
             ServerSideMetricsInternal serverSideMetricsFromAddition = accumulator.GetServerSideMetrics();

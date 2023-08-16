@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
     using System.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     /// <summary>
     /// Metrics received for queries from the backend.
@@ -15,11 +14,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="ServerSideCumulativeMetrics"/> class.
         /// </summary>
-        /// <param name="accumulator"></param>
-        internal ServerSideCumulativeMetrics(ServerSideMetricsAccumulator accumulator)
+        /// <param name="serverSideMetricsList"></param>
+        internal ServerSideCumulativeMetrics(IEnumerable<ServerSidePartitionedMetrics> serverSideMetricsList)
         {
-            this.PartitionedMetrics = accumulator.GetPartitionedServerSideMetrics().Select(metrics => new ServerSidePartitionedMetrics(metrics)).ToList();
-            this.CumulativeMetrics = new ServerSideMetrics(accumulator.GetServerSideMetrics());
+            this.PartitionedMetrics = serverSideMetricsList.ToList();
+            this.CumulativeMetrics = ServerSideMetrics.Create(serverSideMetricsList.Select(partitionedMetrics => partitionedMetrics.ServerSideMetrics));
         }
 
         /// <summary>

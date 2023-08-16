@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         public QueryMetrics GetQueryMetrics()
         {
-            ServerSideMetricsAccumulator serverSideMetricsAccumulator = new ServerSideMetricsAccumulator();
+            ServerSideMetricsInternalAccumulator serverSideMetricsAccumulator = new ServerSideMetricsInternalAccumulator();
             IndexUtilizationInfoAccumulator indexUtilizationInfoAccumulator = new IndexUtilizationInfoAccumulator();
             ClientSideMetricsAccumulator clientSideMetricsAccumulator = new ClientSideMetricsAccumulator();
 

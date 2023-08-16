@@ -6,19 +6,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal class ServerSideMetricsAccumulator
     {
-        internal readonly List<ServerSideMetricsInternal> serverSideMetricsList;
+        internal readonly List<ServerSideMetrics> serverSideMetricsList;
 
         public ServerSideMetricsAccumulator()
         {
-            this.serverSideMetricsList = new List<ServerSideMetricsInternal>();
+            this.serverSideMetricsList = new List<ServerSideMetrics>();
         }
 
-        public void Accumulate(ServerSideMetricsInternal serverSideMetrics)
+        public void Accumulate(ServerSideMetrics serverSideMetrics)
         {
             if (serverSideMetrics == null)
             {
@@ -28,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.serverSideMetricsList.Add(serverSideMetrics);
         }
 
-        public ServerSideMetricsInternal GetServerSideMetrics()
+        public ServerSideMetrics GetServerSideMetrics()
         {
             TimeSpan totalTime = TimeSpan.Zero;
             long retrievedDocumentCount = 0;
@@ -36,14 +34,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             long outputDocumentCount = 0;
             long outputDocumentSize = 0;
             double indexHitRatio = 0;
-            QueryPreparationTimesAccumulator queryPreparationTimesAccumulator = new QueryPreparationTimesAccumulator();
+            TimeSpan queryPreparationTime = TimeSpan.Zero;
             TimeSpan indexLookupTime = TimeSpan.Zero;
             TimeSpan documentLoadTime = TimeSpan.Zero;
-            RuntimeExecutionTimesAccumulator runtimeExecutionTimesAccumulator = new RuntimeExecutionTimesAccumulator();
+            TimeSpan runtimeExecutionTime = TimeSpan.Zero;
             TimeSpan documentWriteTime = TimeSpan.Zero;
             TimeSpan vMExecutionTime = TimeSpan.Zero;
 
-            foreach (ServerSideMetricsInternal serverSideMetrics in this.serverSideMetricsList)
+            foreach (ServerSideMetrics serverSideMetrics in this.serverSideMetricsList)
             {
                 indexHitRatio = (retrievedDocumentCount + serverSideMetrics.RetrievedDocumentCount) != 0 ?
                     ((outputDocumentCount * indexHitRatio) + (serverSideMetrics.OutputDocumentCount * serverSideMetrics.IndexHitRatio)) / (retrievedDocumentCount + serverSideMetrics.RetrievedDocumentCount) :
@@ -53,94 +51,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 retrievedDocumentSize += serverSideMetrics.RetrievedDocumentSize;
                 outputDocumentCount += serverSideMetrics.OutputDocumentCount;
                 outputDocumentSize += serverSideMetrics.OutputDocumentSize;
-                queryPreparationTimesAccumulator.Accumulate(serverSideMetrics.QueryPreparationTimes);
+                queryPreparationTime += serverSideMetrics.QueryPreparationTime;
                 indexLookupTime += serverSideMetrics.IndexLookupTime;
                 documentLoadTime += serverSideMetrics.DocumentLoadTime;
-                runtimeExecutionTimesAccumulator.Accumulate(serverSideMetrics.RuntimeExecutionTimes);
+                runtimeExecutionTime += serverSideMetrics.RuntimeExecutionTime;
                 documentWriteTime += serverSideMetrics.DocumentWriteTime;
                 vMExecutionTime += serverSideMetrics.VMExecutionTime;
             }
 
-            return new ServerSideMetricsInternal(
+            return new ServerSideMetrics(
                 retrievedDocumentCount: retrievedDocumentCount,
                 retrievedDocumentSize: retrievedDocumentSize,
                 outputDocumentCount: outputDocumentCount,
                 outputDocumentSize: outputDocumentSize,
                 indexHitRatio: indexHitRatio,
                 totalQueryExecutionTime: totalTime,
-                queryPreparationTimes: queryPreparationTimesAccumulator.GetQueryPreparationTimes(),
+                queryPreparationTimes: queryPreparationTime,
                 indexLookupTime: indexLookupTime,
                 documentLoadTime: documentLoadTime,
                 vmExecutionTime: vMExecutionTime,
-                runtimeExecutionTimes: runtimeExecutionTimesAccumulator.GetRuntimeExecutionTimes(),
+                runtimeExecutionTimes: runtimeExecutionTime,
                 documentWriteTime: documentWriteTime);
-        }
-
-        public List<ServerSideMetricsInternal> GetPartitionedServerSideMetrics()
-        {
-            return this.serverSideMetricsList;
-        }
-
-        public static void WalkTraceTreeForQueryMetrics(ITrace currentTrace, ServerSideMetricsAccumulator accumulator)
-        {
-            if (currentTrace == null)
-            {
-                return;
-            }
-
-            foreach (object datum in currentTrace.Data.Values)
-            {
-                if (datum is QueryMetricsTraceDatum queryMetricsTraceDatum)
-                {
-                    queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.FeedRange = currentTrace.Name;
-                    queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.PartitionKeyRangeId = WalkTraceTreeForPartitionKeyRangeId(currentTrace);
-                    accumulator.Accumulate(queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics);
-                    return;
-                }
-            }
-
-            foreach (ITrace childTrace in currentTrace.Children)
-            {
-                WalkTraceTreeForQueryMetrics(childTrace, accumulator);
-            }
-
-            return;
-        }
-
-        private static int? WalkTraceTreeForPartitionKeyRangeId(ITrace currentTrace)
-        {
-            if (currentTrace == null)
-            {
-                return null;
-            }
-
-            foreach (Object datum in currentTrace.Data.Values)
-            {
-                if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
-                {
-                    if (clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList.Count > 0)
-                    {
-                        return int.TryParse(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList[0].StoreResult.PartitionKeyRangeId, out int pKRangeId)
-                            ? pKRangeId
-                            : null;
-                    }
-                    else
-                    {
-                        return null;
-                    }
-                }
-            }
-
-            foreach (ITrace childTrace in currentTrace.Children)
-            {
-                int? partitionKeyRangeId = WalkTraceTreeForPartitionKeyRangeId(childTrace);
-                if (partitionKeyRangeId != null)
-                {
-                    return partitionKeyRangeId;
-                }
-            }
-
-            return null;
         }
     }
 }

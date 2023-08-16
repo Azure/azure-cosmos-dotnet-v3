@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
@@ -109,10 +110,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         private static ServerSideCumulativeMetrics PopulateServerSideCumulativeMetrics(ITrace trace)
         {
-            ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
-            ServerSideMetricsAccumulator.WalkTraceTreeForQueryMetrics(trace, accumulator);
+            ServerSideMetricsInternalAccumulator accumulator = new ServerSideMetricsInternalAccumulator();
+            ServerSideMetricsInternalAccumulator.WalkTraceTreeForQueryMetrics(trace, accumulator);
 
-            ServerSideCumulativeMetrics accumulatedMetrics = new ServerSideCumulativeMetrics(accumulator);
+            IReadOnlyList<ServerSidePartitionedMetrics> serverSideMetricsList = accumulator.GetPartitionedServerSideMetrics().Select(metrics => new ServerSidePartitionedMetrics(metrics)).ToList();
+
+            ServerSideCumulativeMetrics accumulatedMetrics = new ServerSideCumulativeMetrics(serverSideMetricsList);
             return accumulatedMetrics.PartitionedMetrics.Count != 0 ? accumulatedMetrics : null;
         }
 

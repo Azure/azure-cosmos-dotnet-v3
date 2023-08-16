@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         public static ServerSideMetricsInternal Create(IEnumerable<ServerSideMetricsInternal> serverSideMetricsEnumerable)
         {
-            ServerSideMetricsAccumulator accumulator = new ServerSideMetricsAccumulator();
+            ServerSideMetricsInternalAccumulator accumulator = new ServerSideMetricsInternalAccumulator();
             foreach (ServerSideMetricsInternal serverSideMetrics in serverSideMetricsEnumerable)
             {
                 accumulator.Accumulate(serverSideMetrics);
