@@ -317,10 +317,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         }
                         catch (Exception ex)
                         {
-                            DefaultTrace.TraceWarning("Failed to refresh addresses in the background for the collection rid: {0} with exception: {1}. '{2}'",
-                                partitionKeyRangeIdentity.CollectionRid,
-                                ex,
-                                System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                            DefaultTrace.TraceWarning($"Failed to refresh addresses in the background for the collection rid: {partitionKeyRangeIdentity.CollectionRid} with exception: {ex}. '{System.Diagnostics.Trace.CorrelationManager.ActivityId}'");
                         }
                     });
                 }
