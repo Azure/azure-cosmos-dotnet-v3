@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 partitionKeyRangeIdentity.PartitionKeyRangeId,
                                 forceRefresh: true)));
 
-                    refreshAddressesInBackgroundTask.Exception.Handle(ex =>
+                    refreshAddressesInBackgroundTask.Exception?.Handle(ex =>
                     {
                         DefaultTrace.TraceWarning("Failed to refresh addresses in the background for the collection rid: {0} with exception: {1}. '{2}'",
                             partitionKeyRangeIdentity.CollectionRid,
