@@ -16,12 +16,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// </summary>
     [TestClass]
     [TestCategory("ClientTelemetryRelease")]
-    public class ClientTelemetryReleaseTests : ClientTelemetryTests
+    public class ClientTelemetryReleaseTests : ClientTelemetryTestsBase
     {
+        public override CosmosClientBuilder GetBuilder()
+        {
+            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_ACCOUNT_CONNECTION_STRING", null);
+            return new CosmosClientBuilder(connectionString: connectionString);
+        }
+
+        public override Task<HttpResponseMessage> HttpHandlerRequestCallbackChecks(HttpRequestMessage request)
+        {
+            return null;
+        }
+
         [ClassInitialize]
         public static new void ClassInitialize(TestContext context)
         {
-            ClientTelemetryTests.ClassInitialize(context);
+            ClientTelemetryTestsBase.ClassInitialize(context);
 
             // It will go away in next PR
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
@@ -32,18 +43,116 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [ClassCleanup]
         public static new void FinalCleanup()
         {
-            ClientTelemetryTests.FinalCleanup();
+            ClientTelemetryTestsBase.FinalCleanup();
         }
 
-        public override CosmosClientBuilder GetBuilder()
+        [TestInitialize]
+        public override void TestInitialize()
         {
-            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_ACCOUNT_CONNECTION_STRING", null);
-            return new CosmosClientBuilder(connectionString: connectionString);
+            base.TestInitialize();
         }
 
-        public override Task<HttpResponseMessage> HttpHandlerRequestCallbackChecks(HttpRequestMessage request)
+        [TestCleanup]
+        public override async Task Cleanup()
         {
-            return null;
+            await base.Cleanup();
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct, true)]
+        [DataRow(ConnectionMode.Gateway, true)]
+        [DataRow(ConnectionMode.Direct, false)]
+        [DataRow(ConnectionMode.Gateway, false)]
+        public override async Task PointSuccessOperationsTest(ConnectionMode mode, bool isAzureInstance)
+        {
+            await base.PointSuccessOperationsTest(mode, isAzureInstance);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public override async Task PointReadFailureOperationsTest(ConnectionMode mode)
+        {
+            await base.PointReadFailureOperationsTest(mode);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public override async Task StreamReadFailureOperationsTest(ConnectionMode mode)
+        {
+            await base.StreamReadFailureOperationsTest(mode);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public override async Task StreamOperationsTest(ConnectionMode mode)
+        {
+            await base.StreamOperationsTest(mode);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public override async Task BatchOperationsTest(ConnectionMode mode)
+        {
+            await base.BatchOperationsTest(mode);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public override async Task SingleOperationMultipleTimesTest(ConnectionMode mode)
+        {
+            await base.SingleOperationMultipleTimesTest(mode);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public override async Task QueryOperationSinglePartitionTest(ConnectionMode mode)
+        {
+            await base.QueryOperationSinglePartitionTest(mode);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public override async Task QueryMultiPageSinglePartitionOperationTest(ConnectionMode mode)
+        {
+            await base.QueryMultiPageSinglePartitionOperationTest(mode);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public override async Task QueryOperationCrossPartitionTest(ConnectionMode mode)
+        {
+            await base.QueryOperationCrossPartitionTest(mode);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public override async Task QueryOperationMutiplePageCrossPartitionTest(ConnectionMode mode)
+        {
+            await base.QueryOperationMutiplePageCrossPartitionTest(mode);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public override async Task QueryOperationInvalidContinuationTokenTest(ConnectionMode mode)
+        {
+            await base.QueryOperationInvalidContinuationTokenTest(mode);
+        }
+
+        [TestMethod]
+        [DataRow(ConnectionMode.Direct)]
+        public override async Task CreateItemWithSubStatusCodeTest(ConnectionMode mode)
+        {
+            await base.CreateItemWithSubStatusCodeTest(mode);
         }
     }
 }

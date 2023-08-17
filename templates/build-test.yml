@@ -5,8 +5,8 @@ parameters:
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
-  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & ClassName!~Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetry & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
-  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & ClassName!~Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetry & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed" --verbosity normal '
+  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!~ClientTelemetry & (TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
+  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!~ClientTelemetry & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed" --verbosity normal '
   EmulatorPipeline1CategoryListName: ' Query, ChangeFeed, ReadFeed, Batch ' # Divided in 2 categories to run them in parallel and reduce the PR feedback time
   EmulatorPipeline2CategoryListName: ' Others '
   ReleasePackage: ''
@@ -209,12 +209,12 @@ jobs:
 
 - job:
   variables:
-    ${{ if ne(parameters.ReleasePackage, true) }}:
+    ${{ if ne(parameters.ReleasePackage, true) }}: # If this is not a release package, then run the tests with Emulator
       TestName: Microsoft.Azure.Cosmos.EmulatorTests
-      ClientTelemetryTestClassName: Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryTests
-    ${{ if eq(parameters.ReleasePackage, true) }}:
+      ClientTelemetryTestCategory: ClientTelemetryEmulator
+    ${{ if eq(parameters.ReleasePackage, true) }}: # If this is a release package, then run the tests with real account sendinmg telemetry to the Service
       TestName: Integration Test With Client Telemetry Service
-      ClientTelemetryTestClassName: Microsoft.Azure.Cosmos.SDK.EmulatorTests.ClientTelemetryReleaseTests
+      ClientTelemetryTestCategory: ClientTelemetryRelease
   displayName: TelemetryToService ${{ parameters.BuildConfiguration }}
   timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
@@ -232,7 +232,7 @@ jobs:
       packageType: 'sdk'
       version: '6.x'
   
-  - ${{ if ne(parameters.ReleasePackage, true) }}:
+  - ${{ if ne(parameters.ReleasePackage, true) }}: # Set up Emulator when this is not a release package
     - template:  emulator-setup.yml
 
   - task: DotNetCoreCLI@2
@@ -241,9 +241,9 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: --filter "ClassName=$(ClientTelemetryTestClassName)" --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: --filter "TestCategory=$(ClientTelemetryTestCategory)" --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
     env:
-      COSMOSDB_ACCOUNT_CONNECTION_STRING: $(COSMOSDB_ACCOUNT_CONNECTION_STRING)
+      COSMOSDB_ACCOUNT_CONNECTION_STRING: $(COSMOSDB_ACCOUNT_CONNECTION_STRING) # Real Account Connection String used by Integration Tests while running as part of release pipeline
