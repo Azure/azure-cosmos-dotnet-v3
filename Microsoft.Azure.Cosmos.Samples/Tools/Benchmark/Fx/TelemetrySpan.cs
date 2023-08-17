@@ -59,6 +59,7 @@ namespace CosmosBenchmark
 
                 if (TelemetrySpan.IncludePercentile)
                 {
+                    Console.WriteLine($"Recording Latency {this.stopwatch.Elapsed.TotalMilliseconds}.."); // TODO REMOVE
                     RecordLatency(this.stopwatch.Elapsed.TotalMilliseconds);
 
                     if(this.isFailed)
@@ -70,14 +71,18 @@ namespace CosmosBenchmark
                         this.recordSuccessOpLatencyAction?.Invoke(this.stopwatch.Elapsed);
 
                     }
+                    Console.WriteLine($"Recorded Latency {this.stopwatch.Elapsed.TotalMilliseconds}"); // TODO REMOVE
                 }
 
+                Console.WriteLine($"Write diagnostics {this.stopwatch.Elapsed.TotalMilliseconds}..");  // TODO REMOVE
                 BenchmarkLatencyEventSource.Instance.LatencyDiagnostics(
                     operationResult.DatabseName,
                     operationResult.ContainerName,
                     (int)this.stopwatch.ElapsedMilliseconds,
                     operationResult.LazyDiagnostics, 
                     this.benchmarkConfig.DiagnosticLatencyThresholdInMs);
+                
+                Console.WriteLine($"Writed diagnostics {this.stopwatch.Elapsed.TotalMilliseconds}");  // TODO REMOVE
             }
         }
 
