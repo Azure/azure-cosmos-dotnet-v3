@@ -11,11 +11,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Http.Headers;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
-    using Telemetry;
 
     /// <summary>
     /// Defines all the configurable options that the CosmosClient requires.
@@ -69,6 +71,7 @@ namespace Microsoft.Azure.Cosmos
         private PortReuseMode? portReuseMode;
         private IWebProxy webProxy;
         private Func<HttpClient> httpClientFactory;
+        private string applicationName;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -90,7 +93,24 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Setting this property after sending any request won't have any effect.
         /// </remarks>
-        public string ApplicationName { get; set; }
+        public string ApplicationName
+        {
+            get => this.applicationName;
+            set
+            {
+                try
+                {
+                    HttpRequestMessage dummyMessage = new HttpRequestMessage();
+                    dummyMessage.Headers.Add(HttpConstants.HttpHeaders.UserAgent, value);
+                }
+                catch (FormatException fme)
+                {
+                    throw new ArgumentException($"Application name '{value}' is invalid.", fme);
+                }
+
+                this.applicationName = value;
+            }
+        }
 
         /// <summary>
         /// Get or set session container for the client
@@ -203,7 +223,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the request timeout in seconds when connecting to the Azure Cosmos DB service.
         /// The number specifies the time to wait for response to come back from network peer.
         /// </summary>
-        /// <value>Default value is 1 minute.</value>
+        /// <value>Default value is 6 seconds.</value>
         /// <seealso cref="CosmosClientBuilder.WithRequestTimeout(TimeSpan)"/>
         public TimeSpan RequestTimeout { get; set; }
 
@@ -230,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default value is <see cref="Cosmos.ConnectionMode.Direct"/>
         /// </value>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect()"/>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, IWebProxy)"/>
@@ -325,6 +345,17 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="ItemRequestOptions.EnableContentResponseOnWrite"/>
         /// <seealso cref="TransactionalBatchItemRequestOptions.EnableContentResponseOnWrite"/>
         public bool? EnableContentResponseOnWrite { get; set; }
+
+        /// <summary>
+        /// Gets or sets the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection
+        /// status, and based on status, it prioritizes the replicas which show healthy stable connections, so that the requests can be sent
+        /// confidently to the particular replica. This helps the cosmos client to become more resilient and effective to any connectivity issues.
+        /// The default value for this parameter is 'false'.
+        /// </summary>
+        /// <remarks>
+        /// <para>This is optimal for latency-sensitive workloads. Does not apply if <see cref="ConnectionMode.Gateway"/> is used.</para>
+        /// </remarks>
+        internal bool? EnableAdvancedReplicaSelectionForTcp { get; set; }
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
@@ -580,10 +611,10 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnablePartitionLevelFailover { get; set; } = false;
 
         /// <summary>
-        /// Quorum Read allowed with eventual consistency account
+        /// Quorum Read allowed with eventual consistency account or consistent prefix account.
         /// </summary>
         internal bool EnableUpgradeConsistencyToLocalQuorum { get; set; } = false;
-        
+
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
         /// </summary>
@@ -593,7 +624,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This setting is not used when <see cref="ConnectionMode"/> is set to <see cref="Cosmos.ConnectionMode.Gateway"/>.
         /// Gateway mode only supports HTTPS.
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#use-tcp">Connection policy: Use the TCP protocol</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#networking">Connection policy: Use the HTTPS protocol</see>.
         /// </remarks>
         internal Protocol ConnectionProtocol
         {
@@ -615,6 +646,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal Func<TransportClient, TransportClient> TransportClientHandlerFactory { get; set; }
 
+        /// <summary>
+        /// A callback delegate to do custom certificate validation for both HTTP and TCP.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Customizing SSL verification is not recommended in production environments.
+        /// </para>
+        /// </remarks>
+        public Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { get; set; }
+       
         /// <summary>
         /// API type for the account
         /// </summary>
@@ -728,7 +769,9 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                HttpClientFactory = this.httpClientFactory
+                EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
+                HttpClientFactory = this.httpClientFactory,
+                ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };
 
             if (this.EnableClientTelemetry.HasValue)
@@ -970,17 +1013,29 @@ namespace Microsoft.Azure.Cosmos
                 return objectType == typeof(DateTime);
             }
         }
-
+        
         /// <summary>
         /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>
         /// </summary>
+        /// <remarks> Applicable only when Operation level distributed tracing is enabled through <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.IsDistributedTracingEnabled"/></remarks>
         internal DistributedTracingOptions DistributedTracingOptions { get; set; }
 
         /// <summary>
-        /// Gets or sets value indicating whether distributed tracing activities (<see cref="System.Diagnostics.Activity"/>) are going to be created for the SDK methods calls and HTTP calls.
-        /// By default true for Preview package
+        /// Gets or sets the flag to generate operation level <see cref="System.Diagnostics.Activity"/> for methods calls using the Source Name "Azure.Cosmos.Operation".
         /// </summary>
-        internal bool EnableDistributedTracing { get; set; }
+        /// <value>
+        /// The default value is true (for preview package).
+        /// </value>
+        /// <remarks>This flag is there to disable it from source. Please Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            bool IsDistributedTracingEnabled { get; set; }
+#if PREVIEW
+        = true;
+#endif
 
     }
 }

@@ -68,6 +68,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.CleanUp();
         }
 
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            this.CleanUp();
+
+            this.client.Dispose();
+            this.primaryReadonlyClient.Dispose();
+            this.secondaryReadonlyClient.Dispose();
+        }
+
         [ClassInitialize]
         public static void Initialize(TestContext textContext)
         {
@@ -775,12 +785,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void TestQueryUnicodeDocumentHttpsGateway()
         {
             this.TestQueryUnicodeDocument(useGateway: true, protocol: Protocol.Https);
-        }
-
-        [TestMethod]
-        public void TestQueryUnicodeDocumentHttpsDirect()
-        {
-            this.TestQueryUnicodeDocument(useGateway: false, protocol: Protocol.Https);
         }
 
         private void TestQueryUnicodeDocument(bool useGateway, Protocol protocol)
@@ -2288,7 +2292,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             QueryMetrics queryMetrics = new QueryMetrics(
                                 responseQueryMetrics,
-                                IndexUtilizationInfo.CreateFromString(indexUtilization),
+                                IndexUtilizationInfo.CreateFromString(indexUtilization, true),
                                 ClientSideMetrics.Empty);
                             this.ValidateQueryMetrics(queryMetrics);
 

@@ -33,9 +33,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private IReadOnlyList<StoreResponseStatistics> shallowCopyOfStoreResponseStatistics = null;
         private IReadOnlyList<HttpResponseStatistics> shallowCopyOfHttpResponseStatistics = null;
         private SystemUsageHistory systemUsageHistory = null;
-        public TraceSummary TraceSummary = null;
 
-        public ClientSideRequestStatisticsTraceDatum(DateTime startTime, TraceSummary summary)
+        public ClientSideRequestStatisticsTraceDatum(DateTime startTime, ITrace trace)
         {
             this.RequestStartTimeUtc = startTime;
             this.RequestEndTimeUtc = null;
@@ -45,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.FailedReplicas = new HashSet<TransportAddressUri>();
             this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatistics = new List<HttpResponseStatistics>();
-            this.TraceSummary = summary;
+            this.Trace = trace;
         }
 
         public DateTime RequestStartTimeUtc { get; }
@@ -74,6 +73,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public HashSet<TransportAddressUri> FailedReplicas { get; }
 
         public HashSet<(string, Uri)> RegionsContacted { get; }
+
+        public ITrace Trace { get; private set; }
+
+        public TraceSummary TraceSummary => this.Trace?.Summary;
 
         public IReadOnlyList<StoreResponseStatistics> StoreResponseStatisticsList
         {
@@ -477,6 +480,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public string RequestSessionToken { get; }
             public Uri LocationEndpoint { get; }
             public bool IsSupplementalResponse { get; }
+            public TimeSpan RequestLatency => this.RequestResponseTime - this.RequestStartTime.GetValueOrDefault();
         }
 
         public readonly struct HttpResponseStatistics
@@ -501,11 +505,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 if (responseMessage != null)
                 {
                     Headers headers = new Headers(GatewayStoreClient.ExtractResponseHeaders(responseMessage));
-                    this.ActivityId = headers.ActivityId ?? Trace.CorrelationManager.ActivityId.ToString();
+                    this.ActivityId = headers.ActivityId ?? System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString();
                 }
                 else
                 {
-                    this.ActivityId = Trace.CorrelationManager.ActivityId.ToString();
+                    this.ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString();
                 }
             }
 

@@ -60,6 +60,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 await testDb.DeleteStreamAsync();
             }
+
+            cosmosClient?.Dispose();
         }
 
         [TestInitialize]
@@ -114,6 +116,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public int? NullableField;
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value false
             public bool BooleanField;
+            public SimpleObject ObjectField = new SimpleObject();
+            public Guid GuidField;
 #pragma warning restore // Field is never assigned to, and will always have its default value false
 
             [JsonConverter(typeof(StringEnumConverter))]
@@ -150,6 +154,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string Id;
 
             public string Pk;
+        }
+
+        internal class SimpleObject
+        {
+            public string Field { get; set; }
         }
 
         class DateJsonConverter : IsoDateTimeConverter
@@ -254,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestTypeCheckFunctions()
         {
-            // IsDefined, IsNull, and IsPrimitive are not supported on the client side.
+            // IsArray, IsBool, IsDefined, IsNull, IsNumber, IsObject, IsPrimitive, and IsString are not supported on the client side.
             // Partly because IsPrimitive is not trivial to implement.
             // Therefore these methods are verified with baseline only.
             List<DataObject> data = new List<DataObject>();
@@ -263,12 +272,22 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
+                new LinqTestInput("IsArray array", b => getQuery(b).Where(doc => doc.ArrayField.IsArray())),
+                new LinqTestInput("IsArray string", b => getQuery(b).Where(doc => doc.StringField.IsArray())),
+                new LinqTestInput("IsBool bool", b => getQuery(b).Where(doc => doc.BooleanField.IsBool())),
+                new LinqTestInput("IsBool string", b => getQuery(b).Where(doc => doc.StringField.IsBool())),
                 new LinqTestInput("IsDefined array", b => getQuery(b).Select(doc => doc.ArrayField.IsDefined())),
                 new LinqTestInput("IsDefined string", b => getQuery(b).Where(doc => doc.StringField.IsDefined())),
                 new LinqTestInput("IsNull array", b => getQuery(b).Select(doc => doc.ArrayField.IsNull())),
                 new LinqTestInput("IsNull string", b => getQuery(b).Where(doc => doc.StringField.IsNull())),
+                new LinqTestInput("IsNumber number", b => getQuery(b).Select(doc => doc.NumericField.IsNumber())),
+                new LinqTestInput("IsNumber string", b => getQuery(b).Where(doc => doc.StringField.IsNumber())),
+                new LinqTestInput("IsObject object", b => getQuery(b).Select(doc => doc.ObjectField.IsObject())),
+                new LinqTestInput("IsObject string", b => getQuery(b).Where(doc => doc.StringField.IsObject())),
                 new LinqTestInput("IsPrimitive array", b => getQuery(b).Select(doc => doc.ArrayField.IsPrimitive())),
-                new LinqTestInput("IsPrimitive string", b => getQuery(b).Where(doc => doc.StringField.IsPrimitive()))
+                new LinqTestInput("IsPrimitive string", b => getQuery(b).Where(doc => doc.StringField.IsPrimitive())),
+                new LinqTestInput("IsString string", b => getQuery(b).Where(doc => doc.StringField.IsString())),
+                new LinqTestInput("IsString number", b => getQuery(b).Select(doc => doc.NumericField.IsString())),
             };
             this.ExecuteTestSuite(inputs);
         }
@@ -663,7 +682,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 {
                     StringField = sb.ToString(),
                     Id = Guid.NewGuid().ToString(),
-                    Pk = "Test"
+                    Pk = "Test",
+                    
+                    // For ToString tests
+                    ArrayField = new int[] {},
+                    Point = new Point(0, 0)
                 };
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
@@ -737,15 +760,26 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("IndexOf string w/ startIndex", b => getQuery(b).Select(doc => doc.StringField.IndexOf("str", 0))),
                 // Count
                 new LinqTestInput("Count", b => getQuery(b).Select(doc => doc.StringField.Count())),
-                // ToLower
-                new LinqTestInput("ToLower", b => getQuery(b).Select(doc => doc.StringField.ToLower())),
-                // TrimStart
-                new LinqTestInput("TrimStart", b => getQuery(b).Select(doc => doc.StringField.TrimStart())),
                 // Replace
                 new LinqTestInput("Replace char", b => getQuery(b).Select(doc => doc.StringField.Replace('c', 'a'))),
                 new LinqTestInput("Replace string", b => getQuery(b).Select(doc => doc.StringField.Replace("str", "str2"))),
+                // ToLower
+                new LinqTestInput("ToLower", b => getQuery(b).Select(doc => doc.StringField.ToLower())),
+                // Trim
+                new LinqTestInput("Trim", b => getQuery(b).Select(doc => doc.StringField.Trim())),
+                new LinqTestInput("Trim with Literal", b => getQuery(b).Select(doc => " abc ".Trim())),
+                new LinqTestInput("Trim with EmptyCharArray", b => getQuery(b).Select(doc => doc.StringField.Trim(new char[]{ }))),
+                new LinqTestInput("Trim with Literal and EmptyCharArray", b => getQuery(b).Select(doc => " abc ".Trim(new char[]{ }))),
                 // TrimEnd
                 new LinqTestInput("TrimEnd", b => getQuery(b).Select(doc => doc.StringField.TrimEnd())),
+                new LinqTestInput("TrimEnd with Literal", b => getQuery(b).Select(doc => " abc ".TrimEnd())),
+                new LinqTestInput("TrimEnd with EmptyCharArray", b => getQuery(b).Select(doc => doc.StringField.TrimEnd(new char[]{ }))),
+                new LinqTestInput("TrimEnd with Literal and EmptyCharArray", b => getQuery(b).Select(doc => " abc ".TrimEnd(new char[]{ }))),
+                // TrimStart
+                new LinqTestInput("TrimStart", b => getQuery(b).Select(doc => doc.StringField.TrimStart())),
+                new LinqTestInput("TrimStart with Literal", b => getQuery(b).Select(doc => " abc ".TrimStart())),
+                new LinqTestInput("TrimStart with EmptyCharArray", b => getQuery(b).Select(doc => doc.StringField.TrimStart(new char[]{ }))),
+                new LinqTestInput("TrimStart with Literal and EmptyCharArray", b => getQuery(b).Select(doc => " abc ".TrimStart(new char[]{ }))),
                 //StartsWith
                 new LinqTestInput("StartsWith", b => getQuery(b).Select(doc => doc.StringField.StartsWith("str"))),
                 new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField))),
@@ -757,13 +791,23 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("String constant StartsWith (case-insensitive)", b => getQuery(b).Select(doc => "sTr".StartsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))),
                 // Substring
                 new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.Substring(0, 1))),
+                // ToString
+                new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField.ToString()))),
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.StringField.ToString())),
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.NumericField.ToString())),
+                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.GuidField.ToString())),
+                // For these fields, .NET ToString and CosmosDB ToString don't produce the same behavior. Manually verified that BE behavior is as expected
+                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.ArrayField.ToString())),
+                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.Point.ToString())),
+                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.BooleanField.ToString())),
+                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.UnixTime.ToString())),
                 // ToUpper
                 new LinqTestInput("ToUpper", b => getQuery(b).Select(doc => doc.StringField.ToUpper()))
             };
             this.ExecuteTestSuite(inputs);
-        }
+    }
 
-        [TestMethod]
+    [TestMethod]
         public void TestArrayFunctions()
         {
             const int Records = 100;
@@ -1001,6 +1045,58 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestStringCompare()
+        {
+            IOrderedQueryable<DataObject> testQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+
+            const int Records = 100;
+            const int MaxStringLength = 20;
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
+                DataObject obj = new DataObject();
+                obj.StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
+                obj.StringField2 = random.NextDouble() < 0.5 ? obj.StringField : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
+                return obj;
+            };
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // projected compare
+                new LinqTestInput("Projected Compare ==", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) == 0)),
+                new LinqTestInput("Projected Compare >", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) > 0)),
+                new LinqTestInput("Projected Compare >=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) >= 0)),
+                new LinqTestInput("Projected Compare <", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) < 0)),
+                new LinqTestInput("Projected Compare <=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) <= 0)),
+                // static strings
+                new LinqTestInput("String.Compare static string ==", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == 0)),
+                new LinqTestInput("String.Compare static string >", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") > 0)),
+                new LinqTestInput("String.Compare static string >=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") >= 0)),
+                new LinqTestInput("String.Compare static string <", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") < 0)),
+                new LinqTestInput("String.Compare static string <=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") <= 0)),
+                // reverse operands
+                new LinqTestInput("Projected Compare == reverse operands", b => getQuery(b).Select(doc => 0 == String.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare < reverse operands", b => getQuery(b).Select(doc => 0 < String.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare <= reverse operands", b => getQuery(b).Select(doc => 0 <= String.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare > reverse operands", b => getQuery(b).Select(doc => 0 > String.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare >= reverse operands", b => getQuery(b).Select(doc => 0 >= String.Compare(doc.StringField, doc.StringField2))),
+                // errors Invalid compare value
+                new LinqTestInput("String.Compare > 1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") > 1)),
+                new LinqTestInput("String.Compare == 1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == 1)),
+                new LinqTestInput("String.Compare == -1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == -1)),
+                // errors Invalid operator
+                new LinqTestInput("String.Compare | 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") | 0)),
+                new LinqTestInput("String.Compare & 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") & 0)),
+                new LinqTestInput("String.Compare ^ 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") ^ 0)),
+                // errors Unexpected number of arguments to string.Compare
+                new LinqTestInput("Unexpected number of arguments to string.Compare", b => getQuery(b).Select(doc => String.Compare(doc.StringField, 0, "str", 0, 3) == 0))
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestUDFs()
         {
             // The UDFs invokation are not supported on the client side.
@@ -1092,8 +1188,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Tuple<int, List<DataObject>> generatedData = this.CreateDataTestSelectTop();
             int seed = generatedData.Item1;
             List<DataObject> data = generatedData.Item2;
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+#if PREVIEW
+                EnableOptimisticDirectExecution = false
+#endif
+            };
 
-            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>

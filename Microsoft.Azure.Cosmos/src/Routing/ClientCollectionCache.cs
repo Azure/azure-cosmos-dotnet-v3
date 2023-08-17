@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -18,21 +19,26 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </summary>
     internal class ClientCollectionCache : CollectionCache
     {
+        private const string TelemetrySourceName = "ClientCollectionCache";
+
         private readonly IStoreModel storeModel;
         private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly IRetryPolicyFactory retryPolicy;
         private readonly ISessionContainer sessionContainer;
+        private readonly ClientTelemetry clientTelemetry;
 
         public ClientCollectionCache(
             ISessionContainer sessionContainer,
             IStoreModel storeModel,
             ICosmosAuthorizationTokenProvider tokenProvider,
-            IRetryPolicyFactory retryPolicy)
+            IRetryPolicyFactory retryPolicy,
+            ClientTelemetry clientTelemetry)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
             this.tokenProvider = tokenProvider;
             this.retryPolicy = retryPolicy;
             this.sessionContainer = sessionContainer;
+            this.clientTelemetry = clientTelemetry;
         }
 
         protected override Task<ContainerProperties> GetByRidAsync(string apiVersion,
@@ -180,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     headers.XDate = Rfc1123DateTimeCache.UtcNow();
 
-                    request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace.Summary);
+                    request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
                     if (clientSideRequestStatistics == null)
                     {
                         childTrace.AddDatum(
@@ -207,7 +213,24 @@ namespace Microsoft.Azure.Cosmos.Routing
                             using (DocumentServiceResponse response =
                                 await this.storeModel.ProcessMessageAsync(request))
                             {
-                                return CosmosResource.FromStream<ContainerProperties>(response);
+                                ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
+
+                                if (this.clientTelemetry != null)
+                                {
+                                    ClientCollectionCache.GetDatabaseAndCollectionName(collectionLink, out string databaseName, out string collectionName);
+                                    this.clientTelemetry.CollectCacheInfo(
+                                                    cacheRefreshSource: ClientCollectionCache.TelemetrySourceName,
+                                                    regionsContactedList: response.RequestStats.RegionsContacted,
+                                                    requestLatency: response.RequestStats.RequestLatency,
+                                                    statusCode: response.StatusCode,
+                                                    containerId: collectionName,
+                                                    operationType: request.OperationType,
+                                                    resourceType: request.ResourceType,
+                                                    subStatusCode: response.SubStatusCode,
+                                                    databaseId: databaseName);
+                                }
+
+                                return containerProperties;
                             }
                         }
                         catch (DocumentClientException ex)
@@ -218,6 +241,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
             }
+        }
+
+        private static void GetDatabaseAndCollectionName(string path, out string databaseName, out string collectionName)
+        {
+            string[] segments = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+            PathsHelper.ParseDatabaseNameAndCollectionNameFromUrlSegments(segments, out databaseName, out collectionName);
         }
     }
 }

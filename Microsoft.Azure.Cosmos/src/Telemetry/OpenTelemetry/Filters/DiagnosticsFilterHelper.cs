@@ -10,27 +10,39 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
     internal static class DiagnosticsFilterHelper
     {
         /// <summary>
-        /// Allow only when either of below is <b>True</b><br></br>
-        /// 1) Latency is not more than 100/250 (query) ms<br></br>
-        /// 3) HTTP status code is not Success<br></br>
+        /// Allow only when Latency is not more than 100 (non-query) /250 (query) ms
         /// </summary>
         /// <returns>true or false</returns>
-        public static bool IsTracingNeeded(
+        public static bool IsLatencyThresholdCrossed(
             DistributedTracingOptions config,
+            OperationType operationType,
             OpenTelemetryAttributes response)
         {
             TimeSpan latencyThreshold;
 
-            if (config?.DiagnosticsLatencyThreshold != null)
+            if (config?.LatencyThresholdForDiagnosticEvent != null)
             {
-                latencyThreshold = config.DiagnosticsLatencyThreshold.Value;
+                latencyThreshold = config.LatencyThresholdForDiagnosticEvent.Value;
             }
             else
             {
-                latencyThreshold = response.OperationType == OperationType.Query ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
+                latencyThreshold = operationType == OperationType.Query ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
             }
 
-            return response.Diagnostics.GetClientElapsedTime() > latencyThreshold || !response.StatusCode.IsSuccess();
+            return response.Diagnostics.GetClientElapsedTime() > latencyThreshold;
+        }
+
+        /// <summary>
+        /// Check if response HTTP status code is returning successful
+        /// </summary>
+        /// <returns>true or false</returns>
+        public static bool IsSuccessfulResponse(OpenTelemetryAttributes response)
+        { 
+            return response.StatusCode.IsSuccess() 
+                        || (response.StatusCode == System.Net.HttpStatusCode.NotFound && response.SubStatusCode == 0)
+                        || (response.StatusCode == System.Net.HttpStatusCode.NotModified && response.SubStatusCode == 0)
+                        || (response.StatusCode == System.Net.HttpStatusCode.Conflict && response.SubStatusCode == 0)
+                        || (response.StatusCode == System.Net.HttpStatusCode.PreconditionFailed && response.SubStatusCode == 0);
         }
     }
 }

@@ -4,18 +4,20 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
     using System;
-    using System.Net.Http;
-    using System.Net;
-    using System.Threading;
-    using System.IO;
-    using System.Net.Sockets;
     using System.Collections.Generic;
+    using System.IO;
+    using System.Net;
+    using System.Net.Http;
+    using System.Net.Security;
+    using System.Security.Cryptography;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class CosmosHttpClientCoreTests
@@ -40,14 +42,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             HttpRequestMessage httpRequestMessage = new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"));
 
-            HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
-                new ValueTask<HttpRequestMessage>(httpRequestMessage),
-                ResourceType.Collection,
-                timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow,new TraceSummary()),
-                default);
+            using (ITrace trace = Trace.GetRootTrace(nameof(ResponseMessageHasRequestMessageAsync)))
+            {
+                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(httpRequestMessage),
+                    ResourceType.Collection,
+                    timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
+                    new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                    default);
 
-            Assert.AreEqual(httpRequestMessage, responseMessage.RequestMessage);
+                Assert.AreEqual(httpRequestMessage, responseMessage.RequestMessage);
+            }
         }
 
         [TestMethod]
@@ -109,15 +114,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
                 using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
 
-                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                using (ITrace trace = Trace.GetRootTrace(nameof(RetryTransientIssuesTestAsync)))
+                {
+                    HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
                     new ValueTask<HttpRequestMessage>(
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: currentTimeoutPolicy.Key,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                         cancellationToken: default);
 
-                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+                    Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+                }
             }
         }
 
@@ -176,15 +184,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
             using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
 
-            HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+            using (ITrace trace = Trace.GetRootTrace(nameof(RetryTransient408sTestAsync)))
+            {
+                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
                 new ValueTask<HttpRequestMessage>(
                     result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                     resourceType: ResourceType.Collection,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                     cancellationToken: default);
 
-            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            }
         }
 
         [TestMethod]
@@ -214,15 +225,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
             using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
 
-            HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+            using (ITrace trace = Trace.GetRootTrace(nameof(DoesNotRetryTransient408sOnDefaultPolicyTestAsync)))
+            {
+                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
                 new ValueTask<HttpRequestMessage>(
                     result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                     resourceType: ResourceType.Collection,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
-                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                     cancellationToken: default);
-             
-            Assert.AreEqual(HttpStatusCode.RequestTimeout, responseMessage.StatusCode, "Should be a request timeout");
+
+                Assert.AreEqual(HttpStatusCode.RequestTimeout, responseMessage.StatusCode, "Should be a request timeout");
+            }
         }
 
         [TestMethod]
@@ -243,13 +257,16 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             try
             {
-                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                using (ITrace trace = Trace.GetRootTrace(nameof(Retry3TimesOnDefaultPolicyTestAsync)))
+                {
+                    HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
                     new ValueTask<HttpRequestMessage>(
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                         cancellationToken: default);
+                }
             }
             catch (Exception ex)
             {
@@ -257,6 +274,72 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.AreEqual(3, count, "Should retry 3 times");
+        }
+ 
+        [TestMethod]
+        public async Task HttpTimeoutThrow503TestAsync()
+        {
+
+            async Task TestScenarioAsync(HttpMethod method, ResourceType resourceType, HttpTimeoutPolicy timeoutPolicy, Type expectedException, int expectedNumberOfRetrys)
+            {
+                int count = 0;
+                async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+                {
+                    count++;
+
+                    throw new OperationCanceledException("API with exception");
+
+                }
+
+                DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+                HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+                using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+                try
+                {
+                    using (ITrace trace = Trace.GetRootTrace(nameof(NoRetryOnNoRetryPolicyTestAsync)))
+                    {
+                        HttpResponseMessage responseMessage1 = await cosmoshttpClient.SendHttpAsync(() =>
+                        new ValueTask<HttpRequestMessage>(
+                            result: new HttpRequestMessage(method, new Uri("http://localhost"))),
+                            resourceType: resourceType,
+                            timeoutPolicy: timeoutPolicy,
+                            clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                            cancellationToken: default);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Assert.AreEqual(expectedNumberOfRetrys, count, "Should retry 3 times for read methods, for writes should only be tried once");
+                    Assert.AreEqual(e.GetType(), expectedException);
+
+                    if (e.GetType() == typeof(CosmosException))
+                    {
+                        CosmosException cosmosException = (CosmosException)e;
+                        Assert.AreEqual(cosmosException.StatusCode, System.Net.HttpStatusCode.ServiceUnavailable);
+                        Assert.AreEqual((int)cosmosException.SubStatusCode,(int)SubStatusCodes.TransportGenerated503);
+
+                        Assert.IsNotNull(cosmosException.Trace);
+                        Assert.AreNotEqual(cosmosException.Trace, NoOpTrace.Singleton);
+                    }
+                }
+
+            }
+
+            //Data plane read
+            await TestScenarioAsync(HttpMethod.Get, ResourceType.Document, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 3);
+
+            //Data plane write (Should throw a 408 OperationCanceledException rather than a 503)
+            await TestScenarioAsync(HttpMethod.Post, ResourceType.Document, HttpTimeoutPolicyDefault.Instance, typeof(TaskCanceledException), 1);
+
+            //Meta data read
+            await TestScenarioAsync(HttpMethod.Get, ResourceType.Database, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 3);
+
+            //Query plan read (note all query plan operations are reads).
+            await TestScenarioAsync(HttpMethod.Get, ResourceType.Document, HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout, typeof(CosmosException), 3);
+
+            //Metadata Write (Should throw a 408 OperationCanceledException rather than a 503)
+            await TestScenarioAsync(HttpMethod.Post, ResourceType.Document, HttpTimeoutPolicyDefault.Instance, typeof(TaskCanceledException), 1);
         }
 
         [TestMethod]
@@ -281,13 +364,16 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             try
             {
-                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                using (ITrace trace = Trace.GetRootTrace(nameof(NoRetryOnNoRetryPolicyTestAsync)))
+                {
+                    HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
                     new ValueTask<HttpRequestMessage>(
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: HttpTimeoutPolicyNoRetry.Instance,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
                         cancellationToken: default);
+                }
             }
             catch (Exception ex)
             {
@@ -309,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Documents.Collections.RequestNameValueCollection());
 
             HttpTimeoutPolicy retryPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(documentServiceRequest);
-            Assert.AreEqual(HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance, retryPolicy);
+            Assert.AreEqual(HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout, retryPolicy);
 
             int count = 0;
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> retry = retryPolicy.GetTimeoutEnumerator();
@@ -338,15 +424,67 @@ namespace Microsoft.Azure.Cosmos.Tests
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
             using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
 
-            HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
-                new ValueTask<HttpRequestMessage>(
-                    result: new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"))),
-                    resourceType: ResourceType.Document,
-                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                    clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary()),
-                    cancellationToken: default);
+            using (ITrace trace = Trace.GetRootTrace(nameof(RetryTransientIssuesForQueryPlanTestAsync)))
+            {
+                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(
+                        result: new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"))),
+                        resourceType: ResourceType.Document,
+                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                        cancellationToken: default);
 
-            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public void CreateSocketsHttpHandlerCreatesCorrectValueType()
+        {
+            int gatewayLimit = 10;
+            IWebProxy webProxy = null;
+            Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback = (certificate2, x509Chain, sslPolicyErrors) => false;
+
+            HttpMessageHandler handler = CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(
+                gatewayLimit, 
+                webProxy, 
+                serverCertificateCustomValidationCallback);
+
+            Assert.AreEqual(Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http"), handler.GetType());
+            SocketsHttpHandler socketsHandler = (SocketsHttpHandler)handler;
+
+            Assert.IsTrue(TimeSpan.FromMinutes(5.5) >= socketsHandler.PooledConnectionLifetime);
+            Assert.IsTrue(TimeSpan.FromMinutes(5) <= socketsHandler.PooledConnectionLifetime);
+            Assert.AreEqual(webProxy, socketsHandler.Proxy);
+            Assert.AreEqual(gatewayLimit, socketsHandler.MaxConnectionsPerServer);
+
+            //Create cert for test
+            X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
+            X509Chain x509Chain = new X509Chain();
+            SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
+            Assert.IsFalse(socketsHandler.SslOptions.RemoteCertificateValidationCallback.Invoke(new object(), x509Certificate2, x509Chain, sslPolicyErrors));
+        }
+
+        [TestMethod]
+        public void CreateHttpClientHandlerCreatesCorrectValueType()
+        {
+            int gatewayLimit = 10;
+            IWebProxy webProxy = null;
+            Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback = (certificate2, x509Chain, sslPolicyErrors) => false;
+
+            HttpMessageHandler handler = CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayLimit, webProxy, serverCertificateCustomValidationCallback);
+
+            Assert.AreEqual(Type.GetType("System.Net.Http.HttpClientHandler, System.Net.Http"), handler.GetType());
+            HttpClientHandler clientHandler = (HttpClientHandler)handler;
+
+            Assert.AreEqual(webProxy, clientHandler.Proxy);
+            Assert.AreEqual(gatewayLimit, clientHandler.MaxConnectionsPerServer);
+
+            //Create cert for test
+            X509Certificate2 x509Certificate2 = new CertificateRequest("cn=www.test", ECDsa.Create(), HashAlgorithmName.SHA256).CreateSelfSigned(DateTime.Now, DateTime.Now.AddYears(1));
+            X509Chain x509Chain = new X509Chain();
+            SslPolicyErrors sslPolicyErrors = new SslPolicyErrors();
+            Assert.IsFalse(clientHandler.ServerCertificateCustomValidationCallback.Invoke(new HttpRequestMessage(), x509Certificate2, x509Chain, sslPolicyErrors));
         }
 
         private class MockMessageHandler : HttpMessageHandler

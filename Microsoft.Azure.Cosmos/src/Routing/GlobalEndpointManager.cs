@@ -95,6 +95,16 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
 
+        public bool IsMultimasterMetadataWriteRequest(DocumentServiceRequest request)
+        {
+            return this.locationCache.IsMultimasterMetadataWriteRequest(request);
+        }
+
+        public Uri GetHubUri()
+        {
+            return this.locationCache.GetHubUri();
+        }
+
         /// <summary>
         /// This will get the account information.
         /// It will try the global endpoint first. 
@@ -541,7 +551,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
         }
-
         internal async Task<AccountProperties> GetDatabaseAccountAsync(bool forceRefresh = false)
         {
 #nullable disable  // Needed because AsyncCache does not have nullable enabled

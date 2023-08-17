@@ -10,11 +10,14 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class HttpTimeoutPolicyControlPlaneRetriableHotPath : HttpTimeoutPolicy
     {
-        public static readonly HttpTimeoutPolicy Instance = new HttpTimeoutPolicyControlPlaneRetriableHotPath();
+        public static readonly HttpTimeoutPolicy Instance = new HttpTimeoutPolicyControlPlaneRetriableHotPath(false);
+        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeout = new HttpTimeoutPolicyControlPlaneRetriableHotPath(true);
+        public bool shouldThrow503OnTimeout;
         private static readonly string Name = nameof(HttpTimeoutPolicyControlPlaneRetriableHotPath);
 
-        private HttpTimeoutPolicyControlPlaneRetriableHotPath()
+        private HttpTimeoutPolicyControlPlaneRetriableHotPath(bool shouldThrow503OnTimeout)
         {
+            this.shouldThrow503OnTimeout = shouldThrow503OnTimeout;
         }
 
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelays = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
@@ -25,8 +28,6 @@ namespace Microsoft.Azure.Cosmos
         };
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyControlPlaneRetriableHotPath.Name;
-
-        public override TimeSpan MaximumRetryTimeLimit => CosmosHttpClient.GatewayRequestTimeout;
 
         public override int TotalRetryCount => this.TimeoutsAndDelays.Count;
 
@@ -61,5 +62,7 @@ namespace Microsoft.Azure.Cosmos
 
             return true;
         }
+
+        public override bool ShouldThrow503OnTimeout => this.shouldThrow503OnTimeout;
     }
 }

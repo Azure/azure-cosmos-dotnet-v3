@@ -33,6 +33,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Cosmos.IncludedPath defaultEntry = containerSettings.IndexingPolicy.IncludedPaths[0];
             Assert.AreEqual(Cosmos.IndexingPolicy.DefaultPath, defaultEntry.Path);
             Assert.AreEqual(0, defaultEntry.Indexes.Count);
+
+            Assert.IsNotNull(containerSettings.ComputedProperties);
+            Assert.AreEqual(0, containerSettings.ComputedProperties.Count);
         }
 
         [TestMethod]
@@ -163,6 +166,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNull(containerSettings.IndexingPolicy.IncludedPaths[0].IsFullIndex, "textprop IsFullIndex is not null");
                 Assert.IsTrue((bool)containerSettings.IndexingPolicy.IncludedPaths[1].IsFullIndex, "listprop IsFullIndex is not set to true");
             }
+        }
+
+        [TestMethod]
+        public void SettingPKShouldNotResetVersion()
+        {
+            ContainerProperties containerProperties = new();
+            containerProperties.Id = "test";
+            containerProperties.PartitionKeyDefinitionVersion = Cosmos.PartitionKeyDefinitionVersion.V2;
+            containerProperties.PartitionKeyPath = "/id";
+
+            Assert.AreEqual(Cosmos.PartitionKeyDefinitionVersion.V2, containerProperties.PartitionKeyDefinitionVersion);
         }
 
         private static string SerializeDocumentCollection(DocumentCollection collection)

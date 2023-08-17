@@ -25,6 +25,54 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         }
 
         public override CosmosElement Visit(
+            SqlAllScalarExpression scalarExpression,
+            CosmosElement document)
+        {
+            // We evaluate the ALL expression by constructing an equivalent EXISTS and evaluating that.
+            // ALL ( Filter Expression ) ==> NOT EXISTS ( NOT Filter Expression )
+
+            // If there is is no filter expression, then an equivalent filter expression of just true is created.
+            SqlScalarExpression filterExpression;
+            if (scalarExpression.Subquery.WhereClause == null)
+            {
+                SqlLiteral trueLiteral = SqlBooleanLiteral.Create(true);
+                filterExpression = SqlLiteralScalarExpression.Create(trueLiteral);
+            }
+            else
+            {
+                filterExpression = scalarExpression.Subquery.WhereClause.FilterExpression;
+            }
+
+            // Create a NOT unary with filter expression.
+            SqlUnaryScalarExpression negatedFilterExpression = SqlUnaryScalarExpression.Create(
+                SqlUnaryScalarOperatorKind.Not,
+                filterExpression);
+
+            // Create new where clause with negated filter expression.
+            SqlWhereClause newWhereClause = SqlWhereClause.Create(negatedFilterExpression);
+
+            // create new subquery with new where clause. 
+            SqlQuery newSqlQuery = SqlQuery.Create(
+                scalarExpression.Subquery.SelectClause,
+                scalarExpression.Subquery.FromClause,
+                newWhereClause,
+                scalarExpression.Subquery.GroupByClause,
+                scalarExpression.Subquery.OrderByClause,
+                scalarExpression.Subquery.OffsetLimitClause);
+
+            // Create an exists expression with new subquery.
+            SqlExistsScalarExpression newExistsScalarExpression = SqlExistsScalarExpression.Create(newSqlQuery);
+
+            // Create a not unary with the exists expression.
+            SqlUnaryScalarExpression negatedExistsExpression = SqlUnaryScalarExpression.Create(
+                SqlUnaryScalarOperatorKind.Not,
+                newExistsScalarExpression);
+
+            // Visit the equivalent NOT EXISTS expression.
+            return this.Visit(negatedExistsExpression, document);
+        }
+
+        public override CosmosElement Visit(
             SqlArrayCreateScalarExpression scalarExpression,
             CosmosElement document)
         {
@@ -209,6 +257,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return CosmosBoolean.Create(subqueryResults.Any());
         }
 
+        public override CosmosElement Visit(SqlFirstScalarExpression scalarExpression, CosmosElement document)
+        {
+            // Only run on the current document since the subquery is always correlated.
+            IEnumerable<CosmosElement> subqueryResults = SqlInterpreter.ExecuteQuery(
+                new CosmosElement[] { document },
+                scalarExpression.Subquery);
+
+            return subqueryResults.FirstOrDefault(CosmosUndefined.Create());
+        }
+
         public override CosmosElement Visit(SqlFunctionCallScalarExpression scalarExpression, CosmosElement document)
         {
             List<CosmosElement> arguments = new List<CosmosElement>();
@@ -254,6 +312,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             }
 
             return CosmosBoolean.Create(contains);
+        }
+
+        public override CosmosElement Visit(SqlLastScalarExpression scalarExpression, CosmosElement document)
+        {
+            // Only run on the current document since the subquery is always correlated.
+            IEnumerable<CosmosElement> subqueryResults = SqlInterpreter.ExecuteQuery(
+                new CosmosElement[] { document },
+                scalarExpression.Subquery);
+
+            return subqueryResults.LastOrDefault(CosmosUndefined.Create());
         }
 
         public override CosmosElement Visit(SqlLikeScalarExpression scalarExpression, CosmosElement document)

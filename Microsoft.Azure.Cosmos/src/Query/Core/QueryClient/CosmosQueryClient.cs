@@ -47,18 +47,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             bool hasLogicalPartitionKey,
             bool allowDCount,
             bool useSystemPrefix,
+            Cosmos.GeospatialType geospatialType,
             CancellationToken cancellationToken);
 
         public abstract Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
             string resourceUri,
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
-            Guid clientQueryCorrelationId,
             FeedRange feedRange,
             QueryRequestOptions requestOptions,
+            AdditionalRequestHeaders additionalRequestHeaders,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            bool isContinuationExpected,
             int pageSize,
             ITrace trace,
             CancellationToken cancellationToken);
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             bool forceRefresh,
             ITrace trace);
 
-        public abstract bool ByPassQueryParsing();
+        public abstract bool BypassQueryParsing();
 
         public abstract Task ForceRefreshCollectionCacheAsync(
             string collectionLink,

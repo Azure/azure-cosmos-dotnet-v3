@@ -12,7 +12,7 @@
     <CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
     <Company>Microsoft Corporation</Company>
     <Authors>Microsoft</Authors>
-    <Description>This library provides an implementation for client-side encryption for Azure Cosmos's SQL API. For more information, refer to https://aka.ms/CosmosClientEncryption</Description>
+    <Description>This library provides an implementation for client-side encryption for Azure Cosmos DB for NoSQL. For more information, refer to https://aka.ms/CosmosClientEncryption</Description>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <Title>Microsoft Azure Cosmos DB client-side encryption library</Title>
     <PackageId>Microsoft.Azure.Cosmos.Encryption</PackageId>
@@ -28,11 +28,11 @@
   </ItemGroup>
 	
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="[3.28.0,3.29)" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="[3.31.0,3.35.2]" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.28.0-preview" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.35.2-preview" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">

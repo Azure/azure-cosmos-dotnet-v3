@@ -9,8 +9,11 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json.Converters;
 
     /// <summary>
-    /// Type of Patch operation.
+    /// Describes the list of Patch supported operation types.
     /// </summary>
+    /// <remarks>
+    /// For more information, see <see href="https://docs.microsoft.com/azure/cosmos-db/partial-document-update#supported-operations">Partial document update in Azure Cosmos DB: Supported operations</see>
+    /// </remarks>
     [JsonConverter(typeof(StringEnumConverter))]
 
     public enum PatchOperationType
@@ -44,5 +47,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [EnumMember(Value = PatchConstants.OperationTypeNames.Increment)]
         Increment,
+
+        /// <summary>
+        /// Operation to move a object/value.
+        /// </summary>
+        [EnumMember(Value = PatchConstants.OperationTypeNames.Move)]
+        Move,
     }
 }

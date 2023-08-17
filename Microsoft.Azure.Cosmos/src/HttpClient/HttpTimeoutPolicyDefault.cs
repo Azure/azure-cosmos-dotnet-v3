@@ -10,11 +10,14 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class HttpTimeoutPolicyDefault : HttpTimeoutPolicy
     {
-        public static readonly HttpTimeoutPolicy Instance = new HttpTimeoutPolicyDefault();
+        public static readonly HttpTimeoutPolicy Instance = new HttpTimeoutPolicyDefault(false);
+        public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeout = new HttpTimeoutPolicyDefault(true);
+        public bool shouldThrow503OnTimeout;
         private static readonly string Name = nameof(HttpTimeoutPolicyDefault);
 
-        private HttpTimeoutPolicyDefault()
+        private HttpTimeoutPolicyDefault(bool shouldThrow503OnTimeout)
         {
+            this.shouldThrow503OnTimeout = shouldThrow503OnTimeout;
         }
 
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelays = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
@@ -25,8 +28,6 @@ namespace Microsoft.Azure.Cosmos
         };
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyDefault.Name;
-
-        public override TimeSpan MaximumRetryTimeLimit => CosmosHttpClient.GatewayRequestTimeout;
 
         public override int TotalRetryCount => this.TimeoutsAndDelays.Count;
 
@@ -46,5 +47,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return false;
         }
+
+        public override bool ShouldThrow503OnTimeout => this.shouldThrow503OnTimeout;
     }
 }

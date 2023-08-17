@@ -54,7 +54,7 @@
 
         private TraceDatum GetDatumObject(string regionName1, string regionName2 = null)
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, new TraceSummary());
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Trace.GetRootTrace(nameof(ContactedRegionsTests)));
             Uri uri1 = new Uri("http://someUri1.com");
             datum.RegionsContacted.Add((regionName1, uri1));
             if (regionName2 != null)
@@ -71,7 +71,7 @@
         {
             CosmosDiagnostics diagnostics = new CosmosTraceDiagnostics(this.CreateTestTraceTree());
 
-            string regionsContacted  = ClientTelemetryHelper.GetContactedRegions(diagnostics);            
+            string regionsContacted  = ClientTelemetryHelper.GetContactedRegions(diagnostics.GetContactedRegions());            
             Assert.IsNotNull(regionsContacted);
             Assert.AreEqual("Central US,Central India,East US 2,France Central", regionsContacted);
             
@@ -91,7 +91,7 @@
            
             CosmosDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
 
-            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(diagnostics);
+            string regionsContacted = ClientTelemetryHelper.GetContactedRegions(diagnostics.GetContactedRegions());
             Assert.IsNotNull(regionsContacted);
             Assert.AreEqual("France Central", regionsContacted);
         }

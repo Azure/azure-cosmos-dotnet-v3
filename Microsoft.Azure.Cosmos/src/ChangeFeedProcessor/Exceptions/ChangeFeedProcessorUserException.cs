@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Runtime.Serialization;
-    using global::Azure.Core.Pipeline;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 

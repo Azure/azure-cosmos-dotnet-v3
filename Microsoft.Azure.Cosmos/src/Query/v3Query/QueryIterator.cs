@@ -41,7 +41,8 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions,
             RequestOptions requestOptions,
             CosmosClientContext clientContext,
-            Guid correlatedActivityId)
+            Guid correlatedActivityId,
+            ContainerInternal container)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.queryPipelineStage = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
@@ -50,6 +51,8 @@ namespace Microsoft.Azure.Cosmos.Query
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.hasMoreResults = true;
             this.correlatedActivityId = correlatedActivityId;
+
+            this.container = container;
         }
 
         public static QueryIterator Create(
@@ -108,7 +111,8 @@ namespace Microsoft.Azure.Cosmos.Query
                                 queryRequestOptions.CosmosSerializationFormatOptions,
                                 queryRequestOptions,
                                 clientContext,
-                                correlatedActivityId);
+                                correlatedActivityId,
+                                containerCore);
                         }
 
                         requestContinuationToken = tryParse.Result;
@@ -140,6 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 executionEnvironment: queryRequestOptions.ExecutionEnvironment,
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
                 forcePassthrough: forcePassthrough,
+                enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 testInjections: queryRequestOptions.TestSettings);
 
             return new QueryIterator(
@@ -148,7 +153,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryRequestOptions.CosmosSerializationFormatOptions,
                 queryRequestOptions,
                 clientContext,
-                correlatedActivityId);
+                correlatedActivityId,
+                containerCore);
         }
 
         public override bool HasMoreResults => this.hasMoreResults;
@@ -230,6 +236,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 {
                     RequestCharge = tryGetQueryPage.Result.RequestCharge,
                     ActivityId = tryGetQueryPage.Result.ActivityId,
+                    CorrelatedActivityId = this.correlatedActivityId.ToString(),
                     SubStatusCode = Documents.SubStatusCodes.Unknown
                 };
 

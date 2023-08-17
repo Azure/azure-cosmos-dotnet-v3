@@ -76,7 +76,7 @@ namespace CosmosCTL
                     DurationUnit = TimeUnit.Milliseconds,
                     RateUnit = TimeUnit.Seconds,
                     Context = loggingContextIdentifier,
-                    Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+                    Reservoir = () => ReservoirProvider.GetReservoir(config)
                 };
 
                 Container container = cosmosClient.GetContainer(config.Database, config.Collection);

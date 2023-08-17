@@ -17,6 +17,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal static partial class TraceWriter
     {
+        internal static readonly string HourTimeFormatString = "HH:mm:ss:fff";
+        internal static readonly string DateTimeFormatString = "yyyy-MM-ddTHH:mm:ss.fffZ";
+
         private static class TraceTextWriter
         {
             private const string space = "  ";
@@ -97,8 +100,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 private static class HeaderLengths
                 {
-                    public static readonly int StartTime = Math.Max(Headers.StartTime.Length, DateTime.MaxValue.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture).Length);
-                    public static readonly int EndTime = Math.Max(Headers.EndTime.Length, DateTime.MaxValue.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture).Length);
+                    public static readonly int StartTime = Math.Max(Headers.StartTime.Length, DateTime.MaxValue.ToString(TraceWriter.HourTimeFormatString, CultureInfo.InvariantCulture).Length);
+                    public static readonly int EndTime = Math.Max(Headers.EndTime.Length, DateTime.MaxValue.ToString(TraceWriter.HourTimeFormatString, CultureInfo.InvariantCulture).Length);
                     public static readonly int Endpoint = 80 - (StartTime + EndTime);
                 }
 
@@ -177,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.Write("Component");
                 writer.Write(space);
 
-                writer.Write(trace.StartTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture));
+                writer.Write(trace.StartTime.ToString(TraceWriter.HourTimeFormatString, CultureInfo.InvariantCulture));
                 writer.Write(space);
 
                 writer.Write(trace.Duration.TotalMilliseconds.ToString("0.00"));
@@ -316,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.AppendLine($"Activity ID: {pointOperationStatisticsTraceDatum.ActivityId ?? "<null>"}");
                     stringBuilder.AppendLine($"Status Code: {pointOperationStatisticsTraceDatum.StatusCode}/{pointOperationStatisticsTraceDatum.SubStatusCode}");
-                    stringBuilder.AppendLine($"Response Time: {pointOperationStatisticsTraceDatum.ResponseTimeUtc.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture)}");
+                    stringBuilder.AppendLine($"Response Time: {pointOperationStatisticsTraceDatum.ResponseTimeUtc.ToString(TraceWriter.HourTimeFormatString, CultureInfo.InvariantCulture)}");
                     stringBuilder.AppendLine($"Request Charge: {pointOperationStatisticsTraceDatum.RequestCharge}");
                     stringBuilder.AppendLine($"Request URI: {pointOperationStatisticsTraceDatum.RequestUri ?? "<null>"}");
                     stringBuilder.AppendLine($"Session Tokens: {pointOperationStatisticsTraceDatum.RequestSessionToken ?? "<null>"} / {pointOperationStatisticsTraceDatum.ResponseSessionToken ?? "<null>"}");
@@ -331,10 +334,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 public void Visit(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
                     StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.AppendLine($"Start Time: {clientSideRequestStatisticsTraceDatum.RequestStartTimeUtc.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture)}");
+                    stringBuilder.AppendLine($"Start Time: {clientSideRequestStatisticsTraceDatum.RequestStartTimeUtc.ToString(TraceWriter.HourTimeFormatString, CultureInfo.InvariantCulture)}");
                     if (clientSideRequestStatisticsTraceDatum.RequestEndTimeUtc.HasValue)
                     {
-                        stringBuilder.AppendLine($"End Time: {clientSideRequestStatisticsTraceDatum.RequestEndTimeUtc.Value.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture)}");
+                        stringBuilder.AppendLine($"End Time: {clientSideRequestStatisticsTraceDatum.RequestEndTimeUtc.Value.ToString(TraceWriter.HourTimeFormatString, CultureInfo.InvariantCulture)}");
                     }
 
                     stringBuilder.AppendLine("Contacted Replicas");
@@ -378,8 +381,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     foreach (KeyValuePair<string, AddressResolutionStatistics> stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics)
                     {
                         string row = AddressResolutionStatisticsTextTable.Singleton.GetRow(
-                            stat.Value.StartTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture),
-                            stat.Value.EndTime.HasValue ? stat.Value.EndTime.Value.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture) : "NO END TIME",
+                            stat.Value.StartTime.ToString(TraceWriter.HourTimeFormatString, CultureInfo.InvariantCulture),
+                            stat.Value.EndTime.HasValue ? stat.Value.EndTime.Value.ToString(TraceWriter.HourTimeFormatString, CultureInfo.InvariantCulture) : "NO END TIME",
                             stat.Value.TargetEndpoint);
                         stringBuilder.AppendLine(row);
                     }
@@ -391,14 +394,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     {
                         if (stat.RequestStartTime.HasValue)
                         {
-                            stringBuilder.AppendLine($"{space}Start Time: {stat.RequestStartTime.Value.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture)}");
+                            stringBuilder.AppendLine($"{space}Start Time: {stat.RequestStartTime.Value.ToString(TraceWriter.HourTimeFormatString, CultureInfo.InvariantCulture)}");
                         }
                         else
                         {
                             stringBuilder.AppendLine("{space}Start Time Not Found");
                         }
 
-                        stringBuilder.AppendLine($"{space}End Time: {stat.RequestResponseTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture)}");
+                        stringBuilder.AppendLine($"{space}End Time: {stat.RequestResponseTime.ToString(TraceWriter.HourTimeFormatString, CultureInfo.InvariantCulture)}");
 
                         stringBuilder.AppendLine($"{space}Resource Type: {stat.RequestResourceType}");
                         stringBuilder.AppendLine($"{space}Operation Type: {stat.RequestOperationType}");

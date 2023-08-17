@@ -6,12 +6,16 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Runtime;
     using CommandLine;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// Represents Benchmark Configuration
+    /// </summary>
     public class BenchmarkConfig
     {
         private static readonly string UserAgentSuffix = "cosmosdbdotnetbenchmark";
@@ -101,6 +105,9 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Enable Client Telemetry")]
         public bool EnableTelemetry { get; set; }
 
+        [Option(Required = false, HelpText = "Enable Distributed Tracing")]
+        public bool EnableDistributedTracing { get; set; }
+
         [Option(Required = false, HelpText = "Client Telemetry Schedule in Seconds")]
         public int  TelemetryScheduleInSec { get; set; }
 
@@ -119,6 +126,12 @@ namespace CosmosBenchmark
 
         [Option(Required = false, HelpText = "Container to publish results to")]
         public string ResultsContainer { get; set; } = "runsummary";
+
+        [Option(Required = false, HelpText = "Metrics reporting interval in seconds")]
+        public int MetricsReportingIntervalInSec { get; set; } = 5;
+
+        [Option(Required = false, HelpText = "Application Insights connection string")]
+        public string AppInsightsConnectionString { get; set; }
 
         internal int GetTaskCount(int containerThroughput)
         {
@@ -140,7 +153,9 @@ namespace CosmosBenchmark
                 Utility.TeeTraceInformation($"{nameof(BenchmarkConfig)} arguments");
                 Utility.TeeTraceInformation($"IsServerGC: {GCSettings.IsServerGC}");
                 Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
-                Utility.TeeTraceInformation(JsonHelper.ToString(this));
+                Utility.TeeTraceInformation(JsonHelper.ToString(
+                    input: this, 
+                    capacity: 2048));
                 Utility.TeeTraceInformation("--------------------------------------------------------------------- ");
                 Utility.TeeTraceInformation(string.Empty);
             }
@@ -219,6 +234,8 @@ namespace CosmosBenchmark
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
 
+            clientOptions.IsDistributedTracingEnabled = this.EnableDistributedTracing;
+
             return new Microsoft.Azure.Cosmos.CosmosClient(
                         this.EndPoint,
                         accountKey,
@@ -256,7 +273,7 @@ namespace CosmosBenchmark
             {
                 foreach (Error e in errors)
                 {
-                    Console.WriteLine(e.ToString());
+                    Trace.TraceInformation(e.ToString());
                 }
             }
 

@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
                     throw new ArgumentException("StartTime cannot have DateTimeKind.Unspecified", nameof(value));
                 }
 
-                this.startTime = value;
+                this.startTime = value.HasValue && value.Value.Kind == DateTimeKind.Local ? value.Value.ToUniversalTime() : value;
             }
         }
 

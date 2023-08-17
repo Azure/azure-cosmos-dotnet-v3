@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 #endif
     abstract class SqlScalarExpressionVisitor<TArg, TOutput>
     {
+        public abstract TOutput Visit(SqlAllScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlArrayCreateScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlArrayScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlBetweenScalarExpression scalarExpression, TArg input);
@@ -20,8 +21,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TOutput Visit(SqlCoalesceScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlConditionalScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlExistsScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlFirstScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlFunctionCallScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlInScalarExpression scalarExpression, TArg input);
+        public abstract TOutput Visit(SqlLastScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlLikeScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlLiteralScalarExpression scalarExpression, TArg input);
         public abstract TOutput Visit(SqlMemberIndexerScalarExpression scalarExpression, TArg input);

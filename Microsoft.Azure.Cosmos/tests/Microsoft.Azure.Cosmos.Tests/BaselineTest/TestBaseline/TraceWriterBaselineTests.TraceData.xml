@@ -24,7 +24,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
         (
             [Point Operation Statistics]
             Activity ID: 00000000-0000-0000-0000-000000000000
@@ -38,8 +38,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start datetime": "0544-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
     "Point Operation Statistics": {
@@ -84,12 +83,12 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
         (
             [Point Operation Statistics Default]
             Activity ID: <null>
             Status Code: 0/Unknown
-            Response Time: 12:00:00:000
+            Response Time: 00:00:00:000
             Request Charge: 0
             Request URI: <null>
             Session Tokens: <null> / <null>
@@ -98,8 +97,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start datetime": "0544-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
     "Point Operation Statistics Default": {
@@ -137,7 +135,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
         (
             [Query Metrics]
             Retrieved Document Count                 :           2,000             
@@ -174,8 +172,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start datetime": "0544-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
     "Query Metrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
@@ -190,7 +187,7 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, new TraceSummary());
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, rootTrace);
 
             TransportAddressUri uri1 = new TransportAddressUri(new Uri("http://someUri1.com"));
             TransportAddressUri uri2 = new TransportAddressUri(new Uri("http://someUri2.com"));
@@ -217,26 +214,7 @@
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                 DateTime.MinValue,
                 DateTime.MaxValue,
-                new Documents.StoreResult(
-                    storeResponse: new StoreResponse(),
-                    exception: null,
-                    partitionKeyRangeId: 42.ToString(),
-                    lsn: 1337,
-                    quorumAckedLsn: 23,
-                    requestCharge: 3.14,
-                    currentReplicaSetSize: 4,
-                    currentWriteQuorum: 3,
-                    isValid: true,
-                    storePhysicalAddress: new Uri("http://storephysicaladdress.com"),
-                    globalCommittedLSN: 1234,
-                    numberOfReadRegions: 13,
-                    itemLSN: 15,
-                    sessionToken: new SimpleSessionToken(42),
-                    usingLocalLSN: true,
-                    activityId: Guid.Empty.ToString(),
-                    backendRequestDurationInMs: "4.2",
-                    retryAfterInMs: "42",
-                    transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
+                StoreResult.CreateForTesting(transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()).Target,
                 ResourceType.Document,
                 OperationType.Query,
                 "42",
@@ -249,11 +227,11 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
         (
             [Client Side Request Stats]
-            Start Time: 12:00:00:000
-            End Time: 11:59:59:999
+            Start Time: 00:00:00:000
+            End Time: 23:59:59:999
             Contacted Replicas
               http://someuri1.com/: 1
               http://someuri2.com/: 1
@@ -267,12 +245,12 @@
             ┌────────────────┬──────────────┬──────────────────────────────────────────────────┐
             │Start Time (utc)│End Time (utc)│Endpoint                                          │
             ├────────────────┼──────────────┼──────────────────────────────────────────────────┤
-            │    12:00:00:000│  11:59:59:999│                              http://localhost.com│
-            │    12:00:00:000│  11:59:59:999│                              http://localhost.com│
+            │    00:00:00:000│  23:59:59:999│                              http://localhost.com│
+            │    00:00:00:000│  23:59:59:999│                              http://localhost.com│
             └────────────────┴──────────────┴──────────────────────────────────────────────────┘
             Store Response Statistics
-              Start Time: 12:00:00:000
-              End Time: 11:59:59:999
+              Start Time: 00:00:00:000
+              End Time: 23:59:59:999
               Resource Type: Document
               Operation Type: Query
               Store Result
@@ -301,8 +279,7 @@
     "RegionsContacted": 2
   },
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start datetime": "0544-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
     "Client Side Request Stats": {
@@ -361,8 +338,14 @@
             "IsValid": true,
             "StorePhysicalAddress": "http://storephysicaladdress.com/",
             "RequestCharge": 3.14,
-            "RetryAfterInMs": "42",
+            "RetryAfterInMs": "9000",
             "BELatencyInMs": "4.2",
+            "ReplicaHealthStatuses": [
+              "http://storephysicaladdress-1p.com:Connected",
+              "http://storephysicaladdress-2s.com:Unknown",
+              "http://storephysicaladdress-3s.com:Unhealthy",
+              "http://storephysicaladdress-4s.com:Unknown"
+            ],
             "transportRequestTimeline": {
               "requestTimeline": [
                 {
@@ -428,7 +411,7 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, new TraceSummary());
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, rootTrace);
             datum.ContactedReplicas.Add(default);
 
             TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", default);
@@ -443,26 +426,7 @@
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                 requestStartTime: default,
                 requestResponseTime: default,
-                new Documents.StoreResult(
-                    storeResponse: new StoreResponse(),
-                    exception: default,
-                    partitionKeyRangeId: default,
-                    lsn: default,
-                    quorumAckedLsn: default,
-                    requestCharge: default,
-                    currentReplicaSetSize: default,
-                    currentWriteQuorum: default,
-                    isValid: default,
-                    storePhysicalAddress: default,
-                    globalCommittedLSN: default,
-                    numberOfReadRegions: default,
-                    itemLSN: default,
-                    sessionToken: default,
-                    usingLocalLSN: default,
-                    activityId: default,
-                    retryAfterInMs: default,
-                    backendRequestDurationInMs: default,
-                     transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
+                StoreResult.CreateForTesting(storeResponse: new StoreResponse()).Target,
                 resourceType: default,
                 operationType: default,
                 requestSessionToken: default,
@@ -475,10 +439,10 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
         (
             [Client Side Request Stats Default]
-            Start Time: 12:00:00:000
+            Start Time: 00:00:00:000
             Contacted Replicas
             Failed to Contact Replicas
               <null>
@@ -488,12 +452,12 @@
             ┌────────────────┬──────────────┬──────────────────────────────────────────────────┐
             │Start Time (utc)│End Time (utc)│Endpoint                                          │
             ├────────────────┼──────────────┼──────────────────────────────────────────────────┤
-            │    12:00:00:000│   NO END TIME│                                                  │
-            │    12:00:00:000│   NO END TIME│                                                  │
+            │    00:00:00:000│   NO END TIME│                                                  │
+            │    00:00:00:000│   NO END TIME│                                                  │
             └────────────────┴──────────────┴──────────────────────────────────────────────────┘
             Store Response Statistics
             {space}Start Time Not Found
-              End Time: 12:00:00:000
+              End Time: 00:00:00:000
               Resource Type: Database
               Operation Type: Create
               Store Result
@@ -522,8 +486,7 @@
     "RegionsContacted": 1
   },
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start datetime": "0544-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
     "Client Side Request Stats Default": {
@@ -572,55 +535,8 @@
             "RequestCharge": 0,
             "RetryAfterInMs": null,
             "BELatencyInMs": null,
-            "transportRequestTimeline": {
-              "requestTimeline": [
-                {
-                  "event": "Created",
-                  "startTimeUtc": "2021-12-31T23:59:59.059Z",
-                  "durationInMs": 1
-                },
-                {
-                  "event": "ChannelAcquisitionStarted",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                },
-                {
-                  "event": "Pipelined",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                },
-                {
-                  "event": "Transit Time",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                },
-                {
-                  "event": "Received",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                },
-                {
-                  "event": "Completed",
-                  "startTimeUtc": "2021-12-31T23:59:59.06Z",
-                  "durationInMs": 0
-                }
-              ],
-              "serviceEndpointStats": {
-                "inflightRequests": 2,
-                "openConnections": 1
-              },
-              "connectionStats": {
-                "waitforConnectionInit": "True",
-                "callsPendingReceive": 1,
-                "lastSendAttempt": "2021-12-31T23:59:59.059Z",
-                "lastSend": "2021-12-31T23:59:59.059Z",
-                "lastReceive": "2021-12-31T23:59:59.059Z"
-              },
-              "requestSizeInBytes": 2,
-              "requestBodySizeInBytes": 1,
-              "responseMetadataSizeInBytes": 1,
-              "responseBodySizeInBytes": 1
-            },
+            "ReplicaHealthStatuses": [],
+            "transportRequestTimeline": null,
             "TransportException": null
           }
         }
@@ -637,7 +553,7 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, new TraceSummary());
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, rootTrace);
             TraceWriterBaselineTests.SetEndRequestTime(datum,DateTime.MaxValue);
 
             HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(
@@ -667,11 +583,11 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
         (
             [Client Side Request Stats]
-            Start Time: 12:00:00:000
-            End Time: 11:59:59:999
+            Start Time: 00:00:00:000
+            End Time: 23:59:59:999
             Contacted Replicas
             Failed to Contact Replicas
             Regions Contacted
@@ -707,8 +623,7 @@
     }
   },
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start datetime": "0544-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
     "Client Side Request Stats": {
@@ -774,7 +689,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
         (
             [System Info]
             {"systemHistory":[{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":42.000,"memory":1000.000,"threadInfo":{"isThreadStarving":"no info"},"numberOfOpenTcpConnection":0},{"dateUtc":"0001-01-01T00:00:00.0000000","cpu":23.000,"memory":9000.000,"threadInfo":{"isThreadStarving":"no info"},"numberOfOpenTcpConnection":0}]}
@@ -783,8 +698,7 @@
       <Json><![CDATA[{
   "Summary": {},
   "name": "Trace For Baseline Testing",
-  "id": "00000000-0000-0000-0000-000000000000",
-  "start time": "12:00:00:000",
+  "start datetime": "0544-01-01T00:00:00Z",
   "duration in milliseconds": 0,
   "data": {
     "System Info": {

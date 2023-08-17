@@ -246,11 +246,13 @@ namespace Microsoft.Azure.Cosmos
         {
             return new FeedIteratorCore(
                clientContext: this.ClientContext,
-               this.LinkUri,
+               resourceLink: this.LinkUri,
                resourceType: ResourceType.Permission,
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
-               options: requestOptions);
+               options: requestOptions,
+               container: null,
+               databaseId: this.Database.Id);
         }
 
         public override FeedIterator<T> GetPermissionQueryIterator<T>(string queryText = null,

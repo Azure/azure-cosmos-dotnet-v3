@@ -4,35 +4,75 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
-    using global::Azure.Core.Pipeline;
+    using System;
+    using System.Diagnostics;
+    using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Tracing;
 
+    /// <summary>
+    /// This class is used to generate Activities with Azure.Cosmos.Operation Source Name
+    /// </summary>
     internal static class OpenTelemetryRecorderFactory
     {
-        private static DiagnosticScopeFactory ScopeFactory { get; set; } 
+        /// <summary>
+        /// Singleton to make sure we only have one instance of the DiagnosticScopeFactory and pattern matching of listener happens only once
+        /// </summary>
+        private static readonly Lazy<DiagnosticScopeFactory> LazyOperationScopeFactory = new Lazy<DiagnosticScopeFactory>(
+            valueFactory: () => new DiagnosticScopeFactory(
+                           clientNamespace: $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.{OpenTelemetryAttributeKeys.OperationPrefix}",
+                           resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
+                           isActivityEnabled: true,
+                           suppressNestedClientActivities: true),
+            isThreadSafe: true);
 
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName, 
+        private static readonly Lazy<DiagnosticScopeFactory> LazyNetworkScopeFactory = new Lazy<DiagnosticScopeFactory>(
+            valueFactory: () => new DiagnosticScopeFactory(
+                           clientNamespace: $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.{OpenTelemetryAttributeKeys.NetworkLevelPrefix}",
+                           resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
+                           isActivityEnabled: true,
+                           suppressNestedClientActivities: true),
+            isThreadSafe: true);
+
+        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
+            string containerName,
+            string databaseName,
+            Documents.OperationType operationType,
             RequestOptions requestOptions, 
+            ITrace trace,
             CosmosClientContext clientContext)
         {
-            if (clientContext is { ClientOptions.EnableDistributedTracing: true })
+            OpenTelemetryCoreRecorder openTelemetryRecorder = default;
+            if (clientContext is { ClientOptions.IsDistributedTracingEnabled: true })
             {
-                ScopeFactory = new DiagnosticScopeFactory(clientNamespace: OpenTelemetryAttributeKeys.DiagnosticNamespace,
-                    resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
-                    isActivityEnabled: true);
-                DiagnosticScope scope = OpenTelemetryRecorderFactory
-                    .ScopeFactory
-                    .CreateScope($"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}");
+                // If there is no source then it will return default otherwise a valid diagnostic scope
+                DiagnosticScope scope = LazyOperationScopeFactory.Value.CreateScope(name: operationName,
+                                 kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
 
+                // Record values only when we have a valid Diagnostic Scope
                 if (scope.IsEnabled)
                 {
-                    return new OpenTelemetryCoreRecorder(
-                        scope: scope,
+                    scope.SetDisplayName($"{operationName} {containerName}");
+
+                    openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateOperationLevelParentActivity(
+                        operationScope: scope,
+                        operationName: operationName,
+                        containerName: containerName,
+                        databaseName: databaseName,
+                        operationType: operationType,
                         clientContext: clientContext,
                         config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
                 }
-            }
+#if !INTERNAL
+                else if (Activity.Current is null)
+                {
+                    DiagnosticScope requestScope = LazyNetworkScopeFactory.Value.CreateScope(name: operationName);
 
-            return default;
+                    openTelemetryRecorder = requestScope.IsEnabled ? OpenTelemetryCoreRecorder.CreateNetworkLevelParentActivity(networkScope: requestScope) : OpenTelemetryCoreRecorder.CreateParentActivity(operationName);
+                }
+#endif
+                trace.AddDatum("DistributedTraceId", Activity.Current?.TraceId);
+            }
+            return openTelemetryRecorder;
         }
     }
 }

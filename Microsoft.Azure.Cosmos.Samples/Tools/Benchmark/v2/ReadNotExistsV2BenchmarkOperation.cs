@@ -22,6 +22,8 @@ namespace CosmosBenchmark
 
         private readonly DocumentClient documentClient;
 
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
+
         public ReadNotExistsV2BenchmarkOperation(
             DocumentClient documentClient,
             string dbName,
@@ -52,7 +54,7 @@ namespace CosmosBenchmark
             {
                 if (dce.StatusCode != HttpStatusCode.NotFound)
                 {
-                    throw new Exception($"ReadItem failed wth {dce?.StatusCode} {dce?.ToString()}");
+                    throw new Exception($"ReadItem failed with {dce?.StatusCode} {dce?.ToString()}");
                 }
 
                 return new OperationResult()

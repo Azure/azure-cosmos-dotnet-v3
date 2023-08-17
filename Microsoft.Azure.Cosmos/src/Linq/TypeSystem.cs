@@ -30,6 +30,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             
             string memberName = null;
+
+            // Check if Newtonsoft JsonExtensionDataAttribute is present on the member, if so, return empty member name.
+            JsonExtensionDataAttribute jsonExtensionDataAttribute = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(true);
+            if (jsonExtensionDataAttribute != null && jsonExtensionDataAttribute.ReadData)
+            {
+                return null;
+            }
+
             // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
             // So we check for JsonPropertyAttribute first.
             JsonPropertyAttribute jsonPropertyAttribute = memberInfo.GetCustomAttribute<JsonPropertyAttribute>(true);

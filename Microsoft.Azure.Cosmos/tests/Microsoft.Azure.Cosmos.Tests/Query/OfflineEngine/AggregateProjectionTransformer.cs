@@ -79,6 +79,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     this.dataSource = dataSource;
                 }
 
+                public override SqlScalarExpression Visit(SqlAllScalarExpression sqlAllScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return sqlAllScalarExpression;
+                }
+
                 public override SqlScalarExpression Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
                 {
                     List<SqlScalarExpression> items = new List<SqlScalarExpression>();
@@ -132,6 +138,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 {
                     // No need to worry about aggregates within the subquery (they will recursively get rewritten).
                     return sqlExistsScalarExpression;
+                }
+
+                public override SqlScalarExpression Visit(SqlFirstScalarExpression sqlFirstScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return sqlFirstScalarExpression;
                 }
 
                 public override SqlScalarExpression Visit(SqlFunctionCallScalarExpression sqlFunctionCallScalarExpression)
@@ -285,6 +297,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         sqlInScalarExpression.Needle.Accept(this),
                         sqlInScalarExpression.Not,
                         items);
+                }
+
+                public override SqlScalarExpression Visit(SqlLastScalarExpression sqlLastScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return sqlLastScalarExpression;
                 }
 
                 public override SqlScalarExpression Visit(SqlLikeScalarExpression sqlLikeScalarExpression)

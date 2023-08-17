@@ -60,6 +60,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<TResult> OperationHelperAsync<TResult>(
             string operationName,
+            string containerName,
+            string databaseName,
+            OperationType operationType,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
             Func<TResult, OpenTelemetryAttributes> openTelemetry = null,
@@ -115,6 +118,18 @@ namespace Microsoft.Azure.Cosmos
            Func<ResponseMessage, T> responseCreator,
            ITrace trace,
            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Initializes the given container by establishing the
+        /// Rntbd connection to all of the backend replica nodes.
+        /// </summary>
+        /// <param name="databaseId">A string containing the cosmos database identifier.</param>
+        /// <param name="containerLinkUri">A string containing the cosmos container link uri.</param>
+        /// <param name="cancellationToken">An instance of the <see cref="CancellationToken"/>.</param>
+        internal abstract Task InitializeContainerUsingRntbdAsync(
+            string databaseId,
+            string containerLinkUri,
+            CancellationToken cancellationToken);
 
         public abstract void Dispose();
     }

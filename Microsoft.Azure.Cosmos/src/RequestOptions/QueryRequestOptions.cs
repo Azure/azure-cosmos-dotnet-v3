@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.ComponentModel;
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
@@ -42,6 +44,22 @@ namespace Microsoft.Azure.Cosmos
         /// The option to enable low-precision order by.
         /// </value>
         public bool? EnableLowPrecisionOrderBy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the option for customers to opt in for direct (optimistic) execution of the query.
+        /// </summary>
+        /// <value>
+        /// Direct (optimistic) execution offers improved performance for several kinds of queries such as a single partition streaming query.
+        /// </value>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool EnableOptimisticDirectExecution { get; set; }
+#if PREVIEW 
+        = true;
+#endif
 
         /// <summary>
         /// Gets or sets the maximum number of items that can be buffered client side during 
@@ -172,6 +190,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosSerializationFormatOptions CosmosSerializationFormatOptions { get; set; }
 
+        internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
+
         internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
 
         internal bool? ReturnResultsInDeterministicOrder { get; set; }
@@ -224,11 +244,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, this.ResponseContinuationTokenLimitInKb.ToString());
             }
-
-            if (this.CosmosSerializationFormatOptions != null)
-            {
-                request.Headers.CosmosMessageHeaders.ContentSerializationFormat = this.CosmosSerializationFormatOptions.ContentSerializationFormat;
-            }
+            
+            request.Headers.CosmosMessageHeaders.SupportedSerializationFormats = this.SupportedSerializationFormats?.ToString() ?? DocumentQueryExecutionContextBase.DefaultSupportedSerializationFormats;
 
             if (this.StartId != null)
             {
@@ -256,6 +273,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);
+            DedicatedGatewayRequestOptions.PopulateBypassIntegratedCacheOption(this.DedicatedGatewayRequestOptions, request);
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
 

@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     return throttledResponse;
                 },
-                this.cosmosClient.DocumentClient.sessionContainer);
+                this.GetClient().DocumentClient.sessionContainer);
 
             try
             {
@@ -366,7 +366,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new QueryRequestOptions
                     {
                         ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
-                        PartitionKey = new Cosmos.PartitionKey(pk)
+                        PartitionKey = new Cosmos.PartitionKey(pk),
+#if PREVIEW
+                        EnableOptimisticDirectExecution = false
+#endif
                     });
                 int itemCountOldContainer = 0;
                 while (queryIteratorOldContainer.HasMoreResults)

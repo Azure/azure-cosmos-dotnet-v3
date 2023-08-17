@@ -116,17 +116,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             string outputText =
                 Regex.Replace(
                     Regex.Replace(
-                        Regex.Replace(
                             File.ReadAllText(outputPath), @"\s+", string.Empty), 
-                    @"<ATTRIBUTE-VALUE>[\w\W]*?</ATTRIBUTE-VALUE>", string.Empty),
                 @"<OPERATION>[\w\W]*?</OPERATION>", string.Empty); // in changefeed test in was changing
 
             string baselineText =
                 Regex.Replace(
                     Regex.Replace(
-                        Regex.Replace(
                             File.ReadAllText(baselinePath), @"\s+", string.Empty), 
-                    @"<ATTRIBUTE-VALUE>[\w\W]*?</ATTRIBUTE-VALUE>", string.Empty),
                 @"<OPERATION>[\w\W]*?</OPERATION>", string.Empty);
 
             int commonPrefixLength = 0;
@@ -157,8 +153,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                     Please run the ..\azure-cosmos-dotnet-v3\UpdateContracts.ps1 script to update the baselines.
                     Expected: {baselineTextSuffix},
                     Actual:   {outputTextSuffix},
-                    OutputPath: {outputPath},
-                    BaselinePath: {baselinePath}");
+                    OutputPath: {Path.GetFullPath(outputPath)},
+                    BaselinePath: {Path.GetFullPath(baselinePath)}");
         }
 
         /// <summary>

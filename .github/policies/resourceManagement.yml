@@ -1,0 +1,57 @@
+id: 
+name: GitOps.PullRequestIssueManagement
+description: GitOps.PullRequestIssueManagement primitive
+owner: 
+resource: repository
+disabled: false
+where: 
+configuration:
+  resourceManagementConfiguration:
+    scheduledSearches:
+    - description: 
+      frequencies:
+      - weekday:
+          day: Monday
+          time: 9:0
+      filters:
+      - isOpen
+      - isIssue
+      - hasLabel:
+          label: needs-more-information
+      - noActivitySince:
+          days: 14
+      - isNotAssigned
+      actions:
+      - addReply:
+          reply: '@${issueAuthor} this issue requires more information for the team to be able to help. In case this information is available, please add it and re-open the Issue.'
+      - closeIssue
+    eventResponderTasks:
+    - if:
+      - payloadType: Issues
+      - not: isAssignedToSomeone
+      - isAction:
+          action: Opened
+      - not:
+          hasLabel:
+            label: needs-investigation
+      then:
+      - addLabel:
+          label: needs-investigation
+      description: 
+    - if:
+      - payloadType: Pull_Request
+      - hasLabel:
+          label: auto-merge
+      then:
+      - enableAutoMerge:
+          mergeMethod: Squash
+      description: 
+    - if:
+      - payloadType: Pull_Request
+      - labelRemoved:
+          label: auto-merge
+      then:
+      - disableAutoMerge
+      description: 
+onFailure: 
+onSuccess: 

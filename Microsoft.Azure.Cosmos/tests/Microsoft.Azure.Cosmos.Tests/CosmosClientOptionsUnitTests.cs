@@ -81,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.HttpClientFactory);
             Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
+            Assert.IsFalse(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -97,6 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(policy.HttpClientFactory);
             Assert.AreNotEqual(Cosmos.ConsistencyLevel.Session, clientOptions.ConsistencyLevel);
             Assert.IsFalse(policy.EnablePartitionLevelFailover);
+            Assert.IsFalse(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
@@ -112,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
+            clientOptions.EnableAdvancedReplicaSelectionForTcp = true;
 
             //Verify all the values are updated
             Assert.AreEqual(region, clientOptions.ApplicationRegion);
@@ -131,6 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
+            Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue && clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -145,7 +149,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
             Assert.AreEqual((Documents.ConsistencyLevel)consistencyLevel, clientOptions.GetDocumentsConsistencyLevel());
             Assert.IsTrue(policy.EnablePartitionLevelFailover);
-            
+            Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
+
             IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
             //Verify Direct Mode settings
             cosmosClientBuilder = new CosmosClientBuilder(
@@ -159,9 +164,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .WithDistributingTracing(new DistributedTracingOptions
+                .WithDistributedTracingOptions(new DistributedTracingOptions
                 {
-                    DiagnosticsLatencyThreshold = TimeSpan.FromMilliseconds(100)
+                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(100)
                 });
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -174,8 +179,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
-            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.DistributedTracingOptions.DiagnosticsLatencyThreshold);
-            Assert.IsFalse(clientOptions.EnableDistributedTracing);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.DistributedTracingOptions.LatencyThresholdForDiagnosticEvent);
+            Assert.IsTrue(clientOptions.IsDistributedTracingEnabled);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -398,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClient cosmosClient = cosmosClientBuilder.Build();
             CosmosHttpClient cosmosHttpClient = cosmosClient.DocumentClient.httpClient;
-            HttpClientHandler handler = (HttpClientHandler)cosmosHttpClient.HttpMessageHandler;
+            SocketsHttpHandler handler = (SocketsHttpHandler)cosmosHttpClient.HttpMessageHandler;
             
             Assert.IsTrue(object.ReferenceEquals(webProxy, handler.Proxy));
         }
@@ -505,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     authKeyOrResourceToken: MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey)
                     .WithApplicationRegion(notAValidAzureRegion);
 
-                ArgumentException argumentException = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.Build(new MockDocumentClient()));
+                ArgumentException argumentException = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.Build());
 
                 Assert.IsTrue(argumentException.Message.Contains(notAValidAzureRegion), $"Expected error message to contain {notAValidAzureRegion} but got: {argumentException.Message}");
             }
@@ -537,6 +542,33 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
             Assert.IsTrue(cosmosClientOptions.EnableUpgradeConsistencyToLocalQuorum);
+        }
+
+        [TestMethod]
+        public void InvalidApplicationNameCatchTest()
+        {
+
+            string[] illegalChars = new string[] { "<", ">", "\"", "{", "}", "\\", "[", "]", ";", ":", "@", "=", "(", ")", "," };
+            string baseName = "illegal";
+
+            foreach (string illegal in illegalChars)
+            {
+                Assert.ThrowsException<ArgumentException>(() => new CosmosClientOptions
+                {
+                    ApplicationName = baseName + illegal
+                });
+
+
+                Assert.ThrowsException<ArgumentException>(() => new CosmosClientOptions
+                {
+                    ApplicationName = illegal + baseName
+                });
+
+                Assert.ThrowsException<ArgumentException>(() => new CosmosClientOptions
+                {
+                    ApplicationName = illegal
+                });
+            }
         }
 
         private class TestWebProxy : IWebProxy

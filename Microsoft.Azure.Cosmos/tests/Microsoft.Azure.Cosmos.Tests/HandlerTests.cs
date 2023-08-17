@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -52,8 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void HandlerOrderIfTelemetryIsEnabled()
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
-            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(enableTelemetry: true);
 
             Type[] types = new Type[]
             {
@@ -67,12 +67,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestHandler handler = client.RequestHandler;
             foreach (Type type in types)
             {
-                Assert.IsTrue(type.Equals(handler.GetType()));
+                Assert.IsTrue(type.Equals(handler.GetType()), $"{type} is not equal to {handler.GetType()}");
                 handler = handler.InnerHandler;
             }
             Assert.IsNull(handler);
-
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
         }
 
         [TestMethod]
@@ -439,6 +437,153 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             Assert.IsTrue(response.ErrorMessage.Contains(errorMessage));
+        }
+
+        [TestMethod]
+        public async Task TestResolveFeedRangeBasedOnPrefixWithFeedRangePartitionKeyAndMultiHashContainerAsync()
+        {
+            dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond", state = "WA", zipCode = "98502" };
+            Cosmos.PartitionKey partitionKey = new PartitionKeyBuilder()
+                .Add(item.city)
+                .Add(item.state)
+                .Build();
+
+            await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangeEpk>(
+                partitionKeyDefinition: new PartitionKeyDefinition()
+                {
+                    Kind = PartitionKind.MultiHash,
+                    Paths = new Collection<string>(new List<string>() { "/city", "/state", "/zipCode" })
+                },
+                inputFeedRange: new FeedRangePartitionKey(partitionKey),
+                expectedFeedRange: new FeedRangeEpk(new Documents.Routing.Range<string>(
+                    min: "01620B162169497AFD85FA66E99F73760845FB119899DE50766A2C4CEFC2FA73",
+                    max: "01620B162169497AFD85FA66E99F73760845FB119899DE50766A2C4CEFC2FA73FF",
+                    isMinInclusive: true,
+                    isMaxInclusive: default)),
+                getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Once());
+        }
+
+        [TestMethod]
+        public async Task TestResolveFeedRangeBasedOnPrefixWithFeedRangePartitionKeyOnHashContainerAsync()
+        {
+            dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond" };
+            Cosmos.PartitionKey partitionKey = new PartitionKeyBuilder()
+                .Add(item.city)
+                .Build();
+            
+            await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangePartitionKey>(
+                partitionKeyDefinition: new PartitionKeyDefinition()
+                {
+                    Kind = PartitionKind.Hash,
+                    Paths = new Collection<string>(new List<string>() { "/city" })
+                },
+                inputFeedRange: new FeedRangePartitionKey(partitionKey),
+                expectedFeedRange: new FeedRangePartitionKey(partitionKey),
+                getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Once());
+        }
+
+        [TestMethod]
+        public async Task TestResolveFeedRangeBasedOnPrefixWithFeedRangePartitionKeyOnRangeContainerAsync()
+        {
+            dynamic item = new { id = Guid.NewGuid().ToString(), city = "Redmond" };
+            Cosmos.PartitionKey partitionKey = new PartitionKeyBuilder()
+                .Add(item.city)
+                .Build();
+
+            await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangePartitionKey>(
+                partitionKeyDefinition: new PartitionKeyDefinition()
+                {
+                    Kind = PartitionKind.Range,
+                    Paths = new Collection<string>(new List<string>() { "/city" })
+                },
+                inputFeedRange: new FeedRangePartitionKey(partitionKey),
+                expectedFeedRange: new FeedRangePartitionKey(partitionKey),
+                getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Once());
+        }
+
+        [TestMethod]
+        public async Task TestResolveFeedRangeBasedOnPrefixWithFeedRangeEpkOnMultiHashContainerAsync()
+        {
+            await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangeEpk>(
+                partitionKeyDefinition: new PartitionKeyDefinition()
+                {
+                    Kind = PartitionKind.MultiHash,
+                    Paths = new Collection<string>(new List<string>() { "/city", "/state", "/zipCode" })
+                },
+                inputFeedRange: FeedRangeEpk.FullRange,
+                expectedFeedRange: FeedRangeEpk.FullRange,
+                getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Never());
+        }
+
+        [TestMethod]
+        public async Task TestResolveFeedRangeBasedOnPrefixWithFeedRangeEpkOnHashContainerAsync()
+        {
+            await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangeEpk>(
+                partitionKeyDefinition: new PartitionKeyDefinition()
+                {
+                    Kind = PartitionKind.Hash,
+                    Paths = new Collection<string>(new List<string>() { "/city" })
+                },
+                inputFeedRange: FeedRangeEpk.FullRange,
+                expectedFeedRange: FeedRangeEpk.FullRange,
+                getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Never());
+        }
+
+        [TestMethod]
+        public async Task TestResolveFeedRangeBasedOnPrefixWithFeedRangeEpkOnRangeContainerAsync()
+        {
+            await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangeEpk>(
+                partitionKeyDefinition: new PartitionKeyDefinition()
+                {
+                    Kind = PartitionKind.Range,
+                    Paths = new Collection<string>(new List<string>() { "/city" })
+                },
+                inputFeedRange: FeedRangeEpk.FullRange,
+                expectedFeedRange: FeedRangeEpk.FullRange,
+                getPartitionKeyDefinitionAsyncExecutions: Moq.Times.Never());
+        }
+
+        private static async Task TestResolveFeedRangeBasedOnPrefixAsync<TFeedRange>(
+            PartitionKeyDefinition partitionKeyDefinition,
+            FeedRangeInternal inputFeedRange,
+            FeedRangeInternal expectedFeedRange,
+            Moq.Times getPartitionKeyDefinitionAsyncExecutions)
+            where TFeedRange : FeedRangeInternal
+        {
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
+                customizeClientBuilder: builder => builder.WithConsistencyLevel(Cosmos.ConsistencyLevel.Eventual));
+
+            Moq.Mock<ContainerInternal> mockContainer = MockCosmosUtil.CreateMockContainer(
+                dbName: Guid.NewGuid().ToString(),
+                containerName: Guid.NewGuid().ToString());
+
+            CancellationToken cancellationToken = CancellationToken.None;
+
+            mockContainer
+                .Setup(container => container.GetPartitionKeyDefinitionAsync(cancellationToken))
+                .Returns(Task.FromResult(partitionKeyDefinition));
+
+            RequestInvokerHandler invoker = new(
+                client: client,
+                requestedClientConsistencyLevel: default);
+
+            Cosmos.FeedRange feedRange = await RequestInvokerHandler.ResolveFeedRangeBasedOnPrefixContainerAsync(
+                feedRange: inputFeedRange,
+                cosmosContainerCore: mockContainer.Object,
+                cancellationToken: cancellationToken);
+
+            mockContainer.Verify(x => x.GetPartitionKeyDefinitionAsync(Moq.It.IsAny<CancellationToken>()), getPartitionKeyDefinitionAsyncExecutions);
+
+            Assert.IsNotNull(feedRange, "FeedRange did not initialize");
+            
+            Assert.IsInstanceOfType(
+                value: feedRange,
+                expectedType: typeof(TFeedRange));
+
+            Assert.AreEqual(
+                expected: expectedFeedRange.ToJsonString(),
+                actual: feedRange.ToJsonString());
         }
 
         private class SomePayload
