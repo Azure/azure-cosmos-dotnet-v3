@@ -107,7 +107,7 @@ namespace CosmosBenchmark
 
             this.successOperationCounter = meter.CreateCounter<long>($"{prefix}OperationSuccess");
             this.failureOperationCounter = meter.CreateCounter<long>($"{prefix}OperationFailure");
-            
+
             this.latencyInMsMetricNameGauge = this.meter.CreateObservableGauge($"{prefix}OperationLatencyInMs",
                 () => new Measurement<double>(this.latencyInMs));
 
@@ -144,12 +144,12 @@ namespace CosmosBenchmark
         public void RecordSuccessOpLatencyAndRps(
             TimeSpan timeSpan)
         {
-            this.rps = 1000 / timeSpan.Milliseconds;
+            this.rps = timeSpan.Milliseconds != 0 ? 1000 / timeSpan.Milliseconds : 0;
             this.latencyInMs = timeSpan.Milliseconds;
             this.rpsMetricNameHistogram.Record(this.rps);
             this.operationLatencyHistogram.Record(this.latencyInMs);
         }
-        
+
         /// <summary>
         /// Records failed operation latency in milliseconds.
         /// </summary>
@@ -157,7 +157,7 @@ namespace CosmosBenchmark
         public void RecordFailedOpLatencyAndRps(
             TimeSpan timeSpan)
         {
-            this.rpsFailed = 1000 / timeSpan.Milliseconds;
+            this.rpsFailed = timeSpan.Milliseconds != 0 ? 1000 / timeSpan.Milliseconds : 0;
             this.latencyFailedInMs = timeSpan.Milliseconds;
             this.rpsFailedMetricNameHistogram.Record(this.rpsFailed);
             this.operationFailedLatencyHistogram.Record(this.latencyFailedInMs);
