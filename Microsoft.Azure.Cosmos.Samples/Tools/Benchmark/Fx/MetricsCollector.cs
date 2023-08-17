@@ -140,12 +140,12 @@ namespace CosmosBenchmark
         /// <summary>
         /// Records success operation latency in milliseconds.
         /// </summary>
-        /// <param name="milliseconds">The number of milliseconds to record.</param>
+        /// <param name="timeSpan">The number of milliseconds to record.</param>
         public void RecordSuccessOpLatencyAndRps(
             TimeSpan timeSpan)
         {
-            this.rps = timeSpan.Milliseconds != 0 ? 1000 / timeSpan.Milliseconds : 0;
-            this.latencyInMs = timeSpan.Milliseconds;
+            this.rps = timeSpan.TotalMilliseconds != 0 ? 1000 / timeSpan.TotalMilliseconds : 0;
+            this.latencyInMs = timeSpan.TotalMilliseconds;
             this.rpsMetricNameHistogram.Record(this.rps);
             this.operationLatencyHistogram.Record(this.latencyInMs);
         }
@@ -153,12 +153,12 @@ namespace CosmosBenchmark
         /// <summary>
         /// Records failed operation latency in milliseconds.
         /// </summary>
-        /// <param name="milliseconds">The number of milliseconds to record.</param>
+        /// <param name="timeSpan">The number of milliseconds to record.</param>
         public void RecordFailedOpLatencyAndRps(
             TimeSpan timeSpan)
         {
-            this.rpsFailed = timeSpan.Milliseconds != 0 ? 1000 / timeSpan.Milliseconds : 0;
-            this.latencyFailedInMs = timeSpan.Milliseconds;
+            this.rpsFailed = timeSpan.TotalMilliseconds != 0 ? 1000 / timeSpan.TotalMilliseconds : 0;
+            this.latencyFailedInMs = timeSpan.TotalMilliseconds;
             this.rpsFailedMetricNameHistogram.Record(this.rpsFailed);
             this.operationFailedLatencyHistogram.Record(this.latencyFailedInMs);
         }

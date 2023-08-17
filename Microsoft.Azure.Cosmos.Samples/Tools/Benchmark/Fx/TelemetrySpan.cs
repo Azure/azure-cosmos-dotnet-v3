@@ -63,11 +63,11 @@ namespace CosmosBenchmark
 
                     if(this.isFailed)
                     {
-                        this.recordSuccessOpLatencyAction?.Invoke(TimeSpan.FromMilliseconds(this.stopwatch.Elapsed.TotalMilliseconds));
+                        this.recordSuccessOpLatencyAction?.Invoke(this.stopwatch.Elapsed);
                     }
                     else
                     {
-                        this.recordSuccessOpLatencyAction?.Invoke(TimeSpan.FromMilliseconds(this.stopwatch.Elapsed.TotalMilliseconds));
+                        this.recordSuccessOpLatencyAction?.Invoke(this.stopwatch.Elapsed);
 
                     }
                 }
