@@ -130,7 +130,7 @@ namespace CosmosBenchmark.Fx
             }
             catch (Exception ex)
             {
-                Utility.TeeTraceInformation($"An exception ocured while writing diagnostic data to the file. {ex.Message}");
+                Utility.TraceError("An exception ocured while writing diagnostic data to the file", ex);
             }
         }
 
@@ -163,7 +163,7 @@ namespace CosmosBenchmark.Fx
                 }
                 catch (Exception ex)
                 {
-                    Utility.TeeTraceInformation($"An exception ocured while uploading file {this.WriterFileName} to the blob storage. {ex.Message}");
+                    Utility.TraceError($"An exception ocured while uploading file {this.WriterFileName} to the blob storage", ex);
                 }
             }
         }
@@ -182,7 +182,7 @@ namespace CosmosBenchmark.Fx
                 }
                 catch (Exception ex)
                 {
-                    Utility.TeeTraceInformation($"An exception ocured while closing StreamWriters. {ex.Message}");
+                    Utility.TraceError("An exception ocured while closing StreamWriters", ex);
                 }
             });
         }
@@ -198,7 +198,7 @@ namespace CosmosBenchmark.Fx
             }
             catch (Exception ex)
             {
-                Utility.TeeTraceInformation($"An exception ocured while closing StreamWriters. {ex.Message}");
+                Utility.TraceError("An exception ocured while closing StreamWriters.", ex);
             }
         }
 
