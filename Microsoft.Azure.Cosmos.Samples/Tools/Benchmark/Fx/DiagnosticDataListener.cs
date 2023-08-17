@@ -57,7 +57,7 @@ namespace CosmosBenchmark.Fx
         /// <summary>
         /// Current diagnostics optput StreamWriter
         /// </summary>
-        private volatile StreamWriter Writer;
+        private volatile TextWriter Writer;
 
         /// <summary>
         /// Current diagnostics optput filename
@@ -69,7 +69,7 @@ namespace CosmosBenchmark.Fx
         /// should be stored for later closing, as they may be 
         /// concurrently accessed by other threads for appending to a file.
         /// </summary>
-        private readonly List<StreamWriter> StreamWriters = new List<StreamWriter>();
+        private readonly List<TextWriter> TextWriters = new List<TextWriter>();
 
         /// <summary>
         /// Represents a class that performs writing diagnostic data to a file and uploading it to Azure Blob Storage
@@ -79,7 +79,7 @@ namespace CosmosBenchmark.Fx
             this.config = config;
             this.EnableEvents(BenchmarkLatencyEventSource.Instance, EventLevel.Informational);
             this.BlobContainerClient = new Lazy<BlobContainerClient>(() => this.GetBlobServiceClient());
-            this.Writer = new StreamWriter(DiagnosticsFileName, true);
+            this.Writer = TextWriter.Synchronized(File.AppendText(DiagnosticsFileName));
             this.WriterFileName = DiagnosticsFileName;
 
             /// <summary>
@@ -102,9 +102,9 @@ namespace CosmosBenchmark.Fx
 
                                 File.Create(newFilePath).Close();
 
-                                this.StreamWriters.Add(this.Writer);
+                                this.TextWriters.Add(this.Writer);
 
-                                this.Writer = new StreamWriter($"{newFilePath}", true);
+                                this.Writer = TextWriter.Synchronized(File.AppendText($"{newFilePath}"));
                                 this.WriterFileName = newFilePath;
                                 this.filesCount++;
 
@@ -183,7 +183,7 @@ namespace CosmosBenchmark.Fx
         private void CloseStreamWriters()
         {
 
-            this.StreamWriters.ForEach(t =>
+            this.TextWriters.ForEach(t =>
             {
                 try
                 {
