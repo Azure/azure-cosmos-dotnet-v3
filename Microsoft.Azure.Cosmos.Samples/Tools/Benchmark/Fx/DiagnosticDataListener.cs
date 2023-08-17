@@ -89,30 +89,37 @@ namespace CosmosBenchmark.Fx
             {
                 while (true)
                 {
-                    if (File.Exists(this.WriterFileName))
+                    try
                     {
-                        FileInfo fileInfo = new FileInfo(this.WriterFileName);
-                        long fileSize = fileInfo.Length;
-
-                        if (fileSize > this.MaxDIagnosticFileSize)
+                        if (File.Exists(this.WriterFileName))
                         {
-                            string newFilePath = Path.Combine(fileInfo.DirectoryName, $"{DiagnosticsFileName}-{this.filesCount}");
+                            FileInfo fileInfo = new FileInfo(this.WriterFileName);
+                            long fileSize = fileInfo.Length;
 
-                            File.Create(newFilePath).Close();
+                            if (fileSize > this.MaxDIagnosticFileSize)
+                            {
+                                string newFilePath = Path.Combine(fileInfo.DirectoryName, $"{DiagnosticsFileName}-{this.filesCount}");
 
-                            this.StreamWriters.Add(this.Writer);
+                                File.Create(newFilePath).Close();
 
-                            this.Writer = new StreamWriter($"{newFilePath}", true);
-                            this.WriterFileName = newFilePath;
-                            this.filesCount++;
+                                this.StreamWriters.Add(this.Writer);
 
-                            Utility.TeeTraceInformation("File size exceeded 100MB. Created a new one.");
+                                this.Writer = new StreamWriter($"{newFilePath}", true);
+                                this.WriterFileName = newFilePath;
+                                this.filesCount++;
+
+                                Utility.TeeTraceInformation("File size exceeded 100MB. Created a new one.");
+                            }
                         }
+
+                        await Task.Delay(this.FileSizeCheckInterval);
+
+                        this.CloseStreamWriters();
                     }
-
-                    await Task.Delay(this.FileSizeCheckInterval);
-
-                    this.CloseStreamWriters();
+                    catch (Exception ex)
+                    {
+                        Utility.TraceError("Exception in file size check loop", ex);
+                    }
                 }
             });
         }
