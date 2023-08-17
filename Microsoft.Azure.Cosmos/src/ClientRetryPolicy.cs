@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
-                if (this.globalEndpointManager.IsMultimasterMetadataWriteRequest(this.documentServiceRequest))
+                if (this.globalEndpointManager.IsSingleOrMultimasterMetadataWriteRequest(this.documentServiceRequest))
                 {
                     bool forceRefresh = false;
 

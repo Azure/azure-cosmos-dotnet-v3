@@ -214,9 +214,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                 request.ResourceType != ResourceType.Document;
    
         }
-        public bool IsMultimasterMetadataWriteRequest(DocumentServiceRequest request)
+        public bool IsSingleOrMultimasterMetadataWriteRequest(DocumentServiceRequest request)
         {
-            return !request.IsReadOnlyRequest && this.locationInfo.AvailableWriteLocations.Count > 1
+            return !request.IsReadOnlyRequest && this.locationInfo.AvailableWriteLocations.Count >= 1
                 && this.IsMetaData(request) 
                 && this.CanUseMultipleWriteLocations();
 
