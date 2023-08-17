@@ -18,7 +18,7 @@ namespace CosmosBenchmark
 
         public static void TraceError(string payload, Exception e)
         {
-            Console.WriteLine($"{payload}: {e.ToString}");
+            Console.WriteLine($"{payload}: {e.Message} {e.StackTrace}");
             Trace.TraceError(payload);
         }
 

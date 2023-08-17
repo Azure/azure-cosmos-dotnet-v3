@@ -137,8 +137,6 @@ namespace CosmosBenchmark.Fx
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.StackTrace);
-                Console.WriteLine(ex.ToString());
                 Utility.TraceError("An exception ocured while writing diagnostic data to the file", ex);
             }
         }
