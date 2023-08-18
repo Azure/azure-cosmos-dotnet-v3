@@ -50,8 +50,9 @@ namespace CosmosBenchmark
                 int currentIterationCount = 0;
                 do
                 {
+                    Console.WriteLine("metricsCollectorProvider.GetMetricsCollector .."); // TODO REMOVE
                     IMetricsCollector metricsCollector = metricsCollectorProvider.GetMetricsCollector(this.operation, benchmarkConfig);
-
+                    Console.WriteLine("metricsCollectorProvider.GetMetricsCollector Finish"); // TODO REMOVE
                     OperationResult? operationResult = null;
 
                     await this.operation.PrepareAsync();
@@ -86,7 +87,9 @@ namespace CosmosBenchmark
                             }
                             telemetrySpan.MarkFailed();
 
+                            Console.WriteLine("metricsCollector.CollectMetricsOnFailure().."); // TODO REMOVE
                             metricsCollector.CollectMetricsOnFailure();
+                            Console.WriteLine("metricsCollector.CollectMetricsOnFailure() Finish"); // TODO REMOVE
 
                             // failure case
                             this.FailedOperationCount++;
@@ -120,7 +123,9 @@ namespace CosmosBenchmark
             }
             finally
             {
+                Console.WriteLine($"Completion Callback.."); // TODO REMOVE
                 completionCallback();
+                Console.WriteLine($"Completion Callback Finish"); // TODO REMOVE
             }
         }
     }
