@@ -6,12 +6,16 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Runtime;
     using CommandLine;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// Represents Benchmark Configuration
+    /// </summary>
     public class BenchmarkConfig
     {
         private static readonly string UserAgentSuffix = "cosmosdbdotnetbenchmark";
@@ -122,6 +126,12 @@ namespace CosmosBenchmark
 
         [Option(Required = false, HelpText = "Container to publish results to")]
         public string ResultsContainer { get; set; } = "runsummary";
+
+        [Option(Required = false, HelpText = "Metrics reporting interval in seconds")]
+        public int MetricsReportingIntervalInSec { get; set; } = 5;
+
+        [Option(Required = false, HelpText = "Application Insights connection string")]
+        public string AppInsightsConnectionString { get; set; }
 
         internal int GetTaskCount(int containerThroughput)
         {
@@ -263,7 +273,7 @@ namespace CosmosBenchmark
             {
                 foreach (Error e in errors)
                 {
-                    Console.WriteLine(e.ToString());
+                    Trace.TraceInformation(e.ToString());
                 }
             }
 
