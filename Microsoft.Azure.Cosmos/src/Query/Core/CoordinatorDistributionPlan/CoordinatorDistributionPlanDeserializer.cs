@@ -11,27 +11,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal class ClientQLDeserializer : JsonConverter
+    internal class CoordinatorDistributionPlanDeserializer
     {
-        public override bool CanConvert(Type objectType)
+        public CoordinatorDistributionPlan DeserializeCoordinatorDistributionPlan(string jsonString)
         {
-            return objectType == typeof(CoordinatorDistributionPlan);
-        }
+            JObject token = JObject.Parse(jsonString);
+            JsonSerializer serializer = new JsonSerializer();
 
-        public override object ReadJson(Newtonsoft.Json.JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
-        {
-            JObject jsonObject = JObject.Load(reader);
             CoordinatorDistributionPlan plan = new CoordinatorDistributionPlan
             {
-                ClientQL = this.DeserializeClientQLEnumerableExpression(jsonObject.GetValue("coordinatorDistributionPlan")["clientQL"], serializer)
+                ClientQL = this.DeserializeClientQLEnumerableExpression(token["coordinatorDistributionPlan"]["clientQL"], serializer)
             };
 
             return plan;
-        }
-
-        public override void WriteJson(Newtonsoft.Json.JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
         }
 
         public ClientQLEnumerableExpression DeserializeClientQLEnumerableExpression(JToken token, JsonSerializer serializer)
