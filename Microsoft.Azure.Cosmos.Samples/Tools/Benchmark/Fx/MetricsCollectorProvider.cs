@@ -46,17 +46,9 @@ namespace CosmosBenchmark
                 while (true)
                 {
                     Console.WriteLine("metricsCollection window .."); // TODO REMOVE
-                    MetricCollectionWindow metricCollectionWindow = this.GetCurrentMetricCollectionWindow(config);
 
-                    // Reset metricCollectionWindow and flush.
-                    if (!metricCollectionWindow.IsValid)
-                    {
-                        this.meterProvider.ForceFlush();
-                        Console.WriteLine("metricsCollection force flush "); // TODO REMOVE
-                     
-                        metricCollectionWindow.Reset(config);
-                        Console.WriteLine("metricsCollection reset"); // TODO REMOVE
-                    }
+                    this.meterProvider.ForceFlush();
+                    Console.WriteLine("metricsCollection force flush "); // TODO REMOVE
 
                     await Task.Delay(TimeSpan.FromSeconds(config.MetricsReportingIntervalInSec));
                 }
