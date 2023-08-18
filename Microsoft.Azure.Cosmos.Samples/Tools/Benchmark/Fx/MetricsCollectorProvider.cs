@@ -47,14 +47,14 @@ namespace CosmosBenchmark
         /// <exception cref="NotSupportedException">Thrown if provided benchmark operation is not covered supported to collect metrics.</exception>
         public IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, BenchmarkConfig config)
         {
-            MetricCollectionWindow metricCollectionWindow = this.metricCollectionWindow;
+           // MetricCollectionWindow metricCollectionWindow = this.metricCollectionWindow;
 
             // Reset metricCollectionWindow and flush.
-            if (!metricCollectionWindow.IsValid)
+/*            if (!metricCollectionWindow.IsValid)
             {
                 this.meterProvider.ForceFlush();
                 metricCollectionWindow.Reset(config);
-            }
+            }*/
 
             return benchmarkOperation.OperationType switch
             {
