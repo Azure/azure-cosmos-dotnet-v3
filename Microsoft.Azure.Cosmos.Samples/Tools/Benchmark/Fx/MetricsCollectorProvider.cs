@@ -48,10 +48,30 @@ namespace CosmosBenchmark
             {
                 while (true)
                 {
-                    this.meterProvider.ForceFlush();
-                    await Task.Delay(TimeSpan.FromSeconds(config.MetricsReportingIntervalInSec));
+                    MetricCollectionWindow metricCollectionWindow = this.GetCurrentMetricCollectionWindow(config);
+
+                    // Reset metricCollectionWindow and flush.
+                    if (!metricCollectionWindow.IsValid)
+                    {
+                        this.meterProvider.ForceFlush();
+                        this.metricCollectionWindow.Reset(config);
+                    }
+                    await Task.Delay(TimeSpan.FromMilliseconds(10));
                 }
             });
+        }
+
+        private MetricCollectionWindow GetCurrentMetricCollectionWindow(BenchmarkConfig config)
+        {
+            if (this.metricCollectionWindow is null || !this.metricCollectionWindow.IsValid)
+            {
+                lock (metricCollectionWindowLock)
+                {
+                    this.metricCollectionWindow ??= new MetricCollectionWindow(config);
+                }
+            }
+
+            return this.metricCollectionWindow;
         }
 
         /// <summary>
