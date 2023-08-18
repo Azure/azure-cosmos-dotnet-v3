@@ -41,35 +41,18 @@ namespace CosmosBenchmark
             this.readOperationMetricsCollector ??= new MetricsCollector(this.readOperationMeter, "Read");
             this.metricCollectionWindow ??= new MetricCollectionWindow(config);
 
+            /// <summary>
+            /// Flush metrics every <see cref="AppConfig.MetricsReportingIntervalInSec"/>
+            /// </summary>
             ThreadPool.QueueUserWorkItem(async state =>
             {
                 while (true)
                 {
-                    Console.WriteLine("metricsCollection window .."); // TODO REMOVE
-
                     this.meterProvider.ForceFlush();
-                    Console.WriteLine("metricsCollection force flush "); // TODO REMOVE
-
                     await Task.Delay(TimeSpan.FromSeconds(config.MetricsReportingIntervalInSec));
                 }
             });
         }
-
-        private MetricCollectionWindow GetCurrentMetricCollectionWindow(BenchmarkConfig config)
-        {
-            if (this.metricCollectionWindow is null || !this.metricCollectionWindow.IsValid)
-            {
-                lock (metricCollectionWindowLock)
-                {
-                    this.metricCollectionWindow ??= new MetricCollectionWindow(config);
-                }
-            }
-
-            return this.metricCollectionWindow;
-        }
-
-
-
 
         /// <summary>
         /// Gets the metric collector.
@@ -78,7 +61,7 @@ namespace CosmosBenchmark
         /// <param name="config">Benchmark configuration.</param>
         /// <returns>Metrics collector.</returns>
         /// <exception cref="NotSupportedException">Thrown if provided benchmark operation is not covered supported to collect metrics.</exception>
-        public IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation, BenchmarkConfig config)
+        public IMetricsCollector GetMetricsCollector(IBenchmarkOperation benchmarkOperation)
         {
             return benchmarkOperation.OperationType switch
             {
