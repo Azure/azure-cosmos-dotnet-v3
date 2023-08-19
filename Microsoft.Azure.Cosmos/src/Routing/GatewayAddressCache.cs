@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
+        private readonly ConcurrentDictionary<int, Task> refreshAddressesInBackgroundTaskDictionary;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
@@ -92,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             this.openConnectionsHandler = openConnectionsHandler;
             this.isReplicaAddressValidationEnabled = replicaAddressValidationEnabled;
+            this.refreshAddressesInBackgroundTaskDictionary = new ();
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
@@ -300,16 +302,19 @@ namespace Microsoft.Azure.Cosmos.Routing
                 if (addresses
                     .Get(Protocol.Tcp)
                     .ReplicaTransportAddressUris
-                    .Any(x => x.ShouldRefreshHealthStatus()))
+                    .Any(x => x.ShouldRefreshHealthStatus())
+                    && !this.IsBackgroundRefreshTaskRunning(addresses.GetHashCode()))
                 {
-                    Task refreshAddressesInBackgroundTask = Task.Run(async () => await this.serverPartitionAddressCache.RefreshAsync(
+                    Task refreshAddressesInBackgroundTask = this.serverPartitionAddressCache.RefreshAsync(
                         key: partitionKeyRangeIdentity,
                         singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
                                 request,
                                 cachedAddresses: currentCachedValue,
                                 partitionKeyRangeIdentity.CollectionRid,
                                 partitionKeyRangeIdentity.PartitionKeyRangeId,
-                                forceRefresh: true)));
+                                forceRefresh: true));
+
+                    this.refreshAddressesInBackgroundTaskDictionary[addresses.GetHashCode()] = refreshAddressesInBackgroundTask;
                 }
 
                 return addresses;
@@ -336,6 +341,18 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Validates if a refresh task is already in progress for the given partition address hash code.
+        /// </summary>
+        /// <param name="hashCode">An integer containing the partition address hash code.</param>
+        /// <returns>A boolean flag indicating if the background task is running.</returns>
+        private bool IsBackgroundRefreshTaskRunning(
+            int hashCode)
+        {
+            this.refreshAddressesInBackgroundTaskDictionary.TryGetValue(hashCode, out Task refreshTask);
+            return refreshTask != null && !(refreshTask.IsCompleted || refreshTask.IsFaulted);
         }
 
         /// <summary>
