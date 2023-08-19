@@ -1301,13 +1301,16 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Test to validate that when replica validation is enabled and there exists a replica such that it remained unhealthy for a period of one minute or
         /// more, then even though a force refresh is not requested, the unhealthy replicas at least get a chance to re-validate it's status by the
-        /// on-demand async non-blocking cache refresh flow and eventually marks itself as healthy once the open connection attempt is successful.
+        /// on-demand async non-blocking cache refresh flow and eventually marks itself as healthy once the open connection attempt is successful. The purpose
+        /// of this test to validate the above scenario with high number of concurrent execution and validate that the concurrent executions doesn't create an
+        /// unbounded number of tasks and the task creation is limited to just one, thus reducing the pressure on the task scheduler drammatically.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
         public async Task TryGetAddressesAsync_WhenReplicaVlidationEnabledAndCSListenerMarksReplicaUnhealthyWithParallelInvocation_ShouldValidateUnhealthyReplicasOnce()
         {
             // Arrange.
+            int maxIteration = 2;
             ManualResetEvent manualResetEvent = new(initialState: false);
             Mock<IHttpHandler> mockHttpHandler = new(MockBehavior.Strict);
             string oldAddress = "rntbd://dummytenant.documents.azure.com:14004/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/4s";
@@ -1347,7 +1350,8 @@ namespace Microsoft.Azure.Cosmos
 
             FakeOpenConnectionHandler fakeOpenConnectionHandler = new(
                 failIndexesByAttempts: new Dictionary<int, HashSet<int>>(),
-                manualResetEvent: manualResetEvent);
+                manualResetEvent: manualResetEvent,
+                openConnectionDelayInSeconds: 2);
 
             HttpClient httpClient = new(new HttpHandlerHelper(mockHttpHandler.Object));
             GatewayAddressCache cache = new(
@@ -1364,107 +1368,65 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid);
 
             // Act and Assert.
-            PartitionAddressInformation addressInfo = await cache.TryGetAddressesAsync(
+            PartitionAddressInformation addressInfo = default;
+            TransportAddressUri refreshedUri = default;
+
+            for (int iterationIndex = 1; iterationIndex <= maxIteration; iterationIndex++)
+            {
+                List<Task> openConnectionTasks = new ();
+                addressInfo = await cache.TryGetAddressesAsync(
+                                request: request,
+                                partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
+                                serviceIdentity: this.serviceIdentity,
+                                forceRefreshPartitionAddresses: false,
+                                cancellationToken: CancellationToken.None);
+
+                // Mimic the Connection State Listener based approach to mark a replica to unhealthy.
+                await cache.MarkAddressesToUnhealthyAsync(
+                    new ServerKey(
+                        new Uri(
+                            uriString: addressTobeMarkedUnhealthy)));
+
+                refreshedUri = addressInfo
+                    .Get(Documents.Client.Protocol.Tcp)?
+                    .ReplicaTransportAddressUris
+                    .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
+
+                ReflectionUtils.AddMinuteToDateTimeFieldUsingReflection(
+                                            objectName: refreshedUri.GetCurrentHealthState(),
+                                            fieldName: "lastUnhealthyTimestamp",
+                                            delayInMinutes: -2 * iterationIndex);
+
+                for (int j = 0; j < 500 * iterationIndex; j++)
+                {
+                    openConnectionTasks
+                        .Add(
+                            cache.TryGetAddressesAsync(
                             request: request,
                             partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
                             serviceIdentity: this.serviceIdentity,
                             forceRefreshPartitionAddresses: false,
-                            cancellationToken: CancellationToken.None);
+                            cancellationToken: CancellationToken.None));
+                }
 
-            // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's health status could be validted.
-            await cache.MarkAddressesToUnhealthyAsync(
-                new ServerKey(
-                    new Uri(
-                        uriString: addressTobeMarkedUnhealthy)));
+                // awaits for the parallel execution to finish.
+                await Task.WhenAll(openConnectionTasks);
 
-            TransportAddressUri refreshedUri = addressInfo
-                .Get(Documents.Client.Protocol.Tcp)?
-                .ReplicaTransportAddressUris
-                .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
+                // This assertion validates that there are no extra tasks created in the thread pool.
+                Assert.AreEqual(0, ThreadPool.PendingWorkItemCount);
 
-            ReflectionUtils.AddMinuteToDateTimeFieldUsingReflection(
-                                        objectName: refreshedUri.GetCurrentHealthState(),
-                                        fieldName: "lastUnhealthyTimestamp",
-                                        delayInMinutes: -2);
+                // Waits until a completion signal from the background task is received.
+                GatewayAddressCacheTests.WaitForManualResetEventSignal(
+                    manualResetEvent: manualResetEvent,
+                    shouldReset: true);
 
-            List<Task> openConnectionTasks = new();
-
-            for (int i = 0; i < 500; i++)
-            {
-                openConnectionTasks
-                    .Add(
-                        cache.TryGetAddressesAsync(
-                        request: request,
-                        partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
-                        serviceIdentity: this.serviceIdentity,
-                        forceRefreshPartitionAddresses: false,
-                        cancellationToken: CancellationToken.None));
+                GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                    fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                    expectedTotalFailedAddressesToOpenCount: 0,
+                    expectedTotalHandlerInvocationCount: iterationIndex,
+                    expectedTotalReceivedAddressesCount: iterationIndex,
+                    expectedTotalSuccessAddressesToOpenCount: iterationIndex);
             }
-
-            await Task.WhenAll(openConnectionTasks);
-
-            // Waits until a completion signal from the background task is received.
-            GatewayAddressCacheTests.WaitForManualResetEventSignal(
-                manualResetEvent: manualResetEvent,
-                shouldReset: true);
-
-            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
-                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedTotalFailedAddressesToOpenCount: 0,
-                expectedTotalHandlerInvocationCount: 1,
-                expectedTotalReceivedAddressesCount: 1,
-                expectedTotalSuccessAddressesToOpenCount: 1);
-
-            PartitionAddressInformation addressInfo2 = await cache.TryGetAddressesAsync(
-                            request: request,
-                            partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
-                            serviceIdentity: this.serviceIdentity,
-                            forceRefreshPartitionAddresses: false,
-                            cancellationToken: CancellationToken.None);
-
-            // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's health status could be validted.
-            await cache.MarkAddressesToUnhealthyAsync(
-                new ServerKey(
-                    new Uri(
-                        uriString: addressTobeMarkedUnhealthy)));
-
-            TransportAddressUri refreshedUri2 = addressInfo2
-                .Get(Documents.Client.Protocol.Tcp)?
-                .ReplicaTransportAddressUris
-                .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
-
-            ReflectionUtils.AddMinuteToDateTimeFieldUsingReflection(
-                                        objectName: refreshedUri2.GetCurrentHealthState(),
-                                        fieldName: "lastUnhealthyTimestamp",
-                                        delayInMinutes: -5);
-
-            openConnectionTasks = new();
-
-            for (int i = 0; i < 1000; i++)
-            {
-                openConnectionTasks
-                    .Add(
-                        cache.TryGetAddressesAsync(
-                        request: request,
-                        partitionKeyRangeIdentity: this.testPartitionKeyRangeIdentity,
-                        serviceIdentity: this.serviceIdentity,
-                        forceRefreshPartitionAddresses: false,
-                        cancellationToken: CancellationToken.None));
-            }
-
-            await Task.WhenAll(openConnectionTasks);
-
-            // Waits until a completion signal from the background task is received.
-            GatewayAddressCacheTests.WaitForManualResetEventSignal(
-                manualResetEvent: manualResetEvent,
-                shouldReset: false);
-
-            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
-                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedTotalFailedAddressesToOpenCount: 0,
-                expectedTotalHandlerInvocationCount: 2,
-                expectedTotalReceivedAddressesCount: 2,
-                expectedTotalSuccessAddressesToOpenCount: 2);
         }
 
         /// <summary>

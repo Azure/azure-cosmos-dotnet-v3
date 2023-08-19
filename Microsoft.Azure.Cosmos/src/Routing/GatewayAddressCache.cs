@@ -305,14 +305,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     .Any(x => x.ShouldRefreshHealthStatus())
                     && !this.IsBackgroundRefreshTaskRunning(addresses.GetHashCode()))
                 {
-                    Task refreshAddressesInBackgroundTask = this.serverPartitionAddressCache.RefreshAsync(
+                    Task refreshAddressesInBackgroundTask = Task.Run(async () => await this.serverPartitionAddressCache.RefreshAsync(
                         key: partitionKeyRangeIdentity,
                         singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
                                 request,
                                 cachedAddresses: currentCachedValue,
                                 partitionKeyRangeIdentity.CollectionRid,
                                 partitionKeyRangeIdentity.PartitionKeyRangeId,
-                                forceRefresh: true));
+                                forceRefresh: true)));
 
                     this.refreshAddressesInBackgroundTaskDictionary[addresses.GetHashCode()] = refreshAddressesInBackgroundTask;
                 }
