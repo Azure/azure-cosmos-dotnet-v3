@@ -213,9 +213,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 Task resultTask = await Task.WhenAny(processingTask, delayTask);
                 if (resultTask == delayTask)
                 {
-                    DefaultTrace.TraceVerbose($"Processor task with date as {telemetryDate} is canceled as it did not finish in {timeout}");
+                    DefaultTrace.TraceVerbose($"Processor task with date as {0} is canceled as it did not finish in {1}", telemetryDate, timeout);
                     // Operation cancelled
-                    throw new OperationCanceledException($"Processor task with date as {telemetryDate} is canceled as it did not finish in {timeout}");
+                    throw new OperationCanceledException(string.Format($"Processor task with date as {0} is canceled as it did not finish in {1}", telemetryDate, timeout));
                 }
                 else
                 {
@@ -235,9 +235,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 throw new ArgumentNullException(nameof(cacheName));
             }
 
-            // If latency information is not available. Ignore this datapoint
+            // If latency information is not available. Ignore this datapoint. It is not expected but putting this safety check
             if (!data.RequestLatency.HasValue)
             {
+                DefaultTrace.TraceWarning($"Latency data point is not available for {0} cache call", cacheName);
+
                 return;
             }
 
@@ -298,6 +300,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                         ClientTelemetryOptions.RequestChargeMax,
                                                         ClientTelemetryOptions.RequestChargePrecision)));
+
+            // If latency information is not available. Ignore this datapoint. It is not expected but putting this safety check
             if (data.RequestLatency.HasValue)
             {
                 try
@@ -309,6 +313,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex);
                 }
 
+            }
+            else
+            {
+                DefaultTrace.TraceWarning($"Latency data point is not available for an operation");
             }
              
             long requestChargeToRecord = (long)(data.RequestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);

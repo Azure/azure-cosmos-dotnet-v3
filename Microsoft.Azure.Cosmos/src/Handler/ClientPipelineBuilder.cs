@@ -48,11 +48,8 @@ namespace Microsoft.Azure.Cosmos
 #else
             this.diagnosticsHandler = null;
 #endif
-            if (telemetryToServiceHelper.IsClientTelemetryJobRunning())
-            {
-                this.telemetryHandler = new TelemetryHandler(telemetryToServiceHelper);
-                Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
-            }
+            this.telemetryHandler = new TelemetryHandler(telemetryToServiceHelper);
+            Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
 
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);

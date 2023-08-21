@@ -1253,6 +1253,12 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
+            if (this.telemetryToServiceHelper != null)
+            {
+                this.telemetryToServiceHelper.Dispose();
+                this.telemetryToServiceHelper = null;
+            }
+
             if (!this.cancellationTokenSource.IsCancellationRequested)
             {
                 this.cancellationTokenSource.Cancel();
@@ -1301,12 +1307,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.cosmosAuthorization != null)
             {
                 this.cosmosAuthorization.Dispose();
-            }
-
-            if (this.telemetryToServiceHelper != null)
-            {
-                this.telemetryToServiceHelper.Dispose();
-                this.telemetryToServiceHelper = null;
             }
 
             if (this.GlobalEndpointManager != null)

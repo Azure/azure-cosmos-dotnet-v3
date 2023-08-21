@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning($"Error While starting Telemetry Job : {ex.Message}. Hence disabling Client Telemetry");
+                DefaultTrace.TraceWarning($"Error While starting Telemetry Job : {0}. Hence disabling Client Telemetry", ex.Message);
                 this.connectionPolicy.EnableClientTelemetry = false;
             }
         }

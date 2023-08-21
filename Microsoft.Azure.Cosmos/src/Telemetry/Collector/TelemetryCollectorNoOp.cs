@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Collector
 {
     using System;
-    using Microsoft.Azure.Cosmos.Telemetry;
 
     internal class TelemetryCollectorNoOp : ITelemetryCollector
     {
