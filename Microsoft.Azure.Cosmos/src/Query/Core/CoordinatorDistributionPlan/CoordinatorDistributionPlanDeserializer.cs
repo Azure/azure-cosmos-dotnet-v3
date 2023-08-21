@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         {
             ClientQLEnumerableExpression sourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
             ClientQLVariable declaredVariable = this.DeserializeClientQLVariable(token["DeclaredVariable"]);
-            List<ClientQLScalarExpression> vecExpressions = this.DeserializeScalarExpressionArray(token["VecExpression"], serializer);
+            IReadOnlyList<ClientQLScalarExpression> vecExpressions = this.DeserializeScalarExpressionArray(token["VecExpression"], serializer);
 
             return new ClientQLDistinctEnumerableExpression(sourceExpression, declaredVariable, vecExpressions);
         }
@@ -76,8 +76,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         public ClientQLGroupByEnumerableExpression DeserializeGroupByEnumerableExpression(JToken token, JsonSerializer serializer)
         {
             ClientQLEnumerableExpression sourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
-            List<ClientQLGroupByKey> vecKeys = this.DeserializeGroupByKeys(token["VecKeys"]);
-            List<ClientQLAggregate> vecAggregates = this.DeserializeAggregates(token["VecAggregates"]);
+            IReadOnlyList<ClientQLGroupByKey> vecKeys = this.DeserializeGroupByKeys(token["VecKeys"]);
+            IReadOnlyList<ClientQLAggregate> vecAggregates = this.DeserializeAggregates(token["VecAggregates"]);
 
             return new ClientQLGroupByEnumerableExpression(sourceExpression, vecKeys, vecAggregates);
         }
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         {
             ClientQLEnumerableExpression source = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
             ClientQLVariable declaredVariable = this.DeserializeClientQLVariable(token["DeclaredVariable"]);
-            List<ClientQLOrderByItem> orderByItems = this.DeserializeOrderByItems(token["VecItems"], serializer);
+            IReadOnlyList<ClientQLOrderByItem> orderByItems = this.DeserializeOrderByItems(token["VecItems"], serializer);
 
             return new ClientQLOrderByEnumerableExpression(source, declaredVariable, orderByItems);
         }
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         public ClientQLArrayCreateScalarExpression DeserializeArrayCreateScalarExpression(JToken token, JsonSerializer serializer)
         {
             ClientQLArrayKind arrayKind = TryGetValue<ClientQLArrayKind>(token, "ArrayKind");
-            List<ClientQLScalarExpression> vecItems = this.DeserializeScalarExpressionArray(token["VecItems"], serializer);
+            IReadOnlyList<ClientQLScalarExpression> vecItems = this.DeserializeScalarExpressionArray(token["VecItems"], serializer);
 
             return new ClientQLArrayCreateScalarExpression(arrayKind, vecItems);
         }
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
                 throw new JsonException($"Invalid ClientQLObjectKind: {objectKindString}");
             }
 
-            List<ClientQLObjectProperty> properties = this.DeserializeObjectProperties(token["Properties"], serializer);
+            IReadOnlyList<ClientQLObjectProperty> properties = this.DeserializeObjectProperties(token["Properties"], serializer);
 
             return new ClientQLObjectCreateScalarExpression(properties, objectKind);
         }
@@ -271,14 +271,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         public ClientQLSystemFunctionCallScalarExpression DeserializeSystemFunctionCallScalarExpression(JToken token, JsonSerializer serializer)
         {
             ClientQLBuiltinScalarFunctionKind functionKind = (ClientQLBuiltinScalarFunctionKind)Enum.Parse(typeof(ClientQLBuiltinScalarFunctionKind), TryGetValue<string>(token, "FunctionKind"));
-            List<ClientQLScalarExpression> vecArguments = this.DeserializeScalarExpressionArray(token["VecArguments"], serializer);
+            IReadOnlyList<ClientQLScalarExpression> vecArguments = this.DeserializeScalarExpressionArray(token["VecArguments"], serializer);
 
             return new ClientQLSystemFunctionCallScalarExpression(functionKind, vecArguments);
         }
 
         public ClientQLTupleCreateScalarExpression DeserializeTupleCreateScalarExpression(JToken token, JsonSerializer serializer)
         {
-            List<ClientQLScalarExpression> vecItems = this.DeserializeScalarExpressionArray(token["Items"], serializer);
+            IReadOnlyList<ClientQLScalarExpression> vecItems = this.DeserializeScalarExpressionArray(token["Items"], serializer);
 
             return new ClientQLTupleCreateScalarExpression(vecItems);
         }
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         public ClientQLUserDefinedFunctionCallScalarExpression DeserializeUserDefinedFunctionCallScalarExpression(JToken token, JsonSerializer serializer)
         {
             ClientQLFunctionIdentifier identifier = token["Identifier"].ToObject<ClientQLFunctionIdentifier>(serializer);
-            List<ClientQLScalarExpression> vecArguments = this.DeserializeScalarExpressionArray(token["VecArguments"], serializer);
+            IReadOnlyList<ClientQLScalarExpression> vecArguments = this.DeserializeScalarExpressionArray(token["VecArguments"], serializer);
             bool builtin = TryGetValue<bool>(token, "Builtin");
 
             return new ClientQLUserDefinedFunctionCallScalarExpression(identifier, vecArguments, builtin);

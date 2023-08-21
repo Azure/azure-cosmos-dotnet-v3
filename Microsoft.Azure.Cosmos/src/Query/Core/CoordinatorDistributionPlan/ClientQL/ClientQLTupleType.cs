@@ -8,13 +8,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLTupleType : ClientQLType
     {
-        public ClientQLTupleType(List<ClientQLType> vecTypes)
+        public ClientQLTupleType(IReadOnlyList<ClientQLType> vecTypes)
             : base(ClientQLTypeKind.Tuple)
         {
             this.VecTypes = vecTypes;
         }
 
-        public List<ClientQLType> VecTypes { get; }
+        public IReadOnlyList<ClientQLType> VecTypes { get; }
     }
 
 }

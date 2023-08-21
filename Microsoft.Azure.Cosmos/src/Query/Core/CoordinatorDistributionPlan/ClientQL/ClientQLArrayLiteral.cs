@@ -8,12 +8,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLArrayLiteral : ClientQLLiteral
     {
-        public ClientQLArrayLiteral(List<ClientQLLiteral> vecItems)
+        public ClientQLArrayLiteral(IReadOnlyList<ClientQLLiteral> vecItems)
             : base(ClientQLLiteralKind.Array)
         {
             this.VecItems = vecItems;
         }
 
-        public List<ClientQLLiteral> VecItems { get; }
+        public IReadOnlyList<ClientQLLiteral> VecItems { get; }
     }
 }

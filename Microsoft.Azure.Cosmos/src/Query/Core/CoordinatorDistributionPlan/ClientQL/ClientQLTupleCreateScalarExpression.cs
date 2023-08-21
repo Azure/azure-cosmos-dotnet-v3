@@ -8,13 +8,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLTupleCreateScalarExpression : ClientQLScalarExpression
     {
-        public ClientQLTupleCreateScalarExpression(List<ClientQLScalarExpression> vecItems) 
+        public ClientQLTupleCreateScalarExpression(IReadOnlyList<ClientQLScalarExpression> vecItems) 
             : base(ClientQLScalarExpressionKind.TupleCreate)
         {
             this.VecItems = vecItems;
         }
 
-        public List<ClientQLScalarExpression> VecItems { get; }
+        public IReadOnlyList<ClientQLScalarExpression> VecItems { get; }
     }
 
 }
