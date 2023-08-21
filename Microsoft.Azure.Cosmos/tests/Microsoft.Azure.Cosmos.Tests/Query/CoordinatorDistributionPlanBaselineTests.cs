@@ -1,23 +1,10 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests.Query
 {
-    using System;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
     using System.Xml;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan;
     using Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -61,14 +48,12 @@
 
         public override CoordinatorDistributionPlanTestOutput ExecuteTest(CoordinatorDistributionPlanTestInput input)
         {
-
-            CoordinatorDistributionPlanDeserializer deserializer = new CoordinatorDistributionPlanDeserializer();
             JsonSerializerSettings settings = new JsonSerializerSettings
             {
                 Formatting = Newtonsoft.Json.Formatting.Indented
             };
 
-            CoordinatorDistributionPlan distributionPlan = deserializer.DeserializeCoordinatorDistributionPlan(input.CoordinatorPlanJson);
+            CoordinatorDistributionPlan distributionPlan = CoordinatorDistributionPlanDeserializer.DeserializeCoordinatorDistributionPlan(input.CoordinatorPlanJson);
             string serializedDistributionPlan = JsonConvert.SerializeObject(distributionPlan, settings);
 
             return new CoordinatorDistributionPlanTestOutput(serializedDistributionPlan);
