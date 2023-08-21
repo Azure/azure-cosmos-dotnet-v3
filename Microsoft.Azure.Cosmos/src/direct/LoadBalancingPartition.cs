@@ -183,8 +183,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                             }
                             while (this.openChannels.Count < targetChannels)
                             {
-                                this.OpenChannelAndIncrementCapacity(
-                                    activityId: activityId);
+                                await this.OpenChannelAndIncrementCapacity(
+                                    activityId: activityId,
+                                    waitForBackgroundInitializationComplete: false);
                             }
                             Debug.Assert(
                                 this.capacity ==
@@ -218,14 +219,15 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
         internal Task OpenChannelAsync(Guid activityId)
         {
-            IChannel channel = null;
             this.capacityLock.EnterWriteLock();
             try
             {
                 if (this.capacity < this.maxCapacity)
                 {
-                    channel = this.OpenChannelAndIncrementCapacity(
-                        activityId: activityId);
+                    return this.OpenChannelAndIncrementCapacity(
+                        activityId: activityId,
+                        waitForBackgroundInitializationComplete: true);
+
                 }
                 else
                 {
@@ -243,14 +245,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 this.capacityLock.ExitWriteLock();
             }
-
-            if (channel == null)
-            {
-                throw new InvalidOperationException(
-                    message: $"Could not open a channel to server {this.serverUri} because a channel instance didn't get created.");
-            }
-
-            return channel.OpenChannelAsync(activityId);
         }
 
         public void Dispose()
@@ -286,9 +280,11 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// and increment the currrent channel capacity.
         /// </summary>
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
-        /// <returns>An instance of <see cref="IChannel"/>.</returns>
-        private IChannel OpenChannelAndIncrementCapacity(
-            Guid activityId)
+        /// <param name="waitForBackgroundInitializationComplete">A boolean flag to indicate if the caller thread should
+        /// wait until all the background tasks have finished.</param>
+        private async Task OpenChannelAndIncrementCapacity(
+            Guid activityId,
+            bool waitForBackgroundInitializationComplete)
         {
             Debug.Assert(this.capacityLock.IsWriteLockHeld);
 
@@ -306,13 +302,16 @@ namespace Microsoft.Azure.Documents.Rntbd
                     message: "Channel can't be null.");
             }
 
+            if (waitForBackgroundInitializationComplete)
+            {
+                await newChannel.OpenChannelAsync(activityId);
+            }
+
             this.openChannels.Add(
                 new LbChannelState(
                     newChannel,
                     this.channelProperties.MaxRequestsPerChannel));
             this.capacity += this.channelProperties.MaxRequestsPerChannel;
-
-            return newChannel;
         }
 
         /// <summary>
@@ -323,7 +322,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <param name="channelProperties">An instance of <see cref="ChannelProperties"/>.</param>
         /// <param name="localRegionRequest">A boolean flag indicating if the request is intendent for local region.</param>
         /// <param name="concurrentOpeningChannelSlim">An instance of <see cref="SemaphoreSlim"/>.</param>
-        /// <returns>An instance of <see cref="IChannel"/>.</returns>
+        /// <returns></returns>
         private static IChannel CreateAndInitializeChannel(
             Guid activityId,
             Uri serverUri,

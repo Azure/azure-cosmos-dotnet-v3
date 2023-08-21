@@ -130,7 +130,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                                                                                     options: this.DistributedTracingOptions,
                                                                                     request: request);
 #endif
-            IChannel channel = null;
             try
             {
                 TransportClient.IncrementCounters();
@@ -138,7 +137,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 operation = "GetChannel";
                 // Treat all retries as out of region request for open timeout. This is to prevent too many retries because of the shorter time duration.
                 bool localRegionRequest = request.RequestContext.IsRetry ? false : request.RequestContext.LocalRegionRequest;
-                channel = this.channelDictionary.GetChannel(physicalAddress.Uri, localRegionRequest);
+                IChannel channel = this.channelDictionary.GetChannel(physicalAddress.Uri, localRegionRequest);
 
                 TransportClient.GetTransportPerformanceCounters().IncrementRntbdRequestCount(resourceOperation.resourceType, resourceOperation.operationType);
 
@@ -147,8 +146,10 @@ namespace Microsoft.Azure.Documents.Rntbd
                     resourceOperation, activityId, transportRequestStats);
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
                 storeResponse.TransportRequestStats = transportRequestStats;
-                channel?.SetHealthState(
-                    isHealthy: true);
+
+#if NETSTANDARD2_0_OR_GREATER
+                recorder?.Record(physicalAddress.Uri, storeResponse: storeResponse);
+#endif
             }
             catch (TransportException ex)
             {
@@ -191,10 +192,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     "Exception: {5}",
                     operation, request.ResourceAddress, request.ResourceType,
                     resourceOperation, physicalAddress, ex);
-
-                channel?.SetHealthState(
-                    isHealthy: false);
-
                 if (request.IsReadOnlyRequest)
                 {
                     DefaultTrace.TraceInformation("Converting to Gone (read-only request)");
@@ -236,9 +233,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             catch (DocumentClientException ex)
             {
-                channel?.SetHealthState(
-                    isHealthy: false);
-
                 transportResponseStatusCode = (int)TransportResponseStatusCode.DocumentClientException;
                 DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                                               "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
@@ -252,9 +246,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             catch (Exception ex)
             {
-                channel?.SetHealthState(
-                    isHealthy: false);
-
                 transportResponseStatusCode = (int)TransportResponseStatusCode.UnknownException;
                 DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                     "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
@@ -282,15 +273,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                 recorder?.Record(physicalAddress.Uri, documentClientException: exception);
                 throw;
             }
-
-            // Record the information of the sucessfull response in the end, it also make sure it is not getting called twice.
-            recorder?.Record(physicalAddress.Uri, storeResponse: storeResponse);
 #else
             catch (DocumentClientException)
             {
                 throw;
             }
 #endif
+
             return storeResponse;
         }
 
