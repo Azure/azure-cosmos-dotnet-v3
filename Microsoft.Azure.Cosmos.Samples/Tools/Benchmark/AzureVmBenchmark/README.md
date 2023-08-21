@@ -35,7 +35,7 @@
 | applicationInsightsName | Specifies Application Insights Account Name |
 | startDate | Specifies Diagnostic Blob storage container folder prefix  |
 
-   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-cosmos-dotnet-v3%2Fusers%2Fv-dchaava%2Fbenchmark-diagnostics%2F3889-2%2FMicrosoft.Azure.Cosmos.Samples%2FTools%2FBenchmark%2FAzureVmBenchmark%2Fazuredeploy.json)
+   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-cosmos-dotnet-v3%2Fmaster%2FMicrosoft.Azure.Cosmos.Samples%2FTools%2FBenchmark%2FAzureVmBenchmark%2Fazuredeploy.json)
 
 After benchmark was launched use Shared Dashboard for viewing charts with
 
