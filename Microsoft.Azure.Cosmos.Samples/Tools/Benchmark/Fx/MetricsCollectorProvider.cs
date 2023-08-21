@@ -15,6 +15,7 @@ namespace CosmosBenchmark
     /// </summary>
     internal class MetricsCollectorProvider
     {
+        private const int WindowCheckInterval = 10;
         private MetricCollectionWindow metricCollectionWindow;
 
         private static readonly object metricCollectionWindowLock = new object();
@@ -56,7 +57,7 @@ namespace CosmosBenchmark
                         this.meterProvider.ForceFlush();
                         this.metricCollectionWindow.Reset(config);
                     }
-                    await Task.Delay(TimeSpan.FromMilliseconds(10));
+                    await Task.Delay(TimeSpan.FromMilliseconds(MetricsCollectorProvider.WindowCheckInterval));
                 }
             });
         }
