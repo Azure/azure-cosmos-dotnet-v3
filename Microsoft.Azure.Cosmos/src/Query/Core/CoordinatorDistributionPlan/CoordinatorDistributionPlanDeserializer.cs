@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 {
     using System;
     using System.Collections.Generic;
+    using System.Reflection;
     using ClientQL;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -24,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         public ClientQLEnumerableExpression DeserializeClientQLEnumerableExpression(JToken token, JsonSerializer serializer)
         {
-            string kind = token.Value<string>("Kind");
+            string kind = TryGetValue<string>(token, "Kind");
 
             switch (kind)
             {
@@ -90,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         public ClientQLInputEnumerableExpression DeserializeInputEnumerableExpression(JToken token, JsonSerializer serializer)
         {
-            return new ClientQLInputEnumerableExpression(token.Value<string>("Name"));
+            return new ClientQLInputEnumerableExpression(TryGetValue<string>(token, "Name"));
         }
 
         public ClientQLOrderByEnumerableExpression DeserializeOrderByEnumerableExpression(JToken token, JsonSerializer serializer)
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         public ClientQLScalarAsEnumerableExpression DeserializeScalarAsEnumerableExpression(JToken token, JsonSerializer serializer)
         {
             ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
-            ClientQLEnumerationKind enumerationKind = (ClientQLEnumerationKind)Enum.Parse(typeof(ClientQLEnumerationKind), token.Value<string>("EnumerationKind"));
+            ClientQLEnumerationKind enumerationKind = (ClientQLEnumerationKind)Enum.Parse(typeof(ClientQLEnumerationKind), TryGetValue<string>(token, "EnumerationKind"));
 
             return new ClientQLScalarAsEnumerableExpression(expression, enumerationKind);
         }
@@ -131,9 +132,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         public ClientQLTakeEnumerableExpression DeserializeTakeEnumerableExpression(JToken token, JsonSerializer serializer)
         {
             ClientQLEnumerableExpression sourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
-            int skipValue = token.Value<int>("SkipValue");
-            int takeExpression = token.Value<int>("TakeValue");
-            
+            int skipValue = TryGetValue<int>(token, "SkipValue");
+            int takeExpression = TryGetValue<int>(token, "TakeValue");
+
             return new ClientQLTakeEnumerableExpression(sourceExpression, skipValue, takeExpression);
         }
 
@@ -147,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         public ClientQLScalarExpression DeserializeScalarExpression(JToken token, JsonSerializer serializer)
         {
-            object scalarExpressionKind = (ClientQLScalarExpressionKind)Enum.Parse(typeof(ClientQLScalarExpressionKind), token.Value<string>("Kind"));
+            object scalarExpressionKind = (ClientQLScalarExpressionKind)Enum.Parse(typeof(ClientQLScalarExpressionKind), TryGetValue<string>(token, "Kind"));
 
             switch (scalarExpressionKind)
             {
@@ -188,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         public ClientQLArrayCreateScalarExpression DeserializeArrayCreateScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLArrayKind arrayKind = token.Value<ClientQLArrayKind>("ArrayKind");
+            ClientQLArrayKind arrayKind = TryGetValue<ClientQLArrayKind>(token, "ArrayKind");
             List<ClientQLScalarExpression> vecItems = this.DeserializeScalarExpressionArray(token["VecItems"], serializer);
 
             return new ClientQLArrayCreateScalarExpression(arrayKind, vecItems);
@@ -197,15 +198,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         public ClientQLArrayIndexerScalarExpression DeserializeArrayIndexerScalarExpression(JToken token, JsonSerializer serializer)
         {
             ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
-            int index = token.Value<int>("Index");
+            int index = TryGetValue<int>(token, "Index");
             
             return new ClientQLArrayIndexerScalarExpression(expression, index);
         }
 
         public ClientQLBinaryScalarExpression DeserializeBinaryOperatorScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLBinaryScalarOperatorKind operatorKind = (ClientQLBinaryScalarOperatorKind)Enum.Parse(typeof(ClientQLBinaryScalarOperatorKind), token.Value<string>("OperatorKind"));
-            int maxDepth = token.Value<int>("MaxDepth");
+            ClientQLBinaryScalarOperatorKind operatorKind = (ClientQLBinaryScalarOperatorKind)Enum.Parse(typeof(ClientQLBinaryScalarOperatorKind), TryGetValue<string>(token, "OperatorKind"));
+            int maxDepth = TryGetValue<int>(token, "MaxDepth");
             ClientQLScalarExpression leftExpression = this.DeserializeScalarExpression(token["LeftExpression"], serializer);
             ClientQLScalarExpression rightExpression = this.DeserializeScalarExpression(token["RightExpression"], serializer);
 
@@ -214,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         public ClientQLIsOperatorScalarExpression DeserializeIsOperatorScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLIsOperatorKind operatorKind = (ClientQLIsOperatorKind)Enum.Parse(typeof(ClientQLIsOperatorKind), token.Value<string>("OperatorKind"));
+            ClientQLIsOperatorKind operatorKind = (ClientQLIsOperatorKind)Enum.Parse(typeof(ClientQLIsOperatorKind), TryGetValue<string>(token, "OperatorKind"));
             ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
 
             return new ClientQLIsOperatorScalarExpression(operatorKind, expression);
@@ -248,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         public ClientQLObjectCreateScalarExpression DeserializeObjectCreateScalarExpression(JToken token, JsonSerializer serializer)
         {
-            string objectKindString = token.Value<string>("ObjectKind");
+            string objectKindString = TryGetValue<string>(token, "ObjectKind");
             if (!Enum.TryParse(objectKindString, out ClientQLObjectKind objectKind))
             {
                 throw new JsonException($"Invalid ClientQLObjectKind: {objectKindString}");
@@ -262,14 +263,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         public ClientQLPropertyRefScalarExpression DeserializePropertyRefScalarExpression(JToken token, JsonSerializer serializer)
         {
             ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
-            string propertyName = token.Value<string>("PropertyName");
+            string propertyName = TryGetValue<string>(token, "PropertyName");
 
             return new ClientQLPropertyRefScalarExpression(expression, propertyName);
         }
 
         public ClientQLSystemFunctionCallScalarExpression DeserializeSystemFunctionCallScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLBuiltinScalarFunctionKind functionKind = (ClientQLBuiltinScalarFunctionKind)Enum.Parse(typeof(ClientQLBuiltinScalarFunctionKind), token.Value<string>("FunctionKind"));
+            ClientQLBuiltinScalarFunctionKind functionKind = (ClientQLBuiltinScalarFunctionKind)Enum.Parse(typeof(ClientQLBuiltinScalarFunctionKind), TryGetValue<string>(token, "FunctionKind"));
             List<ClientQLScalarExpression> vecArguments = this.DeserializeScalarExpressionArray(token["VecArguments"], serializer);
 
             return new ClientQLSystemFunctionCallScalarExpression(functionKind, vecArguments);
@@ -285,14 +286,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         public ClientQLTupleItemRefScalarExpression DeserializeTupleItemRefScalarExpression(JToken token, JsonSerializer serializer)
         {
             ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
-            int index = token.Value<int>("Index");
+            int index = TryGetValue<int>(token, "Index");
 
             return new ClientQLTupleItemRefScalarExpression(expression, index);
         }
 
         public ClientQLUnaryScalarExpression DeserializeUnaryScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLUnaryScalarOperatorKind operatorKind = (ClientQLUnaryScalarOperatorKind)Enum.Parse(typeof(ClientQLUnaryScalarOperatorKind), token.Value<string>("OperatorKind"));
+            ClientQLUnaryScalarOperatorKind operatorKind = (ClientQLUnaryScalarOperatorKind)Enum.Parse(typeof(ClientQLUnaryScalarOperatorKind), TryGetValue<string>(token, "OperatorKind"));
             ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
 
             return new ClientQLUnaryScalarExpression(operatorKind, expression);
@@ -302,7 +303,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         {
             ClientQLFunctionIdentifier identifier = token["Identifier"].ToObject<ClientQLFunctionIdentifier>(serializer);
             List<ClientQLScalarExpression> vecArguments = this.DeserializeScalarExpressionArray(token["VecArguments"], serializer);
-            bool builtin = token.Value<bool>("Builtin");
+            bool builtin = TryGetValue<bool>(token, "Builtin");
 
             return new ClientQLUserDefinedFunctionCallScalarExpression(identifier, vecArguments, builtin);
         }
@@ -316,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         public ClientQLDelegate DeserializeDelegateExpression(JToken token)
         {
-            ClientQLDelegateKind kind = (ClientQLDelegateKind)Enum.Parse(typeof(ClientQLDelegateKind), token.Value<string>("Kind"));
+            ClientQLDelegateKind kind = (ClientQLDelegateKind)Enum.Parse(typeof(ClientQLDelegateKind), TryGetValue<string>(token, "Kind"));
             ClientQLType type = this.DeserializeType(token["Type"]);
 
             return new ClientQLDelegate(kind, type);
@@ -324,14 +325,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         private ClientQLType DeserializeType(JToken token)
         {
-            ClientQLTypeKind kind = (ClientQLTypeKind)Enum.Parse(typeof(ClientQLTypeKind), token.Value<string>("Kind"));
+            ClientQLTypeKind kind = (ClientQLTypeKind)Enum.Parse(typeof(ClientQLTypeKind), TryGetValue<string>(token, "Kind"));
 
             return new ClientQLType(kind);
         }
 
         public ClientQLAggregate DeserializeAggregate(JToken token)
         {
-            ClientQLAggregateKind kind = (ClientQLAggregateKind)Enum.Parse(typeof(ClientQLAggregateKind), token.Value<string>("Kind"));
+            ClientQLAggregateKind kind = (ClientQLAggregateKind)Enum.Parse(typeof(ClientQLAggregateKind), TryGetValue<string>(token, "Kind"));
             string operatorKind = token["OperatorKind"].ToString();
 
             return new ClientQLAggregate(kind, operatorKind);
@@ -339,8 +340,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         public ClientQLVariable DeserializeClientQLVariable(JToken token)
         {
-            string name = token.Value<string>("Name");
-            int uniqueId = token.Value<int>("UniqueId");
+            string name = TryGetValue<string>(token, "Name");
+            int uniqueId = TryGetValue<int>(token, "UniqueId");
 
             return new ClientQLVariable(name, uniqueId);
         }
@@ -352,7 +353,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             {
                 foreach (JToken propertyToken in token)
                 {
-                    string name = propertyToken.Value<string>("Name");
+                    string name = TryGetValue<string>(propertyToken, "Name");
                     ClientQLScalarExpression expression = this.DeserializeScalarExpression(propertyToken["Expression"], serializer);
                     properties.Add(new ClientQLObjectProperty(name, expression));
                 }
@@ -381,8 +382,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             {
                 foreach (JToken aggregateToken in token)
                 {
-                    ClientQLAggregateKind kind = (ClientQLAggregateKind)Enum.Parse(typeof(ClientQLAggregateKind), aggregateToken.Value<string>("Kind"));
-                    string operatorKind = aggregateToken.Value<string>("OperatorKind");
+                    ClientQLAggregateKind kind = (ClientQLAggregateKind)Enum.Parse(typeof(ClientQLAggregateKind), TryGetValue<string>(aggregateToken, "Kind"));
+                    string operatorKind = TryGetValue<string>(aggregateToken, "OperatorKind");
                     aggregates.Add(new ClientQLAggregate(kind, operatorKind));
                 }
             }
@@ -397,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
                 foreach (JToken itemToken in token)
                 {
                     ClientQLScalarExpression expression = this.DeserializeScalarExpression(itemToken["Expression"], serializer);
-                    ClientQLSortOrder sortOrder = (ClientQLSortOrder)Enum.Parse(typeof(ClientQLSortOrder), itemToken.Value<string>("SortOrder"));
+                    ClientQLSortOrder sortOrder = (ClientQLSortOrder)Enum.Parse(typeof(ClientQLSortOrder), TryGetValue<string>(itemToken, "SortOrder"));
                     orderByItems.Add(new ClientQLOrderByItem(expression, sortOrder));
                 }
             }
@@ -416,6 +417,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
                 }
             }
             return properties;
+        }
+
+        private static T TryGetValue<T>(JToken token, string expression)
+        {
+            try
+            {
+                return token.Value<T>(expression);
+            }
+            catch (Exception ex)
+            {
+                Version sdkVersion = Assembly.GetAssembly(typeof(CosmosClient)).GetName().Version;
+                string clientSDKVersion = $"{sdkVersion.Major}.{sdkVersion.Minor}.{sdkVersion.Build}";
+                throw new ArgumentNullException($"Customer SDK version is {clientSDKVersion}. Please upgrade if need be. " +
+                    $"Error occured during deserialization of distribution plan. Please reach out to the CosmosDB query team to fix this. " +
+                    $"Error Message: {ex.InnerException}");
+            }
         }
     }
 }
