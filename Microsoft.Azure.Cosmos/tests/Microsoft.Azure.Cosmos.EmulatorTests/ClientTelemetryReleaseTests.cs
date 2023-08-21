@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
     /// <summary>
     /// In Release pipeline, no need to mock Client Telemetry Service Call and Test will talk to the real database account.
+    /// If you are making changes in this file please make sure you are adding similar test in <see cref="ClientTelemetryTests"/> also.
     /// </summary>
     [TestClass]
     [TestCategory("ClientTelemetryRelease")]
@@ -24,6 +25,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return new CosmosClientBuilder(connectionString: connectionString);
         }
 
+        /// <summary>
+        /// Returing null means do not return any hard codd response for any HTTP call.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public override Task<HttpResponseMessage> HttpHandlerRequestCallbackChecks(HttpRequestMessage request)
         {
             return null;
