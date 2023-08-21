@@ -8,6 +8,7 @@ variables:
   BuildConfiguration: Release
   Packaging.EnableSBOMSigning: true
   ReleasePackage: true
+  OS: 'Windows'
 
 stages:
 - stage:
@@ -25,9 +26,9 @@ stages:
         VmImage: $(VmImage)
         
     - job:
-      displayName: TelemetryToService ${{ parameters.BuildConfiguration }}
+      displayName: TelemetryToService $(BuildConfiguration)
       timeoutInMinutes: 120
-      condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+      condition: and(succeeded(), eq('$(OS)', 'Windows'))
       pool:
         vmImage: windows-2019
       
@@ -48,7 +49,7 @@ stages:
         inputs:
           command: test
           projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-          arguments: --filter "TestCategory=ClientTelemetryRelease" --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+          arguments: --filter "TestCategory=ClientTelemetryRelease" --verbosity normal --configuration $(BuildConfiguration) /p:OS=$(OS)
           nugetConfigPath: NuGet.config
           publishTestResults: true
           testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
@@ -60,7 +61,7 @@ stages:
   jobs:
     - template:  templates/nuget-pack.yml
       parameters:
-        BuildConfiguration: Release
+        BuildConfiguration: $(BuildConfiguration)
         VmImage: $(VmImage)
         ReleasePackage: $(ReleasePackage)
         OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos'
