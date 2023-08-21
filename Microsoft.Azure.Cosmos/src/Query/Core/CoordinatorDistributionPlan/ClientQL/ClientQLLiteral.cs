@@ -6,6 +6,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLLiteral
     {
-        public ClientQLLiteralKind Kind { get; set; }
+        public ClientQLLiteral(ClientQLLiteralKind kind)
+        {
+            this.Kind = kind;
+        }
+
+        public ClientQLLiteralKind Kind { get; }
     }
 }

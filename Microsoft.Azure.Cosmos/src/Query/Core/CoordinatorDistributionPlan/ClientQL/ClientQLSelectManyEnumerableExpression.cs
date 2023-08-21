@@ -4,15 +4,21 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
-    using System;
-
     internal class ClientQLSelectManyEnumerableExpression : ClientQLEnumerableExpression
     {
-        public ClientQLEnumerableExpression SourceExpression { get; set; }
+        public ClientQLSelectManyEnumerableExpression(ClientQLEnumerableExpression sourceExpression, ClientQLVariable declaredVariable, ClientQLEnumerableExpression selectorExpression)
+            : base(ClientQLEnumerableExpressionKind.SelectMany)
+        {
+            this.SourceExpression = sourceExpression;
+            this.DeclaredVariable = declaredVariable;
+            this.SelectorExpression = selectorExpression;
+        }
 
-        public ClientQLVariable DeclaredVariable { get; set; }
+        public ClientQLEnumerableExpression SourceExpression { get; }
+
+        public ClientQLVariable DeclaredVariable { get; }
         
-        public ClientQLEnumerableExpression SelectorExpression { get; set; }
+        public ClientQLEnumerableExpression SelectorExpression { get; }
     }
 
 }

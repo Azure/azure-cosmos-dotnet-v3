@@ -8,9 +8,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLPropertyRefScalarExpression : ClientQLScalarExpression
     {
-        public ClientQLScalarExpression Expression { get; set; }
+        public ClientQLPropertyRefScalarExpression(ClientQLScalarExpression expression, string propertyName) 
+            : base(ClientQLScalarExpressionKind.PropertyRef)
+        {
+            this.Expression = expression;
+            this.PropertyName = propertyName;
+        }
+
+        public ClientQLScalarExpression Expression { get; }
         
-        public string PropertyName { get; set; } //might need to be changed
+        public string PropertyName { get; }
     }
 
 }

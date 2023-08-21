@@ -6,6 +6,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLEnumerableExpression : ClientQLExpression
     {
-        public ClientQLEnumerableExpressionKind Kind { get; set; }
+        public ClientQLEnumerableExpression(ClientQLEnumerableExpressionKind kind)
+        {
+            this.Kind = kind;
+        }
+
+        public ClientQLEnumerableExpressionKind Kind { get; }
     }
 }

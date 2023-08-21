@@ -78,15 +78,230 @@
         "Expression": {
           "VecItems": [
             {
+              "Expression": {
+                "Variable": {
+                  "Name": "v0",
+                  "UniqueId": 16
+                },
+                "Kind": 14
+              },
+              "Index": 0,
               "Kind": 11
             },
             {
+              "ConditionExpression": {
+                "OperatorKind": 1,
+                "MaxDepth": 0,
+                "LeftExpression": {
+                  "OperatorKind": 14,
+                  "MaxDepth": 0,
+                  "LeftExpression": {
+                    "Expression": {
+                      "Expression": {
+                        "Variable": {
+                          "Name": "v0",
+                          "UniqueId": 16
+                        },
+                        "Kind": 14
+                      },
+                      "Index": 1,
+                      "Kind": 11
+                    },
+                    "Index": 1,
+                    "Kind": 11
+                  },
+                  "RightExpression": {
+                    "Literal": {
+                      "Kind": 5
+                    },
+                    "Kind": 4
+                  },
+                  "Kind": 2
+                },
+                "RightExpression": {
+                  "OperatorKind": 2,
+                  "Expression": {
+                    "FunctionKind": 154,
+                    "VecArguments": [],
+                    "Kind": 9
+                  },
+                  "Kind": 12
+                },
+                "Kind": 2
+              },
+              "LeftExpression": {
+                "Literal": {
+                  "Kind": 5
+                },
+                "Kind": 4
+              },
+              "RightExpression": {
+                "Expression": {
+                  "Expression": {
+                    "Variable": {
+                      "Name": "v0",
+                      "UniqueId": 16
+                    },
+                    "Kind": 14
+                  },
+                  "Index": 1,
+                  "Kind": 11
+                },
+                "Index": 0,
+                "Kind": 11
+              },
               "Kind": 6
             },
             {
+              "VecItems": [
+                {
+                  "ConditionExpression": {
+                    "OperatorKind": 1,
+                    "MaxDepth": 0,
+                    "LeftExpression": {
+                      "OperatorKind": 14,
+                      "MaxDepth": 0,
+                      "LeftExpression": {
+                        "Expression": {
+                          "Expression": {
+                            "Expression": {
+                              "Variable": {
+                                "Name": "v0",
+                                "UniqueId": 16
+                              },
+                              "Kind": 14
+                            },
+                            "Index": 2,
+                            "Kind": 11
+                          },
+                          "Index": 0,
+                          "Kind": 11
+                        },
+                        "Index": 1,
+                        "Kind": 11
+                      },
+                      "RightExpression": {
+                        "Literal": {
+                          "Kind": 5
+                        },
+                        "Kind": 4
+                      },
+                      "Kind": 2
+                    },
+                    "RightExpression": {
+                      "OperatorKind": 2,
+                      "Expression": {
+                        "FunctionKind": 154,
+                        "VecArguments": [],
+                        "Kind": 9
+                      },
+                      "Kind": 12
+                    },
+                    "Kind": 2
+                  },
+                  "LeftExpression": {
+                    "Literal": {
+                      "Kind": 5
+                    },
+                    "Kind": 4
+                  },
+                  "RightExpression": {
+                    "Expression": {
+                      "Expression": {
+                        "Variable": {
+                          "Name": "v0",
+                          "UniqueId": 16
+                        },
+                        "Kind": 14
+                      },
+                      "Index": 2,
+                      "Kind": 11
+                    },
+                    "Index": 0,
+                    "Kind": 11
+                  },
+                  "Kind": 6
+                },
+                {
+                  "Expression": {
+                    "Expression": {
+                      "Variable": {
+                        "Name": "v0",
+                        "UniqueId": 16
+                      },
+                      "Kind": 14
+                    },
+                    "Index": 2,
+                    "Kind": 11
+                  },
+                  "Index": 1,
+                  "Kind": 11
+                }
+              ],
               "Kind": 10
             },
             {
+              "ConditionExpression": {
+                "OperatorKind": 1,
+                "MaxDepth": 0,
+                "LeftExpression": {
+                  "OperatorKind": 14,
+                  "MaxDepth": 0,
+                  "LeftExpression": {
+                    "Expression": {
+                      "Expression": {
+                        "Variable": {
+                          "Name": "v0",
+                          "UniqueId": 16
+                        },
+                        "Kind": 14
+                      },
+                      "Index": 3,
+                      "Kind": 11
+                    },
+                    "Index": 1,
+                    "Kind": 11
+                  },
+                  "RightExpression": {
+                    "Literal": {
+                      "Kind": 5
+                    },
+                    "Kind": 4
+                  },
+                  "Kind": 2
+                },
+                "RightExpression": {
+                  "OperatorKind": 2,
+                  "Expression": {
+                    "FunctionKind": 154,
+                    "VecArguments": [],
+                    "Kind": 9
+                  },
+                  "Kind": 12
+                },
+                "Kind": 2
+              },
+              "LeftExpression": {
+                "Literal": {
+                  "Kind": 5
+                },
+                "Kind": 4
+              },
+              "RightExpression": {
+                "Expression": {
+                  "Expression": {
+                    "Variable": {
+                      "Name": "v0",
+                      "UniqueId": 16
+                    },
+                    "Kind": 14
+                  },
+                  "Index": 3,
+                  "Kind": 11
+                },
+                "Index": 0,
+                "Kind": 11
+              },
               "Kind": 6
             }
           ],
@@ -161,7 +376,7 @@
                       "Literal": {
                         "Kind": 5
                       },
-                      "Kind": 5
+                      "Kind": 4
                     },
                     "Kind": 2
                   },
@@ -169,7 +384,7 @@
                     "Literal": {
                       "Kind": 5
                     },
-                    "Kind": 5
+                    "Kind": 4
                   },
                   "RightExpression": {
                     "OperatorKind": 5,
@@ -301,7 +516,7 @@
               "Literal": {
                 "Kind": 5
               },
-              "Kind": 5
+              "Kind": 4
             },
             "Kind": 2
           }

@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using ClientQL;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -18,12 +17,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             JObject token = JObject.Parse(jsonString);
             JsonSerializer serializer = new JsonSerializer();
 
-            CoordinatorDistributionPlan plan = new CoordinatorDistributionPlan
-            {
-                ClientQL = this.DeserializeClientQLEnumerableExpression(token["coordinatorDistributionPlan"]["clientQL"], serializer)
-            };
+            ClientQLExpression clientQL = this.DeserializeClientQLEnumerableExpression(token["coordinatorDistributionPlan"]["clientQL"], serializer);
 
-            return plan;
+            return new CoordinatorDistributionPlan(clientQL);
         }
 
         public ClientQLEnumerableExpression DeserializeClientQLEnumerableExpression(JToken token, JsonSerializer serializer)
@@ -61,140 +57,92 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         public ClientQLAggregateEnumerableExpression DeserializeAggregateEnumerableExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLAggregateEnumerableExpression aggregateExpression = new ClientQLAggregateEnumerableExpression
-            {
-                Kind = ClientQLEnumerableExpressionKind.Aggregate,
-                SourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer),
-                Aggregate = this.DeserializeAggregate(token["Aggregate"])
-            };
+            ClientQLEnumerableExpression sourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
+            ClientQLAggregate aggregate = this.DeserializeAggregate(token["Aggregate"]);
 
-            return aggregateExpression;
+            return new ClientQLAggregateEnumerableExpression(sourceExpression, aggregate);
         }
 
         public ClientQLDistinctEnumerableExpression DeserializeDistinctEnumerableExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLDistinctEnumerableExpression distinctExpression = new ClientQLDistinctEnumerableExpression
-            {
-                Kind = ClientQLEnumerableExpressionKind.Distinct,
-                SourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer),
-                DeclaredVariable = this.DeserializeClientQLVariable(token["DeclaredVariable"]),
-                VecExpression = token["VecExpression"].ToObject<List<ClientQLScalarExpression>>(serializer)
-            };
+            ClientQLEnumerableExpression sourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
+            ClientQLVariable declaredVariable = this.DeserializeClientQLVariable(token["DeclaredVariable"]);
+            List<ClientQLScalarExpression> vecExpressions = this.DeserializeScalarExpressionArray(token["VecExpression"], serializer);
 
-            return distinctExpression;
+            return new ClientQLDistinctEnumerableExpression(sourceExpression, declaredVariable, vecExpressions);
         }
 
         public ClientQLGroupByEnumerableExpression DeserializeGroupByEnumerableExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLGroupByEnumerableExpression groupByExpression = new ClientQLGroupByEnumerableExpression
-            {
-                Kind = ClientQLEnumerableExpressionKind.GroupBy,
-                SourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer),
-                VecKeys = this.DeserializeGroupByKeys(token["VecKeys"]),
-                VecAggregates = this.DeserializeAggregates(token["VecAggregates"])
-            };
+            ClientQLEnumerableExpression sourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
+            List<ClientQLGroupByKey> vecKeys = this.DeserializeGroupByKeys(token["VecKeys"]);
+            List<ClientQLAggregate> vecAggregates = this.DeserializeAggregates(token["VecAggregates"]);
 
-            return groupByExpression;
+            return new ClientQLGroupByEnumerableExpression(sourceExpression, vecKeys, vecAggregates);
         }
 
         public ClientQLFlattenEnumerableExpression DeserializeFlattenEnumerableExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLFlattenEnumerableExpression flattenExpression = new ClientQLFlattenEnumerableExpression
-            {
-                Kind = ClientQLEnumerableExpressionKind.Flatten,
-                SourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer)
-            };
+            ClientQLEnumerableExpression sourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
 
-            return flattenExpression;
+            return new ClientQLFlattenEnumerableExpression(sourceExpression);
         }
 
         public ClientQLInputEnumerableExpression DeserializeInputEnumerableExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLInputEnumerableExpression inputExpression = new ClientQLInputEnumerableExpression
-            {
-                Kind = ClientQLEnumerableExpressionKind.Input,
-                Name = token.Value<string>("Name")
-            };
-
-            return inputExpression;
+            return new ClientQLInputEnumerableExpression(token.Value<string>("Name"));
         }
 
         public ClientQLOrderByEnumerableExpression DeserializeOrderByEnumerableExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLOrderByEnumerableExpression orderByExpression = new ClientQLOrderByEnumerableExpression
-            {
-                Kind = ClientQLEnumerableExpressionKind.OrderBy,
-                SourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer),
-                DeclaredVariable = this.DeserializeClientQLVariable(token["DeclaredVariable"]),
-                VecItems = this.DeserializeOrderByItems(token["VecItems"], serializer)
-            };
+            ClientQLEnumerableExpression source = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
+            ClientQLVariable declaredVariable = this.DeserializeClientQLVariable(token["DeclaredVariable"]);
+            List<ClientQLOrderByItem> orderByItems = this.DeserializeOrderByItems(token["VecItems"], serializer);
 
-            return orderByExpression;
+            return new ClientQLOrderByEnumerableExpression(source, declaredVariable, orderByItems);
         }
 
         public ClientQLScalarAsEnumerableExpression DeserializeScalarAsEnumerableExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLScalarAsEnumerableExpression scalarAsEnumerableExpression = new ClientQLScalarAsEnumerableExpression
-            {
-                Kind = ClientQLEnumerableExpressionKind.ScalarAsEnumerable,
-                Expression = this.DeserializeScalarExpression(token["Expression"], serializer),
-                EnumerationKind = (ClientQLEnumerationKind)Enum.Parse(typeof(ClientQLEnumerationKind), token.Value<string>("EnumerationKind"))
-            };
+            ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
+            ClientQLEnumerationKind enumerationKind = (ClientQLEnumerationKind)Enum.Parse(typeof(ClientQLEnumerationKind), token.Value<string>("EnumerationKind"));
 
-            return scalarAsEnumerableExpression;
+            return new ClientQLScalarAsEnumerableExpression(expression, enumerationKind);
         }
 
         public ClientQLSelectEnumerableExpression DeserializeSelectEnumerableExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLSelectEnumerableExpression selectExpression = new ClientQLSelectEnumerableExpression
-            {
-                Kind = ClientQLEnumerableExpressionKind.Select,
-                Expression = this.DeserializeScalarExpression(token["Expression"], serializer),
-                DeclaredVariable = this.DeserializeClientQLVariable(token["DeclaredVariable"]),
-                SourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer)
-            };
+            ClientQLEnumerableExpression sourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
+            ClientQLVariable declaredVariable = this.DeserializeClientQLVariable(token["DeclaredVariable"]);
+            ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
 
-            return selectExpression;
+            return new ClientQLSelectEnumerableExpression(sourceExpression, declaredVariable, expression);
         }
 
         public ClientQLSelectManyEnumerableExpression DeserializeSelectManyExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLSelectManyEnumerableExpression selectManyExpression = new ClientQLSelectManyEnumerableExpression
-            {
-                Kind = ClientQLEnumerableExpressionKind.SelectMany,
-                SourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer),
-                DeclaredVariable = this.DeserializeClientQLVariable(token["DeclaredVariable"]),
-                SelectorExpression = this.DeserializeClientQLEnumerableExpression(token["SelectorExpression"], serializer)
-            };
+            ClientQLEnumerableExpression sourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
+            ClientQLVariable declaredVariable = this.DeserializeClientQLVariable(token["DeclaredVariable"]);
+            ClientQLEnumerableExpression selectorExpression = this.DeserializeClientQLEnumerableExpression(token["SelectorExpression"], serializer);
 
-            return selectManyExpression;
+            return new ClientQLSelectManyEnumerableExpression(sourceExpression, declaredVariable, selectorExpression);
         }
 
         public ClientQLTakeEnumerableExpression DeserializeTakeEnumerableExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLTakeEnumerableExpression takeExpression = new ClientQLTakeEnumerableExpression
-            {
-                Kind = ClientQLEnumerableExpressionKind.Take,
-
-                SourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer),
-                SkipValue = token.Value<int>("SkipValue"),
-                TakeValue = token.Value<int>("TakeValue")
-            };
-
-            return takeExpression;
+            ClientQLEnumerableExpression sourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
+            int skipValue = token.Value<int>("SkipValue");
+            int takeExpression = token.Value<int>("TakeValue");
+            
+            return new ClientQLTakeEnumerableExpression(sourceExpression, skipValue, takeExpression);
         }
 
         public ClientQLWhereEnumerableExpression DeserializeWhereEnumerableExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLWhereEnumerableExpression whereExpression = new ClientQLWhereEnumerableExpression
-            {
-                Kind = ClientQLEnumerableExpressionKind.Where,
+            ClientQLEnumerableExpression sourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
+            ClientQLDelegate clientDelegate = this.DeserializeDelegateExpression(token["Delegate"]);
 
-                SourceExpression = this.DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer),
-                Delegate = this.DeserializeDelegateExpression(token["Delegate"])
-            };
-
-            return whereExpression;
+            return new ClientQLWhereEnumerableExpression(sourceExpression, clientDelegate);
         }
 
         public ClientQLScalarExpression DeserializeScalarExpression(JToken token, JsonSerializer serializer)
@@ -240,260 +188,161 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         public ClientQLArrayCreateScalarExpression DeserializeArrayCreateScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLArrayCreateScalarExpression arrayCreateExpression = new ClientQLArrayCreateScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.ArrayCreate,
-                ArrayKind = token.Value<ClientQLArrayKind>("ArrayKind"),
-                VecItems = token["VecItems"].ToObject<List<ClientQLScalarExpression>>(serializer)
-            };
+            ClientQLArrayKind arrayKind = token.Value<ClientQLArrayKind>("ArrayKind");
+            List<ClientQLScalarExpression> vecItems = this.DeserializeScalarExpressionArray(token["VecItems"], serializer);
 
-            return arrayCreateExpression;
+            return new ClientQLArrayCreateScalarExpression(arrayKind, vecItems);
         }
 
         public ClientQLArrayIndexerScalarExpression DeserializeArrayIndexerScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLArrayIndexerScalarExpression arrayIndexerExpression = new ClientQLArrayIndexerScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.ArrayIndexer,
-                Expression = this.DeserializeScalarExpression(token["Expression"], serializer),
-                Index = token.Value<int>("Index")
-            };
-
-            return arrayIndexerExpression;
+            ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
+            int index = token.Value<int>("Index");
+            
+            return new ClientQLArrayIndexerScalarExpression(expression, index);
         }
 
         public ClientQLBinaryScalarExpression DeserializeBinaryOperatorScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLBinaryScalarExpression binaryExpression = new ClientQLBinaryScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.BinaryOperator,
-                OperatorKind = (ClientQLBinaryScalarOperatorKind)Enum.Parse(typeof(ClientQLBinaryScalarOperatorKind), token.Value<string>("OperatorKind")),
-                MaxDepth = token.Value<int>("MaxDepth"),
-                LeftExpression = this.DeserializeScalarExpression(token["LeftExpression"], serializer),
-                RightExpression = this.DeserializeScalarExpression(token["RightExpression"], serializer)
-            };
+            ClientQLBinaryScalarOperatorKind operatorKind = (ClientQLBinaryScalarOperatorKind)Enum.Parse(typeof(ClientQLBinaryScalarOperatorKind), token.Value<string>("OperatorKind"));
+            int maxDepth = token.Value<int>("MaxDepth");
+            ClientQLScalarExpression leftExpression = this.DeserializeScalarExpression(token["LeftExpression"], serializer);
+            ClientQLScalarExpression rightExpression = this.DeserializeScalarExpression(token["RightExpression"], serializer);
 
-            return binaryExpression;
+            return new ClientQLBinaryScalarExpression(operatorKind, maxDepth, leftExpression, rightExpression);
         }
 
         public ClientQLIsOperatorScalarExpression DeserializeIsOperatorScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLIsOperatorScalarExpression isOperatorExpression = new ClientQLIsOperatorScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.IsOperator,
-                OperatorKind = (ClientQLIsOperatorKind)Enum.Parse(typeof(ClientQLIsOperatorKind), token.Value<string>("OperatorKind")),
-                Expression = this.DeserializeScalarExpression(token["Expression"], serializer)
-            };
+            ClientQLIsOperatorKind operatorKind = (ClientQLIsOperatorKind)Enum.Parse(typeof(ClientQLIsOperatorKind), token.Value<string>("OperatorKind"));
+            ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
 
-            return isOperatorExpression;
+            return new ClientQLIsOperatorScalarExpression(operatorKind, expression);
         }
 
         public ClientQLLetScalarExpression DeserializeLetScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLLetScalarExpression letExpression = new ClientQLLetScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.Let,
-                DeclaredVariable = this.DeserializeClientQLVariable(token["DeclaredVariable"]),
-                DeclaredVariableExpression = this.DeserializeScalarExpression(token["DeclaredVariableExpression"], serializer),
-                Expression = this.DeserializeScalarExpression(token["Expression"], serializer)
-            };
+            ClientQLVariable declaredVariable = this.DeserializeClientQLVariable(token["DeclaredVariable"]);
+            ClientQLScalarExpression declaredVariableExpression = this.DeserializeScalarExpression(token["DeclaredVariableExpression"], serializer);
+            ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
 
-            return letExpression;
+            return new ClientQLLetScalarExpression(declaredVariable, declaredVariableExpression, expression);
         }
 
-        public ClientQLLiteralScalarlExpression DeserializeLiteralScalarExpression(JToken token, JsonSerializer serializer)
+        public ClientQLLiteralScalarExpression DeserializeLiteralScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLLiteralScalarlExpression literalExpression = new ClientQLLiteralScalarlExpression
-            {
-                Kind = (ClientQLScalarExpressionKind)Enum.Parse(typeof(ClientQLScalarExpressionKind), token.Value<string>("Kind")),
-                Literal = new ClientQLLiteral
-                {
-                    Kind = (ClientQLLiteralKind)ClientQLScalarExpressionKind.Literal
-                }
-            };
+            ClientQLLiteral literal = new ClientQLLiteral((ClientQLLiteralKind)ClientQLScalarExpressionKind.Literal);
 
-            return literalExpression;
+            return new ClientQLLiteralScalarExpression(literal);
+            
         }
 
         public ClientQLMuxScalarExpression DeserializeMuxScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLMuxScalarExpression muxExpression = new ClientQLMuxScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.Mux,
-                ConditionExpression = this.DeserializeScalarExpression(token["ConditionExpression"], serializer),
-                LeftExpression = this.DeserializeScalarExpression(token["LeftExpression"], serializer),
-                RightExpression = this.DeserializeScalarExpression(token["RightExpression"], serializer)
-            };
+            ClientQLScalarExpression conditionExpression = this.DeserializeScalarExpression(token["ConditionExpression"], serializer);
+            ClientQLScalarExpression leftExpression = this.DeserializeScalarExpression(token["LeftExpression"], serializer);
+            ClientQLScalarExpression rightExpression = this.DeserializeScalarExpression(token["RightExpression"], serializer);
 
-            return muxExpression;
+            return new ClientQLMuxScalarExpression(conditionExpression, leftExpression, rightExpression);
         }
 
         public ClientQLObjectCreateScalarExpression DeserializeObjectCreateScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLObjectCreateScalarExpression objectCreateExpression = new ClientQLObjectCreateScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.ObjectCreate
-            };
-
             string objectKindString = token.Value<string>("ObjectKind");
             if (!Enum.TryParse(objectKindString, out ClientQLObjectKind objectKind))
             {
                 throw new JsonException($"Invalid ClientQLObjectKind: {objectKindString}");
             }
 
-            objectCreateExpression.ObjectKind = objectKind;
-            objectCreateExpression.Properties = this.DeserializeObjectProperties(token["Properties"], serializer);
+            List<ClientQLObjectProperty> properties = this.DeserializeObjectProperties(token["Properties"], serializer);
 
-            return objectCreateExpression;
+            return new ClientQLObjectCreateScalarExpression(properties, objectKind);
         }
 
         public ClientQLPropertyRefScalarExpression DeserializePropertyRefScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLPropertyRefScalarExpression propertyRefExpression = new ClientQLPropertyRefScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.PropertyRef,
-                Expression = this.DeserializeScalarExpression(token["Expression"], serializer),
-                PropertyName = token.Value<string>("PropertyName")
-            };
+            ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
+            string propertyName = token.Value<string>("PropertyName");
 
-            return propertyRefExpression;
+            return new ClientQLPropertyRefScalarExpression(expression, propertyName);
         }
 
         public ClientQLSystemFunctionCallScalarExpression DeserializeSystemFunctionCallScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLSystemFunctionCallScalarExpression functionCallExpression = new ClientQLSystemFunctionCallScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.SystemFunctionCall,
-                FunctionKind = (ClientQLBuiltinScalarFunctionKind)Enum.Parse(typeof(ClientQLBuiltinScalarFunctionKind), token.Value<string>("FunctionKind")),
-                VecArguments = token["VecArguments"]
-                .Select(argToken => this.DeserializeScalarExpression(argToken, serializer))
-                .ToList()
-            };
+            ClientQLBuiltinScalarFunctionKind functionKind = (ClientQLBuiltinScalarFunctionKind)Enum.Parse(typeof(ClientQLBuiltinScalarFunctionKind), token.Value<string>("FunctionKind"));
+            List<ClientQLScalarExpression> vecArguments = this.DeserializeScalarExpressionArray(token["VecArguments"], serializer);
 
-            return functionCallExpression;
+            return new ClientQLSystemFunctionCallScalarExpression(functionKind, vecArguments);
         }
 
         public ClientQLTupleCreateScalarExpression DeserializeTupleCreateScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLTupleCreateScalarExpression tupleCreateExpression = new ClientQLTupleCreateScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.TupleCreate,
-                VecItems = token["Items"].ToObject<List<ClientQLScalarExpression>>(serializer)
-            };
+            List<ClientQLScalarExpression> vecItems = this.DeserializeScalarExpressionArray(token["Items"], serializer);
 
-            return tupleCreateExpression;
+            return new ClientQLTupleCreateScalarExpression(vecItems);
         }
 
         public ClientQLTupleItemRefScalarExpression DeserializeTupleItemRefScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLTupleItemRefScalarExpression tupleItemRefExpression = new ClientQLTupleItemRefScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.TupleItemRef,
-                Expression = this.DeserializeScalarExpression(token["Expression"], serializer),
-                Index = token.Value<int>("Index")
-            };
+            ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
+            int index = token.Value<int>("Index");
 
-            return tupleItemRefExpression;
+            return new ClientQLTupleItemRefScalarExpression(expression, index);
         }
 
         public ClientQLUnaryScalarExpression DeserializeUnaryScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLUnaryScalarExpression unaryExpression = new ClientQLUnaryScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.UnaryOperator,
-                OperatorKind = (ClientQLUnaryScalarOperatorKind)Enum.Parse(typeof(ClientQLUnaryScalarOperatorKind), token.Value<string>("OperatorKind")),
-                Expression = this.DeserializeScalarExpression(token["Expression"], serializer)
-            };
+            ClientQLUnaryScalarOperatorKind operatorKind = (ClientQLUnaryScalarOperatorKind)Enum.Parse(typeof(ClientQLUnaryScalarOperatorKind), token.Value<string>("OperatorKind"));
+            ClientQLScalarExpression expression = this.DeserializeScalarExpression(token["Expression"], serializer);
 
-            return unaryExpression;
+            return new ClientQLUnaryScalarExpression(operatorKind, expression);
         }
 
         public ClientQLUserDefinedFunctionCallScalarExpression DeserializeUserDefinedFunctionCallScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLUserDefinedFunctionCallScalarExpression userDefinedFunctionCallExpression = new ClientQLUserDefinedFunctionCallScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.UserDefinedFunctionCall,
-                Identifier = token["Identifier"].ToObject<ClientQLFunctionIdentifier>(serializer),
-                VecArguments = token["VecArguments"].ToObject<List<ClientQLScalarExpression>>(serializer),
-                Builtin = token.Value<bool>("Builtin")
-            };
+            ClientQLFunctionIdentifier identifier = token["Identifier"].ToObject<ClientQLFunctionIdentifier>(serializer);
+            List<ClientQLScalarExpression> vecArguments = this.DeserializeScalarExpressionArray(token["VecArguments"], serializer);
+            bool builtin = token.Value<bool>("Builtin");
 
-            return userDefinedFunctionCallExpression;
+            return new ClientQLUserDefinedFunctionCallScalarExpression(identifier, vecArguments, builtin);
         }
 
         public ClientQLVariableRefScalarExpression DeserializeVariableRefScalarExpression(JToken token, JsonSerializer serializer)
         {
-            ClientQLVariableRefScalarExpression variableRefExpression = new ClientQLVariableRefScalarExpression
-            {
-                Kind = ClientQLScalarExpressionKind.VariableRef,
-                Variable = this.DeserializeClientQLVariable(token["Variable"])
-            };
+            ClientQLVariable variable = this.DeserializeClientQLVariable(token["Variable"]);
 
-            return variableRefExpression;
-        }
-
-        private List<ClientQLOrderByItem> DeserializeOrderByItems(JToken token, JsonSerializer serializer)
-        {
-            List<ClientQLOrderByItem> orderByItems = new List<ClientQLOrderByItem>();
-
-            if (token != null && token.Type == JTokenType.Array)
-            {
-                foreach (JToken itemToken in token)
-                {
-                    ClientQLOrderByItem orderByItem = new ClientQLOrderByItem
-                    {
-                        Expression = this.DeserializeScalarExpression(itemToken["Expression"], serializer),
-                        SortOrder = (ClientQLSortOrder)Enum.Parse(typeof(ClientQLSortOrder), itemToken.Value<string>("SortOrder"))
-                    };
-
-                    orderByItems.Add(orderByItem);
-                }
-            }
-
-            return orderByItems;
+            return new ClientQLVariableRefScalarExpression(variable);
         }
 
         public ClientQLDelegate DeserializeDelegateExpression(JToken token)
         {
-            ClientQLDelegate delegateExpression = new ClientQLDelegate
-            {
-                Kind = (ClientQLDelegateKind)Enum.Parse(typeof(ClientQLDelegateKind), token.Value<string>("Kind")),
-                Type = this.DeserializeType(token["Type"])
-            };
+            ClientQLDelegateKind kind = (ClientQLDelegateKind)Enum.Parse(typeof(ClientQLDelegateKind), token.Value<string>("Kind"));
+            ClientQLType type = this.DeserializeType(token["Type"]);
 
-            return delegateExpression;
+            return new ClientQLDelegate(kind, type);
         }
 
         private ClientQLType DeserializeType(JToken token)
         {
-            ClientQLType type = new ClientQLType
-            {
-                Kind = (ClientQLTypeKind)Enum.Parse(typeof(ClientQLTypeKind), token.Value<string>("Kind"))
-            };
+            ClientQLTypeKind kind = (ClientQLTypeKind)Enum.Parse(typeof(ClientQLTypeKind), token.Value<string>("Kind"));
 
-            return type;
+            return new ClientQLType(kind);
         }
 
         public ClientQLAggregate DeserializeAggregate(JToken token)
         {
-            ClientQLAggregate aggregate = new ClientQLAggregate
-            {
-                Kind = (ClientQLAggregateKind)Enum.Parse(typeof(ClientQLAggregateKind), token.Value<string>("Kind")),
-                OperatorKind = token["OperatorKind"].ToString()
-            };
+            ClientQLAggregateKind kind = (ClientQLAggregateKind)Enum.Parse(typeof(ClientQLAggregateKind), token.Value<string>("Kind"));
+            string operatorKind = token["OperatorKind"].ToString();
 
-            return aggregate;
+            return new ClientQLAggregate(kind, operatorKind);
         }
 
         public ClientQLVariable DeserializeClientQLVariable(JToken token)
         {
-            ClientQLVariable variable = new ClientQLVariable
-            {
-                Name = token.Value<string>("Name"),
-                UniqueId = token.Value<int>("UniqueId")
-            };
+            string name = token.Value<string>("Name");
+            int uniqueId = token.Value<int>("UniqueId");
 
-            return variable;
+            return new ClientQLVariable(name, uniqueId);
         }
 
         public List<ClientQLObjectProperty> DeserializeObjectProperties(JToken token, JsonSerializer serializer)
@@ -503,55 +352,70 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             {
                 foreach (JToken propertyToken in token)
                 {
-                    ClientQLObjectProperty property = new ClientQLObjectProperty
-                    {
-                        Name = propertyToken.Value<string>("Name"),
-                        Expression = this.DeserializeScalarExpression(propertyToken["Expression"], serializer)
-                    };
-                    properties.Add(property);
+                    string name = propertyToken.Value<string>("Name");
+                    ClientQLScalarExpression expression = this.DeserializeScalarExpression(propertyToken["Expression"], serializer);
+                    properties.Add(new ClientQLObjectProperty(name, expression));
                 }
             }
-
             return properties;
         }
 
         private List<ClientQLGroupByKey> DeserializeGroupByKeys(JToken token)
         {
             List<ClientQLGroupByKey> groupByKeys = new List<ClientQLGroupByKey>();
-
             if (token != null && token.Type == JTokenType.Array)
             {
                 foreach (JToken keyToken in token)
                 {
-                    ClientQLGroupByKey groupByKey = new ClientQLGroupByKey
-                    {
-                        Type = this.DeserializeType(keyToken["Type"])
-                    };
-                    groupByKeys.Add(groupByKey);
+                    ClientQLType type = this.DeserializeType(keyToken["Type"]);
+                    groupByKeys.Add(new ClientQLGroupByKey(type));
                 }
             }
-
             return groupByKeys;
         }
 
         private List<ClientQLAggregate> DeserializeAggregates(JToken token)
         {
             List<ClientQLAggregate> aggregates = new List<ClientQLAggregate>();
-
             if (token != null && token.Type == JTokenType.Array)
             {
                 foreach (JToken aggregateToken in token)
                 {
-                    ClientQLAggregate aggregate = new ClientQLAggregate
-                    {
-                        Kind = (ClientQLAggregateKind)Enum.Parse(typeof(ClientQLAggregateKind), aggregateToken.Value<string>("Kind")),
-                        OperatorKind = aggregateToken.Value<string>("OperatorKind")
-                    };
-                    aggregates.Add(aggregate);
+                    ClientQLAggregateKind kind = (ClientQLAggregateKind)Enum.Parse(typeof(ClientQLAggregateKind), aggregateToken.Value<string>("Kind"));
+                    string operatorKind = aggregateToken.Value<string>("OperatorKind");
+                    aggregates.Add(new ClientQLAggregate(kind, operatorKind));
                 }
             }
-
             return aggregates;
+        }
+
+        private List<ClientQLOrderByItem> DeserializeOrderByItems(JToken token, JsonSerializer serializer)
+        {
+            List<ClientQLOrderByItem> orderByItems = new List<ClientQLOrderByItem>();
+            if (token != null && token.Type == JTokenType.Array)
+            {
+                foreach (JToken itemToken in token)
+                {
+                    ClientQLScalarExpression expression = this.DeserializeScalarExpression(itemToken["Expression"], serializer);
+                    ClientQLSortOrder sortOrder = (ClientQLSortOrder)Enum.Parse(typeof(ClientQLSortOrder), itemToken.Value<string>("SortOrder"));
+                    orderByItems.Add(new ClientQLOrderByItem(expression, sortOrder));
+                }
+            }
+            return orderByItems;
+        }
+
+        private List<ClientQLScalarExpression> DeserializeScalarExpressionArray(JToken token, JsonSerializer serializer)
+        {
+            List<ClientQLScalarExpression> properties = new List<ClientQLScalarExpression>();
+            if (token != null)
+            {
+                foreach (JToken propertyToken in token)
+                {
+                    ClientQLScalarExpression expression = this.DeserializeScalarExpression(propertyToken, serializer);
+                    properties.Add(expression);
+                }
+            }
+            return properties;
         }
     }
 }

@@ -8,9 +8,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLObjectCreateScalarExpression : ClientQLScalarExpression
     {
-        public List<ClientQLObjectProperty> Properties { get; set; }
+        public ClientQLObjectCreateScalarExpression(List<ClientQLObjectProperty> properties, ClientQLObjectKind objectKind) 
+            : base(ClientQLScalarExpressionKind.ObjectCreate)
+        {
+            this.Properties = properties;
+            this.ObjectKind = objectKind;
+        }
+
+        public List<ClientQLObjectProperty> Properties { get; }
         
-        public ClientQLObjectKind ObjectKind { get; set; }
+        public ClientQLObjectKind ObjectKind { get; }
     }
 
 }

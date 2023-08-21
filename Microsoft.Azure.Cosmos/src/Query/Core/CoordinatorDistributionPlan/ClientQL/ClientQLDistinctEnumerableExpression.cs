@@ -8,11 +8,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLDistinctEnumerableExpression : ClientQLEnumerableExpression
     {
-        public ClientQLEnumerableExpression SourceExpression { get; set; }
+        public ClientQLDistinctEnumerableExpression(ClientQLEnumerableExpression sourceExpression, ClientQLVariable declaredVariable, List<ClientQLScalarExpression> vecExpression) 
+            : base(ClientQLEnumerableExpressionKind.Distinct)
+        {
+            this.SourceExpression = sourceExpression;
+            this.DeclaredVariable = declaredVariable;
+            this.VecExpression = vecExpression;
+        }
 
-        public ClientQLVariable DeclaredVariable { get; set; }
+        public ClientQLEnumerableExpression SourceExpression { get; }
+
+        public ClientQLVariable DeclaredVariable { get; }
         
-        public List<ClientQLScalarExpression> VecExpression { get; set; }
+        public List<ClientQLScalarExpression> VecExpression { get; }
     }
 
 }

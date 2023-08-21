@@ -6,8 +6,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLAggregateSignature
     {
-        public ClientQLTypeKind ItemType { get; set; }
+        public ClientQLAggregateSignature(ClientQLTypeKind itemType, ClientQLTypeKind resultType)
+        {
+            this.ItemType = itemType;
+            this.ResultType = resultType;
+        }
+
+        public ClientQLTypeKind ItemType { get; }
         
-        public ClientQLTypeKind ResultType { get; set; }
+        public ClientQLTypeKind ResultType { get; }
     }
 }

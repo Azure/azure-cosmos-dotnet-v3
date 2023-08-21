@@ -4,11 +4,15 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
-    using System;
-
     internal class ClientQLFlattenEnumerableExpression : ClientQLEnumerableExpression
     {
-        public ClientQLEnumerableExpression SourceExpression { get; set; }
+        public ClientQLFlattenEnumerableExpression(ClientQLEnumerableExpression sourceExpression) 
+            : base(ClientQLEnumerableExpressionKind.Flatten)
+        {
+            this.SourceExpression = sourceExpression;
+        }
+
+        public ClientQLEnumerableExpression SourceExpression { get; }
     }
 
 }

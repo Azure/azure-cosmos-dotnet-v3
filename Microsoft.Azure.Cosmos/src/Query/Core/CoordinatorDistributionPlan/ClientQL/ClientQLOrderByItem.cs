@@ -6,8 +6,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLOrderByItem
     {
-        public ClientQLScalarExpression Expression { get; set; }
+        public ClientQLOrderByItem(ClientQLScalarExpression expression, ClientQLSortOrder sortOrder)
+        {
+            this.Expression = expression;
+            this.SortOrder = sortOrder;
+        }
+
+        public ClientQLScalarExpression Expression { get; }
         
-        public ClientQLSortOrder SortOrder { get; set; }
+        public ClientQLSortOrder SortOrder { get; }
     }
 }

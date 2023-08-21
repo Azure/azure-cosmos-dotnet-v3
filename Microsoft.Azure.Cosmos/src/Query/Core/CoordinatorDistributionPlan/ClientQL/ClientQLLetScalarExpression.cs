@@ -8,11 +8,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLLetScalarExpression : ClientQLScalarExpression
     {
-        public ClientQLVariable DeclaredVariable { get; set; }
+        public ClientQLLetScalarExpression(ClientQLVariable declaredVariable, ClientQLScalarExpression declaredVariableExpression, ClientQLScalarExpression expression) 
+            : base(ClientQLScalarExpressionKind.Let)
+        {
+            this.DeclaredVariable = declaredVariable;
+            this.DeclaredVariableExpression = declaredVariableExpression;
+            this.Expression = expression;
+        }
 
-        public ClientQLScalarExpression DeclaredVariableExpression { get; set; }
+        public ClientQLVariable DeclaredVariable { get; }
+
+        public ClientQLScalarExpression DeclaredVariableExpression { get; }
         
-        public ClientQLScalarExpression Expression { get; set; }
+        public ClientQLScalarExpression Expression { get; }
     }
 
 }

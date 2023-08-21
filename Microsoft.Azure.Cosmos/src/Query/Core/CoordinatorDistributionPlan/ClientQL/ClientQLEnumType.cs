@@ -6,6 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLEnumType : ClientQLType
     {
-        public ClientQLType ItemType { get; set; }
+        public ClientQLEnumType(ClientQLType itemType)
+            : base(ClientQLTypeKind.Enum)
+        {
+            this.ItemType = itemType;
+        }
+
+        public ClientQLType ItemType { get; }
     }
 }

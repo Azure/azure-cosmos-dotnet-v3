@@ -6,6 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLMSingletonLiteral : ClientQLLiteral
     {
+        public ClientQLMSingletonLiteral(Kind singletonKind)
+            : base(ClientQLLiteralKind.MSingleton)
+        {
+            this.SingletonKind = singletonKind;
+        }
+
         public new enum Kind
         {
             MaxKey,
@@ -13,6 +19,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
             Undefined
         }
 
-        public Kind SingletonKind { get; set; }
+        public Kind SingletonKind { get; }
     }
 }

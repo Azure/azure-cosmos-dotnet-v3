@@ -4,15 +4,21 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
-    using System;
-
     internal class ClientQLTakeEnumerableExpression : ClientQLEnumerableExpression
     {
-        public ClientQLEnumerableExpression SourceExpression { get; set; }
+        public ClientQLTakeEnumerableExpression(ClientQLEnumerableExpression sourceExpression, int skipValue, int takeValue)
+            : base(ClientQLEnumerableExpressionKind.Take)
+        {
+            this.SourceExpression = sourceExpression;
+            this.SkipValue = skipValue;
+            this.TakeValue = takeValue;
+        }
 
-        public int SkipValue { get; set; }
+        public ClientQLEnumerableExpression SourceExpression { get; }
+
+        public int SkipValue { get; }
         
-        public int TakeValue { get; set; }
+        public int TakeValue { get; }
     }
 
 }

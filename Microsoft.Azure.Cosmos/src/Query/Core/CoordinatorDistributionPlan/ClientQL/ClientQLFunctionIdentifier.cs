@@ -6,6 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLFunctionIdentifier
     {
-        public string StrName { get; set; }
+        public string StrName { get; }
     }
 }

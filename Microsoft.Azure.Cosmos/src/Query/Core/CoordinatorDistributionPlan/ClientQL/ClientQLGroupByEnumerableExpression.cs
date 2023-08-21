@@ -8,11 +8,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLGroupByEnumerableExpression : ClientQLEnumerableExpression
     {
-        public ClientQLEnumerableExpression SourceExpression { get; set; }
+        public ClientQLGroupByEnumerableExpression(ClientQLEnumerableExpression sourceExpression, List<ClientQLGroupByKey> vecKeys, List<ClientQLAggregate> vecAggregates) 
+            : base(ClientQLEnumerableExpressionKind.GroupBy)
+        {
+            this.SourceExpression = sourceExpression;
+            this.VecKeys = vecKeys;
+            this.VecAggregates = vecAggregates;
+        }
 
-        public List<ClientQLGroupByKey> VecKeys { get; set; }
+        public ClientQLEnumerableExpression SourceExpression { get; }
+
+        public List<ClientQLGroupByKey> VecKeys { get; }
         
-        public List<ClientQLAggregate> VecAggregates { get; set; }
+        public List<ClientQLAggregate> VecAggregates { get; }
     }
 
 }

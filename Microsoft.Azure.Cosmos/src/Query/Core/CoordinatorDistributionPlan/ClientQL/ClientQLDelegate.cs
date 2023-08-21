@@ -6,8 +6,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLDelegate
     {
-        public ClientQLDelegateKind Kind { get; set; }
+        public ClientQLDelegate(ClientQLDelegateKind kind, ClientQLType type)
+        {
+            this.Kind = kind;
+            this.Type = type;
+        }
+
+        public ClientQLDelegateKind Kind { get; }
         
-        public ClientQLType Type { get; set; }
+        public ClientQLType Type { get; }
     }
 }

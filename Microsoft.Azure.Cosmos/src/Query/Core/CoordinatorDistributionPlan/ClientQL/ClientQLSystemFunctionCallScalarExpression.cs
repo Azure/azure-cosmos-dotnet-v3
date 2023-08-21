@@ -8,9 +8,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLSystemFunctionCallScalarExpression : ClientQLScalarExpression
     {
-        public ClientQLBuiltinScalarFunctionKind FunctionKind { get; set; }
+        public ClientQLSystemFunctionCallScalarExpression(ClientQLBuiltinScalarFunctionKind functionKind, List<ClientQLScalarExpression> vecArguments) 
+            : base(ClientQLScalarExpressionKind.SystemFunctionCall)
+        {
+            this.FunctionKind = functionKind;
+            this.VecArguments = vecArguments;
+        }
+
+        public ClientQLBuiltinScalarFunctionKind FunctionKind { get; }
         
-        public List<ClientQLScalarExpression> VecArguments { get; set; }
+        public List<ClientQLScalarExpression> VecArguments { get; }
     }
 
 }

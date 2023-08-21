@@ -6,6 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLBaseType : ClientQLType
     {
-        public bool ExcludesUndefined { get; set; }
+        public ClientQLBaseType(bool excludesUndefined)
+            : base(ClientQLTypeKind.Base)
+        {
+            this.ExcludesUndefined = excludesUndefined;
+        }
+
+        public bool ExcludesUndefined { get; }
     }
 }

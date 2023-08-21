@@ -6,6 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLBooleanLiteral : ClientQLLiteral
     {
-        public bool Value { get; set; }
+        public ClientQLBooleanLiteral(bool value)
+            : base(ClientQLLiteralKind.Boolean)
+        {
+            this.Value = value;
+        }
+
+        public bool Value { get; }
     }
 }

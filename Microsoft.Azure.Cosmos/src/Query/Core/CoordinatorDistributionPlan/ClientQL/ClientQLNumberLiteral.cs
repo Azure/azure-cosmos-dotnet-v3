@@ -4,8 +4,16 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
+    using System.Collections.Generic;
+
     internal class ClientQLNumberLiteral : ClientQLLiteral
     {
-        public System.Int64 Value { get; set; }
+        public ClientQLNumberLiteral(long value)
+            : base(ClientQLLiteralKind.Number)
+        {
+            this.Value = value;
+        }
+
+        public long Value { get; }
     }
 }

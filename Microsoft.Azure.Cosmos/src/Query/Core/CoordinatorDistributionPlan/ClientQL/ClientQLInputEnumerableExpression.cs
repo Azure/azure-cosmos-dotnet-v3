@@ -4,11 +4,15 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
-    using System;
-
     internal class ClientQLInputEnumerableExpression : ClientQLEnumerableExpression
     {
-        public string Name { get; set; }
+        public ClientQLInputEnumerableExpression(string name) 
+            : base(ClientQLEnumerableExpressionKind.Input)
+        {
+            this.Name = name;
+        }
+
+        public string Name { get; }
     }
 
 }

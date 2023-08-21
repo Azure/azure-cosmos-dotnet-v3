@@ -6,8 +6,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLVariable
     {
-        public string Name { get; set; }
+        public ClientQLVariable(string name, int uniqueId)
+        {
+            this.Name = name;
+            this.UniqueId = uniqueId;
+        }
+
+        public string Name { get; }
         
-        public int UniqueId { get; set; }
+        public int UniqueId { get; }
     }
 }

@@ -6,6 +6,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLGroupByKey
     {
-        public ClientQLType Type { get; set; }
+        public ClientQLGroupByKey(ClientQLType type)
+        {
+            this.Type = type;
+        }
+
+        public ClientQLType Type { get; }
     }
 }
