@@ -131,4 +131,4 @@ If you want to quickly get results, you can use our [guide to leverage Azure Con
 
 ## Running on Azure VM
 
-If you want to execute benchmarking on multiple machines with one ARM Template, you can use our [guide to leverage Azure Virtual Machines](./AzureVmBenchmark/README.md) to execute the benchmarks in any number of Azure regions usgin ARM Template.
+If you want to execute benchmarking on multiple machines with one ARM Template, you can use our [guide to leverage Azure Virtual Machines](./AzureVmBenchmark/README.md).
