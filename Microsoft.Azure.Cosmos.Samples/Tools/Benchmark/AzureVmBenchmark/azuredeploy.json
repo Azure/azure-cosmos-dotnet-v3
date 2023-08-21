@@ -177,7 +177,7 @@
     },
     "metricsReportingIntervalInSec": {
       "type": "int",
-      "defaultValue": 10
+      "defaultValue": 5
     },
     "applicationInsightsName": {
       "type": "string",
