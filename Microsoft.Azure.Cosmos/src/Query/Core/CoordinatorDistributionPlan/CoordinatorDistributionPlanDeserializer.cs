@@ -13,6 +13,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
     internal static class CoordinatorDistributionPlanDeserializer
     {
+        private static class EnumerableConstants
+        {
+            public const string Aggregate = "Aggregate";
+            public const string Distinct = "Distinct";
+            public const string GroupBy = "GroupBy";
+            public const string Flatten = "Flatten";
+            public const string Input = "Input";
+            public const string OrderBy = "OrderBy";
+            public const string ScalarAsEnumerable = "ScalarAsEnumerable";
+            public const string Select = "Select";
+            public const string SelectMany = "SelectMany";
+            public const string Take = "Take";
+            public const string Where = "Where";
+        }
+
         public static CoordinatorDistributionPlan DeserializeCoordinatorDistributionPlan(string jsonString)
         {
             JObject token = JObject.Parse(jsonString);
@@ -29,27 +44,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
             switch (kind)
             {
-                case "Aggregate":
+                case EnumerableConstants.Aggregate:
                     return DeserializeAggregateEnumerableExpression(token, serializer);
-                case "Distinct":
+                case EnumerableConstants.Distinct:
                     return DeserializeDistinctEnumerableExpression(token, serializer);
-                case "GroupBy":
+                case EnumerableConstants.GroupBy:
                     return DeserializeGroupByEnumerableExpression(token, serializer);
-                case "Flatten":
+                case EnumerableConstants.Flatten:
                     return DeserializeFlattenEnumerableExpression(token, serializer);
-                case "Input":
+                case EnumerableConstants.Input:
                     return DeserializeInputEnumerableExpression(token, serializer);
-                case "OrderBy":
+                case EnumerableConstants.OrderBy:
                     return DeserializeOrderByEnumerableExpression(token, serializer);
-                case "ScalarAsEnumerable":
+                case EnumerableConstants.ScalarAsEnumerable:
                     return DeserializeScalarAsEnumerableExpression(token, serializer);
-                case "Select":
+                case EnumerableConstants.Select:
                     return DeserializeSelectEnumerableExpression(token, serializer);
-                case "SelectMany":
+                case EnumerableConstants.SelectMany:
                     return DeserializeSelectManyExpression(token, serializer);
-                case "Take":
+                case EnumerableConstants.Take:
                     return DeserializeTakeEnumerableExpression(token, serializer);
-                case "Where":
+                case EnumerableConstants.Where:
                     return DeserializeWhereEnumerableExpression(token, serializer);
                 default:
                     throw new JsonException($"Invalid ClientQLExpression kind: {kind}");
