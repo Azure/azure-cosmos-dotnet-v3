@@ -90,9 +90,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         private static ClientQLGroupByEnumerableExpression DeserializeGroupByEnumerableExpression(JToken token, JsonSerializer serializer)
         {
+            IReadOnlyList<ClientQLGroupByKey> vecKeys = new ClientQLGroupByKey[] { };
+            IReadOnlyList<ClientQLAggregate> vecAggregates = new ClientQLAggregate[] { };
             ClientQLEnumerableExpression sourceExpression = DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
-            IReadOnlyList<ClientQLGroupByKey> vecKeys = DeserializeGroupByKeys(token["VecKeys"]);
-            IReadOnlyList<ClientQLAggregate> vecAggregates = DeserializeAggregates(token["VecAggregates"]);
+            if (token["VecKeys"] != null && token["VecKeys"] is JArray)
+            {
+                vecKeys = DeserializeGroupByKeys(token["VecKeys"]);
+            }
+
+            if (token["VecAggregates"] != null && token["VecAggregates"] is JArray)
+            {
+                vecAggregates = DeserializeAggregates(token["VecAggregates"]);
+            }
 
             return new ClientQLGroupByEnumerableExpression(sourceExpression, vecKeys, vecAggregates);
         }
@@ -350,8 +359,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         private static ClientQLAggregate DeserializeAggregate(JToken token)
         {
+            string operatorKind = null;
             ClientQLAggregateKind kind = (ClientQLAggregateKind)Enum.Parse(typeof(ClientQLAggregateKind), TryGetValue<string>(token, "Kind"));
-            string operatorKind = token["OperatorKind"].ToString();
+            if (token["OperatorKind"] != null)
+            {
+                operatorKind = token["OperatorKind"].ToString();
+            }
 
             return new ClientQLAggregate(kind, operatorKind);
         }
@@ -380,44 +393,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         private static List<ClientQLGroupByKey> DeserializeGroupByKeys(JToken token)
         {
             List<ClientQLGroupByKey> groupByKeys = new List<ClientQLGroupByKey>();
-            if (token != null && token.Type == JTokenType.Array)
+            foreach (JToken keyToken in token)
             {
-                foreach (JToken keyToken in token)
-                {
-                    ClientQLType type = DeserializeType(keyToken["Type"]);
-                    groupByKeys.Add(new ClientQLGroupByKey(type));
-                }
+                ClientQLType type = DeserializeType(keyToken["Type"]);
+                groupByKeys.Add(new ClientQLGroupByKey(type));
             }
+
             return groupByKeys;
         }
 
         private static List<ClientQLAggregate> DeserializeAggregates(JToken token)
         {
             List<ClientQLAggregate> aggregates = new List<ClientQLAggregate>();
-            if (token != null && token.Type == JTokenType.Array)
+            foreach (JToken aggregateToken in token)
             {
-                foreach (JToken aggregateToken in token)
-                {
-                    ClientQLAggregateKind kind = (ClientQLAggregateKind)Enum.Parse(typeof(ClientQLAggregateKind), TryGetValue<string>(aggregateToken, "Kind"));
-                    string operatorKind = TryGetValue<string>(aggregateToken, "OperatorKind");
-                    aggregates.Add(new ClientQLAggregate(kind, operatorKind));
-                }
+                ClientQLAggregateKind kind = (ClientQLAggregateKind)Enum.Parse(typeof(ClientQLAggregateKind), TryGetValue<string>(aggregateToken, "Kind"));
+                string operatorKind = TryGetValue<string>(aggregateToken, "OperatorKind");
+                aggregates.Add(new ClientQLAggregate(kind, operatorKind));
             }
+
             return aggregates;
         }
 
         private static List<ClientQLOrderByItem> DeserializeOrderByItems(JToken token, JsonSerializer serializer)
         {
             List<ClientQLOrderByItem> orderByItems = new List<ClientQLOrderByItem>();
-            if (token != null && token.Type == JTokenType.Array)
+            foreach (JToken itemToken in token)
             {
-                foreach (JToken itemToken in token)
-                {
-                    ClientQLScalarExpression expression = DeserializeScalarExpression(itemToken["Expression"], serializer);
-                    ClientQLSortOrder sortOrder = (ClientQLSortOrder)Enum.Parse(typeof(ClientQLSortOrder), TryGetValue<string>(itemToken, "SortOrder"));
-                    orderByItems.Add(new ClientQLOrderByItem(expression, sortOrder));
-                }
+                ClientQLScalarExpression expression = DeserializeScalarExpression(itemToken["Expression"], serializer);
+                ClientQLSortOrder sortOrder = (ClientQLSortOrder)Enum.Parse(typeof(ClientQLSortOrder), TryGetValue<string>(itemToken, "SortOrder"));
+                orderByItems.Add(new ClientQLOrderByItem(expression, sortOrder));
             }
+
             return orderByItems;
         }
 
