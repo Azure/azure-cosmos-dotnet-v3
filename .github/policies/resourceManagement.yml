@@ -43,7 +43,7 @@ configuration:
       - isAction:
           action: Opened
       - not:
-        - or:
+        or:
           - activitySenderHasPermission:
             permission: write
           - activitySenderHasPermission:
