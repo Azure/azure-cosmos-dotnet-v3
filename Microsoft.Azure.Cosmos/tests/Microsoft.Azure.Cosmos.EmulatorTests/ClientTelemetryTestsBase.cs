@@ -1073,7 +1073,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 : this.cosmosClientBuilder.Build());
 
             // Making sure client telemetry is enabled
-            Assert.IsNotNull(this.GetClient().DocumentClient.clientTelemetry);
+            Assert.IsNotNull(this.GetClient().DocumentClient.telemetryToServiceHelper);
 
             this.database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
     
