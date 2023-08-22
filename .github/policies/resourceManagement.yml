@@ -43,11 +43,11 @@ configuration:
       - isAction:
           action: Opened
       - not:
-        or:
-          - activitySenderHasPermission:
-            permission: write
-          - activitySenderHasPermission:
-            permission: admin
+          or:
+            - activitySenderHasPermission:
+              permission: write
+            - activitySenderHasPermission:
+              permission: admin
       then:
       - addLabel:
           label: customer-reported
