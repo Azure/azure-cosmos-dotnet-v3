@@ -4,40 +4,46 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
+    using System;
+    using System.Net.Http;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using System.Net.Http;
-    using System.Net;
-    using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
-    /// In Emulator Mode, Run test against emulator and mock client telemetry service calls. 
-    /// If you are making changes in this file please make sure you are adding similar test in <see cref="ClientTelemetryReleaseTests"/> also.
+    /// In Release pipeline, no need to mock Client Telemetry Service Call and Test will talk to the real database account.
+    /// If you are making changes in this file please make sure you are adding similar test in <see cref="ClientTelemetryTests"/> also.
     /// </summary>
     [TestClass]
-    [TestCategory("ClientTelemetryEmulator")]
-    public class ClientTelemetryTests : ClientTelemetryTestsBase
+    [TestCategory("ClientTelemetryRelease")]
+    public class ClientTelemetryReleaseTests : ClientTelemetryTestsBase
     {
-        public override Task<HttpResponseMessage> HttpHandlerRequestCallbackChecks(HttpRequestMessage request)
-        {
-            if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
-            {
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));  // In Emulator test, send hardcoded response status code as there is no real communication happens with client telemetry service
-            }
-
-            return null;
-        }
-
         public override CosmosClientBuilder GetBuilder()
         {
-            return TestCommon.GetDefaultConfiguration();
+            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_ACCOUNT_CONNECTION_STRING", null);
+            return new CosmosClientBuilder(connectionString: connectionString);
+        }
+
+        /// <summary>
+        /// Returing null means do not return any hard codd response for any HTTP call.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public override Task<HttpResponseMessage> HttpHandlerRequestCallbackChecks(HttpRequestMessage request)
+        {
+            return null;
         }
 
         [ClassInitialize]
         public static new void ClassInitialize(TestContext context)
         {
             ClientTelemetryTestsBase.ClassInitialize(context);
+
+            // It will go away in next PR
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "https://tools.cosmos.azure.com/api/clienttelemetry/trace");
         }
 
         [ClassCleanup]
