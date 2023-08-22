@@ -42,11 +42,12 @@ configuration:
       - payloadType: Issues
       - isAction:
           action: Opened
-      - or:
-        - activitySenderHasPermission:
-            permission: Read
-        - activitySenderHasPermission:
-            permission: None
+      - not:
+        - or:
+          - activitySenderHasPermission:
+            permission: write
+          - activitySenderHasPermission:
+            permission: admin
       then:
       - addLabel:
           label: customer-reported
