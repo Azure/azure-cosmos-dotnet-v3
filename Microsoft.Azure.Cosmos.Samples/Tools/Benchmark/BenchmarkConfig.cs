@@ -128,7 +128,7 @@ namespace CosmosBenchmark
         public string ResultsContainer { get; set; } = "runsummary";
         
         [Option(Required = false, HelpText = "Request latency threshold for capturing diagnostic data")]
-        public int DiagnosticLatencyThresholdInMs { get; set; } = 500;
+        public int DiagnosticLatencyThresholdInMs { get; set; } = 100;
 
         [Option(Required = false, HelpText = "Blob storage account connection string")]
         [JsonIgnore]
