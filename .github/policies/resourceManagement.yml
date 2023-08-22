@@ -45,9 +45,9 @@ configuration:
       - not:
           or:
             - activitySenderHasPermission:
-              permission: Write
+                permission: Write
             - activitySenderHasPermission:
-              permission: Admin
+                permission: Admin
       then:
       - addLabel:
           label: customer-reported
