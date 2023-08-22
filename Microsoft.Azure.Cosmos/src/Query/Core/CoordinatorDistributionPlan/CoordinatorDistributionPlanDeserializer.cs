@@ -270,6 +270,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
                 throw new JsonException($"Invalid ClientQLObjectKind: {objectKindString}");
             }
 
+            ValidateArrayProperty(token, "Properties");
             IReadOnlyList<ClientQLObjectProperty> properties = DeserializeObjectProperties(token["Properties"], serializer);
 
             return new ClientQLObjectCreateScalarExpression(properties, objectKind);
@@ -317,6 +318,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         private static ClientQLUserDefinedFunctionCallScalarExpression DeserializeUserDefinedFunctionCallScalarExpression(JToken token, JsonSerializer serializer)
         {
             ClientQLFunctionIdentifier identifier = token["Identifier"].ToObject<ClientQLFunctionIdentifier>(serializer);
+
+            ValidateArrayProperty(token, "VecArguments");
             IReadOnlyList<ClientQLScalarExpression> vecArguments = DeserializeScalarExpressionArray(token["VecArguments"], serializer);
             bool builtin = TryGetValue<bool>(token, "Builtin");
 
@@ -364,15 +367,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         private static List<ClientQLObjectProperty> DeserializeObjectProperties(JToken token, JsonSerializer serializer)
         {
             List<ClientQLObjectProperty> properties = new List<ClientQLObjectProperty>();
-            if (token != null && token.Type == JTokenType.Array)
+            foreach (JToken propertyToken in token)
             {
-                foreach (JToken propertyToken in token)
-                {
-                    string name = TryGetValue<string>(propertyToken, "Name");
-                    ClientQLScalarExpression expression = DeserializeScalarExpression(propertyToken["Expression"], serializer);
-                    properties.Add(new ClientQLObjectProperty(name, expression));
-                }
+                string name = TryGetValue<string>(propertyToken, "Name");
+                ClientQLScalarExpression expression = DeserializeScalarExpression(propertyToken["Expression"], serializer);
+                properties.Add(new ClientQLObjectProperty(name, expression));
             }
+
             return properties;
         }
 
@@ -442,12 +443,38 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             }
             catch (Exception ex)
             {
-                Version sdkVersion = Assembly.GetAssembly(typeof(CosmosClient)).GetName().Version;
-                string clientSDKVersion = $"{sdkVersion.Major}.{sdkVersion.Minor}.{sdkVersion.Build}";
-                throw new ArgumentNullException($"Customer SDK version is {clientSDKVersion}. Please upgrade if need be. " +
-                    $"Error occured during deserialization of distribution plan. Please reach out to the CosmosDB query team to fix  " +
-                    $"Error Message: {ex.InnerException}");
+                string errorMessage = DeserializingExceptionMessage();
+                errorMessage += ex.InnerException;
+
+                throw new ArgumentNullException(errorMessage);
             }
+        }
+
+        private static void ValidateArrayProperty(JToken token, string property)
+        {
+            string errorMessage;
+            if (token[property] == null)
+            {
+                string nullErrorMessage = $"{property} could not be found in the deserialized plan.";
+                errorMessage = DeserializingExceptionMessage();
+                throw new ArgumentException(errorMessage + nullErrorMessage);
+            }
+            else if (token[property] is not JArray)
+            {
+                string arrayErrorMessage = $"{property} is not of type array when it should be.";
+                errorMessage = DeserializingExceptionMessage();
+                throw new ArgumentException(errorMessage + arrayErrorMessage);
+            }
+        }
+
+        private static string DeserializingExceptionMessage()
+        {
+            Version sdkVersion = Assembly.GetAssembly(typeof(CosmosClient)).GetName().Version;
+            string clientSDKVersion = $"{sdkVersion.Major}.{sdkVersion.Minor}.{sdkVersion.Build}";
+            
+            return $"Customer SDK version is {clientSDKVersion}. Please upgrade if need be. " +
+                $"Error occured during deserialization of distribution plan. Please reach out to the CosmosDB query team to fix this. " +
+                $"Error Message: ";
         }
     }
 }
