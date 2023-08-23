@@ -5,11 +5,13 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using System.Net.Http;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using System.Text;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// In Emulator Mode, Run test against emulator and mock client telemetry service calls. 
@@ -21,9 +23,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         public override Task<HttpResponseMessage> HttpHandlerRequestCallbackChecks(HttpRequestMessage request)
         {
-            if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+            if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint))
             {
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));  // In Emulator test, send hardcoded response status code as there is no real communication happens with client telemetry service
+            }
+            else if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+            {
+                HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+                AccountClientConfiguration clientConfigProperties = new AccountClientConfiguration
+                {
+                    ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                    {
+                        IsEnabled = true,
+                        Endpoint = telemetryServiceEndpoint.AbsoluteUri
+                    }
+                };
+                string payload = JsonConvert.SerializeObject(clientConfigProperties);
+                result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+                return Task.FromResult(result);
             }
 
             return null;

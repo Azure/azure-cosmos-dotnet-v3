@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (withClientTelemetry)
             {
-                Util.EnableClientTelemetryEnvironmentVariables();
+               
             }
 
             string databaseId = Guid.NewGuid().ToString();
@@ -141,7 +141,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (withClientTelemetry)
                 {
-                    Util.DisableClientTelemetryEnvironmentVariables();
                 }
             }
         }

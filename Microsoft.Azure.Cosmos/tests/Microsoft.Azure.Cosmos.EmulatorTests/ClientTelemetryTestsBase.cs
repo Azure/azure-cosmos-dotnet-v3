@@ -27,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
     public abstract class ClientTelemetryTestsBase : BaseCosmosClientHelper
     {
+        protected static readonly Uri telemetryServiceEndpoint = new Uri("http://dummy.telemetry.service/api/url");
+
         private static SystemUsageMonitor systemUsageMonitor;
         private static readonly List<string> preferredRegionList = new List<string>
         {
@@ -53,10 +55,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public static void ClassInitialize(TestContext _)
         {
-            Util.EnableClientTelemetryEnvironmentVariables();
+            FieldInfo field = typeof(ClientTelemetryOptions).GetField("DefaultTimeStampInSeconds", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static);
+            field.SetValue(null, TimeSpan.FromSeconds(1));
 
             SystemUsageMonitor oldSystemUsageMonitor = (SystemUsageMonitor)typeof(DiagnosticsHandlerHelper)
-                .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.Instance);
+                .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.GetInstance());
             oldSystemUsageMonitor.Stop();
 
             ClientTelemetryTestsBase.ResetSystemUsageMonitor(true);
@@ -70,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 RequestCallBack = (request, cancellation) =>
                 {
-                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint))
                     {
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
@@ -83,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ResponseIntercepter = (response) =>
                 {
-                    if (response.RequestMessage.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    if (response.RequestMessage.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint))
                     {
                         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     }
@@ -92,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ExceptionIntercepter = (request, exception) =>
                 {
-                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint))
                     {
                         this.isClientTelemetryAPICallFailed = true;
                     }
@@ -109,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         return Task.FromResult(result);
                     }
 
-                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint))
                     {
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
@@ -123,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ResponseIntercepter = (response) =>
                 {
-                    if (response.RequestMessage.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    if (response.RequestMessage.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint))
                     {
                         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     }
@@ -131,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ExceptionIntercepter = (request, exception) =>
                 {
-                    if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint))
                     {
                         this.isClientTelemetryAPICallFailed = true;
                     }
@@ -159,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
                         .GetField("diagnosticSystemUsageRecorder", 
                                                 BindingFlags.Instance | BindingFlags.NonPublic)
-                        .GetValue(DiagnosticsHandlerHelper.Instance)
+                        .GetValue(DiagnosticsHandlerHelper.GetInstance())
             };
 
             if (isTelemetryEnabled)
@@ -168,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     (SystemUsageRecorder)typeof(DiagnosticsHandlerHelper)
                                 .GetField("telemetrySystemUsageRecorder", 
                                                             BindingFlags.Instance | BindingFlags.NonPublic)
-                                .GetValue(DiagnosticsHandlerHelper.Instance));
+                                .GetValue(DiagnosticsHandlerHelper.GetInstance()));
             }
 
             ClientTelemetryTestsBase.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
@@ -187,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             azMetadataField.SetValue(null, null);
             await base.TestCleanup();
 
-            Assert.IsFalse(this.isClientTelemetryAPICallFailed, $"Call to client telemetry service endpoint (i.e. {ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri}) failed");
+            Assert.IsFalse(this.isClientTelemetryAPICallFailed, $"Call to client telemetry service endpoint (i.e. {telemetryServiceEndpoint}) failed");
         }
 
         public static void FinalCleanup()
@@ -414,8 +417,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public virtual async Task QueryOperationSinglePartitionTest(ConnectionMode mode)
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
-
             Container container = await this.CreateClientAndContainer(mode);
 
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "MyTestItemId");
@@ -471,7 +472,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public virtual async Task QueryMultiPageSinglePartitionOperationTest(ConnectionMode mode)
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
             Container container = await this.CreateClientAndContainer(mode: mode);
 
             ItemRequestOptions requestOptions = new ItemRequestOptions()
@@ -532,8 +532,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public virtual async Task QueryOperationCrossPartitionTest(ConnectionMode mode)
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "20");
-
             ContainerInternal itemsCore = (ContainerInternal)await this.CreateClientAndContainer(
                 mode: mode,
                 isLargeContainer: true);
@@ -674,7 +672,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             httpHandler.RequestCallBack = (request, cancellation) =>
             {
-                if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint().AbsoluteUri))
+                if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint))
                 {
                     string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 

@@ -33,22 +33,56 @@ namespace Microsoft.Azure.Cosmos.Handler
             historyLength: 120,
             refreshInterval: DiagnosticsHandlerHelper.ClientTelemetryRefreshInterval);
 
-        private static bool isDiagnosticsMonitoringEnabled = false;
-        private static bool isTelemetryMonitoringEnabled = false;
-
         /// <summary>
         /// Singleton to make sure only one instance of DiagnosticHandlerHelper is there.
         /// The system usage collection is disabled for internal builds so it is set to null to avoid
         /// compute for accidentally creating an instance or trying to use it.
         /// </summary>
-        public static readonly DiagnosticsHandlerHelper Instance =
+        private static DiagnosticsHandlerHelper Instance =
 #if INTERNAL
             null; 
 #else
             new DiagnosticsHandlerHelper();
 #endif
 
+        private static bool isDiagnosticsMonitoringEnabled = false;
+        private static bool isTelemetryMonitoringEnabled = false;
+
         private readonly SystemUsageMonitor systemUsageMonitor = null;
+
+        public static DiagnosticsHandlerHelper GetInstance()
+        {
+            return DiagnosticsHandlerHelper.Instance;
+        }
+
+        /// <summary>
+        /// Restart the monitor with client telemetry recorder if telemetry is enabled
+        /// </summary>
+        /// <param name="isClientTelemetryEnabled"></param>
+        public static void Refresh(bool isClientTelemetryEnabled)
+        {
+            if (isClientTelemetryEnabled != DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
+            {
+                // Lock this instance
+                lock (DiagnosticsHandlerHelper.Instance)
+                {
+                    // Stop SystemMonitor job
+                    DiagnosticsHandlerHelper.Instance.StopSystemMonitor();
+                    // Make instance eligible for garbage collection
+                    DiagnosticsHandlerHelper.Instance = null;
+
+                    // Update telemetry flag
+                    DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = isClientTelemetryEnabled;
+                    // Create new instance
+                    DiagnosticsHandlerHelper.Instance = new DiagnosticsHandlerHelper();
+                }
+            }
+        }
+
+        private void StopSystemMonitor()
+        {
+            this.systemUsageMonitor?.Dispose();
+        }
 
         /// <summary>
         /// Start System Usage Monitor with Diagnostic and Telemetry Recorder if Telemetry is enabled 
@@ -61,8 +95,6 @@ namespace Microsoft.Azure.Cosmos.Handler
             // If the CPU monitor fails for some reason don't block the application
             try
             {
-                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled();
-
                 List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
                 {
                     this.diagnosticSystemUsageRecorder,
