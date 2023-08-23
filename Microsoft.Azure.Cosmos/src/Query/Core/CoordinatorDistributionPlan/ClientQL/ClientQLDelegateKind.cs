@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal enum ClientQLDelegateKind
     {
-        JavaScript,
         ScalarExpression,
     }
 }
