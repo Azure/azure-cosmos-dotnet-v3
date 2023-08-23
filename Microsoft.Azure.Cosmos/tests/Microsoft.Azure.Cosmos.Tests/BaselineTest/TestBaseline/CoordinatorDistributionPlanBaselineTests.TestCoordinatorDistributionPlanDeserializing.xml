@@ -309,8 +309,8 @@
         },
         "Kind": 7
       },
-      "VecKeys": [],
-      "VecAggregates": [],
+      "VecKeys": null,
+      "VecAggregates": null,
       "Kind": 2
     },
     "DeclaredVariable": {
