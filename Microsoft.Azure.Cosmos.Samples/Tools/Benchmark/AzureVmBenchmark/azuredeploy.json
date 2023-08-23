@@ -1,0 +1,1161 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "projectName": {
+      "type": "string",
+      "defaultValue": "Benchmarking-dotnet-SDK",
+      "metadata": {
+        "description": "Specifies a name for generating resource names."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Specifies the location for all resources."
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "benchmarking",
+      "metadata": {
+        "description": "Specifies a username for the Virtual Machine."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Specifies a password for the Virtual Machine."
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D4s_v3",
+      "metadata": {
+        "description": "Specifies a Virtual Machine size"
+      }
+    },
+    "vNetName": {
+      "type": "string",
+      "defaultValue": "Benchmarking-dotnet-SDK-vnet",
+      "metadata": {
+        "description": "Specifies a Virtual Network name"
+      }
+    },
+    "vNetAddressPrefixes": {
+      "type": "string",
+      "defaultValue": "10.2.0.0/16",
+      "metadata": {
+        "description": "Specifies a Virtual Network Address Prefix"
+      }
+    },
+    "vNetSubnetName": {
+      "type": "string",
+      "defaultValue": "default",
+      "metadata": {
+        "description": "Specifies a Virtual Network Subnet name"
+      }
+    },
+    "vNetSubnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.2.0.0/24",
+      "metadata": {
+        "description": "Specifies a Virtual Network Subnet Address Prefix "
+      }
+    },
+    "cosmosURI": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the URI of the Cosmos DB account"
+      }
+    },
+    "cosmosKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Specifies the key for the Cosmos DB account"
+      }
+    },
+    "throughput": {
+      "type": "int",
+      "defaultValue": 100000,
+      "metadata": {
+        "description": "Specifies Collection throughput use"
+      }
+    },
+    "operationsCount": {
+      "type": "int",
+      "metadata": {
+        "description": "Specifies the number of operations to execute"
+      }
+    },
+    "parallelism": {
+      "type": "int",
+      "defaultValue": -1,
+      "metadata": {
+        "description": "Specifies the degree of parallelism"
+      }
+    },
+    "resultsContainer": {
+      "type": "string",
+      "defaultValue": "BenchmarkResult",
+      "metadata": {
+        "description": "Specifies the name of the container to which the results to be saved"
+      }
+    },
+    "vmCount": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Specifies the number of Virtual Machines that will part of the test bench"
+      }
+    },
+    "workloadType": {
+      "type": "string",
+      "allowedValues": [
+        "InsertV3BenchmarkOperation",
+        "QueryStreamCrossPkDistinctFullDrainV3BenchmarkOperation",
+        "QueryStreamCrossPkDistinctWithPaginationV3BenchmarkOperation",
+        "QueryStreamCrossPkGroupByFullDrainV3BenchmarkOperation",
+        "QueryStreamCrossPkGroupByWithPaginationV3BenchmarkOperation",
+        "QueryStreamCrossPkOrderByFullDrainV3BenchmarkOperation",
+        "QueryStreamCrossPkOrderByWithPaginationV3BenchmarkOperation",
+        "QueryStreamCrossPkV3BenchmarkOperation",
+        "QueryStreamCrossPkWithPaginationV3BenchmarkOperation",
+        "QueryStreamSinglePkDistinctFullDrainV3BenchmarkOperation",
+        "QueryStreamSinglePkDistinctWithPaginationV3BenchmarkOperation",
+        "QueryStreamSinglePkGroupByFullDrainV3BenchmarkOperation",
+        "QueryStreamSinglePkGroupByWithPaginationV3BenchmarkOperation",
+        "QueryStreamSinglePkGroupByWithPaginationV3BenchmarkOperation",
+        "QueryStreamSinglePkOrderByWithPaginationV3BenchmarkOperation",
+        "QueryStreamSinglePkV3BenchmarkOperation",
+        "QueryStreamSinglePkWithPaginationV3BenchmarkOperation",
+        "QueryTCrossPkDistinctFullDrainV3BenchmarkOperation",
+        "QueryTCrossPkDistinctWithPaginationV3BenchmarkOperation",
+        "QueryTCrossPkGroupByFullDrainV3BenchmarkOperation",
+        "QueryTCrossPkGroupByWithPaginationV3BenchmarkOperation",
+        "QueryTCrossPkOrderByFullDrainV3BenchmarkOperation",
+        "QueryTCrossPkOrderByWithPaginationV3BenchmarkOperation",
+        "QueryTCrossPkV3BenchmarkOperation",
+        "QueryTCrossPkWithPaginationV3BenchmarkOperation",
+        "QueryTSinglePkDistinctFullDrainV3BenchmarkOperation",
+        "QueryTSinglePkDistinctWithPaginationV3BenchmarkOperation",
+        "QueryTSinglePkGroupByFullDrainV3BenchmarkOperation",
+        "QueryTSinglePkGroupByWithPaginationV3BenchmarkOperation",
+        "QueryTSinglePkOrderByFullDrainV3BenchmarkOperation",
+        "QueryTSinglePkOrderByWithPaginationV3BenchmarkOperation",
+        "QueryTSinglePkV3BenchmarkOperation",
+        "QueryTSinglePkWithPaginationV3BenchmarkOperation",
+        "ReadFeedStreamV3BenchmarkOperation",
+        "ReadNotExistsV3BenchmarkOperation",
+        "ReadStreamExistsV3BenchmarkOperation",
+        "ReadStreamExistsWithDiagnosticsV3BenchmarkOperation",
+        "ReadTExistsV3BenchmarkOperation"
+      ],
+      "defaultValue": "ReadTExistsV3BenchmarkOperation",
+      "metadata": {
+        "description": "Specifies the workload"
+      }
+    },
+    "benchmarkingToolsBranchName": {
+      "type": "string",
+      "defaultValue": "master",
+      "metadata": {
+        "description": "Specifies the GitHub branch for the benchmark tool source code repository"
+      }
+    },
+    "diagnosticsLatencyThresholdInMS": {
+      "type": "int",
+      "defaultValue": 100
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "dotnetbenchmark",
+      "metadata": {
+        "description": "Specifies Storage Account Nmae"
+      }
+    },
+    "metricsReportingIntervalInSec": {
+      "type": "int",
+      "defaultValue": 5
+    },
+    "applicationInsightsName": {
+      "type": "string",
+      "defaultValue": "CosmosDBBenchmarkTestAppInsights",
+      "metadata": {
+        "description": "Specifies Application Insights Account Name"
+      }
+    },
+    "startDate": {
+      "type": "int",
+      "defaultValue": "[dateTimeToEpoch(utcNow())]"
+    },
+    "dashboardName": {
+      "type": "string",
+      "defaultValue": "Cosmos Benchmark Statistics",
+      "metadata": {
+        "description": "Specifies Application Insights Dashboard Name"
+      }
+    }
+  },
+  "variables": {
+    "vmName": "[concat(parameters('projectName'), '-vm')]",
+    "publicIPAddressName": "[concat(parameters('projectName'), '-ip')]",
+    "networkInterfaceName": "[concat(parameters('projectName'), '-nic')]",
+    "networkSecurityGroupName": "[concat(parameters('projectName'), '-nsg')]",
+    "benchmarkingToolsURL": "https://github.com/Azure/azure-cosmos-dotnet-v3.git",
+    "cloudInitScriptUrl": "[concat('https://raw.githubusercontent.com/Azure/azure-cosmos-dotnet-v3/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/system/cloud-init.txt')]",
+    "vmScriptExtensionScriptUrl": "[concat('https://raw.githubusercontent.com/Azure/azure-cosmos-dotnet-v3/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/scripts/execute.sh')]",
+    "customScriptUrl": "[concat('https://raw.githubusercontent.com/Azure/azure-cosmos-dotnet-v3/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/scripts/custom-script.sh')]",
+    "vmScriptExtensionScriptName": "execute.sh",
+    "convertedDatetime": "[dateTimeFromEpoch(parameters('startDate'))]",
+    "metricsPrefix" : "[if(startsWith(parameters('workloadType'), 'Read'), 'Read1', '')]", 
+    "appInsightsResourceIds": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/microsoft.insights/components/', parameters('applicationInsightsName'))]",
+    "chart0Expression": "[concat('customMetrics\n| where name == \"', variables('metricsPrefix'), 'OperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 50),\n    percentile(value, 75),\n    percentile(value, 90),\n    percentile(value, 95)\n    by ts = bin(timestamp, ', parameters('metricsReportingIntervalInSec'), 's)\n| render timechart \n\n')]",
+    "chart1Expression": "[concat('customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 99),\n    percentile(value, 99.9),\n    percentile(value, 99.99)\n    by ts = bin(timestamp, ', parameters('metricsReportingIntervalInSec'), 's)\n| render timechart \n\n')]",
+    "chart2Expression": "[concat('customMetrics\n| where name == \"ReadOperationRps\" and timestamp > ago(1d)\n| summarize\n    avg(value)\n    by ts = bin(timestamp, ', parameters('metricsReportingIntervalInSec'), 's)\n| render timechart \n\n')]"
+
+  },
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2021-04-01",
+            "name": "[parameters('storageAccountName')]",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "StorageV2",
+            "properties": {
+                "accessTier": "Hot"
+            }
+        },
+        {
+            "name": "[parameters('applicationInsightsName')]",
+            "type": "Microsoft.Insights/components",
+            "apiVersion": "2015-05-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "ApplicationId": "[parameters('applicationInsightsName')]",
+                "Application_Type": "web"
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-11-01",
+            "name": "[variables('networkSecurityGroupName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2020-11-01",
+            "name": "[concat(variables('publicIPAddressName'),copyIndex(1))]",
+            "location": "[parameters('location')]",
+            "sku": {
+                "name": "Basic",
+                "tier": "Regional"
+            },
+            "properties": {
+                "publicIPAddressVersion": "IPv4",
+                "publicIPAllocationMethod": "Dynamic",
+                "idleTimeoutInMinutes": 4
+            },
+            "copy": {
+                "name": "publicIPcopy",
+                "count": "[parameters('vmCount')]"
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2020-11-01",
+            "name": "[parameters('vNetName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('vNetAddressPrefixes')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('vNetSubnetName')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('vNetSubnetAddressPrefix')]",
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    }
+                ],
+                "enableDdosProtection": false
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2020-11-01",
+            "name": "[concat(parameters('vNetName'), '/',parameters('vNetSubnetName'))]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('vNetName'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+            ],
+            "properties": {
+                "addressPrefix": "[parameters('vNetSubnetAddressPrefix')]",
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled",
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2020-11-01",
+            "name": "[concat(variables('networkInterfaceName'),copyIndex(1))]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('publicIPAddressName'),copyIndex(1)))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vNetName'), parameters('vNetSubnetName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAddress": "10.0.0.4",
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(variables('publicIPAddressName'),copyIndex(1)))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vNetName'), parameters('vNetSubnetName'))]"
+                            },
+                            "primary": true,
+                            "privateIPAddressVersion": "IPv4"
+                        }
+                    }
+                ],
+                "enableAcceleratedNetworking": true,
+                "enableIPForwarding": false
+            },
+            "copy": {
+                "name": "networkInterfacecopy",
+                "count": "[parameters('vmCount')]"
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2021-11-01",
+            "name": "[concat(variables('vmName'),copyIndex(1))]",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('networkInterfaceName'),copyIndex(1)))]",
+                "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]",
+                "[resourceId('Microsoft.Insights/components', parameters('applicationInsightsName'))]"
+            ],
+            "tags": {
+                "azsecpack": "prod",
+                "platformsettings.host_environment.service.platform_optedin_for_rootcerts": "true"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('vmSize')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "canonical",
+                        "offer": "0001-com-ubuntu-server-focal",
+                        "sku": "20_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Linux",
+                        "name": "[concat(variables('vmName'),copyIndex(1),'_OsDisk')]",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "storageAccountType": "Premium_LRS"
+                        },
+                        "deleteOption": "Delete",
+                        "diskSizeGB": 30
+                    }
+                },
+                "osProfile": {
+                    "computerName": "[concat(variables('vmName'),copyIndex(1))]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "customData": "[base64(concat('#include\n',variables('cloudInitScriptUrl')))]",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false,
+                        "provisionVMAgent": true,
+                        "patchSettings": {
+                            "patchMode": "ImageDefault",
+                            "assessmentMode": "ImageDefault"
+                        }
+                    },
+                    "allowExtensionOperations": true
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('networkInterfaceName'),copyIndex(1)))]",
+                            "properties": {
+                                "deleteOption": "Delete"
+                            }
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true
+                    }
+                }
+            },
+            "copy": {
+                "name": "vmcopy",
+                "count": "[parameters('vmCount')]"
+            }
+        },
+      {
+        "type": "Microsoft.Compute/virtualMachines/extensions",
+        "apiVersion": "2019-03-01",
+        "name": "[concat(variables('vmName'),copyIndex(1),'/CustomScript')]",
+        "location": "[parameters('location')]",
+        "dependsOn": [
+          "[resourceId('Microsoft.Compute/virtualMachines', concat(variables('vmName'),copyIndex(1)))]"
+        ],
+        "properties": {
+          "publisher": "Microsoft.Azure.Extensions",
+          "type": "CustomScript",
+          "typeHandlerVersion": "2.1",
+          "autoUpgradeMinorVersion": true,
+          "settings": {
+          },
+          "protectedSettings": {
+            "commandToExecute": "[concat('ADMIN_USER_NAME=',parameters('adminUsername'),' ','BENCHMARKING_TOOLS_URL=',variables('benchmarkingToolsURL'),' ','BENCHMARKING_TOOLS_BRANCH_NAME=',parameters('benchmarkingToolsBranchName'),' ','WORKLOAD_TYPE=',parameters('workloadType'),' ','VM_NAME=',variables('vmName'),copyIndex(1), ' ','DIAGNOSTICS_STORAGE_CONNECTION_STRING=','\"',concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value),'\"',' ','COSMOS_URI=','\"',parameters('cosmosURI'),'\"', ' ', 'COSMOS_KEY=',parameters('cosmosKey'), ' ', 'THROUGHPUT=',parameters('throughput'), ' ', 'DOCUMENTS=',parameters('operationsCount'), ' ','PARALLELISM=',parameters('parallelism'), ' ','RESULTS_CONTAINER=',parameters('resultsContainer'), ' ','VM_COUNT=',parameters('vmCount'), ' ','DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS=',parameters('diagnosticsLatencyThresholdInMS'),' ','DIAGNOSTICS_STORAGE_CONTAINER_PREFIX=',variables('convertedDatetime'),' ','METRICS_REPORTINT_INTERVAL_SEC=',parameters('metricsReportingIntervalInSec'), ' ','CUSTOM_SCRIPT_URL=',variables('customScriptUrl'), ' ','MACHINE_INDEX=',copyIndex(1), ' ','APP_INSIGHT_CONN_STR=','\"', reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName'))).ConnectionString,'\"',' ', 'bash ',variables('vmScriptExtensionScriptName'))]",
+            "fileUris": [ "[concat(variables('vmScriptExtensionScriptURL'))]" ]
+          }
+        },
+        "copy": {
+          "name": "vmextensioncopy",
+          "count": "[parameters('vmCount')]"
+        }
+      },
+      {
+        "name": "CosmosDBBenchmarkDashboard",
+        "type": "Microsoft.Portal/dashboards",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2015-08-01-preview",
+        "dependsOn": [
+          "[resourceId('Microsoft.Insights/components', parameters('applicationInsightsName'))]"
+        ],
+        "tags": {
+          "hidden-title": "[parameters('dashboardName')]"
+        },
+
+        "properties": {
+          "lenses": {
+            "0": {
+              "order": 0,
+              "parts": {
+                "0": {
+                  "position": {
+                    "x": 0,
+                    "y": 0,
+                    "colSpan": 10,
+                    "rowSpan": 6
+                  },
+                  "metadata": {
+                    "inputs": [
+                      {
+                        "name": "resourceTypeMode",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "ComponentId",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Scope",
+                        "value": {
+                          "resourceIds": [
+                            "[variables('appInsightsResourceIds')]"
+                          ]
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartId",
+                        "value": "104528fc-0216-49c6-bf70-fffe9d37f93d",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Version",
+                        "value": "2.0",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "TimeRange",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "DashboardId",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "DraftRequestParameters",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Query",
+                        "value": "[variables('chart0Expression')]",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "ControlType",
+                        "value": "FrameControlChart",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "SpecificChart",
+                        "value": "Line",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartTitle",
+                        "value": "Request latencies P50, P75, P90, P95 in ms",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartSubTitle",
+                        "value": "A Latency Percentiles dashboard provides a concise overview of the distribution of response times or latencies for a system or application. It helps monitor and analyze the performance of the system, identify bottlenecks or outliers, and ensure optimal user experience.",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Dimensions",
+                        "value": {
+                          "xAxis": {
+                            "name": "ts",
+                            "type": "datetime"
+                          },
+                          "yAxis": [
+                            {
+                              "name": "percentile_value_50",
+                              "type": "real"
+                            },
+                            {
+                              "name": "percentile_value_75",
+                              "type": "real"
+                            },
+                            {
+                              "name": "percentile_value_90",
+                              "type": "real"
+                            },
+                            {
+                              "name": "percentile_value_95",
+                              "type": "real"
+                            }
+                          ],
+                          "splitBy": [],
+                          "aggregation": "Sum"
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "LegendOptions",
+                        "value": {
+                          "isEnabled": true,
+                          "position": "Bottom"
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "IsQueryContainTimeRange",
+                        "value": true,
+                        "isOptional": true
+                      }
+                    ],
+                    "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+                    "settings": {
+                      "content": {
+                        "Dimensions": {
+                          "xAxis": {
+                            "name": "ts",
+                            "type": "datetime"
+                          },
+                          "yAxis": [
+                            {
+                              "name": "percentile_value_50",
+                              "type": "real"
+                            },
+                            {
+                              "name": "percentile_value_75",
+                              "type": "real"
+                            },
+                            {
+                              "name": "percentile_value_90",
+                              "type": "real"
+                            },
+                            {
+                              "name": "percentile_value_95",
+                              "type": "real"
+                            }
+                          ],
+                          "splitBy": [],
+                          "aggregation": "Sum"
+                        },
+                        "IsQueryContainTimeRange": true
+                      }
+                    }
+                  }
+                },
+                "1": {
+                  "position": {
+                    "x": 10,
+                    "y": 0,
+                    "colSpan": 10,
+                    "rowSpan": 6
+                  },
+                  "metadata": {
+                    "inputs": [
+                      {
+                        "name": "resourceTypeMode",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "ComponentId",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Scope",
+                        "value": {
+                          "resourceIds": [
+                            "[variables('appInsightsResourceIds')]"
+                          ]
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartId",
+                        "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Version",
+                        "value": "2.0",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "TimeRange",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "DashboardId",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "DraftRequestParameters",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Query",
+                        "value": "[variables('chart1Expression')]",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "ControlType",
+                        "value": "FrameControlChart",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "SpecificChart",
+                        "value": "Line",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartTitle",
+                        "value": "Request latencies P99, P99.9, P99.99 in ms",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartSubTitle",
+                        "value": "A Latency Percentiles dashboard provides a concise overview of the distribution of response times or latencies for a system or application. It helps monitor and analyze the performance of the system, identify bottlenecks or outliers, and ensure optimal user experience.",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Dimensions",
+                        "value": {
+                          "xAxis": {
+                            "name": "ts",
+                            "type": "datetime"
+                          },
+                          "yAxis": [
+                            {
+                              "name": "percentile_value_99",
+                              "type": "real"
+                            },
+                            {
+                              "name": "percentile_value_99_9",
+                              "type": "real"
+                            },
+                            {
+                              "name": "percentile_value_99_99",
+                              "type": "real"
+                            }
+                          ],
+                          "splitBy": [],
+                          "aggregation": "Sum"
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "LegendOptions",
+                        "value": {
+                          "isEnabled": true,
+                          "position": "Bottom"
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "IsQueryContainTimeRange",
+                        "value": true,
+                        "isOptional": true
+                      }
+                    ],
+                    "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+                    "settings": {}
+                  }
+                },
+                "2": {
+                  "position": {
+                    "x": 0,
+                    "y": 6,
+                    "colSpan": 5,
+                    "rowSpan": 6
+                  },
+                  "metadata": {
+                    "inputs": [
+                      {
+                        "name": "resourceTypeMode",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "ComponentId",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Scope",
+                        "value": {
+                          "resourceIds": [
+                            "[variables('appInsightsResourceIds')]"
+                          ]
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartId",
+                        "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Version",
+                        "value": "2.0",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "TimeRange",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "DashboardId",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "DraftRequestParameters",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Query",
+                        "value": "customMetrics\n| where name == \"ReadOperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "ControlType",
+                        "value": "FrameControlChart",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "SpecificChart",
+                        "value": "Line",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartTitle",
+                        "value": "Failed operations",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartSubTitle",
+                        "value": "Provides the number of failed operations. (most likely related to some error or inavailability)",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Dimensions",
+                        "value": {
+                          "xAxis": {
+                            "name": "ts",
+                            "type": "datetime"
+                          },
+                          "yAxis": [
+                            {
+                              "name": "sum_value",
+                              "type": "real"
+                            }
+                          ],
+                          "splitBy": [],
+                          "aggregation": "Sum"
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "LegendOptions",
+                        "value": {
+                          "isEnabled": true,
+                          "position": "Bottom"
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "IsQueryContainTimeRange",
+                        "value": true,
+                        "isOptional": true
+                      }
+                    ],
+                    "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+                    "settings": {
+                      "content": {
+                        "Query": "customMetrics\n| where name == \"ReadOperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n",
+                        "Dimensions": {
+                          "xAxis": {
+                            "name": "ts",
+                            "type": "datetime"
+                          },
+                          "yAxis": [
+                            {
+                              "name": "sum_value",
+                              "type": "real"
+                            }
+                          ],
+                          "splitBy": [],
+                          "aggregation": "Sum"
+                        }
+                      }
+                    }
+                  }
+                },
+                "3": {
+                  "position": {
+                    "x": 5,
+                    "y": 6,
+                    "colSpan": 5,
+                    "rowSpan": 6
+                  },
+                  "metadata": {
+                    "inputs": [
+                      {
+                        "name": "resourceTypeMode",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "ComponentId",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Scope",
+                        "value": {
+                          "resourceIds": [
+                            "[variables('appInsightsResourceIds')]"
+                          ]
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartId",
+                        "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Version",
+                        "value": "2.0",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "TimeRange",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "DashboardId",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "DraftRequestParameters",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Query",
+                        "value": "customMetrics\n| where name == \"ReadOperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "ControlType",
+                        "value": "FrameControlChart",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "SpecificChart",
+                        "value": "Line",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartTitle",
+                        "value": "Success operations",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartSubTitle",
+                        "value": "Provides the number of successful operations.",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Dimensions",
+                        "value": {
+                          "xAxis": {
+                            "name": "ts",
+                            "type": "datetime"
+                          },
+                          "yAxis": [
+                            {
+                              "name": "sum_value",
+                              "type": "real"
+                            }
+                          ],
+                          "splitBy": [],
+                          "aggregation": "Sum"
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "LegendOptions",
+                        "value": {
+                          "isEnabled": true,
+                          "position": "Bottom"
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "IsQueryContainTimeRange",
+                        "value": true,
+                        "isOptional": true
+                      }
+                    ],
+                    "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+                    "settings": {
+                      "content": {
+                        "Query": "customMetrics\n| where name == \"ReadOperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n",
+                        "Dimensions": {
+                          "xAxis": {
+                            "name": "ts",
+                            "type": "datetime"
+                          },
+                          "yAxis": [
+                            {
+                              "name": "sum_value",
+                              "type": "real"
+                            }
+                          ],
+                          "splitBy": [],
+                          "aggregation": "Sum"
+                        }
+                      }
+                    }
+                  }
+                },
+                "4": {
+                  "position": {
+                    "x": 10,
+                    "y": 6,
+                    "colSpan": 10,
+                    "rowSpan": 6
+                  },
+                  "metadata": {
+                    "inputs": [
+                      {
+                        "name": "resourceTypeMode",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "ComponentId",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Scope",
+                        "value": {
+                          "resourceIds": [
+                            "[variables('appInsightsResourceIds')]"
+                          ]
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartId",
+                        "value": "104528fc-0216-49c6-bf70-fffe9d37f93e",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Version",
+                        "value": "2.0",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "TimeRange",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "DashboardId",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "DraftRequestParameters",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Query",
+                        "value": "[variables('chart2Expression')]",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "ControlType",
+                        "value": "FrameControlChart",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "SpecificChart",
+                        "value": "Line",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartTitle",
+                        "value": "Requests per Second (RPS)",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "PartSubTitle",
+                        "value": "A Requests per Second (RPS) dashboard provides a concise overview of the number of requests being processed by a system or application per second.",
+                        "isOptional": true
+                      },
+                      {
+                        "name": "Dimensions",
+                        "value": {
+                          "xAxis": {
+                            "name": "ts",
+                            "type": "datetime"
+                          },
+                          "yAxis": [
+                            {
+                              "name": "RPs",
+                              "type": "real"
+                            }
+                          ],
+                          "splitBy": [],
+                          "aggregation": "Sum"
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "LegendOptions",
+                        "value": {
+                          "isEnabled": true,
+                          "position": "Bottom"
+                        },
+                        "isOptional": true
+                      },
+                      {
+                        "name": "IsQueryContainTimeRange",
+                        "value": true,
+                        "isOptional": true
+                      }
+                    ],
+                    "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+                    "settings": {
+                      "content": {
+                        "Dimensions": {
+                          "xAxis": {
+                            "name": "ts",
+                            "type": "datetime"
+                          },
+                          "yAxis": [
+                            {
+                              "name": "avg_value",
+                              "type": "real"
+                            }
+                          ],
+                          "splitBy": [],
+                          "aggregation": "Sum"
+                        },
+                        "IsQueryContainTimeRange": false
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "metadata": {
+            "model": {
+              "timeRange": {
+                "value": {
+                  "relative": {
+                    "duration": 24,
+                    "timeUnit": 1
+                  }
+                },
+                "type": "MsPortalFx.Composition.Configuration.ValueTypes.TimeRange"
+              },
+              "filterLocale": {
+                "value": "en-us"
+              },
+              "filters": {
+                "value": {
+                  "MsPortalFx_TimeRange": {
+                    "model": {
+                      "format": "utc",
+                      "granularity": "auto",
+                      "relative": "24h"
+                    },
+                    "displayCache": {
+                      "name": "UTC Time",
+                      "value": "Past 24 hours"
+                    },
+                    "filteredPartIds": [
+                      "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700a",
+                      "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700c",
+                      "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700d",
+                      "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700e",
+                      "StartboardPart-LogsDashboardPart-6d2eff36-636b-406d-8390-12e2135e700f"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "outputs": {
+        "results": {
+            "type": "string",
+            "value": "The Benchmarking job has been triggered successfully. Please check the storage account you provided for Job Status and Results. The jobs status will be available in a storage table within a few minutes and results will be available once the job finishes."
+        }
+    }
+}
