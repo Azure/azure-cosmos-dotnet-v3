@@ -29,8 +29,6 @@ namespace CosmosCTL
             {
                 CTLConfig config = CTLConfig.From(args);
 
-                SetEnvironmentVariables(config);
-              
                 if (config.OutputEventTraces)
                 {
                     EnableTraceSourcesToConsole();
@@ -55,9 +53,9 @@ namespace CosmosCTL
                     logger.LogInformation("Initialization completed.");
 
                     if(client.ClientOptions.EnableClientTelemetry.GetValueOrDefault()) {
-                        logger.LogInformation("Telemetry is enabled for CTL.");
+                        logger.LogInformation("Telemetry Feature flag is enabled for CTL.");
                     } else {
-                        logger.LogInformation("Telemetry is disabled for CTL.");
+                        logger.LogInformation("Telemetry Feature flag is disabled for CTL.");
                     }
 
                     List<Task> tasks = new List<Task>
@@ -146,12 +144,6 @@ namespace CosmosCTL
             {
                 Utils.LogError(logger, "Unhandled exception during execution", ex);
             }
-        }
-
-        private static void SetEnvironmentVariables(CTLConfig config)
-        {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, config.TelemetryEndpoint);
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, config.TelemetryScheduleInSeconds);
         }
 
         private static IMetricsRoot ConfigureReporting(

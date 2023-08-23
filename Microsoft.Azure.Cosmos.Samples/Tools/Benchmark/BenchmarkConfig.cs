@@ -215,29 +215,9 @@ namespace CosmosBenchmark
                 ApplicationName = this.GetUserAgentPrefix(),
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
-                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint
+                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
+                EnableClientTelemetry = this.EnableTelemetry
             };
-
-            if (this.EnableTelemetry)
-            {
-                Environment.SetEnvironmentVariable(
-                    Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, 
-                    "true");
-
-                if (this.TelemetryScheduleInSec > 0)
-                {
-                    Environment.SetEnvironmentVariable(
-                        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, 
-                        Convert.ToString(this.TelemetryScheduleInSec));
-                }
-
-                if (!string.IsNullOrEmpty(this.TelemetryEndpoint))
-                {
-                    Environment.SetEnvironmentVariable(
-                        Microsoft.Azure.Cosmos.Telemetry.ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, 
-                        this.TelemetryEndpoint);
-                }
-            }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {
