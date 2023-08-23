@@ -558,7 +558,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Allows optimistic batching of requests to service. Setting this option might impact the latency of the operations. Hence this option is recommended for non-latency sensitive scenarios only.
         /// <remarks>
-        /// The use of Resource Tokens as an authentication mechanism when Bulk is enabled is not recommended because it reduces the potential throughput benefits by reducing the scope of the operation
+        /// The use of Resource Tokens scoped to a Partion Key as an authentication mechanism when Bulk is enabled is not recommended because it reduces the potential throughput benefits by reducing the scope of the operation
         /// </remarks>
         /// </summary>
         public bool AllowBulkExecution { get; set; }
