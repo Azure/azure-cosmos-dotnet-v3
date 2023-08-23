@@ -39,6 +39,20 @@ configuration:
           label: needs-investigation
       description: 
     - if:
+      - payloadType: Issues
+      - isAction:
+          action: Opened
+      - not:
+          or:
+            - activitySenderHasPermission:
+                permission: Write
+            - activitySenderHasPermission:
+                permission: Admin
+      then:
+      - addLabel:
+          label: customer-reported
+      description: Identifies issues created by users without write access as customers
+    - if:
       - payloadType: Pull_Request
       - hasLabel:
           label: auto-merge
