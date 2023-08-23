@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
-    using System.Collections.Specialized;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;

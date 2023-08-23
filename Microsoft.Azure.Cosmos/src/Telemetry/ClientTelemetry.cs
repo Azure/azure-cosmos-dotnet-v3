@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        private static readonly TimeSpan observingWindow = ClientTelemetryOptions.DefaultTimeStampInSeconds;
+        private static readonly TimeSpan observingWindow = ClientTelemetryOptions.DefaultIntervalForTelemetryJob;
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly ClientTelemetryProcessor processor;
