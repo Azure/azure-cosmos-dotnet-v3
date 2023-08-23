@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
     using System;
     using System.Collections.Generic;
     using System.Reflection;
-    using System.Runtime.CompilerServices;
     using ClientQL;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -114,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         {
             ClientQLEnumerableExpression source = DeserializeClientQLEnumerableExpression(token["SourceExpression"], serializer);
             ClientQLVariable declaredVariable = DeserializeClientQLVariable(token["DeclaredVariable"]);
-            IReadOnlyList<ClientQLOrderByItem> orderByItems = DeserializeOrderByItems(token["VecItems"], serializer);
+            IReadOnlyList<ClientQLOrderByItem> orderByItems = GetValue<IReadOnlyList<ClientQLOrderByItem>>(token, "VecItems");
 
             return new ClientQLOrderByEnumerableExpression(source, declaredVariable, orderByItems);
         }
@@ -380,31 +379,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             }
 
             return properties;
-        }
-
-        private static List<ClientQLGroupByKey> DeserializeGroupByKeys(JToken token)
-        {
-            List<ClientQLGroupByKey> groupByKeys = new List<ClientQLGroupByKey>();
-            foreach (JToken keyToken in token)
-            {
-                ClientQLType type = DeserializeType(keyToken["Type"]);
-                groupByKeys.Add(new ClientQLGroupByKey(type));
-            }
-
-            return groupByKeys;
-        }
-
-        private static List<ClientQLAggregate> DeserializeAggregates(JToken token)
-        {
-            List<ClientQLAggregate> aggregates = new List<ClientQLAggregate>();
-            foreach (JToken aggregateToken in token)
-            {
-                ClientQLAggregateKind kind = (ClientQLAggregateKind)Enum.Parse(typeof(ClientQLAggregateKind), GetValue<string>(aggregateToken, "Kind"));
-                string operatorKind = GetValue<string>(aggregateToken, "OperatorKind");
-                aggregates.Add(new ClientQLAggregate(kind, operatorKind));
-            }
-
-            return aggregates;
         }
 
         private static List<ClientQLOrderByItem> DeserializeOrderByItems(JToken token, JsonSerializer serializer)
