@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System;
     using System.Collections.Generic;
 
-    internal class QueryPreparationTimesAccumulator
+    internal sealed class QueryPreparationTimesAccumulator
     {
         private readonly List<QueryPreparationTimesInternal> queryPreparationTimesList;
 

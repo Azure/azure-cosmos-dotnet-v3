@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System;
     using System.Collections.Generic;
 
-    internal class QueryMetricsAccumulator
+    internal sealed class QueryMetricsAccumulator
     {
         private readonly List<QueryMetrics> queryMetricsList;
 

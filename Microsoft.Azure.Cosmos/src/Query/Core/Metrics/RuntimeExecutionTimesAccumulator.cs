@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System;
     using System.Collections.Generic;
 
-    internal class RuntimeExecutionTimesAccumulator
+    internal sealed class RuntimeExecutionTimesAccumulator
     {
         private readonly List<RuntimeExecutionTimesInternal> runtimeExecutionTimesList;
 

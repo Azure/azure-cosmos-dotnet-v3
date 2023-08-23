@@ -7,9 +7,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System;
     using System.Collections.Generic;
 
-    internal class ServerSideMetricsAccumulator
+    internal sealed class ServerSideMetricsAccumulator
     {
-        internal readonly List<ServerSideMetrics> serverSideMetricsList;
+        private readonly List<ServerSideMetrics> serverSideMetricsList;
 
         public ServerSideMetricsAccumulator()
         {

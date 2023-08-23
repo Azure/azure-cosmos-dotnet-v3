@@ -9,9 +9,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
-    internal class ServerSideMetricsInternalAccumulator
+    internal sealed class ServerSideMetricsInternalAccumulator
     {
-        internal readonly List<ServerSideMetricsInternal> serverSideMetricsList;
+        private readonly List<ServerSideMetricsInternal> serverSideMetricsList;
 
         public ServerSideMetricsInternalAccumulator()
         {
