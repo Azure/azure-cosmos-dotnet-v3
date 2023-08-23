@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
         Select,
         SelectMany,
         Take,
-        Unwind,
         Where,
     }
 }
