@@ -153,6 +153,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         this.clientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
                     }
 
+                    Console.WriteLine("Telemetry Job Started with Observing window : {0}", observingWindow);
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
                     this.clientTelemetryInfo.DateTimeUtc = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);

@@ -52,6 +52,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     throw;
                 }
                 this.ExceptionIntercepter.Invoke(request, ex);
+
+                throw;
             }
            
             if (this.ResponseIntercepter != null)

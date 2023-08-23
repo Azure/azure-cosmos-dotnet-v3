@@ -55,8 +55,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public static void ClassInitialize(TestContext _)
         {
-            FieldInfo field = typeof(ClientTelemetryOptions).GetField("DefaultTimeStampInSeconds", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static);
-            field.SetValue(null, TimeSpan.FromSeconds(1));
+            ClientTelemetryOptions.DefaultIntervalForTelemetryJob = TimeSpan.FromSeconds(1);
 
             SystemUsageMonitor oldSystemUsageMonitor = (SystemUsageMonitor)typeof(DiagnosticsHandlerHelper)
                 .GetField("systemUsageMonitor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(DiagnosticsHandlerHelper.GetInstance());
@@ -86,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 },
                 ResponseIntercepter = (response) =>
                 {
-                    if (response.RequestMessage.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint))
+                    if (response.RequestMessage != null && response.RequestMessage.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint))
                     {
                         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
                     }
@@ -142,6 +141,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             this.cosmosClientBuilder = this.GetBuilder()
+                                                .WithTelemetryEnabled()
                                                 .WithApplicationPreferredRegions(ClientTelemetryTestsBase.preferredRegionList);
         }
 

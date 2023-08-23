@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static readonly List<int> ExcludedStatusCodes = new List<int> { 404, 409, 412 };
 
         internal static readonly int NetworkTelemetrySampleSize = 200;
-        internal static readonly TimeSpan DefaultIntervalForTelemetryJob = TimeSpan.FromMinutes(10);
+        internal static TimeSpan DefaultIntervalForTelemetryJob = TimeSpan.FromMinutes(10);
         internal static int PayloadSizeThreshold = 1024 * 1024 * 2; // 2MB
         internal static TimeSpan ClientTelemetryProcessorTimeOut = TimeSpan.FromMinutes(5);
         
