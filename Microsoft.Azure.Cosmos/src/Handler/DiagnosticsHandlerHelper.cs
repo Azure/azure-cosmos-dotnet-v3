@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Handler
     using System.Collections.Generic;
     using Documents.Rntbd;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
 
     /// <summary>
     /// This is a helper class that creates a single static instance to avoid each
@@ -63,26 +63,26 @@ namespace Microsoft.Azure.Cosmos.Handler
         {
             if (isClientTelemetryEnabled != DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
             {
+                DiagnosticsHandlerHelper.Instance.StopSystemMonitor();
+
                 // Update telemetry flag
                 DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = isClientTelemetryEnabled;
 
                 // Create new instance, it will start a new system monitor job
-                DiagnosticsHandlerHelper newInstance = new DiagnosticsHandlerHelper();
-
-                // Create a new reference to the old instance
-                DiagnosticsHandlerHelper oldInstance = DiagnosticsHandlerHelper.Instance;
-
-                // Assing new instance to the static refrence,
-                DiagnosticsHandlerHelper.Instance = newInstance;
-
-                // Stop and dispose old instance of SystemMonitor job
-                oldInstance.StopSystemMonitor();
+                DiagnosticsHandlerHelper.Instance = new DiagnosticsHandlerHelper();
             }
         }
 
         private void StopSystemMonitor()
         {
-            this.systemUsageMonitor?.Dispose();
+            try
+            {
+                this.systemUsageMonitor?.Dispose();
+            }
+            catch (ObjectDisposedException ex)
+            {
+                DefaultTrace.TraceError($"Error while stopping system usage monitor. Stacktrace: {0} ", ex.StackTrace);
+            }
         }
 
         /// <summary>
@@ -160,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.Handler
             catch (Exception ex)
             {
                 DefaultTrace.TraceError(ex.Message);
+                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = false;
                 return null;
             }
         }
