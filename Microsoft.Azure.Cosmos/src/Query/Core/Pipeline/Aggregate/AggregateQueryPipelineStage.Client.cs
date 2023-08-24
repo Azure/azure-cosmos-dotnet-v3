@@ -42,6 +42,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
                 }
 
+                if ((continuationToken != null) && !(continuationToken is CosmosArray))
+                {
+                    throw new CosmosException(
+                        "Aggregate queries with a continuation token not supported using LINQ",
+                        statusCode: System.Net.HttpStatusCode.BadRequest,
+                        subStatusCode: default,
+                        activityId: Guid.Empty.ToString(),
+                        requestCharge: default);
+                }
+
                 TryCatch<SingleGroupAggregator> tryCreateSingleGroupAggregator = SingleGroupAggregator.TryCreate(
                     aggregates,
                     aliasToAggregateType,

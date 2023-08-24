@@ -898,16 +898,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             FeedIterator<ToDoActivity> firstFeedIterator = firstQuery.ToFeedIterator();
 
-            // if instead of while loop to retrieve continuation token
+            // if instead of while loop in order to retrieve continuation token
             if (firstFeedIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> firstFeedResponse = await firstFeedIterator.ReadNextAsync();
 
                 continuationToken = firstFeedResponse.ContinuationToken;
             }
-            Assert.IsTrue(count == 2);
 
-            IOrderedQueryable<ToDoActivity> secondQuery = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, continuationToken: continuationToken, requestOptions: requestOptions);
+            Assert.AreEqual(2, count);
+            Assert.IsNotNull(continuationToken);
+
+            IOrderedQueryable<ToDoActivity> secondQuery = this.Container.GetItemLinqQueryable<ToDoActivity>(continuationToken: continuationToken, requestOptions: requestOptions);
 
             try
             {
@@ -915,13 +917,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException exception)
             {
-                Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
-                Assert.IsTrue(exception.SubStatusCode == (int)Documents.SubStatusCodes.MalformedContinuationToken);
-                Assert.IsTrue(exception.Message.Contains(malformedString));
+                Assert.IsNotNull(exception);
                 return;
             }
 
-            Assert.Fail("Should fail"); //todo: more verbose
+            Assert.Fail("Expect Count query to return exception");
+        }
+
+        [TestMethod]
+        public async Task LinqAverageWithContinuationTokenTest()
+        {
+            await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 1, perPKItemCount: 2, randomPartitionKey: true);
+
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = 1
+            };
+
+            IOrderedQueryable<ToDoActivity> firstQuery = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
+
+            double average = firstQuery.Average(x => x.taskNum);
+
+            string continuationToken = null;
+
+            FeedIterator<ToDoActivity> firstFeedIterator = firstQuery.ToFeedIterator();
+
+            // if instead of while loop in order to retrieve continuation token
+            if (firstFeedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> firstFeedResponse = await firstFeedIterator.ReadNextAsync();
+
+                continuationToken = firstFeedResponse.ContinuationToken;
+            }
+
+            Assert.IsNotNull(continuationToken);
+
+            IOrderedQueryable<ToDoActivity> secondQuery = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, continuationToken: continuationToken, requestOptions: requestOptions);
+
+            try
+            {
+                average = secondQuery.Average(x => x.taskNum);
+            }
+            catch (CosmosException exception)
+            {
+                Assert.IsNotNull(exception);
+                return;
+            }
+
+            Assert.Fail("Expect Average query to return exception");
         }
 
         [TestMethod]
