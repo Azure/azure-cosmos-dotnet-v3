@@ -917,7 +917,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException exception)
             {
-                Assert.IsNotNull(exception);
+                Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
+                Assert.IsTrue(exception.SubStatusCode == (int)Documents.SubStatusCodes.MalformedContinuationToken);
+                Assert.IsTrue(exception.Message.Contains("Cannot use non-aggrgate continuation token with aggregate queries."));
                 return;
             }
 
@@ -960,7 +962,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (CosmosException exception)
             {
-                Assert.IsNotNull(exception);
+                Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
+                Assert.IsTrue(exception.SubStatusCode == (int)Documents.SubStatusCodes.MalformedContinuationToken);
+                Assert.IsTrue(exception.Message.Contains("Cannot use non-aggrgate continuation token with aggregate queries."));
                 return;
             }
 
