@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 if ((continuationToken != null) && (continuationToken is CosmosElement))
                 {
                     throw new CosmosException(
-                        "Cannot use non-aggrgate continuation token with aggregate queries.",
+                        "Cannot use non-aggregate continuation token with aggregate queries.",
                         statusCode: System.Net.HttpStatusCode.BadRequest,
                         subStatusCode: (int)Documents.SubStatusCodes.MalformedContinuationToken,
                         activityId: Guid.Empty.ToString(),
