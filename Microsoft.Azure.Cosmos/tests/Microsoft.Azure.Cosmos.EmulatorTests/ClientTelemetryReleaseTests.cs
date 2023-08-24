@@ -41,12 +41,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ClientTelemetryTestsBase.ClassInitialize(context);
         }
 
-        [ClassCleanup]
-        public static new void FinalCleanup()
-        {
-            ClientTelemetryTestsBase.FinalCleanup();
-        }
-
         [TestInitialize]
         public override void TestInitialize()
         {

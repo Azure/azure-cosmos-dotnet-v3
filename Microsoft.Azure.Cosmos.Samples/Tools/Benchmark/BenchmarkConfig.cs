@@ -10,6 +10,7 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Runtime;
     using CommandLine;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
 
@@ -102,17 +103,11 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Disable core SDK logging")]
         public bool DisableCoreSdkLogging { get; set; }
 
-        [Option(Required = false, HelpText = "Enable Client Telemetry")]
-        public bool EnableTelemetry { get; set; }
-
         [Option(Required = false, HelpText = "Enable Distributed Tracing")]
         public bool EnableDistributedTracing { get; set; }
 
         [Option(Required = false, HelpText = "Client Telemetry Schedule in Seconds")]
         public int  TelemetryScheduleInSec { get; set; }
-
-        [Option(Required = false, HelpText = "Client Telemetry Endpoint")]
-        public string TelemetryEndpoint { get; set; }
 
         [Option(Required = false, HelpText = "Endpoint to publish results to")]
         public string ResultsEndpoint { get; set; }
@@ -210,13 +205,19 @@ namespace CosmosBenchmark
 
         internal Microsoft.Azure.Cosmos.CosmosClient CreateCosmosClient(string accountKey)
         {
+            // Overwrite the default timespan if configured
+            if(this.TelemetryScheduleInSec > 0)
+            {
+                ClientTelemetryOptions.DefaultIntervalForTelemetryJob = TimeSpan.FromSeconds(this.TelemetryScheduleInSec);
+            }
+
             Microsoft.Azure.Cosmos.CosmosClientOptions clientOptions = new Microsoft.Azure.Cosmos.CosmosClientOptions()
             {
                 ApplicationName = this.GetUserAgentPrefix(),
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-                EnableClientTelemetry = this.EnableTelemetry
+                EnableClientTelemetry = true // Always enable client telemetry feature as it will be controlled from the portal
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))

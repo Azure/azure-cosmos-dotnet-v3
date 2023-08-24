@@ -52,12 +52,6 @@ namespace CosmosCTL
 
                     logger.LogInformation("Initialization completed.");
 
-                    if(client.ClientOptions.EnableClientTelemetry.GetValueOrDefault()) {
-                        logger.LogInformation("Telemetry Feature flag is enabled for CTL.");
-                    } else {
-                        logger.LogInformation("Telemetry Feature flag is disabled for CTL.");
-                    }
-
                     List<Task> tasks = new List<Task>
                     {
                         scenario.RunAsync(

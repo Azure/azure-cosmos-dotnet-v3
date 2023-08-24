@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Microsoft.Azure.Documents;
@@ -60,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     using (CosmosClient client = TestCommon.CreateCosmosClient(
                                                                 customizeClientBuilder: (builder) => builder
+                                                                                                        .WithTelemetryEnabled()
                                                                                                         .WithHttpClientFactory(() => new HttpClient(httpHandler))))
                     {
                         Cosmos.Database database = client.CreateDatabaseAsync(databaseId).GetAwaiter().GetResult();

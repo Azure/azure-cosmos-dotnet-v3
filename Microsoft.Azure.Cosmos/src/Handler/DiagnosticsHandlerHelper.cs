@@ -63,19 +63,20 @@ namespace Microsoft.Azure.Cosmos.Handler
         {
             if (isClientTelemetryEnabled != DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
             {
-                // Lock this instance
-                lock (DiagnosticsHandlerHelper.Instance)
-                {
-                    // Stop SystemMonitor job
-                    DiagnosticsHandlerHelper.Instance.StopSystemMonitor();
-                    // Make instance eligible for garbage collection
-                    DiagnosticsHandlerHelper.Instance = null;
+                // Update telemetry flag
+                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = isClientTelemetryEnabled;
 
-                    // Update telemetry flag
-                    DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = isClientTelemetryEnabled;
-                    // Create new instance
-                    DiagnosticsHandlerHelper.Instance = new DiagnosticsHandlerHelper();
-                }
+                // Create new instance, it will start a new system monitor job
+                DiagnosticsHandlerHelper newInstance = new DiagnosticsHandlerHelper();
+
+                // Create a new refrence to the old instance
+                DiagnosticsHandlerHelper oldInstance = DiagnosticsHandlerHelper.Instance;
+
+                // Assing new instance to the static refrence,
+                DiagnosticsHandlerHelper.Instance = newInstance;
+
+                // Stop and dispose old instance of SystemMonitor job
+                oldInstance.StopSystemMonitor();
             }
         }
 

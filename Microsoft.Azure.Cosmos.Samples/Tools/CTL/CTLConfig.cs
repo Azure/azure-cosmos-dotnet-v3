@@ -97,12 +97,6 @@ namespace CosmosCTL
         [Option("ctl_logging_context", Required = false, HelpText = "Defines a custom context to use on metrics")]
         public string LogginContext { get; set; } = string.Empty;
 
-        [Option("ctl_telemetry_endpoint", Required = false, HelpText = "telemetry juno end point")]
-        public string TelemetryEndpoint { get; set; }
-
-        [Option("ctl_telemetry_schedule_in_sec", Required = false, HelpText = "telemetry task schedule time in sec")]
-        public string TelemetryScheduleInSeconds { get; set; }
-
         [Option("ctl_reservoir_type", Required = false, HelpText = "Defines the reservoir type. Valid values are: Uniform, SlidingWindow and ExponentialDecay. The default value is SlidingWindow.")]
         public ReservoirTypes ReservoirType { get; set; } = ReservoirTypes.SlidingWindow;
 
@@ -133,7 +127,7 @@ namespace CosmosCTL
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ApplicationName = CTLConfig.UserAgentSuffix,
-                EnableClientTelemetry = true
+                EnableClientTelemetry = true // always enable this feature.
             };
 
             if (this.UseGatewayMode)

@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     {
         public override Task<HttpResponseMessage> HttpHandlerRequestCallbackChecks(HttpRequestMessage request)
         {
-            if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint))
+            if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
             {
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));  // In Emulator test, send hardcoded response status code as there is no real communication happens with client telemetry service
             }
@@ -55,12 +55,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public static new void ClassInitialize(TestContext context)
         {
             ClientTelemetryTestsBase.ClassInitialize(context);
-        }
-
-        [ClassCleanup]
-        public static new void FinalCleanup()
-        {
-            ClientTelemetryTestsBase.FinalCleanup();
         }
 
         [TestInitialize]
