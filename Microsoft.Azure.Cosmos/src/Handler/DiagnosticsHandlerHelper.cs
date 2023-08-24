@@ -22,13 +22,13 @@ namespace Microsoft.Azure.Cosmos.Handler
         private const string Telemetrykey = "telemetry";
 
         public static readonly TimeSpan DiagnosticsRefreshInterval = TimeSpan.FromSeconds(10);
-        private readonly SystemUsageRecorder diagnosticSystemUsageRecorder = new SystemUsageRecorder(
+        private static readonly SystemUsageRecorder DiagnosticSystemUsageRecorder = new SystemUsageRecorder(
             identifier: Diagnostickey,
             historyLength: 6,
             refreshInterval: DiagnosticsHandlerHelper.DiagnosticsRefreshInterval);
 
         private static readonly TimeSpan ClientTelemetryRefreshInterval = TimeSpan.FromSeconds(5);
-        private readonly SystemUsageRecorder telemetrySystemUsageRecorder = new SystemUsageRecorder(
+        private static readonly SystemUsageRecorder TelemetrySystemUsageRecorder = new SystemUsageRecorder(
             identifier: Telemetrykey,
             historyLength: 120,
             refreshInterval: DiagnosticsHandlerHelper.ClientTelemetryRefreshInterval);
@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Handler
         /// <param name="isClientTelemetryEnabled"></param>
         public static void Refresh(bool isClientTelemetryEnabled)
         {
+            Console.WriteLine("DiagnosticsHandlerHelper.Refresh " + isClientTelemetryEnabled);
             if (isClientTelemetryEnabled != DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
             {
                 // Update telemetry flag
@@ -78,6 +79,8 @@ namespace Microsoft.Azure.Cosmos.Handler
                 // Stop and dispose old instance of SystemMonitor job
                 oldInstance.StopSystemMonitor();
             }
+
+            Console.WriteLine("DiagnosticsHandlerHelper.Refreshed");
         }
 
         private void StopSystemMonitor()
@@ -96,14 +99,16 @@ namespace Microsoft.Azure.Cosmos.Handler
             // If the CPU monitor fails for some reason don't block the application
             try
             {
+                Console.WriteLine("Added diag recorder");
                 List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
                 {
-                    this.diagnosticSystemUsageRecorder,
+                    DiagnosticSystemUsageRecorder,
                 };
 
                 if (DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
                 {
-                    recorders.Add(this.telemetrySystemUsageRecorder);
+                    Console.WriteLine("Added telemetry recorder");
+                    recorders.Add(TelemetrySystemUsageRecorder);
                 }
 
                 this.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
@@ -132,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 
             try
             {
-                return this.diagnosticSystemUsageRecorder.Data;
+                return DiagnosticSystemUsageRecorder.Data;
             }
             catch (Exception ex)
             {
@@ -156,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 
             try
             {
-                return this.telemetrySystemUsageRecorder.Data;
+                return TelemetrySystemUsageRecorder.Data;
             }
             catch (Exception ex)
             {
