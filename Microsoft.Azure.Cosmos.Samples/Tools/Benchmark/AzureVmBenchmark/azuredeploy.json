@@ -777,7 +777,7 @@
                       },
                       {
                         "name": "Query",
-                        "value": "customMetrics\n| where name == \"ReadOperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
+                        "value": "[concat('customMetrics\n| where name == \"', variables('metricsPrefix'), 'OperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n')]",
                         "isOptional": true
                       },
                       {
@@ -835,7 +835,7 @@
                     "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
                     "settings": {
                       "content": {
-                        "Query": "customMetrics\n| where name == \"ReadOperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n",
+                        "Query": "[concat('customMetrics\n| where name == \"', variables('metricsPrefix'), 'OperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n')]",
                         "Dimensions": {
                           "xAxis": {
                             "name": "ts",
@@ -904,7 +904,7 @@
                       },
                       {
                         "name": "Query",
-                        "value": "customMetrics\n| where name == \"ReadOperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
+                        "value": "[concat('customMetrics\n| where name == \"', variables('metricsPrefix'), 'OperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n')]",
                         "isOptional": true
                       },
                       {
@@ -962,7 +962,7 @@
                     "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
                     "settings": {
                       "content": {
-                        "Query": "customMetrics\n| where name == \"ReadOperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n",
+                        "Query": "[concat('customMetrics\n| where name == \"', variables('metricsPrefix'), 'OperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n')]",
                         "Dimensions": {
                           "xAxis": {
                             "name": "ts",
