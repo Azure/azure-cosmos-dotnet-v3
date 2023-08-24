@@ -25,6 +25,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private const string StringValue = "string";
 
+        private const string ArrayValue = "[10, 20]";
+
+        private const string ObjectValue = "{'type':'object'}";
+
         private static readonly int[] PageSizes = new[] { 5, 10, -1 };
 
         private static readonly IndexingPolicy CompositeIndexPolicy = CreateIndexingPolicy();
@@ -422,6 +426,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                     case 4:
                         mixedTypeElement = CosmosString.Create(StringValue);
+                        break;
+
+                    case 5:
+                        mixedTypeElement = CosmosArray.Parse(ArrayValue);
+                        break;
+
+                    case 6:
+                        mixedTypeElement = CosmosObject.Parse(ObjectValue);
                         break;
 
                     default:

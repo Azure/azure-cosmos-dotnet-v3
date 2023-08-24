@@ -404,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         this.uninitializedEnumeratorsAndTokens.Enqueue((currentEnumerator, (OrderByContinuationToken)null));
 
                         // Use the token for the next page, since we fully drained the enumerator.
-                        OrderByContinuationToken orderByContinuationToken = CreateContinuationToken(
+                        OrderByContinuationToken orderByContinuationToken = CreateOrderByContinuationToken(
                             new ParallelContinuationToken(
                                     token: ((CosmosString)currentEnumerator.FeedRangeState.State.Value).Value,
                                     range: ((FeedRangeEpk)currentEnumerator.FeedRangeState.FeedRange).Range),
@@ -455,7 +455,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
             else
             {
-                OrderByContinuationToken orderByContinuationToken = CreateContinuationToken(
+                OrderByContinuationToken orderByContinuationToken = CreateOrderByContinuationToken(
                     new ParallelContinuationToken(
                             token: currentEnumerator.StartOfPageState != null ? ((CosmosString)currentEnumerator.StartOfPageState.Value).Value : null,
                             range: ((FeedRangeEpk)currentEnumerator.FeedRangeState.FeedRange).Range),
@@ -877,9 +877,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             foreach (OrderByContinuationToken suppliedOrderByContinuationToken in orderByContinuationTokens)
             {
-                int orderByCount = suppliedOrderByContinuationToken.ResumeValues != null ?
-                    suppliedOrderByContinuationToken.ResumeValues.Count : suppliedOrderByContinuationToken.OrderByItems.Count;
-
+                int orderByCount = GetOrderByItemCount(suppliedOrderByContinuationToken);
                 if (orderByCount != numOrderByColumns)
                 {
                     return TryCatch<List<OrderByContinuationToken>>.FromException(
@@ -889,6 +887,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
 
             return TryCatch<List<OrderByContinuationToken>>.FromResult(orderByContinuationTokens);
+        }
+
+        private static int GetOrderByItemCount(OrderByContinuationToken orderByContinuationToken)
+        {
+            return orderByContinuationToken.ResumeValues != null ?
+                orderByContinuationToken.ResumeValues.Count : orderByContinuationToken.OrderByItems.Count;
         }
 
         private static void AppendToBuilders((StringBuilder leftFilter, StringBuilder targetFilter, StringBuilder rightFilter) builders, object str)
@@ -1143,7 +1147,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             return (left.ToString(), target.ToString(), right.ToString());
         }
 
-        private static OrderByContinuationToken CreateContinuationToken(
+        private static OrderByContinuationToken CreateOrderByContinuationToken(
             ParallelContinuationToken parallelToken,
             OrderByQueryResult orderByQueryResult,
             int skipCount,
