@@ -419,7 +419,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.systemUsageHistory.Values.Count == 0 ||
                 this.systemUsageHistory.LastTimestamp + DiagnosticsHandlerHelper.DiagnosticsRefreshInterval < DateTime.UtcNow)
             {
-                this.systemUsageHistory = DiagnosticsHandlerHelper.GetInstance().GetDiagnosticsSystemHistory();
+                this.systemUsageHistory = DiagnosticsHandlerHelper.GetInstance()?.GetDiagnosticsSystemHistory();
             }
 #endif
         }

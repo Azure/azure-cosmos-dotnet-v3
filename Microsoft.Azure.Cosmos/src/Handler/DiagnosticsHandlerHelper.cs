@@ -83,6 +83,8 @@ namespace Microsoft.Azure.Cosmos.Handler
             {
                 DefaultTrace.TraceError($"Error while stopping system usage monitor. Stacktrace: {0} ", ex.StackTrace);
             }
+
+            DiagnosticsHandlerHelper.Instance = null; // refrence is lost, GC will collect it
         }
 
         /// <summary>
