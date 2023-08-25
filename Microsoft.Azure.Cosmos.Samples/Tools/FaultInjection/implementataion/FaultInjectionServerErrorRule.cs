@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         //Used for Connection Delay
         public bool IsApplicable(
             Guid activityId, 
-            string callUri, 
+            Uri callUri, 
             DocumentServiceRequest request)
         {
             if (!this.IsValid())

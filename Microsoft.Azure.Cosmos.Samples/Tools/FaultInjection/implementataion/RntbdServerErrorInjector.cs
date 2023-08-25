@@ -97,13 +97,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>a bool representing if the injection was sucessfull.</returns>
         public bool InjectRntbdServerConnectionDelay(
             Guid activityId,
-            string callUri,
+            Uri callUri,
             DocumentServiceRequest request)
         {
             FaultInjectionServerErrorRule? serverConnectionDelayRule = this.ruleStore.FindRntbdServerConnectionDelayRule(
                 activityId,
                 callUri,
                 request);
+
+            serverConnectionDelayRule.GetDelay();
 
             if (serverConnectionDelayRule != null)
             {
@@ -113,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         ruleId: serverConnectionDelayRule.GetId());
 
                 DefaultTrace.TraceInformation("FaultInjection: FaultInjection Rule {0} Inserted {1} connection delay for request {2}",
-                                    serverConnectionDelayRule.GetId(), transportRequestStats.FaultInjectionDelay, args.CommonArguments.ActivityId);
+                                    serverConnectionDelayRule.GetId(), serverConnectionDelayRule.GetDelay(), activityId);
 
                 TimeSpan connectionDelay = serverConnectionDelayRule.GetDelay();
                 Thread.Sleep(connectionDelay);

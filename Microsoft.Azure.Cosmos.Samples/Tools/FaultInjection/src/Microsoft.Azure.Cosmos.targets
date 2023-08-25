@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+***********************************************************************************************
+Microsoft.Azure.Cosmos.targets
+
+Includes native assemblies when building against the .NET client SDK.
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (C) Microsoft Corporation. All rights reserved.
+***********************************************************************************************
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    
+  <ItemGroup>
+    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>Microsoft.Azure.Cosmos.ServiceInterop.dll</TargetPath>
+      <Visible>False</Visible>
+    </ContentWithTargetPath>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Cosmos.CRTCompat.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>Cosmos.CRTCompat.dll</TargetPath>
+      <Visible>False</Visible>
+    </ContentWithTargetPath>
+  </ItemGroup>
+
+  <ItemGroup>
+      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\msvcp140.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <TargetPath>msvcp140.dll</TargetPath>
+          <Visible>False</Visible>
+      </ContentWithTargetPath>
+  </ItemGroup>
+
+  <ItemGroup>
+      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <TargetPath>vcruntime140.dll</TargetPath>
+          <Visible>False</Visible>
+      </ContentWithTargetPath>
+  </ItemGroup>
+
+  <ItemGroup>
+      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140_1.dll">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+          <TargetPath>vcruntime140_1.dll</TargetPath>
+          <Visible>False</Visible>
+      </ContentWithTargetPath>
+  </ItemGroup>
+    
+</Project>

@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         //Used for connection delay
-        public bool IsApplicable(string ruleId, Guid activityId, string callUri, DocumentServiceRequest request)
+        public bool IsApplicable(string ruleId, Guid activityId, Uri callUri, DocumentServiceRequest request)
         {
             foreach (IFaultInjectionConditionValidator validator in this.validators)
             {
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
             {
-                bool isApplicable = this.addresses.Exists(uri => args.PreparedCall.Uri.ToString().StartsWith(uri.ToString()));
+                bool isApplicable = this.addresses.Exists(uri => args.PreparedCall.Uri.AbsoluteUri.StartsWith(uri.AbsoluteUri));
                 if (!isApplicable)
                 {
                     args.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(
@@ -290,9 +290,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
 
             //Used for Connection Delay
-            public bool IsApplicable(string ruleId, Guid activityId, string callUri, DocumentServiceRequest request)
+            public bool IsApplicable(string ruleId, Guid activityId, Uri callUri, DocumentServiceRequest request)
             {
-                bool isApplicable = this.addresses.Exists(uri => callUri.StartsWith(uri.ToString()));
+                bool isApplicable = this.addresses.Exists(uri => callUri.AbsoluteUri.StartsWith(uri.AbsoluteUri));
                 if (!isApplicable)
                 {
                     request.FaultInjectionRequestContext.RecordFaultInjectionRuleEvaluation(

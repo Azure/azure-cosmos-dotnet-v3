@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         public FaultInjectionServerErrorRule? FindRntbdServerConnectionDelayRule(
             Guid activityId,
-            string callUri, 
+            Uri callUri, 
             DocumentServiceRequest request)
         {
             foreach (FaultInjectionServerErrorRule rule in this.serverConnectionDelayRuleSet.Keys)

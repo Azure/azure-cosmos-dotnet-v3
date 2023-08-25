@@ -6,52 +6,57 @@ namespace Microsoft.Azure.Documents.FaultInjection
     /// <summary>
     /// Types of ServerErrors that can be injected
     /// </summary>
-    public enum FaultInjectionServerErrorType
+    internal enum FaultInjectionServerErrorType
     {
         /// <summary>
         /// 410: Gone from server
         /// </summary>
-        GONE,
+        Gone,
 
         /// <summary>
         /// 449: RetryWith from server
         /// </summary>
-        RETRY_WITH,
+        RetryWith,
 
         /// <summary>
         /// 500: Internal Server Error from server
         /// </summary>
-        INTERNAL_SERVER_ERROR,
+        InternalServerEror,
 
         /// <summary>
         /// 429:Too Many Requests from server
         /// </summary>
-        TOO_MANY_REQUESTS,
+        TooManyRequests,
 
         /// <summary>
         /// 404-1002: Read session not available from server
         /// </summary>
-        READ_SESSION_NOT_AVAILABLE,
+        ReadSessionNotAvailable,
 
         /// <summary>
         /// 408: Request Timeout from server
         /// </summary>
-        TIMEOUT,
+        Timeout,
+
+        /// <summary>
+        /// 410-1008: Partition is splitting
+        /// </summary>
+        PartitionIsSplittinggrating,
 
         /// <summary>
         /// 410-1008: Partition is migrating from server
         /// </summary>
-        PARTITION_IS_MIGRATING,
+        PartitionIsMigrating,
 
         /// <summary>
         /// Used to simulate a transient timeout/broken connection when over request timeout
         /// </summary>
-        RESPONSE_DELAY, 
+        ResponseDelay,
 
         /// <summary>
         ///  Used to simulate hight channel acquisiton. 
         ///  When over a connection timeouts can simulate connectionTimeoutException
         /// </summary>
-        CONNECTION_DELAY
+        ConnectionDelay
     }
 }
