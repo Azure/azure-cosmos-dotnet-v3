@@ -11,24 +11,21 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Maps a normalized region name to the format that CosmosDB is expecting (for e.g. from 'westus2' to 'West US 2')
     /// </summary>
-    internal class RegionNameMapping
+    internal sealed class RegionNameMapper
     {
-        private static Dictionary<string, string> normalizedToCosmosDBRegionNameMapping;
+        private readonly Dictionary<string, string> normalizedToCosmosDBRegionNameMapping;
 
-        internal static void PrepareCache()
+        public RegionNameMapper()
         {
             FieldInfo[] fields = typeof(Regions).GetFields(BindingFlags.Public | BindingFlags.Static);
-            normalizedToCosmosDBRegionNameMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            this.normalizedToCosmosDBRegionNameMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (FieldInfo field in fields)
             {
-                normalizedToCosmosDBRegionNameMapping[field.Name.ToLowerInvariant()] = field.GetValue(null).ToString();
+                Console.WriteLine($"{field.Name} -> {field.GetValue(null)}");
+                this.normalizedToCosmosDBRegionNameMapping[field.Name] = field.GetValue(null).ToString();
             }
-        }
-
-        internal static void ClearCache()
-        {
-            normalizedToCosmosDBRegionNameMapping = null;
         }
 
         /// <summary>
@@ -37,19 +34,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="normalizedRegionName">An Azure region name in a normalized format. The input is not case sensitive.</param>
         /// <returns>A string that contains the region name in the format that CosmosDB expects.</returns>
-        public static string GetCosmosDBRegionName(string normalizedRegionName)
+        public string GetCosmosDBRegionName(string normalizedRegionName)
         {
             if (string.IsNullOrEmpty(normalizedRegionName))
             {
                 return string.Empty;
             }
 
-            if (normalizedToCosmosDBRegionNameMapping == null)
-            {
-                throw new ApplicationException("Name mapping cache has not been initialized");
-            }
-
-            if (normalizedToCosmosDBRegionNameMapping.TryGetValue(normalizedRegionName, out string cosmosDBRegionName))
+            normalizedRegionName = normalizedRegionName.Replace(" ", string.Empty);
+            if (this.normalizedToCosmosDBRegionNameMapping.TryGetValue(normalizedRegionName,
+                out string cosmosDBRegionName))
             {
                 return cosmosDBRegionName;
             }

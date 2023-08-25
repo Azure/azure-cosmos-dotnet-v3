@@ -779,24 +779,17 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy.EnableClientTelemetry = this.EnableClientTelemetry.Value;
             }
 
-            RegionNameMapping.PrepareCache();
-            try
+            RegionNameMapper mapper = new RegionNameMapper();
+            if (!string.IsNullOrEmpty(this.ApplicationRegion))
             {
-                if (!string.IsNullOrEmpty(this.ApplicationRegion))
-                {
-                   connectionPolicy.SetCurrentLocation(RegionNameMapping.GetCosmosDBRegionName(this.ApplicationRegion));
-                }
-
-                if (this.ApplicationPreferredRegions != null)
-                {
-                    List<string> mappedRegions = this.ApplicationPreferredRegions.Select(s => RegionNameMapping.GetCosmosDBRegionName(s)).ToList();
-
-                    connectionPolicy.SetPreferredLocations(mappedRegions);
-                }
+                connectionPolicy.SetCurrentLocation(mapper.GetCosmosDBRegionName(this.ApplicationRegion));
             }
-            finally
+
+            if (this.ApplicationPreferredRegions != null)
             {
-                RegionNameMapping.ClearCache();
+                List<string> mappedRegions = this.ApplicationPreferredRegions.Select(s => mapper.GetCosmosDBRegionName(s)).ToList();
+
+                connectionPolicy.SetPreferredLocations(mappedRegions);
             }
 
             if (this.MaxRetryAttemptsOnRateLimitedRequests != null)
