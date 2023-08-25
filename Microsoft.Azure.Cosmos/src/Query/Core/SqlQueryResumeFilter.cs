@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             string rid,
             bool exclude)
         {
-            if (resumeValues.Count == 0)
+            if ((resumeValues == null) || (resumeValues.Count == 0))
             {
                 throw new ArgumentException($"{nameof(resumeValues)} can not be empty.");
             }

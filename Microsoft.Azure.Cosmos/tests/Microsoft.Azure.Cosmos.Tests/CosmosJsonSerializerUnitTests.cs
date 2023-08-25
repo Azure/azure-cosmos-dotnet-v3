@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
         }
 
         [TestMethod]
-        public void ValidateSqlQuerySpecSerializerWithResumeInfo()
+        public void ValidateSqlQuerySpecSerializerWithResumeFilter()
         {
             // Test serializing of different types
             string queryText = "SELECT * FROM root r";
@@ -283,7 +283,9 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 (SqlQueryResumeValue.FromCosmosElement(CosmosNumber64.Create(10)), "10"),
                 (SqlQueryResumeValue.FromCosmosElement(CosmosString.Create("testval")), "\"testval\""),
                 (SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"array\",\"low\":10000,\"high\":20000}")), "{\"type\":\"array\",\"low\":10000,\"high\":20000}"),
-                (SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"object\",\"low\":10000,\"high\":20000}")), "{\"type\":\"object\",\"low\":10000,\"high\":20000}")
+                (SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"object\",\"low\":10000,\"high\":20000}")), "{\"type\":\"object\",\"low\":10000,\"high\":20000}"),
+                (SqlQueryResumeValue.FromOrderByValue(CosmosArray.Parse("[]")), "{\"type\":\"array\",\"low\":-6706074647855398782,\"high\":9031114912533472255}"),
+                (SqlQueryResumeValue.FromOrderByValue(CosmosObject.Parse("{}")), "{\"type\":\"object\",\"low\":1457042291250783704,\"high\":1493060239874959160}")
             };
 
             CosmosJsonDotNetSerializer userSerializer = new CosmosJsonDotNetSerializer();

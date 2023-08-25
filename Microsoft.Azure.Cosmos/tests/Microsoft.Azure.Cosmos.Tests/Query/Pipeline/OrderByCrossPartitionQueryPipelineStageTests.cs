@@ -57,8 +57,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ("true", SqlQueryResumeValue.FromCosmosElement(CosmosBoolean.Create(true))),
                 ("1337", SqlQueryResumeValue.FromCosmosElement(CosmosNumber64.Create(1337))),
                 ("asdf", SqlQueryResumeValue.FromCosmosElement(CosmosString.Create("asdf"))),
-                ("{\"type\":\"array\",\"low\":10000,\"high\":20000}", SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"array\",\"low\":10000,\"high\":20000}"))),
-                ("{\"type\":\"object\",\"low\":30000,\"high\":40000}", SqlQueryResumeValue.FromCosmosElement(CosmosObject.Parse("{\"type\":\"object\",\"low\":30000,\"high\":40000}")))
+                ("{\"type\":\"array\",\"low\":-6706074647855398782,\"high\":9031114912533472255}", SqlQueryResumeValue.FromOrderByValue(CosmosArray.Parse("[]"))),
+                ("{\"type\":\"object\",\"low\":1457042291250783704,\"high\":1493060239874959160}", SqlQueryResumeValue.FromOrderByValue(CosmosObject.Parse("{}")))
             };
         }
 
@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     partitionKey: null,
                     orderByColumns: new List<OrderByColumn>()
                     {
-                    new OrderByColumn("item", SortOrder.Ascending)
+                        new OrderByColumn("item", SortOrder.Ascending)
                     },
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     maxConcurrency: 10,
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     continuationToken: CosmosArray.Create(
                         new List<CosmosElement>()
                         {
-                        OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
+                            OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
                         }));
                 Assert.IsTrue(monadicCreate.Succeeded);
             }
@@ -365,8 +365,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         partitionKey: null,
                         orderByColumns: new List<OrderByColumn>()
                         {
-                               new OrderByColumn("item1", SortOrder.Ascending),
-                               new OrderByColumn("item2", SortOrder.Ascending)
+                            new OrderByColumn("item1", SortOrder.Ascending),
+                            new OrderByColumn("item2", SortOrder.Ascending)
                         },
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         maxConcurrency: 10,

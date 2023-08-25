@@ -259,28 +259,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             List<CosmosElement> resumeValuesRaw;
             if (orderByContinuationToken.OrderByItems != null)
             {
+                resumeValuesRaw = null;
                 orderByItemsRaw = new List<CosmosElement>(orderByContinuationToken.OrderByItems.Count);
                 foreach (OrderByItem orderByItem in orderByContinuationToken.OrderByItems)
                 {
                     orderByItemsRaw.Add(OrderByItem.ToCosmosElement(orderByItem));
                 }
-
-                resumeValuesRaw = null;
             }
-            else
+            else if (orderByContinuationToken.ResumeValues != null)
             {
-                if (orderByContinuationToken.ResumeValues == null)
-                {
-                    throw new ArgumentException($"Either {nameof(orderByContinuationToken.ResumeValues)} or {nameof(orderByContinuationToken.OrderByItems)} needs to be specified.");
-                }
-
+                orderByItemsRaw = null;
                 resumeValuesRaw = new List<CosmosElement>(orderByContinuationToken.ResumeValues.Count);
                 foreach (SqlQueryResumeValue resumeValue in orderByContinuationToken.ResumeValues)
                 {
                     resumeValuesRaw.Add(SqlQueryResumeValue.ToCosmosElement(resumeValue));
                 }
-
-                orderByItemsRaw = null;
+            }
+            else
+            {
+                throw new ArgumentException($"Either {nameof(orderByContinuationToken.ResumeValues)} or {nameof(orderByContinuationToken.OrderByItems)} needs to be specified.");
             }
 
             CosmosElement filter = orderByContinuationToken.Filter == null ? CosmosNull.Create() : CosmosString.Create(orderByContinuationToken.Filter);
@@ -330,33 +327,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             // Try to get ResumeValues first, if it is not present then try to get orderby items
             List<SqlQueryResumeValue> resumeValues;
+            List<OrderByItem> orderByItems;
             if (cosmosObject.TryGetValue(PropertyNames.ResumeValues, out CosmosArray resumeValuesRaw))
             {
+                orderByItems = null;
                 resumeValues = new List<SqlQueryResumeValue>(resumeValuesRaw.Count);
                 foreach (CosmosElement resumeValue in resumeValuesRaw)
                 {
                     resumeValues.Add(SqlQueryResumeValue.FromCosmosElement(resumeValue));
                 }
             }
-            else 
+            else if (cosmosObject.TryGetValue(PropertyNames.OrderByItems, out CosmosArray orderByItemsRaw))
             {
                 resumeValues = null;
-            }
-
-            List<OrderByItem> orderByItems;
-            if (resumeValues != null)
-            {
-                orderByItems = null;
-            }
-            else
-            {
-                if (!cosmosObject.TryGetValue(PropertyNames.OrderByItems, out CosmosArray orderByItemsRaw))
-                {
-                    return TryCatch<OrderByContinuationToken>.FromException(
-                        new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{PropertyNames.OrderByItems}': {cosmosElement}"));
-                }
-
                 orderByItems = orderByItemsRaw.Select(x => OrderByItem.FromCosmosElement(x)).ToList();
+            }
+            else 
+            {
+                return TryCatch<OrderByContinuationToken>.FromException(
+                        new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{PropertyNames.OrderByItems}': {cosmosElement}"));
             }
 
             if (!cosmosObject.TryGetValue(PropertyNames.Rid, out CosmosString ridRaw))

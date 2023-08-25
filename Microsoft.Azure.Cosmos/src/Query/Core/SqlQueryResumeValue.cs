@@ -13,6 +13,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Newtonsoft.Json;
 
+    // Class that represents the resume value of a query. Primarily used to represent the resume value for order by query
+    // The actual value is saved as a CosmosElement. Only native JSON types are supported. C* types are not supported.
+    // Objects and Arrays are represented by their UInt128 hash value. All other types are represented by their actual value.
+    // Example for Object and Array:
+    //       {"type":"array", "low": 1000000000, "high": 8888888888}
+    //       {"type":"object", "low": 1000000000, "high": 8888888888}
     internal class SqlQueryResumeValue : IComparable<CosmosElement>
     {
         private static class PropertyNames
@@ -24,13 +30,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             public const string Type = "type";
         }
 
-        private SqlQueryResumeValue(CosmosElement element)
+        private SqlQueryResumeValue(CosmosElement resumeValue)
         {
-            this.resumeValue = element;
+            this.resumeValue = resumeValue;
         }
 
         private readonly CosmosElement resumeValue;
 
+        // Method to compare a value represented as CosmosElement with the resume value.
+        // Object and Array needs special handling as the resume value is a UInt128 hash.
         public int CompareTo(CosmosElement cosmosElement)
         {
             switch (this.resumeValue)
@@ -44,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
                 case CosmosObject:
                 {
+                    // Extract UInt128 hash from the CosmosObject
                     CosmosObject cosmosObject = (CosmosObject)this.resumeValue;
 
                     if (!cosmosObject.TryGetValue(PropertyNames.Type, out CosmosString objectType)
@@ -65,6 +74,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         }
                         else
                         {
+                            // Resume Value is an array but the other element is not an array.
+                            // Utilize an Empty array for comparison. Since the other element is of different type,
+                            // empty array is sufficient to get the correct result.
                             return ItemComparer.Instance.Compare(CosmosArray.Empty, cosmosElement);
                         }
                     }
@@ -75,11 +87,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         // will take care of ordering based on types.
                         if (cosmosElement is CosmosObject objectResult)
                         {
-                            // same type so compare the hash values
                             return UInt128BinaryComparer.Singleton.Compare(hashValue, DistinctHash.GetHash(objectResult));
                         }
                         else
                         {
+                            // Resume Value is an object but the other element is not an object.
+                            // Utilize an Empty object for comparison. Since the other element is of different type,
+                            // empty object is sufficient to get the correct result.
                             return ItemComparer.Instance.Compare(CosmosObject.Create(new Dictionary<string, CosmosElement>()), cosmosElement);
                         }
                     }
@@ -90,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 }
 
                 default:
-                    throw new ArgumentException($"Invalid {nameof(SqlQueryResumeValue)} type.");
+                    throw new ArgumentException($"Invalid {nameof(this.resumeValue)} type.");
             }
         }
 
@@ -110,11 +124,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             return value.Accept(CosmosElementToResumeValueVisitor.Singleton);
         }
 
+        // Generates the SqlQueryResumeValue given an exact orderby value from the query.
+        // The orderby value is provided as CosmosElement.
         public static SqlQueryResumeValue FromOrderByValue(CosmosElement orderByValue)
         {
             return orderByValue.Accept(OrderByValueToResumeValueVisitor.Singleton);
         }
 
+        // Serializer that gets called when serializing SqlQueryResumeValue to send to backend. 
         public static void Serialize(JsonWriter writer, SqlQueryResumeValue value, JsonSerializer serializer)
         {
             switch (value.resumeValue)
@@ -149,8 +166,57 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
         }
 
+        // Visitor to verify if the number type is supported by resume value. C* number types are not supported
+        public sealed class SupportedResumeNumberTypeVisitor : ICosmosNumberVisitor<bool>
+        {
+            public static readonly SupportedResumeNumberTypeVisitor Singleton = new SupportedResumeNumberTypeVisitor();
+
+            private SupportedResumeNumberTypeVisitor()
+            {
+            }
+
+            public bool Visit(CosmosNumber64 cosmosNumber64)
+            {
+                return true;
+            }
+
+            public bool Visit(CosmosInt8 cosmosInt8)
+            {
+                return false;
+            }
+
+            public bool Visit(CosmosInt16 cosmosInt16)
+            {
+                return false;
+            }
+
+            public bool Visit(CosmosInt32 cosmosInt32)
+            {
+                return false;
+            }
+
+            public bool Visit(CosmosInt64 cosmosInt64)
+            {
+                return false;
+            }
+
+            public bool Visit(CosmosUInt32 cosmosUInt32)
+            {
+                return false;
+            }
+            public bool Visit(CosmosFloat32 cosmosFloat32)
+            {
+                return false;
+            }
+
+            public bool Visit(CosmosFloat64 cosmosFloat64)
+            {
+                return false;
+            }
+        }
+
         // Visitor to convert resume values that are represented as CosmosElement to ResumeValue
-        // This is the inverse of ToCosmosElement method
+        // This is the inverse of ToCosmosElement method. The input for this is from the Client continuation token.
         private sealed class CosmosElementToResumeValueVisitor : ICosmosElementVisitor<SqlQueryResumeValue>
         {
             public static readonly CosmosElementToResumeValueVisitor Singleton = new CosmosElementToResumeValueVisitor();
@@ -196,6 +262,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosNumber cosmosNumber)
             {
+                bool bSupportedType = cosmosNumber.Accept(SupportedResumeNumberTypeVisitor.Singleton);
+                if (!bSupportedType)
+                {
+                    throw new NotSupportedException($"Extended number types are not supported in SqlQueryResumeValue.");
+                }
+
                 return new SqlQueryResumeValue(cosmosNumber);
             }
 
@@ -272,6 +344,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosNumber cosmosNumber)
             {
+                bool bSupportedType = cosmosNumber.Accept(SupportedResumeNumberTypeVisitor.Singleton);
+                if (!bSupportedType)
+                {
+                    throw new NotSupportedException($"Extended number types are not supported in SqlQueryResumeValue.");
+                }
+
                 return new SqlQueryResumeValue(cosmosNumber);
             }
 
