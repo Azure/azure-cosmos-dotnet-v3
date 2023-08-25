@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #else
     internal
 #endif
-     sealed class ServerSideMetricsInternal
+    sealed class ServerSideMetricsInternal : ServerSideMetrics
     {
         /// <summary>
         /// QueryMetrics with all members having default (but not null) members.
@@ -85,74 +85,43 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.PartitionKeyRangeId = partitionKeyRangeId;
         }
 
-        /// <summary>
-        /// Gets the total query time in the Azure Cosmos database service.
-        /// </summary>
-        public TimeSpan TotalTime { get; }
+        public override TimeSpan TotalTime { get; }
 
-        /// <summary>
-        /// Gets the number of documents retrieved during query in the Azure Cosmos database service.
-        /// </summary>
-        public long RetrievedDocumentCount { get; }
+        public override long RetrievedDocumentCount { get; }
 
-        /// <summary>
-        /// Gets the size of documents retrieved in bytes during query in the Azure Cosmos DB service.
-        /// </summary>
-        public long RetrievedDocumentSize { get; }
+        public override long RetrievedDocumentSize { get; }
 
-        /// <summary>
-        /// Gets the number of documents returned by query in the Azure Cosmos DB service.
-        /// </summary>
-        public long OutputDocumentCount { get; }
+        public override long OutputDocumentCount { get; }
 
-        /// <summary>
-        /// Gets the size of documents outputted in bytes during query in the Azure Cosmos database service.
-        /// </summary>
-        public long OutputDocumentSize { get; }
+        public override long OutputDocumentSize { get; }
 
-        /// <summary>
-        /// Gets the query QueryPreparationTimes in the Azure Cosmos database service.
-        /// </summary>
         public QueryPreparationTimesInternal QueryPreparationTimes { get; }
 
-        /// <summary>
-        /// Gets the query index lookup time in the Azure Cosmos database service.
-        /// </summary>
-        public TimeSpan IndexLookupTime { get; }
+        public override TimeSpan QueryPreparationTime => 
+            this.QueryPreparationTimes.LogicalPlanBuildTime + 
+            this.QueryPreparationTimes.PhysicalPlanBuildTime + 
+            this.QueryPreparationTimes.QueryCompilationTime + 
+            this.QueryPreparationTimes.QueryOptimizationTime;
 
-        /// <summary>
-        /// Gets the document loading time during query in the Azure Cosmos database service.
-        /// </summary>
-        public TimeSpan DocumentLoadTime { get; }
+        public override TimeSpan IndexLookupTime { get; }
 
-        /// <summary>
-        /// Gets the query runtime execution times during query in the Azure Cosmos database service.
-        /// </summary>
+        public override TimeSpan DocumentLoadTime { get; }
+
         public RuntimeExecutionTimesInternal RuntimeExecutionTimes { get; }
 
-        /// <summary>
-        /// Gets the output writing/serializing time during query in the Azure Cosmos database service.
-        /// </summary>
-        public TimeSpan DocumentWriteTime { get; }
+        public override TimeSpan RuntimeExecutionTime => 
+            this.RuntimeExecutionTimes.QueryEngineExecutionTime + 
+            this.RuntimeExecutionTimes.SystemFunctionExecutionTime + 
+            this.RuntimeExecutionTimes.UserDefinedFunctionExecutionTime;
 
-        /// <summary>
-        /// Gets the index hit ratio by query in the Azure Cosmos database service.
-        /// </summary>
-        public double IndexHitRatio { get; }
+        public override TimeSpan DocumentWriteTime { get; }
 
-        /// <summary>
-        /// Gets the VMExecution Time.
-        /// </summary>
-        public TimeSpan VMExecutionTime { get; }
+        public override double IndexHitRatio { get; }
 
-        /// <summary>
-        /// Gets the FeedRange for a single backend call.
-        /// </summary>
+        public override TimeSpan VMExecutionTime { get; }
+
         public string FeedRange { get; set; }
 
-        /// <summary>
-        /// Gets the partition key range id for a single backend call.
-        /// </summary>
         public int? PartitionKeyRangeId { get; set; }
 
         public static ServerSideMetricsInternal Create(IEnumerable<ServerSideMetricsInternal> serverSideMetricsEnumerable)

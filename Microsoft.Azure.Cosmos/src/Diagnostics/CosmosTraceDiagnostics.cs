@@ -113,9 +113,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             ServerSideMetricsInternalAccumulator accumulator = new ServerSideMetricsInternalAccumulator();
             ServerSideMetricsInternalAccumulator.WalkTraceTreeForQueryMetrics(trace, accumulator);
 
-            IReadOnlyList<ServerSidePartitionedMetrics> serverSideMetricsList = accumulator.GetPartitionedServerSideMetrics().Select(metrics => new ServerSidePartitionedMetrics(metrics)).ToList();
+            IReadOnlyList<ServerSidePartitionedMetricsInternal> serverSideMetricsList = accumulator.GetPartitionedServerSideMetrics().Select(metrics => new ServerSidePartitionedMetricsInternal(metrics)).ToList();
 
-            ServerSideCumulativeMetrics accumulatedMetrics = new ServerSideCumulativeMetrics(serverSideMetricsList);
+            ServerSideCumulativeMetrics accumulatedMetrics = new ServerSideCumulativeMetricsInternal(serverSideMetricsList);
             return accumulatedMetrics.PartitionedMetrics.Count != 0 ? accumulatedMetrics : null;
         }
 
