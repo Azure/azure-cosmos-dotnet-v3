@@ -90,6 +90,9 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the list of all regions that were contacted for a request
         /// </summary>
         /// <returns>The list of tuples containing the Region name and the URI</returns>
+        /// <remarks>
+        /// The returned list contains unique regions and doesn't guarantee ordering of the regions contacted from the first to the last
+        /// </remarks>
         public abstract IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions();
     }
 }

@@ -16,6 +16,12 @@ namespace CosmosBenchmark
             Trace.TraceInformation(payload);
         }
 
+        public static void TraceError(string payload, Exception e)
+        {
+            Console.WriteLine($"{payload}: {e.Message} {e.StackTrace}");
+            Trace.TraceError(payload);
+        }
+
         public static void TeePrint(string format, params object[] arg)
         {
             string payload = string.Format(format, arg);
