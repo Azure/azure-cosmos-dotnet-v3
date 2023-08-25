@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos
 
             foreach (FieldInfo field in fields)
             {
-                Console.WriteLine($"{field.Name} -> {field.GetValue(null)}");
                 this.normalizedToCosmosDBRegionNameMapping[field.Name] = field.GetValue(null).ToString();
             }
         }
