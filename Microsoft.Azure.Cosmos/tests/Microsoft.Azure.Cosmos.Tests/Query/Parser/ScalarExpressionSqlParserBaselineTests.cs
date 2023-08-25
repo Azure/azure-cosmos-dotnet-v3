@@ -520,6 +520,24 @@
             this.ExecuteTestSuite(inputs);
         }
 
+        [TestMethod]
+        public void StringLiteral()
+        {
+            List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()
+            {
+                // Single quoted string literals do not allow ' even when it's escaped.
+                // Parser currently fails with Antlr4.Runtime.NoViableAltException
+                CreateInput(
+                    description: @"Single quoted string literals with escape seqence",
+                    scalarExpression: @"['\""DoubleQuote', '\\ReverseSolidus', '\/solidus', '\bBackspace', '\fSeparatorFeed', '\nLineFeed', '\rCarriageReturn', '\tTab', '\u1234']"),
+                CreateInput(
+                    description: @"Double quoted string literals with escape seqence",
+                    scalarExpression: @"[""'SingleQuote"", ""\""DoubleQuote"", ""\\ReverseSolidus"", ""\/solidus"", ""\bBackspace"", ""\fSeparatorFeed"", ""\nLineFeed"", ""\rCarriageReturn"", ""\tTab"", ""\u1234""]"),
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
         public static SqlParserBaselineTestInput CreateInput(string description, string scalarExpression)
         {
             return new SqlParserBaselineTestInput(description, $"SELECT VALUE {scalarExpression}");

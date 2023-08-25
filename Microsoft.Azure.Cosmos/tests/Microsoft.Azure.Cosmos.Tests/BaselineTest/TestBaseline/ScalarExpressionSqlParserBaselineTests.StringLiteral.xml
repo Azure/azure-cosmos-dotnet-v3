@@ -1,0 +1,20 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Single quoted string literals with escape seqence]]></Description>
+      <Query><![CDATA[SELECT VALUE ['\"DoubleQuote', '\\ReverseSolidus', '\/solidus', '\bBackspace', '\fSeparatorFeed', '\nLineFeed', '\rCarriageReturn', '\tTab', '\u1234']]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ["\"DoubleQuote", "\\ReverseSolidus", "/solidus", "\\bBackspace", "\\fSeparatorFeed", "\\nLineFeed", "\\rCarriageReturn", "\\tTab", "\\u1234"]]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Double quoted string literals with escape seqence]]></Description>
+      <Query><![CDATA[SELECT VALUE ["'SingleQuote", "\"DoubleQuote", "\\ReverseSolidus", "\/solidus", "\bBackspace", "\fSeparatorFeed", "\nLineFeed", "\rCarriageReturn", "\tTab", "\u1234"]]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ["'SingleQuote", "\"DoubleQuote", "\\ReverseSolidus", "/solidus", "\\bBackspace", "\\fSeparatorFeed", "\\nLineFeed", "\\rCarriageReturn", "\\tTab", "\\u1234"]]]></ParsedQuery>
+    </Output>
+  </Result>
+</Results>
