@@ -579,13 +579,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
             
             // No conversion for expected format.
-            cosmosClientOptions.ApplicationRegion = Regions.AustraliaCentral2;
-            Assert.AreEqual(Regions.AustraliaCentral2, cosmosClientOptions.ApplicationRegion);
-
-            // Ignore unknown values.
-            cosmosClientOptions.ApplicationRegion = null;
+            cosmosClientOptions.ApplicationRegion = Regions.NorthCentralUS;
 
             ConnectionPolicy policy = cosmosClientOptions.GetConnectionPolicy(0);
+
+            Assert.AreEqual(Regions.NorthCentralUS, policy.PreferredLocations[0]);
+
+            // Ignore unknown values. 
+            cosmosClientOptions.ApplicationRegion = null;
+
+            policy = cosmosClientOptions.GetConnectionPolicy(0);
 
             Assert.AreEqual(0, policy.PreferredLocations.Count);
 
@@ -651,14 +654,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyRegionNameFormatConversionBypassForInvalidApplicationPreferredRegions()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
-
-            // List is null
-            cosmosClientOptions.ApplicationPreferredRegions = null;
-            Assert.IsNull(cosmosClientOptions.ApplicationRegion);
-
-            // List is empty
-            cosmosClientOptions.ApplicationPreferredRegions = new List<string>();
-            Assert.AreEqual(0, cosmosClientOptions.ApplicationPreferredRegions.Count);
 
             // List contains valid and invalid values
             cosmosClientOptions.ApplicationPreferredRegions = new List<string>
