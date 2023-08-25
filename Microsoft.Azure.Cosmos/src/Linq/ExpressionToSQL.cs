@@ -62,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             public const string Any = "Any";
             public const string Average = "Average";
             public const string Count = "Count";
+            public const string GroupBy = "GroupBy";
             public const string Max = "Max";
             public const string Min = "Min";
             public const string OrderBy = "OrderBy";
@@ -1674,6 +1675,19 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             return collection;
+        }
+
+        private static SqlGroupByClause VisitGroupBy(ReadOnlyCollection<Expression> arguments, TranslationContext context)
+        {
+            if (arguments.Count != 2)
+            {
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.GroupBy, 2, arguments.Count));
+            }
+
+            LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
+            SqlScalarExpression sqlfunc = ExpressionToSql.VisitScalarExpression(lambda, context);
+            SqlGroupByClause groupby = SqlGroupByClause.Create(sqlfunc);
+            return groupby;
         }
 
         private static SqlOrderByClause VisitOrderBy(ReadOnlyCollection<Expression> arguments, bool isDescending, TranslationContext context)
