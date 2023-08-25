@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.Azure.Documents.FaultInjection;
     using System.Diagnostics;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
     /// Rntbd server error injector
