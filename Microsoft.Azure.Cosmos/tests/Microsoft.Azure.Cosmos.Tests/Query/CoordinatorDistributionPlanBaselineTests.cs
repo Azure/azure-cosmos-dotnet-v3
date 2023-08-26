@@ -14,7 +14,7 @@
     {
         [TestMethod]
         [Owner("akotalwar")]
-        public void TestCoordinatorDistributionPlanDeserializing()
+        public void TestCoordinatorDistributionPlanDeserialization()
         {
             List<CoordinatorDistributionPlanTestInput> testVariations = new List<CoordinatorDistributionPlanTestInput>
             {
@@ -33,7 +33,7 @@
                 CreateInput(
                     description: @"Select, Sum and VariableRef Expressions",
                     coordinatorPlanJson: "{\"coordinatorDistributionPlan\": {\"clientQL\": {\"Kind\": \"Select\",\"DeclaredVariable\": {\"Name\": \"v0\",\"UniqueId\": 6},\"Expression\": {\"Kind\": \"ObjectCreate\",\"ObjectKind\": \"Object\",\"Properties\": [{\"Name\": \"count_a_plus_five\",\"Expression\": {\"Kind\": \"BinaryOperator\",\"OperatorKind\": \"Add\",\"LeftExpression\": {\"Kind\": \"VariableRef\",\"Variable\": {\"Name\": \"v0\",\"UniqueId\": 6 }}, \"RightExpression\": { \"Kind\": \"Literal\", \"Literal\": { \"Kind\": \"Number\", \"Value\": 5 }}}}]}, \"SourceExpression\": { \"Kind\": \"Aggregate\", \"Aggregate\": { \"Kind\": \"Builtin\", \"OperatorKind\": \"Sum\" }, \"SourceExpression\": { \"Kind\": \"Input\", \"Name\": \"root\" }}}}}"),
-        };
+            };
 
             this.ExecuteTestSuite(testVariations);
         }
