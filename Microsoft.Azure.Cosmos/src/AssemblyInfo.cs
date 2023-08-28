@@ -31,3 +31,4 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("CosmosCTL" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("CosmosBenchmark" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("CosmosBenchmark" + AssemblyKeys.TestPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.CosmosFabric" + AssemblyKeys.TestPublicKey)]
