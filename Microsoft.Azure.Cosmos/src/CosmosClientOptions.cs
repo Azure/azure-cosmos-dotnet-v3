@@ -85,6 +85,7 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionProtocol = CosmosClientOptions.DefaultProtocol;
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
+            this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
         }
 
         /// <summary>
@@ -771,7 +772,8 @@ namespace Microsoft.Azure.Cosmos
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
                 HttpClientFactory = this.httpClientFactory,
-                ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
+                ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
             };
 
             if (this.CosmosClientTelemetryOptions != null)
