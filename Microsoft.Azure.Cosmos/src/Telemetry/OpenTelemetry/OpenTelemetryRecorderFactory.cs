@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             CosmosClientContext clientContext)
         {
             OpenTelemetryCoreRecorder openTelemetryRecorder = default;
-            if (clientContext is { ClientOptions.IsDistributedTracingEnabled: true })
+            if (clientContext is { ClientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing: false })
             {
                 // If there is no source then it will return default otherwise a valid diagnostic scope
                 DiagnosticScope scope = LazyOperationScopeFactory.Value.CreateScope(name: operationName,
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         databaseName: databaseName,
                         operationType: operationType,
                         clientContext: clientContext,
-                        config: requestOptions?.DistributedTracingOptions ?? clientContext.ClientOptions?.DistributedTracingOptions);
+                        config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions?.CosmosThresholdOptions);
                 }
 #if !INTERNAL
                 else if (Activity.Current is null)

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private const string CosmosDb = "cosmosdb";
 
         private readonly DiagnosticScope scope = default;
-        private readonly DistributedTracingOptions config = null;
+        private readonly CosmosThresholdOptions config = null;
         private readonly Activity activity = null;
 
         private readonly Documents.OperationType operationType = Documents.OperationType.Invalid;
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string containerName,
             string databaseName,
             Documents.OperationType operationType, 
-            CosmosClientContext clientContext, DistributedTracingOptions config)
+            CosmosClientContext clientContext, CosmosThresholdOptions config)
         {
             this.scope = scope;
             this.config = config;
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName,
             Documents.OperationType operationType,
             CosmosClientContext clientContext,
-            DistributedTracingOptions config)
+            CosmosThresholdOptions config)
         {
             return new OpenTelemetryCoreRecorder(
                         operationScope,

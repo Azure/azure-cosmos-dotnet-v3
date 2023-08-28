@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using System.Net.Http;
-    using System.ComponentModel;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
     public sealed class DistributedTracingOTelTests : BaseCosmosClientHelper
@@ -46,7 +45,10 @@ namespace Microsoft.Azure.Cosmos
 
             await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false, 
                                 customizeClientBuilder: (builder) => builder
-                                                                        .WithDistributedTracing(true)
+                                                                        .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                                                                         {
+                                                                            DisableDistributedTracing = false
+                                                                         })
                                                                         .WithConnectionModeDirect());
 
             Container containerResponse = await this.database.CreateContainerAsync(
@@ -128,7 +130,10 @@ namespace Microsoft.Azure.Cosmos
 
             await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false, 
                                 customizeClientBuilder: (builder) => builder
-                                                                        .WithDistributedTracing(true)
+                                                                        .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                                                                         {
+                                                                            DisableDistributedTracing = false
+                                                                         })
                                                                         .WithHttpClientFactory(() => new HttpClient(httpClientHandlerHelper))
                                                                         .WithConnectionModeGateway());
 
@@ -175,14 +180,20 @@ namespace Microsoft.Azure.Cosmos
             {
                 await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false, 
                                     customizeClientBuilder: (builder) => builder
-                                                                            .WithDistributedTracing(enableDistributingTracing)
+                                                                            .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                                                                             {
+                                                                                DisableDistributedTracing = enableDistributingTracing
+                                                                             })
                                                                             .WithConnectionModeGateway());
             }
             else
             {
                 await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false, 
                                     customizeClientBuilder: (builder) => builder
-                                                                            .WithDistributedTracing(enableDistributingTracing));
+                                                                            .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                                                                             {
+                                                                                DisableDistributedTracing = enableDistributingTracing
+                                                                             }));
             }
 
             ContainerResponse containerResponse = await this.database.CreateContainerAsync(

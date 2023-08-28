@@ -56,19 +56,29 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 enableDistributingTracing: true);
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
                 .WithBulkExecution(true)
-                .WithDistributedTracingOptions(new DistributedTracingOptions()
-                {
-                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
-                }));
-            
+                .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                 {
+                    DisableDistributedTracing = false,
+                    CosmosThresholdOptions = new CosmosThresholdOptions()
+                    {
+                        PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
+                        NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                    }
+                 }));
+
             // Set a small retry count to reduce test time
             miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
                 builder
                     .AddCustomHandlers(requestHandler)
-                    .WithDistributedTracingOptions(new DistributedTracingOptions()
-                    {
-                        LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
-                    }));
+                    .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                     {
+                        DisableDistributedTracing = false,
+                        CosmosThresholdOptions = new CosmosThresholdOptions()
+                        {
+                            PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
+                            NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                        }
+                     }));
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     "databaseName",
@@ -682,7 +692,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             // It is not baseline test hence disable distributed tracing for this test
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                IsDistributedTracingEnabled = false
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                {
+                    DisableDistributedTracing = false,
+                    CosmosThresholdOptions = new CosmosThresholdOptions()
+                    {
+                        PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
+                        NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                    }
+                }
             };
             
             using (CosmosClient client = new CosmosClient(
@@ -1015,9 +1033,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 Guid exceptionActivityId = Guid.NewGuid();
                 using CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
                     builder
-                     .WithDistributedTracingOptions(new DistributedTracingOptions()
+                    .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                      {
-                         LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                        DisableDistributedTracing = false,
+                        CosmosThresholdOptions = new CosmosThresholdOptions()
+                        {
+                            PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
+                            NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                        }
                      })
                     .WithThrottlingRetryOptions(
                         maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
@@ -1303,9 +1326,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                         maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(1),
                         maxRetryAttemptsOnThrottledRequests: 3)
                         .WithBulkExecution(true)
-                        .WithDistributedTracingOptions(new DistributedTracingOptions()
+                        .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                          {
-                             LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(0)
+                            DisableDistributedTracing = false,
+                            CosmosThresholdOptions = new CosmosThresholdOptions()
+                            {
+                                PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
+                                NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                            }
                          })
                         .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                             transportClient,

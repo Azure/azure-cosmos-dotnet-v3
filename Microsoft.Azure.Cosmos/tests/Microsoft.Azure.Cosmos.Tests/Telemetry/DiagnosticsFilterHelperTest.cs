@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using Documents;
     using VisualStudio.TestTools.UnitTesting;
 
-
     [TestClass]
     public class DiagnosticsFilterHelperTest
     {
@@ -33,9 +32,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         {
             Assert.IsTrue(this.rootTrace.Duration > TimeSpan.Zero);
 
-            DistributedTracingOptions distributedTracingOptions = new DistributedTracingOptions
+            CosmosThresholdOptions distributedTracingOptions = new CosmosThresholdOptions
             {
-                LatencyThresholdForDiagnosticEvent = this.rootTrace.Duration.Add(TimeSpan.FromSeconds(1))
+                PointOperationLatencyThreshold = this.rootTrace.Duration.Add(TimeSpan.FromSeconds(1))
             };
             
             OpenTelemetryAttributes response = new OpenTelemetryAttributes
@@ -48,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 DiagnosticsFilterHelper
                                 .IsLatencyThresholdCrossed(distributedTracingOptions, OperationType.Read, response), 
                 $" Response time is {response.Diagnostics.GetClientElapsedTime().Milliseconds}ms " +
-                $"and Configured threshold value is {distributedTracingOptions.LatencyThresholdForDiagnosticEvent.Value.Milliseconds}ms " +
+                $"and Configured threshold value is {distributedTracingOptions.PointOperationLatencyThreshold.Milliseconds}ms " +
                 $"and Is response Success : {response.StatusCode.IsSuccess()}" );
         }
 
@@ -56,13 +55,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         public void CheckReturnTrueOnFailedStatusCode()
         {
             Assert.IsTrue(this.rootTrace.Duration > TimeSpan.Zero);
-
-
-            DistributedTracingOptions distributedTracingOptions = new DistributedTracingOptions
-            {
-                LatencyThresholdForDiagnosticEvent = this.rootTrace.Duration.Add(TimeSpan.FromSeconds(1))
-            };
-
             OpenTelemetryAttributes response = new OpenTelemetryAttributes
             {
                 StatusCode = HttpStatusCode.BadRequest,
@@ -73,7 +65,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 !DiagnosticsFilterHelper
                     .IsSuccessfulResponse(response),
                 $" Response time is {response.Diagnostics.GetClientElapsedTime().Milliseconds}ms " +
-                $"and Configured threshold value is {distributedTracingOptions.LatencyThresholdForDiagnosticEvent.Value.Milliseconds}ms " +
                 $"and Is response Success : {response.StatusCode.IsSuccess()}");
 
         }

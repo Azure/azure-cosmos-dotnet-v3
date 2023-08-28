@@ -490,6 +490,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// ClientTelemetryOptions
+        /// </summary>
+        public CosmosClientTelemetryOptions CosmosClientTelemetryOptions
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// GlobalEndpointManager will subscribe to this event if user updates the preferredLocations list in the Azure Cosmos DB service.
         /// </summary>
         internal event NotifyCollectionChangedEventHandler PreferenceChanged

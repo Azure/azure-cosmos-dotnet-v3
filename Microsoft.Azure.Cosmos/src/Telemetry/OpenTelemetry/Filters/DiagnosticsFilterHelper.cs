@@ -14,21 +14,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// </summary>
         /// <returns>true or false</returns>
         public static bool IsLatencyThresholdCrossed(
-            DistributedTracingOptions config,
+            CosmosThresholdOptions config,
             OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            TimeSpan latencyThreshold;
-
-            if (config?.LatencyThresholdForDiagnosticEvent != null)
-            {
-                latencyThreshold = config.LatencyThresholdForDiagnosticEvent.Value;
-            }
-            else
-            {
-                latencyThreshold = operationType == OperationType.Query ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
-            }
-
+            TimeSpan latencyThreshold = operationType == OperationType.Query ? config.NonPointOperationLatencyThreshold : config.PointOperationLatencyThreshold;
             return response.Diagnostics.GetClientElapsedTime() > latencyThreshold;
         }
 

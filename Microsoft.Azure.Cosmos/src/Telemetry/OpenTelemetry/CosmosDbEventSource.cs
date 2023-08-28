@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         [NonEvent]
         public static void RecordDiagnosticsForRequests(
-            DistributedTracingOptions config,
+            CosmosThresholdOptions config,
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {

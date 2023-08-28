@@ -730,9 +730,9 @@ namespace Microsoft.Azure.Cosmos
         internal bool? EnableCpuMonitor { get; set; }
 
         /// <summary>
-        /// Flag to enable telemetry
+        /// Client Telemetry Options
         /// </summary>
-        internal bool? EnableClientTelemetry { get; set; }
+        public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
@@ -774,9 +774,9 @@ namespace Microsoft.Azure.Cosmos
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };
 
-            if (this.EnableClientTelemetry.HasValue)
+            if (this.CosmosClientTelemetryOptions != null)
             {
-                connectionPolicy.EnableClientTelemetry = this.EnableClientTelemetry.Value;
+                connectionPolicy.CosmosClientTelemetryOptions = this.CosmosClientTelemetryOptions;
             }
 
             if (this.ApplicationRegion != null)
@@ -1013,29 +1013,5 @@ namespace Microsoft.Azure.Cosmos
                 return objectType == typeof(DateTime);
             }
         }
-        
-        /// <summary>
-        /// Distributed Tracing Options. <see cref="Microsoft.Azure.Cosmos.DistributedTracingOptions"/>
-        /// </summary>
-        /// <remarks> Applicable only when Operation level distributed tracing is enabled through <see cref="Microsoft.Azure.Cosmos.CosmosClientOptions.IsDistributedTracingEnabled"/></remarks>
-        internal DistributedTracingOptions DistributedTracingOptions { get; set; }
-
-        /// <summary>
-        /// Gets or sets the flag to generate operation level <see cref="System.Diagnostics.Activity"/> for methods calls using the Source Name "Azure.Cosmos.Operation".
-        /// </summary>
-        /// <value>
-        /// The default value is true (for preview package).
-        /// </value>
-        /// <remarks>This flag is there to disable it from source. Please Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            bool IsDistributedTracingEnabled { get; set; }
-#if PREVIEW
-        = true;
-#endif
-
     }
 }
