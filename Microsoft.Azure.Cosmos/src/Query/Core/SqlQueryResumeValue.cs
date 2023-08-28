@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     // Class that represents the resume value of a query. Primarily used to represent the resume value for order by query
     // The actual value is saved as a CosmosElement. Only native JSON types are supported. C* types are not supported.
@@ -30,91 +31,206 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             public const string Type = "type";
         }
 
-        private SqlQueryResumeValue(CosmosElement resumeValue)
+        private static readonly CosmosElement EmptyObject = CosmosObject.Create(new Dictionary<string, CosmosElement>());
+
+        private class UndefinedResumeValue : SqlQueryResumeValue
         {
-            this.resumeValue = resumeValue;
+            private static readonly UndefinedResumeValue Singelton = new UndefinedResumeValue();
+
+            private UndefinedResumeValue() 
+            {
+            }
+
+            public static UndefinedResumeValue Create()
+            {
+                return Singelton;
+            }
         }
 
-        private readonly CosmosElement resumeValue;
+        private class NullResumeValue : SqlQueryResumeValue
+        {
+            private static readonly NullResumeValue Singelton = new NullResumeValue();
+
+            private NullResumeValue() 
+            { 
+            }
+
+            public static NullResumeValue Create()
+            {
+                return Singelton;
+            }
+        }
+
+        private class BooleanResumeValue : SqlQueryResumeValue
+        {
+            private static readonly BooleanResumeValue True = new BooleanResumeValue(true);
+            private static readonly BooleanResumeValue False = new BooleanResumeValue(false);
+
+            public bool Value { get; }
+
+            private BooleanResumeValue(bool value)
+            {
+                this.Value = value;
+            }
+
+            public static BooleanResumeValue Create(bool value)
+            {
+                return value ? True : False;
+            }
+        }
+
+        private class NumberResumeValue : SqlQueryResumeValue
+        {
+            public CosmosNumber Value { get; }
+
+            private NumberResumeValue(CosmosNumber value)
+            {
+                this.Value = value;
+            }
+
+            public static NumberResumeValue Create(CosmosNumber value)
+            {
+                return new NumberResumeValue(value);
+            }
+        }
+
+        private class StringResumeValue : SqlQueryResumeValue
+        {
+            public CosmosString Value { get; }
+
+            private StringResumeValue(CosmosString value)
+            {
+                this.Value = value;
+            }
+
+            public static StringResumeValue Create(CosmosString value)
+            {
+                return new StringResumeValue(value);
+            }
+        }
+
+        private class ArrayResumeValue : SqlQueryResumeValue
+        {
+            public UInt128 HashValue { get; }
+
+            private ArrayResumeValue(UInt128 hashValue)
+            {
+                this.HashValue = hashValue;
+            }
+
+            public static ArrayResumeValue Create(UInt128 hashValue)
+            {
+                return new ArrayResumeValue(hashValue);
+            }
+
+            public static ArrayResumeValue Create(CosmosArray arrayValue)
+            {
+                return Create(DistinctHash.GetHash(arrayValue));
+            }
+        }
+
+        private class ObjectResumeValue : SqlQueryResumeValue
+        {
+            public UInt128 HashValue { get; }
+
+            private ObjectResumeValue(UInt128 hashValue)
+            {
+                this.HashValue = hashValue;
+            }
+
+            public static ObjectResumeValue Create(UInt128 hashValue)
+            {
+                return new ObjectResumeValue(hashValue);
+            }
+
+            public static ObjectResumeValue Create(CosmosObject objectValue)
+            {
+                return Create(DistinctHash.GetHash(objectValue));
+            }
+        }
 
         // Method to compare a value represented as CosmosElement with the resume value.
         // Object and Array needs special handling as the resume value is a UInt128 hash.
         public int CompareTo(CosmosElement cosmosElement)
         {
-            switch (this.resumeValue)
+            // Convert ResumeValue to CosmosElement and invoke ItemComparer to compare the cosmoselements
+            switch (this)
             {
-                case CosmosUndefined:
-                case CosmosNull:
-                case CosmosBoolean:
-                case CosmosNumber:
-                case CosmosString:
-                    return ItemComparer.Instance.Compare(this.resumeValue, cosmosElement);
+                case UndefinedResumeValue:
+                    return ItemComparer.Instance.Compare(CosmosUndefined.Create(), cosmosElement);
 
-                case CosmosObject:
+                case NullResumeValue:
+                    return ItemComparer.Instance.Compare(CosmosNull.Create(), cosmosElement);
+
+                case BooleanResumeValue booleanValue:
+                    return ItemComparer.Instance.Compare(CosmosBoolean.Create(booleanValue.Value), cosmosElement);
+
+                case NumberResumeValue numberValue:
+                    return ItemComparer.Instance.Compare(numberValue.Value, cosmosElement);
+
+                case StringResumeValue stringValue:
+                    return ItemComparer.Instance.Compare(stringValue.Value, cosmosElement);
+
+                case ArrayResumeValue arrayValue:
                 {
-                    // Extract UInt128 hash from the CosmosObject
-                    CosmosObject cosmosObject = (CosmosObject)this.resumeValue;
-
-                    if (!cosmosObject.TryGetValue(PropertyNames.Type, out CosmosString objectType)
-                        || !cosmosObject.TryGetValue(PropertyNames.Low, out CosmosNumber64 lowValue)
-                        || !cosmosObject.TryGetValue(PropertyNames.High, out CosmosNumber64 highValue))
+                    // If the order by result is also of array type, then compare the hash values
+                    // For other types create an empty array and call CosmosElement comparer which
+                    // will take care of ordering based on types.
+                    if (cosmosElement is CosmosArray arrayResult)
                     {
-                        throw new ArgumentException($"Incorrect Array / Object Resume Value. One or more of the required properties are missing.");
-                    }
-
-                    UInt128 hashValue = UInt128.Create((ulong)Number64.ToLong(lowValue.Value), (ulong)Number64.ToLong(highValue.Value));
-                    if (string.Equals(objectType.Value, PropertyNames.ArrayType))
-                    {
-                        // If the order by result is also of array type, then compare the hash values
-                        // For other types create an empty array and call CosmosElement comparer which
-                        // will take care of ordering based on types.
-                        if (cosmosElement is CosmosArray arrayResult)
-                        {
-                            return UInt128BinaryComparer.Singleton.Compare(hashValue, DistinctHash.GetHash(arrayResult));
-                        }
-                        else
-                        {
-                            // Resume Value is an array but the other element is not an array.
-                            // Utilize an Empty array for comparison. Since the other element is of different type,
-                            // empty array is sufficient to get the correct result.
-                            return ItemComparer.Instance.Compare(CosmosArray.Empty, cosmosElement);
-                        }
-                    }
-                    else if (string.Equals(objectType.Value, PropertyNames.ObjectType))
-                    {
-                        // If the order by result is also of object type, then compare the hash values
-                        // For other types create an empty object and call CosmosElement comparer which
-                        // will take care of ordering based on types.
-                        if (cosmosElement is CosmosObject objectResult)
-                        {
-                            return UInt128BinaryComparer.Singleton.Compare(hashValue, DistinctHash.GetHash(objectResult));
-                        }
-                        else
-                        {
-                            // Resume Value is an object but the other element is not an object.
-                            // Utilize an Empty object for comparison. Since the other element is of different type,
-                            // empty object is sufficient to get the correct result.
-                            return ItemComparer.Instance.Compare(CosmosObject.Create(new Dictionary<string, CosmosElement>()), cosmosElement);
-                        }
+                        return UInt128BinaryComparer.Singleton.Compare(arrayValue.HashValue, DistinctHash.GetHash(arrayResult));
                     }
                     else
                     {
-                        throw new ArgumentException($"Incorrect value for {PropertyNames.Type} property. Value is {objectType.Value}.");
+                        return ItemComparer.Instance.Compare(CosmosArray.Empty, cosmosElement);
+                    }
+                }
+
+                case ObjectResumeValue objectValue:
+                {
+                    // If the order by result is also of object type, then compare the hash values
+                    // For other types create an empty object and call CosmosElement comparer which
+                    // will take care of ordering based on types.
+                    if (cosmosElement is CosmosObject objectResult)
+                    {
+                        // same type so compare the hash values
+                        return UInt128BinaryComparer.Singleton.Compare(objectValue.HashValue, DistinctHash.GetHash(objectResult));
+                    }
+                    else
+                    {
+                        return ItemComparer.Instance.Compare(EmptyObject, cosmosElement);
                     }
                 }
 
                 default:
-                    throw new ArgumentException($"Invalid {nameof(this.resumeValue)} type.");
+                    throw new ArgumentException($"Invalid {nameof(SqlQueryResumeValue)} type.");
             }
         }
 
         // Utility method that converts SqlQueryResumeValue to CosmosElement which can then be serialized to string
         public static CosmosElement ToCosmosElement(SqlQueryResumeValue resumeValue)
         {
-            return resumeValue.resumeValue switch
+            return resumeValue switch
             {
-                CosmosUndefined => CosmosArray.Create(new List<CosmosElement>()),
-                CosmosBoolean or CosmosNull or CosmosNumber or CosmosString or CosmosObject => resumeValue.resumeValue,
+                UndefinedResumeValue => CosmosArray.Empty,
+                NullResumeValue => CosmosNull.Create(),
+                BooleanResumeValue booleanValue => CosmosBoolean.Create(booleanValue.Value),
+                NumberResumeValue numberValue => numberValue.Value,
+                StringResumeValue stringValue => stringValue.Value,
+                ArrayResumeValue arrayValue => CosmosObject.Create(
+                    new Dictionary<string, CosmosElement>()
+                    {
+                        { PropertyNames.Type, CosmosString.Create(PropertyNames.ArrayType) },
+                        { PropertyNames.Low, CosmosNumber64.Create((long)arrayValue.HashValue.GetLow()) },
+                        { PropertyNames.High, CosmosNumber64.Create((long)arrayValue.HashValue.GetHigh()) }
+                    }),
+                ObjectResumeValue objectValue => CosmosObject.Create(
+                    new Dictionary<string, CosmosElement>()
+                    {
+                        { PropertyNames.Type, CosmosString.Create(PropertyNames.ObjectType) },
+                        { PropertyNames.Low, CosmosNumber64.Create((long)objectValue.HashValue.GetLow()) },
+                        { PropertyNames.High, CosmosNumber64.Create((long)objectValue.HashValue.GetHigh()) }
+                    }),
                 _ => throw new ArgumentException($"Invalid {nameof(SqlQueryResumeValue)} type."),
             };
         }
@@ -134,31 +250,53 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         // Serializer that gets called when serializing SqlQueryResumeValue to send to backend. 
         public static void Serialize(JsonWriter writer, SqlQueryResumeValue value, JsonSerializer serializer)
         {
-            switch (value.resumeValue)
+            switch (value)
             {
-                case CosmosUndefined:
+                case UndefinedResumeValue:
                     writer.WriteStartArray();
                     writer.WriteEndArray();
                     break;
 
-                case CosmosNull:
+                case NullResumeValue:
                     writer.WriteNull();
                     break;
 
-                case CosmosBoolean booleanValue:
+                case BooleanResumeValue booleanValue:
                     serializer.Serialize(writer, booleanValue.Value);
                     break;
 
-                case CosmosNumber numberValue:
+                case NumberResumeValue numberValue:
                     serializer.Serialize(writer, numberValue.Value);
                     break;
 
-                case CosmosString stringValue:
-                    serializer.Serialize(writer, stringValue.Value.ToString());
+                case StringResumeValue stringValue:
+                    serializer.Serialize(writer, stringValue.Value);
                     break;
 
-                case CosmosObject objectValue:
-                    serializer.Serialize(writer, objectValue);
+                case ArrayResumeValue arrayValue:
+                    {
+                        writer.WriteStartObject();
+                        writer.WritePropertyName(PropertyNames.Type);
+                        writer.WriteValue(PropertyNames.ArrayType);
+                        writer.WritePropertyName(PropertyNames.Low);
+                        writer.WriteValue((long)arrayValue.HashValue.GetLow());
+                        writer.WritePropertyName(PropertyNames.High);
+                        writer.WriteValue((long)arrayValue.HashValue.GetHigh());
+                        writer.WriteEndObject();
+                    }
+                    break;
+
+                case ObjectResumeValue objectValue:
+                    {
+                        writer.WriteStartObject();
+                        writer.WritePropertyName(PropertyNames.Type);
+                        writer.WriteValue(PropertyNames.ObjectType);
+                        writer.WritePropertyName(PropertyNames.Low);
+                        writer.WriteValue((long)objectValue.HashValue.GetLow());
+                        writer.WritePropertyName(PropertyNames.High);
+                        writer.WriteValue((long)objectValue.HashValue.GetHigh());
+                        writer.WriteEndObject();
+                    }
                     break;
 
                 default:
@@ -232,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     throw new ArgumentException($"Only empty arrays can be converted to ResumeValue. Array has {cosmosArray.Count} elements.");
                 }
 
-                return new SqlQueryResumeValue(CosmosUndefined.Create());
+                return UndefinedResumeValue.Create();
             }
 
             public SqlQueryResumeValue Visit(CosmosBinary cosmosBinary)
@@ -242,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosBoolean cosmosBoolean)
             {
-                return new SqlQueryResumeValue(cosmosBoolean);
+                return BooleanResumeValue.Create(cosmosBoolean.Value);
             }
 
             public SqlQueryResumeValue Visit(CosmosGuid cosmosGuid)
@@ -252,12 +390,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosNull cosmosNull)
             {
-                return new SqlQueryResumeValue(cosmosNull);
+                return NullResumeValue.Create();
             }
 
             public SqlQueryResumeValue Visit(CosmosUndefined cosmosUndefined)
             {
-                return new SqlQueryResumeValue(cosmosUndefined);
+                return UndefinedResumeValue.Create();
             }
 
             public SqlQueryResumeValue Visit(CosmosNumber cosmosNumber)
@@ -268,30 +406,41 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     throw new NotSupportedException($"Extended number types are not supported in SqlQueryResumeValue.");
                 }
 
-                return new SqlQueryResumeValue(cosmosNumber);
+                return NumberResumeValue.Create(cosmosNumber);
             }
 
             public SqlQueryResumeValue Visit(CosmosObject cosmosObject)
             {
-                // Validate if the object is in the expected format
                 if (!cosmosObject.TryGetValue(PropertyNames.Type, out CosmosString objectType)
-                    || !cosmosObject.TryGetValue(PropertyNames.Low, out CosmosNumber64 _)
-                    || !cosmosObject.TryGetValue(PropertyNames.High, out CosmosNumber64 _))
+                    || !cosmosObject.TryGetValue(PropertyNames.Low, out CosmosNumber64 lowValue)
+                    || !cosmosObject.TryGetValue(PropertyNames.High, out CosmosNumber64 highValue))
                 {
                     throw new ArgumentException($"Incorrect Array / Object Resume Value. One or more of the required properties are missing.");
                 }
 
-                if (!string.Equals(objectType.Value, PropertyNames.ArrayType) && !string.Equals(objectType.Value, PropertyNames.ObjectType))
+                if (string.Equals(objectType.Value, PropertyNames.ArrayType))
+                {
+                    return ArrayResumeValue.Create(
+                        UInt128.Create(
+                            (ulong)Number64.ToLong(lowValue.Value),
+                            (ulong)Number64.ToLong(highValue.Value)));
+                }
+                else if (string.Equals(objectType.Value, PropertyNames.ObjectType))
+                {
+                    return ObjectResumeValue.Create(
+                        UInt128.Create(
+                            (ulong)Number64.ToLong(lowValue.Value),
+                            (ulong)Number64.ToLong(highValue.Value)));
+                }
+                else
                 {
                     throw new ArgumentException($"Incorrect value for {PropertyNames.Type} property. Value is {objectType.Value}.");
                 }
-
-                return new SqlQueryResumeValue(cosmosObject);
             }
 
             public SqlQueryResumeValue Visit(CosmosString cosmosString)
             {
-                return new SqlQueryResumeValue(cosmosString);
+                return StringResumeValue.Create(cosmosString);
             }
         }
 
@@ -307,14 +456,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosArray cosmosArray)
             {
-                UInt128 hashValue = DistinctHash.GetHash(cosmosArray);
-                return new SqlQueryResumeValue(CosmosObject.Create(
-                    new Dictionary<string, CosmosElement>()
-                    {
-                        { PropertyNames.Type, CosmosString.Create(PropertyNames.ArrayType) },
-                        { PropertyNames.Low, CosmosNumber64.Create((long)hashValue.GetLow()) },
-                        { PropertyNames.High, CosmosNumber64.Create((long)hashValue.GetHigh()) }
-                    }));
+                return ArrayResumeValue.Create(cosmosArray);
             }
 
             public SqlQueryResumeValue Visit(CosmosBinary cosmosBinary)
@@ -324,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosBoolean cosmosBoolean)
             {
-                return new SqlQueryResumeValue(cosmosBoolean);
+                return BooleanResumeValue.Create(cosmosBoolean.Value);
             }
 
             public SqlQueryResumeValue Visit(CosmosGuid cosmosGuid)
@@ -334,12 +476,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosNull cosmosNull)
             {
-                return new SqlQueryResumeValue(cosmosNull);
+                return NullResumeValue.Create();
             }
 
             public SqlQueryResumeValue Visit(CosmosUndefined cosmosUndefined)
             {
-                return new SqlQueryResumeValue(cosmosUndefined);
+                return UndefinedResumeValue.Create();
             }
 
             public SqlQueryResumeValue Visit(CosmosNumber cosmosNumber)
@@ -350,24 +492,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     throw new NotSupportedException($"Extended number types are not supported in SqlQueryResumeValue.");
                 }
 
-                return new SqlQueryResumeValue(cosmosNumber);
+                return NumberResumeValue.Create(cosmosNumber);
             }
 
             public SqlQueryResumeValue Visit(CosmosObject cosmosObject)
             {
-                UInt128 hashValue = DistinctHash.GetHash(cosmosObject);
-                return new SqlQueryResumeValue(CosmosObject.Create(
-                    new Dictionary<string, CosmosElement>()
-                    {
-                        { PropertyNames.Type, CosmosString.Create(PropertyNames.ObjectType) },
-                        { PropertyNames.Low, CosmosNumber64.Create((long)hashValue.GetLow()) },
-                        { PropertyNames.High, CosmosNumber64.Create((long)hashValue.GetHigh()) }
-                    }));
+                return ObjectResumeValue.Create(cosmosObject);
             }
 
             public SqlQueryResumeValue Visit(CosmosString cosmosString)
             {
-                return new SqlQueryResumeValue(cosmosString);
+                return StringResumeValue.Create(cosmosString);
             }
         }
     }
