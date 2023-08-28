@@ -138,6 +138,9 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Application Insights connection string")]
         public string AppInsightsConnectionString { get; set; }
 
+        [Option(Required = false, HelpText = "Enable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
+        public bool EnableClientTelemetry { get; set; } = true;
+
         internal int GetTaskCount(int containerThroughput)
         {
             int taskCount = this.DegreeOfParallelism;
@@ -217,7 +220,7 @@ namespace CosmosBenchmark
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-                EnableClientTelemetry = true // Always enable client telemetry feature as it will be controlled from the portal
+                EnableClientTelemetry = this.EnableClientTelemetry 
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
