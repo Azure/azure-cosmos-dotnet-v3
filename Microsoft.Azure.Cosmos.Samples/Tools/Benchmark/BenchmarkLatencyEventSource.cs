@@ -47,15 +47,15 @@ namespace CosmosBenchmark
         }
 
         [Event(2, Level = EventLevel.Informational)]
-        public void OnOperationSuccess(int operationType, long durationInMs)
+        public void OnOperationSuccess(int operationType, TimeSpan duration)
         {
-            this.WriteEvent(2, operationType, durationInMs);
+            this.WriteEvent(2, operationType, duration.TotalMilliseconds);
         }
 
         [Event(3, Level = EventLevel.Informational)]
-        public void OnOperationFailure(int operationType, long durationInMs)
+        public void OnOperationFailure(int operationType, TimeSpan duration)
         {
-            this.WriteEvent(3, operationType, durationInMs);
+            this.WriteEvent(3, operationType, duration);
         }
     }
 }

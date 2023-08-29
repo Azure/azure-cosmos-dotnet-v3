@@ -67,11 +67,11 @@ namespace CosmosBenchmark
 
                     if (this.isFailed)
                     {
-                        BenchmarkLatencyEventSource.Instance.OnOperationSuccess((int)operationResult.OperationType, (long)this.stopwatch.Elapsed.TotalMilliseconds);
+                        BenchmarkLatencyEventSource.Instance.OnOperationSuccess((int)operationResult.OperationType, this.stopwatch.Elapsed);
                     }
                     else
                     {
-                        BenchmarkLatencyEventSource.Instance.OnOperationFailure((int)operationResult.OperationType, (long)this.stopwatch.Elapsed.TotalMilliseconds);
+                        BenchmarkLatencyEventSource.Instance.OnOperationFailure((int)operationResult.OperationType, this.stopwatch.Elapsed);
                     }
                 }
 
