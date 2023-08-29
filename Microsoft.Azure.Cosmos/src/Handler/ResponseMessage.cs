@@ -259,13 +259,31 @@ namespace Microsoft.Azure.Cosmos
             {
                 return new Lazy<string>(() =>
                     {
-                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText, isBase64Encoded);
-                       
-                        StringBuilder stringBuilder = new StringBuilder();
-                        IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
-                        indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
+                        if (isBase64Encoded)
+                        {
+                            IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText, isBase64Encoded);
 
-                        return stringBuilder.ToString();
+                            StringBuilder stringBuilder = new StringBuilder();
+                            IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
+                            indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
+
+                            return stringBuilder.ToString();
+                        }
+                        else
+                        {
+                            bool parseSucess = IndexMetricsInfo.TryCreateFromString(responseMessageHeaders.IndexUtilizationText, out IndexMetricsInfo parsedIndexUMetricsInfo);
+
+                            // If parsing wasn't successful, return the decoded JSON from the response message
+                            if (!parseSucess) return parsedIndexUMetricsInfo.ResponseText;
+
+                            // If success, return pretty printed JSON 
+                            // TODO: These two format are dissimilar, do we want to just release the pure json and not the pretty writer? 
+                            StringBuilder stringBuilder = new StringBuilder();
+                            IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
+                            indexMetricWriter.WriteIndexMetrics(parsedIndexUMetricsInfo);
+
+                            return stringBuilder.ToString();
+                        }
                     });
             }
 

@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             potentialCompositeIndexes: new List<CompositeIndexUtilizationEntity>());
         
         /// <summary>
-        /// Initializes a new instance of the Index Utilization class.
+        /// Initializes a new instance of the Index Utilization class. This is the legacy class of IndexMetricsInfo.
         /// </summary>
         /// <param name="utilizedSingleIndexes">The utilized single indexes list</param>
         /// <param name="potentialSingleIndexes">The potential single indexes list</param>
@@ -67,27 +67,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 result = IndexUtilizationInfo.Empty;
                 return true;
             }
-            
-            return TryCreateFromDelimitedString(System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(delimitedString)), out result);
-        }
 
-        /// <summary>
-        /// Creates a new IndexUtilizationInfo from the backend delimited string.
-        /// </summary>
-        /// <param name="delimitedString">The backend delimited string to deserialize from.</param>
-        /// <param name="result">The parsed index utilization info</param>
-        /// <returns>A new IndexUtilizationInfo from the backend delimited string.</returns>
-        internal static bool TryCreateFromDelimitedString(string delimitedString, out IndexUtilizationInfo result)
-        {
-            if (delimitedString == null)
-            {
-                result = IndexUtilizationInfo.Empty;
-                return true;
-            }
-
+            // Even though this parsing is resilient, older version of the SDK doesn't have such lenient parsing.
+            // As such, it is right not not possible to remove some of the fied in the IndexUtilizationInfo class.
+            // However, in newer version of the SDKs, the code base is going to start returning IndexMetricsInfo, 
+            // so this class exists solely for legacy support.
             try
             {
-                string decodedString = System.Web.HttpUtility.UrlDecode(delimitedString, Encoding.UTF8);
+                string decodedString = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(delimitedString));
 
                 result = JsonConvert.DeserializeObject<IndexUtilizationInfo>(decodedString, new JsonSerializerSettings()
                 {
@@ -111,20 +98,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// Materialize the Index Utilization String into Concrete objects.
         /// </summary>
         /// <param name="delimitedString">The index utilization response string as sent by the back end.</param>
-        /// <param name="isBse64Encoded">The encoding of the string.</param>
         /// <returns>Cpncrete Index utilization object.</returns>
-        public static IndexUtilizationInfo CreateFromString(string delimitedString, bool isBse64Encoded)
+        public static IndexUtilizationInfo CreateFromString(string delimitedString)
         {
-            IndexUtilizationInfo indexUtilizationInfo;
-
-            if (isBse64Encoded)
-            {
-                TryCreateFromDelimitedBase64String(delimitedString, out indexUtilizationInfo);
-            }
-            else
-            {
-                TryCreateFromDelimitedString(delimitedString, out indexUtilizationInfo);
-            }
+            TryCreateFromDelimitedBase64String(delimitedString, out IndexUtilizationInfo indexUtilizationInfo);
 
             return indexUtilizationInfo;
         }

@@ -47,6 +47,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.WriteAfterIndexUtilizationInfo();
         }
 
+        public void WriteIndexMetrics(IndexMetricsInfo indexMetricsInfo)
+        {
+            // IndexUtilizationInfo
+            this.WriteBeforeIndexUtilizationInfo();
+
+            this.WriteIndexUtilizationInfo(indexMetricsInfo);
+
+            this.WriteAfterIndexUtilizationInfo();
+        }
+
         #region IndexUtilizationInfo
         protected void WriteBeforeIndexUtilizationInfo()
         {
