@@ -51,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private SqlSelectClause selectClause;
         private SqlWhereClause whereClause;
         private SqlOrderByClause orderByClause;
+        private SqlGroupByClause groupByClause;
 
         // The specs could be in clauses to reflect the SqlQuery.
         // However, they are separated to avoid update recreation of the readonly DOMs and lengthy code.
@@ -97,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Create a FROM clause from a set of FROM parameter bindings.
         /// </summary>
         /// <returns>The created FROM clause.</returns>
-        private SqlFromClause CreateFrom(SqlCollectionExpression inputCollectionExpression)
+        private SqlFromClause CreateFromClause(SqlCollectionExpression inputCollectionExpression)
         {
             bool first = true;
             foreach (Binding paramDef in this.fromParameters.GetBindings())
@@ -147,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             ParameterExpression inputParam = this.inputQuery.Alias;
             SqlIdentifier identifier = SqlIdentifier.Create(inputParam.Name);
             SqlAliasedCollectionExpression colExp = SqlAliasedCollectionExpression.Create(collection, identifier);
-            SqlFromClause fromClause = this.CreateFrom(colExp);
+            SqlFromClause fromClause = this.CreateFromClause(colExp);
             return fromClause;
         }
 
@@ -169,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             else
             {
-                fromClause = this.CreateFrom(inputCollectionExpression: null);
+                fromClause = this.CreateFromClause(inputCollectionExpression: null);
             }
 
             // Create a SqlSelectClause with the topSpec.
@@ -186,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlOffsetLimitClause offsetLimitClause = (this.offsetSpec != null) ?
                 SqlOffsetLimitClause.Create(this.offsetSpec, this.limitSpec ?? SqlLimitSpec.Create(SqlNumberLiteral.Create(int.MaxValue))) :
                 offsetLimitClause = default(SqlOffsetLimitClause);
-            SqlQuery result = SqlQuery.Create(selectClause, fromClause, this.whereClause, /*GroupBy*/ null, this.orderByClause, offsetLimitClause);
+            SqlQuery result = SqlQuery.Create(selectClause, fromClause, this.whereClause, this.groupByClause, this.orderByClause, offsetLimitClause);
             return result;
         }
 
@@ -253,10 +254,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 seenAnyNonSelectOp |=
                     (query.whereClause != null) ||
                     (query.orderByClause != null) ||
+                    (query.groupByClause != null) ||    
                     (query.topSpec != null) ||
                     (query.offsetSpec != null) ||
                     query.fromParameters.GetBindings().Any(b => b.ParameterDefinition != null) ||
-                    ((query.selectClause != null) && (query.selectClause.HasDistinct || this.HasSelectAggregate()));
+                    ((query.selectClause != null) && (query.selectClause.HasDistinct || 
+                    this.HasSelectAggregate()));
                 parentQuery = query;
             }
 
@@ -319,6 +322,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlSelectClause composedSelect = this.Substitute(inputSelect, inputSelect.TopSpec ?? this.topSpec, replacement, this.selectClause);
             SqlWhereClause composedWhere = this.Substitute(inputSelect.SelectSpec, replacement, this.whereClause);
             SqlOrderByClause composedOrderBy = this.Substitute(inputSelect.SelectSpec, replacement, this.orderByClause);
+            SqlGroupByClause composedGroupBy = this.Substitute(inputSelect.SelectSpec, replacement, this.groupByClause);
             SqlWhereClause and = QueryUnderConstruction.CombineWithConjunction(inputwhere, composedWhere);
             FromParameterBindings fromParams = QueryUnderConstruction.CombineInputParameters(flatInput.fromParameters, this.fromParameters);
             SqlOffsetSpec offsetSpec;
@@ -340,6 +344,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 inputQuery = null,
                 fromParameters = flatInput.fromParameters,
                 orderByClause = composedOrderBy ?? this.inputQuery.orderByClause,
+                groupByClause = composedGroupBy ?? this.inputQuery.groupByClause,
                 offsetSpec = offsetSpec,
                 limitSpec = limitSpec,
                 alias = new Lazy<ParameterExpression>(() => this.Alias)
@@ -440,6 +445,37 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new DocumentQueryException("Unexpected SQL select clause type: " + spec.GetType());
         }
 
+        private SqlGroupByClause Substitute(SqlSelectSpec spec, SqlIdentifier inputParam, SqlGroupByClause groupByClause)
+        {
+            if (groupByClause == null)
+            {
+                return null;
+            }
+
+            if (spec is SqlSelectStarSpec)
+            {
+                return groupByClause;
+            }
+
+            SqlSelectValueSpec selValue = spec as SqlSelectValueSpec;
+            if (selValue != null)
+            {
+                // TODO: Fill in this
+
+                //SqlScalarExpression replaced = selValue.Expression;
+                //SqlOrderByItem[] substitutedItems = new SqlOrderByItem[orderByClause.OrderByItems.Length];
+                //for (int i = 0; i < substitutedItems.Length; ++i)
+                //{
+                //    SqlScalarExpression substituted = SqlExpressionManipulation.Substitute(replaced, inputParam, orderByClause.OrderByItems[i].Expression);
+                //    substitutedItems[i] = SqlOrderByItem.Create(substituted, orderByClause.OrderByItems[i].IsDescending);
+                //}
+                //SqlOrderByClause result = SqlOrderByClause.Create(substitutedItems);
+                //return result;
+            }
+
+            throw new DocumentQueryException("Unexpected SQL select clause type: " + spec.GetType());
+        }
+
         /// <summary>
         /// Determine if the current method call should create a new QueryUnderConstruction node or not.
         /// </summary>
@@ -449,10 +485,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         public bool ShouldBeOnNewQuery(string methodName, int argumentCount)
         {
             // In the LINQ provider perspective, a SQL query (without subquery) the order of the execution of the operations is:
-            //      Join -> Where -> Order By -> Aggregates/Distinct/Select -> Top/Offset Limit
+            //      Join -> Where -> Order By  -> Aggregates/Distinct/Select -> Top/Offset Limit
+            //                    |             |
+            //                    |-> Group By->|
             //
             // The order for the corresponding LINQ operations is:
-            //      SelectMany -> Where -> OrderBy -> Aggregates/Distinct/Select -> Skip/Take
+            //      SelectMany -> Where -> OrderBy    -> Aggregates/Distinct/Select -> Skip/Take
+            //                          |             |
+            //                          |-> Group By->|
             //
             // In general, if an operation Op1 is being visited and the current query already has Op0 which
             // appear not before Op1 in the execution order, then this Op1 needs to be in a new query. This ensures
@@ -495,13 +535,14 @@ namespace Microsoft.Azure.Cosmos.Linq
                     break;
 
                 case LinqMethods.Where:
-                // Where expression parameter needs to be substitued if necessary so
+                // Where expression parameter needs to be substituted if necessary so
                 // It is not needed in Select distinct because the Select distinct would have the necessary parameter name adjustment.
                 case LinqMethods.Any:
                 case LinqMethods.OrderBy:
                 case LinqMethods.OrderByDescending:
                 case LinqMethods.ThenBy:
                 case LinqMethods.ThenByDescending:
+                case LinqMethods.GroupBy: //TODO need to check if this is correct
                 case LinqMethods.Distinct:
                     // New query is needed when there is already a Take or a non-distinct Select
                     shouldPackage = (this.topSpec != null) ||
@@ -590,6 +631,16 @@ namespace Microsoft.Azure.Cosmos.Linq
             foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) context.currentQuery.AddBinding(binding);
 
             return context.currentQuery;
+        }
+
+        public QueryUnderConstruction AddGroupByClause(SqlGroupByClause groupBy, TranslationContext context)
+        {
+            QueryUnderConstruction result = context.PackageCurrentQueryIfNeccessary();
+
+            result.groupByClause = groupBy;
+            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) result.AddBinding(binding);
+
+            return result;
         }
 
         public QueryUnderConstruction AddOffsetSpec(SqlOffsetSpec offsetSpec, TranslationContext context)

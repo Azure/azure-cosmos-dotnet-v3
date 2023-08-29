@@ -62,9 +62,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             public const string Any = "Any";
             public const string Average = "Average";
             public const string Count = "Count";
-            public const string GroupBy = "GroupBy";
             public const string Max = "Max";
             public const string Min = "Min";
+            public const string GroupBy = "GroupBy";
             public const string OrderBy = "OrderBy";
             public const string ThenBy = "ThenBy";
             public const string OrderByDescending = "OrderByDescending";
@@ -1201,6 +1201,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                         result = ExpressionToSql.VisitSelectMany(inputExpression.Arguments, context);
                         break;
                     }
+                case LinqMethods.GroupBy:
+                    {
+                        SqlGroupByClause groupBy = ExpressionToSql.VisitGroupBy(inputExpression.Arguments, context);
+                        context.currentQuery = context.currentQuery.AddGroupByClause(groupBy, context);
+                        break;
+                    }
                 case LinqMethods.OrderBy:
                     {
                         SqlOrderByClause orderBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, false, context);
@@ -1684,6 +1690,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.GroupBy, 2, arguments.Count));
             }
 
+            // TODO: check if this is correct
             LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
             SqlScalarExpression sqlfunc = ExpressionToSql.VisitScalarExpression(lambda, context);
             SqlGroupByClause groupby = SqlGroupByClause.Create(sqlfunc);
