@@ -21,8 +21,10 @@ namespace CosmosBenchmark
         private Func<OperationResult> lazyOperationResult;
         private bool disableTelemetry;
         private bool isFailed = false;
+        private BenchmarkConfig benchmarkConfig;
 
         public static ITelemetrySpan StartNew(
+            BenchmarkConfig benchmarkConfig,
             Func<OperationResult> lazyOperationResult,
             bool disableTelemetry)
         {
@@ -33,14 +35,15 @@ namespace CosmosBenchmark
 
             return new TelemetrySpan
             {
+                benchmarkConfig = benchmarkConfig,
                 stopwatch = Stopwatch.StartNew(),
                 lazyOperationResult = lazyOperationResult,
                 disableTelemetry = disableTelemetry
             };
         }
 
-        public void MarkFailed() 
-        { 
+        public void MarkFailed()
+        {
             this.isFailed = true;
             this.stopwatch.Stop();
         }
@@ -62,7 +65,7 @@ namespace CosmosBenchmark
                 {
                     RecordLatency(this.stopwatch.Elapsed.TotalMilliseconds);
 
-                    if(this.isFailed)
+                    if (this.isFailed)
                     {
                         BenchmarkLatencyEventSource.Instance.OnOperationSuccess((int)operationResult.OperationType, (long)this.stopwatch.Elapsed.TotalMilliseconds);
                     }
@@ -76,7 +79,8 @@ namespace CosmosBenchmark
                     operationResult.DatabseName,
                     operationResult.ContainerName,
                     (int)this.stopwatch.ElapsedMilliseconds,
-                    operationResult.LazyDiagnostics);
+                    operationResult.LazyDiagnostics,
+                    this.benchmarkConfig.DiagnosticLatencyThresholdInMs);
             }
         }
 
@@ -109,7 +113,7 @@ namespace CosmosBenchmark
             public void Dispose()
             {
             }
-            
+
             public void MarkSuccess()
             {
             }
@@ -119,7 +123,8 @@ namespace CosmosBenchmark
             }
         }
 
-        public interface ITelemetrySpan : IDisposable {
+        public interface ITelemetrySpan : IDisposable
+        {
             void MarkSuccess();
             void MarkFailed();
         }

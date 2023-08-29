@@ -108,7 +108,7 @@ namespace CosmosBenchmark
 
             this.successOperationCounter = this.meter.CreateCounter<long>($"{operationType}OperationSuccess");
             this.failureOperationCounter = this.meter.CreateCounter<long>($"{operationType}OperationFailure");
-            
+
             this.latencyInMsMetricNameGauge = this.meter.CreateObservableGauge($"{operationType}OperationLatencyInMs",
                 () => new Measurement<double>(this.latencyInMs));
 
@@ -151,25 +151,25 @@ namespace CosmosBenchmark
         /// <summary>
         /// Records success operation latency in milliseconds.
         /// </summary>
-        /// <param name="milliseconds">The number of milliseconds to record.</param>
-        private void RecordSuccessOpLatencyAndRps(
+        /// <param name="timeSpan">The number of milliseconds to record.</param>
+        public void RecordSuccessOpLatencyAndRps(
             TimeSpan timeSpan)
         {
-            this.rps = 1000 / timeSpan.Milliseconds;
-            this.latencyInMs = timeSpan.Milliseconds;
+            this.rps = timeSpan.TotalMilliseconds != 0 ? 1000 / timeSpan.TotalMilliseconds : 0;
+            this.latencyInMs = timeSpan.TotalMilliseconds;
             this.rpsMetricNameHistogram.Record(this.rps);
             this.operationLatencyHistogram.Record(this.latencyInMs);
         }
-        
+
         /// <summary>
         /// Records failed operation latency in milliseconds.
         /// </summary>
-        /// <param name="milliseconds">The number of milliseconds to record.</param>
-        private void RecordFailedOpLatencyAndRps(
+        /// <param name="timeSpan">The number of milliseconds to record.</param>
+        public void RecordFailedOpLatencyAndRps(
             TimeSpan timeSpan)
         {
-            this.rpsFailed = 1000 / timeSpan.Milliseconds;
-            this.latencyFailedInMs = timeSpan.Milliseconds;
+            this.rpsFailed = timeSpan.TotalMilliseconds != 0 ? 1000 / timeSpan.TotalMilliseconds : 0;
+            this.latencyFailedInMs = timeSpan.TotalMilliseconds;
             this.rpsFailedMetricNameHistogram.Record(this.rpsFailed);
             this.operationFailedLatencyHistogram.Record(this.latencyFailedInMs);
         }
