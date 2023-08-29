@@ -687,7 +687,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.clientId = cosmosClientId;
             this.remoteCertificateValidationCallback = remoteCertificateValidationCallback;
-            this.cosmosClientTelemetryOptions = cosmosClientTelemetryOptions;
+            this.cosmosClientTelemetryOptions = cosmosClientTelemetryOptions ?? new CosmosClientTelemetryOptions();
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
