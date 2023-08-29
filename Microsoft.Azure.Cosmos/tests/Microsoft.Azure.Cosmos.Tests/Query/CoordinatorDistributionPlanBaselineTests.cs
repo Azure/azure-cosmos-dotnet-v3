@@ -5,6 +5,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan;
     using Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -52,8 +53,12 @@
             {
                 Formatting = Newtonsoft.Json.Formatting.Indented
             };
+            if (!CoordinatorDistributionPlanDeserializer.TryDeserializeCoordinatorDistributionPlan(input.CoordinatorPlanJson, out CoordinatorDistributionPlan distributionPlan).IsSuccess)
+            {
+                CoordinatorDistributionPlanDeserializer.Result result = CoordinatorDistributionPlanDeserializer.TryDeserializeCoordinatorDistributionPlan(input.CoordinatorPlanJson, out _);
+                throw new NotFoundException(result.ErrorMessage);
+            }
 
-            CoordinatorDistributionPlan distributionPlan = CoordinatorDistributionPlanDeserializer.DeserializeCoordinatorDistributionPlan(input.CoordinatorPlanJson);
             string serializedDistributionPlan = JsonConvert.SerializeObject(distributionPlan, settings);
 
             return new CoordinatorDistributionPlanTestOutput(serializedDistributionPlan);
