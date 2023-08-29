@@ -3,21 +3,22 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Services.Management.Tests
+namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Linq;
     using System.Linq.Expressions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using BaselineTest;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
     using System.Net;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos;
 
-    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
+    [SDK.EmulatorTests.TestClass]
     public class LinqSQLTranslationBaselineTest : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         static Expression Lambda<T, S>(Expression<Func<T, S>> func)
@@ -32,7 +33,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
         {
-            cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
+            cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
+            {
                 cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
                 {
                     ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
@@ -76,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             public string pk;
 
             public simple(int x, int y)
-            { this.x = x;  this.y = y; this.id = Guid.NewGuid().ToString(); this.pk = "Test"; }
+            { this.x = x; this.y = y; this.id = Guid.NewGuid().ToString(); this.pk = "Test"; }
         }
 
         struct nested
@@ -103,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             public string id;
             public string pk;
 
-            [Newtonsoft.Json.JsonExtensionData(ReadData = true, WriteData = true)]
+            [JsonExtensionData(ReadData = true, WriteData = true)]
             public Dictionary<string, object> NewtonsoftExtensionData { get; set; }
 
             [System.Text.Json.Serialization.JsonExtensionData()]
@@ -214,12 +216,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 obj.pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<simple>> dataQuery = LinqTestsCommon.GenerateTestCosmosData<simple>(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<simple>> dataQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select cast float", b => dataQuery(b).Select(x => (int)floatValue)));
             inputs.Add(new LinqTestInput("Select identity", b => dataQuery(b).Select(x => x)));
-            inputs.Add(new LinqTestInput("Select int expr", b => dataQuery(b).Select(x => (x.x % 10) + 2 + (x.x % 5))));
+            inputs.Add(new LinqTestInput("Select int expr", b => dataQuery(b).Select(x => x.x % 10 + 2 + x.x % 5)));
             inputs.Add(new LinqTestInput("Select int expr w const", b => dataQuery(b).Select(x => x.x + constInt)));
             inputs.Add(new LinqTestInput("Select w new array", b => dataQuery(b).Select(d => new int[2] { d.x, d.x + 1 })));
             inputs.Add(new LinqTestInput("Select new", b => dataQuery(b).Select(d => new { first = d.x, second = d.x })));
@@ -245,14 +247,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             inputs.Add(new LinqTestInput("Select method id", b => dataQuery(b).Select(x => id(x))));
             inputs.Add(new LinqTestInput("Select identity", b => dataQuery(b).Select(x => x)));
             inputs.Add(new LinqTestInput("Select simple property", b => dataQuery(b).Select(x => x.x)));
-            inputs.Add(new LinqTestInput("Select extension data", b => dataQuery(b).Select(x => new complex() {
-                NewtonsoftExtensionData = new() { 
+            inputs.Add(new LinqTestInput("Select extension data", b => dataQuery(b).Select(x => new complex()
+            {
+                NewtonsoftExtensionData = new() {
                     { "test", 1.5 }
                 },
-                NetExtensionData = new() { 
+                NetExtensionData = new() {
                     { "OtherTest", 1.5 }
                 }
-            } )));
+            })));
             this.ExecuteTestSuite(inputs);
         }
 
@@ -280,13 +283,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 obj.str = random.NextDouble() < 0.1 ? "5" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.id = Guid.NewGuid().ToString();
                 obj.pk = "Test";
-                obj.NewtonsoftExtensionData = new Dictionary<string, object>() { 
+                obj.NewtonsoftExtensionData = new Dictionary<string, object>()
+                {
                     ["age"] = 32,
-                    ["tags"] = new [] { "item-1", "item-2" }
+                    ["tags"] = new[] { "item-1", "item-2" }
                 };
                 return obj;
             };
-            Func<bool, IQueryable<complex>> getQuery = LinqTestsCommon.GenerateTestCosmosData<complex>(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<complex>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select equality", b => getQuery(b).Select(s => s.str == "5")));
@@ -307,11 +311,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             inputs.Add(new LinqTestInput("SelectMany array", b => getQuery(b).SelectMany(x => x.dblArray)));
 
             inputs.Add(new LinqTestInput("Select where extensiondata", b => getQuery(b).Where(p => (int)p.NewtonsoftExtensionData["age"] > 18).Select(x => new { Age = (int)x.NewtonsoftExtensionData["age"] })));
-            inputs.Add(new LinqTestInput("Select where extensiondata contains", b => getQuery(b).Where(p => ((string[])p.NewtonsoftExtensionData["tags"]).Contains("item-1")).Select(x => (string[])x.NewtonsoftExtensionData["tags"] )));
+            inputs.Add(new LinqTestInput("Select where extensiondata contains", b => getQuery(b).Where(p => ((string[])p.NewtonsoftExtensionData["tags"]).Contains("item-1")).Select(x => (string[])x.NewtonsoftExtensionData["tags"])));
 
             // TODO: SelectMany does not currently work with Dictionary objects, the snapshot represents
             // the current (broken) behavior
-            inputs.Add(new LinqTestInput("SelectMany where extensiondata contains", b => getQuery(b).Where(p => ((string[])p.NewtonsoftExtensionData["tags"]).Contains("item-1")).SelectMany(x => (object[])x.NewtonsoftExtensionData["tags"] )));
+            inputs.Add(new LinqTestInput("SelectMany where extensiondata contains", b => getQuery(b).Where(p => ((string[])p.NewtonsoftExtensionData["tags"]).Contains("item-1")).SelectMany(x => (object[])x.NewtonsoftExtensionData["tags"])));
 
             this.ExecuteTestSuite(inputs);
         }

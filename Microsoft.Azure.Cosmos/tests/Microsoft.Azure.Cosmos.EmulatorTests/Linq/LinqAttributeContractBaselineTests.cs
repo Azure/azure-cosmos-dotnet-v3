@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
+namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections.Generic;
@@ -12,16 +12,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using VisualStudio.TestTools.UnitTesting;
-    using BaselineTest;
-    using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// Class that tests to see that we honor the attributes for members in a class / struct when we create LINQ queries.
     /// </summary>
-    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
+    [SDK.EmulatorTests.TestClass]
     public class LinqAttributeContractBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static Func<bool, IQueryable<Datum>> getQuery;
@@ -59,17 +59,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition,
-                IndexingPolicy = new Microsoft.Azure.Cosmos.IndexingPolicy()
+                IndexingPolicy = new Cosmos.IndexingPolicy()
                 {
-                    IncludedPaths = new System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.IncludedPath>()
+                    IncludedPaths = new System.Collections.ObjectModel.Collection<Cosmos.IncludedPath>()
                     {
-                        new Microsoft.Azure.Cosmos.IncludedPath()
+                        new Cosmos.IncludedPath()
                         {
                             Path = "/*",
-                            Indexes = new System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.Index>()
+                            Indexes = new System.Collections.ObjectModel.Collection<Cosmos.Index>()
                             {
-                                Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.Number, -1),
-                                Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.String, -1)
+                                Cosmos.Index.Range(Cosmos.DataType.Number, -1),
+                                Cosmos.Index.Range(Cosmos.DataType.String, -1)
                             }
                         }
                     }
@@ -173,10 +173,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestAttributePriority()
         {
-            Assert.AreEqual("jsonProperty", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonProperty").First()));
-            Assert.AreEqual("dataMember", TypeSystem.GetMemberName(typeof(Datum).GetMember("DataMember").First()));
-            Assert.AreEqual("Default", TypeSystem.GetMemberName(typeof(Datum).GetMember("Default").First()));
-            Assert.AreEqual("jsonPropertyHasHigherPriority", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonPropertyAndDataMember").First()));
+            Assert.AreEqual("jsonProperty", typeof(Datum).GetMember("JsonProperty").First().GetMemberName());
+            Assert.AreEqual("dataMember", typeof(Datum).GetMember("DataMember").First().GetMemberName());
+            Assert.AreEqual("Default", typeof(Datum).GetMember("Default").First().GetMemberName());
+            Assert.AreEqual("jsonPropertyHasHigherPriority", typeof(Datum).GetMember("JsonPropertyAndDataMember").First().GetMemberName());
         }
 
         /// <summary>

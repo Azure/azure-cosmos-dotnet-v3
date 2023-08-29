@@ -3,7 +3,8 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
+
+namespace Microsoft.Azure.Cosmos.Linq
 {
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -15,13 +16,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using System.Xml;
     using static LinqAggregateFunctionBaselineTests;
 
-    using BaselineTest;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using System.Threading.Tasks;
     using System.Text;
 
-    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
+    [SDK.EmulatorTests.TestClass]
     public class LinqAggregateFunctionBaselineTests : BaselineTests<LinqAggregateInput, LinqAggregateOutput>
     {
         private static CosmosClient client;
@@ -38,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Set a callback to get the handle of the last executed query to do the verification
             // This is neede because aggregate queries return type is a scalar so it can't be used 
             // to verify the translated LINQ directly as other queries type.
-            client.DocumentClient.OnExecuteScalarQueryCallback = q => LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery = q;
+            client.DocumentClient.OnExecuteScalarQueryCallback = q => lastExecutedScalarQuery = q;
 
             string dbName = $"{nameof(LinqAggregateFunctionBaselineTests)}-{Guid.NewGuid().ToString("N")}";
             testDb = await client.CreateDatabaseAsync(dbName);
@@ -415,7 +416,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new()) -> Skip -> Take -> Select -> Any", b => getQueryFamily(b)
                 .Skip(1).Take(20)
-                .Select(f => new {
+                .Select(f => new
+                {
                     v0 = f.Children.Skip(3).Select(c => c.Grade).Any(),
                     v1 = f.Children.Skip(3).Take(3).Select(c => c.Grade).Any(),
                     v2 = f.Children.Take(3).Skip(4).Select(c => c.Grade).Any(),
@@ -425,7 +427,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         .SelectMany(c => c.Pets.Where(p => p.GivenName.CompareTo("A") > 0).Skip(1).Take(2)).Take(3).Any(),
                 })
                 .Skip(1).Take(10)
-                .Select(f => (f.v0 && f.v1) || (f.v0 && f.v1))
+                .Select(f => f.v0 && f.v1 || f.v0 && f.v1)
                 .Any()));
 
             this.ExecuteTestSuite(inputs);
@@ -501,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         public override LinqAggregateOutput ExecuteTest(LinqAggregateInput input)
         {
-            LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery = null;
+            lastExecutedScalarQuery = null;
             Func<bool, object> compiledQuery = input.expression.Compile();
 
             string errorMessage = null;
@@ -515,10 +517,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 }
                 finally
                 {
-                    Assert.IsNotNull(LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery, "lastExecutedScalarQuery is not set");
+                    Assert.IsNotNull(lastExecutedScalarQuery, "lastExecutedScalarQuery is not set");
 
                     query = JObject
-                        .Parse(LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery.ToString())
+                        .Parse(lastExecutedScalarQuery.ToString())
                         .GetValue("query", StringComparison.Ordinal)
                         .ToString();
                 }

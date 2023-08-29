@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Services.Management.Tests
+namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Collections;
@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Xml;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
                 else
                 {
-                    if (!LinqTestsCommon.NestedListsSequenceEqual(queryEnumerable, dataEnumerable)) return false;
+                    if (!NestedListsSequenceEqual(queryEnumerable, dataEnumerable)) return false;
                 }
             }
 
@@ -146,11 +147,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 || value is decimal;
         }
 
-        public static Boolean IsAnonymousType(Type type)
+        public static bool IsAnonymousType(Type type)
         {
-            Boolean hasCompilerGeneratedAttribute = type.GetCustomAttributes(typeof(CompilerGeneratedAttribute), false).Count() > 0;
-            Boolean nameContainsAnonymousType = type.FullName.Contains("AnonymousType");
-            Boolean isAnonymousType = hasCompilerGeneratedAttribute && nameContainsAnonymousType;
+            bool hasCompilerGeneratedAttribute = type.GetCustomAttributes(typeof(CompilerGeneratedAttribute), false).Count() > 0;
+            bool nameContainsAnonymousType = type.FullName.Contains("AnonymousType");
+            bool isAnonymousType = hasCompilerGeneratedAttribute && nameContainsAnonymousType;
 
             return isAnonymousType;
         }
@@ -320,22 +321,22 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         {
             // The test collection should have range index on string properties
             // for the orderby tests
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
             ContainerProperties newCol = new ContainerProperties()
             {
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition,
-                IndexingPolicy = new Microsoft.Azure.Cosmos.IndexingPolicy()
+                IndexingPolicy = new Cosmos.IndexingPolicy()
                 {
                     IncludedPaths = new Collection<Cosmos.IncludedPath>()
                     {
                         new Cosmos.IncludedPath()
                         {
                             Path = "/*",
-                            Indexes = new System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.Index>()
+                            Indexes = new Collection<Cosmos.Index>()
                             {
-                                Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.Number, -1),
-                                Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.String, -1)
+                                Cosmos.Index.Range(Cosmos.DataType.Number, -1),
+                                Cosmos.Index.Range(Cosmos.DataType.String, -1)
                             }
                         }
                     },
@@ -387,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 {
                     FamilyId = random.NextDouble() < 0.05 ? "some id" : Guid.NewGuid().ToString(),
                     IsRegistered = random.NextDouble() < 0.5,
-                    NullableInt = random.NextDouble() < 0.5 ? (int?)random.Next() : null,
+                    NullableInt = random.NextDouble() < 0.5 ? random.Next() : null,
                     Int = random.NextDouble() < 0.5 ? 5 : random.Next(),
                     Id = Guid.NewGuid().ToString(),
                     Pk = "Test",
@@ -397,8 +398,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 {
                     obj.Parents[i] = new Parent()
                     {
-                        FamilyName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
-                        GivenName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength))
+                        FamilyName = RandomString(random, random.Next(MaxNameLength)),
+                        GivenName = RandomString(random, random.Next(MaxNameLength))
                     };
                 }
 
@@ -415,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     {
                         Gender = random.NextDouble() < 0.5 ? "male" : "female",
                         FamilyName = obj.Parents[random.Next(obj.Parents.Length)].FamilyName,
-                        GivenName = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
+                        GivenName = RandomString(random, random.Next(MaxNameLength)),
                         Grade = random.Next(MaxGrade)
                     };
 
@@ -425,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                         obj.Children[i].Pets.Add(new Pet()
                         {
                             GivenName = random.NextDouble() < 0.5 ?
-                                LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)) :
+                                RandomString(random, random.Next(MaxNameLength)) :
                                 "Fluffy"
                         });
                     }
@@ -435,13 +436,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     {
                         obj.Children[i].Things.Add(
                             j == 0 ? "A" : $"{j}-{random.Next().ToString()}",
-                            LinqTestsCommon.RandomString(random, random.Next(MaxThingStringLength)));
+                            RandomString(random, random.Next(MaxThingStringLength)));
                     }
                 }
 
                 obj.Records = new Logs
                 {
-                    LogId = LinqTestsCommon.RandomString(random, random.Next(MaxNameLength)),
+                    LogId = RandomString(random, random.Next(MaxNameLength)),
                     Transactions = new Transaction[random.Next(MaxTransaction)]
                 };
                 for (int i = 0; i < obj.Records.Transactions.Length; ++i)
@@ -458,7 +459,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 return obj;
             }
 
-            Func<bool, IQueryable<Family>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, container);
+            Func<bool, IQueryable<Family>> getQuery = GenerateTestCosmosData(createDataObj, Records, container);
             return getQuery;
         }
 
@@ -467,7 +468,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
          )
         {
             const int DocumentCount = 10;
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
             Container container = cosmosDatabase.CreateContainerAsync(new ContainerProperties { Id = Guid.NewGuid().ToString(), PartitionKey = partitionKeyDefinition }).Result;
 
             int seed = DateTime.Now.Millisecond;
@@ -485,7 +486,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     Pk = "Test"
                 };
 
-                Data response = container.CreateItemAsync<Data>(dataEntry, new Cosmos.PartitionKey(dataEntry.Pk)).Result;
+                Data response = container.CreateItemAsync(dataEntry, new Cosmos.PartitionKey(dataEntry.Pk)).Result;
                 testData.Add(dataEntry);
             }
 
@@ -522,14 +523,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 if (!input.skipVerification)
                 {
                     IQueryable dataResults = compiledQuery(false);
-                    LinqTestsCommon.ValidateResults(queryResults, dataResults);
+                    ValidateResults(queryResults, dataResults);
                 }
 
                 return new LinqTestOutput(querySqlStr);
             }
             catch (Exception e)
             {
-                return new LinqTestOutput(querySqlStr, LinqTestsCommon.BuildExceptionMessageForTest(e));
+                return new LinqTestOutput(querySqlStr, BuildExceptionMessageForTest(e));
             }
         }
 
@@ -658,7 +659,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
             if (this.expressionStr == null)
             {
-                this.expressionStr = LinqTestInput.FilterInputExpression(this.Expression.Body.ToString());
+                this.expressionStr = FilterInputExpression(this.Expression.Body.ToString());
             }
 
 
@@ -710,7 +711,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             this.ErrorMessage = errorMsg;
         }
 
-        public static String FormatSql(string sqlQuery)
+        public static string FormatSql(string sqlQuery)
         {
             const string subqueryCue = "(SELECT";
             bool hasSubquery = sqlQuery.IndexOf(subqueryCue, StringComparison.OrdinalIgnoreCase) > 0;
@@ -757,7 +758,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             if (this.ErrorMessage != null)
             {
                 xmlWriter.WriteStartElement("ErrorMessage");
-                xmlWriter.WriteCData(LinqTestOutput.FormatErrorMessage(this.ErrorMessage));
+                xmlWriter.WriteCData(FormatErrorMessage(this.ErrorMessage));
                 xmlWriter.WriteEndElement();
             }
         }
