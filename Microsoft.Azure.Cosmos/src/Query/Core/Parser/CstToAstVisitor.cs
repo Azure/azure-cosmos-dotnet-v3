@@ -961,36 +961,35 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             // https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/constants#remarks
             // However that's failing in the parser (before reaching this point) and will be fixed separately (after checking server's behavior).
             StringBuilder stringBuilder = new StringBuilder(text.Length);
-            for (int i = 1; i < text.Length - 1; i++)
+            for (int index = 1; index < text.Length - 1; index++)
             {
-                switch (text[i])
+                switch (text[index])
                 {
                     case '\\':
-                        if ((i + 1) < (text.Length - 1))
+                        if ((index + 1) < (text.Length - 1))
                         {
-                            switch (text[i + 1])
+                            switch (text[index + 1])
                             {
                                 case '"':
                                 case '\\':
                                 case '/':
-                                    stringBuilder.Append(text[i + 1]);
-                                    i++;
+                                    stringBuilder.Append(text[index + 1]);
+                                    index++;
                                     break;
                                 default:
-                                    stringBuilder.Append(text[i]);
+                                    stringBuilder.Append(text[index]);
                                     break;
                             }
                         }
                         break;
 
                     default:
-                        stringBuilder.Append(text[i]);
+                        stringBuilder.Append(text[index]);
                         break;
                 }
             }
 
-            string unescapedString = stringBuilder.ToString();
-            return unescapedString;
+            return stringBuilder.ToString();
         }
 
         private static Number64 GetNumber64ValueFromNode(IParseTree parseTree)

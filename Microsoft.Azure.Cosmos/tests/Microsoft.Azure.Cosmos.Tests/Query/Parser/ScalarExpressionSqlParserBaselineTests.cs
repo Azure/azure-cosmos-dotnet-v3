@@ -533,6 +533,12 @@
                 CreateInput(
                     description: @"Double quoted string literals with escape seqence",
                     scalarExpression: @"[""'SingleQuote"", ""\""DoubleQuote"", ""\\ReverseSolidus"", ""\/solidus"", ""\bBackspace"", ""\fSeparatorFeed"", ""\nLineFeed"", ""\rCarriageReturn"", ""\tTab"", ""\u1234""]"),
+                CreateInput(
+                    description: @"Single quoted string literals special cases",
+                    scalarExpression: @"['\""', '\""\""', '\\', '\\\\', '\/', '\/\/', '\b', '\b\b', '\f', '\f\f', '\n', '\n\n', '\r', '\r\r', '\t', '\t\t', '\u1234', '\u1234\u1234']"),
+                CreateInput(
+                    description: @"Double quoted string literals special cases",
+                    scalarExpression: @"[""\"""", ""\""\"""", ""\\"", ""\\\\"", ""\/"", ""\/\/"", ""\b"", ""\b\b"", ""\f"", ""\f\f"", ""\n"", ""\n\n"", ""\r"", ""\r\r"", ""\t"", ""\t\t"", ""\u1234"", ""\u1234\u1234""]"),
             };
 
             this.ExecuteTestSuite(inputs);
