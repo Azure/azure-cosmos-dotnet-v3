@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             // IndexUtilizationInfo
             this.WriteBeforeIndexUtilizationInfo();
 
-            this.WriteIndexUtilizationInfo(indexMetricsInfo);
+            //this.WriteIndexUtilizationInfo(indexMetricsInfo);
 
             this.WriteAfterIndexUtilizationInfo();
         }

@@ -261,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (isBase64Encoded)
                         {
-                            IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText, isBase64Encoded);
+                            IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
 
                             StringBuilder stringBuilder = new StringBuilder();
                             IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
