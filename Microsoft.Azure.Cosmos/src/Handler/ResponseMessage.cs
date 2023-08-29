@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos
                             IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
                             indexMetricWriter.WriteIndexMetrics(parsedIndexUMetricsInfo);
 
-                            return stringBuilder.ToString();
+                            return parsedIndexUMetricsInfo.ResponseText;
                         }
                     });
             }
