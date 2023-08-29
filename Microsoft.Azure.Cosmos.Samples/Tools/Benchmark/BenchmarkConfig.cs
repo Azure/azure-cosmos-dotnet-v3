@@ -220,15 +220,17 @@ namespace CosmosBenchmark
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-                EnableClientTelemetry = this.EnableClientTelemetry 
+                CosmosClientTelemetryOptions = new Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions()
+                {
+                    EnableSendingMetricsToService = this.EnableTelemetry,
+                    DisableDistributedTracing = !this.EnableDistributedTracing
+                }
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
-
-            clientOptions.IsDistributedTracingEnabled = this.EnableDistributedTracing;
 
             return new Microsoft.Azure.Cosmos.CosmosClient(
                         this.EndPoint,
