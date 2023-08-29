@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
     using System;
     using System.Globalization;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -19,11 +18,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Moq;
     using System.Collections.ObjectModel;
     using System.Collections.Generic;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
-    using System.IO;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Newtonsoft.Json;
+    using Microsoft.Azure.Cosmos.Telemetry;
 
     internal class MockDocumentClient : DocumentClient, ICosmosAuthorizationTokenProvider
     {
@@ -47,7 +45,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             bool? isClientTelemetryEnabled = null,
             Action < CosmosClientBuilder> customizeClientBuilder = null)
         {
-            MockDocumentClient documentClient = new MockDocumentClient();
+            ConnectionPolicy policy = new ConnectionPolicy();
+
+            if (isClientTelemetryEnabled.HasValue)
+            {
+                policy = new ConnectionPolicy
+                {
+                    EnableClientTelemetry = isClientTelemetryEnabled.Value
+                };
+
+            }
+
+            MockDocumentClient documentClient = new MockDocumentClient(policy);
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
             cosmosClientBuilder.WithConnectionModeDirect();
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
@@ -59,11 +68,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     {
                         IgnoreNullValues = true,
                     });
-            }
-
-            if (isClientTelemetryEnabled.HasValue && isClientTelemetryEnabled.Value)
-            {
-                cosmosClientBuilder.WithTelemetryEnabled();
             }
 
             documentClient.dummyHeaderNames = new string[100];
@@ -79,8 +83,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return cosmosClientBuilder.Build(documentClient);
         }
 
-        public MockDocumentClient()
-            : base(new Uri("http://localhost"), null)
+        public MockDocumentClient(ConnectionPolicy policy = null)
+            : base(new Uri("http://localhost"), connectionPolicy: policy)
         {
             this.authKeyHashFunction = new StringHMACSHA256Hash(MockDocumentClient.GenerateRandomKey());
 
@@ -212,6 +216,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
 
+            this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob("perf-test-client",
+                                                                this.ConnectionPolicy,
+                                                                new Mock<AuthorizationTokenProvider>().Object,
+                                                                new Mock<CosmosHttpClient>().Object,
+                                                                this.ServiceEndpoint,
+                                                                this.GlobalEndpointManager,
+                                                                default);
             this.InitStoreModels();
         }
 

@@ -63,11 +63,11 @@ namespace CosmosBenchmark
 
                     if(this.isFailed)
                     {
-                        this.recordSuccessOpLatencyAction?.Invoke(TimeSpan.FromMilliseconds(this.stopwatch.Elapsed.TotalMilliseconds));
+                        this.recordSuccessOpLatencyAction?.Invoke(this.stopwatch.Elapsed);
                     }
                     else
                     {
-                        this.recordSuccessOpLatencyAction?.Invoke(TimeSpan.FromMilliseconds(this.stopwatch.Elapsed.TotalMilliseconds));
+                        this.recordSuccessOpLatencyAction?.Invoke(this.stopwatch.Elapsed);
 
                     }
                 }
@@ -76,7 +76,9 @@ namespace CosmosBenchmark
                     operationResult.DatabseName,
                     operationResult.ContainerName,
                     (int)this.stopwatch.ElapsedMilliseconds,
-                    operationResult.LazyDiagnostics);
+                    operationResult.LazyDiagnostics, 
+                    this.benchmarkConfig.DiagnosticLatencyThresholdInMs);
+                
             }
         }
 
