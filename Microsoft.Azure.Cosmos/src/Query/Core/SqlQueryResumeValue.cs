@@ -47,105 +47,50 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
         }
 
-        private class NullResumeValue : SqlQueryResumeValue
+        private class PrimitiveResumeValue : SqlQueryResumeValue
         {
-            private static readonly NullResumeValue Singelton = new NullResumeValue();
+            public CosmosElement Value { get; }
 
-            private NullResumeValue() 
-            { 
-            }
-
-            public static NullResumeValue Create()
-            {
-                return Singelton;
-            }
-        }
-
-        private class BooleanResumeValue : SqlQueryResumeValue
-        {
-            private static readonly BooleanResumeValue True = new BooleanResumeValue(true);
-            private static readonly BooleanResumeValue False = new BooleanResumeValue(false);
-
-            public bool Value { get; }
-
-            private BooleanResumeValue(bool value)
+            private PrimitiveResumeValue(CosmosElement value)
             {
                 this.Value = value;
             }
 
-            public static BooleanResumeValue Create(bool value)
+            public static PrimitiveResumeValue Create(CosmosElement value)
             {
-                return value ? True : False;
+                return value switch
+                {
+                    CosmosNull or CosmosBoolean or CosmosNumber or CosmosString => new PrimitiveResumeValue(value),
+                    _ => throw new ArgumentException("Non primitive value passed to PrimitiveResumeValue"),
+                };
             }
         }
 
-        private class NumberResumeValue : SqlQueryResumeValue
+        private class ComplexResumeValue : SqlQueryResumeValue
         {
-            public CosmosNumber Value { get; }
+            public bool bArray { get; }
 
-            private NumberResumeValue(CosmosNumber value)
-            {
-                this.Value = value;
-            }
-
-            public static NumberResumeValue Create(CosmosNumber value)
-            {
-                return new NumberResumeValue(value);
-            }
-        }
-
-        private class StringResumeValue : SqlQueryResumeValue
-        {
-            public CosmosString Value { get; }
-
-            private StringResumeValue(CosmosString value)
-            {
-                this.Value = value;
-            }
-
-            public static StringResumeValue Create(CosmosString value)
-            {
-                return new StringResumeValue(value);
-            }
-        }
-
-        private class ArrayResumeValue : SqlQueryResumeValue
-        {
             public UInt128 HashValue { get; }
 
-            private ArrayResumeValue(UInt128 hashValue)
+            private ComplexResumeValue(bool bArray, UInt128 hashValue)
             {
+                this.bArray = bArray;
                 this.HashValue = hashValue;
             }
 
-            public static ArrayResumeValue Create(UInt128 hashValue)
+            public static ComplexResumeValue Create(bool bArray, UInt128 hashValue)
             {
-                return new ArrayResumeValue(hashValue);
+                return new ComplexResumeValue(bArray, hashValue);
             }
 
-            public static ArrayResumeValue Create(CosmosArray arrayValue)
+            public static ComplexResumeValue Create(CosmosArray arrayValue)
             {
-                return Create(DistinctHash.GetHash(arrayValue));
-            }
-        }
-
-        private class ObjectResumeValue : SqlQueryResumeValue
-        {
-            public UInt128 HashValue { get; }
-
-            private ObjectResumeValue(UInt128 hashValue)
-            {
-                this.HashValue = hashValue;
+                return Create(bArray: true, DistinctHash.GetHash(arrayValue));
             }
 
-            public static ObjectResumeValue Create(UInt128 hashValue)
+            public static ComplexResumeValue Create(CosmosObject objectValue)
             {
-                return new ObjectResumeValue(hashValue);
-            }
-
-            public static ObjectResumeValue Create(CosmosObject objectValue)
-            {
-                return Create(DistinctHash.GetHash(objectValue));
+                return Create(bArray: false, DistinctHash.GetHash(objectValue));
             }
         }
 
@@ -159,46 +104,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 case UndefinedResumeValue:
                     return ItemComparer.Instance.Compare(CosmosUndefined.Create(), cosmosElement);
 
-                case NullResumeValue:
-                    return ItemComparer.Instance.Compare(CosmosNull.Create(), cosmosElement);
+                case PrimitiveResumeValue primitiveResumeValue:
+                    return ItemComparer.Instance.Compare(primitiveResumeValue.Value, cosmosElement);
 
-                case BooleanResumeValue booleanValue:
-                    return ItemComparer.Instance.Compare(CosmosBoolean.Create(booleanValue.Value), cosmosElement);
-
-                case NumberResumeValue numberValue:
-                    return ItemComparer.Instance.Compare(numberValue.Value, cosmosElement);
-
-                case StringResumeValue stringValue:
-                    return ItemComparer.Instance.Compare(stringValue.Value, cosmosElement);
-
-                case ArrayResumeValue arrayValue:
+                case ComplexResumeValue complexResumeValue:
                 {
-                    // If the order by result is also of array type, then compare the hash values
-                    // For other types create an empty array and call CosmosElement comparer which
-                    // will take care of ordering based on types.
-                    if (cosmosElement is CosmosArray arrayResult)
+                    if (complexResumeValue.bArray)
                     {
-                        return UInt128BinaryComparer.Singleton.Compare(arrayValue.HashValue, DistinctHash.GetHash(arrayResult));
+                        // If the order by result is also of array type, then compare the hash values
+                        // For other types create an empty array and call CosmosElement comparer which
+                        // will take care of ordering based on types.
+                        if (cosmosElement is CosmosArray arrayResult)
+                        {
+                            return UInt128BinaryComparer.Singleton.Compare(complexResumeValue.HashValue, DistinctHash.GetHash(arrayResult));
+                        }
+                        else
+                        {
+                            return ItemComparer.Instance.Compare(CosmosArray.Empty, cosmosElement);
+                        }
+
                     }
                     else
                     {
-                        return ItemComparer.Instance.Compare(CosmosArray.Empty, cosmosElement);
-                    }
-                }
-
-                case ObjectResumeValue objectValue:
-                {
-                    // If the order by result is also of object type, then compare the hash values
-                    // For other types create an empty object and call CosmosElement comparer which
-                    // will take care of ordering based on types.
-                    if (cosmosElement is CosmosObject objectResult)
-                    {
-                        // same type so compare the hash values
-                        return UInt128BinaryComparer.Singleton.Compare(objectValue.HashValue, DistinctHash.GetHash(objectResult));
-                    }
-                    else
-                    {
-                        return ItemComparer.Instance.Compare(EmptyObject, cosmosElement);
+                        // If the order by result is also of object type, then compare the hash values
+                        // For other types create an empty object and call CosmosElement comparer which
+                        // will take care of ordering based on types.
+                        if (cosmosElement is CosmosObject objectResult)
+                        {
+                            // same type so compare the hash values
+                            return UInt128BinaryComparer.Singleton.Compare(complexResumeValue.HashValue, DistinctHash.GetHash(objectResult));
+                        }
+                        else
+                        {
+                            return ItemComparer.Instance.Compare(EmptyObject, cosmosElement);
+                        }
                     }
                 }
 
@@ -213,23 +152,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             return resumeValue switch
             {
                 UndefinedResumeValue => CosmosArray.Empty,
-                NullResumeValue => CosmosNull.Create(),
-                BooleanResumeValue booleanValue => CosmosBoolean.Create(booleanValue.Value),
-                NumberResumeValue numberValue => numberValue.Value,
-                StringResumeValue stringValue => stringValue.Value,
-                ArrayResumeValue arrayValue => CosmosObject.Create(
+                PrimitiveResumeValue primiteResumeValue => primiteResumeValue.Value,
+                ComplexResumeValue complexResumeValue => CosmosObject.Create(
                     new Dictionary<string, CosmosElement>()
                     {
-                        { PropertyNames.Type, CosmosString.Create(PropertyNames.ArrayType) },
-                        { PropertyNames.Low, CosmosNumber64.Create((long)arrayValue.HashValue.GetLow()) },
-                        { PropertyNames.High, CosmosNumber64.Create((long)arrayValue.HashValue.GetHigh()) }
-                    }),
-                ObjectResumeValue objectValue => CosmosObject.Create(
-                    new Dictionary<string, CosmosElement>()
-                    {
-                        { PropertyNames.Type, CosmosString.Create(PropertyNames.ObjectType) },
-                        { PropertyNames.Low, CosmosNumber64.Create((long)objectValue.HashValue.GetLow()) },
-                        { PropertyNames.High, CosmosNumber64.Create((long)objectValue.HashValue.GetHigh()) }
+                        { PropertyNames.Type, CosmosString.Create(complexResumeValue.bArray ? PropertyNames.ArrayType : PropertyNames.ObjectType) },
+                        { PropertyNames.Low, CosmosNumber64.Create((long)complexResumeValue.HashValue.GetLow()) },
+                        { PropertyNames.High, CosmosNumber64.Create((long)complexResumeValue.HashValue.GetHigh()) }
                     }),
                 _ => throw new ArgumentException($"Invalid {nameof(SqlQueryResumeValue)} type."),
             };
@@ -257,44 +186,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     writer.WriteEndArray();
                     break;
 
-                case NullResumeValue:
-                    writer.WriteNull();
+                case PrimitiveResumeValue primitiveResumeValue:
+                    serializer.Serialize(writer, primitiveResumeValue.Value);
                     break;
 
-                case BooleanResumeValue booleanValue:
-                    serializer.Serialize(writer, booleanValue.Value);
-                    break;
-
-                case NumberResumeValue numberValue:
-                    serializer.Serialize(writer, numberValue.Value);
-                    break;
-
-                case StringResumeValue stringValue:
-                    serializer.Serialize(writer, stringValue.Value);
-                    break;
-
-                case ArrayResumeValue arrayValue:
+                case ComplexResumeValue complexResumeValue:
                     {
                         writer.WriteStartObject();
                         writer.WritePropertyName(PropertyNames.Type);
-                        writer.WriteValue(PropertyNames.ArrayType);
+                        writer.WriteValue(complexResumeValue.bArray ? PropertyNames.ArrayType : PropertyNames.ObjectType);
                         writer.WritePropertyName(PropertyNames.Low);
-                        writer.WriteValue((long)arrayValue.HashValue.GetLow());
+                        writer.WriteValue((long)complexResumeValue.HashValue.GetLow());
                         writer.WritePropertyName(PropertyNames.High);
-                        writer.WriteValue((long)arrayValue.HashValue.GetHigh());
-                        writer.WriteEndObject();
-                    }
-                    break;
-
-                case ObjectResumeValue objectValue:
-                    {
-                        writer.WriteStartObject();
-                        writer.WritePropertyName(PropertyNames.Type);
-                        writer.WriteValue(PropertyNames.ObjectType);
-                        writer.WritePropertyName(PropertyNames.Low);
-                        writer.WriteValue((long)objectValue.HashValue.GetLow());
-                        writer.WritePropertyName(PropertyNames.High);
-                        writer.WriteValue((long)objectValue.HashValue.GetHigh());
+                        writer.WriteValue((long)complexResumeValue.HashValue.GetHigh());
                         writer.WriteEndObject();
                     }
                     break;
@@ -380,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosBoolean cosmosBoolean)
             {
-                return BooleanResumeValue.Create(cosmosBoolean.Value);
+                return PrimitiveResumeValue.Create(cosmosBoolean);
             }
 
             public SqlQueryResumeValue Visit(CosmosGuid cosmosGuid)
@@ -390,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosNull cosmosNull)
             {
-                return NullResumeValue.Create();
+                return PrimitiveResumeValue.Create(cosmosNull);
             }
 
             public SqlQueryResumeValue Visit(CosmosUndefined cosmosUndefined)
@@ -406,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     throw new NotSupportedException($"Extended number types are not supported in SqlQueryResumeValue.");
                 }
 
-                return NumberResumeValue.Create(cosmosNumber);
+                return PrimitiveResumeValue.Create(cosmosNumber);
             }
 
             public SqlQueryResumeValue Visit(CosmosObject cosmosObject)
@@ -418,19 +322,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     throw new ArgumentException($"Incorrect Array / Object Resume Value. One or more of the required properties are missing.");
                 }
 
+                UInt128 hashValue = UInt128.Create(
+                            (ulong)Number64.ToLong(lowValue.Value),
+                            (ulong)Number64.ToLong(highValue.Value));
+
                 if (string.Equals(objectType.Value, PropertyNames.ArrayType))
                 {
-                    return ArrayResumeValue.Create(
-                        UInt128.Create(
-                            (ulong)Number64.ToLong(lowValue.Value),
-                            (ulong)Number64.ToLong(highValue.Value)));
+                    return ComplexResumeValue.Create(bArray: true, hashValue);
                 }
                 else if (string.Equals(objectType.Value, PropertyNames.ObjectType))
                 {
-                    return ObjectResumeValue.Create(
-                        UInt128.Create(
-                            (ulong)Number64.ToLong(lowValue.Value),
-                            (ulong)Number64.ToLong(highValue.Value)));
+                    return ComplexResumeValue.Create(bArray: false, hashValue);
                 }
                 else
                 {
@@ -440,7 +342,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosString cosmosString)
             {
-                return StringResumeValue.Create(cosmosString);
+                return PrimitiveResumeValue.Create(cosmosString);
             }
         }
 
@@ -456,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosArray cosmosArray)
             {
-                return ArrayResumeValue.Create(cosmosArray);
+                return ComplexResumeValue.Create(cosmosArray);
             }
 
             public SqlQueryResumeValue Visit(CosmosBinary cosmosBinary)
@@ -466,7 +368,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosBoolean cosmosBoolean)
             {
-                return BooleanResumeValue.Create(cosmosBoolean.Value);
+                return PrimitiveResumeValue.Create(cosmosBoolean);
             }
 
             public SqlQueryResumeValue Visit(CosmosGuid cosmosGuid)
@@ -476,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public SqlQueryResumeValue Visit(CosmosNull cosmosNull)
             {
-                return NullResumeValue.Create();
+                return PrimitiveResumeValue.Create(cosmosNull);
             }
 
             public SqlQueryResumeValue Visit(CosmosUndefined cosmosUndefined)
@@ -492,17 +394,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     throw new NotSupportedException($"Extended number types are not supported in SqlQueryResumeValue.");
                 }
 
-                return NumberResumeValue.Create(cosmosNumber);
+                return PrimitiveResumeValue.Create(cosmosNumber);
             }
 
             public SqlQueryResumeValue Visit(CosmosObject cosmosObject)
             {
-                return ObjectResumeValue.Create(cosmosObject);
+                return ComplexResumeValue.Create(cosmosObject);
             }
 
             public SqlQueryResumeValue Visit(CosmosString cosmosString)
             {
-                return StringResumeValue.Create(cosmosString);
+                return PrimitiveResumeValue.Create(cosmosString);
             }
         }
     }
