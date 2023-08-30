@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
         }
 
-        public PartitionKeyHash(UInt128[] values)
+        internal PartitionKeyHash(UInt128[] values)
         {
             StringBuilder stringBuilder = new StringBuilder();
             foreach (UInt128 value in values)
