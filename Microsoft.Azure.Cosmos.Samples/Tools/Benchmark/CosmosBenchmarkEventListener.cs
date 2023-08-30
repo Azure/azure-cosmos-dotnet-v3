@@ -13,6 +13,7 @@
         private readonly MeterProvider meterProvider;
         private readonly MetricsCollector[] metricsCollectors;
         private readonly MetricCollectionWindow metricCollectionWindow;
+        private const int WindowCheckInterval = 10;
 
         public CosmosBenchmarkEventListener(MeterProvider meterProvider, BenchmarkConfig config)
         {
@@ -24,7 +25,26 @@
             {
                 this.metricsCollectors[(int)entry] = new MetricsCollector(entry);
             }
+
+            /// <summary>
+            /// Flush metrics every <see cref="AppConfig.MetricsReportingIntervalInSec"/>
+            /// </summary>
+            ThreadPool.QueueUserWorkItem(async state =>
+            {
+                while (true)
+                {
+                    // Reset metricCollectionWindow and flush.
+                    if (this.metricCollectionWindow.IsInvalid())
+                    {
+                        this.meterProvider.ForceFlush();
+                        this.metricCollectionWindow.Reset();
+                    }
+                    await Task.Delay(TimeSpan.FromMilliseconds(CosmosBenchmarkEventListener.WindowCheckInterval));
+                }
+            });
         }
+
+
 
         /// <summary>
         /// Override this method to get a list of all the eventSources that exist.  
