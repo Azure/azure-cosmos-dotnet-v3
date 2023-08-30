@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Handler
             }
             catch (ObjectDisposedException ex)
             {
-                DefaultTrace.TraceError($"Error while stopping system usage monitor. Stacktrace: {0} ", ex.StackTrace);
+                DefaultTrace.TraceError($"Error while stopping system usage monitor. {0} ", ex);
             }
 
             DiagnosticsHandlerHelper.Instance = null; // refrence is lost, GC will collect it
