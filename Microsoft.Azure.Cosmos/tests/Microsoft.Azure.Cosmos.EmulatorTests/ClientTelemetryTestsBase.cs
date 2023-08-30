@@ -57,6 +57,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ClientTelemetryOptions.DefaultIntervalForTelemetryJob = TimeSpan.FromSeconds(1);
         }
 
+        public static void ClassCleanup()
+        {
+            //undone the changes done in ClassInitialize
+            ClientTelemetryOptions.DefaultIntervalForTelemetryJob = TimeSpan.FromMinutes(10);
+        }
+
         public virtual void TestInitialize()
         {
             this.actualInfo = new List<ClientTelemetryProperties>();

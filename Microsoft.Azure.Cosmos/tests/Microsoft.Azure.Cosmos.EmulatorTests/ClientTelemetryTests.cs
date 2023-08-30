@@ -52,9 +52,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [ClassInitialize]
-        public static new void ClassInitialize(TestContext context)
+        public static void ClassInit(TestContext context)
         {
             ClientTelemetryTestsBase.ClassInitialize(context);
+        }
+
+        [ClassCleanup]
+        public static void ClassCleanUp()
+        {
+            ClientTelemetryTestsBase.ClassCleanup();
         }
 
         [TestInitialize]
