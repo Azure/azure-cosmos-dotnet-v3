@@ -2,6 +2,8 @@
 {
     using System;
     using System.Diagnostics.Tracing;
+    using System.Threading;
+    using System.Threading.Tasks;
     using OpenTelemetry.Metrics;
 
     internal class CosmosBenchmarkEventListener : EventListener
@@ -64,10 +66,9 @@
                     default:
                         break;
                 }
-
                 // Reset metricCollectionWindow and flush.
                 // TODO: Revisit for concurrency 
-                if (!this.metricCollectionWindow.IsValid)
+                if (this.metricCollectionWindow.IsInvalid())
                 {
                     this.meterProvider.ForceFlush();
                     this.metricCollectionWindow.Reset();
