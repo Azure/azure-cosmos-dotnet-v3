@@ -185,8 +185,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (this.StartInclusive.HasValue && this.EndExclusive.HasValue)
             {
-                UInt128[] leftHashes = this.StartInclusive.Value.hashValues;
-                UInt128[] rightHashes = this.EndExclusive.Value.hashValues;
+                UInt128[] leftHashes = this.StartInclusive.Value.HashValues;
+                UInt128[] rightHashes = this.EndExclusive.Value.HashValues;
                 int minLength = leftHashes.Length < rightHashes.Length ? leftHashes.Length : rightHashes.Length;
                 for (int i = 0; i < minLength; i++)
                 {

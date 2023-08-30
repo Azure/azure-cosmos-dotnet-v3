@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             foreach (UInt128 value in values)
             {
                 byte[] hashBytes = UInt128.ToByteArray(value);
-                stringBuilder.Append(HexConvert.ToHex(hashBytes, 0, hashBytes.Length));
+                stringBuilder.Append(PartitionKeyInternal.HexConvert.ToHex(hashBytes, 0, hashBytes.Length));
             }
 
             this.Value = stringBuilder.ToString();
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public string Value { get; }
 
-        public UInt128[] hashValues
+        internal UInt128[] HashValues
         {
             get
             {
@@ -248,33 +248,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         internal static class HexConvert
         {
-            private static readonly ushort[] LookupTable = CreateLookupTable();
-
-            private static ushort[] CreateLookupTable()
-            {
-                ushort[] lookupTable = new ushort[256];
-                for (int byteValue = 0; byteValue < 256; byteValue++)
-                {
-                    string byteAsHexString = byteValue.ToString("X2");
-                    lookupTable[byteValue] = (ushort)(byteAsHexString[0] + (byteAsHexString[1] << 8));
-                }
-
-                return lookupTable;
-            }
-
-            public static string ToHex(byte[] bytes, int start, int length)
-            {
-                char[] result = new char[length * 2];
-                for (int i = 0; i < length; i++)
-                {
-                    ushort encodedByte = LookupTable[bytes[i + start]];
-                    result[2 * i] = (char)(encodedByte & 0xFF);
-                    result[(2 * i) + 1] = (char)(encodedByte >> 8);
-                }
-
-                return new string(result);
-            }
-
             public static byte[] HexStringToByteArray(string hex)
             {
                 int numberChars = hex.Length;

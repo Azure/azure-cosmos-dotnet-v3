@@ -1212,7 +1212,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             CosmosNull _ => PartitionKeyHash.V2.HashNull(),
                             _ => throw new ArgumentOutOfRangeException(),
                         };
-                        partitionKeyHashValues.Add(elementHash.hashValues[0]);
+                        partitionKeyHashValues.Add(elementHash.HashValues[0]);
                     }
                     continue;
                 }
@@ -1226,7 +1226,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     CosmosNull _ => PartitionKeyHash.V2.HashNull(),
                     _ => throw new ArgumentOutOfRangeException(),
                 };
-                partitionKeyHashValues.Add(partitionKeyHash.hashValues[0]);
+                partitionKeyHashValues.Add(partitionKeyHash.HashValues[0]);
             }
 
             return new PartitionKeyHash(partitionKeyHashValues.ToArray());
@@ -1387,9 +1387,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             // For MultiHash Collection, split at top level to ensure documents for top level key exist across partitions
             // after split
-            if (medianPkHash.hashValues.Length > 1)
+            if (medianPkHash.HashValues.Length > 1)
             {
-                return new PartitionKeyHash(medianPkHash.hashValues[0]);
+                return new PartitionKeyHash(medianPkHash.HashValues[0]);
             }
 
             return medianPkHash;

@@ -132,9 +132,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (partitionKeyHashRange.StartInclusive.HasValue)
                 {
-                    if (partitionKeyHashRange.StartInclusive.Value.hashValues[0] < minStart)
+                    if (partitionKeyHashRange.StartInclusive.Value.HashValues[0] < minStart)
                     {
-                        minStart = partitionKeyHashRange.StartInclusive.Value.hashValues[0];
+                        minStart = partitionKeyHashRange.StartInclusive.Value.HashValues[0];
                     }
                 }
                 else
@@ -144,9 +144,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (partitionKeyHashRange.EndExclusive.HasValue)
                 {
-                    if (partitionKeyHashRange.EndExclusive.Value.hashValues[0] > maxEnd)
+                    if (partitionKeyHashRange.EndExclusive.Value.HashValues[0] > maxEnd)
                     {
-                        maxEnd = partitionKeyHashRange.EndExclusive.Value.hashValues[0];
+                        maxEnd = partitionKeyHashRange.EndExclusive.Value.HashValues[0];
                     }
                 }
                 else
@@ -154,8 +154,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     maxEnd = UInt128.MaxValue;
                 }
 
-                UInt128 width = partitionKeyHashRange.EndExclusive.GetValueOrDefault(new PartitionKeyHash(UInt128.MaxValue)).hashValues[0]
-                    - partitionKeyHashRange.StartInclusive.GetValueOrDefault(new PartitionKeyHash(UInt128.MinValue)).hashValues[0];
+                UInt128 width = partitionKeyHashRange.EndExclusive.GetValueOrDefault(new PartitionKeyHash(UInt128.MaxValue)).HashValues[0]
+                    - partitionKeyHashRange.StartInclusive.GetValueOrDefault(new PartitionKeyHash(UInt128.MinValue)).HashValues[0];
                 sumOfWidth += width;
                 if (sumOfWidth < width)
                 {

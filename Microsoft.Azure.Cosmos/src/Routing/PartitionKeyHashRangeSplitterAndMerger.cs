@@ -39,8 +39,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return SplitOutcome.NumRangesNeedsToBeGreaterThanZero;
             }
 
-            UInt128 actualEnd = partitionKeyHashRange.EndExclusive.HasValue ? partitionKeyHashRange.EndExclusive.Value.hashValues[0] : UInt128.MaxValue;
-            UInt128 actualStart = partitionKeyHashRange.StartInclusive.HasValue ? partitionKeyHashRange.StartInclusive.Value.hashValues[0] : UInt128.MinValue;
+            UInt128 actualEnd = partitionKeyHashRange.EndExclusive.HasValue ? partitionKeyHashRange.EndExclusive.Value.HashValues[0] : UInt128.MaxValue;
+            UInt128 actualStart = partitionKeyHashRange.StartInclusive.HasValue ? partitionKeyHashRange.StartInclusive.Value.HashValues[0] : UInt128.MinValue;
             UInt128 rangeLength = actualEnd - actualStart;
             if (rangeLength < rangeCount)
             {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             for (int i = 1; i < rangeCount - 1; i++)
             {
                 PartitionKeyHash start = new PartitionKeyHash(actualStart + (childRangeLength * i));
-                PartitionKeyHash end = new PartitionKeyHash(start.hashValues[0] + childRangeLength);
+                PartitionKeyHash end = new PartitionKeyHash(start.HashValues[0] + childRangeLength);
                 childRanges.Add(new PartitionKeyHashRange(start, end));
             }
 
