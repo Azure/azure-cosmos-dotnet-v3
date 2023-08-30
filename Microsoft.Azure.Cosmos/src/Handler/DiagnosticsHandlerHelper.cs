@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Handler
     using System.Collections.Generic;
     using Documents.Rntbd;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
 
     /// <summary>
     /// This is a helper class that creates a single static instance to avoid each
