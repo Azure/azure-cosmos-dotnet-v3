@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Linq
+namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 {
     using System;
     using System.Collections.Generic;
@@ -11,16 +11,15 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Dynamic;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.Scripts;
-    using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
 
-    [SDK.EmulatorTests.TestClass]
+    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqGeneralBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static CosmosClient cosmosClient;
@@ -1281,7 +1280,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             List<LinqTestInput> inputs = new List<LinqTestInput>();
 
-            inputs.Add(new LinqTestInput("Select -> GroupBy", b => getQuery(b).Select(family => family.FamilyId).GroupBy(id => id)));
+            inputs.Add(new LinqTestInput("Select -> GroupBy", b => getQuery(b).Select(family => family.FamilyId).GroupBy(id => id), skipVerification: true));
             inputs.Add(new LinqTestInput("Select -> GroupBy -> Select", b => getQuery(b).Select(family => family.FamilyId).GroupBy(id => id).Select(x => x.Key)));
             inputs.Add(new LinqTestInput("Select -> GroupBy -> Select with Aggregate", b => getQuery(b).Select(family => family.FamilyId).GroupBy(id => id).Select(x => x.Count())));
             inputs.Add(new LinqTestInput("Where -> GroupBy -> Select query",

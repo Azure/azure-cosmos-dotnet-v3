@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Linq
+namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 {
     using System;
     using System.Linq;
@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Threading.Tasks;
     using System.Net;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
 
-    [SDK.EmulatorTests.TestClass]
+    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqSQLTranslationBaselineTest : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         static Expression Lambda<T, S>(Expression<Func<T, S>> func)

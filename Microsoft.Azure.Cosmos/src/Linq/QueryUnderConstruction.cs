@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private QueryUnderConstruction Flatten()
         {
             // SELECT fo(y) FROM y IN (SELECT fi(x) FROM x WHERE gi(x)) WHERE go(y)
-            // is translated by substituting fi(x) for y in the outer query
+            // is translated by substituting y for fi(x) in the outer query
             // producing
             // SELECT fo(fi(x)) FROM x WHERE gi(x) AND (go(fi(x))
             if (this.inputQuery == null)
@@ -460,17 +460,15 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlSelectValueSpec selValue = spec as SqlSelectValueSpec;
             if (selValue != null)
             {
-                // TODO: Fill in this
-
-                //SqlScalarExpression replaced = selValue.Expression;
-                //SqlOrderByItem[] substitutedItems = new SqlOrderByItem[orderByClause.OrderByItems.Length];
-                //for (int i = 0; i < substitutedItems.Length; ++i)
-                //{
-                //    SqlScalarExpression substituted = SqlExpressionManipulation.Substitute(replaced, inputParam, orderByClause.OrderByItems[i].Expression);
-                //    substitutedItems[i] = SqlOrderByItem.Create(substituted, orderByClause.OrderByItems[i].IsDescending);
-                //}
-                //SqlOrderByClause result = SqlOrderByClause.Create(substitutedItems);
-                //return result;
+                SqlScalarExpression replaced = selValue.Expression;
+                SqlScalarExpression[] substitutedItems = new SqlScalarExpression[groupByClause.Expressions.Length];
+                for (int i = 0; i < substitutedItems.Length; ++i)
+                {
+                    SqlScalarExpression substituted = SqlExpressionManipulation.Substitute(replaced, inputParam, groupByClause.Expressions[i]);
+                    substitutedItems[i] = substituted;
+                }
+                SqlGroupByClause result = SqlGroupByClause.Create(substitutedItems);
+                return result;
             }
 
             throw new DocumentQueryException("Unexpected SQL select clause type: " + spec.GetType());

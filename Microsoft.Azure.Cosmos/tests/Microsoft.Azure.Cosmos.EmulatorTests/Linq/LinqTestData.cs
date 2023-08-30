@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Linq
+namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 {
     using Newtonsoft.Json;
     using System;

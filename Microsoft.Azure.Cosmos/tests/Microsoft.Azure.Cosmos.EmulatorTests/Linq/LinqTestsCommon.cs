@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Linq
+namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 {
     using System;
     using System.Collections;
@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Xml;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -63,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 else
                 {
-                    if (!NestedListsSequenceEqual(queryEnumerable, dataEnumerable)) return false;
+                    if (!LinqTestsCommon.NestedListsSequenceEqual(queryEnumerable, dataEnumerable)) return false;
                 }
             }
 

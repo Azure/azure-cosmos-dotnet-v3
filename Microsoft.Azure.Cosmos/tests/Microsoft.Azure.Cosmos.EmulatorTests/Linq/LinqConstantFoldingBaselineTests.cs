@@ -4,8 +4,9 @@
 // </copyright>
 //-----------------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Linq
+namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 {
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Services.Management.Tests.BaselineTest;
     using System;

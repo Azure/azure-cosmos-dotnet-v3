@@ -3,7 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Linq
+namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 {
     using System;
     using System.Collections.Generic;
@@ -12,16 +12,16 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
+    using BaselineTest;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
 
     /// <summary>
     /// Class that tests to see that we honor the attributes for members in a class / struct when we create LINQ queries.
     /// </summary>
-    [SDK.EmulatorTests.TestClass]
+    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqAttributeContractBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static Func<bool, IQueryable<Datum>> getQuery;
@@ -59,17 +59,17 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition,
-                IndexingPolicy = new Cosmos.IndexingPolicy()
+                IndexingPolicy = new Microsoft.Azure.Cosmos.IndexingPolicy()
                 {
                     IncludedPaths = new System.Collections.ObjectModel.Collection<Cosmos.IncludedPath>()
                     {
-                        new Cosmos.IncludedPath()
+                        new Microsoft.Azure.Cosmos.IncludedPath()
                         {
                             Path = "/*",
                             Indexes = new System.Collections.ObjectModel.Collection<Cosmos.Index>()
                             {
-                                Cosmos.Index.Range(Cosmos.DataType.Number, -1),
-                                Cosmos.Index.Range(Cosmos.DataType.String, -1)
+                                Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.Number, -1),
+                                Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.String, -1)
                             }
                         }
                     }

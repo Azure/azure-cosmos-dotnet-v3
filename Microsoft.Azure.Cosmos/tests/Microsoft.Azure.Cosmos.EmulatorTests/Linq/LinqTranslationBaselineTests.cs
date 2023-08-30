@@ -3,8 +3,9 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos.Linq
+namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 {
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -13,15 +14,13 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Globalization;
     using System.Linq;
     using Newtonsoft.Json.Converters;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
+    using BaselineTest;
     using System.Linq.Dynamic;
     using System.Text;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
 
-    [SDK.EmulatorTests.TestClass]
+    [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqTranslationBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
         private static CosmosClient cosmosClient;
@@ -204,55 +203,55 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 // Byte
                 new LinqTestInput("Byte 1", b => getQuery(b).Select(doc => new { value = 1 })),
-                new LinqTestInput("Byte MinValue", b => getQuery(b).Select(doc => new { value = byte.MinValue })),
-                new LinqTestInput("Byte MaxValue", b => getQuery(b).Select(doc => new { value = byte.MaxValue })),
+                new LinqTestInput("Byte MinValue", b => getQuery(b).Select(doc => new { value = Byte.MinValue })),
+                new LinqTestInput("Byte MaxValue", b => getQuery(b).Select(doc => new { value = Byte.MaxValue })),
                 // SByte
                 new LinqTestInput("SByte 2", b => getQuery(b).Select(doc => new { value = 2 })),
-                new LinqTestInput("SByte MinValue", b => getQuery(b).Select(doc => new { value = sbyte.MinValue })),
-                new LinqTestInput("SByte MaxValue", b => getQuery(b).Select(doc => new { value = sbyte.MaxValue })),
+                new LinqTestInput("SByte MinValue", b => getQuery(b).Select(doc => new { value = SByte.MinValue })),
+                new LinqTestInput("SByte MaxValue", b => getQuery(b).Select(doc => new { value = SByte.MaxValue })),
                 // UInt16
                 new LinqTestInput("UInt16 3", b => getQuery(b).Select(doc => new { value = 3 })),
-                new LinqTestInput("UInt16 MinValue", b => getQuery(b).Select(doc => new { value = ushort.MinValue })),
-                new LinqTestInput("UInt16 MaxValue", b => getQuery(b).Select(doc => new { value = ushort.MaxValue })),
+                new LinqTestInput("UInt16 MinValue", b => getQuery(b).Select(doc => new { value = UInt16.MinValue })),
+                new LinqTestInput("UInt16 MaxValue", b => getQuery(b).Select(doc => new { value = UInt16.MaxValue })),
                 // UInt32
                 new LinqTestInput("UInt32 4", b => getQuery(b).Select(doc => new { value = 4 })),
-                new LinqTestInput("UInt32 MinValue", b => getQuery(b).Select(doc => new { value = uint.MinValue })),
-                new LinqTestInput("UInt32 MaxValue", b => getQuery(b).Select(doc => new { value = uint.MaxValue })),
+                new LinqTestInput("UInt32 MinValue", b => getQuery(b).Select(doc => new { value = UInt32.MinValue })),
+                new LinqTestInput("UInt32 MaxValue", b => getQuery(b).Select(doc => new { value = UInt32.MaxValue })),
                 // UInt64
                 new LinqTestInput("UInt64 5", b => getQuery(b).Select(doc => new { value = 5 })),
-                new LinqTestInput("UInt64 MinValue", b => getQuery(b).Select(doc => new { value = ulong.MinValue })),
-                new LinqTestInput("UInt64 MaxValue", b => getQuery(b).Select(doc => new { value = ulong.MaxValue })),
+                new LinqTestInput("UInt64 MinValue", b => getQuery(b).Select(doc => new { value = UInt64.MinValue })),
+                new LinqTestInput("UInt64 MaxValue", b => getQuery(b).Select(doc => new { value = UInt64.MaxValue })),
                 // Int16
                 new LinqTestInput("Int16 6", b => getQuery(b).Select(doc => new { value = 6 })),
-                new LinqTestInput("Int16 MinValue", b => getQuery(b).Select(doc => new { value = short.MinValue })),
-                new LinqTestInput("Int16 MaxValue", b => getQuery(b).Select(doc => new { value = short.MaxValue })),
+                new LinqTestInput("Int16 MinValue", b => getQuery(b).Select(doc => new { value = Int16.MinValue })),
+                new LinqTestInput("Int16 MaxValue", b => getQuery(b).Select(doc => new { value = Int16.MaxValue })),
                 // Int32
                 new LinqTestInput("Int32 7", b => getQuery(b).Select(doc => new { value = 7 })),
-                new LinqTestInput("Int32 MinValue", b => getQuery(b).Select(doc => new { value = int.MinValue })),
-                new LinqTestInput("Int32 MaxValue", b => getQuery(b).Select(doc => new { value = int.MaxValue })),
+                new LinqTestInput("Int32 MinValue", b => getQuery(b).Select(doc => new { value = Int32.MinValue })),
+                new LinqTestInput("Int32 MaxValue", b => getQuery(b).Select(doc => new { value = Int32.MaxValue })),
                 // Int64
                 new LinqTestInput("Int64 8", b => getQuery(b).Select(doc => new { value = 8 })),
-                new LinqTestInput("Int64 MinValue", b => getQuery(b).Select(doc => new { value = long.MinValue })),
-                new LinqTestInput("Int64 MaxValue", b => getQuery(b).Select(doc => new { value = long.MaxValue })),
+                new LinqTestInput("Int64 MinValue", b => getQuery(b).Select(doc => new { value = Int64.MinValue })),
+                new LinqTestInput("Int64 MaxValue", b => getQuery(b).Select(doc => new { value = Int64.MaxValue })),
                 // Decimal
                 new LinqTestInput("Decimal 9", b => getQuery(b).Select(doc => new { value = 9 })),
-                new LinqTestInput("Decimal MinValue", b => getQuery(b).Select(doc => new { value = decimal.MinValue })),
-                new LinqTestInput("Decimal MaxValue", b => getQuery(b).Select(doc => new { value = decimal.MaxValue })),
+                new LinqTestInput("Decimal MinValue", b => getQuery(b).Select(doc => new { value = Decimal.MinValue })),
+                new LinqTestInput("Decimal MaxValue", b => getQuery(b).Select(doc => new { value = Decimal.MaxValue })),
                 // Double
                 new LinqTestInput("Double 10", b => getQuery(b).Select(doc => new { value = 10 })),
-                new LinqTestInput("Double MinValue", b => getQuery(b).Select(doc => new { value = double.MinValue })),
-                new LinqTestInput("Double MaxValue", b => getQuery(b).Select(doc => new { value = double.MaxValue })),
+                new LinqTestInput("Double MinValue", b => getQuery(b).Select(doc => new { value = Double.MinValue })),
+                new LinqTestInput("Double MaxValue", b => getQuery(b).Select(doc => new { value = Double.MaxValue })),
                 // Single
                 new LinqTestInput("Single 11", b => getQuery(b).Select(doc => new { value = 11 })),
-                new LinqTestInput("Single MinValue", b => getQuery(b).Select(doc => new { value = float.MinValue })),
-                new LinqTestInput("Single MaxValue", b => getQuery(b).Select(doc => new { value = float.MaxValue })),
+                new LinqTestInput("Single MinValue", b => getQuery(b).Select(doc => new { value = Single.MinValue })),
+                new LinqTestInput("Single MaxValue", b => getQuery(b).Select(doc => new { value = Single.MaxValue })),
                 // Bool
                 new LinqTestInput("Bool true", b => getQuery(b).Select(doc => new { value = true })),
                 new LinqTestInput("Bool false", b => getQuery(b).Select(doc => new { value = false }))
             };
             // String
             string nullStr = null;
-            inputs.Add(new LinqTestInput("String empty", b => getQuery(b).Select(doc => new { value = string.Empty })));
+            inputs.Add(new LinqTestInput("String empty", b => getQuery(b).Select(doc => new { value = String.Empty })));
             inputs.Add(new LinqTestInput("String str1", b => getQuery(b).Select(doc => new { value = "str1" })));
             inputs.Add(new LinqTestInput("String special", b => getQuery(b).Select(doc => new { value = "long string with speicial characters (*)(*)__)((*&*(&*&'*(&)()(*_)()(_(_)*!@#$%^ and numbers 132654890" })));
             inputs.Add(new LinqTestInput("String unicode", b => getQuery(b).Select(doc => new { value = "unicode 㐀㐁㨀㨁䶴䶵" })));
@@ -1066,33 +1065,33 @@ namespace Microsoft.Azure.Cosmos.Linq
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
                 // projected compare
-                new LinqTestInput("Projected Compare ==", b => getQuery(b).Select(doc => string.Compare(doc.StringField, doc.StringField2) == 0)),
-                new LinqTestInput("Projected Compare >", b => getQuery(b).Select(doc => string.Compare(doc.StringField, doc.StringField2) > 0)),
-                new LinqTestInput("Projected Compare >=", b => getQuery(b).Select(doc => string.Compare(doc.StringField, doc.StringField2) >= 0)),
-                new LinqTestInput("Projected Compare <", b => getQuery(b).Select(doc => string.Compare(doc.StringField, doc.StringField2) < 0)),
-                new LinqTestInput("Projected Compare <=", b => getQuery(b).Select(doc => string.Compare(doc.StringField, doc.StringField2) <= 0)),
+                new LinqTestInput("Projected Compare ==", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) == 0)),
+                new LinqTestInput("Projected Compare >", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) > 0)),
+                new LinqTestInput("Projected Compare >=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) >= 0)),
+                new LinqTestInput("Projected Compare <", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) < 0)),
+                new LinqTestInput("Projected Compare <=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) <= 0)),
                 // static strings
-                new LinqTestInput("String.Compare static string ==", b => getQuery(b).Select(doc => string.Compare(doc.StringField, "str") == 0)),
-                new LinqTestInput("String.Compare static string >", b => getQuery(b).Select(doc => string.Compare(doc.StringField, "str") > 0)),
-                new LinqTestInput("String.Compare static string >=", b => getQuery(b).Select(doc => string.Compare(doc.StringField, "str") >= 0)),
-                new LinqTestInput("String.Compare static string <", b => getQuery(b).Select(doc => string.Compare(doc.StringField, "str") < 0)),
-                new LinqTestInput("String.Compare static string <=", b => getQuery(b).Select(doc => string.Compare(doc.StringField, "str") <= 0)),
+                new LinqTestInput("String.Compare static string ==", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == 0)),
+                new LinqTestInput("String.Compare static string >", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") > 0)),
+                new LinqTestInput("String.Compare static string >=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") >= 0)),
+                new LinqTestInput("String.Compare static string <", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") < 0)),
+                new LinqTestInput("String.Compare static string <=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") <= 0)),
                 // reverse operands
-                new LinqTestInput("Projected Compare == reverse operands", b => getQuery(b).Select(doc => 0 == string.Compare(doc.StringField, doc.StringField2))),
-                new LinqTestInput("Projected Compare < reverse operands", b => getQuery(b).Select(doc => 0 < string.Compare(doc.StringField, doc.StringField2))),
-                new LinqTestInput("Projected Compare <= reverse operands", b => getQuery(b).Select(doc => 0 <= string.Compare(doc.StringField, doc.StringField2))),
-                new LinqTestInput("Projected Compare > reverse operands", b => getQuery(b).Select(doc => 0 > string.Compare(doc.StringField, doc.StringField2))),
-                new LinqTestInput("Projected Compare >= reverse operands", b => getQuery(b).Select(doc => 0 >= string.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare == reverse operands", b => getQuery(b).Select(doc => 0 == String.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare < reverse operands", b => getQuery(b).Select(doc => 0 < String.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare <= reverse operands", b => getQuery(b).Select(doc => 0 <= String.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare > reverse operands", b => getQuery(b).Select(doc => 0 > String.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare >= reverse operands", b => getQuery(b).Select(doc => 0 >= String.Compare(doc.StringField, doc.StringField2))),
                 // errors Invalid compare value
-                new LinqTestInput("String.Compare > 1", b => getQuery(b).Select(doc => string.Compare(doc.StringField, "str") > 1)),
-                new LinqTestInput("String.Compare == 1", b => getQuery(b).Select(doc => string.Compare(doc.StringField, "str") == 1)),
-                new LinqTestInput("String.Compare == -1", b => getQuery(b).Select(doc => string.Compare(doc.StringField, "str") == -1)),
+                new LinqTestInput("String.Compare > 1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") > 1)),
+                new LinqTestInput("String.Compare == 1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == 1)),
+                new LinqTestInput("String.Compare == -1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == -1)),
                 // errors Invalid operator
-                new LinqTestInput("String.Compare | 0", b => getQuery(b).Select(doc => string.Compare(doc.StringField, "str") | 0)),
-                new LinqTestInput("String.Compare & 0", b => getQuery(b).Select(doc => string.Compare(doc.StringField, "str") & 0)),
-                new LinqTestInput("String.Compare ^ 0", b => getQuery(b).Select(doc => string.Compare(doc.StringField, "str") ^ 0)),
+                new LinqTestInput("String.Compare | 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") | 0)),
+                new LinqTestInput("String.Compare & 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") & 0)),
+                new LinqTestInput("String.Compare ^ 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") ^ 0)),
                 // errors Unexpected number of arguments to string.Compare
-                new LinqTestInput("Unexpected number of arguments to string.Compare", b => getQuery(b).Select(doc => string.Compare(doc.StringField, 0, "str", 0, 3) == 0))
+                new LinqTestInput("Unexpected number of arguments to string.Compare", b => getQuery(b).Select(doc => String.Compare(doc.StringField, 0, "str", 0, 3) == 0))
             };
             this.ExecuteTestSuite(inputs);
         }
