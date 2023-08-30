@@ -51,24 +51,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             this.Value = stringBuilder.ToString();
+            this.values = values;
         }
 
         public string Value { get; }
 
-        internal UInt128[] HashValues
-        {
-            get
-            {
-                int components = this.Value.Length / 32;
-                UInt128[] returnValue = new UInt128[components];
-                for (int i = 0; i < components; i++)
-                {
-                    byte[] x = HexConvert.HexStringToByteArray(this.Value.Substring(i * 32, (i * 32) + 32 > this.Value.Length ? this.Value.Length - (i * 32) : 32));
-                    returnValue[i] = UInt128.FromByteArray(x);
-                }
-                return returnValue;
-            }
-        }
+        private readonly UInt128[] values;
+        public readonly UInt128[] HashValues => this.values;
 
         public int CompareTo(PartitionKeyHash other)
         {
@@ -245,25 +234,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return new PartitionKeyHash(hash);
             }
         }
-
-        internal static class HexConvert
+        
+        private static byte[] HexStringToByteArray(string hex)
         {
-            public static byte[] HexStringToByteArray(string hex)
+            int numberChars = hex.Length;
+            if (numberChars % 2 != 0)
             {
-                int numberChars = hex.Length;
-                if (numberChars % 2 != 0)
-                {
-                    throw new ArgumentException("Hex string should be even length", "hex");
-                }
-
-                byte[] bytes = new byte[numberChars / 2];
-                for (int i = 0; i < numberChars; i += 2)
-                {
-                    bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
-                }
-
-                return bytes;
+                throw new ArgumentException("Hex string should be even length", "hex");
             }
+
+            byte[] bytes = new byte[numberChars / 2];
+            for (int i = 0; i < numberChars; i += 2)
+            {
+                bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
+            }
+
+            return bytes;
         }
 
         public static bool operator ==(PartitionKeyHash left, PartitionKeyHash right) => left.Equals(right);
