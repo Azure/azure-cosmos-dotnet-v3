@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         internal readonly static PartitionKeyHash None = new PartitionKeyHash(0);
 
         private readonly UInt128[] values;
+
         public PartitionKeyHash(UInt128 value)
             : this(new UInt128[] { value })
         {
