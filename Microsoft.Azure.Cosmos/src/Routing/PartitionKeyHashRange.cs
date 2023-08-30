@@ -180,26 +180,5 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return stringBuilder.ToString();
         }
-
-        public PartitionKeyHash GetMidPoint()
-        {
-            if (this.StartInclusive.HasValue && this.EndExclusive.HasValue)
-            {
-                UInt128[] leftHashes = this.StartInclusive.Value.HashValues;
-                UInt128[] rightHashes = this.EndExclusive.Value.HashValues;
-                int minLength = leftHashes.Length < rightHashes.Length ? leftHashes.Length : rightHashes.Length;
-                for (int i = 0; i < minLength; i++)
-                {
-                    if (leftHashes[i] != rightHashes[i]) return new PartitionKeyHash(GetMeanHashValue(leftHashes[i], rightHashes[i]));
-                }
-            }
-
-            throw new Exception("Cannot compute midpoint");
-        }
-
-        private static UInt128 GetMeanHashValue(UInt128 left, UInt128 right)
-        {
-            return left + ((right - left) / 2);
-        }
     }
 }

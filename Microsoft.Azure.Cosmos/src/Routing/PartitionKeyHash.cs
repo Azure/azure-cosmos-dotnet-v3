@@ -36,12 +36,14 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal readonly struct PartitionKeyHash : IComparable<PartitionKeyHash>, IEquatable<PartitionKeyHash>
     {
         internal readonly static PartitionKeyHash None = new PartitionKeyHash(0);
+
+        private readonly UInt128[] values;
         public PartitionKeyHash(UInt128 value)
             : this(new UInt128[] { value })
         {
         }
 
-        internal PartitionKeyHash(UInt128[] values)
+        private PartitionKeyHash(UInt128[] values)
         {
             StringBuilder stringBuilder = new StringBuilder();
             foreach (UInt128 value in values)
@@ -56,7 +58,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public string Value { get; }
 
-        private readonly UInt128[] values;
         public readonly UInt128[] HashValues => this.values;
 
         public int CompareTo(PartitionKeyHash other)
