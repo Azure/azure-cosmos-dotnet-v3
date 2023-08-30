@@ -12,12 +12,17 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     [TestClass]
     public class DiagnosticHandlerHelperTests
     {
-        [TestInitialize]
+        [ClassInitialize]
         public void Initialize()
+        {
+            DiagnosticHandlerHelperTests.ResetDiagnosticsHandlerHelper();
+        }
+
+        private static void ResetDiagnosticsHandlerHelper()
         {
             //Stop the job
             DiagnosticsHandlerHelper helper = DiagnosticsHandlerHelper.GetInstance();
-            MethodInfo iMethod= helper.GetType().GetMethod("StopSystemMonitor", BindingFlags.NonPublic | BindingFlags.Instance);
+            MethodInfo iMethod = helper.GetType().GetMethod("StopSystemMonitor", BindingFlags.NonPublic | BindingFlags.Instance);
             iMethod.Invoke(helper, new object[] { });
 
             //Reset the instance woth original value
