@@ -1032,16 +1032,6 @@
             });
         }
 
-        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(string resourceLink, string collectionResourceId, string effectivePartitionKeyString, bool forceRefresh, ITrace trace)
-        {
-            return Task.FromResult(new List<PartitionKeyRange>{new PartitionKeyRange()
-            {
-                MinInclusive = PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                MaxExclusive = PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
-            }
-            });
-        }
-
         public override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(string collectionResourceId, Range<string> range, bool forceRefresh = false)
         {
             throw new NotImplementedException();

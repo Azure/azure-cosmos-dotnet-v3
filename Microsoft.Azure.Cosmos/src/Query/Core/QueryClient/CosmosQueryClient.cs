@@ -76,13 +76,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
 
         public abstract void ClearSessionTokenCache(string collectionFullName);
 
-        public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
-            string resourceLink,
-            string collectionResourceId,
-            string effectivePartitionKeyString,
-            bool forceRefresh,
-            ITrace trace);
-
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
             string resourceLink,
             string collectionResourceId,

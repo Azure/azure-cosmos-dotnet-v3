@@ -644,15 +644,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     forceRefresh: false,
                     trace);
             }
-            else if (TryGetEpkProperty(properties, out string effectivePartitionKeyString))
-            {
-                targetRanges = await queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
-                    resourceLink,
-                    containerQueryProperties.ResourceId,
-                    effectivePartitionKeyString,
-                    forceRefresh: false,
-                    trace);
-            }
             else if (feedRangeInternal != null)
             {
                 targetRanges = await queryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(

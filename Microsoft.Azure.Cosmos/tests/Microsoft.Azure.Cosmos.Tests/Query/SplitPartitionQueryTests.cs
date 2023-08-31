@@ -21,18 +21,21 @@
             IDocumentContainer documentContainer = await CreateSplitDocumentContainerAsync(numItems);
 
             string query = "SELECT * FROM c";
-            Cosmos.PartitionKey partitionKey = new PartitionKeyBuilder()
-                    .Add("0")
+            for(int i = 0; i < 5; i++)
+            {
+                Cosmos.PartitionKey partitionKey = new PartitionKeyBuilder()
+                    .Add(i.ToString())
                 .Build();
 
-            QueryPage queryPage = await documentContainer.QueryAsync(
-                    sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec(query),
-                    feedRangeState: new FeedRangeState<QueryState>(new FeedRangePartitionKey(partitionKey), state: null),
-                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: int.MaxValue),
-                    trace: NoOpTrace.Singleton,
-                    cancellationToken: default);
-           
-            Assert.AreEqual(numItems / 5, queryPage.Documents.Count);
+                QueryPage queryPage = await documentContainer.QueryAsync(
+                        sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec(query),
+                        feedRangeState: new FeedRangeState<QueryState>(new FeedRangePartitionKey(partitionKey), state: null),
+                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: int.MaxValue),
+                        trace: NoOpTrace.Singleton,
+                        cancellationToken: default);
+
+                Assert.AreEqual(numItems / 5, queryPage.Documents.Count);
+            }
         }
 
         private static async Task<IDocumentContainer> CreateSplitDocumentContainerAsync(int numItems)

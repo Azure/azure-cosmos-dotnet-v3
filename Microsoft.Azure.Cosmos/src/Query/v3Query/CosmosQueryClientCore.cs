@@ -209,24 +209,6 @@ namespace Microsoft.Azure.Cosmos
             return partitionedQueryExecutionInfo;
         }
 
-        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
-            string resourceLink,
-            string collectionResourceId,
-            string effectivePartitionKeyString,
-            bool forceRefresh,
-            ITrace trace)
-        {
-            return this.GetTargetPartitionKeyRangesAsync(
-                resourceLink,
-                collectionResourceId,
-                new List<Range<string>>
-                {
-                    Range<string>.GetPointRange(effectivePartitionKeyString)
-                },
-                forceRefresh,
-                trace);
-        }
-
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
             string resourceLink,
             string collectionResourceId,
