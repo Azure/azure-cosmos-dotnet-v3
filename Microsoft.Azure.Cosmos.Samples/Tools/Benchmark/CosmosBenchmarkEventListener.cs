@@ -86,13 +86,6 @@
                     default:
                         break;
                 }
-                // Reset metricCollectionWindow and flush.
-                // TODO: Revisit for concurrency 
-                if (this.metricCollectionWindow.IsInvalid())
-                {
-                    this.meterProvider.ForceFlush();
-                    this.metricCollectionWindow.Reset();
-                }
             }
         }
     }
