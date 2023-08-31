@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -28,14 +27,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         private readonly Cosmos.ConsistencyLevel accountConsistencyLevel;
 
-        public MockDocumentClient(ConnectionPolicy connectionPolicy = null)
-            : base(new Uri("http://localhost"), MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey, connectionPolicy)
+        public MockDocumentClient()
+            : base(new Uri("http://localhost"), MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey)
         {
             this.Init();
         }
 
-        public MockDocumentClient(Cosmos.ConsistencyLevel accountConsistencyLevel, ConnectionPolicy connectionPolicy = null)
-            : base(new Uri("http://localhost"), connectionPolicy)
+        public MockDocumentClient(Cosmos.ConsistencyLevel accountConsistencyLevel)
+            : base(new Uri("http://localhost"), null)
         {
             this.accountConsistencyLevel = accountConsistencyLevel;
             this.Init();
@@ -262,14 +261,6 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
             this.MockGlobalEndpointManager.Setup(gep => gep.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>())).Returns(new Uri("http://localhost"));
             this.MockGlobalEndpointManager.Setup(gep => gep.InitializeAccountPropertiesAndStartBackgroundRefresh(It.IsAny<AccountProperties>()));
             SessionContainer sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
-
-            this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob("test-client",
-                                                                 this.ConnectionPolicy,
-                                                                 new Mock<AuthorizationTokenProvider>().Object,
-                                                                 new Mock<CosmosHttpClient>().Object,
-                                                                 this.ServiceEndpoint,
-                                                                 this.GlobalEndpointManager,
-                                                                 default);
             this.sessionContainer = sessionContainer;
 
         }

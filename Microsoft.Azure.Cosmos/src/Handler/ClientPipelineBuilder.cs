@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosClient client,
             ConsistencyLevel? requestedClientConsistencyLevel,
             IReadOnlyCollection<RequestHandler> customHandlers,
-            TelemetryToServiceHelper telemetryToServiceHelper)
+            ClientTelemetry telemetry)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
@@ -48,8 +48,11 @@ namespace Microsoft.Azure.Cosmos
 #else
             this.diagnosticsHandler = null;
 #endif
-            this.telemetryHandler = new TelemetryHandler(telemetryToServiceHelper);
-            Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
+            if (telemetry != null)
+            {
+                this.telemetryHandler = new TelemetryHandler(telemetry);
+                Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
+            }
 
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
