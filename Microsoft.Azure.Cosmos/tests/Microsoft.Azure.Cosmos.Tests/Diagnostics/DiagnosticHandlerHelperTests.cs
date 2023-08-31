@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     public class DiagnosticHandlerHelperTests
     {
         [ClassInitialize]
-        public void Initialize()
+        public static void Initialize(TestContext _)
         {
             DiagnosticHandlerHelperTests.ResetDiagnosticsHandlerHelper();
         }
