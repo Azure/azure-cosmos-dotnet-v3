@@ -47,8 +47,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             StringBuilder stringBuilder = new StringBuilder();
             foreach (UInt128 value in values)
             {
-                byte[] hashBytes = UInt128.ToByteArray(value);
-                stringBuilder.Append(PartitionKeyInternal.HexConvert.ToHex(hashBytes, 0, hashBytes.Length));
+                stringBuilder.Append(value.ToString());
             }
 
             this.Value = stringBuilder.ToString();
@@ -235,23 +234,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 UInt128 hash = Cosmos.MurmurHash3.Hash128(bytesForHashing, seed: 0);
                 return new PartitionKeyHash(hash);
             }
-        }
-
-        private static byte[] HexStringToByteArray(string hex)
-        {
-            int numberChars = hex.Length;
-            if (numberChars % 2 != 0)
-            {
-                throw new ArgumentException("Hex string should be even length", "hex");
-            }
-
-            byte[] bytes = new byte[numberChars / 2];
-            for (int i = 0; i < numberChars; i += 2)
-            {
-                bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
-            }
-
-            return bytes;
         }
 
         public static bool operator ==(PartitionKeyHash left, PartitionKeyHash right) => left.Equals(right);

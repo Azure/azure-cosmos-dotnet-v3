@@ -1179,7 +1179,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         private static IList<CosmosElement> GetPartitionKeysFromObjectModel(Cosmos.PartitionKey payload)
         {
             CosmosArray partitionKeyPayload = CosmosArray.Parse(payload.ToJsonString());
-            return new List<CosmosElement>() { partitionKeyPayload };
+            List<CosmosElement> cosmosElemementPayload = new List<CosmosElement>();
+            foreach (CosmosElement element in partitionKeyPayload)
+            {
+                cosmosElemementPayload.Add(element);
+            }
+            return cosmosElemementPayload;
         }
 
         private static PartitionKeyHash GetHashFromPartitionKeys(IList<CosmosElement> partitionKeys, PartitionKeyDefinition partitionKeyDefinition)
