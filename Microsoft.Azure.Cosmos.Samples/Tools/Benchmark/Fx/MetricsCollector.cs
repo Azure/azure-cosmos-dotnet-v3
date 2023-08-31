@@ -116,10 +116,10 @@ namespace CosmosBenchmark
                 () => new Measurement<double>(this.rps));
 
             this.latencyInMsFailedMetricNameGauge = this.meter.CreateObservableGauge($"{operationType}FailedOperationLatencyInMs",
-                () => new Measurement<double>(this.latencyInMs));
+                () => new Measurement<double>(this.latencyFailedInMs));
 
             this.rpsFailedNameGauge = this.meter.CreateObservableGauge($"{operationType}FailedOperationRps",
-                () => new Measurement<double>(this.rps));
+                () => new Measurement<double>(this.rpsFailed));
         }
 
         internal static IEnumerable<string> GetBenchmarkMeterNames()
