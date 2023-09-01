@@ -59,7 +59,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     using (CosmosClient client = TestCommon.CreateCosmosClient(
                                                                 customizeClientBuilder: (builder) => builder
-                                                                                                        .WithTelemetryEnabled()
+                                                                                                        .WithClientTelemetryOptions(new CosmosClientTelemetryOptions ()
+                                                                                                        {
+                                                                                                            EnableSendingMetricsToService = withClientTelemetry
+                                                                                                        })
                                                                                                         .WithHttpClientFactory(() => new HttpClient(httpHandler))))
                     {
                         Cosmos.Database database = client.CreateDatabaseAsync(databaseId).GetAwaiter().GetResult();

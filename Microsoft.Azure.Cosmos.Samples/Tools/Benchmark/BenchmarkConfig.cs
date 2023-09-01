@@ -222,7 +222,7 @@ namespace CosmosBenchmark
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 CosmosClientTelemetryOptions = new Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions()
                 {
-                    EnableSendingMetricsToService = this.EnableTelemetry,
+                    EnableSendingMetricsToService = this.EnableClientTelemetry,
                     DisableDistributedTracing = !this.EnableDistributedTracing
                 }
             };
