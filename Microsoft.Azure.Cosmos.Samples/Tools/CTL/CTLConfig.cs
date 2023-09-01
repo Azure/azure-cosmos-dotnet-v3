@@ -97,17 +97,14 @@ namespace CosmosCTL
         [Option("ctl_logging_context", Required = false, HelpText = "Defines a custom context to use on metrics")]
         public string LogginContext { get; set; } = string.Empty;
 
-        [Option("ctl_telemetry_endpoint", Required = false, HelpText = "telemetry juno end point")]
-        public string TelemetryEndpoint { get; set; }
-
-        [Option("ctl_telemetry_schedule_in_sec", Required = false, HelpText = "telemetry task schedule time in sec")]
-        public string TelemetryScheduleInSeconds { get; set; }
-
         [Option("ctl_reservoir_type", Required = false, HelpText = "Defines the reservoir type. Valid values are: Uniform, SlidingWindow and ExponentialDecay. The default value is SlidingWindow.")]
         public ReservoirTypes ReservoirType { get; set; } = ReservoirTypes.SlidingWindow;
 
         [Option("ctl_reservoir_sample_size", Required = false, HelpText = "The reservoir sample size.")]
         public int ReservoirSampleSize { get; set; } = 1028;
+
+        [Option("ctl_enable_client_telemetry", Required = false, HelpText = "Enable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
+        public bool EnableClientTelemetry { get; set; } = true;
 
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
@@ -133,7 +130,7 @@ namespace CosmosCTL
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ApplicationName = CTLConfig.UserAgentSuffix,
-                EnableClientTelemetry = true
+                EnableClientTelemetry = this.EnableClientTelemetry
             };
 
             if (this.UseGatewayMode)
