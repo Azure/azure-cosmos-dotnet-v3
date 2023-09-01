@@ -70,7 +70,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         resourceLink: container.LinkUri,
                         partitionedQueryExecutionInfo: null,
                         containerQueryProperties: containerQueryProperties,
-                        properties: null,
                         feedRangeInternal: feedToken as FeedRangeInternal,
                         NoOpTrace.Singleton);
 

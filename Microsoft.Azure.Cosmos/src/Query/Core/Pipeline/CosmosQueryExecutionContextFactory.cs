@@ -262,7 +262,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    cosmosQueryContext.ResourceLink,
                    partitionedQueryExecutionInfo,
                    containerQueryProperties,
-                   inputParameters.Properties,
                    inputParameters.InitialFeedRange,
                    trace);
 
@@ -451,7 +450,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                   cosmosQueryContext.ResourceLink,
                   partitionedQueryExecutionInfo,
                   containerQueryProperties,
-                  inputParameters.Properties,
                   inputParameters.InitialFeedRange,
                   trace);
 
@@ -630,7 +628,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             string resourceLink,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
-            IReadOnlyDictionary<string, object> properties,
             FeedRangeInternal feedRangeInternal,
             ITrace trace)
         {
@@ -685,28 +682,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     responseStats.PipelineType = TestInjections.PipelineType.Passthrough;
                 }
             }
-        }
-
-        private static bool TryGetEpkProperty(
-            IReadOnlyDictionary<string, object> properties,
-            out string effectivePartitionKeyString)
-        {
-            if (properties != null
-                && properties.TryGetValue(
-                   Documents.WFConstants.BackendHeaders.EffectivePartitionKeyString,
-                   out object effectivePartitionKeyStringObject))
-            {
-                effectivePartitionKeyString = effectivePartitionKeyStringObject as string;
-                if (string.IsNullOrEmpty(effectivePartitionKeyString))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(effectivePartitionKeyString));
-                }
-
-                return true;
-            }
-
-            effectivePartitionKeyString = null;
-            return false;
         }
 
         private static Documents.PartitionKeyDefinition GetPartitionKeyDefinition(InputParameters inputParameters, ContainerQueryProperties containerQueryProperties)
@@ -765,7 +740,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cosmosQueryContext.ResourceLink,
                     partitionedQueryExecutionInfo,
                     containerQueryProperties,
-                    inputParameters.Properties,
                     inputParameters.InitialFeedRange,
                     trace);
             }
