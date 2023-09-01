@@ -73,11 +73,11 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public static void EnsureValid(
+        public static async Task EnsureValidAsync(
             IReadOnlyList<ItemBatchOperation> operations,
             RequestOptions batchOptions)
         {
-            string errorMessage = BatchExecUtils.IsValid(operations, batchOptions);
+            string errorMessage = await BatchExecUtils.IsValidAsync(operations, batchOptions);
 
             if (errorMessage != null)
             {
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static string IsValid(
+        internal static async Task<string> IsValidAsync(
             IReadOnlyList<ItemBatchOperation> operations,
             RequestOptions batchOptions)
         {
@@ -127,6 +127,18 @@ namespace Microsoft.Azure.Cosmos
                         if (operation.PartitionKey != null && !operation.RequestOptions.IsEffectivePartitionKeyRouting)
                         {
                             errorMessage = ClientResources.PKAndEpkSetTogether;
+                        }
+
+                        if (operation.PartitionKey != null)
+                        {
+                            int specifiedPartitionKeyComponentCount = operation.PartitionKey.Value.InternalKey.Components.Count;
+                            PartitionKeyDefinition partitionKeyDefinition = await operation.ContainerInternal.GetPartitionKeyDefinitionAsync(CancellationToken.None);
+                            if (partitionKeyDefinition.Paths.Count != specifiedPartitionKeyComponentCount)
+                            {
+                                errorMessage = specifiedPartitionKeyComponentCount < partitionKeyDefinition.Paths.Count ? 
+                                    ClientResources.TooFewPartitionKeyComponents : 
+                                    ClientResources.TooManyPartitionKeyComponents;
+                            }
                         }
                     }
                 }

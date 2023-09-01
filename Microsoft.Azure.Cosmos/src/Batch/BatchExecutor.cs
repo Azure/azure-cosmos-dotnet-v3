@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         {
             using (ITrace executeNextBatchTrace = trace.StartChild("Execute Next Batch", TraceComponent.Batch, Tracing.TraceLevel.Info))
             {
-                BatchExecUtils.EnsureValid(this.inputOperations, this.batchOptions);
+                await BatchExecUtils.EnsureValidAsync(this.inputOperations, this.batchOptions);
 
                 PartitionKey? serverRequestPartitionKey = this.partitionKey;
                 if (this.batchOptions != null && this.batchOptions.IsEffectivePartitionKeyRouting)
