@@ -73,15 +73,15 @@
                 || eventData.EventId == 3)  // Failure
             {
                 int operationTypeIndex = (int)eventData.Payload[0];
-                long durationInMs = (long)eventData.Payload[1];
+                double durationInMs = (double)eventData.Payload[1];
 
                 switch (eventData.EventId)
                 {
                     case 2:
-                        this.metricsCollectors[operationTypeIndex].OnOperationSuccess(TimeSpan.FromMilliseconds(durationInMs));
+                        this.metricsCollectors[operationTypeIndex].OnOperationSuccess(durationInMs);
                         break;
                     case 3:
-                        this.metricsCollectors[operationTypeIndex].OnOperationFailure(TimeSpan.FromMilliseconds(durationInMs));
+                        this.metricsCollectors[operationTypeIndex].OnOperationFailure(durationInMs);
                         break;
                     default:
                         break;

@@ -14,11 +14,11 @@ namespace CosmosBenchmark
         /// <summary>
         /// Successful operation with latency
         /// </summary>
-        void OnOperationSuccess(TimeSpan operationLatency);
+        void OnOperationSuccess(double operationLatencyInMs);
 
         /// <summary>
         /// Failed operation with latency
         /// </summary>
-        void OnOperationFailure(TimeSpan operationLatency);
+        void OnOperationFailure(double operationLatencyInMs);
     }
 }
