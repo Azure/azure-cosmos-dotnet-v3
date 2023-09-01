@@ -1533,19 +1533,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
 
             await this.Container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString(), pk = "test" });
-            epk = new PartitionKey("test")
-                           .InternalKey
-                           .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
 
-            properties = new Dictionary<string, object>()
-            {
-                { WFConstants.BackendHeaders.EffectivePartitionKeyString, epk },
-            };
+            FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(new Cosmos.PartitionKey("test"));
 
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
-                IsEffectivePartitionKeyRouting = true,
-                Properties = properties,
+                PartitionKey = new Cosmos.PartitionKey("test"),
+                FeedRange = feedRangePartitionKey,
             };
 
             using (FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
@@ -1586,11 +1580,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // If this fails the RUs of the container needs to be increased to ensure at least 2 partitions.
                 Assert.IsTrue(ranges.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
+
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
-                    null,
+                    new List<Documents.Routing.Range<string>> { new Documents.Routing.Range<string>("AA", "AA", true, true) },
                     containerResponse.Resource.PartitionKey,
                     containerResponse.Resource.GeospatialConfig.GeospatialType);
+
+                // There should only be one range since the EPK option is set.
+                List<PartitionKeyRange> partitionKeyRanges = await CosmosQueryExecutionContextFactory.GetTargetPartitionKeyRangesAsync(
+                    queryClient: new CosmosQueryClientCore(container.ClientContext, container),
+                    resourceLink: container.LinkUri,
+                    partitionedQueryExecutionInfo: null,
+                    containerQueryProperties: containerQueryProperties,
+                    feedRangeInternal: null,
+                    trace: NoOpTrace.Singleton);
+
+                Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
 
             }
             finally
