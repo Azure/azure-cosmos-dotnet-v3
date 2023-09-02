@@ -529,14 +529,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             TaskContinuationOptions.OnlyOnFaulted);
         }
 
-        /// <inheritdoc/>
-        public void SetHealthState(
-            bool isHealthy)
-        {
-            // No implementation is required since the channel health state is managed
-            // using the State enumeration.
-        }
-
         private enum State
         {
             New,

@@ -130,7 +130,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                                                                                     options: this.DistributedTracingOptions,
                                                                                     request: request);
 #endif
-            IChannel channel = null;
             try
             {
                 TransportClient.IncrementCounters();
@@ -138,7 +137,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 operation = "GetChannel";
                 // Treat all retries as out of region request for open timeout. This is to prevent too many retries because of the shorter time duration.
                 bool localRegionRequest = request.RequestContext.IsRetry ? false : request.RequestContext.LocalRegionRequest;
-                channel = this.channelDictionary.GetChannel(physicalAddress.Uri, localRegionRequest);
+                IChannel channel = this.channelDictionary.GetChannel(physicalAddress.Uri, localRegionRequest);
 
                 TransportClient.GetTransportPerformanceCounters().IncrementRntbdRequestCount(resourceOperation.resourceType, resourceOperation.operationType);
 
@@ -190,9 +189,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     operation, request.ResourceAddress, request.ResourceType,
                     resourceOperation, physicalAddress, ex);
 
-                channel?.SetHealthState(
-                    isHealthy: false);
-
                 if (request.IsReadOnlyRequest)
                 {
                     DefaultTrace.TraceInformation("Converting to Gone (read-only request)");
@@ -234,9 +230,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             catch (DocumentClientException ex)
             {
-                channel?.SetHealthState(
-                    isHealthy: false);
-
                 transportResponseStatusCode = (int)TransportResponseStatusCode.DocumentClientException;
                 DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                                               "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
@@ -250,9 +243,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             catch (Exception ex)
             {
-                channel?.SetHealthState(
-                    isHealthy: false);
-
                 transportResponseStatusCode = (int)TransportResponseStatusCode.UnknownException;
                 DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                     "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
@@ -353,8 +343,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             IChannel channel = this.channelDictionary.GetChannel(
                 requestUri: physicalAddress,
-                localRegionRequest: false,
-                validationRequired: true);
+                localRegionRequest: false);
 
             return channel.Healthy
                 ? Task.FromResult(0)

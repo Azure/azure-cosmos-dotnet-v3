@@ -42,8 +42,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <returns>An instance of <see cref="IChannel"/> containing the <see cref="LoadBalancingChannel"/>.</returns>
         public IChannel GetChannel(
             Uri requestUri,
-            bool localRegionRequest,
-            bool validationRequired = false)
+            bool localRegionRequest)
         {
             this.ThrowIfDisposed();
             ServerKey key = new ServerKey(requestUri);
@@ -57,7 +56,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 new Uri(requestUri.GetLeftPart(UriPartial.Authority)),
                 this.channelProperties,
                 localRegionRequest,
-                validationRequired,
                 this.singleLoadBalancedPartitionForTest);
             if (this.channels.TryAdd(key, value))
             {

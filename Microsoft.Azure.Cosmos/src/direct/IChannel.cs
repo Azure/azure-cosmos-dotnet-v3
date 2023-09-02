@@ -24,13 +24,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         public Task OpenChannelAsync(
             Guid activityId);
 
-        /// <summary>
-        /// Sets the health state.
-        /// </summary>
-        /// <param name="isHealthy">A boolean flag indicating the health state to be set.</param>
-        public void SetHealthState(
-            bool isHealthy);
-
         bool Healthy { get; }
 
         void Close();

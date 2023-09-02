@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
     using System.Diagnostics;
-    using System.Threading;
     using System.Threading.Tasks;
 
     // LoadBalancingChannel encapsulates the management of channels that connect to a single
@@ -23,19 +22,13 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private bool disposed = false;
 
-        private readonly ReaderWriterLockSlim healthStateLock = new(LockRecursionPolicy.NoRecursion);
-
-        private volatile bool healthy;
-
         public LoadBalancingChannel(
             Uri serverUri,
             ChannelProperties channelProperties,
             bool localRegionRequest,
-            bool validationRequired = false,
             LoadBalancingPartition singleLoadBalancedPartitionForTest = null)
         {
             this.serverUri = serverUri;
-            this.SetHealthState(!validationRequired);
 
             if ((channelProperties.PartitionCount < 1) ||
                 (channelProperties.PartitionCount > 8))
@@ -93,30 +86,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             get
             {
                 this.ThrowIfDisposed();
-                this.healthStateLock.EnterReadLock();
-                try
-                {
-                    return this.healthy;
-                }
-                finally
-                {
-                    this.healthStateLock.ExitReadLock();
-                }
-            }
-        }
-
-        /// <inheritdoc/>
-        public void SetHealthState(
-            bool isHealthy)
-        {
-            this.healthStateLock.EnterWriteLock();
-            try
-            {
-                this.healthy = isHealthy;
-            }
-            finally
-            {
-                this.healthStateLock.ExitWriteLock();
+                return true;
             }
         }
 
@@ -152,24 +122,21 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// </summary>
         /// <param name="activityId">An unique identifier indicating the current activity id.</param>
         /// <returns>A completed task once the channel is opened.</returns>
-        public async Task OpenChannelAsync(
+        public Task OpenChannelAsync(
             Guid activityId)
         {
             this.ThrowIfDisposed();
             if (this.singlePartition != null)
             {
                 Debug.Assert(this.partitions == null);
-                await this.OpenChannelToPartitionAsync(
-                    partition: this.singlePartition,
-                    activityId: activityId);
+                return this.singlePartition.OpenChannelAsync(activityId);
             }
             else
             {
                 Debug.Assert(this.partitions != null);
                 LoadBalancingPartition partition = this.GetLoadBalancedPartition(activityId);
-                await this.OpenChannelToPartitionAsync(
-                    partition: partition,
-                    activityId: activityId);
+                return partition.OpenChannelAsync(
+                    activityId);
             }
         }
 
@@ -183,18 +150,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             LoadBalancingPartition partition,
             Guid activityId)
         {
-            try
-            {
-                await partition.OpenChannelAsync(activityId);
-                this.SetHealthState(
-                    isHealthy: true);
-            }
-            catch (Exception)
-            {
-                this.SetHealthState(
-                    isHealthy: false);
-                throw;
-            }
+            await partition.OpenChannelAsync(activityId);
         }
 
         /// <summary>
@@ -234,8 +190,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.partitions[i].Dispose();
                 }
             }
-
-            this.healthStateLock.Dispose();
         }
 
         private void ThrowIfDisposed()
