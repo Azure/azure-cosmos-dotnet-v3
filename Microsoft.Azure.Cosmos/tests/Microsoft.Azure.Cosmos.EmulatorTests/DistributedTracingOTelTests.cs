@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
                                     customizeClientBuilder: (builder) => builder
                                                                             .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                                                                              {
-                                                                                DisableDistributedTracing = enableDistributingTracing
+                                                                                DisableDistributedTracing = !enableDistributingTracing
                                                                              })
                                                                             .WithConnectionModeGateway());
             }
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
                                     customizeClientBuilder: (builder) => builder
                                                                             .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                                                                              {
-                                                                                DisableDistributedTracing = enableDistributingTracing
+                                                                                DisableDistributedTracing = !enableDistributingTracing
                                                                              }));
             }
 
