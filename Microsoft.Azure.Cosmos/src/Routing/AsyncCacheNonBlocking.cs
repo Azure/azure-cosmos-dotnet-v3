@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     /// <summary>
     /// This is a thread safe AsyncCache that allows refreshing values in the background.
@@ -183,17 +182,26 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="key">The requested key to be refreshed.</param>
         /// <param name="singleValueInitFunc">A func delegate to be invoked at a later point of time.</param>
-        public async Task RefreshAsync(
+        public void Refresh(
            TKey key,
            Func<TValue, Task<TValue>> singleValueInitFunc)
         {
             if (this.values.TryGetValue(key, out AsyncLazyWithRefreshTask<TValue> initialLazyValue))
             {
-                await this.UpdateCacheAndGetValueFromBackgroundTaskAsync(
-                    key: key,
-                    initialValue: initialLazyValue,
-                    callbackDelegate: singleValueInitFunc,
-                    operationName: nameof(RefreshAsync));
+                Task backgroundRefreshTask = initialLazyValue.Refresh(
+                    createRefreshTask: singleValueInitFunc);
+
+                backgroundRefreshTask.ContinueWith(task =>
+                {
+                    if (task.IsFaulted)
+                    {
+                        this.RemoveKeyForBackgroundExceptions(
+                            key,
+                            initialLazyValue,
+                            task?.Exception?.InnerException,
+                            nameof(Refresh));
+                    }
+                });
             }
         }
 
@@ -218,26 +226,46 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex)
             {
-                if (initialValue.ShouldRemoveFromCacheThreadSafe())
-                {
-                    bool removed = false;
-
-                    // In some scenarios when a background failure occurs like a 404
-                    // the initial cache value should be removed.
-                    if (this.removeFromCacheOnBackgroundRefreshException(ex))
-                    {
-                        removed = this.TryRemove(key);
-                    }
-
-                    DefaultTrace.TraceError(
-                        "AsyncCacheNonBlocking Failed. key: {0}, operation: {1}, tryRemoved: {2}, Exception: {3}",
-                        key,
-                        operationName,
-                        removed,
-                        ex);
-                }
+                this.RemoveKeyForBackgroundExceptions(
+                    key,
+                    initialValue,
+                    ex,
+                    operationName);
 
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Removes the specified key from the async non blocking cache for specific exception types.
+        /// </summary>
+        /// <param name="key">The requested key to be updated.</param>
+        /// <param name="initialValue">An instance of <see cref="AsyncLazyWithRefreshTask{T}"/> containing the initial cached value.</param>
+        /// <param name="ex">A func callback delegate to be invoked at a later point of time.</param>
+        /// <param name="operationName">A string indicating the operation on the cache.</param>
+        private void RemoveKeyForBackgroundExceptions(
+            TKey key,
+            AsyncLazyWithRefreshTask<TValue> initialValue,
+            Exception ex,
+            string operationName)
+        {
+            if (initialValue.ShouldRemoveFromCacheThreadSafe())
+            {
+                bool removed = false;
+
+                // In some scenarios when a background failure occurs like a 404
+                // the initial cache value should be removed.
+                if (this.removeFromCacheOnBackgroundRefreshException(ex))
+                {
+                    removed = this.TryRemove(key);
+                }
+
+                DefaultTrace.TraceError(
+                    "AsyncCacheNonBlocking Failed. key: {0}, operation: {1}, tryRemoved: {2}, Exception: {3}",
+                    key,
+                    operationName,
+                    removed,
+                    ex);
             }
         }
 
@@ -250,8 +278,10 @@ namespace Microsoft.Azure.Cosmos
         {
             private readonly CancellationToken cancellationToken;
             private readonly Func<T, Task<T>> createValueFunc;
-            private readonly object valueLock = new object();
-            private readonly object removedFromCacheLock = new object();
+            private readonly object valueLock = new ();
+            private readonly object removedFromCacheLock = new ();
+            private readonly object refreshLock = new ();
+            private Task<T> backgroundRefreshTask;
 
             private bool removedFromCache = false;
             private Task<T> value;
@@ -265,6 +295,7 @@ namespace Microsoft.Azure.Cosmos
                 this.createValueFunc = null;
                 this.value = Task.FromResult(value);
                 this.refreshInProgress = null;
+                this.backgroundRefreshTask = null;
             }
 
             public AsyncLazyWithRefreshTask(
@@ -275,6 +306,7 @@ namespace Microsoft.Azure.Cosmos
                 this.createValueFunc = taskFactory;
                 this.value = null;
                 this.refreshInProgress = null;
+                this.backgroundRefreshTask = null;
             }
 
             public bool IsValueCreated => this.value != null;
@@ -386,6 +418,31 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            public Task Refresh(
+                Func<T, Task<T>> createRefreshTask)
+            {
+                lock (this.refreshLock)
+                {
+                    if (AsyncLazyWithRefreshTask<T>.IsTaskRunning(this.backgroundRefreshTask))
+                    {
+                        DefaultTrace.TraceInformation(
+                            message: "Background refresh task is already in progress, skip creating a new one.");
+
+                        return Task.CompletedTask;
+                    }
+                    else
+                    {
+                        DefaultTrace.TraceInformation(
+                            message: "Started a new background refresh task.");
+
+                        this.backgroundRefreshTask = Task.Run(async () => await this.CreateAndWaitForBackgroundRefreshTaskAsync(
+                            createRefreshTask));
+
+                        return this.backgroundRefreshTask;
+                    }
+                }
+            }
+
             private static bool IsTaskRunning(Task t)
             {
                 if (t == null)
@@ -393,7 +450,7 @@ namespace Microsoft.Azure.Cosmos
                     return false;
                 }
 
-                return !t.IsCompleted;
+                return !t.IsCompleted && !t.IsFaulted;
             }
         }
 

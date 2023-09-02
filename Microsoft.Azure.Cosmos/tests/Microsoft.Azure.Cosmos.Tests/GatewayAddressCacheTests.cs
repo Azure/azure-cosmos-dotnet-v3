@@ -1351,7 +1351,7 @@ namespace Microsoft.Azure.Cosmos
             FakeOpenConnectionHandler fakeOpenConnectionHandler = new(
                 failIndexesByAttempts: new Dictionary<int, HashSet<int>>(),
                 manualResetEvent: manualResetEvent,
-                openConnectionDelayInSeconds: 2);
+                openConnectionDelayInSeconds: 1);
 
             HttpClient httpClient = new(new HttpHandlerHelper(mockHttpHandler.Object));
             GatewayAddressCache cache = new(
