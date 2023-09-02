@@ -141,19 +141,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         /// <summary>
-        /// Attempts to open the Rntbd connection to a specific <see cref="LoadBalancingPartition"/>.
-        /// </summary>
-        /// <param name="partition">An instance of <see cref="LoadBalancingPartition"/> where the channel required to be open.</param>
-        /// <param name="activityId">An unique identifier indicating the current activity id.</param>
-        /// <returns>A completed task once the channel is opened.</returns>
-        private async Task OpenChannelToPartitionAsync(
-            LoadBalancingPartition partition,
-            Guid activityId)
-        {
-            await partition.OpenChannelAsync(activityId);
-        }
-
-        /// <summary>
         /// Gets the load balanced partition from the hash key,
         /// generated from the current activity id.
         /// </summary>
