@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -731,9 +730,14 @@ namespace Microsoft.Azure.Cosmos
         internal bool? EnableCpuMonitor { get; set; }
 
         /// <summary>
-        /// Client Telemetry Options
+        /// Gets or sets Client Telemetry Options like feature flags and corresponding options
         /// </summary>
-        public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
+#if PREVIEW
+        public 
+#else
+        internal
+#endif 
+            CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {

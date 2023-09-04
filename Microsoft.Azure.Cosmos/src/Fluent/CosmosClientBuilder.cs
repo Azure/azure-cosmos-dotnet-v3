@@ -682,11 +682,16 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// WithClientTelemetryOptions
+        /// To enable Telemetry features with corresponding options
         /// </summary>
         /// <param name="options"></param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-        public CosmosClientBuilder WithClientTelemetryOptions(CosmosClientTelemetryOptions options)
+#if PREVIEW
+        public 
+#else
+        internal
+#endif 
+            CosmosClientBuilder WithClientTelemetryOptions(CosmosClientTelemetryOptions options)
         {
             this.clientOptions.CosmosClientTelemetryOptions = options;
             return this;

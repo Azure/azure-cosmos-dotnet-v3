@@ -54,9 +54,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             {
                 policy = new ConnectionPolicy
                 {
-                    EnableClientTelemetry = true // feature flag is always true
+                    CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions
+                    {
+                        DisableSendingMetricsToService = !isClientTelemetryEnabled.Value
+                    }
                 };
-
             }
 
             MockDocumentClient documentClient = new MockDocumentClient(policy);

@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cosmosClientBuilder = this.GetBuilder()
                                                  .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                                                  {
-                                                     EnableSendingMetricsToService = true
+                                                     DisableSendingMetricsToService = false
                                                  })
                                                 .WithApplicationPreferredRegions(ClientTelemetryTestsBase.preferredRegionList);
         }
@@ -671,7 +671,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cosmosClientBuilder = this.cosmosClientBuilder
                                          .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                                          {
-                                             EnableSendingMetricsToService = true
+                                             DisableSendingMetricsToService = false
                                          })
                                         .WithHttpClientFactory(() => new HttpClient(httpHandler));
 

@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                                 customizeClientBuilder: (builder) => builder
                                                                                                         .WithClientTelemetryOptions(new CosmosClientTelemetryOptions ()
                                                                                                         {
-                                                                                                            EnableSendingMetricsToService = withClientTelemetry
+                                                                                                            DisableSendingMetricsToService = !withClientTelemetry
                                                                                                         })
                                                                                                         .WithHttpClientFactory(() => new HttpClient(httpHandler))))
                     {

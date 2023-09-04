@@ -14,7 +14,6 @@ namespace CosmosCTL
     using App.Metrics.Gauge;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
-    using Microsoft.Azure.Cosmos.Telemetry;
 
     public sealed class Program
     {
@@ -52,10 +51,8 @@ namespace CosmosCTL
 
                     logger.LogInformation("Initialization completed.");
 
-                    if(client.ClientOptions.CosmosClientTelemetryOptions.EnableSendingMetricsToService) {
-                        logger.LogInformation("Telemetry is enabled for CTL.");
-                    } else {
-                        logger.LogInformation("Telemetry is disabled for CTL.");
+                    if(client.ClientOptions.CosmosClientTelemetryOptions.DisableSendingMetricsToService) {
+                        logger.LogInformation("Telemetry Feature flag is disabled for CTL.");
                     }
 
                     List<Task> tasks = new List<Task>

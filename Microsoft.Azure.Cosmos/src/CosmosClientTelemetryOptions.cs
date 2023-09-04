@@ -10,17 +10,29 @@ namespace Microsoft.Azure.Cosmos
     public class CosmosClientTelemetryOptions
     {
         /// <summary>
-        /// Enable sending telemetry to service, <see cref="CosmosThresholdOptions"/> is not applicable to this as of now
+        /// Disable sending telemetry to service, <see cref="CosmosThresholdOptions"/> is not applicable to this as of now. 
+        /// This option will disable sending telemetry to service.even it is opt-in from portal.
         /// </summary>
-        public bool EnableSendingMetricsToService { get; set; } = false;
+        /// <remarks>By default, it is false</remarks>
+#if PREVIEW
+        public 
+#else
+        internal
+#endif
+        bool DisableSendingMetricsToService { get; set; } =
+#if PREVIEW
+        false;
+#else
+        true;
+#endif
 
         /// <summary>
-        /// Gets or sets the flag to generate operation level <see cref="System.Diagnostics.Activity"/> for methods calls using the Source Name "Azure.Cosmos.Operation".
+        /// This method enable/disable generation of operation level <see cref="System.Diagnostics.Activity"/> if listener is subscribed to the Source Name "Azure.Cosmos.Operation".
         /// </summary>
         /// <value>
-        /// The default value is true (for preview package).
+        /// The default value is true
         /// </value>
-        /// <remarks>This flag is there to disable it from source. Please Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
+        /// <remarks> Please Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
 #if PREVIEW
         public 
 #else
@@ -34,13 +46,15 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
         /// <summary>
-        /// Threshold values for telemetry
+        /// Threshold values for Distributed Tracing. 
+        /// These values decides whether to generate operation level <see cref="System.Diagnostics.Tracing.EventSource"/> with request diagnostics or not.
         /// </summary>
 #if PREVIEW
         public 
 #else
         internal
 #endif
-        CosmosThresholdOptions CosmosThresholdOptions { get; set; }
+        CosmosThresholdOptions CosmosThresholdOptions { get; set; } = new CosmosThresholdOptions();
+
     }
 }
