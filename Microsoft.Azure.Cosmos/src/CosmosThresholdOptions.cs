@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
 
     /// <summary>
-    /// Threshold options for telemetry
+    /// Threshold values for Distributed Tracing
     /// </summary>
 #if PREVIEW
     public 

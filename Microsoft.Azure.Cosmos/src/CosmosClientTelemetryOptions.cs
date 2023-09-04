@@ -5,12 +5,17 @@
 namespace Microsoft.Azure.Cosmos
 {
     /// <summary>
-    /// Telemetry Options for Cosmos Client
+    /// Telemetry Options for Cosmos Client to enable/disable telemetry and distributed tracing along with corresponding threshold values.
     /// </summary>
-    public class CosmosClientTelemetryOptions
+#if PREVIEW
+        public 
+#else
+        internal
+#endif 
+        class CosmosClientTelemetryOptions
     {
         /// <summary>
-        /// Disable sending telemetry to service, <see cref="CosmosThresholdOptions"/> is not applicable to this as of now. 
+        /// Disable sending telemetry to service, <see cref="Microsoft.Azure.Cosmos.CosmosThresholdOptions"/> is not applicable to this as of now. 
         /// This option will disable sending telemetry to service.even it is opt-in from portal.
         /// </summary>
         /// <remarks>By default, it is false</remarks>
