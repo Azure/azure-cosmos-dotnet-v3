@@ -345,9 +345,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 requestUri: physicalAddress,
                 localRegionRequest: false);
 
-            return channel.Healthy
-                ? Task.FromResult(0)
-                : channel.OpenChannelAsync(
+            return channel.OpenChannelAsync(
                     activityId: Trace.CorrelationManager.ActivityId);
         }
 
