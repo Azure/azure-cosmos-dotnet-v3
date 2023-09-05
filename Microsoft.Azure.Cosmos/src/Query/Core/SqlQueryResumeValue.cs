@@ -68,29 +68,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
         private class ComplexResumeValue : SqlQueryResumeValue
         {
-            public bool bArray { get; }
+            public bool IsArray { get; }
 
             public UInt128 HashValue { get; }
 
-            private ComplexResumeValue(bool bArray, UInt128 hashValue)
+            private ComplexResumeValue(bool isArray, UInt128 hashValue)
             {
-                this.bArray = bArray;
+                this.IsArray = isArray;
                 this.HashValue = hashValue;
             }
 
-            public static ComplexResumeValue Create(bool bArray, UInt128 hashValue)
+            public static ComplexResumeValue Create(bool isArray, UInt128 hashValue)
             {
-                return new ComplexResumeValue(bArray, hashValue);
+                return new ComplexResumeValue(isArray, hashValue);
             }
 
             public static ComplexResumeValue Create(CosmosArray arrayValue)
             {
-                return Create(bArray: true, DistinctHash.GetHash(arrayValue));
+                return Create(isArray: true, DistinctHash.GetHash(arrayValue));
             }
 
             public static ComplexResumeValue Create(CosmosObject objectValue)
             {
-                return Create(bArray: false, DistinctHash.GetHash(objectValue));
+                return Create(isArray: false, DistinctHash.GetHash(objectValue));
             }
         }
 
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
                 case ComplexResumeValue complexResumeValue:
                 {
-                    if (complexResumeValue.bArray)
+                    if (complexResumeValue.IsArray)
                     {
                         // If the order by result is also of array type, then compare the hash values
                         // For other types create an empty array and call CosmosElement comparer which
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 ComplexResumeValue complexResumeValue => CosmosObject.Create(
                     new Dictionary<string, CosmosElement>()
                     {
-                        { PropertyNames.Type, CosmosString.Create(complexResumeValue.bArray ? PropertyNames.ArrayType : PropertyNames.ObjectType) },
+                        { PropertyNames.Type, CosmosString.Create(complexResumeValue.IsArray ? PropertyNames.ArrayType : PropertyNames.ObjectType) },
                         { PropertyNames.Low, CosmosNumber64.Create((long)complexResumeValue.HashValue.GetLow()) },
                         { PropertyNames.High, CosmosNumber64.Create((long)complexResumeValue.HashValue.GetHigh()) }
                     }),
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     {
                         writer.WriteStartObject();
                         writer.WritePropertyName(PropertyNames.Type);
-                        writer.WriteValue(complexResumeValue.bArray ? PropertyNames.ArrayType : PropertyNames.ObjectType);
+                        writer.WriteValue(complexResumeValue.IsArray ? PropertyNames.ArrayType : PropertyNames.ObjectType);
                         writer.WritePropertyName(PropertyNames.Low);
                         writer.WriteValue((long)complexResumeValue.HashValue.GetLow());
                         writer.WritePropertyName(PropertyNames.High);
@@ -328,11 +328,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
                 if (string.Equals(objectType.Value, PropertyNames.ArrayType))
                 {
-                    return ComplexResumeValue.Create(bArray: true, hashValue);
+                    return ComplexResumeValue.Create(isArray: true, hashValue);
                 }
                 else if (string.Equals(objectType.Value, PropertyNames.ObjectType))
                 {
-                    return ComplexResumeValue.Create(bArray: false, hashValue);
+                    return ComplexResumeValue.Create(isArray: false, hashValue);
                 }
                 else
                 {
