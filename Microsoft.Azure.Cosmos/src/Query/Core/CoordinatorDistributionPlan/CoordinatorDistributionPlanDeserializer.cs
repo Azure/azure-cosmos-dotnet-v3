@@ -14,53 +14,56 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
     {
         private static class Constants
         {
-            public const string Aggregate = "\"Aggregate\"";
-            public const string Distinct = "\"Distinct\"";
-            public const string GroupBy = "\"GroupBy\"";
-            public const string Flatten = "\"Flatten\"";
-            public const string Input = "\"Input\"";
-            public const string OrderBy = "\"OrderBy\"";
-            public const string ScalarAsEnumerable = "\"ScalarAsEnumerable\"";
-            public const string Select = "\"Select\"";
-            public const string SelectMany = "\"SelectMany\"";
-            public const string Take = "\"Take\"";
-            public const string Where = "\"Where\"";
+            public const string Aggregate = "Aggregate";
+            public const string Aggregates = "Aggregates";
+            public const string Distinct = "Distinct";
+            public const string GroupBy = "GroupBy";
+            public const string Flatten = "Flatten";
+            public const string Input = "Input";
+            public const string OrderBy = "OrderBy";
+            public const string ScalarAsEnumerable = "ScalarAsEnumerable";
+            public const string Select = "Select";
+            public const string SelectMany = "SelectMany";
+            public const string Arguments = "Arguments";
+            public const string Take = "Take";
+            public const string Where = "Where";
+            public const string Tuple = "Tuple";
             public const string CoordinatorDistributionPlan = "coordinatorDistributionPlan";
             public const string ClientQL = "clientQL";
             public const string SourceExpression = "SourceExpression";
-            public const string VecExpression = "\"VecExpression\"";
-            public const string VecKeys = "\"VecKeys\"";
-            public const string VecAggregates = "\"VecAggregates\"";
-            public const string VecItems = "\"VecItems\"";
+            public const string VecExpression = "VecExpression";
+            public const string VecKeys = "VecKeys";
+            public const string VecAggregates = "VecAggregates";
+            public const string VecItems = "VecItems";
             public const string DeclaredVariable = "DeclaredVariable";
-            public const string EnumerationKind = "\"EnumerationKind\"";
-            public const string SelectorExpression = "\"SelectorExpression\"";
-            public const string SkipValue = "\"SkipValue\"";
-            public const string TakeValue = "\"TakeValue\"";
-            public const string Delegate = "\"Delegate\"";
+            public const string EnumerationKind = "EnumerationKind";
+            public const string SelectorExpression = "SelectorExpression";
+            public const string SkipValue = "SkipValue";
+            public const string TakeValue = "TakeValue";
+            public const string Delegate = "Delegate";
             public const string Kind = "Kind";
-            public const string Index = "\"Index\"";
-            public const string ArrayKind = "\"ArrayKind\"";
+            public const string Index = "Index";
+            public const string ArrayKind = "ArrayKind";
             public const string Expression = "Expression";
-            public const string OperatorKind = "\"OperatorKind\"";
-            public const string LeftExpression = "\"LeftExpression\"";
-            public const string RightExpression = "\"RightExpression\"";
-            public const string MaxDepth = "\"MaxDepth\"";
-            public const string DeclaredVariableExpression = "\"DeclaredVariableExpression\"";
-            public const string ConditionExpression = "\"ConditionExpression\"";
-            public const string Properties = "\"Properties\"";
-            public const string PropertyName = "\"PropertyName\"";
-            public const string FunctionKind = "\"FunctionKind\"";
-            public const string VecArguments = "\"VecArguments\"";
-            public const string Identifier = "\"Identifier\"";
-            public const string Builtin = "\"Builtin\"";
-            public const string Type = "\"Type\"";
+            public const string OperatorKind = "OperatorKind";
+            public const string LeftExpression = "LeftExpression";
+            public const string RightExpression = "RightExpression";
+            public const string MaxDepth = "MaxDepth";
+            public const string DeclaredVariableExpression = "DeclaredVariableExpression";
+            public const string ConditionExpression = "ConditionExpression";
+            public const string Properties = "Properties";
+            public const string PropertyName = "PropertyName";
+            public const string FunctionKind = "FunctionKind";
+            public const string VecArguments = "VecArguments";
+            public const string Identifier = "Identifier";
+            public const string Builtin = "Builtin";
+            public const string Type = "Type";
             public const string Name = "Name";
-            public const string UniqueId = "\"UniqueId\"";
-            public const string SortOrder = "\"SortOrder\"";
-            public const string Variable = "\"Variable\"";
-            public const string ObjectKind = "\"ObjectKind\"";
-            public const string Items = "\"Items\"";
+            public const string UniqueId = "UniqueId";
+            public const string SortOrder = "SortOrder";
+            public const string Variable = "Variable";
+            public const string ObjectKind = "ObjectKind";
+            public const string Items = "Items";
         }
 
         public struct Result
@@ -110,17 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             }
             else
             {
-                //string output = Regex.Replace(token.ToString(), "\"", string.Empty);
-                if (token.ToString().Equals(Constants.Input))
-                {
-                    Console.WriteLine("Wow");
-                }
-                else
-                {
-                    Console.WriteLine(token.ToString());
-                    Console.WriteLine(Constants.Input);
-                }
-                switch (token.ToString())
+                switch (RemoveQuotesIfPresent(token.ToString()))
                 {
                     case Constants.Aggregate:
                         Result result = TryDeserializeAggregateEnumerableExpression(cosmosObject, out ClientQLAggregateEnumerableExpression aggregateEnumerableExpression);
@@ -194,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             {
                 Result result = TryDeserializeClientQLEnumerableExpression((CosmosObject)cosmosObject[Constants.SourceExpression], out ClientQLEnumerableExpression sourceExpression);
                 ClientQLVariable declaredVariable = DeserializeClientQLVariable((CosmosObject)cosmosObject[Constants.DeclaredVariable]);
-                IReadOnlyList<ClientQLScalarExpression> vecExpressions = DeserializeScalarExpressionArray((CosmosObject)cosmosObject[Constants.VecExpression]);
+                IReadOnlyList<ClientQLScalarExpression> vecExpressions = DeserializeScalarExpressionArray((CosmosArray)cosmosObject[Constants.VecExpression]);
                 distinctExpression = new ClientQLDistinctEnumerableExpression(sourceExpression, declaredVariable, vecExpressions);
                 return result;
             }
@@ -211,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             {
                 Result result = TryDeserializeClientQLEnumerableExpression((CosmosObject)cosmosObject[Constants.SourceExpression], out ClientQLEnumerableExpression sourceExpression);
                 IReadOnlyList<ClientQLGroupByKey> vecKeys = GetValue<IReadOnlyList<ClientQLGroupByKey>>(cosmosObject, Constants.VecKeys);
-                IReadOnlyList<ClientQLAggregate> vecAggregates = GetValue<IReadOnlyList<ClientQLAggregate>>(cosmosObject, Constants.VecAggregates);
+                IReadOnlyList<ClientQLAggregate> vecAggregates = DeserializeAggregateArray((CosmosArray)cosmosObject[Constants.Aggregates]);
                 groupByExpression = new ClientQLGroupByEnumerableExpression(sourceExpression, vecKeys, vecAggregates);
                 return result;
             }
@@ -241,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         {
             try
             {
-                inputEnumerableExpression = new ClientQLInputEnumerableExpression(GetValue<string>(cosmosObject, Constants.Name));
+                inputEnumerableExpression = new ClientQLInputEnumerableExpression(RemoveQuotesIfPresent(GetValue<string>(cosmosObject, Constants.Name)));
                 return Result.Success;
             }
             catch (Exception ex)
@@ -442,7 +435,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             try
             {
                 ClientQLArrayKind arrayKind = GetValue<ClientQLArrayKind>(cosmosObject, Constants.ArrayKind);
-                IReadOnlyList<ClientQLScalarExpression> vecItems = DeserializeScalarExpressionArray((CosmosObject)cosmosObject[Constants.VecItems]);
+                IReadOnlyList<ClientQLScalarExpression> vecItems = DeserializeScalarExpressionArray((CosmosArray)cosmosObject[Constants.VecItems]);
                 arrayCreateScalarExpression = new ClientQLArrayCreateScalarExpression(arrayKind, vecItems);
                 return Result.Success;
             }
@@ -590,8 +583,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
                     return Result.Failure($"Invalid ClientQLObjectKind: {objectKindString}");
                 }
 
-                ValidateArrayProperty(cosmosObject, "Properties");
-                IReadOnlyList<ClientQLObjectProperty> properties = DeserializeObjectProperties((CosmosObject)cosmosObject[Constants.Properties]);
+                ValidateArrayProperty(cosmosObject, Constants.Properties);
+                IReadOnlyList<ClientQLObjectProperty> properties = DeserializeObjectProperties((CosmosArray)cosmosObject[Constants.Properties]);
                 objectCreateScalarExpression = new ClientQLObjectCreateScalarExpression(properties, objectKind);
                 return Result.Success;
             }
@@ -624,7 +617,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             {
                 try
                 {
-                    IReadOnlyList<ClientQLScalarExpression> vecArguments = DeserializeScalarExpressionArray((CosmosObject)cosmosObject[Constants.VecArguments]);
+                    IReadOnlyList<ClientQLScalarExpression> vecArguments = DeserializeScalarExpressionArray((CosmosArray)cosmosObject[Constants.Arguments]);
                     systemFunctionCallScalarExpression = new ClientQLSystemFunctionCallScalarExpression(functionKind, vecArguments);
                     return Result.Success;
                 }
@@ -645,7 +638,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         {
             try
             {
-                IReadOnlyList<ClientQLScalarExpression> vecItems = DeserializeScalarExpressionArray((CosmosObject)cosmosObject[Constants.Items]);
+                IReadOnlyList<ClientQLScalarExpression> vecItems = DeserializeScalarExpressionArray((CosmosArray)cosmosObject[Constants.Items]);
                 tupleCreateScalarExpression = new ClientQLTupleCreateScalarExpression(vecItems);
                 return Result.Success;
             }
@@ -700,7 +693,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         {
             ClientQLFunctionIdentifier identifier = GetValue<ClientQLFunctionIdentifier>(cosmosObject, Constants.Identifier);
             ValidateArrayProperty(cosmosObject, Constants.VecArguments);
-            IReadOnlyList<ClientQLScalarExpression> vecArguments = DeserializeScalarExpressionArray((CosmosObject)cosmosObject[Constants.VecArguments]);
+            IReadOnlyList<ClientQLScalarExpression> vecArguments = DeserializeScalarExpressionArray((CosmosArray)cosmosObject[Constants.VecArguments]);
             bool builtin = GetValue<bool>(cosmosObject, Constants.Builtin);
             userDefinedFunctionCallScalarExpression = new ClientQLUserDefinedFunctionCallScalarExpression(identifier, vecArguments, builtin);
             return Result.Success;
@@ -748,12 +741,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         private static ClientQLAggregate DeserializeAggregate(CosmosObject cosmosObject)
         {
-            if (Enum.TryParse(cosmosObject[Constants.Kind].ToString(), out ClientQLAggregateKind kind))
+            string aggregateKind = RemoveQuotesIfPresent(cosmosObject[Constants.Kind].ToString());
+            if (Enum.TryParse(aggregateKind, out ClientQLAggregateKind kind))
             {
                 string operatorKind = null;
                 if (cosmosObject[Constants.OperatorKind] != null)
                 {
-                    operatorKind = cosmosObject[Constants.OperatorKind].ToString();
+                    operatorKind = RemoveQuotesIfPresent(cosmosObject[Constants.OperatorKind].ToString());
                 }
 
                 return new ClientQLAggregate(kind, operatorKind);
@@ -770,7 +764,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             int uniqueId = default;
 
             name = cosmosObject.TryGetValue(Constants.Name, out CosmosElement nameToken)
-                ? nameToken.ToString()
+                ? RemoveQuotesIfPresent(nameToken.ToString())
                 : throw new NotSupportedException($"Invalid Aggregate Expression: {nameToken.GetType()}");
 
             if (cosmosObject.TryGetValue(Constants.UniqueId, out CosmosElement uniqueIdToken))
@@ -787,31 +781,71 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             return new ClientQLVariable(name, uniqueId);
         }
 
-        private static List<ClientQLObjectProperty> DeserializeObjectProperties(CosmosObject cosmosObject)
+        private static List<ClientQLObjectProperty> DeserializeObjectProperties(CosmosArray cosmosArray)
         {
             List<ClientQLObjectProperty> properties = new List<ClientQLObjectProperty>();
-            foreach (KeyValuePair<string, CosmosElement> propertyElement in cosmosObject)
+            foreach (CosmosElement propertyElement in cosmosArray)
             {
-                CosmosObject propertyObject = propertyElement.Value as CosmosObject;
-                string name = propertyObject[Constants.Name].ToString();
+                CosmosObject propertyObject = propertyElement as CosmosObject;
+                string objectPropertyName = RemoveQuotesIfPresent(propertyObject[Constants.Name].ToString());
                 TryDeserializeScalarExpression(propertyObject[Constants.Expression] as CosmosObject, out ClientQLScalarExpression expression);
-                properties.Add(new ClientQLObjectProperty(name, expression));
+                properties.Add(new ClientQLObjectProperty(objectPropertyName, expression));
             }
 
             return properties;
         }
 
-        private static List<ClientQLScalarExpression> DeserializeScalarExpressionArray(CosmosObject cosmosObject)
+        private static List<ClientQLScalarExpression> DeserializeScalarExpressionArray(CosmosArray cosmosArray)
         {
             List<ClientQLScalarExpression> expressions = new List<ClientQLScalarExpression>();
-            if (cosmosObject != null)
+            if (cosmosArray != null)
             {
-                foreach (KeyValuePair<string, CosmosElement> property in cosmosObject)
+                foreach (CosmosElement propertyElement in cosmosArray)
                 {
-                    TryDeserializeScalarExpression(property.Value as CosmosObject, out ClientQLScalarExpression expression);
+                    TryDeserializeScalarExpression(propertyElement as CosmosObject, out ClientQLScalarExpression expression);
                     expressions.Add(expression);
                 }
             }
+            return expressions;
+        }
+
+        private static ClientQLTupleAggregate DeserializeTupleAggregateExpression(CosmosObject cosmosObject)
+        {
+            string tupleAggregateKind = RemoveQuotesIfPresent(cosmosObject["Kind"].ToString());
+            List<ClientQLAggregate> expression = new List<ClientQLAggregate>();
+            foreach (CosmosElement propertyElement in cosmosObject[Constants.Items] as CosmosArray)
+            {
+                ClientQLAggregate aggregateExpression = DeserializeAggregate((CosmosObject)propertyElement);
+                expression.Add(aggregateExpression);
+            }
+
+            return new ClientQLTupleAggregate(tupleAggregateKind, expression);
+        }
+
+        private static List<ClientQLAggregate> DeserializeAggregateArray(CosmosArray cosmosArray)
+        {
+            List<ClientQLAggregate> expressions = new List<ClientQLAggregate>();
+            if (cosmosArray != null)
+            {
+                foreach (CosmosElement propertyElement in cosmosArray)
+                {
+                    ClientQLAggregate aggregateExpression = null;
+                    CosmosObject propertyObject = (CosmosObject)propertyElement;
+                    string kindString = RemoveQuotesIfPresent(propertyObject[Constants.Kind].ToString());
+
+                    if (kindString.Equals(Constants.Builtin))
+                    {
+                        aggregateExpression = DeserializeAggregate((CosmosObject)propertyElement);
+                    }
+                    else if (kindString.Equals(Constants.Tuple))
+                    {
+                        aggregateExpression = DeserializeTupleAggregateExpression((CosmosObject)propertyElement);
+                    }
+                    
+                    expressions.Add(aggregateExpression);
+                }
+            }
+
             return expressions;
         }
 
@@ -855,5 +889,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             
             return $"Exception occurred while deserializing query plan. Version : '{clientSDKVersion}', Exception/Reason : '{1}'.";
         }
+
+        private static string RemoveQuotesIfPresent(string token)
+        {
+            if (token.StartsWith("\"") && token.EndsWith("\""))
+            {
+                return token.Substring(1, token.Length - 2);
+            }
+            else
+            {
+                return token;
+            }
+        }
+
     }
 }
