@@ -13,8 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -122,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosClient,
                     clientOptions.ConsistencyLevel,
                     clientOptions.CustomHandlers,
-                    telemetry: documentClient.clientTelemetry);
+                    telemetryToServiceHelper: documentClient.telemetryToServiceHelper);
 
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }

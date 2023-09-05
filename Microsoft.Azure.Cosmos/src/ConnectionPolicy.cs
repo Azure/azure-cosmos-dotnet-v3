@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
-            this.EnableClientTelemetry = ClientTelemetryOptions.IsClientTelemetryEnabled();
+            this.EnableClientTelemetry = false; // by default feature flag is off
             this.ServerCertificateCustomValidationCallback = null;
         }
 
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default value is <see cref="Cosmos.ConnectionMode.Gateway"/>
         /// </value>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         public ConnectionMode ConnectionMode
         {
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This setting is not used when <see cref="ConnectionMode"/> is set to <see cref="Cosmos.ConnectionMode.Gateway"/>.
         /// Gateway mode only supports HTTPS.
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#use-tcp">Connection policy: Use the TCP protocol</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#networking">Connection policy: Use the HTTPS protocol</see>.
         /// </remarks>
         public Protocol ConnectionProtocol
         {
@@ -211,6 +211,9 @@ namespace Microsoft.Azure.Cosmos
             set;
         }
 
+        /// <summary>
+        /// Gets or sets the flag to enable client telemetry feature.
+        /// </summary>
         internal bool EnableClientTelemetry 
         { 
             get; 
@@ -369,7 +372,7 @@ namespace Microsoft.Azure.Cosmos
         /// set to 9 and <see cref="Cosmos.RetryOptions.MaxRetryWaitTimeInSeconds"/> set to 30 seconds.
         /// </value>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/en-us/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#429">Handle rate limiting/request rate too large</see>.
         /// </remarks>
         public RetryOptions RetryOptions
         {
