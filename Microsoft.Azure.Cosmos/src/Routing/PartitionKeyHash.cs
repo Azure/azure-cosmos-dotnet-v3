@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public string Value { get; }
 
-        public readonly UInt128[] HashValues => this.values;
+        internal readonly UInt128[] HashValues => this.values;
 
         public int CompareTo(PartitionKeyHash other)
         {

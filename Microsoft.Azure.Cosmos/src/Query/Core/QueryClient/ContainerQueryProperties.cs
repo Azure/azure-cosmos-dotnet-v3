@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     {
         public ContainerQueryProperties(
             string resourceId,
-            List<Range<string>> effectivePartitionKeyRanges,
+            IReadOnlyList<Range<string>> effectivePartitionKeyRanges,
             PartitionKeyDefinition partitionKeyDefinition,
             Cosmos.GeospatialType geospatialType)
         {

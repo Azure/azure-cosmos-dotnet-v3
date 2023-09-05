@@ -1533,13 +1533,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
 
             await this.Container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString(), pk = "test" });
-
-            FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(new Cosmos.PartitionKey("test"));
+            epk = new PartitionKey("test")
+                           .InternalKey
+                           .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
+            properties = new Dictionary<string, object>()
+            {
+                { WFConstants.BackendHeaders.EffectivePartitionKeyString, epk },
+            };
 
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
-                PartitionKey = new Cosmos.PartitionKey("test"),
-                FeedRange = feedRangePartitionKey,
+                IsEffectivePartitionKeyRouting = true,
+                Properties = properties,
             };
 
             using (FeedIterator<dynamic> resultSet = this.Container.GetItemQueryIterator<dynamic>(
@@ -1583,7 +1588,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
-                    new List<Documents.Routing.Range<string>> { new Documents.Routing.Range<string>("AA", "AA", true, true) },
+                    null,
+                    //new List<Documents.Routing.Range<string>> { new Documents.Routing.Range<string>("AA", "AA", true, true) },
                     containerResponse.Resource.PartitionKey,
                     containerResponse.Resource.GeospatialConfig.GeospatialType);
 
@@ -1593,6 +1599,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     resourceLink: container.LinkUri,
                     partitionedQueryExecutionInfo: null,
                     containerQueryProperties: containerQueryProperties,
+                    properties: new Dictionary<string, object>()
+                    {
+                        {"x-ms-effective-partition-key-string", "AA" }
+                    },
                     feedRangeInternal: null,
                     trace: NoOpTrace.Singleton);
 

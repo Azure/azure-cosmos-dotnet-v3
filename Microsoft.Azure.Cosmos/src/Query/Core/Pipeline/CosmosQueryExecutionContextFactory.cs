@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -262,6 +263,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                    cosmosQueryContext.ResourceLink,
                    partitionedQueryExecutionInfo,
                    containerQueryProperties,
+                   inputParameters.Properties,
                    inputParameters.InitialFeedRange,
                    trace);
 
@@ -450,6 +452,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                   cosmosQueryContext.ResourceLink,
                   partitionedQueryExecutionInfo,
                   containerQueryProperties,
+                  inputParameters.Properties,
                   inputParameters.InitialFeedRange,
                   trace);
 
@@ -628,6 +631,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             string resourceLink,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
+            IReadOnlyDictionary<string, object> properties,
             FeedRangeInternal feedRangeInternal,
             ITrace trace)
         {
@@ -641,27 +645,58 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     forceRefresh: false,
                     trace);
             }
-            else if (feedRangeInternal != null)
+            else if (TryGetEpkProperty(properties, out string effectivePartitionKeyString))
             {
-                targetRanges = await queryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
+                List<Documents.Routing.Range<string>> effectiveRanges = new List<Documents.Routing.Range<string>>
+                    { new Documents.Routing.Range<string>(effectivePartitionKeyString, effectivePartitionKeyString, true, true) };
+                targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     containerQueryProperties.ResourceId,
-                    containerQueryProperties.PartitionKeyDefinition,
-                    feedRangeInternal,
+                    effectiveRanges,
                     forceRefresh: false,
                     trace);
             }
             else
             {
-                targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
-                    resourceLink,
-                    containerQueryProperties.ResourceId,
-                    partitionedQueryExecutionInfo.QueryRanges,
-                    forceRefresh: false,
-                    trace);
+                targetRanges = feedRangeInternal != null
+                    ? await queryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
+                                    resourceLink,
+                                    containerQueryProperties.ResourceId,
+                                    containerQueryProperties.PartitionKeyDefinition,
+                                    feedRangeInternal,
+                                    forceRefresh: false,
+                                    trace)
+                    : await queryClient.GetTargetPartitionKeyRangesAsync(
+                                    resourceLink,
+                                    containerQueryProperties.ResourceId,
+                                    partitionedQueryExecutionInfo.QueryRanges,
+                                    forceRefresh: false,
+                                    trace);
             }
 
             return targetRanges;
+        }
+
+        private static bool TryGetEpkProperty(
+            IReadOnlyDictionary<string, object> properties,
+            out string effectivePartitionKeyString)
+        {
+            if (properties != null
+                && properties.TryGetValue(
+                   Documents.WFConstants.BackendHeaders.EffectivePartitionKeyString,
+                   out object effectivePartitionKeyStringObject))
+            {
+                effectivePartitionKeyString = effectivePartitionKeyStringObject as string;
+                if (string.IsNullOrEmpty(effectivePartitionKeyString))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(effectivePartitionKeyString));
+                }
+
+                return true;
+            }
+
+            effectivePartitionKeyString = null;
+            return false;
         }
 
         private static void SetTestInjectionPipelineType(InputParameters inputParameters, string pipelineType)
@@ -740,6 +775,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cosmosQueryContext.ResourceLink,
                     partitionedQueryExecutionInfo,
                     containerQueryProperties,
+                    inputParameters.Properties,
                     inputParameters.InitialFeedRange,
                     trace);
             }
