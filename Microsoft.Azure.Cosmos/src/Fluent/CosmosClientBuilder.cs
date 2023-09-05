@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
-    using Telemetry;
 
     /// <summary>
     /// This is a Builder class that creates a cosmos client
@@ -349,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Sets the connection mode to Direct. This is used by the client when connecting to the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
@@ -396,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// The default value is false.
         /// </param>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
@@ -472,7 +471,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="maxConnectionLimit">The number specifies the number of connections that may be opened simultaneously. Default is 50 connections</param>
         /// <param name="webProxy">Get or set the proxy information used for web requests.</param>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.ConnectionMode"/>
@@ -529,7 +528,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// If the cumulative wait time exceeds the this value, the client will stop retrying and return the error to the application.
         /// </para>
         /// <para>
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#429">Handle rate limiting/request rate too large</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#429">Handle rate limiting/request rate too large</see>.
         /// </para>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso cref="CosmosClientOptions.MaxRetryWaitTimeOnRateLimitedRequests"/>

@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Handler
     using System.Collections.Generic;
     using Documents.Rntbd;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Telemetry;
 
     /// <summary>
     /// This is a helper class that creates a single static instance to avoid each
@@ -22,33 +21,68 @@ namespace Microsoft.Azure.Cosmos.Handler
         private const string Telemetrykey = "telemetry";
 
         public static readonly TimeSpan DiagnosticsRefreshInterval = TimeSpan.FromSeconds(10);
-        private readonly SystemUsageRecorder diagnosticSystemUsageRecorder = new SystemUsageRecorder(
+        private static readonly SystemUsageRecorder DiagnosticSystemUsageRecorder = new SystemUsageRecorder(
             identifier: Diagnostickey,
             historyLength: 6,
             refreshInterval: DiagnosticsHandlerHelper.DiagnosticsRefreshInterval);
 
         private static readonly TimeSpan ClientTelemetryRefreshInterval = TimeSpan.FromSeconds(5);
-        private readonly SystemUsageRecorder telemetrySystemUsageRecorder = new SystemUsageRecorder(
+        private static readonly SystemUsageRecorder TelemetrySystemUsageRecorder = new SystemUsageRecorder(
             identifier: Telemetrykey,
             historyLength: 120,
             refreshInterval: DiagnosticsHandlerHelper.ClientTelemetryRefreshInterval);
-
-        private static bool isDiagnosticsMonitoringEnabled = false;
-        private static bool isTelemetryMonitoringEnabled = false;
 
         /// <summary>
         /// Singleton to make sure only one instance of DiagnosticHandlerHelper is there.
         /// The system usage collection is disabled for internal builds so it is set to null to avoid
         /// compute for accidentally creating an instance or trying to use it.
         /// </summary>
-        public static readonly DiagnosticsHandlerHelper Instance =
+        private static DiagnosticsHandlerHelper Instance =
 #if INTERNAL
             null; 
 #else
             new DiagnosticsHandlerHelper();
 #endif
 
+        private static bool isDiagnosticsMonitoringEnabled;
+        private static bool isTelemetryMonitoringEnabled;
+
         private readonly SystemUsageMonitor systemUsageMonitor = null;
+
+        public static DiagnosticsHandlerHelper GetInstance()
+        {
+            return DiagnosticsHandlerHelper.Instance;
+        }
+
+        /// <summary>
+        /// Restart the monitor with client telemetry recorder if telemetry is enabled
+        /// </summary>
+        /// <param name="isClientTelemetryEnabled"></param>
+        public static void Refresh(bool isClientTelemetryEnabled)
+        {
+            if (isClientTelemetryEnabled != DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
+            {
+                DiagnosticsHandlerHelper.Instance.StopSystemMonitor();
+
+                // Update telemetry flag
+                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = isClientTelemetryEnabled;
+
+                // Create new instance, it will start a new system monitor job
+                DiagnosticsHandlerHelper.Instance = new DiagnosticsHandlerHelper();
+            }
+        }
+
+        private void StopSystemMonitor()
+        {
+            try
+            {
+                this.systemUsageMonitor?.Dispose();
+            }
+            catch (ObjectDisposedException ex)
+            {
+                DefaultTrace.TraceError($"Error while stopping system usage monitor. {0} ", ex);
+            }
+        }
 
         /// <summary>
         /// Start System Usage Monitor with Diagnostic and Telemetry Recorder if Telemetry is enabled 
@@ -61,16 +95,14 @@ namespace Microsoft.Azure.Cosmos.Handler
             // If the CPU monitor fails for some reason don't block the application
             try
             {
-                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = ClientTelemetryOptions.IsClientTelemetryEnabled();
-
                 List<SystemUsageRecorder> recorders = new List<SystemUsageRecorder>()
                 {
-                    this.diagnosticSystemUsageRecorder,
+                    DiagnosticsHandlerHelper.DiagnosticSystemUsageRecorder,
                 };
 
                 if (DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
                 {
-                    recorders.Add(this.telemetrySystemUsageRecorder);
+                    recorders.Add(DiagnosticsHandlerHelper.TelemetrySystemUsageRecorder);
                 }
 
                 this.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(recorders);
@@ -82,7 +114,6 @@ namespace Microsoft.Azure.Cosmos.Handler
                 DefaultTrace.TraceError(ex.Message);
 
                 DiagnosticsHandlerHelper.isDiagnosticsMonitoringEnabled = false;
-                DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = false;
             }
         }
 
@@ -99,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 
             try
             {
-                return this.diagnosticSystemUsageRecorder.Data;
+                return DiagnosticsHandlerHelper.DiagnosticSystemUsageRecorder.Data;
             }
             catch (Exception ex)
             {
@@ -123,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Handler
 
             try
             {
-                return this.telemetrySystemUsageRecorder.Data;
+                return DiagnosticsHandlerHelper.TelemetrySystemUsageRecorder.Data;
             }
             catch (Exception ex)
             {
