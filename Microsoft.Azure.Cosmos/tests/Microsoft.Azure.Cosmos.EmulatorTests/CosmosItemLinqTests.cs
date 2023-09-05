@@ -881,7 +881,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task LinqCountWithContinuationTokenTest()
+        public async Task LinqAggregatesWithContinuationTokenTest()
         {
             await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 1, perPKItemCount: 2, randomPartitionKey: true);
 
@@ -909,67 +909,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(2, count);
             Assert.IsNotNull(continuationToken);
 
-            IOrderedQueryable<ToDoActivity> secondQuery = this.Container.GetItemLinqQueryable<ToDoActivity>(continuationToken: continuationToken, requestOptions: requestOptions);
-
-            try
-            {
-                count = await secondQuery.CountAsync();
-            }
-            catch (CosmosException exception)
-            {
-                Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
-                Assert.IsTrue(exception.SubStatusCode == (int)Documents.SubStatusCodes.MalformedContinuationToken);
-                Assert.IsTrue(exception.Message.Contains("ParallelCrossPartitionQueryPipelineStage"));
-                return;
-            }
-
-            Assert.Fail("Expect Count query to return exception");
-        }
-
-        [TestMethod]
-        public async Task LinqAverageWithContinuationTokenTest()
-        {
-            await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 1, perPKItemCount: 2, randomPartitionKey: true);
-
-            QueryRequestOptions requestOptions = new QueryRequestOptions()
-            {
-                MaxItemCount = 1
-            };
-
-            IOrderedQueryable<ToDoActivity> firstQuery = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
-
-            double average = firstQuery.Average(x => x.taskNum);
-
-            string continuationToken = null;
-
-            FeedIterator<ToDoActivity> firstFeedIterator = firstQuery.ToFeedIterator();
-
-            // if instead of while loop in order to retrieve continuation token
-            if (firstFeedIterator.HasMoreResults)
-            {
-                FeedResponse<ToDoActivity> firstFeedResponse = await firstFeedIterator.ReadNextAsync();
-
-                continuationToken = firstFeedResponse.ContinuationToken;
-            }
-
-            Assert.IsNotNull(continuationToken);
-
             IOrderedQueryable<ToDoActivity> secondQuery = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, continuationToken: continuationToken, requestOptions: requestOptions);
 
             try
             {
-                average = secondQuery.Average(x => x.taskNum);
+                count = await secondQuery.CountAsync();
+                Assert.Fail("Expected Count query to return exception");
             }
             catch (CosmosException exception)
             {
                 Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
                 Assert.IsTrue(exception.SubStatusCode == (int)Documents.SubStatusCodes.MalformedContinuationToken);
                 Assert.IsTrue(exception.Message.Contains("ParallelCrossPartitionQueryPipelineStage"));
-                return;
             }
 
-            Assert.Fail("Expect Average query to return exception");
-        }
+            try
+            {
+                secondQuery.Average(x => x.taskNum);
+                Assert.Fail("Expected Average query to return exception");
+            }
+            catch (CosmosException exception)
+            {
+                Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
+                Assert.IsTrue(exception.SubStatusCode == (int)Documents.SubStatusCodes.MalformedContinuationToken);
+                Assert.IsTrue(exception.Message.Contains("ParallelCrossPartitionQueryPipelineStage"));
+            }
+        }     
 
         [TestMethod]
         public async Task LinqSelectEverythingWithoutQueryableTest()
