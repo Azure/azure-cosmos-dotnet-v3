@@ -26,11 +26,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
+        private static readonly TimeSpan observingWindow = ClientTelemetryOptions.DefaultIntervalForTelemetryJob;
 
         private readonly ClientTelemetryProperties clientTelemetryInfo;
         private readonly ClientTelemetryProcessor processor;
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
+        private readonly string endpointUrl;
         private readonly NetworkDataRecorder networkDataRecorder;
         
         private readonly CancellationTokenSource cancellationTokenSource;
@@ -63,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="diagnosticsHelper"></param>
         /// <param name="preferredRegions"></param>
         /// <param name="globalEndpointManager"></param>
+        /// <param name="endpointUrl"></param>
         /// <returns>ClientTelemetry</returns>
         public static ClientTelemetry CreateAndStartBackgroundTelemetry(
             string clientId,
@@ -72,7 +74,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper,
             IReadOnlyList<string> preferredRegions,
-            GlobalEndpointManager globalEndpointManager)
+            GlobalEndpointManager globalEndpointManager,
+            string endpointUrl )
         {
             DefaultTrace.TraceInformation("Initiating telemetry with background task.");
 
@@ -84,7 +87,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 authorizationTokenProvider,
                 diagnosticsHelper,
                 preferredRegions,
-                globalEndpointManager);
+                globalEndpointManager,
+                endpointUrl);
 
             clientTelemetry.StartObserverTask();
 
@@ -99,9 +103,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper,
             IReadOnlyList<string> preferredRegions,
-            GlobalEndpointManager globalEndpointManager)
+            GlobalEndpointManager globalEndpointManager,
+            string endpointUrl)
         {
             this.diagnosticsHelper = diagnosticsHelper ?? throw new ArgumentNullException(nameof(diagnosticsHelper));
+            this.endpointUrl = endpointUrl ?? throw new ArgumentNullException(nameof(endpointUrl));
+
             this.globalEndpointManager = globalEndpointManager;
             
             this.processor = new ClientTelemetryProcessor(httpClient, authorizationTokenProvider);
@@ -177,6 +184,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                                             operationInfoSnapshot: operationInfoSnapshot,
                                                                             cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                                                                             requestInfoSnapshot: requestInfoSnapshot,
+                                                                            endpointUrl: this.endpointUrl,
                                                                             cancellationToken: cancellationToken.Token), cancellationToken.Token);
 
                         // Initiating Telemetry Data Processor task which will serialize and send telemetry information to Client Telemetry Service
