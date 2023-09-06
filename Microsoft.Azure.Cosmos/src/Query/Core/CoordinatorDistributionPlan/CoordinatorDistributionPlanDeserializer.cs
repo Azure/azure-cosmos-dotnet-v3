@@ -66,706 +66,318 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             public const string Items = "Items";
         }
 
-        public struct Result
-        {
-            public bool IsSuccess { get; }
-            public string ErrorMessage { get; }
-
-            private Result(bool isSuccess, string errorMessage)
-            {
-                this.IsSuccess = isSuccess;
-                this.ErrorMessage = errorMessage;
-            }
-
-            public static Result Success => new Result(true, null);
-
-            public static Result Failure(string errorMessage)
-            {
-                return new Result(false, errorMessage);
-            }
-        }
-
-        public static Result TryDeserializeCoordinatorDistributionPlan(string jsonString, out CoordinatorDistributionPlan clientQL)
+        public static CoordinatorDistributionPlan DeserializeCoordinatorDistributionPlan(string jsonString)
         {
             CosmosObject cosmosObject = CosmosObject.Parse(jsonString);
-            clientQL = null;
 
             if (cosmosObject.TryGetValue(Constants.CoordinatorDistributionPlan, out CosmosElement coordinatorDistributionPlanElement) &&
                 coordinatorDistributionPlanElement is CosmosObject coordinatorDistributionPlanObject &&
                 coordinatorDistributionPlanObject.TryGetValue(Constants.ClientQL, out CosmosElement clientQLElement))
             {
-                Result result = TryDeserializeClientQLEnumerableExpression((CosmosObject)clientQLElement, out ClientQLEnumerableExpression expression);
-                clientQL = new CoordinatorDistributionPlan((ClientQLExpression)expression);
-                return result;
+                ClientQLEnumerableExpression expression = DeserializeClientQLEnumerableExpression((CosmosObject)clientQLElement);
+                return new CoordinatorDistributionPlan(expression);
             }
             else
             {
-                return Result.Failure("Invalid Coordinator Distribution Plan");
+                return null;
             }
         }
 
-        private static Result TryDeserializeClientQLEnumerableExpression(CosmosObject cosmosObject, out ClientQLEnumerableExpression expression)
+        private static ClientQLEnumerableExpression DeserializeClientQLEnumerableExpression(CosmosObject cosmosObject)
         {
-            expression = null;
-            if (!cosmosObject.TryGetValue(Constants.Kind, out CosmosElement token))
+            cosmosObject.TryGetValue(Constants.Kind, out CosmosElement token);
+            switch (RemoveQuotesIfPresent(token.ToString()))
             {
-                return Result.Failure("Invalid Kind Operation in Coordinator Distribution Plan");
-            }
-            else
-            {
-                switch (RemoveQuotesIfPresent(token.ToString()))
-                {
-                    case Constants.Aggregate:
-                        Result result = TryDeserializeAggregateEnumerableExpression(cosmosObject, out ClientQLAggregateEnumerableExpression aggregateEnumerableExpression);
-                        expression = aggregateEnumerableExpression;
-                        return result;
-                    case Constants.Distinct:
-                        result = TryDeserializeDistinctEnumerableExpression(cosmosObject, out ClientQLDistinctEnumerableExpression distinctEnumerableExpression);
-                        expression = distinctEnumerableExpression;
-                        return result;
-                    case Constants.GroupBy:
-                        result = TryDeserializeGroupByEnumerableExpression(cosmosObject, out ClientQLGroupByEnumerableExpression groupByEnumerableExpression);
-                        expression = groupByEnumerableExpression;
-                        return result;
-                    case Constants.Flatten:
-                        result = TryDeserializeFlattenEnumerableExpression(cosmosObject, out ClientQLFlattenEnumerableExpression flattenEnumerableExpression);
-                        expression = flattenEnumerableExpression;
-                        return result;
-                    case Constants.Input:
-                        result = TryDeserializeInputEnumerableExpression(cosmosObject, out ClientQLInputEnumerableExpression inputEnumerableExpression);
-                        expression = inputEnumerableExpression;
-                        return result;
-                    case Constants.OrderBy:
-                        result = TryDeserializeOrderByEnumerableExpression(cosmosObject, out ClientQLOrderByEnumerableExpression orderByEnumerableExpression);
-                        expression = orderByEnumerableExpression;
-                        return result;
-                    case Constants.ScalarAsEnumerable:
-                        result = TryDeserializeScalarAsEnumerableExpression(cosmosObject, out ClientQLScalarAsEnumerableExpression scalarAsEnumerableExpression);
-                        expression = scalarAsEnumerableExpression;
-                        return result;
-                    case Constants.Select:
-                        result = TryDeserializeSelectEnumerableExpression(cosmosObject, out ClientQLSelectEnumerableExpression selectEnumerableExpression);
-                        expression = selectEnumerableExpression;
-                        return result;
-                    case Constants.SelectMany:
-                        result = TryDeserializeSelectManyExpression(cosmosObject, out ClientQLSelectManyEnumerableExpression selectManyEnumerableExpression);
-                        expression = selectManyEnumerableExpression;
-                        return result;
-                    case Constants.Take:
-                        result = TryDeserializeTakeEnumerableExpression(cosmosObject, out ClientQLTakeEnumerableExpression takeEnumerableExpression);
-                        expression = takeEnumerableExpression;
-                        return result;
-                    case Constants.Where:
-                        result = TryDeserializeWhereEnumerableExpression(cosmosObject, out ClientQLWhereEnumerableExpression whereEnumerableExpression);
-                        expression = whereEnumerableExpression;
-                        return result;
-                    default:
-                        return Result.Failure($"Invalid ClientQLExpression kind: {token}");
-                }
+                case Constants.Aggregate:
+                    return DeserializeAggregateEnumerableExpression(cosmosObject);
+                case Constants.Distinct:
+                    return DeserializeDistinctEnumerableExpression(cosmosObject);
+                case Constants.GroupBy:
+                    return DeserializeGroupByEnumerableExpression(cosmosObject);
+                case Constants.Flatten:
+                    return DeserializeFlattenEnumerableExpression(cosmosObject);
+                case Constants.Input:
+                    return DeserializeInputEnumerableExpression(cosmosObject);
+                case Constants.OrderBy:
+                    return DeserializeOrderByEnumerableExpression(cosmosObject);
+                case Constants.ScalarAsEnumerable:
+                    return DeserializeScalarAsEnumerableExpression(cosmosObject);
+                case Constants.Select:
+                    return DeserializeSelectEnumerableExpression(cosmosObject);
+                case Constants.SelectMany:
+                    return DeserializeSelectManyExpression(cosmosObject);
+                case Constants.Take:
+                    return DeserializeTakeEnumerableExpression(cosmosObject);
+                case Constants.Where:
+                    return DeserializeWhereEnumerableExpression(cosmosObject);
+                default:
+                    throw new ArgumentNullException("blah");
             }
         }
         
-        private static Result TryDeserializeAggregateEnumerableExpression(CosmosObject cosmosObject, out ClientQLAggregateEnumerableExpression aggregateExpression)
+        private static ClientQLAggregateEnumerableExpression DeserializeAggregateEnumerableExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeClientQLEnumerableExpression((CosmosObject)cosmosObject[Constants.SourceExpression], out ClientQLEnumerableExpression sourceExpression);
-                ClientQLAggregate aggregate = DeserializeAggregate((CosmosObject)cosmosObject[Constants.Aggregate]);
-                aggregateExpression = new ClientQLAggregateEnumerableExpression(sourceExpression, aggregate);
-                return result;
-            }
-            catch (Exception ex) 
-            {
-                aggregateExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            ClientQLEnumerableExpression sourceExpression = DeserializeClientQLEnumerableExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            ClientQLAggregate aggregate = DeserializeAggregate(GetCosmosElement<CosmosObject>(cosmosObject, Constants.Aggregate));
+            return new ClientQLAggregateEnumerableExpression(sourceExpression, aggregate);
         }
 
-        private static Result TryDeserializeDistinctEnumerableExpression(CosmosObject cosmosObject, out ClientQLDistinctEnumerableExpression distinctExpression)
+        private static ClientQLDistinctEnumerableExpression DeserializeDistinctEnumerableExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeClientQLEnumerableExpression((CosmosObject)cosmosObject[Constants.SourceExpression], out ClientQLEnumerableExpression sourceExpression);
-                ClientQLVariable declaredVariable = DeserializeClientQLVariable((CosmosObject)cosmosObject[Constants.DeclaredVariable]);
-                IReadOnlyList<ClientQLScalarExpression> vecExpressions = DeserializeScalarExpressionArray((CosmosArray)cosmosObject[Constants.VecExpression]);
-                distinctExpression = new ClientQLDistinctEnumerableExpression(sourceExpression, declaredVariable, vecExpressions);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                distinctExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            ClientQLEnumerableExpression sourceExpression = DeserializeClientQLEnumerableExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            ClientQLVariable declaredVariable = DeserializeClientQLVariable(GetCosmosElement<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
+            IReadOnlyList<ClientQLScalarExpression> vecExpressions = DeserializeScalarExpressionArray(GetCosmosElement<CosmosArray>(cosmosObject, Constants.VecExpression));
+            return new ClientQLDistinctEnumerableExpression(sourceExpression, declaredVariable, vecExpressions);
         }
 
-        private static Result TryDeserializeGroupByEnumerableExpression(CosmosObject cosmosObject, out ClientQLGroupByEnumerableExpression groupByExpression)
+        private static ClientQLGroupByEnumerableExpression DeserializeGroupByEnumerableExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeClientQLEnumerableExpression((CosmosObject)cosmosObject[Constants.SourceExpression], out ClientQLEnumerableExpression sourceExpression);
-                IReadOnlyList<ClientQLGroupByKey> vecKeys = GetValue<IReadOnlyList<ClientQLGroupByKey>>(cosmosObject, Constants.VecKeys);
-                IReadOnlyList<ClientQLAggregate> vecAggregates = DeserializeAggregateArray((CosmosArray)cosmosObject[Constants.Aggregates]);
-                groupByExpression = new ClientQLGroupByEnumerableExpression(sourceExpression, vecKeys, vecAggregates);
-                return result;
-            }
-            catch (Exception ex) 
-            {
-                groupByExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            ClientQLEnumerableExpression sourceExpression = DeserializeClientQLEnumerableExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            IReadOnlyList<ClientQLGroupByKey> vecKeys = TryGetValue<IReadOnlyList<ClientQLGroupByKey>>(cosmosObject, Constants.VecKeys);
+            IReadOnlyList<ClientQLAggregate> vecAggregates = DeserializeAggregateArray(GetCosmosElement<CosmosArray>(cosmosObject, Constants.Aggregates));
+            return new ClientQLGroupByEnumerableExpression(sourceExpression, vecKeys, vecAggregates);
         }
 
-        private static Result TryDeserializeFlattenEnumerableExpression(CosmosObject cosmosObject, out ClientQLFlattenEnumerableExpression flattenExpression)
+        private static ClientQLFlattenEnumerableExpression DeserializeFlattenEnumerableExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeClientQLEnumerableExpression((CosmosObject)cosmosObject[Constants.SourceExpression], out ClientQLEnumerableExpression sourceExpression);
-                flattenExpression = new ClientQLFlattenEnumerableExpression(sourceExpression);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                flattenExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            ClientQLEnumerableExpression sourceExpression = DeserializeClientQLEnumerableExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            return new ClientQLFlattenEnumerableExpression(sourceExpression);
         }
 
-        private static Result TryDeserializeInputEnumerableExpression(CosmosObject cosmosObject, out ClientQLInputEnumerableExpression inputEnumerableExpression)
+        private static ClientQLInputEnumerableExpression DeserializeInputEnumerableExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                inputEnumerableExpression = new ClientQLInputEnumerableExpression(RemoveQuotesIfPresent(GetValue<string>(cosmosObject, Constants.Name)));
-                return Result.Success;
-            }
-            catch (Exception ex)
-            {
-                inputEnumerableExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            return new ClientQLInputEnumerableExpression(RemoveQuotesIfPresent(GetValue<string>(cosmosObject, Constants.Name)));
         }
 
-        private static Result TryDeserializeOrderByEnumerableExpression(CosmosObject cosmosObject, out ClientQLOrderByEnumerableExpression orderByExpression)
+        private static ClientQLOrderByEnumerableExpression DeserializeOrderByEnumerableExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeClientQLEnumerableExpression((CosmosObject)cosmosObject[Constants.SourceExpression], out ClientQLEnumerableExpression sourceExpression);
-                ClientQLVariable declaredVariable = DeserializeClientQLVariable((CosmosObject)cosmosObject[Constants.DeclaredVariable]);
-                IReadOnlyList<ClientQLOrderByItem> orderByItems = GetValue<IReadOnlyList<ClientQLOrderByItem>>(cosmosObject, Constants.VecItems);
-                orderByExpression = new ClientQLOrderByEnumerableExpression(sourceExpression, declaredVariable, orderByItems);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                orderByExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            ClientQLEnumerableExpression sourceExpression = DeserializeClientQLEnumerableExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            ClientQLVariable declaredVariable = DeserializeClientQLVariable(GetCosmosElement<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
+            IReadOnlyList<ClientQLOrderByItem> orderByItems = GetValue<IReadOnlyList<ClientQLOrderByItem>>(cosmosObject, Constants.VecItems);
+            return new ClientQLOrderByEnumerableExpression(sourceExpression, declaredVariable, orderByItems);
         }
 
-        private static Result TryDeserializeScalarAsEnumerableExpression(CosmosObject cosmosObject, out ClientQLScalarAsEnumerableExpression scalarAsExpression)
+        private static ClientQLScalarAsEnumerableExpression DeserializeScalarAsEnumerableExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.Expression], out ClientQLScalarExpression expression);
-                if (Enum.TryParse(GetValue<string>(cosmosObject, Constants.EnumerationKind), out ClientQLEnumerationKind enumerationKind))
-                {
-                    scalarAsExpression = new ClientQLScalarAsEnumerableExpression(expression, enumerationKind);
-                    return result;
-                }
-                else
-                {
-                    scalarAsExpression = null;
-                    return Result.Failure($"Invalid Coordinator Distribution Plan");
-                }
-            }
-            catch (Exception ex)
-            {
-                scalarAsExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            ClientQLScalarExpression expression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.Expression));
+            Enum.TryParse(GetValue<string>(cosmosObject, Constants.EnumerationKind), out ClientQLEnumerationKind enumerationKind);
+            return new ClientQLScalarAsEnumerableExpression(expression, enumerationKind);
         }
 
-        private static Result TryDeserializeSelectEnumerableExpression(CosmosObject cosmosObject, out ClientQLSelectEnumerableExpression selectEnumerableExpression)
+        private static ClientQLSelectEnumerableExpression DeserializeSelectEnumerableExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeClientQLEnumerableExpression((CosmosObject)cosmosObject[Constants.SourceExpression], out ClientQLEnumerableExpression sourceExpression);
-                ClientQLVariable declaredVariable = DeserializeClientQLVariable((CosmosObject)cosmosObject[Constants.DeclaredVariable]);
-                TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.Expression], out ClientQLScalarExpression expression);
-                selectEnumerableExpression = new ClientQLSelectEnumerableExpression(sourceExpression, declaredVariable, expression);
-                return result;
-            }
-            catch (Exception ex) 
-            {
-                selectEnumerableExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            ClientQLEnumerableExpression sourceExpression = DeserializeClientQLEnumerableExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            ClientQLVariable declaredVariable = DeserializeClientQLVariable(GetCosmosElement<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
+            ClientQLScalarExpression expression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.Expression));
+            return new ClientQLSelectEnumerableExpression(sourceExpression, declaredVariable, expression);
         }
 
-        private static Result TryDeserializeSelectManyExpression(CosmosObject cosmosObject, out ClientQLSelectManyEnumerableExpression selectManyEnumerableExpression)
+        private static ClientQLSelectManyEnumerableExpression DeserializeSelectManyExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeClientQLEnumerableExpression((CosmosObject)cosmosObject[Constants.SourceExpression], out ClientQLEnumerableExpression sourceExpression);
-                ClientQLVariable declaredVariable = DeserializeClientQLVariable((CosmosObject)cosmosObject[Constants.DeclaredVariable]);
-                Result secondResult = TryDeserializeClientQLEnumerableExpression((CosmosObject)cosmosObject[Constants.SelectorExpression], out ClientQLEnumerableExpression selectorExpression);
-                selectManyEnumerableExpression = new ClientQLSelectManyEnumerableExpression(sourceExpression, declaredVariable, selectorExpression);
-                if (result.IsSuccess && secondResult.IsSuccess)
-                {
-                    return Result.Success;
-                }
-                else
-                {
-                    return Result.Failure("Invalid Select Many Expression");
-                }
-            }
-            catch (Exception ex) 
-            {
-                selectManyEnumerableExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            ClientQLEnumerableExpression sourceExpression = DeserializeClientQLEnumerableExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            ClientQLVariable declaredVariable = DeserializeClientQLVariable(GetCosmosElement<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
+            ClientQLEnumerableExpression selectorExpression = DeserializeClientQLEnumerableExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.SelectorExpression));
+            return new ClientQLSelectManyEnumerableExpression(sourceExpression, declaredVariable, selectorExpression);
         }
 
-        private static Result TryDeserializeTakeEnumerableExpression(CosmosObject cosmosObject, out ClientQLTakeEnumerableExpression takeEnumerableExpression)
+        private static ClientQLTakeEnumerableExpression DeserializeTakeEnumerableExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeClientQLEnumerableExpression((CosmosObject)cosmosObject[Constants.SourceExpression], out ClientQLEnumerableExpression sourceExpression);
-                int skipValue = GetValue<int>(cosmosObject, Constants.SkipValue);
-                int takeExpression = GetValue<int>(cosmosObject, Constants.TakeValue);
-                takeEnumerableExpression = new ClientQLTakeEnumerableExpression(sourceExpression, skipValue, takeExpression);
-                return result;
-            }
-            catch (Exception ex) 
-            {
-                takeEnumerableExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            ClientQLEnumerableExpression sourceExpression = DeserializeClientQLEnumerableExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            int skipValue = GetValue<int>(cosmosObject, Constants.SkipValue);
+            int takeExpression = GetValue<int>(cosmosObject, Constants.TakeValue);
+            return new ClientQLTakeEnumerableExpression(sourceExpression, skipValue, takeExpression);
         }
 
-        private static Result TryDeserializeWhereEnumerableExpression(CosmosObject cosmosObject, out ClientQLWhereEnumerableExpression whereEnumerableExpression)
+        private static ClientQLWhereEnumerableExpression DeserializeWhereEnumerableExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeClientQLEnumerableExpression((CosmosObject)cosmosObject[Constants.SourceExpression], out ClientQLEnumerableExpression sourceExpression);
-                ClientQLDelegate clientDelegate = TryDeserializeDelegateExpression((CosmosObject)cosmosObject[Constants.Delegate]);
-                whereEnumerableExpression = new ClientQLWhereEnumerableExpression(sourceExpression, clientDelegate);
-                return result;
-            }
-            catch (Exception ex) 
-            {
-                whereEnumerableExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            ClientQLEnumerableExpression sourceExpression = DeserializeClientQLEnumerableExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            ClientQLDelegate clientDelegate = DeserializeDelegateExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.Delegate));
+            return new ClientQLWhereEnumerableExpression(sourceExpression, clientDelegate);
         }
 
-        private static Result TryDeserializeScalarExpression(CosmosObject cosmosObject, out ClientQLScalarExpression scalarExpression)
+        private static ClientQLScalarExpression DeserializeScalarExpression(CosmosObject cosmosObject)
         {
-            scalarExpression = null;
             Enum.TryParse(GetValue<string>(cosmosObject, Constants.Kind), out ClientQLScalarExpressionKind scalarExpressionKind);
-
             switch (scalarExpressionKind)
             {
                 case ClientQLScalarExpressionKind.ArrayCreate:
-                    Result result = TryDeserializeArrayCreateScalarExpression(cosmosObject, out ClientQLArrayCreateScalarExpression arrayCreateScalarExpression);
-                    scalarExpression = arrayCreateScalarExpression;
-                    return result;
+                    return DeserializeArrayCreateScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.ArrayIndexer:
-                    result = TryDeserializeArrayIndexerScalarExpression(cosmosObject, out ClientQLArrayIndexerScalarExpression arrayIndexerScalarExpression);
-                    scalarExpression = arrayIndexerScalarExpression;
-                    return result;
+                    return DeserializeArrayIndexerScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.BinaryOperator:
-                    result = TryDeserializeBinaryOperatorScalarExpression(cosmosObject, out ClientQLBinaryScalarExpression binaryScalarExpression);
-                    scalarExpression = binaryScalarExpression;
-                    return result;
+                    return DeserializeBinaryOperatorScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.IsOperator:
-                    result = TryDeserializeIsOperatorScalarExpression(cosmosObject, out ClientQLIsOperatorScalarExpression isOperatorScalarExpression);
-                    scalarExpression = isOperatorScalarExpression;
-                    return result;
+                    return DeserializeIsOperatorScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.Let:
-                    result = TryDeserializeLetScalarExpression(cosmosObject, out ClientQLLetScalarExpression letScalarExpression);
-                    scalarExpression = letScalarExpression;
-                    return result;
+                    return DeserializeLetScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.Literal:
-                    result = TryDeserializeLiteralScalarExpression(cosmosObject, out ClientQLLiteralScalarExpression literalScalarExpression);
-                    scalarExpression = literalScalarExpression;
-                    return result;
+                    return DeserializeLiteralScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.Mux:
-                    result = TryDeserializeMuxScalarExpression(cosmosObject, out ClientQLMuxScalarExpression muxScalarExpression);
-                    scalarExpression = muxScalarExpression;
-                    return result;
+                    return DeserializeMuxScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.ObjectCreate:
-                    result = TryDeserializeObjectCreateScalarExpression(cosmosObject, out ClientQLObjectCreateScalarExpression objectCreateScalarExpression);
-                    scalarExpression = objectCreateScalarExpression;
-                    return result;
+                    return DeserializeObjectCreateScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.PropertyRef:
-                    result = TryDeserializePropertyRefScalarExpression(cosmosObject, out ClientQLPropertyRefScalarExpression propertyRefScalarExpression);
-                    scalarExpression = propertyRefScalarExpression;
-                    return result;
+                    return DeserializePropertyRefScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.SystemFunctionCall:
-                    result = TryDeserializeSystemFunctionCallScalarExpression(cosmosObject, out ClientQLSystemFunctionCallScalarExpression systemFunctionCallScalarExpression);
-                    scalarExpression = systemFunctionCallScalarExpression;
-                    return result;
+                    return DeserializeSystemFunctionCallScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.TupleCreate:
-                    result = TryDeserializeTupleCreateScalarExpression(cosmosObject, out ClientQLTupleCreateScalarExpression tupleCreateScalarExpression);
-                    scalarExpression = tupleCreateScalarExpression;
-                    return result;
+                    return DeserializeTupleCreateScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.TupleItemRef:
-                    result = TryDeserializeTupleItemRefScalarExpression(cosmosObject, out ClientQLTupleItemRefScalarExpression tupleItemRefScalarExpression);
-                    scalarExpression = tupleItemRefScalarExpression;
-                    return result;
+                    return DeserializeTupleItemRefScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.UnaryOperator:
-                    result = TryDeserializeUnaryScalarExpression(cosmosObject, out ClientQLUnaryScalarExpression unaryScalarExpression);
-                    scalarExpression = unaryScalarExpression;
-                    return result;
+                    return DeserializeUnaryScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.UserDefinedFunctionCall:
-                    result = TryDeserializeUserDefinedFunctionCallScalarExpression(cosmosObject, out ClientQLUserDefinedFunctionCallScalarExpression userDefinedFunctionCallScalarExpression);
-                    scalarExpression = userDefinedFunctionCallScalarExpression;
-                    return result;
+                    return DeserializeUserDefinedFunctionCallScalarExpression(cosmosObject);
                 case ClientQLScalarExpressionKind.VariableRef:
-                    result = TryDeserializeVariableRefScalarExpression(cosmosObject, out ClientQLVariableRefScalarExpression variableRefScalarExpression);
-                    scalarExpression = variableRefScalarExpression;
-                    return result;
+                    return DeserializeVariableRefScalarExpression(cosmosObject);
                 default:
-                    return Result.Failure($"Invalid ClientQLScalarExpressionKind: {scalarExpressionKind}");
+                    throw new ArgumentException("blah");
             }
         }
 
-        private static Result TryDeserializeArrayCreateScalarExpression(CosmosObject cosmosObject, out ClientQLArrayCreateScalarExpression arrayCreateScalarExpression)
+        private static ClientQLArrayCreateScalarExpression DeserializeArrayCreateScalarExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                ClientQLArrayKind arrayKind = GetValue<ClientQLArrayKind>(cosmosObject, Constants.ArrayKind);
-                IReadOnlyList<ClientQLScalarExpression> vecItems = DeserializeScalarExpressionArray((CosmosArray)cosmosObject[Constants.VecItems]);
-                arrayCreateScalarExpression = new ClientQLArrayCreateScalarExpression(arrayKind, vecItems);
-                return Result.Success;
-            }
-            catch (Exception ex) 
-            {
-                arrayCreateScalarExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            ClientQLArrayKind arrayKind = GetValue<ClientQLArrayKind>(cosmosObject, Constants.ArrayKind);
+            IReadOnlyList<ClientQLScalarExpression> vecItems = DeserializeScalarExpressionArray(GetCosmosElement<CosmosArray>(cosmosObject, Constants.VecItems));
+            return new ClientQLArrayCreateScalarExpression(arrayKind, vecItems);
         }
 
-        private static Result TryDeserializeArrayIndexerScalarExpression(CosmosObject cosmosObject, out ClientQLArrayIndexerScalarExpression arrayIndexerScalarExpression)
+        private static ClientQLArrayIndexerScalarExpression DeserializeArrayIndexerScalarExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.Expression], out ClientQLScalarExpression expression);
-                int index = GetValue<int>(cosmosObject, Constants.Index);
-                arrayIndexerScalarExpression = new ClientQLArrayIndexerScalarExpression(expression, index);
-                return result;
-            }
-            catch (Exception ex)
-            { 
-                arrayIndexerScalarExpression = null;
-                return Result.Failure(ex.ToString());
-            }
+            ClientQLScalarExpression expression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.Expression));
+            int index = GetValue<int>(cosmosObject, Constants.Index);
+            return new ClientQLArrayIndexerScalarExpression(expression, index);
         }
 
-        private static Result TryDeserializeBinaryOperatorScalarExpression(CosmosObject cosmosObject, out ClientQLBinaryScalarExpression binaryScalarExpression)
+        private static ClientQLBinaryScalarExpression DeserializeBinaryOperatorScalarExpression(CosmosObject cosmosObject)
         {
-            if (Enum.TryParse(GetValue<string>(cosmosObject, Constants.OperatorKind), out ClientQLBinaryScalarOperatorKind operatorKind))
-            {
-                int maxDepth = GetValue<int>(cosmosObject, Constants.MaxDepth);
-                Result result = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.LeftExpression], out ClientQLScalarExpression leftExpression);
-                Result secondResult = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.RightExpression], out ClientQLScalarExpression rightExpression);
-                binaryScalarExpression = new ClientQLBinaryScalarExpression(operatorKind, maxDepth, leftExpression, rightExpression);
-                if (result.IsSuccess && secondResult.IsSuccess)
-                {
-                    return Result.Success;
-                }
-                else
-                {
-                    return Result.Failure($"Invalid Binary Operator Expression: {operatorKind}");
-                }
-            }
-            else
-            {
-                binaryScalarExpression = null;
-                return Result.Failure($"Invalid Binary Operator Expression");
-            }
+            Enum.TryParse(GetValue<string>(cosmosObject, Constants.OperatorKind), out ClientQLBinaryScalarOperatorKind operatorKind);
+            int maxDepth = TryGetValue<int>(cosmosObject, Constants.MaxDepth);
+            ClientQLScalarExpression leftExpression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.LeftExpression));
+            ClientQLScalarExpression rightExpression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.RightExpression));
+            return new ClientQLBinaryScalarExpression(operatorKind, maxDepth, leftExpression, rightExpression);
         }
 
-        private static Result TryDeserializeIsOperatorScalarExpression(CosmosObject cosmosObject, out ClientQLIsOperatorScalarExpression isOperatorScalarExpression)
+        private static ClientQLIsOperatorScalarExpression DeserializeIsOperatorScalarExpression(CosmosObject cosmosObject)
         {
-            if (Enum.TryParse(GetValue<string>(cosmosObject, Constants.OperatorKind), out ClientQLIsOperatorKind operatorKind))
-            {
-                try 
-                {
-                    Result result = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.Expression], out ClientQLScalarExpression expression);
-                    isOperatorScalarExpression = new ClientQLIsOperatorScalarExpression(operatorKind, expression);
-                    return result;
-                }
-                catch (Exception ex) 
-                {
-                    isOperatorScalarExpression = null;
-                    return Result.Failure(ex.Message);
-                }
-            }
-            else
-            {
-                isOperatorScalarExpression = null;
-                return Result.Failure($"Invalid Operator Scalar Expression: {operatorKind}");
-            }
+            Enum.TryParse(GetValue<string>(cosmosObject, Constants.OperatorKind), out ClientQLIsOperatorKind operatorKind);
+            ClientQLScalarExpression expression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.Expression));
+            return new ClientQLIsOperatorScalarExpression(operatorKind, expression);
         }
 
-        private static Result TryDeserializeLetScalarExpression(CosmosObject cosmosObject, out ClientQLLetScalarExpression letScalarExpression)
+        private static ClientQLLetScalarExpression DeserializeLetScalarExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                ClientQLVariable declaredVariable = DeserializeClientQLVariable((CosmosObject)cosmosObject[Constants.DeclaredVariable]);
-                Result result = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.DeclaredVariableExpression], out ClientQLScalarExpression declaredVariableExpression);
-                Result secondResult = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.Expression], out ClientQLScalarExpression expression);
-                letScalarExpression = new ClientQLLetScalarExpression(declaredVariable, declaredVariableExpression, expression);
-                if (result.IsSuccess && secondResult.IsSuccess)
-                {
-                    return Result.Success;
-                }
-                else
-                {
-                    return Result.Failure($"Invalid Let Operator Expression");
-                }
-            }
-            catch (Exception ex)
-            { 
-                letScalarExpression = null;
-                return Result.Failure(ex.Message);
-            }
+            ClientQLVariable declaredVariable = DeserializeClientQLVariable(GetCosmosElement<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
+            ClientQLScalarExpression declaredVariableExpression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.DeclaredVariableExpression));
+            ClientQLScalarExpression expression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.Expression));
+            return new ClientQLLetScalarExpression(declaredVariable, declaredVariableExpression, expression);
         }
 
-        private static Result TryDeserializeLiteralScalarExpression(CosmosObject cosmosObject, out ClientQLLiteralScalarExpression literalScalarExpression)
+        private static ClientQLLiteralScalarExpression DeserializeLiteralScalarExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                ClientQLLiteral literal = new ClientQLLiteral((ClientQLLiteralKind)ClientQLScalarExpressionKind.Literal);
-                literalScalarExpression = new ClientQLLiteralScalarExpression(literal);
-                return Result.Success;
-            }
-            catch (Exception ex)
-            { 
-                literalScalarExpression = null;
-                return Result.Failure(ex.Message);
-            }
+            ClientQLLiteral literal = new ClientQLLiteral((ClientQLLiteralKind)ClientQLScalarExpressionKind.Literal);
+            return new ClientQLLiteralScalarExpression(literal);
         }
 
-        private static Result TryDeserializeMuxScalarExpression(CosmosObject cosmosObject, out ClientQLMuxScalarExpression muxScalarExpression)
+        private static ClientQLMuxScalarExpression DeserializeMuxScalarExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.ConditionExpression], out ClientQLScalarExpression conditionExpression);
-                Result secondResult = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.LeftExpression], out ClientQLScalarExpression leftExpression);
-                Result thirdResult = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.RightExpression], out ClientQLScalarExpression rightExpression);
-                muxScalarExpression = new ClientQLMuxScalarExpression(conditionExpression, leftExpression, rightExpression);
-                if (result.IsSuccess && secondResult.IsSuccess && thirdResult.IsSuccess)
-                {
-                    return Result.Success;
-                }
-                else
-                {
-                    return Result.Failure($"Invalid Mux Operator Expression");
-                }
-            }
-            catch (Exception ex)
-            {
-                muxScalarExpression = null;
-                return Result.Failure(ex.Message);
-            }
+            ClientQLScalarExpression conditionExpression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.ConditionExpression));
+            ClientQLScalarExpression leftExpression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.LeftExpression));
+            ClientQLScalarExpression rightExpression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.RightExpression));
+            return new ClientQLMuxScalarExpression(conditionExpression, leftExpression, rightExpression);
         }
 
-        private static Result TryDeserializeObjectCreateScalarExpression(CosmosObject cosmosObject, out ClientQLObjectCreateScalarExpression objectCreateScalarExpression)
+        private static ClientQLObjectCreateScalarExpression DeserializeObjectCreateScalarExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                string objectKindString = GetValue<string>(cosmosObject, Constants.ObjectKind);
-                if (!Enum.TryParse(objectKindString, out ClientQLObjectKind objectKind))
-                {
-                    objectCreateScalarExpression = null;
-                    return Result.Failure($"Invalid ClientQLObjectKind: {objectKindString}");
-                }
-
-                ValidateArrayProperty(cosmosObject, Constants.Properties);
-                IReadOnlyList<ClientQLObjectProperty> properties = DeserializeObjectProperties((CosmosArray)cosmosObject[Constants.Properties]);
-                objectCreateScalarExpression = new ClientQLObjectCreateScalarExpression(properties, objectKind);
-                return Result.Success;
-            }
-            catch (Exception ex) 
-            { 
-                objectCreateScalarExpression = null;
-                return Result.Failure(ex.Message);
-            }
+            string objectKindString = GetValue<string>(cosmosObject, Constants.ObjectKind);
+            Enum.TryParse(objectKindString, out ClientQLObjectKind objectKind);
+            IReadOnlyList<ClientQLObjectProperty> properties = DeserializeObjectProperties((CosmosArray)cosmosObject[Constants.Properties]);
+            return new ClientQLObjectCreateScalarExpression(properties, objectKind);
         }
 
-        private static Result TryDeserializePropertyRefScalarExpression(CosmosObject cosmosObject, out ClientQLPropertyRefScalarExpression propertyRefScalarExpression)
+        private static ClientQLPropertyRefScalarExpression DeserializePropertyRefScalarExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.Expression], out ClientQLScalarExpression expression);
-                string propertyName = GetValue<string>(cosmosObject, Constants.PropertyName);
-                propertyRefScalarExpression = new ClientQLPropertyRefScalarExpression(expression, propertyName);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                propertyRefScalarExpression = null;
-                return Result.Failure(ex.Message);
-            }
+            ClientQLScalarExpression expression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.Expression));
+            string propertyName = GetValue<string>(cosmosObject, Constants.PropertyName);
+            return new ClientQLPropertyRefScalarExpression(expression, propertyName);
         }
 
-        private static Result TryDeserializeSystemFunctionCallScalarExpression(CosmosObject cosmosObject, out ClientQLSystemFunctionCallScalarExpression systemFunctionCallScalarExpression)
+        private static ClientQLSystemFunctionCallScalarExpression DeserializeSystemFunctionCallScalarExpression(CosmosObject cosmosObject)
         {
-            if (Enum.TryParse(GetValue<string>(cosmosObject, Constants.FunctionKind), out ClientQLBuiltinScalarFunctionKind functionKind))
-            {
-                try
-                {
-                    IReadOnlyList<ClientQLScalarExpression> vecArguments = DeserializeScalarExpressionArray((CosmosArray)cosmosObject[Constants.Arguments]);
-                    systemFunctionCallScalarExpression = new ClientQLSystemFunctionCallScalarExpression(functionKind, vecArguments);
-                    return Result.Success;
-                }
-                catch (Exception ex)
-                {
-                    systemFunctionCallScalarExpression = null;
-                    return Result.Failure(ex.Message);
-                }
-            }
-            else
-            {
-                systemFunctionCallScalarExpression = null;
-                return Result.Failure($"Invalid System Function Call Expression: {functionKind}");
-            }
+            Enum.TryParse(GetValue<string>(cosmosObject, Constants.FunctionKind), out ClientQLBuiltinScalarFunctionKind functionKind);
+            IReadOnlyList<ClientQLScalarExpression> vecArguments = DeserializeScalarExpressionArray(GetCosmosElement<CosmosArray>(cosmosObject, Constants.Arguments));
+            return new ClientQLSystemFunctionCallScalarExpression(functionKind, vecArguments);
         }
 
-        private static Result TryDeserializeTupleCreateScalarExpression(CosmosObject cosmosObject, out ClientQLTupleCreateScalarExpression tupleCreateScalarExpression)
+        private static ClientQLTupleCreateScalarExpression DeserializeTupleCreateScalarExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                IReadOnlyList<ClientQLScalarExpression> vecItems = DeserializeScalarExpressionArray((CosmosArray)cosmosObject[Constants.Items]);
-                tupleCreateScalarExpression = new ClientQLTupleCreateScalarExpression(vecItems);
-                return Result.Success;
-            }
-            catch (Exception ex) 
-            {
-                tupleCreateScalarExpression = null;
-                return Result.Failure(ex.Message);
-            }
-            
+            IReadOnlyList<ClientQLScalarExpression> vecItems = DeserializeScalarExpressionArray(GetCosmosElement<CosmosArray>(cosmosObject, Constants.Items));
+            return new ClientQLTupleCreateScalarExpression(vecItems);
         }
 
-        private static Result TryDeserializeTupleItemRefScalarExpression(CosmosObject cosmosObject, out ClientQLTupleItemRefScalarExpression tupleItemRefScalarExpression)
+        private static ClientQLTupleItemRefScalarExpression DeserializeTupleItemRefScalarExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                Result result = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.Expression], out ClientQLScalarExpression expression);
-                int index = GetValue<int>(cosmosObject, Constants.Index);
-                tupleItemRefScalarExpression = new ClientQLTupleItemRefScalarExpression(expression, index);
-                return result;
-            }
-            catch (Exception ex) 
-            {
-                tupleItemRefScalarExpression = null;
-                return Result.Failure(ex.Message);
-            }
+            ClientQLScalarExpression expression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.Expression));
+            int index = GetValue<int>(cosmosObject, Constants.Index);
+            return new ClientQLTupleItemRefScalarExpression(expression, index);
         }
 
-        private static Result TryDeserializeUnaryScalarExpression(CosmosObject cosmosObject, out ClientQLUnaryScalarExpression unaryScalarExpression)
+        private static ClientQLUnaryScalarExpression DeserializeUnaryScalarExpression(CosmosObject cosmosObject)
         {
-            if (Enum.TryParse(GetValue<string>(cosmosObject, Constants.OperatorKind), out ClientQLUnaryScalarOperatorKind operatorKind))
-            {
-                try
-                {
-                    Result result = TryDeserializeScalarExpression((CosmosObject)cosmosObject[Constants.Expression], out ClientQLScalarExpression expression);
-                    unaryScalarExpression = new ClientQLUnaryScalarExpression(operatorKind, expression);
-                    return result;
-                }
-                catch (Exception ex)
-                {
-                    unaryScalarExpression = null;
-                    return Result.Failure(ex.Message);
-                }
-            }
-            else
-            {
-                unaryScalarExpression = null;
-                return Result.Failure("Invalid Unary Scalar Expression");
-            }
+            Enum.TryParse(GetValue<string>(cosmosObject, Constants.OperatorKind), out ClientQLUnaryScalarOperatorKind operatorKind);
+            ClientQLScalarExpression expression = DeserializeScalarExpression(GetCosmosElement<CosmosObject>(cosmosObject, Constants.Expression));
+            return new ClientQLUnaryScalarExpression(operatorKind, expression);
         }
 
-        private static Result TryDeserializeUserDefinedFunctionCallScalarExpression(CosmosObject cosmosObject, out ClientQLUserDefinedFunctionCallScalarExpression userDefinedFunctionCallScalarExpression)
+        private static ClientQLUserDefinedFunctionCallScalarExpression DeserializeUserDefinedFunctionCallScalarExpression(CosmosObject cosmosObject)
         {
             ClientQLFunctionIdentifier identifier = GetValue<ClientQLFunctionIdentifier>(cosmosObject, Constants.Identifier);
-            ValidateArrayProperty(cosmosObject, Constants.VecArguments);
-            IReadOnlyList<ClientQLScalarExpression> vecArguments = DeserializeScalarExpressionArray((CosmosArray)cosmosObject[Constants.VecArguments]);
+            IReadOnlyList<ClientQLScalarExpression> vecArguments = DeserializeScalarExpressionArray(GetCosmosElement<CosmosArray>(cosmosObject, Constants.VecArguments));
             bool builtin = GetValue<bool>(cosmosObject, Constants.Builtin);
-            userDefinedFunctionCallScalarExpression = new ClientQLUserDefinedFunctionCallScalarExpression(identifier, vecArguments, builtin);
-            return Result.Success;
+            return new ClientQLUserDefinedFunctionCallScalarExpression(identifier, vecArguments, builtin);
         }
 
-        private static Result TryDeserializeVariableRefScalarExpression(CosmosObject cosmosObject, out ClientQLVariableRefScalarExpression variableRefScalarExpression)
+        private static ClientQLVariableRefScalarExpression DeserializeVariableRefScalarExpression(CosmosObject cosmosObject)
         {
-            try
-            {
-                ClientQLVariable variable = DeserializeClientQLVariable((CosmosObject)cosmosObject[Constants.Variable]);
-                variableRefScalarExpression = new ClientQLVariableRefScalarExpression(variable);
-                return Result.Success;
-            }
-            catch (Exception ex)
-            {
-                variableRefScalarExpression = null;
-                return Result.Failure(ex.Message);
-            }
+            ClientQLVariable variable = DeserializeClientQLVariable(GetCosmosElement<CosmosObject>(cosmosObject, Constants.Variable));
+            return new ClientQLVariableRefScalarExpression(variable);
         }
 
-        private static ClientQLDelegate TryDeserializeDelegateExpression(CosmosObject cosmosObject)
+        private static ClientQLDelegate DeserializeDelegateExpression(CosmosObject cosmosObject)
         {
-            if (Enum.TryParse(GetValue<string>(cosmosObject, Constants.Kind), out ClientQLDelegateKind kind))
-            {
-                ClientQLType type = DeserializeType((CosmosObject)cosmosObject[Constants.Type]);
-                return new ClientQLDelegate(kind, type);
-            }
-            else
-            {
-                throw new NotSupportedException($"Invalid Delegate Expression: {kind}");
-            }
+            Enum.TryParse(GetValue<string>(cosmosObject, Constants.Kind), out ClientQLDelegateKind kind);
+            ClientQLType type = DeserializeType(GetCosmosElement<CosmosObject>(cosmosObject, Constants.Type));
+            return new ClientQLDelegate(kind, type);
         }
 
         private static ClientQLType DeserializeType(CosmosObject cosmosObject)
         {
-            if (Enum.TryParse(cosmosObject[Constants.Kind].ToString(), out ClientQLTypeKind kind))
-            {
-                return new ClientQLType(kind);
-            }
-            else
-            {
-                throw new NotSupportedException($"Invalid Type Expression: {kind}");
-            }
+            Enum.TryParse(cosmosObject[Constants.Kind].ToString(), out ClientQLTypeKind kind);
+            return new ClientQLType(kind);
         }
 
         private static ClientQLAggregate DeserializeAggregate(CosmosObject cosmosObject)
         {
             string aggregateKind = RemoveQuotesIfPresent(cosmosObject[Constants.Kind].ToString());
-            if (Enum.TryParse(aggregateKind, out ClientQLAggregateKind kind))
+            Enum.TryParse(aggregateKind, out ClientQLAggregateKind kind);
+            string operatorKind = null;
+            if (cosmosObject[Constants.OperatorKind] != null)
             {
-                string operatorKind = null;
-                if (cosmosObject[Constants.OperatorKind] != null)
-                {
-                    operatorKind = RemoveQuotesIfPresent(cosmosObject[Constants.OperatorKind].ToString());
-                }
+                operatorKind = RemoveQuotesIfPresent(cosmosObject[Constants.OperatorKind].ToString());
+            }
 
-                return new ClientQLAggregate(kind, operatorKind);
-            }
-            else
-            {
-                throw new NotSupportedException($"Invalid Aggregate Expression: {kind}");
-            }
+            return new ClientQLAggregate(kind, operatorKind);
         }
 
         private static ClientQLVariable DeserializeClientQLVariable(CosmosObject cosmosObject)
         {
-            string name;
+            string name = string.Empty;
             int uniqueId = default;
 
-            name = cosmosObject.TryGetValue(Constants.Name, out CosmosElement nameToken)
-                ? RemoveQuotesIfPresent(nameToken.ToString())
-                : throw new NotSupportedException($"Invalid Aggregate Expression: {nameToken.GetType()}");
+            if (cosmosObject.TryGetValue(Constants.Name, out CosmosElement nameToken))
+            {
+                name = RemoveQuotesIfPresent(nameToken.ToString());
+            }
 
             if (cosmosObject.TryGetValue(Constants.UniqueId, out CosmosElement uniqueIdToken))
             {
@@ -788,25 +400,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             {
                 CosmosObject propertyObject = propertyElement as CosmosObject;
                 string objectPropertyName = RemoveQuotesIfPresent(propertyObject[Constants.Name].ToString());
-                TryDeserializeScalarExpression(propertyObject[Constants.Expression] as CosmosObject, out ClientQLScalarExpression expression);
+                ClientQLScalarExpression expression = DeserializeScalarExpression(propertyObject[Constants.Expression] as CosmosObject);
                 properties.Add(new ClientQLObjectProperty(objectPropertyName, expression));
             }
 
             return properties;
-        }
-
-        private static List<ClientQLScalarExpression> DeserializeScalarExpressionArray(CosmosArray cosmosArray)
-        {
-            List<ClientQLScalarExpression> expressions = new List<ClientQLScalarExpression>();
-            if (cosmosArray != null)
-            {
-                foreach (CosmosElement propertyElement in cosmosArray)
-                {
-                    TryDeserializeScalarExpression(propertyElement as CosmosObject, out ClientQLScalarExpression expression);
-                    expressions.Add(expression);
-                }
-            }
-            return expressions;
         }
 
         private static ClientQLTupleAggregate DeserializeTupleAggregateExpression(CosmosObject cosmosObject)
@@ -820,6 +418,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             }
 
             return new ClientQLTupleAggregate(tupleAggregateKind, expression);
+        }
+
+        private static List<ClientQLScalarExpression> DeserializeScalarExpressionArray(CosmosArray cosmosArray)
+        {
+            List<ClientQLScalarExpression> expressions = new List<ClientQLScalarExpression>();
+            if (cosmosArray != null)
+            {
+                foreach (CosmosElement propertyElement in cosmosArray)
+                {
+                    ClientQLScalarExpression expression = DeserializeScalarExpression(propertyElement as CosmosObject);
+                    expressions.Add(expression);
+                }
+            }
+            return expressions;
         }
 
         private static List<ClientQLAggregate> DeserializeAggregateArray(CosmosArray cosmosArray)
@@ -859,6 +471,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
                 }
                 else
                 {
+                    throw new ArgumentException("The specified property does not exist in the CosmosObject.", nameof(expression));
+                }
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = GetExceptionMessageFormat();
+                errorMessage += ex.InnerException;
+
+                throw new ArgumentNullException(errorMessage);
+            }
+        }
+
+        private static T TryGetValue<T>(CosmosObject token, string expression)
+        {
+            try
+            {
+                if (token.TryGetValue(expression, out CosmosElement value))
+                {
+                    return System.Text.Json.JsonSerializer.Deserialize<T>(value.ToString());
+                }
+                else
+                {
                     return default;
                 }
             }
@@ -871,14 +505,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             }
         }
 
-        private static void ValidateArrayProperty(CosmosObject cosmosObject, string property)
+        private static T GetCosmosElement<T>(CosmosObject token, string expression)
+            where T : CosmosElement
         {
-            string errorMessage;
-            if (cosmosObject[property] == null)
+            try
             {
-                string nullErrorMessage = $"{property} could not be found in the deserialized plan.";
-                errorMessage = GetExceptionMessageFormat();
-                throw new ArgumentNullException(errorMessage + nullErrorMessage);
+                if (token.TryGetValue(expression, out CosmosElement value))
+                {
+                    if (value is T typedValue)
+                    {
+                        return typedValue;
+                    }
+                    else
+                    {
+                        throw new ArgumentException($"The specified property is not of type {typeof(T).Name}.", nameof(expression));
+                    }
+                }
+                else
+                {
+                    throw new ArgumentNullException("The specified property does not exist in the CosmosObject.", nameof(expression));
+                }
+            }
+            catch (Exception ex)
+            {
+                string errorMessage = GetExceptionMessageFormat();
+                errorMessage += ex.InnerException;
+
+                throw new ArgumentNullException(errorMessage);
             }
         }
 

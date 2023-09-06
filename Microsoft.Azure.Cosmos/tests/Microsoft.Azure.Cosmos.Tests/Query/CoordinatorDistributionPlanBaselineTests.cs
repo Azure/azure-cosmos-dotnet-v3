@@ -53,12 +53,8 @@
             {
                 Formatting = Newtonsoft.Json.Formatting.Indented
             };
-            if (!CoordinatorDistributionPlanDeserializer.TryDeserializeCoordinatorDistributionPlan(input.CoordinatorPlanJson, out CoordinatorDistributionPlan distributionPlan).IsSuccess)
-            {
-                CoordinatorDistributionPlanDeserializer.Result result = CoordinatorDistributionPlanDeserializer.TryDeserializeCoordinatorDistributionPlan(input.CoordinatorPlanJson, out _);
-                throw new NotFoundException(result.ErrorMessage);
-            }
 
+            CoordinatorDistributionPlan distributionPlan = CoordinatorDistributionPlanDeserializer.DeserializeCoordinatorDistributionPlan(input.CoordinatorPlanJson);
             string serializedDistributionPlan = JsonConvert.SerializeObject(distributionPlan, settings);
 
             return new CoordinatorDistributionPlanTestOutput(serializedDistributionPlan);
