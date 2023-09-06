@@ -130,8 +130,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static CosmosClient CreateCosmosClient(
             bool useGateway,
-            Action<CosmosClientBuilder> customizeClientBuilder = null,
-            bool enableDistributingTracing = false)
+            Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
 
@@ -140,19 +139,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             if (useGateway)
             {
                 cosmosClientBuilder.WithConnectionModeGateway();
-            }
-
-            if(enableDistributingTracing)
-            {
-                cosmosClientBuilder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
-                {
-                    DisableDistributedTracing = false,
-                    CosmosThresholdOptions = new CosmosThresholdOptions()
-                    {
-                        PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
-                        NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
-                    }
-                });
             }
             
             return cosmosClientBuilder.Build();
@@ -169,8 +155,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             RetryOptions retryOptions = null,
             ApiType apiType = ApiType.None,
             EventHandler<ReceivedResponseEventArgs> recievedResponseEventHandler = null,
-            bool useMultipleWriteLocations = false,
-            bool enableClientTelemetry = false)
+            bool useMultipleWriteLocations = false)
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
 

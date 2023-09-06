@@ -47,13 +47,23 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         private static int MethodCount = 0;
         
         [ClassInitialize]
-        public static async Task ClassInitAsync(TestContext context)
+        public static async Task ClassInitAsync(TestContext _)
         {
             EndToEndTraceWriterBaselineTests.testListener = Util.ConfigureOpenTelemetryAndCustomListeners();
             
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
                 useGateway: false,
-                enableDistributingTracing: true);
+                builder => builder
+                    .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                    {
+                        DisableDistributedTracing = false,
+                        CosmosThresholdOptions = new CosmosThresholdOptions()
+                        {
+                            PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
+                            NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                        }
+                    }));
+
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
                 .WithBulkExecution(true)
                 .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
@@ -694,12 +704,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             {
                 CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
                 {
-                    DisableDistributedTracing = false,
-                    CosmosThresholdOptions = new CosmosThresholdOptions()
-                    {
-                        PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
-                        NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
-                    }
+                    DisableDistributedTracing = true
                 }
             };
             
