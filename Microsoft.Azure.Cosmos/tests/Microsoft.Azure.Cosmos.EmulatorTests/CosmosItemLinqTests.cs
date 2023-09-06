@@ -893,6 +893,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IOrderedQueryable<ToDoActivity> firstQuery = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
 
             int count = await firstQuery.CountAsync();
+            double average = firstQuery.Average(x => x.taskNum);
 
             string continuationToken = null;
 
@@ -925,7 +926,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             try
             {
-                secondQuery.Average(x => x.taskNum);
+                average = secondQuery.Average(x => x.taskNum);
                 Assert.Fail("Expected Average query to return exception");
             }
             catch (CosmosException exception)
