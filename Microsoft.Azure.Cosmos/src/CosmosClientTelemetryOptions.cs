@@ -18,24 +18,19 @@ namespace Microsoft.Azure.Cosmos
         /// Disable sending telemetry to service, <see cref="Microsoft.Azure.Cosmos.CosmosThresholdOptions"/> is not applicable to this as of now. 
         /// This option will disable sending telemetry to service.even it is opt-in from portal.
         /// </summary>
-        /// <remarks>By default, it is false</remarks>
+        /// <remarks>By default, it is true</remarks>
 #if PREVIEW
         public 
 #else
         internal
 #endif
-        bool DisableSendingMetricsToService { get; set; } =
-#if PREVIEW
-        false;
-#else
-        true;
-#endif
+        bool DisableSendingMetricsToService { get; set; } = true;
 
         /// <summary>
         /// This method enable/disable generation of operation level <see cref="System.Diagnostics.Activity"/> if listener is subscribed to the Source Name "Azure.Cosmos.Operation".
         /// </summary>
         /// <value>
-        /// The default value is true
+        /// The default value is false
         /// </value>
         /// <remarks> Please Refer https://opentelemetry.io/docs/instrumentation/net/exporters/ to know more about open telemetry exporters</remarks>
 #if PREVIEW
