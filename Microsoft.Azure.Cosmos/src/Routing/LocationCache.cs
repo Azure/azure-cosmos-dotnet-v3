@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             else
             {
-                ReadOnlyCollection<Uri> endpoints = request.OperationType.IsWriteOperation() ? this.WriteEndpoints : this.ReadEndpoints;
+                ReadOnlyCollection<Uri> endpoints = this.ReadEndpoints;
                 locationEndpointToRoute = endpoints[locationIndex % endpoints.Count];
             }
 
