@@ -349,11 +349,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         private static ClientQLAggregate DeserializeAggregate(CosmosObject cosmosObject)
         {
             GetEnumValue<ClientQLAggregateKind>(GetValue<CosmosString>(cosmosObject, Constants.Kind).Value, out ClientQLAggregateKind kind);
-            string operatorKind = null;
-            if (cosmosObject[Constants.OperatorKind] != null)
-            {
-                operatorKind = GetValue<CosmosString>(cosmosObject, Constants.OperatorKind).Value;
-            }
+            string operatorKind = GetValue<CosmosString>(cosmosObject, Constants.OperatorKind).Value;
 
             return new ClientQLAggregate(kind, operatorKind);
         }
@@ -493,7 +489,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             bool success = Enum.TryParse(propertyName, out TEnum enumValue);
             if (!success) 
             {
-                throw new InvalidOperationException($"{GetExceptionMessage()}. The string representation of this {propertyName} enumerated constant was not able to be converted to an equivalent enumerated object");
+                throw new InvalidOperationException($"{GetExceptionMessage()}. The string representation of {propertyName} enumerated constant was not able to be converted to an equivalent enumerated object");
             }
 
             result = enumValue;
