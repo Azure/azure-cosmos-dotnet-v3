@@ -76,7 +76,7 @@
           "UniqueId": 16
         },
         "Expression": {
-          "VecItems": [
+          "Items": [
             {
               "Expression": {
                 "Variable": {
@@ -122,7 +122,23 @@
                   "OperatorKind": 2,
                   "Expression": {
                     "FunctionKind": 154,
-                    "VecArguments": [],
+                    "Arguments": [
+                      {
+                        "Expression": {
+                          "Expression": {
+                            "Variable": {
+                              "Name": "v0",
+                              "UniqueId": 16
+                            },
+                            "Kind": 14
+                          },
+                          "Index": 1,
+                          "Kind": 11
+                        },
+                        "Index": 0,
+                        "Kind": 11
+                      }
+                    ],
                     "Kind": 9
                   },
                   "Kind": 12
@@ -153,7 +169,7 @@
               "Kind": 6
             },
             {
-              "VecItems": [
+              "Items": [
                 {
                   "ConditionExpression": {
                     "OperatorKind": 1,
@@ -192,7 +208,27 @@
                       "OperatorKind": 2,
                       "Expression": {
                         "FunctionKind": 154,
-                        "VecArguments": [],
+                        "Arguments": [
+                          {
+                            "Expression": {
+                              "Expression": {
+                                "Expression": {
+                                  "Variable": {
+                                    "Name": "v0",
+                                    "UniqueId": 16
+                                  },
+                                  "Kind": 14
+                                },
+                                "Index": 2,
+                                "Kind": 11
+                              },
+                              "Index": 0,
+                              "Kind": 11
+                            },
+                            "Index": 0,
+                            "Kind": 11
+                          }
+                        ],
                         "Kind": 9
                       },
                       "Kind": 12
@@ -274,7 +310,23 @@
                   "OperatorKind": 2,
                   "Expression": {
                     "FunctionKind": 154,
-                    "VecArguments": [],
+                    "Arguments": [
+                      {
+                        "Expression": {
+                          "Expression": {
+                            "Variable": {
+                              "Name": "v0",
+                              "UniqueId": 16
+                            },
+                            "Kind": 14
+                          },
+                          "Index": 3,
+                          "Kind": 11
+                        },
+                        "Index": 0,
+                        "Kind": 11
+                      }
+                    ],
                     "Kind": 9
                   },
                   "Kind": 12
@@ -309,8 +361,31 @@
         },
         "Kind": 7
       },
-      "VecKeys": null,
-      "VecAggregates": null,
+      "KeyCount": 1,
+      "Aggregates": [
+        {
+          "Kind": 0,
+          "OperatorKind": "Sum"
+        },
+        {
+          "Items": [
+            {
+              "Kind": 0,
+              "OperatorKind": "Sum"
+            },
+            {
+              "Kind": 0,
+              "OperatorKind": "Sum"
+            }
+          ],
+          "Kind": 1,
+          "OperatorKind": "Tuple"
+        },
+        {
+          "Kind": 0,
+          "OperatorKind": "Max"
+        }
+      ],
       "Kind": 2
     },
     "DeclaredVariable": {

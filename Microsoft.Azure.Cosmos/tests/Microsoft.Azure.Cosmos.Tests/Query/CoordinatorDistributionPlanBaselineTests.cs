@@ -5,6 +5,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan;
     using Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;

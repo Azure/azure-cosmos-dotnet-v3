@@ -8,19 +8,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLOrderByEnumerableExpression : ClientQLEnumerableExpression
     {
-        public ClientQLOrderByEnumerableExpression(ClientQLEnumerableExpression sourceExpression, ClientQLVariable declaredVariable, IReadOnlyList<ClientQLOrderByItem> vecItems)
+        public ClientQLOrderByEnumerableExpression(ClientQLEnumerableExpression sourceExpression, ClientQLVariable declaredVariable, IReadOnlyList<ClientQLOrderByItem> items)
             : base(ClientQLEnumerableExpressionKind.OrderBy)
         {
             this.SourceExpression = sourceExpression;
             this.DeclaredVariable = declaredVariable;
-            this.VecItems = vecItems;
+            this.Items = items;
         }
 
         public ClientQLEnumerableExpression SourceExpression { get; }
 
         public ClientQLVariable DeclaredVariable { get; }
         
-        public IReadOnlyList<ClientQLOrderByItem> VecItems { get; }
+        public IReadOnlyList<ClientQLOrderByItem> Items { get; }
     }
 
 }
