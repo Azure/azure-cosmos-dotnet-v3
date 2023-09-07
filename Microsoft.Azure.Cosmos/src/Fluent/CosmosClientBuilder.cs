@@ -646,6 +646,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
                     throw new ArgumentException("Invalid SpeculationType");
             }
         }
+        
+        /// <summary>
+        /// Adds a automatic failover policy to the client.
+        /// </summary>
+        /// <param name="fallbackAfterTimeSpan"></param>
+        /// <returns>the <see cref="CosmosClientBuilder"/></returns>
+        public CosmosClientBuilder WithAutomaticFailover(TimeSpan fallbackAfterTimeSpan)
+        {
+            this.clientOptions.AutomaticFailoverPolicy = new AutomaticFailoverPolicy(fallbackAfterTimeSpan);
+            return this;
+        }
 
         /// <summary>
         /// The event handler to be invoked before the request is sent.

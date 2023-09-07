@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
@@ -117,6 +118,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool isReplicaAddressValidationEnabled;
 
         private readonly ISpeculativeProcessor speculativeProcessor;
+        private readonly AutomaticFailoverPolicy automaticFailoverPolicy;
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -436,6 +438,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
         /// <param name="isDistributedTracingEnabled">This is distributed tracing flag</param>
         /// <param name="speculativeProcessor">This is the speculative processor</param>
+        /// <param name="automaticFailoverPolicy">This is the automatic failover policy</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -464,7 +467,8 @@ namespace Microsoft.Azure.Cosmos
                               string cosmosClientId = null,
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               bool isDistributedTracingEnabled = false,
-                              ISpeculativeProcessor speculativeProcessor = null)
+                              ISpeculativeProcessor speculativeProcessor = null,
+                              AutomaticFailoverPolicy automaticFailoverPolicy = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -491,6 +495,11 @@ namespace Microsoft.Azure.Cosmos
             if (speculativeProcessor != null)
             {
                 this.speculativeProcessor = speculativeProcessor;
+            }
+
+            if (automaticFailoverPolicy != null)
+            {
+                this.automaticFailoverPolicy = automaticFailoverPolicy;
             }
 
             this.Initialize(
@@ -1471,7 +1480,63 @@ namespace Microsoft.Azure.Cosmos
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
         {
+            if (this.automaticFailoverPolicy != null && this.automaticFailoverPolicy.IsEnabled())
+            {
+                return this.ProcessRequestWithFailoverAsync(request, retryPolicyInstance, NoOpTrace.Singleton, cancellationToken);
+            }
+
             return this.ProcessRequestAsync(request, retryPolicyInstance, NoOpTrace.Singleton, cancellationToken);
+        }
+
+        internal Task<DocumentServiceResponse> ProcessRequestWithFailoverAsync(
+            DocumentServiceRequest request,
+            IDocumentClientRetryPolicy retryPolicyInstance,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            CancellationTokenSource failoverTaskCancellationTokenSource = new CancellationTokenSource();
+            CancellationToken failoverTaskCancellationToken = failoverTaskCancellationTokenSource.Token;
+
+            List<Task<DocumentServiceResponse>> tasks = new List<Task<DocumentServiceResponse>>
+            {
+                this.ProcessRequestAsync(request, retryPolicyInstance, trace, cancellationToken)
+            };
+
+            Task<DocumentServiceResponse> failoverTask = Task.Delay(this.automaticFailoverPolicy.GetThreshold(), failoverTaskCancellationToken)
+                .ContinueWith(
+                    t =>
+                    {
+                        this.automaticFailoverPolicy.Failover(
+                            request.RequestContext.LocationEndpointToRoute, 
+                            this.GlobalEndpointManager);
+
+                        NameValueCollectionWrapper headers = new NameValueCollectionWrapper
+                        {
+                            { "x-ms-substatus", "20008" }
+                        };
+
+                        return new DocumentServiceResponse(
+                            null, 
+                            headers,
+                            HttpStatusCode.Gone);
+                        
+                    },
+                    failoverTaskCancellationToken);
+
+            tasks.Add(failoverTask);
+            int completedTaskIndex = Task.WaitAny(tasks.ToArray(), failoverTaskCancellationToken);
+            failoverTaskCancellationTokenSource.Cancel();
+            return tasks[completedTaskIndex];
+        }
+
+        internal void EnableAutomaticFailover()
+        {
+            this.automaticFailoverPolicy.Enable();
+        }
+
+        internal void DisableAutomaticFailover()
+        {
+            this.automaticFailoverPolicy.Disable();
         }
 
         internal async Task<DocumentServiceResponse> ProcessRequestAsync(

@@ -612,6 +612,11 @@ namespace Microsoft.Azure.Cosmos
         public ISpeculativeProcessor SpeculativeProcessor { get; set; }
 
         /// <summary>
+        /// fff
+        /// </summary>
+        internal AutomaticFailoverPolicy AutomaticFailoverPolicy { get; set; }
+
+        /// <summary>
         /// Enable partition key level failover
         /// </summary>
         internal bool EnablePartitionLevelFailover { get; set; } = false;

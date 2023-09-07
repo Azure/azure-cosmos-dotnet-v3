@@ -1201,6 +1201,27 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Updates clients location
+        /// </summary>
+        /// <param name="location">the new location</param>
+        public void UpdateLocation(string location)
+        {
+            this.ClientContext.DocumentClient.ConnectionPolicy.SetCurrentLocation(location);
+            this.ClientContext.ClientOptions.ApplicationRegion = location;
+            this.ClientOptions.ApplicationPreferredRegions = this.ClientContext.DocumentClient.ConnectionPolicy.PreferredLocations;
+        }
+
+        /// <summary>
+        /// Updates the preferred location of the client
+        /// </summary>
+        /// <param name="preferrredLocations">the new preferred location list</param>
+        public void UpdatePreferredLocations(IReadOnlyList<string> preferrredLocations)
+        {
+            this.ClientContext.DocumentClient.ConnectionPolicy.SetPreferredLocations(preferrredLocations);
+            this.ClientContext.ClientOptions.ApplicationPreferredRegions = this.ClientContext.DocumentClient.ConnectionPolicy.PreferredLocations;
+        }
+
+        /// <summary>
         /// Removes the DefaultTraceListener which causes locking issues which leads to avability problems. 
         /// </summary>
         private static void RemoveDefaultTraceListener()
@@ -1448,6 +1469,22 @@ namespace Microsoft.Azure.Cosmos
         public void DisableSpeculation()
         {
             this.ClientContext.DocumentClient.DisableSpeculation();
+        }
+
+        /// <summary>
+        /// Enables automatic failover for all requests issued by this client.
+        /// </summary>
+        public void EnableAutomaticFailover()
+        {
+            this.ClientContext.DocumentClient.EnableAutomaticFailover();
+        }
+
+        /// <summary>
+        /// Disables automatic failover for all requests issued by this client.
+        /// </summary>
+        public void DisableAutomaticFailover()
+        {
+            this.ClientContext.DocumentClient.DisableAutomaticFailover();
         }
 
         /// <summary>

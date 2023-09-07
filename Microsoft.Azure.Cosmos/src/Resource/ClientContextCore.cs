@@ -86,7 +86,8 @@ namespace Microsoft.Azure.Cosmos
                cosmosClientId: cosmosClient.Id,
                remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback),
                isDistributedTracingEnabled: clientOptions.IsDistributedTracingEnabled,
-               speculativeProcessor: clientOptions.SpeculativeProcessor);
+               speculativeProcessor: clientOptions.SpeculativeProcessor,
+               automaticFailoverPolicy: clientOptions.AutomaticFailoverPolicy);
 
             return ClientContextCore.Create(
                 cosmosClient,
