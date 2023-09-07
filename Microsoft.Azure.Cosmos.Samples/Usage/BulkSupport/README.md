@@ -19,5 +19,3 @@ dotnet run
 ## Getting Started
 
 ### Create Database and Container
-
-
