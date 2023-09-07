@@ -1205,6 +1205,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         SqlGroupByClause groupBy = ExpressionToSql.VisitGroupBy(inputExpression.Arguments, context);
                         context.currentQuery = context.currentQuery.AddGroupByClause(groupBy, context);
+
                         break;
                     }
                 case LinqMethods.OrderBy:
@@ -1387,6 +1388,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.Skip:
                 case LinqMethods.Take:
                 case LinqMethods.Distinct:
+                case LinqMethods.GroupBy:
                     isSubqueryExpression = true;
                     expressionObjKind = SubqueryKind.ArrayScalarExpression;
                     break;
@@ -1416,7 +1418,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Visit an lambda expression which is in side a lambda and translate it to a scalar expression or a collection scalar expression.
+        /// Visit an lambda expression which is inside a lambda and translate it to a scalar expression or a collection scalar expression.
         /// If it is a collection scalar expression, e.g. should be translated to subquery such as SELECT VALUE ARRAY, SELECT VALUE EXISTS, 
         /// SELECT VALUE [aggregate], the subquery will be aliased to a new binding for the FROM clause. E.g. consider 
         /// Select(family => family.Children.Select(child => child.Grade)). Since the inner Select corresponds to a subquery, this method would 
@@ -1685,15 +1687,55 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static SqlGroupByClause VisitGroupBy(ReadOnlyCollection<Expression> arguments, TranslationContext context)
         {
-            if (arguments.Count != 2)
+            if (arguments.Count != 3)
             {
-                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.GroupBy, 2, arguments.Count));
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.GroupBy, 3, arguments.Count));
             }
 
-            // TODO: check if this is correct
-            LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
-            SqlScalarExpression sqlfunc = ExpressionToSql.VisitScalarExpression(lambda, context);
-            SqlGroupByClause groupby = SqlGroupByClause.Create(sqlfunc);
+            // First argument is input, second is key selector and third is value selector
+            LambdaExpression keySelectorLambda = Utilities.GetLambda(arguments[1]);
+            SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitScalarExpression(keySelectorLambda, context);
+
+            // TODO - We need special treatment for this binding
+            LambdaExpression valueSelectorLambda = Utilities.GetLambda(arguments[2]);
+            SqlScalarExpression valueSelectorFunc = ExpressionToSql.VisitScalarExpression(valueSelectorLambda, context);
+
+            SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunc, valueSelectorFunc);
+
+            // First, we need to fully translate the scalar expression
+            // then we can use the return type, and the scalar expression collection name to create new binding
+
+            //Collection collection = ExpressionToSql.ConvertToCollection(sqlfunc);
+            //context.PushCollection(collection);
+            //ParameterExpression parameter = context.GenFreshParameter(sqlfunc.GetType(), ExpressionToSql.GetBindingParameterName(context));
+            //context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
+            //context.PopParameter();
+            //context.PopCollection();
+
+            //SqlQuery query = context.currentQuery.FlattenAsPossible().GetSqlQuery();
+            //SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);
+
+            //ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+            //Binding binding = new Binding(parameterExpression, subqueryCollection, isInCollection: false, isInputParameter: true);
+
+            //context.currentQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc());
+            //context.currentQuery.AddBinding(binding);
+
+            //result = new Collection(LinqMethods.GroupBy);
+
+            //====================================
+            // Once we have visit a group by query, then the input need to be set
+
+            //Type elemType = TypeSystem.GetElementType(inputExpression.Type);
+            //context.SetInputParameter(elemType, ParameterSubstitution.InputParameterName); // ignore result
+
+            //// First outer collection
+            //Collection result = new Collection(ExpressionToSql.SqlRoot);
+
+            // Set the input param of the current query to whatever the lambda produce
+            //context.currentQuery.fromParameters.SetInputParameter(lambda.ReturnType, context.currentQuery.GetInputParameterInContext(isInNewQuery: false).Name, context.InScope);
+            //context.SetInputParameter(TypeSystem.GetElementType(lambda.ReturnType), context.currentQuery.GetInputParameterInContext(isInNewQuery: false).Name); // ignore result
+            //context.currentQuery.fromParameters.SetInputParameter(lambda.ReturnType, context.currentQuery.GetInputParameterInContext(isInNewQuery: false).Name, context.InScope);
             return groupby;
         }
 

@@ -243,14 +243,14 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (flattenQuery != null) break;
 
                 if (((query.topSpec != null || query.offsetSpec != null || query.limitSpec != null) && seenAnyNonSelectOp) ||
-                    (query.selectClause != null && query.selectClause.HasDistinct && seenSelect))
+                    (query.selectClause != null && query.selectClause.HasDistinct && seenSelect) )
                 {
                     parentQuery.inputQuery = query.FlattenAsPossible();
                     flattenQuery = this;
                     break;
                 }
 
-                seenSelect = seenSelect || ((query.selectClause != null) && !query.selectClause.HasDistinct);
+                seenSelect = seenSelect || ((query.selectClause != null) && !query.selectClause.HasDistinct) || (query.groupByClause != null);
                 seenAnyNonSelectOp |=
                     (query.whereClause != null) ||
                     (query.orderByClause != null) ||
@@ -319,7 +319,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             SqlIdentifier replacement = SqlIdentifier.Create(paramName);
-            SqlSelectClause composedSelect = this.Substitute(inputSelect, inputSelect.TopSpec ?? this.topSpec, replacement, this.selectClause);
+            SqlSelectClause composedSelect;
+            
+            // TODO: If there is already a groupby prior to the select, some form of substitution needs to happen
+            composedSelect = this.Substitute(inputSelect, inputSelect.TopSpec ?? this.topSpec, replacement, this.selectClause);
             SqlWhereClause composedWhere = this.Substitute(inputSelect.SelectSpec, replacement, this.whereClause);
             SqlOrderByClause composedOrderBy = this.Substitute(inputSelect.SelectSpec, replacement, this.orderByClause);
             SqlGroupByClause composedGroupBy = this.Substitute(inputSelect.SelectSpec, replacement, this.groupByClause);
@@ -389,6 +392,33 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new DocumentQueryException("Unexpected SQL select clause type: " + selectSpec.GetType());
         }
 
+#if false
+        private SqlSelectClause Substitute(SqlGroupByClause inputGroupByClause, SqlTopSpec topSpec, SqlIdentifier inputParam, SqlSelectClause selectClause)
+        {
+            SqlSelectValueSpec selValue = SqlSelectValueSpec.Create(inputGroupByClause.KeySelectorExpressions[0]);
+            if (selValue != null)
+            {
+                SqlSelectSpec intoSpec = selectClause.SelectSpec;
+                if (intoSpec is SqlSelectStarSpec)
+                {
+                    return SqlSelectClause.Create(selValue, topSpec, hasDistinct: false);
+                }
+
+                SqlSelectValueSpec intoSelValue = intoSpec as SqlSelectValueSpec;
+                if (intoSelValue != null)
+                {
+                    SqlScalarExpression replacement = SqlExpressionManipulation.Substitute(selValue.Expression, inputParam, intoSelValue.Expression);
+                    SqlSelectValueSpec selValueReplacement = SqlSelectValueSpec.Create(replacement);
+                    return SqlSelectClause.Create(selValueReplacement, topSpec, hasDistinct: false);
+                }
+
+                throw new DocumentQueryException("Unexpected SQL select clause type: " + intoSpec.GetType());
+            }
+
+            throw new DocumentQueryException("Unexpected SQL select clause type: " + inputGroupByClause.GetType());
+        }
+#endif 
+
         private SqlWhereClause Substitute(SqlSelectSpec spec, SqlIdentifier inputParam, SqlWhereClause whereClause)
         {
             if (whereClause == null)
@@ -457,14 +487,14 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return groupByClause;
             }
 
-            SqlSelectValueSpec selValue = spec as SqlSelectValueSpec;
-            if (selValue != null)
+            SqlSelectValueSpec selectValueSpec = spec as SqlSelectValueSpec;
+            if (selectValueSpec != null)
             {
-                SqlScalarExpression replaced = selValue.Expression;
-                SqlScalarExpression[] substitutedItems = new SqlScalarExpression[groupByClause.Expressions.Length];
+                SqlScalarExpression replaced = selectValueSpec.Expression;
+                SqlScalarExpression[] substitutedItems = new SqlScalarExpression[groupByClause.KeySelectorExpressions.Length];
                 for (int i = 0; i < substitutedItems.Length; ++i)
                 {
-                    SqlScalarExpression substituted = SqlExpressionManipulation.Substitute(replaced, inputParam, groupByClause.Expressions[i]);
+                    SqlScalarExpression substituted = SqlExpressionManipulation.Substitute(replaced, inputParam, groupByClause.KeySelectorExpressions[i]);
                     substitutedItems[i] = substituted;
                 }
                 SqlGroupByClause result = SqlGroupByClause.Create(substitutedItems);
@@ -513,14 +543,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 case LinqMethods.Select:
                     // New query is needed when adding a Select to an existing Select
-                    shouldPackage = this.selectClause != null;
+                    shouldPackage = this.selectClause != null || this.groupByClause != null;
                     break;
 
                 case LinqMethods.Min:
                 case LinqMethods.Max:
                 case LinqMethods.Sum:
                 case LinqMethods.Average:
-                    shouldPackage = (this.selectClause != null) ||
+                    shouldPackage = (this.selectClause != null) || this.groupByClause != null ||
                         (this.offsetSpec != null) ||
                         (this.topSpec != null);
                     break;
@@ -545,18 +575,18 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // New query is needed when there is already a Take or a non-distinct Select
                     shouldPackage = (this.topSpec != null) ||
                         (this.offsetSpec != null) ||
-                        (this.selectClause != null && !this.selectClause.HasDistinct);
+                        (this.selectClause != null && !this.selectClause.HasDistinct) || this.groupByClause != null;
                     break;
 
                 case LinqMethods.Skip:
                     shouldPackage = (this.topSpec != null) ||
-                        (this.limitSpec != null);
+                        (this.limitSpec != null) || this.groupByClause != null;
                     break;
 
                 case LinqMethods.SelectMany:
                     shouldPackage = (this.topSpec != null) ||
                         (this.offsetSpec != null) ||
-                        (this.selectClause != null);
+                        (this.selectClause != null) || this.groupByClause != null;
                     break;
 
                 default:

@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
         {
             if (sqlQuery.GroupByClause != null)
             {
-                GroupByStaticAnalyzer groupByStaticAnalyzer = new GroupByStaticAnalyzer(sqlQuery.GroupByClause.Expressions);
+                GroupByStaticAnalyzer groupByStaticAnalyzer = new GroupByStaticAnalyzer(sqlQuery.GroupByClause.KeySelectorExpressions);
                 sqlQuery.SelectClause.SelectSpec.Accept(groupByStaticAnalyzer);
             }
         }
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 {
                     return GetGroupByKey(
                         document,
-                        sqlGroupByClause.Expressions);
+                        sqlGroupByClause.KeySelectorExpressions);
                 },
                 comparer: GroupByKeyEqualityComparer.Singleton);
         }

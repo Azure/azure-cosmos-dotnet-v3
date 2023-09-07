@@ -207,12 +207,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override void Visit(SqlGroupByClause sqlGroupByClause)
         {
-            this.writer.Write(" GROUP BY ");
-            sqlGroupByClause.Expressions[0].Accept(this);
-            for (int i = 1; i < sqlGroupByClause.Expressions.Length; i++)
+            this.writer.Write("GROUP BY ");
+            sqlGroupByClause.KeySelectorExpressions[0].Accept(this);
+            for (int i = 1; i < sqlGroupByClause.KeySelectorExpressions.Length; i++)
             {
                 this.writer.Write(", ");
-                sqlGroupByClause.Expressions[i].Accept(this);
+                sqlGroupByClause.KeySelectorExpressions[i].Accept(this);
             }
         }
 
@@ -495,6 +495,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
             if (sqlQuery.GroupByClause != null)
             {
+                this.WriteDelimiter(string.Empty);
                 sqlQuery.GroupByClause.Accept(this);
                 this.writer.Write(" ");
             }
