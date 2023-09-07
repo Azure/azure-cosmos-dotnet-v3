@@ -8,17 +8,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLUserDefinedFunctionCallScalarExpression : ClientQLScalarExpression
     {
-        public ClientQLUserDefinedFunctionCallScalarExpression(ClientQLFunctionIdentifier identifier, IReadOnlyList<ClientQLScalarExpression> vecArguments, bool builtin) 
+        public ClientQLUserDefinedFunctionCallScalarExpression(ClientQLFunctionIdentifier identifier, IReadOnlyList<ClientQLScalarExpression> arguments, bool builtin) 
             : base(ClientQLScalarExpressionKind.UserDefinedFunctionCall)
         {
             this.Identifier = identifier;
-            this.VecArguments = vecArguments;
+            this.Arguments = arguments;
             this.Builtin = builtin;
         }
 
         public ClientQLFunctionIdentifier Identifier { get; }
 
-        public IReadOnlyList<ClientQLScalarExpression> VecArguments { get; }
+        public IReadOnlyList<ClientQLScalarExpression> Arguments { get; }
         
         public bool Builtin { get; }
     }

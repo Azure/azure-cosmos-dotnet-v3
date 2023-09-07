@@ -76,7 +76,7 @@
           "UniqueId": 16
         },
         "Expression": {
-          "VecItems": [
+          "Items": [
             {
               "Expression": {
                 "Variable": {
@@ -122,7 +122,7 @@
                   "OperatorKind": 2,
                   "Expression": {
                     "FunctionKind": 154,
-                    "VecArguments": [
+                    "Arguments": [
                       {
                         "Expression": {
                           "Expression": {
@@ -169,7 +169,7 @@
               "Kind": 6
             },
             {
-              "VecItems": [
+              "Items": [
                 {
                   "ConditionExpression": {
                     "OperatorKind": 1,
@@ -208,7 +208,7 @@
                       "OperatorKind": 2,
                       "Expression": {
                         "FunctionKind": 154,
-                        "VecArguments": [
+                        "Arguments": [
                           {
                             "Expression": {
                               "Expression": {
@@ -310,7 +310,7 @@
                   "OperatorKind": 2,
                   "Expression": {
                     "FunctionKind": 154,
-                    "VecArguments": [
+                    "Arguments": [
                       {
                         "Expression": {
                           "Expression": {
@@ -361,14 +361,14 @@
         },
         "Kind": 7
       },
-      "VecKeys": null,
-      "VecAggregates": [
+      "KeyCount": 1,
+      "Aggregates": [
         {
           "Kind": 0,
           "OperatorKind": "Sum"
         },
         {
-          "VecItems": [
+          "Items": [
             {
               "Kind": 0,
               "OperatorKind": "Sum"

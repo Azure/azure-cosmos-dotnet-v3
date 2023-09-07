@@ -8,16 +8,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLArrayCreateScalarExpression : ClientQLScalarExpression
     {
-        public ClientQLArrayCreateScalarExpression(ClientQLArrayKind arrayKind, IReadOnlyList<ClientQLScalarExpression> vecItems) 
+        public ClientQLArrayCreateScalarExpression(ClientQLArrayKind arrayKind, IReadOnlyList<ClientQLScalarExpression> items) 
             : base(ClientQLScalarExpressionKind.ArrayCreate)
         {
             this.ArrayKind = arrayKind;
-            this.VecItems = vecItems;
+            this.Items = items;
         }
 
         public ClientQLArrayKind ArrayKind { get; }
         
-        public IReadOnlyList<ClientQLScalarExpression> VecItems { get; }
+        public IReadOnlyList<ClientQLScalarExpression> Items { get; }
     }
 
 }
