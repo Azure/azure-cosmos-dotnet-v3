@@ -99,7 +99,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreNotEqual(Cosmos.ConsistencyLevel.Session, clientOptions.ConsistencyLevel);
             Assert.IsFalse(policy.EnablePartitionLevelFailover);
             Assert.IsFalse(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue);
+#if PREVIEW
+            Assert.IsFalse(clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing);
+#else
             Assert.IsTrue(clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing);
+#endif
             Assert.IsTrue(clientOptions.CosmosClientTelemetryOptions.DisableSendingMetricsToService);
 
             cosmosClientBuilder.WithApplicationRegion(region)
