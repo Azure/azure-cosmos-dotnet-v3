@@ -247,8 +247,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Received 503 due to client connect timeout or Gateway
-            if (statusCode == HttpStatusCode.ServiceUnavailable
-                && ClientRetryPolicy.IsRetriableServiceUnavailable(subStatusCode))
+            if (statusCode == HttpStatusCode.ServiceUnavailable)
             {
                 DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
@@ -263,12 +262,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return null;
-        }
-
-        private static bool IsRetriableServiceUnavailable(SubStatusCodes? subStatusCode)
-        {
-            return subStatusCode == SubStatusCodes.Unknown ||
-                (subStatusCode.HasValue && subStatusCode.Value.IsSDKGeneratedSubStatus());
         }
 
         private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(
@@ -390,20 +383,13 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// For a ServiceUnavailable (503.0) we could be having a timeout from Direct/TCP locally or a request to Gateway request with a similar response due to an endpoint not yet available.
-        /// We try and retry the request only if there are other regions available.
+        /// We try and retry the request only if there are other regions available. The retry logic is applicable for single master write accounts as well.
         /// </summary>
         private ShouldRetryResult ShouldRetryOnServiceUnavailable()
         {
             if (this.serviceUnavailableRetryCount++ >= ClientRetryPolicy.MaxServiceUnavailableRetryCount)
             {
                 DefaultTrace.TraceInformation($"ClientRetryPolicy: ShouldRetryOnServiceUnavailable() Not retrying. Retry count = {this.serviceUnavailableRetryCount}.");
-                return ShouldRetryResult.NoRetry();
-            }
-
-            if (!this.canUseMultipleWriteLocations
-                    && !this.isReadRequest)
-            {
-                // Write requests on single master cannot be retried, no other regions available
                 return ShouldRetryResult.NoRetry();
             }
 
