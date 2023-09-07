@@ -6,6 +6,7 @@ THis sample demonstrates how to maintain a Cosmos client and reuse the instance 
 
 - Azure Cosmos DB NoSQL Account
   - Create a DataBase and Container
+- Microsoft.Azure.Cosmos NuGet [package](http://www.nuget.org/packages/Microsoft.Azure.Cosmos/)
 
 ## Run
 
