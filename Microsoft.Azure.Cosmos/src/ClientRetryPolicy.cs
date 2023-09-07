@@ -165,6 +165,8 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
+            // Console.WriteLine("Status Code: " + statusCode.Value + "Sub Status Code: " + subStatusCode.Value + "IsRead Request: " + this.isReadRequest);
+
             // Received request timeout
             if (statusCode == HttpStatusCode.RequestTimeout)
             {
@@ -247,8 +249,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Received 503 due to client connect timeout or Gateway
-            if (statusCode == HttpStatusCode.ServiceUnavailable
-                && ClientRetryPolicy.IsRetriableServiceUnavailable(subStatusCode))
+            if (statusCode == HttpStatusCode.ServiceUnavailable)
             {
                 DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
@@ -263,12 +264,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return null;
-        }
-
-        private static bool IsRetriableServiceUnavailable(SubStatusCodes? subStatusCode)
-        {
-            return subStatusCode == SubStatusCodes.Unknown ||
-                (subStatusCode.HasValue && subStatusCode.Value.IsSDKGeneratedSubStatus());
         }
 
         private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(
@@ -400,12 +395,12 @@ namespace Microsoft.Azure.Cosmos
                 return ShouldRetryResult.NoRetry();
             }
 
-            if (!this.canUseMultipleWriteLocations
+            /*if (!this.canUseMultipleWriteLocations
                     && !this.isReadRequest)
             {
                 // Write requests on single master cannot be retried, no other regions available
                 return ShouldRetryResult.NoRetry();
-            }
+            }*/
 
             int availablePreferredLocations = this.globalEndpointManager.PreferredLocationCount;
 
