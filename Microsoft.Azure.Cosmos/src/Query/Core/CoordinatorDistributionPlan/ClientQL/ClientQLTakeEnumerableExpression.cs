@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLTakeEnumerableExpression : ClientQLEnumerableExpression
     {
-        public ClientQLTakeEnumerableExpression(ClientQLEnumerableExpression sourceExpression, int skipValue, int takeValue)
+        public ClientQLTakeEnumerableExpression(ClientQLEnumerableExpression sourceExpression, long skipValue, long takeValue)
             : base(ClientQLEnumerableExpressionKind.Take)
         {
             this.SourceExpression = sourceExpression;
@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
         public ClientQLEnumerableExpression SourceExpression { get; }
 
-        public int SkipValue { get; }
+        public long SkipValue { get; }
         
-        public int TakeValue { get; }
+        public long TakeValue { get; }
     }
 
 }

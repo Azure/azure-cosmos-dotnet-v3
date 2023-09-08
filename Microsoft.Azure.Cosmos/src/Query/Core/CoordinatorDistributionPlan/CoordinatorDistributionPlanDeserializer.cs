@@ -173,8 +173,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         private static ClientQLTakeEnumerableExpression DeserializeTakeEnumerableExpression(CosmosObject cosmosObject)
         {
             ClientQLEnumerableExpression sourceExpression = DeserializeClientQLEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
-            int skipValue = (int)Number64.ToDouble(GetValue<CosmosNumber>(cosmosObject, Constants.SkipValue).Value);
-            int takeExpression = (int)Number64.ToDouble(GetValue<CosmosNumber>(cosmosObject, Constants.TakeValue).Value);
+            long skipValue = Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.SkipValue).Value);
+            long takeExpression = Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.TakeValue).Value);
             return new ClientQLTakeEnumerableExpression(sourceExpression, skipValue, takeExpression);
         }
 
@@ -418,7 +418,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             return new ClientQLVariable(name, uniqueId);
         }
 
-        private static List<ClientQLObjectProperty> DeserializeObjectProperties(CosmosArray cosmosArray)
+        private static IReadOnlyList<ClientQLObjectProperty> DeserializeObjectProperties(CosmosArray cosmosArray)
         {
             List<ClientQLObjectProperty> properties = new List<ClientQLObjectProperty>();
             foreach (CosmosElement propertyElement in cosmosArray)
