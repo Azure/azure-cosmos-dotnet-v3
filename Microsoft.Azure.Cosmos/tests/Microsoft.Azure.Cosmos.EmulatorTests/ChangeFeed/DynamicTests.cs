@@ -25,8 +25,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await base.ChangeFeedTestInit();
 
             string PartitionKey = "/pk";
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
+            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), 
+                partitionKeyPath: PartitionKey);
+            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+
+            ContainerResponse response = await this.database.CreateContainerAsync(properties,
                 throughput: 10000,
                 cancellationToken: this.cancellationToken);
             this.Container = (ContainerInternal)response;
@@ -77,6 +80,94 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             await processor.StopAsync();
             Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
+            Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
+        }
+
+        [TestMethod]
+        public async Task TestWithRunningFFCFProcessor()
+        {
+            int partitionKey = 0;
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+            int processedDocCount = 0;
+            string accumulator = string.Empty;
+
+            ChangeFeedProcessor processor = this.Container
+                .GetAllVersionsChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItemChange<dynamic>> docs, CancellationToken token) =>
+                {
+                    this.ValidateContext(context);
+                    processedDocCount += docs.Count;
+
+                    foreach (ChangeFeedItemChange<dynamic> change in docs)
+                    {
+                        int id;
+
+                        if (change.Metadata.OperationType != ChangeFeedOperationType.Delete)
+                        {
+                            id = change.Current.id;
+                        }
+                        else
+                        {
+                            id = change.Previous.id;
+                        }
+
+                        accumulator += id.ToString() + ".";
+                    }
+
+                    if (processedDocCount == 10)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("ffcftest")
+                .WithLeaseContainer(this.LeaseContainer).Build();
+
+            dynamic[] items = new dynamic[10];
+            // Start the processor, insert 1 document to generate a checkpoint
+            await processor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            foreach (int id in Enumerable.Range(0, 10))
+            {
+                //items[id] = new { id = id.ToString(), pk = partitionKey, test = "test" };
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey, test = "test" });
+            }
+
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            
+            Assert.IsTrue(isStartOk, "Timed out waiting for create to process");
+            Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
+
+            // Reset to test updates
+            processedDocCount = 0;
+            accumulator = string.Empty;
+            allDocsProcessed.Reset();
+
+            foreach (int id in Enumerable.Range(0, 10))
+            {
+                //items[id].test = "update-test";
+                await this.Container.UpsertItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey, update = "true" });
+            }
+
+            isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+
+            Assert.IsTrue(isStartOk, "Timed out waiting for update to process");
+            Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
+
+            // Reset to test delete
+            processedDocCount = 0;
+            accumulator = string.Empty;
+            allDocsProcessed.Reset();
+
+            foreach (int id in Enumerable.Range(0, 10))
+            {
+                await this.Container.DeleteItemAsync<dynamic>(id.ToString(), new PartitionKey(partitionKey));
+            }
+
+            isStartOk = allDocsProcessed.WaitOne(60 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await processor.StopAsync();
+            Assert.IsTrue(isStartOk, "Timed out waiting for delete to process");
             Assert.AreEqual("0.1.2.3.4.5.6.7.8.9.", accumulator);
         }
 
