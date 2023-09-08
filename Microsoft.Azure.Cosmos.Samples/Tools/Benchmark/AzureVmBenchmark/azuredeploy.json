@@ -209,10 +209,11 @@
     "customScriptUrl": "[concat('https://raw.githubusercontent.com/Azure/azure-cosmos-dotnet-v3/',parameters('benchmarkingToolsBranchName'),'/Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/AzureVmBenchmark/scripts/custom-script.sh')]",
     "vmScriptExtensionScriptName": "execute.sh",
     "convertedDatetime": "[dateTimeFromEpoch(parameters('startDate'))]",
+    "metricsPrefix" : "[if(startsWith(parameters('workloadType'), 'Read'), 'Read', if(startsWith(parameters('workloadType'), 'Query'), 'Query', if(startsWith(parameters('workloadType'), 'Insert'), 'Insert', '')))]", 
     "appInsightsResourceIds": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/microsoft.insights/components/', parameters('applicationInsightsName'))]",
-    "chart0Expression": "[concat('customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 50),\n    percentile(value, 75),\n    percentile(value, 90),\n    percentile(value, 95)\n    by ts = bin(timestamp, ', parameters('metricsReportingIntervalInSec'), 's)\n| render timechart \n\n')]",
-    "chart1Expression": "[concat('customMetrics\n| where name == \"ReadOperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 99),\n    percentile(value, 99.9),\n    percentile(value, 99.99)\n    by ts = bin(timestamp, ', parameters('metricsReportingIntervalInSec'), 's)\n| render timechart \n\n')]",
-    "chart2Expression": "[concat('customMetrics\n| where name == \"ReadOperationRps\" and timestamp > ago(1d)\n| summarize\n    avg(value)\n    by ts = bin(timestamp, ', parameters('metricsReportingIntervalInSec'), 's)\n| render timechart \n\n')]"
+    "chart0Expression": "[concat('customMetrics\n| where name == \"', variables('metricsPrefix'), 'OperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 50),\n    percentile(value, 75),\n    percentile(value, 90),\n    percentile(value, 95)\n    by ts = bin(timestamp, ', parameters('metricsReportingIntervalInSec'), 's)\n| render timechart \n\n')]",
+    "chart1Expression": "[concat('customMetrics\n| where name == \"', variables('metricsPrefix'), 'OperationLatencyInMs\" and timestamp > ago(1d)\n| summarize\n    percentile(value, 99),\n    percentile(value, 99.9),\n    percentile(value, 99.99)\n    by ts = bin(timestamp, ', parameters('metricsReportingIntervalInSec'), 's)\n| render timechart \n\n')]",
+    "chart2Expression": "[concat('customMetrics\n| where name == \"', variables('metricsPrefix'), 'OperationRps\" and timestamp > ago(1d)\n| summarize\n    avg(value)\n    by ts = bin(timestamp, ', parameters('metricsReportingIntervalInSec'), 's)\n| render timechart \n\n')]"
 
   },
     "resources": [
@@ -776,7 +777,7 @@
                       },
                       {
                         "name": "Query",
-                        "value": "customMetrics\n| where name == \"ReadOperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
+                        "value": "[concat('customMetrics\n| where name == \"', variables('metricsPrefix'), 'OperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n')]",
                         "isOptional": true
                       },
                       {
@@ -834,7 +835,7 @@
                     "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
                     "settings": {
                       "content": {
-                        "Query": "customMetrics\n| where name == \"ReadOperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n",
+                        "Query": "[concat('customMetrics\n| where name == \"', variables('metricsPrefix'), 'OperationFailure\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n')]",
                         "Dimensions": {
                           "xAxis": {
                             "name": "ts",
@@ -903,7 +904,7 @@
                       },
                       {
                         "name": "Query",
-                        "value": "customMetrics\n| where name == \"ReadOperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n",
+                        "value": "[concat('customMetrics\n| where name == \"', variables('metricsPrefix'), 'OperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n')]",
                         "isOptional": true
                       },
                       {
@@ -961,7 +962,7 @@
                     "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
                     "settings": {
                       "content": {
-                        "Query": "customMetrics\n| where name == \"ReadOperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n",
+                        "Query": "[concat('customMetrics\n| where name == \"', variables('metricsPrefix'), 'OperationSuccess\" and timestamp > ago(1d)\n| summarize\n   sum(value)\n    by ts = bin(timestamp, 1s)\n    | render timechart\n\n')]",
                         "Dimensions": {
                           "xAxis": {
                             "name": "ts",
