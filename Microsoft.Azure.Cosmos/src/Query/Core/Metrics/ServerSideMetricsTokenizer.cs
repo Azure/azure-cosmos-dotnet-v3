@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Text;
 
     /// <summary>
-    /// Tokenizer for <see cref="BackendMetrics"/>
+    /// Tokenizer for <see cref="ServerSideMetricsInternal"/>
     /// </summary>
 #if INTERNAL
 #pragma warning disable SA1600
@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #else
     internal
 #endif
-    static class BackendMetricsTokenizer
+    static class ServerSideMetricsTokenizer
     {
         public enum TokenType
         {
