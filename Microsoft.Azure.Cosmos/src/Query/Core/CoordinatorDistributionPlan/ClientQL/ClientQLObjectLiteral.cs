@@ -8,12 +8,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLObjectLiteral : ClientQLLiteral
     {
-        public ClientQLObjectLiteral(IReadOnlyList<ClientQLObjectLiteral> properties)
+        public ClientQLObjectLiteral(IReadOnlyList<ClientQLObjectLiteralProperty> properties)
             : base(ClientQLLiteralKind.Object)
         {
             this.Properties = properties;
         }
 
-        public IReadOnlyList<ClientQLObjectLiteral> Properties { get; }
+        public IReadOnlyList<ClientQLObjectLiteralProperty> Properties { get; }
     }
 }

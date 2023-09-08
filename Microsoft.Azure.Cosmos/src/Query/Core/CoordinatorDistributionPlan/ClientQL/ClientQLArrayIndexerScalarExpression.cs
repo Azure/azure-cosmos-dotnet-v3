@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLArrayIndexerScalarExpression : ClientQLScalarExpression
     {
-        public ClientQLArrayIndexerScalarExpression(ClientQLScalarExpression expression, int index) 
+        public ClientQLArrayIndexerScalarExpression(ClientQLScalarExpression expression, long index) 
             : base(ClientQLScalarExpressionKind.ArrayIndexer)
         {
             this.Expression = expression;
@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
         public ClientQLScalarExpression Expression { get; }
         
-        public int Index { get; }
+        public long Index { get; }
     }
 
 }

@@ -6,12 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLMJavaScriptLiteral : ClientQLLiteral
     {
-        public ClientQLMJavaScriptLiteral(string strName)
+        public ClientQLMJavaScriptLiteral(string name)
             : base(ClientQLLiteralKind.MJavaScript)
         {
-            this.StrName = strName;
+            this.Name = name;
         }
 
-        public string StrName { get; }
+        public string Name { get; }
     }
 }

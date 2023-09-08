@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
-    internal class ClientQLExpression
+    internal abstract class ClientQLExpression
     {
         // Decided to keep this empty as it does not provide new information
     }

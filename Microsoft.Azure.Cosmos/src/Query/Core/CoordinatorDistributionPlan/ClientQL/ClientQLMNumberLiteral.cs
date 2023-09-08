@@ -6,12 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLMNumberLiteral : ClientQLLiteral
     {
-        public ClientQLMNumberLiteral(int value)
+        public ClientQLMNumberLiteral(long value)
             : base(ClientQLLiteralKind.MNumber)
         {
             this.Value = value;
         }
 
-        public int Value { get; }
+        public long Value { get; }
     }
 }

@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
     internal class ClientQLLiteralScalarExpression : ClientQLScalarExpression
     {
         public ClientQLLiteralScalarExpression(ClientQLLiteral literal)
-           : base(ClientQLScalarExpressionKind.Let)
+           : base(ClientQLScalarExpressionKind.Literal)
         {
             this.Literal = literal;
         }

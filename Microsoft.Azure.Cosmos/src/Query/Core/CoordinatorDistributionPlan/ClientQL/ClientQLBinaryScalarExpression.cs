@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLBinaryScalarExpression : ClientQLScalarExpression
     {
-        public ClientQLBinaryScalarExpression(ClientQLBinaryScalarOperatorKind operatorKind, int maxDepth, ClientQLScalarExpression leftExpression, ClientQLScalarExpression rightExpression) 
+        public ClientQLBinaryScalarExpression(ClientQLBinaryScalarOperatorKind operatorKind, long? maxDepth, ClientQLScalarExpression leftExpression, ClientQLScalarExpression rightExpression) 
             : base(ClientQLScalarExpressionKind.BinaryOperator)
         {
             this.OperatorKind = operatorKind;
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
         public ClientQLBinaryScalarOperatorKind OperatorKind { get; }
 
-        public int MaxDepth { get; }
+        public long? MaxDepth { get; }
 
         public ClientQLScalarExpression LeftExpression { get; }
         

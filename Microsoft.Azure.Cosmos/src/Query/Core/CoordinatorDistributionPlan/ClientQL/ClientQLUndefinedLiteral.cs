@@ -4,16 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
-    internal class ClientQLVariable
+    internal class ClientQLUndefinedLiteral : ClientQLLiteral
     {
-        public ClientQLVariable(string name, long uniqueId)
+        public ClientQLUndefinedLiteral()
+            : base(ClientQLLiteralKind.Undefined)
         {
-            this.Name = name;
-            this.UniqueId = uniqueId;
         }
-
-        public string Name { get; }
-        
-        public long UniqueId { get; }
     }
 }

@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLGroupByEnumerableExpression : ClientQLEnumerableExpression
     {
-        public ClientQLGroupByEnumerableExpression(ClientQLEnumerableExpression sourceExpression, int keyCount, IReadOnlyList<ClientQLAggregate> aggregates) 
+        public ClientQLGroupByEnumerableExpression(ClientQLEnumerableExpression sourceExpression, ulong keyCount, IReadOnlyList<ClientQLAggregate> aggregates) 
             : base(ClientQLEnumerableExpressionKind.GroupBy)
         {
             this.SourceExpression = sourceExpression;
@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
         public ClientQLEnumerableExpression SourceExpression { get; }
 
-        public int KeyCount { get; }
+        public ulong KeyCount { get; }
         
         public IReadOnlyList<ClientQLAggregate> Aggregates { get; }
     }

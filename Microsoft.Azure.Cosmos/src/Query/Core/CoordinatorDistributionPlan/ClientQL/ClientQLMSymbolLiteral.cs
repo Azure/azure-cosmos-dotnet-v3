@@ -6,12 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLMSymbolLiteral : ClientQLLiteral
     {
-        public ClientQLMSymbolLiteral(string strValue)
+        public ClientQLMSymbolLiteral(string value)
             : base(ClientQLLiteralKind.MSymbol)
         {
-            this.StrValue = strValue;
+            this.Value = value;
         }
 
-        public string StrValue { get; }
+        public string Value { get; }
     }
 }
