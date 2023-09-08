@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 indentLevel: 0);
         }
 
-        protected override void WriteQueryPreparationTime(QueryPreparationTimes queryPreparationTimes)
+        protected override void WriteQueryPreparationTime(QueryPreparationTimesInternal queryPreparationTimes)
         {
             QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
                 this.stringBuilder,
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             // Do Nothing
         }
 
-        protected override void WriteRuntimeExecutionTime(RuntimeExecutionTimes runtimeExecutionTimes)
+        protected override void WriteRuntimeExecutionTime(RuntimeExecutionTimesInternal runtimeExecutionTimes)
         {
             QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
                 this.stringBuilder,
