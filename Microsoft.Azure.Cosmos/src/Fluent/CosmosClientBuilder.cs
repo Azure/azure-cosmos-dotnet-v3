@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
-    using Telemetry;
 
     /// <summary>
     /// This is a Builder class that creates a cosmos client

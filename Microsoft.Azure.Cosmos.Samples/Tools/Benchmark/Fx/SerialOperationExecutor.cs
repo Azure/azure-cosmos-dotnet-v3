@@ -50,8 +50,7 @@ namespace CosmosBenchmark
                 int currentIterationCount = 0;
                 do
                 {
-                    IMetricsCollector metricsCollector = metricsCollectorProvider.GetMetricsCollector(this.operation, benchmarkConfig);
-
+                    IMetricsCollector metricsCollector = metricsCollectorProvider.GetMetricsCollector(this.operation);
                     OperationResult? operationResult = null;
 
                     await this.operation.PrepareAsync();
@@ -115,7 +114,8 @@ namespace CosmosBenchmark
             }
             catch (Exception e)
             {
-                Trace.TraceInformation($"Error: {e.Message}");
+                Utility.TraceError("Error:", e);
+                
             }
             finally
             {
