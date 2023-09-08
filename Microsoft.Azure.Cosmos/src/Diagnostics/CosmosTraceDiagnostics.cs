@@ -9,12 +9,15 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
+        private readonly Lazy<ServerSideCumulativeMetrics> accumulatedMetrics;
+
         public CosmosTraceDiagnostics(ITrace trace)
         {
             if (trace == null)
@@ -30,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             this.Value = rootTrace;
+            this.accumulatedMetrics = new Lazy<ServerSideCumulativeMetrics>(() => PopulateServerSideCumulativeMetrics(this.Value));
         }
 
         public ITrace Value { get; }
@@ -49,6 +53,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return this.Value?.Summary?.RegionsContacted;
         }
 
+        public override ServerSideCumulativeMetrics GetQueryMetrics()
+        {
+            return this.accumulatedMetrics.Value;
+        }
+
         internal bool IsGoneExceptionHit()
         {
             return this.WalkTraceTreeForGoneException(this.Value);
@@ -61,9 +70,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return false;
             }
 
-            foreach (object datums in currentTrace.Data.Values)
+            foreach (object datum in currentTrace.Data.Values)
             {
-                if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
                     foreach (StoreResponseStatistics responseStatistics in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
                     {
@@ -97,6 +106,17 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             IJsonWriter jsonTextWriter = JsonWriter.Create(jsonSerializationFormat);
             TraceWriter.WriteTrace(jsonTextWriter, this.Value);
             return jsonTextWriter.GetResult();
+        }
+
+        private static ServerSideCumulativeMetrics PopulateServerSideCumulativeMetrics(ITrace trace)
+        {
+            ServerSideMetricsInternalAccumulator accumulator = new ServerSideMetricsInternalAccumulator();
+            ServerSideMetricsInternalAccumulator.WalkTraceTreeForQueryMetrics(trace, accumulator);
+
+            IReadOnlyList<ServerSidePartitionedMetricsInternal> serverSideMetricsList = accumulator.GetPartitionedServerSideMetrics().Select(metrics => new ServerSidePartitionedMetricsInternal(metrics)).ToList();
+
+            ServerSideCumulativeMetrics accumulatedMetrics = new ServerSideCumulativeMetricsInternal(serverSideMetricsList);
+            return accumulatedMetrics.PartitionedMetrics.Count != 0 ? accumulatedMetrics : null;
         }
 
         public override DateTime? GetStartTimeUtc()
