@@ -182,37 +182,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     if (request.RequestUri.AbsoluteUri.Contains(Documents.Paths.ClientConfigPathSegment))
                     {
-                        Console.WriteLine($"Counter: {counter}");
-                        counter++;
-                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
-
-                        AccountClientConfiguration clientConfigProperties = counter < 5
-                            ? new AccountClientConfiguration
-                            {
-                                ClientTelemetryConfiguration = new ClientTelemetryConfiguration
-                                {
-                                    IsEnabled = flagState1,
-                                    Endpoint = flagState1 ? EndpointUrl : null
-                                }
-                            }
-                            : new AccountClientConfiguration
-                            {
-                                ClientTelemetryConfiguration = new ClientTelemetryConfiguration
-                                {
-                                    IsEnabled = flagState2,
-                                    Endpoint = flagState2 ? EndpointUrl : null
-                                }
-                            };
-                        if (counter == 8)
+                        if (counter == 10)
                         {
                             manualResetEvent.Set();
                         }
 
-                        string payload = JsonConvert.SerializeObject(clientConfigProperties);
+                        Console.WriteLine($"Counter: {counter}");
+                        counter++;
+                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+
+                        bool isEnabled = counter < 5 ? flagState1 : flagState2;
+                        string payload = JsonConvert.SerializeObject(new AccountClientConfiguration
+                        {
+                            ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                            {
+                                IsEnabled = isEnabled,
+                                Endpoint = isEnabled ? EndpointUrl : null
+                            }
+                        });
 
                         Console.WriteLine($"payload: {payload}");
                         result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
+                        Console.WriteLine($"i ma here");
                         return Task.FromResult(result);
                     }
 

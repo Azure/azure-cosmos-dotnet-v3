@@ -77,9 +77,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             TelemetryToServiceHelper helper = new TelemetryToServiceHelper(
-                clientId, connectionPolicy, cosmosAuthorization, httpClient, serviceEndpoint, globalEndpointManager, cancellationTokenSource);
+                clientId: clientId, 
+                connectionPolicy: connectionPolicy, 
+                cosmosAuthorization: cosmosAuthorization, 
+                httpClient: httpClient, serviceEndpoint, 
+                globalEndpointManager: globalEndpointManager, 
+                cancellationTokenSource: cancellationTokenSource);
 
-            _ = helper.RetrieveConfigAndInitiateTelemetryAsync(); // Let it run in backgroud
+            _ = Task.Run(helper.RetrieveConfigAndInitiateTelemetryAsync); // Let it run in backgroud
 
             return helper;
 #endif
@@ -90,31 +95,38 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             try
             {
                 Uri serviceEndpointWithPath = new Uri(this.serviceEnpoint + Paths.ClientConfigPathSegment);
-
                 while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
-                    TryCatch<AccountClientConfiguration> databaseAccountClientConfigs = await this.GetDatabaseAccountClientConfigAsync(this.cosmosAuthorization, this.httpClient, serviceEndpointWithPath);
+                    TryCatch<AccountClientConfiguration> databaseAccountClientConfigs = await this.GetDatabaseAccountClientConfigAsync(
+                        cosmosAuthorization: this.cosmosAuthorization,
+                        httpClient: this.httpClient, 
+                        clientConfigEndpoint: serviceEndpointWithPath);
+
                     if (databaseAccountClientConfigs.Succeeded)
                     {
-                        this.InitializeClientTelemetry(databaseAccountClientConfigs.Result);
+                        Console.WriteLine("initializing telemetry");
+                        this.InitializeClientTelemetry(
+                            clientConfig: databaseAccountClientConfigs.Result);
+                        Console.WriteLine("done with initializing telemetry");
                     }
                     else if (!this.cancellationTokenSource.IsCancellationRequested)
                     {
-                        Console.WriteLine("i am here");
                         DefaultTrace.TraceWarning($"Exception while calling client config " + databaseAccountClientConfigs.Exception.ToString());
                     }
 
                     Console.WriteLine(TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeInterval);
 
-                    await Task.Delay(TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeInterval, 
-                        this.cancellationTokenSource.Token);
+                    await Task.Delay(
+                        delay: TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeInterval,
+                        cancellationToken: this.cancellationTokenSource.Token);
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Exception =>" + ex.ToString());
+                Console.WriteLine("Exception ===> " + ex.ToString());
                 DefaultTrace.TraceWarning($"Exception while running client config job " + ex.ToString());
             }
+            Console.WriteLine("Exiting client config job");
         }
 
         private async Task<TryCatch<AccountClientConfiguration>> GetDatabaseAccountClientConfigAsync(AuthorizationTokenProvider cosmosAuthorization,
@@ -140,6 +152,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         clientSideRequestStatistics: null,
                         cancellationToken: default))
                     {
+                        Console.WriteLine("responseMessage " + responseMessage.StatusCode);
                         // It means feature flag is off at gateway, hence disable this feature at SDK also
                         if (responseMessage.StatusCode == System.Net.HttpStatusCode.BadRequest)
                         {
@@ -154,7 +167,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceWarning($"Exception while calling client config " + ex.StackTrace);
+                    Console.WriteLine($"Exception while calling client config " + ex);
+                    DefaultTrace.TraceWarning($"Exception while calling client config " + ex);
                     return TryCatch<AccountClientConfiguration>.FromException(ex);
                 }
             }
@@ -175,18 +189,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         private void InitializeClientTelemetry(AccountClientConfiguration clientConfig)
         {
-            Console.WriteLine("i am here with obj " + JsonConvert.SerializeObject(clientConfig));
             // If state of the job is same as state of the flag, then no need to do anything.
             if (clientConfig.IsClientTelemetryEnabled() == this.IsClientTelemetryJobRunning()) 
             {
+                Console.WriteLine("Client Telemetry Job is already in the same state as flag.");
                 return;
             }
 
+            Console.WriteLine("Refresh DiagnosticsHandlerHelper." + clientConfig.IsClientTelemetryEnabled() + " " + this.IsClientTelemetryJobRunning());
             DiagnosticsHandlerHelper.Refresh(clientConfig.IsClientTelemetryEnabled());
+            Console.WriteLine("Done with Refresh DiagnosticsHandlerHelper.");
+
             if (clientConfig.IsClientTelemetryEnabled())
             { 
                 try
                 {
+                    Console.WriteLine("Starting Client Telemetry Job.");
                     this.clientTelemetry = ClientTelemetry.CreateAndStartBackgroundTelemetry(
                         clientId: this.clientId,
                         httpClient: this.httpClient,
@@ -210,6 +228,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             else
             {
+                Console.WriteLine("Stopping Client Telemetry Job.");
                 this.StopClientTelemetry();
                 DefaultTrace.TraceVerbose("Client Telemetry Disabled.");    
             }
