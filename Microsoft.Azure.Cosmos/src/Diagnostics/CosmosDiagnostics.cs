@@ -44,8 +44,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        ///  This represents the backend query metrics for the request.
+        /// This represents the backend query metrics for the request.
         /// </summary>
+        /// <remarks>
+        /// This is only applicable for query operations. For all other operations this will return null.
+        /// </remarks>
         /// <returns>The accumulated backend metrics for the request.</returns>
         public virtual ServerSideCumulativeMetrics GetQueryMetrics()
         {

@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract TimeSpan DocumentWriteTime { get; }
 
         /// <summary>
-        /// Gets the index hit ratio by query in the Azure Cosmos database service.
+        /// Gets the index hit ratio by query in the Azure Cosmos database service. Value is within the range [0,1].
         /// </summary>
         public abstract double IndexHitRatio { get; }
 
