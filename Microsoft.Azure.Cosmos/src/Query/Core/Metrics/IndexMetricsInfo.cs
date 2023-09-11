@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Query index utilization metrics in the Azure Cosmos database service.
+    /// Query index utilization data for composite indexes (sub-structure of the Index Metrics class) in the Azure Cosmos database service.
     /// </summary>
 #if INTERNAL
 #pragma warning disable SA1600

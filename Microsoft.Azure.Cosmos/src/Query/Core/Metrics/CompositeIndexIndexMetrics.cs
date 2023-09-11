@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Query index utilization data for composite indexes (sub-structure of the Index Utilization metrics) in the Azure Cosmos database service.
+    /// Query index utilization data for composite indexes (sub-structure of the Index Metrics class) in the Azure Cosmos database service.
     /// </summary>
-#if INTERNAL
+    #if INTERNAL
 #pragma warning disable SA1600
 #pragma warning disable CS1591
     public
@@ -20,22 +20,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     sealed class CompositeIndexIndexMetrics
     {
         /// <summary>
-        /// Initialized a new instance of the Composite Index Utilization Entity class.
+        /// Initialized a new instance of an Index Metrics' Composite Index class.
         /// </summary>
-        /// <param name="indexDocumentExpressions">The index representation of the filter expression.</param>
+        /// <param name="indexDocumentExpressions">The string list representation of the composite index.</param>
         /// <param name="indexImpactScore">The index impact score.</param>
         [JsonConstructor]
-        public CompositeIndexIndexMetrics(
+        private CompositeIndexIndexMetrics(
             IReadOnlyList<string> indexDocumentExpressions,
             string indexImpactScore)
         {
-            this.IndexDocumentExpressions = indexDocumentExpressions;
+            this.IndexSpecs = indexDocumentExpressions;
             this.IndexImpactScore = indexImpactScore;
         }
 
+        /// <summary>
+        /// String list representation of index paths of a composite index.
+        /// </summary>
         [JsonProperty(PropertyName = "IndexSpecs")]
-        public IReadOnlyList<string> IndexDocumentExpressions { get; }
+        public IReadOnlyList<string> IndexSpecs { get; }
 
+        /// <summary>
+        /// The index impact score of the composite index.
+        /// </summary>
         [JsonProperty(PropertyName = "IndexImpactScore")]
         public string IndexImpactScore { get; }
     }

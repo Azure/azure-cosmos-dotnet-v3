@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #else
     internal
 #endif
-    class IndexMetricWriter
+    class IndexMetricsWriter
     {
         private const string IndexUtilizationInfo = "Index Utilization Information";
         private const string UtilizedSingleIndexes = "Utilized Single Indexes";
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private readonly StringBuilder stringBuilder;
 
-        public IndexMetricWriter(StringBuilder stringBuilder)
+        public IndexMetricsWriter(StringBuilder stringBuilder)
         {
             this.stringBuilder = stringBuilder ?? throw new ArgumentNullException($"{nameof(stringBuilder)} must not be null.");
         }
@@ -47,50 +47,40 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.WriteAfterIndexUtilizationInfo();
         }
 
-        public void WriteIndexMetrics(IndexMetricsInfo indexMetricsInfo)
-        {
-            // IndexUtilizationInfo
-            this.WriteBeforeIndexUtilizationInfo();
-
-            //this.WriteIndexUtilizationInfo(indexMetricsInfo);
-
-            this.WriteAfterIndexUtilizationInfo();
-        }
-
         #region IndexUtilizationInfo
         protected void WriteBeforeIndexUtilizationInfo()
         {
-            IndexMetricWriter.AppendNewlineToStringBuilder(this.stringBuilder);
-            IndexMetricWriter.AppendHeaderToStringBuilder(
+            IndexMetricsWriter.AppendNewlineToStringBuilder(this.stringBuilder);
+            IndexMetricsWriter.AppendHeaderToStringBuilder(
                 this.stringBuilder,
-                IndexMetricWriter.IndexUtilizationInfo,
+                IndexMetricsWriter.IndexUtilizationInfo,
                 indentLevel: 0);
         }
 
         protected void WriteIndexUtilizationInfo(IndexUtilizationInfo indexUtilizationInfo)
         {
-            IndexMetricWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexMetricWriter.UtilizedSingleIndexes, indentLevel: 1);
+            IndexMetricsWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexMetricsWriter.UtilizedSingleIndexes, indentLevel: 1);
 
             foreach (SingleIndexUtilizationEntity indexUtilizationEntity in indexUtilizationInfo.UtilizedSingleIndexes)
             {
                 WriteSingleIndexUtilizationEntity(indexUtilizationEntity);
             }
 
-            IndexMetricWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexMetricWriter.PotentialSingleIndexes, indentLevel: 1);
+            IndexMetricsWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexMetricsWriter.PotentialSingleIndexes, indentLevel: 1);
 
             foreach (SingleIndexUtilizationEntity indexUtilizationEntity in indexUtilizationInfo.PotentialSingleIndexes)
             {
                 WriteSingleIndexUtilizationEntity(indexUtilizationEntity);
             }
 
-            IndexMetricWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexMetricWriter.UtilizedCompositeIndexes, indentLevel: 1);
+            IndexMetricsWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexMetricsWriter.UtilizedCompositeIndexes, indentLevel: 1);
 
             foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in indexUtilizationInfo.UtilizedCompositeIndexes)
             {
                 WriteCompositeIndexUtilizationEntity(indexUtilizationEntity);
             }
 
-            IndexMetricWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexMetricWriter.PotentialCompositeIndexes, indentLevel: 1);
+            IndexMetricsWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexMetricsWriter.PotentialCompositeIndexes, indentLevel: 1);
 
             foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in indexUtilizationInfo.PotentialCompositeIndexes)
             {
@@ -99,16 +89,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
             void WriteSingleIndexUtilizationEntity(SingleIndexUtilizationEntity indexUtilizationEntity)
             {
-                IndexMetricWriter.AppendHeaderToStringBuilder(this.stringBuilder, $"{IndexMetricWriter.IndexExpression}: {indexUtilizationEntity.IndexDocumentExpression}", indentLevel: 2);
-                IndexMetricWriter.AppendHeaderToStringBuilder(this.stringBuilder, $"{IndexMetricWriter.IndexImpactScore}: {indexUtilizationEntity.IndexImpactScore}", indentLevel: 2);
-                IndexMetricWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexMetricWriter.IndexUtilizationSeparator, indentLevel: 2);
+                IndexMetricsWriter.AppendHeaderToStringBuilder(this.stringBuilder, $"{IndexMetricsWriter.IndexExpression}: {indexUtilizationEntity.IndexDocumentExpression}", indentLevel: 2);
+                IndexMetricsWriter.AppendHeaderToStringBuilder(this.stringBuilder, $"{IndexMetricsWriter.IndexImpactScore}: {indexUtilizationEntity.IndexImpactScore}", indentLevel: 2);
+                IndexMetricsWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexMetricsWriter.IndexUtilizationSeparator, indentLevel: 2);
             }
 
             void WriteCompositeIndexUtilizationEntity(CompositeIndexUtilizationEntity indexUtilizationEntity)
             {
-                IndexMetricWriter.AppendHeaderToStringBuilder(this.stringBuilder, $"{IndexMetricWriter.IndexExpression}: {String.Join(", ", indexUtilizationEntity.IndexDocumentExpressions)}", indentLevel: 2);
-                IndexMetricWriter.AppendHeaderToStringBuilder(this.stringBuilder, $"{IndexMetricWriter.IndexImpactScore}: {indexUtilizationEntity.IndexImpactScore}", indentLevel: 2);
-                IndexMetricWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexMetricWriter.IndexUtilizationSeparator, indentLevel: 2);
+                IndexMetricsWriter.AppendHeaderToStringBuilder(this.stringBuilder, $"{IndexMetricsWriter.IndexExpression}: {String.Join(", ", indexUtilizationEntity.IndexDocumentExpressions)}", indentLevel: 2);
+                IndexMetricsWriter.AppendHeaderToStringBuilder(this.stringBuilder, $"{IndexMetricsWriter.IndexImpactScore}: {indexUtilizationEntity.IndexImpactScore}", indentLevel: 2);
+                IndexMetricsWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexMetricsWriter.IndexUtilizationSeparator, indentLevel: 2);
             }
         }
 
@@ -133,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private static void AppendNewlineToStringBuilder(StringBuilder stringBuilder)
         {
-            IndexMetricWriter.AppendHeaderToStringBuilder(
+            IndexMetricsWriter.AppendHeaderToStringBuilder(
                 stringBuilder,
                 string.Empty,
                 indentLevel: 0);

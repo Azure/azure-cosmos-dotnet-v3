@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             }
 
             // Even though this parsing is resilient, older version of the SDK doesn't have such lenient parsing.
-            // As such, it is right not not possible to remove some of the fied in the IndexUtilizationInfo class.
+            // As such, it is right not not possible to remove some of the field in the IndexUtilizationInfo class.
             // However, in newer version of the SDKs, the code base is going to start returning IndexMetricsInfo, 
             // so this class exists solely for legacy support.
             try

@@ -264,26 +264,14 @@ namespace Microsoft.Azure.Cosmos
                             IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
 
                             StringBuilder stringBuilder = new StringBuilder();
-                            IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
+                            IndexMetricsWriter indexMetricWriter = new IndexMetricsWriter(stringBuilder);
                             indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
 
                             return stringBuilder.ToString();
                         }
-                        else
-                        {
-                            bool parseSucess = IndexMetricsInfo.TryCreateFromString(responseMessageHeaders.IndexUtilizationText, out IndexMetricsInfo parsedIndexUMetricsInfo);
-
-                            // If parsing wasn't successful, return the decoded JSON from the response message
-                            if (!parseSucess) return parsedIndexUMetricsInfo.ResponseText;
-
-                            // If success, return pretty printed JSON 
-                            // TODO: These two format are dissimilar, do we want to just release the pure json and not the pretty writer? 
-                            StringBuilder stringBuilder = new StringBuilder();
-                            IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
-                            indexMetricWriter.WriteIndexMetrics(parsedIndexUMetricsInfo);
-
-                            return parsedIndexUMetricsInfo.ResponseText;
-                        }
+                        
+                        // Return the JSON from the response header
+                        return responseMessageHeaders.IndexUtilizationText;
                     });
             }
 

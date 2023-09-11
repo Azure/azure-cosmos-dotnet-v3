@@ -7,9 +7,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Query index utilization data for single index (sub-structure of the Index Utilization metrics) in the Azure Cosmos database service.
+    /// Query index utilization data for single indexes (sub-structure of the Index Metrics class) in the Azure Cosmos database service.
     /// </summary>
-#if INTERNAL
+    #if INTERNAL
 #pragma warning disable SA1600
 #pragma warning disable CS1591
     public
@@ -19,9 +19,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     sealed class SingleIndexIndexMetrics
     {
         /// <summary>
-        /// Initialized a new instance of the Single Index Utilization Entity class.
+        /// Initialized a new instance of an Index Metrics' Single Index class.
         /// </summary>
-        /// <param name="indexDocumentExpression">The index representation of the filter expression.</param>
+        /// <param name="indexDocumentExpression">The string representation of the single index.</param>
         /// <param name="indexImpactScore">The index impact score.</param>
         [JsonConstructor]
         public SingleIndexIndexMetrics(
@@ -32,9 +32,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.IndexImpactScore = indexImpactScore;
         }
 
+        /// <summary>
+        /// String representation of index paths of a composite index.
+        /// </summary>
         [JsonProperty(PropertyName = "IndexSpec")]
         public string IndexDocumentExpression { get; }
 
+        /// <summary>
+        /// The index impact score of the single index.
+        /// </summary>
         [JsonProperty(PropertyName = "IndexImpactScore")]
         public string IndexImpactScore { get; }
     }
