@@ -26,25 +26,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HttpResponseMessage httpResponse = null;
             if (this.RequestCallBack != null)
             {
-                try
+                Task<HttpResponseMessage> response = this.RequestCallBack(request, cancellationToken);
+                if(response != null)
                 {
-                    Task<HttpResponseMessage> response = this.RequestCallBack(request, cancellationToken);
-                    if (response != null)
+                    httpResponse = await response;
+                    if (httpResponse != null)
                     {
-                        httpResponse = await response;
-                        if (httpResponse != null)
+                        if (this.ResponseIntercepter != null)
                         {
-                            if (this.ResponseIntercepter != null)
-                            {
-                                httpResponse = await this.ResponseIntercepter(httpResponse);
-                            }
-                            return httpResponse;
+                            httpResponse = await this.ResponseIntercepter(httpResponse);
                         }
+                        return httpResponse;
                     }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("===> " + ex.ToString());
                 }
             }
 
@@ -52,9 +45,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 httpResponse = await base.SendAsync(request, cancellationToken);
             }
-            catch (Exception ex) 
-            {
-                Console.WriteLine("==> " + ex.ToString());
+            catch (Exception ex) {
+
                 if (this.ExceptionIntercepter == null)
                 {
                     throw;
