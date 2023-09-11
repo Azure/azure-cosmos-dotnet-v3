@@ -25,11 +25,21 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             MethodInfo iMethod = helper.GetType().GetMethod("StopSystemMonitor", BindingFlags.NonPublic | BindingFlags.Instance);
             iMethod.Invoke(helper, new object[] { });
 
-            //Reset the instance woth original value
+            //Reset the DiagnosticSystemUsageRecorder with original value
+            FieldInfo DiagnosticSystemUsageRecorderField = typeof(DiagnosticsHandlerHelper).GetField("DiagnosticSystemUsageRecorder",
+                            BindingFlags.Static |
+                            BindingFlags.NonPublic);
+            DiagnosticSystemUsageRecorderField.SetValue(null, new Documents.Rntbd.SystemUsageRecorder(
+                            identifier: "diagnostic",
+                            historyLength: 6,
+                            refreshInterval: DiagnosticsHandlerHelper.DiagnosticsRefreshInterval));
+
+            //Reset the instance with original value
             FieldInfo field = typeof(DiagnosticsHandlerHelper).GetField("Instance",
                             BindingFlags.Static |
                             BindingFlags.NonPublic);
             field.SetValue(null, Activator.CreateInstance(typeof(DiagnosticsHandlerHelper), true));
+
         }
 
         [TestMethod]
@@ -50,14 +60,20 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             DiagnosticsHandlerHelper diagnosticHandlerHelper1 = DiagnosticsHandlerHelper.GetInstance();
             await Task.Delay(10000); // warm up
             Assert.IsNotNull(diagnosticHandlerHelper1.GetDiagnosticsSystemHistory());
+            Assert.AreEqual(2, diagnosticHandlerHelper1.GetDiagnosticsSystemHistory().Values.Count);
             int countBeforeRefresh = diagnosticHandlerHelper1.GetDiagnosticsSystemHistory().Values.Count;
+
+            FieldInfo TelemetrySystemUsageRecorderField1 = typeof(DiagnosticsHandlerHelper).GetField("TelemetrySystemUsageRecorder",
+                            BindingFlags.Static |
+                            BindingFlags.NonPublic);
+            Assert.IsNull(TelemetrySystemUsageRecorderField1.GetValue(null));
 
             // Refresh instance of DiagnosticsHandlerHelper with client telemetry enabled
             DiagnosticsHandlerHelper.Refresh(true);
+            await Task.Delay(5000); // warm up again to populate telemetry data
             DiagnosticsHandlerHelper diagnosticHandlerHelper2 = DiagnosticsHandlerHelper.GetInstance();
             int countAfterRefresh = diagnosticHandlerHelper1.GetDiagnosticsSystemHistory().Values.Count;
-
-            Console.WriteLine(countBeforeRefresh + " " + countAfterRefresh);
+            
             Assert.IsTrue(countBeforeRefresh <= countAfterRefresh, "After Refresh count should be greater than or equal to before refresh count");
 
             Assert.AreNotEqual(diagnosticHandlerHelper1, diagnosticHandlerHelper2);
@@ -65,11 +81,23 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             Assert.IsNotNull(diagnosticHandlerHelper2.GetDiagnosticsSystemHistory());
             Assert.IsNotNull(diagnosticHandlerHelper2.GetClientTelemetrySystemHistory());
 
+            Assert.AreEqual(2, diagnosticHandlerHelper2.GetClientTelemetrySystemHistory().Values.Count);
+
             // Refresh instance of DiagnosticsHandlerHelper with client telemetry disabled
             DiagnosticsHandlerHelper.Refresh(false);
             DiagnosticsHandlerHelper diagnosticHandlerHelper3 = DiagnosticsHandlerHelper.GetInstance();
             Assert.IsNotNull(diagnosticHandlerHelper3.GetDiagnosticsSystemHistory());
             Assert.IsNull(diagnosticHandlerHelper3.GetClientTelemetrySystemHistory());
+
+            FieldInfo DiagnosticSystemUsageRecorderField3 = typeof(DiagnosticsHandlerHelper).GetField("DiagnosticSystemUsageRecorder",
+                            BindingFlags.Static |
+                            BindingFlags.NonPublic);
+            Assert.IsNotNull(DiagnosticSystemUsageRecorderField3.GetValue(null));
+
+            FieldInfo TelemetrySystemUsageRecorderField3 = typeof(DiagnosticsHandlerHelper).GetField("TelemetrySystemUsageRecorder",
+                            BindingFlags.Static |
+                            BindingFlags.NonPublic);
+            Assert.IsNull(TelemetrySystemUsageRecorderField3.GetValue(null));
         }
     }
 }
