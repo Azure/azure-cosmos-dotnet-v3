@@ -3,8 +3,7 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-
-namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
+namespace Microsoft.Azure.Cosmos.Test.Management.Tests.LinqProviderTests
 {
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

@@ -3,7 +3,6 @@
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
 //-----------------------------------------------------------------------
-
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 {
 
@@ -16,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using System.Xml;
     using static LinqAggregateFunctionBaselineTests;
 
-    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
+    using BaselineTest;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Documents;
     using System.Threading.Tasks;
@@ -416,8 +415,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqAggregateInput(
                 "Skip -> Take -> Select(new()) -> Skip -> Take -> Select -> Any", b => getQueryFamily(b)
                 .Skip(1).Take(20)
-                .Select(f => new
-                {
+                .Select(f => new {
                     v0 = f.Children.Skip(3).Select(c => c.Grade).Any(),
                     v1 = f.Children.Skip(3).Take(3).Select(c => c.Grade).Any(),
                     v2 = f.Children.Take(3).Skip(4).Select(c => c.Grade).Any(),
@@ -427,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         .SelectMany(c => c.Pets.Where(p => p.GivenName.CompareTo("A") > 0).Skip(1).Take(2)).Take(3).Any(),
                 })
                 .Skip(1).Take(10)
-                .Select(f => f.v0 && f.v1 || f.v0 && f.v1)
+                .Select(f => (f.v0 && f.v1) || (f.v0 && f.v1))
                 .Any()));
 
             this.ExecuteTestSuite(inputs);

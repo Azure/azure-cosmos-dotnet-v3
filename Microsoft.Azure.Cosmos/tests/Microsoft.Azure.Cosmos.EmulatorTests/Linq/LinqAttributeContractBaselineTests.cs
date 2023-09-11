@@ -61,12 +61,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 PartitionKey = partitionKeyDefinition,
                 IndexingPolicy = new Microsoft.Azure.Cosmos.IndexingPolicy()
                 {
-                    IncludedPaths = new System.Collections.ObjectModel.Collection<Cosmos.IncludedPath>()
+                    IncludedPaths = new System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.IncludedPath>()
                     {
                         new Microsoft.Azure.Cosmos.IncludedPath()
                         {
                             Path = "/*",
-                            Indexes = new System.Collections.ObjectModel.Collection<Cosmos.Index>()
+                            Indexes = new System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.Index>()
                             {
                                 Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.Number, -1),
                                 Microsoft.Azure.Cosmos.Index.Range(Microsoft.Azure.Cosmos.DataType.String, -1)
@@ -173,10 +173,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestAttributePriority()
         {
-            Assert.AreEqual("jsonProperty", typeof(Datum).GetMember("JsonProperty").First().GetMemberName());
-            Assert.AreEqual("dataMember", typeof(Datum).GetMember("DataMember").First().GetMemberName());
-            Assert.AreEqual("Default", typeof(Datum).GetMember("Default").First().GetMemberName());
-            Assert.AreEqual("jsonPropertyHasHigherPriority", typeof(Datum).GetMember("JsonPropertyAndDataMember").First().GetMemberName());
+            Assert.AreEqual("jsonProperty", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonProperty").First()));
+            Assert.AreEqual("dataMember", TypeSystem.GetMemberName(typeof(Datum).GetMember("DataMember").First()));
+            Assert.AreEqual("Default", TypeSystem.GetMemberName(typeof(Datum).GetMember("Default").First()));
+            Assert.AreEqual("jsonPropertyHasHigherPriority", TypeSystem.GetMemberName(typeof(Datum).GetMember("JsonPropertyAndDataMember").First()));
         }
 
         /// <summary>
