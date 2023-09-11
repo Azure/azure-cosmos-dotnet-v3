@@ -269,9 +269,11 @@ namespace Microsoft.Azure.Cosmos
 
                             return stringBuilder.ToString();
                         }
-                        
-                        // Return the JSON from the response header
-                        return responseMessageHeaders.IndexUtilizationText;
+                        else
+                        {
+                            // Return the JSON from the response header
+                            return responseMessageHeaders.IndexUtilizationText;
+                        }
                     });
             }
 

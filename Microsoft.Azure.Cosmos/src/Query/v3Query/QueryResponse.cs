@@ -184,12 +184,12 @@ namespace Microsoft.Azure.Cosmos
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
 
-            // Chose how to decode depending on which POpulateIndexMetrics request header was sent
+            // Chose how to decode depending on which PopulateIndexMetrics request header was sent
             // If none was sent, we currently default to V1
-            // TODO: make the default to V2 once V2 is enabled
+            // TODO: Switch the flag to false once V2 is deployed
             this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(
                 responseMessageHeaders, 
-                isBase64Encoded: (requestMessage != null) && (requestMessage.Headers.CosmosMessageHeaders.Get(HttpConstants.HttpHeaders.PopulateIndexMetrics) == true.ToString()));
+                isBase64Encoded: true);
             
             this.RequestMessage = requestMessage;
         }

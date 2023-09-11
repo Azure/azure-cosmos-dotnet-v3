@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Text;
 
     /// <summary>
-    /// Base class for visiting and serializing a <see cref="QueryMetrics"/>.
+    /// Base class for visiting and serializing a <see cref="IndexUtilizationInfo"/>.
     /// </summary>
 #if INTERNAL
 #pragma warning disable SA1600
