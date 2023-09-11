@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -7038,6 +7039,11 @@ namespace Microsoft.Azure.Cosmos
                 headers.Set(HttpConstants.HttpHeaders.PreserveFullContent, bool.TrueString);
             }
             return headers;
+        }
+
+        public async Task<AccountClientConfiguration> GetDatabaseAccountClientConfigInternalAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default)
+        {
+            return (await this.telemetryToServiceHelper.GetDatabaseAccountClientConfigAsync(this.cosmosAuthorization, this.httpClient, serviceEndpoint)).Result;
         }
 
         private class ResetSessionTokenRetryPolicyFactory : IRetryPolicyFactory

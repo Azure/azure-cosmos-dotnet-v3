@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
-        private async Task<TryCatch<AccountClientConfiguration>> GetDatabaseAccountClientConfigAsync(AuthorizationTokenProvider cosmosAuthorization,
+        internal async Task<TryCatch<AccountClientConfiguration>> GetDatabaseAccountClientConfigAsync(AuthorizationTokenProvider cosmosAuthorization,
             CosmosHttpClient httpClient,
             Uri clientConfigEndpoint)
         {

@@ -9,11 +9,20 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal class ClientTelemetryConfiguration
+    /// <summary>
+    /// ClientTelemetryConfiguration
+    /// </summary>
+    public class ClientTelemetryConfiguration
     {
+        /// <summary>
+        /// IsEnabled
+        /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.ClientTelemetryEnabled)]
         public bool IsEnabled { get; set; }
 
+        /// <summary>
+        /// Endpoint
+        /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.ClientTelemetryEndpoint)]
         public string Endpoint { get; set; }
 

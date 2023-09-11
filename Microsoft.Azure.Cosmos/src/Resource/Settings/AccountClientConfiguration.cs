@@ -9,8 +9,14 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal class AccountClientConfiguration
+    /// <summary>
+    /// AccountClientConfiguration
+    /// </summary>
+    public class AccountClientConfiguration
     {
+        /// <summary>
+        /// ClientTelemetryConfiguration
+        /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.ClientTelemetryConfiguration)]
         public ClientTelemetryConfiguration ClientTelemetryConfiguration { get; set; }
 
