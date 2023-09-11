@@ -1,0 +1,26 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[RegexMatch with 1 argument]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.RegexMatch("abcd"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE RegexMatch(root["StringField"], "abcd")]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RegexMatch with 2 argument]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.RegexMatch("abcd", "i"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE RegexMatch(root["StringField"], "abcd", "i")]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>
