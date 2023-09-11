@@ -185,6 +185,28 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="obj"></param>
         /// <param name="regularExpression">A string expression with a regular expression defined to use when searching.</param>
+        /// <returns>Returns true if the string matches the regex expressions; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Where(document => document.Name.RegexMatch(<regex>));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool RegexMatch(this object obj, string regularExpression)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a Boolean value indicating if the specified expression matches the supplied regex pattern.
+        /// Azure Cosmos DB for NoSQL uses PERL compatible regualr expressions (PCRE).
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/regexmatch.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="regularExpression">A string expression with a regular expression defined to use when searching.</param>
         /// <param name="searchModifier">An optional string expression with the selected modifiers to use with the regular expression.</param>
         /// <returns>Returns true if the string matches the regex expressions; otherwise, false.</returns>
         /// <example>
@@ -194,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static bool RegexMatch(this object obj, string regularExpression, [Optional] string searchModifier)
+        public static bool RegexMatch(this object obj, string regularExpression, string searchModifier)
         {
             throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }

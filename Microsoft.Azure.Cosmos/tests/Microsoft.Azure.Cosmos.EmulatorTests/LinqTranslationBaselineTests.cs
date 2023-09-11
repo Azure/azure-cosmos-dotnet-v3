@@ -293,6 +293,23 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestRegexMatchFunction()
+        {
+            // Similar to the type checking function, RegexMatch are not supported client side.
+            // Therefore this method is verified with baseline only.
+            List<DataObject> data = new List<DataObject>();
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("RegexMatch with 1 argument", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abcd"))),
+                new LinqTestInput("RegexMatch with 2 argument", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abcd", "i"))),
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestMemberInitializer()
         {
             const int Records = 100;

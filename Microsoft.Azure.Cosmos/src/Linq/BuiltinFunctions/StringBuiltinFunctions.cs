@@ -327,7 +327,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
-
         private class RegexMatchVisitor : SqlBuiltinFunctionVisitor
         {
             public RegexMatchVisitor()
@@ -335,28 +334,30 @@ namespace Microsoft.Azure.Cosmos.Linq
                     isStatic: true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(string)},
-                        new Type[]{typeof(string), typeof(string)}
+                        new Type[]{ typeof(object), typeof(string)},
+                        new Type[]{ typeof(object), typeof(string), typeof(string)}
                     })
-            { }
+            {
+            }
 
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
                 int argumentCount = methodCallExpression.Arguments.Count;
-                if (argumentCount == 0 || argumentCount > 2 || (methodCallExpression.Arguments[1].NodeType != ExpressionType.Constant))
+                if (argumentCount == 0 || argumentCount > 3 || (methodCallExpression.Arguments[1].NodeType != ExpressionType.Constant))
                 {
                     return null;
                 }
 
                 List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
                 {
-                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context),
-                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context)
+                    // Argument 0 and the Method object is the same
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context),
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[1], context)
                 };
 
-                if (argumentCount > 1 && (methodCallExpression.Arguments[2].NodeType == ExpressionType.Constant))
+                if (argumentCount > 2 && (methodCallExpression.Arguments[2].NodeType == ExpressionType.Constant))
                 {
-                    arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[1], context));
+                    arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[2], context));
                 }
 
                 return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.RegexMatch, arguments.ToArray());
