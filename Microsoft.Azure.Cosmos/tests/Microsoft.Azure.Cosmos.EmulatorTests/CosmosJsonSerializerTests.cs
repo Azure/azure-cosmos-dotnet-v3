@@ -98,7 +98,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 fromStreamCount = 0;
 
                 FeedIterator<ToDoActivity> itemIterator = container.GetItemQueryIterator<ToDoActivity>(
-                    query);
+                    query
+#if PREVIEW
+                    , requestOptions: new QueryRequestOptions() { EnableOptimisticDirectExecution = false }
+#endif
+                    );
                 List<ToDoActivity> items = new List<ToDoActivity>();
                 while (itemIterator.HasMoreResults)
                 {
@@ -113,7 +117,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Verify that the custom serializer is actually being used via stream
                 FeedIterator itemStreamIterator = container.GetItemQueryStreamIterator(
-                    query);
+                    query
+#if PREVIEW
+                    , requestOptions: new QueryRequestOptions() { EnableOptimisticDirectExecution = false }
+#endif
+                    );
                 while (itemStreamIterator.HasMoreResults)
                 {
                     ResponseMessage response = await itemStreamIterator.ReadNextAsync();

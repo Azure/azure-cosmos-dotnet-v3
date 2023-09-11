@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
         /// Default value is <see cref="Cosmos.ConnectionMode.Direct"/>
         /// </value>
         /// <remarks>
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#direct-connection">Connection policy: Use direct connection mode</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#direct-connection">Connection policy: Use direct connection mode</see>.
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect()"/>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, IWebProxy)"/>
@@ -345,6 +345,17 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="ItemRequestOptions.EnableContentResponseOnWrite"/>
         /// <seealso cref="TransactionalBatchItemRequestOptions.EnableContentResponseOnWrite"/>
         public bool? EnableContentResponseOnWrite { get; set; }
+
+        /// <summary>
+        /// Gets or sets the advanced replica selection flag. The advanced replica selection logic keeps track of the replica connection
+        /// status, and based on status, it prioritizes the replicas which show healthy stable connections, so that the requests can be sent
+        /// confidently to the particular replica. This helps the cosmos client to become more resilient and effective to any connectivity issues.
+        /// The default value for this parameter is 'false'.
+        /// </summary>
+        /// <remarks>
+        /// <para>This is optimal for latency-sensitive workloads. Does not apply if <see cref="ConnectionMode.Gateway"/> is used.</para>
+        /// </remarks>
+        internal bool? EnableAdvancedReplicaSelectionForTcp { get; set; }
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
@@ -603,7 +614,7 @@ namespace Microsoft.Azure.Cosmos
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.
         /// </summary>
         internal bool EnableUpgradeConsistencyToLocalQuorum { get; set; } = false;
-        
+
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
         /// </summary>
@@ -613,7 +624,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// This setting is not used when <see cref="ConnectionMode"/> is set to <see cref="Cosmos.ConnectionMode.Gateway"/>.
         /// Gateway mode only supports HTTPS.
-        /// For more information, see <see href="https://docs.microsoft.com/azure/documentdb/documentdb-performance-tips#use-tcp">Connection policy: Use the TCP protocol</see>.
+        /// For more information, see <see href="https://learn.microsoft.com/azure/cosmos-db/nosql/performance-tips-dotnet-sdk-v3#networking">Connection policy: Use the HTTPS protocol</see>.
         /// </remarks>
         internal Protocol ConnectionProtocol
         {
@@ -758,6 +769,7 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
+                EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
                 HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback
             };
