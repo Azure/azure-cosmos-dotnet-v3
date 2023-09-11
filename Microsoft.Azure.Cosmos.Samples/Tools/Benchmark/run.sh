@@ -47,15 +47,15 @@ echo $COMMIT_TIME
 echo $BRANCH_NAME
 
 # Client telemetry disabled ReadStreamExistsV3
-dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --disableClientTelemetry --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --disableClientTelemetry --disableDistributedTracing --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
 sleep 10 #Wait
 
 # Client telemetry enabled ReadStreamExistsV3. This is needed to see the impact of client telemetry. 
-dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --WorkloadName ReadStreamExistsV3WithTelemetry --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --WorkloadName ReadStreamExistsV3WithTelemetry --telemetryScheduleInSec 60 --disableDistributedTracing --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
 sleep 10 #Wait
 
 # Open telemetry enabled ReadStreamExistsV3. This is needed to see the impact of distributed tracing (without listener) 
-dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --WorkloadName ReadStreamExistsV3WithDistributedTracingWOListener  --disableClientTelemetry --enableDistributedTracing --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --WorkloadName ReadStreamExistsV3WithDistributedTracingWOListener  --disableClientTelemetry --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
 sleep 10 #Wait
 
 #Point read operations
