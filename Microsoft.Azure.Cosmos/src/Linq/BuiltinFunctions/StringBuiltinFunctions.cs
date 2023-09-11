@@ -327,6 +327,47 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
+
+        private class RegexMatchVisitor : SqlBuiltinFunctionVisitor
+        {
+            public RegexMatchVisitor()
+                : base(SqlFunctionCallScalarExpression.Names.RegexMatch,
+                    isStatic: true,
+                    new List<Type[]>()
+                    {
+                        new Type[]{typeof(string)},
+                        new Type[]{typeof(string), typeof(string)}
+                    })
+            { }
+
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                int argumentCount = methodCallExpression.Arguments.Count;
+                if (argumentCount == 0 || argumentCount > 2 || (methodCallExpression.Arguments[1].NodeType != ExpressionType.Constant))
+                {
+                    return null;
+                }
+
+                List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
+                {
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Object, context),
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context)
+                };
+
+                if (argumentCount > 1 && (methodCallExpression.Arguments[2].NodeType == ExpressionType.Constant))
+                {
+                    arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[1], context));
+                }
+
+                return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.RegexMatch, arguments.ToArray());
+            }
+
+            protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                return null;
+            }
+        }
+
         private class StringVisitToString : SqlBuiltinFunctionVisitor
         {
             public StringVisitToString()
@@ -431,6 +472,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     "TrimStart",
                     new StringVisitTrimStart()
+                },
+                {
+                    nameof(CosmosLinqExtensions.RegexMatch),
+                    new RegexMatchVisitor()
                 },
                 {
                     "Replace",

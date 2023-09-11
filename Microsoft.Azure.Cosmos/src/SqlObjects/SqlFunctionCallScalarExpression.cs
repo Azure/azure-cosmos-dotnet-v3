@@ -332,6 +332,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Power = "POWER";
             public const string Radians = "RADIANS";
             public const string Rand = "RAND";
+            public const string RegexMatch = "RegexMatch";
             public const string Replace = "REPLACE";
             public const string Replicate = "REPLICATE";
             public const string Reverse = "REVERSE";
