@@ -141,10 +141,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override SqlObject Visit(SqlGroupByClause sqlGroupByClause)
         {
-            SqlScalarExpression[] expressions = new SqlScalarExpression[sqlGroupByClause.KeySelectorExpressions.Length];
-            for (int i = 0; i < sqlGroupByClause.KeySelectorExpressions.Length; i++)
+            SqlScalarExpression[] expressions = new SqlScalarExpression[sqlGroupByClause.Expressions.Length];
+            for (int i = 0; i < sqlGroupByClause.Expressions.Length; i++)
             {
-                expressions[i] = sqlGroupByClause.KeySelectorExpressions[i].Accept(this) as SqlScalarExpression;
+                expressions[i] = sqlGroupByClause.Expressions[i].Accept(this) as SqlScalarExpression;
             }
 
             return SqlGroupByClause.Create(expressions);

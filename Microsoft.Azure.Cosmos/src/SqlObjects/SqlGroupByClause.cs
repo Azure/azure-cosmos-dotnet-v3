@@ -16,41 +16,24 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #endif
     sealed class SqlGroupByClause : SqlObject
     {
-        private SqlGroupByClause(ImmutableArray<SqlScalarExpression> keySelectorExpressions, SqlScalarExpression valueSelectorExpression)
+        private SqlGroupByClause(ImmutableArray<SqlScalarExpression> expressions)
         {
-            foreach (SqlScalarExpression expression in keySelectorExpressions)
+            foreach (SqlScalarExpression expression in expressions)
             {
                 if (expression == null)
                 {
-                    throw new ArgumentException($"{nameof(keySelectorExpressions)} must not have null items.");
+                    throw new ArgumentException($"{nameof(expressions)} must not have null items.");
                 }
             }
 
-            this.KeySelectorExpressions = keySelectorExpressions;
-
-            this.ValueSelectorExpression = valueSelectorExpression;
+            this.Expressions = expressions;
         }
 
-        public ImmutableArray<SqlScalarExpression> KeySelectorExpressions { get; }
+        public ImmutableArray<SqlScalarExpression> Expressions { get; }
 
-        // For use during LINQ translation only
-        public SqlScalarExpression ValueSelectorExpression { get; }
+        public static SqlGroupByClause Create(params SqlScalarExpression[] expressions) => new SqlGroupByClause(expressions.ToImmutableArray());
 
-        public static SqlGroupByClause Create(params SqlScalarExpression[] keySelectorExpressions)
-        {
-            return new SqlGroupByClause(keySelectorExpressions.ToImmutableArray(), valueSelectorExpression: null);
-        }
-
-        public static SqlGroupByClause Create(ImmutableArray<SqlScalarExpression> keySelectorExpressions)
-        {
-            return new SqlGroupByClause(keySelectorExpressions, valueSelectorExpression: null);
-        }
-
-        // For Use with Linq
-        public static SqlGroupByClause Create(SqlScalarExpression keySelectorExpression, SqlScalarExpression valueSelectorExpression)
-        {
-            return new SqlGroupByClause(ImmutableArray.Create(keySelectorExpression), valueSelectorExpression);
-        }
+        public static SqlGroupByClause Create(ImmutableArray<SqlScalarExpression> expressions) => new SqlGroupByClause(expressions);
 
         public override void Accept(SqlObjectVisitor visitor) => visitor.Visit(this);
 

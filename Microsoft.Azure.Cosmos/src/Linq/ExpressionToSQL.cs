@@ -64,7 +64,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             public const string Count = "Count";
             public const string Max = "Max";
             public const string Min = "Min";
-            public const string GroupBy = "GroupBy";
             public const string OrderBy = "OrderBy";
             public const string ThenBy = "ThenBy";
             public const string OrderByDescending = "OrderByDescending";
@@ -1024,7 +1023,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlQuery query = context.currentQuery.FlattenAsPossible().GetSqlQuery();
             SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);
 
-            ParameterExpression parameterExpression = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+            ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
             Binding binding = new Binding(parameterExpression, subqueryCollection, isInCollection: false, isInputParameter: true);
 
             context.currentQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc());
@@ -1138,7 +1137,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             Collection collection = ExpressionToSql.ConvertToCollection(body);
             context.PushCollection(collection);
-            ParameterExpression parameter = context.GenerateFreshParameter(type, parameterName);
+            ParameterExpression parameter = context.GenFreshParameter(type, parameterName);
             context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
             context.PopParameter();
             context.PopCollection();
@@ -1199,13 +1198,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         context.currentQuery = context.PackageCurrentQueryIfNeccessary();
                         result = ExpressionToSql.VisitSelectMany(inputExpression.Arguments, context);
-                        break;
-                    }
-                case LinqMethods.GroupBy:
-                    {
-                        SqlGroupByClause groupBy = ExpressionToSql.VisitGroupBy(inputExpression.Arguments, context);
-                        context.currentQuery = context.currentQuery.AddGroupByClause(groupBy, context);
-
                         break;
                     }
                 case LinqMethods.OrderBy:
@@ -1388,7 +1380,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.Skip:
                 case LinqMethods.Take:
                 case LinqMethods.Distinct:
-                case LinqMethods.GroupBy:
                     isSubqueryExpression = true;
                     expressionObjKind = SubqueryKind.ArrayScalarExpression;
                     break;
@@ -1418,7 +1409,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// Visit an lambda expression which is inside a lambda and translate it to a scalar expression or a collection scalar expression.
+        /// Visit an lambda expression which is in side a lambda and translate it to a scalar expression or a collection scalar expression.
         /// If it is a collection scalar expression, e.g. should be translated to subquery such as SELECT VALUE ARRAY, SELECT VALUE EXISTS, 
         /// SELECT VALUE [aggregate], the subquery will be aliased to a new binding for the FROM clause. E.g. consider 
         /// Select(family => family.Children.Select(child => child.Grade)). Since the inner Select corresponds to a subquery, this method would 
@@ -1521,7 +1512,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 SqlQuery query = ExpressionToSql.CreateSubquery(expression, parameters, context);
 
-                ParameterExpression parameterExpression = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                 SqlCollection subqueryCollection = ExpressionToSql.CreateSubquerySqlCollection(
                     query, context,
                     isMinMaxAvgMethod ? SubqueryKind.ArrayScalarExpression : expressionObjKind.Value);
@@ -1677,81 +1668,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 Binding binding;
                 SqlQuery query = ExpressionToSql.CreateSubquery(lambda.Body, lambda.Parameters, context);
                 SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);
-                ParameterExpression parameterExpression = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                 binding = new Binding(parameterExpression, subqueryCollection, isInCollection: false, isInputParameter: true);
                 context.currentQuery.fromParameters.Add(binding);
             }
 
             return collection;
-        }
-
-        private static SqlGroupByClause VisitGroupBy(ReadOnlyCollection<Expression> arguments, TranslationContext context)
-        {
-            if (arguments.Count != 3)
-            {
-                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.GroupBy, 3, arguments.Count));
-            }
-
-            // First argument is input, second is key selector and third is value selector
-            LambdaExpression keySelectorLambda = Utilities.GetLambda(arguments[1]);
-            SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitScalarExpression(keySelectorLambda, context);
-
-            // TODO - We need special treatment for this binding 
-            // Alternate thoughts: Instead of saving the value selector func, we emit a select clause here?
-            LambdaExpression valueSelectorLambda = Utilities.GetLambda(arguments[2]);
-            SqlScalarExpression valueSelectorFunc = ExpressionToSql.VisitScalarExpression(valueSelectorLambda, context);
-
-            SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunc, valueSelectorFunc);
-
-            // We need to make the type in IGrouping<keyType, valueType> and then push the corresponding parameter binding
-            // Look to Parameter Access for inspiration
-            SqlScalarExpression body = ExpressionToSql.VisitNonSubqueryScalarExpression(inputExpression, context);
-            Type type = typeof(IGrouping<int, int>);
-
-            Collection collection = ExpressionToSql.ConvertToCollection(body);
-            context.PushCollection(collection);
-            ParameterExpression parameter = context.GenerateFreshParameter(type, parameterName);
-            context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
-            context.PopParameter();
-            context.PopCollection();
-
-            return new Collection(parameter.Name);
-
-            // First, we need to fully translate the scalar expression
-            // then we can use the return type, and the scalar expression collection name to create new binding
-
-            //Collection collection = ExpressionToSql.ConvertToCollection(sqlfunc);
-            //context.PushCollection(collection);
-            //ParameterExpression parameter = context.GenFreshParameter(sqlfunc.GetType(), ExpressionToSql.GetBindingParameterName(context));
-            //context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
-            //context.PopParameter();
-            //context.PopCollection();
-
-            //SqlQuery query = context.currentQuery.FlattenAsPossible().GetSqlQuery();
-            //SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);
-
-            //ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
-            //Binding binding = new Binding(parameterExpression, subqueryCollection, isInCollection: false, isInputParameter: true);
-
-            //context.currentQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc());
-            //context.currentQuery.AddBinding(binding);
-
-            //result = new Collection(LinqMethods.GroupBy);
-
-            //====================================
-            // Once we have visit a group by query, then the input need to be set
-
-            //Type elemType = TypeSystem.GetElementType(inputExpression.Type);
-            //context.SetInputParameter(elemType, ParameterSubstitution.InputParameterName); // ignore result
-
-            //// First outer collection
-            //Collection result = new Collection(ExpressionToSql.SqlRoot);
-
-            // Set the input param of the current query to whatever the lambda produce
-            //context.currentQuery.fromParameters.SetInputParameter(lambda.ReturnType, context.currentQuery.GetInputParameterInContext(isInNewQuery: false).Name, context.InScope);
-            //context.SetInputParameter(TypeSystem.GetElementType(lambda.ReturnType), context.currentQuery.GetInputParameterInContext(isInNewQuery: false).Name); // ignore result
-            //context.currentQuery.fromParameters.SetInputParameter(lambda.ReturnType, context.currentQuery.GetInputParameterInContext(isInNewQuery: false).Name, context.InScope);
-            return groupby;
         }
 
         private static SqlOrderByClause VisitOrderBy(ReadOnlyCollection<Expression> arguments, bool isDescending, TranslationContext context)
@@ -1783,7 +1705,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // it is necessary to trigger the binding because Skip is just a spec with no binding on its own. 
                     // This can be done by pushing and popping a temporary parameter. E.g. In SelectMany(f => f.Children.Skip(1)), 
                     // it's necessary to consider Skip as Skip(x => x, 1) to bind x to f.Children. Similarly for Top and Limit.
-                    ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                    ParameterExpression parameter = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                     context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
                     context.PopParameter();
 
@@ -1932,7 +1854,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (arguments.Count == 1)
             {
                 // Need to trigger parameter binding for cases where a aggregate function immediately follows a member access.
-                ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                ParameterExpression parameter = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                 context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
                 aggregateExpression = ExpressionToSql.VisitParameter(parameter, context);
                 context.PopParameter();
@@ -1967,7 +1889,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             // We consider Distinct as Distinct(v0 => v0)
             // It's necessary to visit this identity method to replace the parameters names
-            ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+            ParameterExpression parameter = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
             LambdaExpression identityLambda = Expression.Lambda(parameter, parameter);
             SqlScalarExpression sqlfunc = ExpressionToSql.VisitNonSubqueryScalarLambda(identityLambda, context);
             SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(sqlfunc);
