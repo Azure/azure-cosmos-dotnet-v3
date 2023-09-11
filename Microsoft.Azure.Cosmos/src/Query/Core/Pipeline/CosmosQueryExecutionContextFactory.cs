@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.SqlObjects.Visitors;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents.Routing;
 
     internal static class CosmosQueryExecutionContextFactory
     {
@@ -647,8 +648,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else if (TryGetEpkProperty(properties, out string effectivePartitionKeyString))
             {
-                List<Documents.Routing.Range<string>> effectiveRanges = new List<Documents.Routing.Range<string>>
-                    { Documents.Routing.Range<string>.GetPointRange(effectivePartitionKeyString) };
+                List<Range<string>> effectiveRanges = new List<Range<string>>
+                    { Range<string>.GetPointRange(effectivePartitionKeyString) };
 
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
