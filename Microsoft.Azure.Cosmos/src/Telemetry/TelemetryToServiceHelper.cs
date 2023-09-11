@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         cancellationToken: default))
                     {
                         // It means feature flag is off at gateway, then log the exception and retry after defined interval.
-                        // If feature flagis OFF at gateway, SDK won't refresh the latest of the flag.
+                        // If feature flag is OFF at gateway, SDK won't refresh the latest state of the client telemetry flag.
                         if (responseMessage.StatusCode == System.Net.HttpStatusCode.BadRequest)
                         {
                             throw new InvalidOperationException("Client Config API is not enabled at compute gateway.");
@@ -156,8 +156,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         }
                     }
                 }
-                catch (Exception ex) when (!(ex is ObjectDisposedException)) // Do not log if exception is due to client dispose.
+                catch (Exception ex) when (!(ex is ObjectDisposedException))
                 {
+                    // Do not log if exception is due to client dispose.
                     DefaultTrace.TraceWarning($"Exception while calling client config " + ex);
                     return TryCatch<AccountClientConfiguration>.FromException(ex);
                 }

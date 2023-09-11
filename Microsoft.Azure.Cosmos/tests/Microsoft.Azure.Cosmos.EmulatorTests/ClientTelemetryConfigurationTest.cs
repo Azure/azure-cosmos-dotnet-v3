@@ -23,11 +23,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string EndpointUrl = "http://dummy.test.com/";
         private CosmosClientBuilder cosmosClientBuilder;
 
+        private readonly TimeSpan OriginalDefaultBackgroundRefreshClientConfigTimeInterval = TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeInterval;
+        
         [TestInitialize]
         public void TestInitialize()
         {
             TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeInterval 
                 = TimeSpan.FromMilliseconds(100);
+
             this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
         }
 
@@ -38,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Resetting time intervals
             TelemetryToServiceHelper.DefaultBackgroundRefreshClientConfigTimeInterval 
-                = TimeSpan.FromMinutes(10);
+                = this.OriginalDefaultBackgroundRefreshClientConfigTimeInterval;
         }
 
         [TestMethod]
