@@ -38,9 +38,7 @@ namespace Microsoft.Azure.Cosmos
             ConnectionPolicy connectionPolicy)
         {
             bool replicaValidationDefaultValue = false;
-#if PREVIEW
-            replicaValidationDefaultValue = true;
-#endif
+
             if (connectionPolicy != null
                 && connectionPolicy.EnableAdvancedReplicaSelectionForTcp.HasValue)
             {

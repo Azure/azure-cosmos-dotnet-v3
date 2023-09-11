@@ -13,6 +13,34 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.35.3-preview"/> [3.35.3-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.3-preview) - 2023-08-10
+### <a name="3.35.3"/> [3.35.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.3) - 2023-08-10
+
+#### Fixed
+- [4030](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4030) Upgrade Resiliency: Fixes Race Condition by Calling Dispose Too Early
+
+#### Added
+- [4019](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4019) Upgrade Resiliency: Disables Replica Validation Feature By Default in Preview (The feature was previously enabled by default in the [`3.35.2-preview`](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.2-preview) release)
+
+### <a name="3.35.2-preview"/> [3.35.2-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.2-preview) - 2023-07-17
+
+#### Fixed
+- [3973](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3973) Application Insights Integration: Fixes event generation for failed requests
+
+#### Added
+- [3951](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3951) Upgrade Resiliency: Adds Code to Enable Replica Validation Feature By Default for Preview
+
+### <a name="3.35.2"/> [3.35.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.2) - 2023-07-17
+
+#### Fixed
+- [3917](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3917) Query: Fixes malformed continuation token exception type and message
+- [3969](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3969) Diagnostics: Fixes verbose levels for "Operation will NOT be retried"
+
+#### Added
+- [3668](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3668) Query : Adds string comparison alternative when converting LINQ to SQL (Thanks [@ernesto1596](https://github.com/ernesto1596))
+- [3834](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3834) Query : Adds support for newtonsoft member access via ExtensionData (Thanks [@onionhammer](https://github.com/onionhammer))
+- [3939](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3939) CreateAndInitializeAsync: Adds Code to Optimize Rntbd Open Connection Logic to Open Connections in Parallel
+
 ### <a name="3.35.1-preview"/> [3.35.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.1-preview) - 2023-06-27
 ### <a name="3.35.1"/> [3.35.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.1) - 2023-06-27
 
@@ -24,6 +52,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Added
 - [3836](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3836) Integrated cache: Adds BypassIntegratedCache to DedicatedGatewayRequestOptions
 - [3909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/3909) Query: Adds EnableOptimisticDirectExecution in QueryRequestOptions enabled by default
+
+Recommendation for customers regarding Optimistic Direct Execution:
+
+Starting Version 3.35.0, the Preview SDK enables the ODE feature by default. This can potentially cause a new type of continuation token to be generated. Such a token is not recognized by the older SDKs by design and this could result in a Malformed Continuation Token Exception. 
+If you have a scenario where tokens generated from the newer SDKs are used by an older SDK, we recommend a 2 step approach to upgrade:
+
+- Upgrade to the new SDK and disable ODE, both together as part of a single deployment. Wait for all nodes to upgrade.
+    - In order to disable ODE, set EnableOptimisticDirectExecution to false in the QueryRequestOptions. 
+- Enable ODE as part of second deployment for all nodes.
 
 ### <a name="3.35.0"/> [3.35.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.35.0) - 2023-06-19
 

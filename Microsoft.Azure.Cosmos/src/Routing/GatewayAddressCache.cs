@@ -302,14 +302,27 @@ namespace Microsoft.Azure.Cosmos.Routing
                     .ReplicaTransportAddressUris
                     .Any(x => x.ShouldRefreshHealthStatus()))
                 {
-                    Task refreshAddressesInBackgroundTask = Task.Run(async () => await this.serverPartitionAddressCache.RefreshAsync(
-                        key: partitionKeyRangeIdentity,
-                        singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
-                                request,
-                                cachedAddresses: currentCachedValue,
+                    Task refreshAddressesInBackgroundTask = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await this.serverPartitionAddressCache.RefreshAsync(
+                                key: partitionKeyRangeIdentity,
+                                singleValueInitFunc: (currentCachedValue) => this.GetAddressesForRangeIdAsync(
+                                    request,
+                                    cachedAddresses: currentCachedValue,
+                                    partitionKeyRangeIdentity.CollectionRid,
+                                    partitionKeyRangeIdentity.PartitionKeyRangeId,
+                                    forceRefresh: true));
+                        }
+                        catch (Exception ex)
+                        {
+                            DefaultTrace.TraceWarning("Failed to refresh addresses in the background for the collection rid: {0} with exception: {1}. '{2}'",
                                 partitionKeyRangeIdentity.CollectionRid,
-                                partitionKeyRangeIdentity.PartitionKeyRangeId,
-                                forceRefresh: true)));
+                                ex,
+                                System.Diagnostics.Trace.CorrelationManager.ActivityId);
+                        }
+                    });
                 }
 
                 return addresses;

@@ -44,9 +44,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.
+        /// This represents the backend query metrics for the request.
         /// </summary>
-        /// <returns>The string field <see cref="CosmosDiagnostics"/> instance in the Azure CosmosDB database service.</returns>
+        /// <remarks>
+        /// This is only applicable for query operations. For all other operations this will return null.
+        /// </remarks>
+        /// <returns>The accumulated backend metrics for the request.</returns>
+        public virtual ServerSideCumulativeMetrics GetQueryMetrics()
+        {
+            // Default implementation avoids breaking change for users upgrading.
+            throw new NotImplementedException($"{nameof(CosmosDiagnostics)}.{nameof(GetQueryMetrics)}");
+        }
+
+        /// <summary>
+        /// Gets the string field <see cref="CosmosDiagnostics"/> instance in the Azure Cosmos DB database service.
+        /// </summary>
+        /// <returns>The string field <see cref="CosmosDiagnostics"/> instance in the Azure Cosmos DB database service.</returns>
         /// <remarks>
         /// <see cref="CosmosDiagnostics"/> implements lazy materialization and is only materialized when <see cref="CosmosDiagnostics.ToString"/> is called.
         /// </remarks>
@@ -80,6 +93,9 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the list of all regions that were contacted for a request
         /// </summary>
         /// <returns>The list of tuples containing the Region name and the URI</returns>
+        /// <remarks>
+        /// The returned list contains unique regions and doesn't guarantee ordering of the regions contacted from the first to the last
+        /// </remarks>
         public abstract IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions();
     }
 }
