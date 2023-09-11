@@ -334,8 +334,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                     isStatic: true,
                     new List<Type[]>()
                     {
-                        new Type[]{ typeof(object), typeof(string)},
-                        new Type[]{ typeof(object), typeof(string), typeof(string)}
+                        new Type[]{ typeof(object), typeof(string)}, // search string, regex pattern
+                        new Type[]{ typeof(object), typeof(string), typeof(string)} // search string, regex pattern, search modifier
                     })
             {
             }
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
                 {
-                    // Argument 0 and the Method object is the same
+                    // Argument 0 and the Method object is the same, since Regex is an extension method 
                     ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context),
                     ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[1], context)
                 };
@@ -361,11 +361,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
 
                 return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.RegexMatch, arguments.ToArray());
-            }
-
-            protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
-            {
-                return null;
             }
         }
 
