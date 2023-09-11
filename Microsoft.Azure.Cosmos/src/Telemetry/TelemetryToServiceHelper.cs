@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         // If feature flagis OFF at gateway, SDK won't refresh the latest of the flag.
                         if (responseMessage.StatusCode == System.Net.HttpStatusCode.BadRequest)
                         {
-                           throw new InvalidOperationException("Client Config API is not enabled at compute gateway.");
+                            throw new InvalidOperationException("Client Config API is not enabled at compute gateway.");
                         }
 
                         using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!(ex is ObjectDisposedException)) // Do not log if exception is due to client dispose.
                 {
                     DefaultTrace.TraceWarning($"Exception while calling client config " + ex);
                     return TryCatch<AccountClientConfiguration>.FromException(ex);
