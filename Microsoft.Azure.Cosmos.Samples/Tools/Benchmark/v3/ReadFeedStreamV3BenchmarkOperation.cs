@@ -59,6 +59,7 @@ namespace CosmosBenchmark
             {
                 DatabseName = databsaeName,
                 ContainerName = containerName,
+                OperationType = this.OperationType,
                 RuCharges = feedResponse.Headers.RequestCharge,
                 CosmosDiagnostics = feedResponse.Diagnostics,
                 LazyDiagnostics = () => feedResponse.Diagnostics.ToString(),
