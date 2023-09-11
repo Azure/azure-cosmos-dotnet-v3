@@ -31,16 +31,17 @@
     │           │       [System Info]
     │           │       Redacted To Not Change The Baselines From Run To Run
     │           │   )
-    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                       └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                               (
-    │                                   [Client Side Request Stats]
-    │                                   Redacted To Not Change The Baselines From Run To Run
-    │                                   [PointOperationStatisticsTraceDatum]
-    │                                   Redacted To Not Change The Baselines From Run To Run
-    │                               )
+    │           └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                           └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                                   (
+    │                                       [Client Side Request Stats]
+    │                                       Redacted To Not Change The Baselines From Run To Run
+    │                                       [PointOperationStatisticsTraceDatum]
+    │                                       Redacted To Not Change The Baselines From Run To Run
+    │                                   )
     └── Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
@@ -73,24 +74,30 @@
               },
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
+                              "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                               "duration in milliseconds": 0,
-                              "data": {
-                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                                "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
-                              }
+                              "children": [
+                                {
+                                  "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
+                                  "duration in milliseconds": 0,
+                                  "data": {
+                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                    "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
+                                  }
+                                }
+                              ]
                             }
                           ]
                         }
@@ -187,16 +194,17 @@
     │       │       [System Info]
     │       │       Redacted To Not Change The Baselines From Run To Run
     │       │   )
-    │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    │                           (
-    │                               [Client Side Request Stats]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                               [PointOperationStatisticsTraceDatum]
-    │                               Redacted To Not Change The Baselines From Run To Run
-    │                           )
+    │       └── Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │           └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │               └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    │                               (
+    │                                   [Client Side Request Stats]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                                   [PointOperationStatisticsTraceDatum]
+    │                                   Redacted To Not Change The Baselines From Run To Run
+    │                               )
     └── Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
@@ -221,24 +229,30 @@
           },
           "children": [
             {
-              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
+              "name": "Microsoft.Azure.Cosmos.Handlers.TelemetryHandler",
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "duration in milliseconds": 0,
                       "children": [
                         {
-                          "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "duration in milliseconds": 0,
-                          "data": {
-                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                            "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
-                          }
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
+                              }
+                            }
+                          ]
                         }
                       ]
                     }

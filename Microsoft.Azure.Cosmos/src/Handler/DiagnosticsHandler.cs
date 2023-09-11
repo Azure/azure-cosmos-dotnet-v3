@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Handlers
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handler;
@@ -25,7 +26,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage responseMessage = await base.SendAsync(request, cancellationToken);
 
             // Record the diagnostics on the response to get the CPU of when the request was executing
-            SystemUsageHistory systemUsageHistory = DiagnosticsHandlerHelper.Instance.GetDiagnosticsSystemHistory();
+            SystemUsageHistory systemUsageHistory = DiagnosticsHandlerHelper.GetInstance().GetDiagnosticsSystemHistory();
+
             if (systemUsageHistory != null)
             {
                 request.Trace.AddDatum(

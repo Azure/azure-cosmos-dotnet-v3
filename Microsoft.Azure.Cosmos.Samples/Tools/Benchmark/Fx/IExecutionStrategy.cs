@@ -6,6 +6,7 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Threading.Tasks;
+    using OpenTelemetry.Metrics;
 
     internal interface IExecutionStrategy
     {
@@ -19,7 +20,7 @@ namespace CosmosBenchmark
             BenchmarkConfig benchmarkConfig,
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
-            double warmupFraction);
-
+            double warmupFraction,
+            MetricsCollectorProvider metricsCollectorProvider);
     }
 }

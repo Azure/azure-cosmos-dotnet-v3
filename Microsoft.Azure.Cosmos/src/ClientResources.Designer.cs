@@ -583,6 +583,24 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid operator for string.Compare(). Valid operators are (&apos;==&apos;, &apos;&lt;&apos;, &apos;&lt;=&apos;, &apos;&gt;&apos; or &apos;&gt;=&apos;).
+        /// </summary>
+        internal static string StringCompareInvalidOperator {
+            get {
+                return ResourceManager.GetString("StringCompareInvalidOperator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The right hand side of string.Compare() comparison must be constant &apos;0&apos;.
+        /// </summary>
+        internal static string StringCompareInvalidConstant {
+            get {
+                return ResourceManager.GetString("StringCompareInvalidConstant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Token refresh in progress..
         /// </summary>
         internal static string TokenRefreshInProgress {

@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -240,7 +239,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     requestOptions: new QueryRequestOptions()
                     {
                         MaxItemCount = 1,
-                        MaxConcurrency = 1
+                        MaxConcurrency = 1,
+#if PREVIEW
+                        EnableOptimisticDirectExecution = false
+#endif
                     }))
                 {
                     while (feedIterator.HasMoreResults)
@@ -268,7 +270,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions: new QueryRequestOptions()
                 {
                     MaxItemCount = 1,
-                    MaxConcurrency = 1
+                    MaxConcurrency = 1,
+#if PREVIEW
+                    EnableOptimisticDirectExecution = false
+#endif
                 });
 
             // First request should be a success
@@ -778,6 +783,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(correlatedIdList[0], firstCorrelatedActivityId.ToString());
             }
 
+        }
+
+        //TODO: Remove Ignore flag once emulator is updated to 0415
+        [Ignore]
+        [TestMethod]
+        public async Task TesOdeTokenCompatibilityWithNonOdePipeline()
+        {
+            string query = "select top 200 * from c";
+            CosmosClient client = DirectCosmosClient;
+            Container container = client.GetContainer(DatabaseId, ContainerId);
+                
+            // Create items
+            for (int i = 0; i < 500; i++)
+            {
+                await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity());
+            }
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                MaxItemCount = 50,
+                EnableOptimisticDirectExecution = true
+            };
+
+            FeedIteratorInternal feedIterator =
+                (FeedIteratorInternal)container.GetItemQueryStreamIterator(
+                query,
+                null,
+                queryRequestOptions);
+
+            ResponseMessage responseMessage = await feedIterator.ReadNextAsync(CancellationToken.None);
+            string continuationToken = responseMessage.ContinuationToken;
+
+            QueryRequestOptions newQueryRequestOptions = new QueryRequestOptions
+            {
+                MaxItemCount = 50,
+                EnableOptimisticDirectExecution = false
+            };
+
+            // use Continuation Token to create new iterator and use same trace
+            FeedIterator feedIteratorNew =
+                container.GetItemQueryStreamIterator(
+                query,
+                continuationToken,
+                newQueryRequestOptions);
+
+            while (feedIteratorNew.HasMoreResults)
+            {
+                responseMessage = await feedIteratorNew.ReadNextAsync(CancellationToken.None);
+            }
+
+            string expectedErrorMessage = "The continuation token supplied requires the Optimistic Direct Execution flag to be enabled in QueryRequestOptions for the query execution to resume. ";
+            Assert.IsTrue(responseMessage.CosmosException.ToString().Contains(expectedErrorMessage));
         }
 
         private class CustomHandler : RequestHandler

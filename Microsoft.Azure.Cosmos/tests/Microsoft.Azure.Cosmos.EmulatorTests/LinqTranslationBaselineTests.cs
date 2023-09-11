@@ -1045,6 +1045,58 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestStringCompare()
+        {
+            IOrderedQueryable<DataObject> testQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+
+            const int Records = 100;
+            const int MaxStringLength = 20;
+            Func<Random, DataObject> createDataObj = (random) =>
+            {
+                DataObject obj = new DataObject();
+                obj.StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
+                obj.StringField2 = random.NextDouble() < 0.5 ? obj.StringField : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
+                obj.Id = Guid.NewGuid().ToString();
+                obj.Pk = "Test";
+                return obj;
+            };
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // projected compare
+                new LinqTestInput("Projected Compare ==", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) == 0)),
+                new LinqTestInput("Projected Compare >", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) > 0)),
+                new LinqTestInput("Projected Compare >=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) >= 0)),
+                new LinqTestInput("Projected Compare <", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) < 0)),
+                new LinqTestInput("Projected Compare <=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, doc.StringField2) <= 0)),
+                // static strings
+                new LinqTestInput("String.Compare static string ==", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == 0)),
+                new LinqTestInput("String.Compare static string >", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") > 0)),
+                new LinqTestInput("String.Compare static string >=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") >= 0)),
+                new LinqTestInput("String.Compare static string <", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") < 0)),
+                new LinqTestInput("String.Compare static string <=", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") <= 0)),
+                // reverse operands
+                new LinqTestInput("Projected Compare == reverse operands", b => getQuery(b).Select(doc => 0 == String.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare < reverse operands", b => getQuery(b).Select(doc => 0 < String.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare <= reverse operands", b => getQuery(b).Select(doc => 0 <= String.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare > reverse operands", b => getQuery(b).Select(doc => 0 > String.Compare(doc.StringField, doc.StringField2))),
+                new LinqTestInput("Projected Compare >= reverse operands", b => getQuery(b).Select(doc => 0 >= String.Compare(doc.StringField, doc.StringField2))),
+                // errors Invalid compare value
+                new LinqTestInput("String.Compare > 1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") > 1)),
+                new LinqTestInput("String.Compare == 1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == 1)),
+                new LinqTestInput("String.Compare == -1", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") == -1)),
+                // errors Invalid operator
+                new LinqTestInput("String.Compare | 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") | 0)),
+                new LinqTestInput("String.Compare & 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") & 0)),
+                new LinqTestInput("String.Compare ^ 0", b => getQuery(b).Select(doc => String.Compare(doc.StringField, "str") ^ 0)),
+                // errors Unexpected number of arguments to string.Compare
+                new LinqTestInput("Unexpected number of arguments to string.Compare", b => getQuery(b).Select(doc => String.Compare(doc.StringField, 0, "str", 0, 3) == 0))
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestUDFs()
         {
             // The UDFs invokation are not supported on the client side.
@@ -1136,8 +1188,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Tuple<int, List<DataObject>> generatedData = this.CreateDataTestSelectTop();
             int seed = generatedData.Item1;
             List<DataObject> data = generatedData.Item2;
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+#if PREVIEW
+                EnableOptimisticDirectExecution = false
+#endif
+            };
 
-            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>

@@ -19,8 +19,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal class ClientTelemetryProcessor
     {
-        private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
-        
         private readonly AuthorizationTokenProvider tokenProvider;
         private readonly CosmosHttpClient httpClient;
             
@@ -39,6 +37,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharget)> operationInfoSnapshot,
             ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot,
             IReadOnlyList<RequestInfo> requestInfoSnapshot,
+            string endpointUrl,
             CancellationToken cancellationToken)
         {
             try
@@ -48,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     operationInfoSnapshot: operationInfoSnapshot,
                     cacheRefreshInfoSnapshot: cacheRefreshInfoSnapshot,
                     sampledRequestInfo: requestInfoSnapshot,
-                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, cancellationToken));
+                    callback: async (payload) => await this.SendAsync(clientTelemetryInfo.GlobalDatabaseAccountName, payload, endpointUrl, cancellationToken));
             }
             catch (Exception ex)
             {
@@ -67,6 +66,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private async Task SendAsync(
             string globalDatabaseAccountName, 
             string jsonPayload, 
+            string endpointUrl,
             CancellationToken cancellationToken)
         {
             if (endpointUrl == null)
@@ -77,12 +77,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             
             try
             {
-                DefaultTrace.TraceInformation("Sending Telemetry Data to {0}", endpointUrl.AbsoluteUri);
+                DefaultTrace.TraceInformation("Sending Telemetry Data to {0}", endpointUrl);
                 
                 using HttpRequestMessage request = new HttpRequestMessage
                 {
                     Method = HttpMethod.Post,
-                    RequestUri = endpointUrl,
+                    RequestUri = new Uri(endpointUrl),
                     Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
                 };
 
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     INameValueCollection headersCollection = new StoreResponseNameValueCollection();
                     await this.tokenProvider.AddAuthorizationHeaderAsync(
                             headersCollection,
-                            endpointUrl,
+                            new Uri(endpointUrl),
                             "POST",
                             AuthorizationTokenType.PrimaryMasterKey);
 
