@@ -7,6 +7,7 @@ THis sample demonstrates the basic usage of the CosmosClient bulk mode by perfor
 - Azure Cosmos DB NoSQL Account
   - Create a DataBase and Container
 - Microsoft.Azure.Cosmos NuGet [package](http://www.nuget.org/packages/Microsoft.Azure.Cosmos/)
+- Async main requires c# 7.1 which is set in the csproj with the LangVersion attribute
 
 ## Run
 
