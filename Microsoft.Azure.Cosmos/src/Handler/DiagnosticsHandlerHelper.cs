@@ -61,25 +61,15 @@ namespace Microsoft.Azure.Cosmos.Handler
         /// <param name="isClientTelemetryEnabled"></param>
         public static void Refresh(bool isClientTelemetryEnabled)
         {
-            Console.WriteLine("DiagnopsticHelper states " + isClientTelemetryEnabled + " " + DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled);
             if (isClientTelemetryEnabled != DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled)
             {
                 DiagnosticsHandlerHelper tempInstance = DiagnosticsHandlerHelper.Instance;
 
-                // Update telemetry flag
                 DiagnosticsHandlerHelper.isTelemetryMonitoringEnabled = isClientTelemetryEnabled;
-                // Restart the job
                 DiagnosticsHandlerHelper.Instance = new DiagnosticsHandlerHelper();
-                _ = Task.Run(() =>
-                {
-                    Console.WriteLine("Stopping System Monitor for new state " + isClientTelemetryEnabled);
-                    tempInstance.StopSystemMonitor();
-                    Console.WriteLine("Stopped System Monitor for new state " + isClientTelemetryEnabled);
-                });
-            } 
-            else
-            {
-                Console.WriteLine("DiagnopsticHelper: No state change detected");
+
+                // Stopping the monitor is a blocking call so we do it in a separate thread
+                _ = Task.Run(() => tempInstance.StopSystemMonitor());
             }
         }
 

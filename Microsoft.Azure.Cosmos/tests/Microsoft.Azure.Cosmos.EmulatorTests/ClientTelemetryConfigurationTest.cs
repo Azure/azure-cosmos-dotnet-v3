@@ -187,7 +187,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             manualResetEvent.Set();
                         }
 
-                        Console.WriteLine($"Counter: {counter}");
                         counter++;
                         HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
 
@@ -200,11 +199,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 Endpoint = isEnabled ? EndpointUrl : null
                             }
                         });
-
-                        Console.WriteLine($"payload: {payload}");
                         result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
 
-                        Console.WriteLine($"i ma here");
                         return Task.FromResult(result);
                     }
 
