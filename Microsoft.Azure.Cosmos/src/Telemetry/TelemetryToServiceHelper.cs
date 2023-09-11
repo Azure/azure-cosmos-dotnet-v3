@@ -143,10 +143,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         clientSideRequestStatistics: null,
                         cancellationToken: default))
                     {
-                        // It means feature flag is off at gateway, hence disable this feature at SDK also
+                        // It means feature flag is off at gateway, then log the exception and retry after defined interval.
+                        // If feature flagis OFF at gateway, SDK won't refresh the latest of the flag.
                         if (responseMessage.StatusCode == System.Net.HttpStatusCode.BadRequest)
                         {
-                            return TryCatch<AccountClientConfiguration>.FromResult(new AccountClientConfiguration());
+                           throw new InvalidOperationException("Client Config API is not enabled at compute gateway.");
                         }
 
                         using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))

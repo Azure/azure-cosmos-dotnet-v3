@@ -103,10 +103,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(true, false)]
-        [DataRow(false, false)]
-        [DataRow(false, true)] // Errored Client Config API should be treated as disabled client telemetry state
-        public async Task Validate_ClientTelemetryJob_Status_if_Enabled_Or_Disabled_Or_Errored_Client_Config_ApiAsync(bool isEnabled, bool isErrored)
+        [DataRow(true, HttpStatusCode.OK)]
+        [DataRow(false, HttpStatusCode.OK)]
+        [DataRow(false, HttpStatusCode.BadRequest)] // Errored Client Config API
+        public async Task Validate_ClientTelemetryJob_Status_with_Client_Config_Api_States_Async(bool clientTelemetryFlagEnabled, HttpStatusCode clientConfigApiStatus)
         {
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
             {
@@ -119,19 +119,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                     else if (request.RequestUri.AbsoluteUri.Contains(Documents.Paths.ClientConfigPathSegment))
                     {
-                        if(isErrored)
-                        {
-                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest));
-                        }
-
-                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+                        HttpResponseMessage result = new HttpResponseMessage(clientConfigApiStatus);
 
                         AccountClientConfiguration clientConfigProperties = new AccountClientConfiguration
                         {
                             ClientTelemetryConfiguration = new ClientTelemetryConfiguration
                             {
-                                IsEnabled = isEnabled,
-                                Endpoint = isEnabled ? EndpointUrl : null
+                                IsEnabled = clientTelemetryFlagEnabled,
+                                Endpoint = clientTelemetryFlagEnabled ? EndpointUrl : null
                             }
                         };
 
@@ -164,14 +159,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
                .GetValue(collCache);
 
-            Assert.AreEqual(isEnabled, documentClient.telemetryToServiceHelper.IsClientTelemetryJobRunning());
-            Assert.AreEqual(isEnabled, telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobRunning());
+            Assert.AreEqual(clientTelemetryFlagEnabled, documentClient.telemetryToServiceHelper.IsClientTelemetryJobRunning());
+            Assert.AreEqual(clientTelemetryFlagEnabled, telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobRunning());
         }
 
         [TestMethod]
-        [DataRow(true, false)]
-        [DataRow(false, true)]
-        public async Task Validate_ClientTelemetryJob_When_Flag_Is_Switched(bool flagState1, bool flagState2)
+        [DataRow(true, false, HttpStatusCode.OK)]
+        [DataRow(false, true, HttpStatusCode.OK)]
+        [DataRow(true, false, HttpStatusCode.BadRequest)]
+        [DataRow(false, true, HttpStatusCode.BadRequest)]
+        public async Task Validate_ClientTelemetryJob_When_Flag_Is_Switched(bool flagState1, bool flagState2, HttpStatusCode clientConfigApiStatusAfterSwitch)
         {
             using ManualResetEvent manualResetEvent = new ManualResetEvent(false);
 
@@ -188,9 +185,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
 
                         counter++;
-                        HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
-
+                      
                         bool isEnabled = counter < 5 ? flagState1 : flagState2;
+                        HttpStatusCode apiStatusCode = counter < 5 ? HttpStatusCode.OK : clientConfigApiStatusAfterSwitch;
+
+                        HttpResponseMessage result = new HttpResponseMessage(apiStatusCode);
                         string payload = JsonConvert.SerializeObject(new AccountClientConfiguration
                         {
                             ClientTelemetryConfiguration = new ClientTelemetryConfiguration
@@ -236,17 +235,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             manualResetEvent.WaitOne(TimeSpan.FromSeconds(1));
 
             collCache = (ClientCollectionCache)documentClient
-                                                .GetType()
-                                                .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
-                                                .GetValue(documentClient);
+                                               .GetType()
+                                               .GetField("collectionCache", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                                               .GetValue(documentClient);
 
             telemetryToServiceHelperFromCollectionCache = (TelemetryToServiceHelper)collCache
                .GetType()
                .GetField("telemetryToServiceHelper", BindingFlags.Instance | BindingFlags.NonPublic)
                .GetValue(collCache);
 
-            Assert.AreEqual(flagState2, documentClient.telemetryToServiceHelper.IsClientTelemetryJobRunning());
-            Assert.AreEqual(flagState2, telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobRunning());
+            if (clientConfigApiStatusAfterSwitch == HttpStatusCode.OK)
+            {
+                Assert.AreEqual(flagState2, documentClient.telemetryToServiceHelper.IsClientTelemetryJobRunning());
+                Assert.AreEqual(flagState2, telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobRunning());
+            }
+            else
+            {
+                // If the client config api errored out, the flag should not be changed
+                Assert.AreEqual(flagState1, documentClient.telemetryToServiceHelper.IsClientTelemetryJobRunning());
+                Assert.AreEqual(flagState1, telemetryToServiceHelperFromCollectionCache.IsClientTelemetryJobRunning());
+            }
+           
+           
         }
     }
 }
