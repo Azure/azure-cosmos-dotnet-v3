@@ -105,43 +105,5 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
             return indexUtilizationInfo;
         }
-
-        public ref struct Accumulator
-        {
-            public Accumulator(
-                IEnumerable<SingleIndexUtilizationEntity> utilizedSingleIndexes,
-                IEnumerable<SingleIndexUtilizationEntity> potentialSingleIndexes,
-                IEnumerable<CompositeIndexUtilizationEntity> utilizedCompositeIndexes,
-                IEnumerable<CompositeIndexUtilizationEntity> potentialCompositeIndexes)
-            {
-                this.UtilizedSingleIndexes = utilizedSingleIndexes;  
-                this.PotentialSingleIndexes = potentialSingleIndexes;  
-                this.UtilizedCompositeIndexes = utilizedCompositeIndexes;  
-                this.PotentialCompositeIndexes = potentialCompositeIndexes; 
-            }
-
-            public IEnumerable<SingleIndexUtilizationEntity> UtilizedSingleIndexes { get; }
-            public IEnumerable<SingleIndexUtilizationEntity> PotentialSingleIndexes { get; }
-            public IEnumerable<CompositeIndexUtilizationEntity> UtilizedCompositeIndexes { get; }
-            public IEnumerable<CompositeIndexUtilizationEntity> PotentialCompositeIndexes { get; }
-
-            public Accumulator Accumulate(IndexUtilizationInfo indexUtilizationInfo)
-            {
-                return new Accumulator(
-                    utilizedSingleIndexes: (this.UtilizedSingleIndexes ?? Enumerable.Empty<SingleIndexUtilizationEntity>()).Concat(indexUtilizationInfo.UtilizedSingleIndexes),
-                    potentialSingleIndexes: (this.PotentialSingleIndexes ?? Enumerable.Empty<SingleIndexUtilizationEntity>()).Concat(indexUtilizationInfo.PotentialSingleIndexes),
-                    utilizedCompositeIndexes: (this.UtilizedCompositeIndexes ?? Enumerable.Empty<CompositeIndexUtilizationEntity>()).Concat(indexUtilizationInfo.UtilizedCompositeIndexes),
-                    potentialCompositeIndexes: (this.PotentialCompositeIndexes ?? Enumerable.Empty<CompositeIndexUtilizationEntity>()).Concat(indexUtilizationInfo.PotentialCompositeIndexes));
-            }
-
-            public static IndexUtilizationInfo ToIndexUtilizationInfo(Accumulator accumulator)
-            {
-                return new IndexUtilizationInfo(
-                    utilizedSingleIndexes: accumulator.UtilizedSingleIndexes.ToList(),
-                    potentialSingleIndexes: accumulator.PotentialSingleIndexes.ToList(),
-                    utilizedCompositeIndexes: accumulator.UtilizedCompositeIndexes.ToList(),
-                    potentialCompositeIndexes: accumulator.PotentialCompositeIndexes.ToList());
-            }
-        }
     }
 }
