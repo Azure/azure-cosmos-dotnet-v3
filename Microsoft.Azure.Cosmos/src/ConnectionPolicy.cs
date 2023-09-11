@@ -483,12 +483,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets Client Telemetry Options like feature flags and corresponding options
         /// </summary>
-#if PREVIEW
-        public 
-#else
-        internal
-#endif 
-            CosmosClientTelemetryOptions CosmosClientTelemetryOptions
+        internal CosmosClientTelemetryOptions CosmosClientTelemetryOptions
         {
             get;
             set;

@@ -136,9 +136,13 @@ namespace CosmosCTL
                 }
             };
 
+            Console.WriteLine("ApplicationName = " + CTLConfig.UserAgentSuffix);
+            Console.WriteLine("DisableSendingMetricsToService = " + this.DisableClientTelemetry);
+
             if (this.UseGatewayMode)
             {
                 clientOptions.ConnectionMode = ConnectionMode.Gateway;
+                Console.WriteLine("ConnectionMode = " + ConnectionMode.Gateway);
             }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
@@ -146,6 +150,7 @@ namespace CosmosCTL
                 if (Enum.TryParse(this.ConsistencyLevel, out ConsistencyLevel consistencyLevel))
                 {
                     clientOptions.ConsistencyLevel = consistencyLevel;
+                    Console.WriteLine("ConsistencyLevel = " + consistencyLevel);
                 }
                 else
                 {
