@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return splitOutcome switch
             {
                 SplitOutcome.Success => splitRanges,
-                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(SplitOutcome)}: {splitOutcome}."),
+                _ => throw new RangeSplitException($"Splitting range failed because {splitOutcome}"),
             };
         }
 
@@ -144,7 +144,13 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             public override PartitionKeyHashRange FullRange => PartitionKeyHashRangeSplitterAndMerger.V2.fullRange;
         }
-
+        private sealed class RangeSplitException : Exception
+        {
+            public RangeSplitException(string message)
+                : base(message)
+            {
+            }
+        }
         public enum SplitOutcome
         {
             Success,

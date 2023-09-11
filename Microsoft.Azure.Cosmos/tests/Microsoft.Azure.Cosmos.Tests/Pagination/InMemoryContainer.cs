@@ -1392,7 +1392,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             // For MultiHash Collection, split at top level to ensure documents for top level key exist across partitions
             // after split
-            if (medianPkHash.HashValues.Length > 1)
+            if (medianPkHash.HashValues.Count > 1)
             {
                 return new PartitionKeyHash(medianPkHash.HashValues[0]);
             }

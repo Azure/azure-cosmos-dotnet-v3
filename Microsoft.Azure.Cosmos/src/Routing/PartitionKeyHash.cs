@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
-    using System.Runtime.CompilerServices;
+    using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Documents.Routing;
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </example>
     internal readonly struct PartitionKeyHash : IComparable<PartitionKeyHash>, IEquatable<PartitionKeyHash>
     {
-        private readonly UInt128[] values;
+        private readonly IReadOnlyList<UInt128> values;
 
         public PartitionKeyHash(UInt128 value)
             : this(new UInt128[] { value })
@@ -47,6 +47,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             StringBuilder stringBuilder = new StringBuilder();
             foreach (UInt128 value in values)
             {
+                if (stringBuilder.Length > 0)
+                {
+                    stringBuilder.Append('-');
+                }
                 stringBuilder.Append(value.ToString());
             }
 
@@ -58,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public string Value { get; }
 
-        internal readonly UInt128[] HashValues => this.values;
+        internal readonly IReadOnlyList<UInt128> HashValues => this.values;
 
         public int CompareTo(PartitionKeyHash other)
         {

@@ -7,9 +7,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -648,7 +648,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             else if (TryGetEpkProperty(properties, out string effectivePartitionKeyString))
             {
                 List<Documents.Routing.Range<string>> effectiveRanges = new List<Documents.Routing.Range<string>>
-                    { new Documents.Routing.Range<string>(effectivePartitionKeyString, effectivePartitionKeyString, true, true) };
+                    { Documents.Routing.Range<string>.GetPointRange(effectivePartitionKeyString) };
+
                 targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
                     containerQueryProperties.ResourceId,
@@ -656,17 +657,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     forceRefresh: false,
                     trace);
             }
-            else
+            else if (feedRangeInternal != null)
             {
-                targetRanges = feedRangeInternal != null
-                    ? await queryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
+                targetRanges = await queryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
                                     resourceLink,
                                     containerQueryProperties.ResourceId,
                                     containerQueryProperties.PartitionKeyDefinition,
                                     feedRangeInternal,
                                     forceRefresh: false,
-                                    trace)
-                    : await queryClient.GetTargetPartitionKeyRangesAsync(
+                                    trace);
+            }
+            else
+            {
+                    targetRanges = await queryClient.GetTargetPartitionKeyRangesAsync(
                                     resourceLink,
                                     containerQueryProperties.ResourceId,
                                     partitionedQueryExecutionInfo.QueryRanges,
