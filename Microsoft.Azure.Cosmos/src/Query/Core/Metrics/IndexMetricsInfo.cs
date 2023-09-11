@@ -45,13 +45,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         public IndexMetricsInfoEntity UtilizedEntity { get; }
         [JsonProperty("Potential")]
         public IndexMetricsInfoEntity PotentialEntity { get; }
-        /// <summary>
-        /// Gets or Sets the resulting index advice from the back end advice.
-        /// </summary>
-        /// <value>
-        /// The backend response for Index Metrics V2, after being URL decoded
-        /// </value>
-        public string ResponseText { get; set; }
 
         /// <summary>
         /// Creates a new IndexMetricsInfo from the backend delimited string.
@@ -59,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="delimitedString">The backend delimited string to deserialize from.</param>
         /// <param name="result">The parsed index utilization info</param>
         /// <returns>A new IndexMetricsInfo from the backend delimited string.</returns>
-        internal static bool TryCreateFromString(string delimitedString, out IndexMetricsInfo result)
+        public static bool TryCreateFromString(string delimitedString, out IndexMetricsInfo result)
         {
             if (delimitedString == null)
             {
@@ -80,9 +73,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                     // Ignore parsing error encountered in deserialization
                     Error = (sender, parsingErrorEvent) => parsingErrorEvent.ErrorContext.Handled = true
                 }) ?? IndexMetricsInfo.Empty;
-
-                // Save the raw decoded response in the IndexMetricsInfo object
-                result.ResponseText = decodedString;
 
                 return true;
             }

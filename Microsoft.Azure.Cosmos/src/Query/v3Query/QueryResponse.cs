@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos
             // TODO: make the default to V2 once V2 is enabled
             this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(
                 responseMessageHeaders, 
-                isBase64Encoded: requestMessage != null && requestMessage.Headers.CosmosMessageHeaders.Get(HttpConstants.HttpHeaders.PopulateIndexMetricsV2) != true.ToString());
+                isBase64Encoded: (requestMessage != null) && (requestMessage.Headers.CosmosMessageHeaders.Get(HttpConstants.HttpHeaders.PopulateIndexMetrics) == true.ToString()));
             
             this.RequestMessage = requestMessage;
         }
