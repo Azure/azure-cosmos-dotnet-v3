@@ -79,14 +79,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             return this.substitutions.Lookup(parameter);
         }
 
-        public ParameterExpression GenFreshParameter(Type parameterType, string baseParameterName)
+        public ParameterExpression GenerateFreshParameter(Type parameterType, string baseParameterName)
         {
             return Utilities.NewParameter(baseParameterName, parameterType, this.InScope);
         }
 
         public Func<string, ParameterExpression> GetGenFreshParameterFunc()
         {
-            return (paramName) => this.GenFreshParameter(typeof(object), paramName);
+            return (paramName) => this.GenerateFreshParameter(typeof(object), paramName);
         }
 
         /// <summary>

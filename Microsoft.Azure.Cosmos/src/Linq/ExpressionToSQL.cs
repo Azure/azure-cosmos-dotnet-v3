@@ -1024,7 +1024,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlQuery query = context.currentQuery.FlattenAsPossible().GetSqlQuery();
             SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);
 
-            ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+            ParameterExpression parameterExpression = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
             Binding binding = new Binding(parameterExpression, subqueryCollection, isInCollection: false, isInputParameter: true);
 
             context.currentQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc());
@@ -1138,7 +1138,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             Collection collection = ExpressionToSql.ConvertToCollection(body);
             context.PushCollection(collection);
-            ParameterExpression parameter = context.GenFreshParameter(type, parameterName);
+            ParameterExpression parameter = context.GenerateFreshParameter(type, parameterName);
             context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
             context.PopParameter();
             context.PopCollection();
@@ -1521,7 +1521,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 SqlQuery query = ExpressionToSql.CreateSubquery(expression, parameters, context);
 
-                ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                ParameterExpression parameterExpression = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                 SqlCollection subqueryCollection = ExpressionToSql.CreateSubquerySqlCollection(
                     query, context,
                     isMinMaxAvgMethod ? SubqueryKind.ArrayScalarExpression : expressionObjKind.Value);
@@ -1677,7 +1677,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 Binding binding;
                 SqlQuery query = ExpressionToSql.CreateSubquery(lambda.Body, lambda.Parameters, context);
                 SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);
-                ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                ParameterExpression parameterExpression = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                 binding = new Binding(parameterExpression, subqueryCollection, isInCollection: false, isInputParameter: true);
                 context.currentQuery.fromParameters.Add(binding);
             }
@@ -1696,11 +1696,26 @@ namespace Microsoft.Azure.Cosmos.Linq
             LambdaExpression keySelectorLambda = Utilities.GetLambda(arguments[1]);
             SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitScalarExpression(keySelectorLambda, context);
 
-            // TODO - We need special treatment for this binding
+            // TODO - We need special treatment for this binding 
+            // Alternate thoughts: Instead of saving the value selector func, we emit a select clause here?
             LambdaExpression valueSelectorLambda = Utilities.GetLambda(arguments[2]);
             SqlScalarExpression valueSelectorFunc = ExpressionToSql.VisitScalarExpression(valueSelectorLambda, context);
 
             SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunc, valueSelectorFunc);
+
+            // We need to make the type in IGrouping<keyType, valueType> and then push the corresponding parameter binding
+            // Look to Parameter Access for inspiration
+            SqlScalarExpression body = ExpressionToSql.VisitNonSubqueryScalarExpression(inputExpression, context);
+            Type type = typeof(IGrouping<int, int>);
+
+            Collection collection = ExpressionToSql.ConvertToCollection(body);
+            context.PushCollection(collection);
+            ParameterExpression parameter = context.GenerateFreshParameter(type, parameterName);
+            context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
+            context.PopParameter();
+            context.PopCollection();
+
+            return new Collection(parameter.Name);
 
             // First, we need to fully translate the scalar expression
             // then we can use the return type, and the scalar expression collection name to create new binding
@@ -1768,7 +1783,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     // it is necessary to trigger the binding because Skip is just a spec with no binding on its own. 
                     // This can be done by pushing and popping a temporary parameter. E.g. In SelectMany(f => f.Children.Skip(1)), 
                     // it's necessary to consider Skip as Skip(x => x, 1) to bind x to f.Children. Similarly for Top and Limit.
-                    ParameterExpression parameter = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                    ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                     context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
                     context.PopParameter();
 
@@ -1917,7 +1932,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (arguments.Count == 1)
             {
                 // Need to trigger parameter binding for cases where a aggregate function immediately follows a member access.
-                ParameterExpression parameter = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
                 context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
                 aggregateExpression = ExpressionToSql.VisitParameter(parameter, context);
                 context.PopParameter();
@@ -1952,7 +1967,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             // We consider Distinct as Distinct(v0 => v0)
             // It's necessary to visit this identity method to replace the parameters names
-            ParameterExpression parameter = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+            ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
             LambdaExpression identityLambda = Expression.Lambda(parameter, parameter);
             SqlScalarExpression sqlfunc = ExpressionToSql.VisitNonSubqueryScalarLambda(identityLambda, context);
             SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(sqlfunc);
