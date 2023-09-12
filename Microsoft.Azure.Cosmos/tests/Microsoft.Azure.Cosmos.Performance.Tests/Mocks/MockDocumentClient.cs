@@ -22,6 +22,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using System.Net.Http;
+    using System.Net;
+    using System.Text;
 
     internal class MockDocumentClient : DocumentClient, ICosmosAuthorizationTokenProvider
     {
@@ -51,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             {
                 policy = new ConnectionPolicy
                 {
-                    EnableClientTelemetry = isClientTelemetryEnabled.Value
+                    EnableClientTelemetry = true // feature flag is always true
                 };
 
             }
@@ -59,6 +62,43 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             MockDocumentClient documentClient = new MockDocumentClient(policy);
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
             cosmosClientBuilder.WithConnectionModeDirect();
+
+            Uri telemetryServiceEndpoint = new Uri("https://dummy.endpoint.com/");
+
+            if (isClientTelemetryEnabled.HasValue)
+            {
+                // mock external calls
+                HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
+                {
+                    RequestCallBack = (request, cancellation) =>
+                    {
+                        if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
+                        {
+                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));  // In Emulator test, send hardcoded response status code as there is no real communication happens with client telemetry service
+                        }
+                        else if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
+                        {
+                            HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+                            AccountClientConfiguration clientConfigProperties = new AccountClientConfiguration
+                            {
+                                ClientTelemetryConfiguration = new ClientTelemetryConfiguration
+                                {
+                                    IsEnabled = isClientTelemetryEnabled.Value,
+                                    Endpoint = isClientTelemetryEnabled.Value?telemetryServiceEndpoint.AbsoluteUri: null
+                                }
+                            };
+                            string payload = JsonConvert.SerializeObject(clientConfigProperties);
+                            result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+                            return Task.FromResult(result);
+                        }
+
+                        return null;
+                    }
+                };
+
+                cosmosClientBuilder.WithHttpClientFactory(() => new HttpClient(httpHandler));
+            }
+
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             if (useCustomSerializer)
