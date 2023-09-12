@@ -54,6 +54,7 @@ namespace CosmosBenchmark
             {
                 DatabseName = databsaeName,
                 ContainerName = containerName,
+                OperationType = this.OperationType,
                 RuCharges = ruCharges,
                 LazyDiagnostics = () => feedResponse.QueryMetrics.ToString(),
             };
