@@ -91,10 +91,8 @@
             {
               "ConditionExpression": {
                 "OperatorKind": 1,
-                "MaxDepth": null,
                 "LeftExpression": {
                   "OperatorKind": 14,
-                  "MaxDepth": null,
                   "LeftExpression": {
                     "Expression": {
                       "Expression": {
@@ -175,10 +173,8 @@
                 {
                   "ConditionExpression": {
                     "OperatorKind": 1,
-                    "MaxDepth": null,
                     "LeftExpression": {
                       "OperatorKind": 14,
-                      "MaxDepth": null,
                       "LeftExpression": {
                         "Expression": {
                           "Expression": {
@@ -283,10 +279,8 @@
             {
               "ConditionExpression": {
                 "OperatorKind": 1,
-                "MaxDepth": null,
                 "LeftExpression": {
                   "OperatorKind": 14,
-                  "MaxDepth": null,
                   "LeftExpression": {
                     "Expression": {
                       "Expression": {
@@ -437,7 +431,6 @@
                 "Expression": {
                   "ConditionExpression": {
                     "OperatorKind": 6,
-                    "MaxDepth": null,
                     "LeftExpression": {
                       "Expression": {
                         "Expression": {
@@ -470,7 +463,6 @@
                   },
                   "RightExpression": {
                     "OperatorKind": 5,
-                    "MaxDepth": null,
                     "LeftExpression": {
                       "Expression": {
                         "Expression": {
@@ -586,7 +578,6 @@
           "Name": "count_a_plus_five",
           "Expression": {
             "OperatorKind": 0,
-            "MaxDepth": null,
             "LeftExpression": {
               "Variable": {
                 "Name": "v0",

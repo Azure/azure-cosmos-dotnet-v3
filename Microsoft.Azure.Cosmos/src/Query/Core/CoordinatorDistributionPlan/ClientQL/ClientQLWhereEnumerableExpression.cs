@@ -6,16 +6,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLWhereEnumerableExpression : ClientQLEnumerableExpression
     {
-        public ClientQLWhereEnumerableExpression(ClientQLEnumerableExpression sourceExpression, ClientQLDelegate clientQLDelegate)
+        public ClientQLWhereEnumerableExpression(ClientQLEnumerableExpression sourceExpression)
             : base(ClientQLEnumerableExpressionKind.Where)
         {
             this.SourceExpression = sourceExpression;
-            this.Delegate = clientQLDelegate;
         }
 
         public ClientQLEnumerableExpression SourceExpression { get; }
-        
-        public ClientQLDelegate Delegate { get; }
     }
 
 }
