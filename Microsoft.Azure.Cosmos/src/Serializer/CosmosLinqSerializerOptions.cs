@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Reflection;
     using System.Text;
 
     /// <summary>
@@ -30,5 +31,10 @@ namespace Microsoft.Azure.Cosmos
         /// The default value is CosmosPropertyNamingPolicy.Default
         /// </remarks>
         public CosmosPropertyNamingPolicy PropertyNamingPolicy { get; set; }
+
+        /// <summary>
+        /// Set customized logic to handle property name. (E.g., from System.Text.Json attribute)
+        /// </summary>
+        public Func<MemberInfo, string> CustomPropertyNamingHandler { get; set; }
     }
 }
