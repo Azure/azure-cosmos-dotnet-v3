@@ -1,6 +1,6 @@
 # Cosmos Bulk Executor migration
 
-THis sample demonstrates how to migrate from Bulk Executor Library to V3 SDK with Bulk support.
+This sample demonstrates how to migrate from Bulk Executor Library to V3 SDK with Bulk support.
 
 ## Prerequisites
 
