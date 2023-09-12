@@ -648,6 +648,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else if (TryGetEpkProperty(properties, out string effectivePartitionKeyString))
             {
+                //Note that here we have no way to consume the EPK string as there is no way to convert
+                //the string to the partition key type to evaulate the number of components which needs to be done for the 
+                //multihahs methods/classes. This is particually important for queries with prefix partition key. 
+                //the EPK sting header is only for internal use but this needs to be fixed in the future.
                 List<Range<string>> effectiveRanges = new List<Range<string>>
                     { Range<string>.GetPointRange(effectivePartitionKeyString) };
 
