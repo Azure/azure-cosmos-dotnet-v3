@@ -20,7 +20,6 @@ namespace CosmosBenchmark
             BenchmarkConfig benchmarkConfig,
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
-            double warmupFraction,
-            MetricsCollectorProvider metricsCollectorProvider);
+            double warmupFraction);
     }
 }
