@@ -72,17 +72,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const string IsThreadStarvingName = "SystemPool_IsThreadStarving_True";
         internal const string IsThreadStarvingUnit = "Count";
 
-        internal const double DefaultTimeStampInSeconds = 600;
         internal const double Percentile50 = 50.0;
         internal const double Percentile90 = 90.0;
         internal const double Percentile95 = 95.0;
         internal const double Percentile99 = 99.0;
         internal const double Percentile999 = 99.9;
         internal const string DateFormat = "yyyy-MM-ddTHH:mm:ssZ";
-        internal const string EnvPropsClientTelemetrySchedulingInSeconds = "COSMOS.CLIENT_TELEMETRY_SCHEDULING_IN_SECONDS";
-        internal const string EnvPropsClientTelemetryEnabled = "COSMOS.CLIENT_TELEMETRY_ENABLED";
-        internal const string EnvPropsClientTelemetryVmMetadataUrl = "COSMOS.VM_METADATA_URL";
-        internal const string EnvPropsClientTelemetryEndpoint = "COSMOS.CLIENT_TELEMETRY_ENDPOINT";
+
         internal const string EnvPropsClientTelemetryEnvironmentName = "COSMOS.ENVIRONMENT_NAME";
         
         internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
@@ -99,53 +95,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static readonly List<int> ExcludedStatusCodes = new List<int> { 404, 409, 412 };
 
         internal static readonly int NetworkTelemetrySampleSize = 200;
+        internal static TimeSpan DefaultIntervalForTelemetryJob = TimeSpan.FromMinutes(10);
         internal static int PayloadSizeThreshold = 1024 * 1024 * 2; // 2MB
         internal static TimeSpan ClientTelemetryProcessorTimeOut = TimeSpan.FromMinutes(5);
         
-        private static Uri clientTelemetryEndpoint;
         private static string environmentName;
-        private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;
-        
-        internal static bool IsClientTelemetryEnabled()
-        {
-            bool isTelemetryEnabled = ConfigurationManager
-                .GetEnvironmentVariable<bool>(ClientTelemetryOptions
-                                                        .EnvPropsClientTelemetryEnabled, false);
-
-            DefaultTrace.TraceInformation($"Telemetry Flag is set to {isTelemetryEnabled}");
-
-            return isTelemetryEnabled;
-        }
-
-        internal static TimeSpan GetScheduledTimeSpan()
-        {
-            if (scheduledTimeSpan.Equals(TimeSpan.Zero))
-            {
-                double scheduledTimeInSeconds = ClientTelemetryOptions.DefaultTimeStampInSeconds;
-                try
-                {
-                    scheduledTimeInSeconds = ConfigurationManager
-                                                    .GetEnvironmentVariable<double>(
-                                                           ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds,
-                                                           ClientTelemetryOptions.DefaultTimeStampInSeconds);
-
-                    if (scheduledTimeInSeconds <= 0)
-                    {
-                        throw new ArgumentException("Telemetry Scheduled time can not be less than or equal to 0.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceError($"Error while getting telemetry scheduling configuration : {ex.Message}. Falling back to default configuration i.e. {scheduledTimeInSeconds}" );
-                }
-               
-                scheduledTimeSpan = TimeSpan.FromSeconds(scheduledTimeInSeconds);
-
-                DefaultTrace.TraceInformation($"Telemetry Scheduled in Seconds {scheduledTimeSpan.TotalSeconds}");
-
-            }
-            return scheduledTimeSpan;
-        }
 
         internal static string GetHostInformation(Compute vmInformation)
         {
@@ -153,23 +107,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     vmInformation?.SKU, "|",
                     vmInformation?.VMSize, "|",
                     vmInformation?.AzEnvironment);
-        }
-
-        internal static Uri GetClientTelemetryEndpoint()
-        {
-            if (clientTelemetryEndpoint == null)
-            {
-                string uriProp = ConfigurationManager
-                    .GetEnvironmentVariable<string>(
-                        ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
-                if (!String.IsNullOrEmpty(uriProp))
-                {
-                    clientTelemetryEndpoint = new Uri(uriProp);
-                }
-
-                DefaultTrace.TraceInformation($"Telemetry Endpoint URL is  {uriProp}");
-            }
-            return clientTelemetryEndpoint;
         }
 
         internal static string GetEnvironmentName()

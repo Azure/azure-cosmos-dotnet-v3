@@ -14,10 +14,10 @@ git checkout ${BENCHMARKING_TOOLS_BRANCH_NAME}
 cd 'Microsoft.Azure.Cosmos.Samples/Tools/Benchmark'
 
 echo "########## Build benckmark tool ##########"
-dotnet build --configuration Release -p:"OSSProjectRef=true;ShouldUnsetParentConfigurationAndPlatform=false"
+dotnet build --configuration Release -p:"OSSProjectRef=true"
 
 echo "########## Run benchmark ##########"
-nohup dotnet run -c Release -e ${COSMOS_URI} -k ${COSMOS_KEY} -t ${THROUGHPUT} -n ${DOCUMENTS} --pl ${PARALLELISM} \
+nohup dotnet run -c Release -p:"OSSProjectRef=true" -e ${COSMOS_URI} -k ${COSMOS_KEY} -t ${THROUGHPUT} -n ${DOCUMENTS} --pl ${PARALLELISM} \
 --enablelatencypercentiles true --resultscontainer ${RESULTS_CONTAINER} --resultspartitionkeyvalue "pk" \
 --DiagnosticsStorageConnectionString ${DIAGNOSTICS_STORAGE_CONNECTION_STRING} \
 --DiagnosticLatencyThresholdInMs ${DIAGNOSTICS_LATENCY_THRESHOLD_IN_MS} \
