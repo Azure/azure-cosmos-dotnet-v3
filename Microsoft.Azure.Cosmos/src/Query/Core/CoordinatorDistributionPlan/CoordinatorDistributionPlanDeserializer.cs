@@ -42,7 +42,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             public const string Name = "Name";
             public const string ObjectKind = "ObjectKind";
             public const string OperatorKind = "OperatorKind";
+            public const string Options = "Options";
             public const string OrderBy = "OrderBy";
+            public const string Pattern = "Pattern";
             public const string Properties = "Properties";
             public const string PropertyName = "PropertyName";
             public const string RightExpression = "RightExpression";
@@ -50,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             public const string Select = "Select";
             public const string SelectorExpression = "SelectorExpression";
             public const string SelectMany = "SelectMany";
+            public const string SingletonKind = "SingletonKind";
             public const string SkipValue = "SkipValue";
             public const string SortOrder = "SortOrder";
             public const string SourceExpression = "SourceExpression";
@@ -275,8 +278,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
                 case ClientQLLiteralKind.Binary:
                     return new ClientQLBinaryLiteral(DeserializeBinaryArray(GetValue<CosmosArray>(cosmosObject, Constants.Value)));
                 case ClientQLLiteralKind.Boolean:
-                    ClientQLBooleanLiteral booleanLiteral = new ClientQLBooleanLiteral(GetValue<CosmosBoolean>(cosmosObject, Constants.Value).Value);
-                    return booleanLiteral;
+                    return new ClientQLBooleanLiteral(GetValue<CosmosBoolean>(cosmosObject, Constants.Value).Value);
                 case ClientQLLiteralKind.CGuid:
                     return new ClientQLCGuidLiteral(GetValue<CosmosGuid>(cosmosObject, Constants.Value).Value);
                 case ClientQLLiteralKind.CNumber:
@@ -288,11 +290,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
                 case ClientQLLiteralKind.MNumber:
                     return new ClientQLMNumberLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
                 case ClientQLLiteralKind.MRegex:
-                    string pattern = GetValue<CosmosString>(cosmosObject, "Pattern").Value;
-                    string options = GetValue<CosmosString>(cosmosObject, "Options").Value;
+                    string pattern = GetValue<CosmosString>(cosmosObject, Constants.Pattern).Value;
+                    string options = GetValue<CosmosString>(cosmosObject, Constants.Options).Value;
                     return new ClientQLMRegexLiteral(pattern, options);
                 case ClientQLLiteralKind.MSingleton:
-                    return new ClientQLMSingletonLiteral(GetEnumValue<ClientQLMSingletonLiteral.Kind>(GetValue<CosmosString>(cosmosObject, "SingletonKind").Value));
+                    return new ClientQLMSingletonLiteral(GetEnumValue<ClientQLMSingletonLiteral.Kind>(GetValue<CosmosString>(cosmosObject, Constants.SingletonKind).Value));
                 case ClientQLLiteralKind.MSymbol:
                     return new ClientQLMSymbolLiteral(GetValue<CosmosString>(cosmosObject, Constants.Value).Value);
                 case ClientQLLiteralKind.Null:
