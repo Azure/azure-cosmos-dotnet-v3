@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Serializer;
@@ -1203,8 +1204,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case LinqMethods.GroupBy:
                     {
-                        SqlGroupByClause groupBy = ExpressionToSql.VisitGroupBy(inputExpression.Arguments, context);
-                        context.currentQuery = context.currentQuery.AddGroupByClause(groupBy, context);
+                        result = ExpressionToSql.VisitGroupBy(returnElementType, inputExpression.Arguments, context);
 
                         break;
                     }
@@ -1685,9 +1685,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             return collection;
         }
 
-        private static SqlGroupByClause VisitGroupBy(ReadOnlyCollection<Expression> arguments, TranslationContext context)
+        private static Collection VisitGroupBy(Type returnElementType, ReadOnlyCollection<Expression> arguments, TranslationContext context)
         {
-            if (arguments.Count != 3)
+            if (arguments.Count != 3 && arguments.Count != 2 /*only key selector*/)
             {
                 throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.GroupBy, 3, arguments.Count));
             }
@@ -1698,24 +1698,29 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             // TODO - We need special treatment for this binding 
             // Alternate thoughts: Instead of saving the value selector func, we emit a select clause here?
-            LambdaExpression valueSelectorLambda = Utilities.GetLambda(arguments[2]);
-            SqlScalarExpression valueSelectorFunc = ExpressionToSql.VisitScalarExpression(valueSelectorLambda, context);
+            //LambdaExpression valueSelectorLambda = Utilities.GetLambda(arguments[2]);
+            //SqlScalarExpression valueSelectorFunc = ExpressionToSql.VisitScalarExpression(valueSelectorLambda, context);
 
-            SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunc, valueSelectorFunc);
+            SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunc/*, valueSelectorFunc*/);
+
+            context.currentQuery = context.currentQuery.AddGroupByClause(groupby, context);
 
             // We need to make the type in IGrouping<keyType, valueType> and then push the corresponding parameter binding
             // Look to Parameter Access for inspiration
-            SqlScalarExpression body = ExpressionToSql.VisitNonSubqueryScalarExpression(inputExpression, context);
-            Type type = typeof(IGrouping<int, int>);
 
-            Collection collection = ExpressionToSql.ConvertToCollection(body);
-            context.PushCollection(collection);
-            ParameterExpression parameter = context.GenerateFreshParameter(type, parameterName);
-            context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
-            context.PopParameter();
-            context.PopCollection();
+            Collection collection = ExpressionToSql.ConvertToCollection(keySelectorFunc);
 
-            return new Collection(parameter.Name);
+            //context.PushCollection(collection);
+            //ParameterExpression parameter = context.GenerateFreshParameter(returnElementType, ExpressionToSql.DefaultParameterName);
+            //context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
+            //context.PopParameter();
+            //context.PopCollection();
+
+            ParameterExpression parameterExpression = context.GenerateFreshParameter(returnElementType, ExpressionToSql.DefaultParameterName);
+            Binding binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
+            //context.currentQuery.fromParameters.Add(binding);
+
+            return collection;
 
             // First, we need to fully translate the scalar expression
             // then we can use the return type, and the scalar expression collection name to create new binding
@@ -1751,7 +1756,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             //context.currentQuery.fromParameters.SetInputParameter(lambda.ReturnType, context.currentQuery.GetInputParameterInContext(isInNewQuery: false).Name, context.InScope);
             //context.SetInputParameter(TypeSystem.GetElementType(lambda.ReturnType), context.currentQuery.GetInputParameterInContext(isInNewQuery: false).Name); // ignore result
             //context.currentQuery.fromParameters.SetInputParameter(lambda.ReturnType, context.currentQuery.GetInputParameterInContext(isInNewQuery: false).Name, context.InScope);
-            return groupby;
+            
         }
 
         private static SqlOrderByClause VisitOrderBy(ReadOnlyCollection<Expression> arguments, bool isDescending, TranslationContext context)

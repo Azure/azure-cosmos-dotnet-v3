@@ -135,6 +135,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     inputCollectionExpression = collExpr;
                 }
+
+                //if (inputCollectionExpression == null) inputCollectionExpression = collExpr;
             }
 
             SqlFromClause fromClause = SqlFromClause.Create(inputCollectionExpression);
