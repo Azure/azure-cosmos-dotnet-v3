@@ -10,7 +10,7 @@ This sample demonstrates how to maintain a Cosmos client and reuse the instance 
 
 ## Run
 
-Before running the application you need fill out `EndPointUrl` and `AuthorizationKey` params in the [AppSettings.json](AppSettings.json)
+Before running the application you need fill out `EndpointUrl` and `AuthorizationKey` params in the [AppSettings.json](AppSettings.json)
 
 ```PowerShell
 dotnet run
