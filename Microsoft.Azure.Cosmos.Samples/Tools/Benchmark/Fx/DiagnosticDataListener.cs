@@ -131,13 +131,16 @@ namespace CosmosBenchmark.Fx
         /// <param name="eventData">An instance of <see cref="EventWrittenEventArgs "/> containing the request latency and diagnostics.</param>
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            try
+            if (eventData.EventId == 1)
             {
-                this.Writer.WriteLine($"{eventData.Payload[2]} ; {eventData.Payload[3]}");
-            }
-            catch (Exception ex)
-            {
-                Utility.TraceError("An exception ocured while writing diagnostic data to the file", ex);
+                try
+                {
+                    this.Writer.WriteLine($"{eventData.Payload[2]} ; {eventData.Payload[3]}");
+                }
+                catch (Exception ex)
+                {
+                    Utility.TraceError("An exception ocured while writing diagnostic data to the file", ex);
+                }
             }
         }
 
