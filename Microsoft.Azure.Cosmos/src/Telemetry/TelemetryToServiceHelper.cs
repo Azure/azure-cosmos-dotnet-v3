@@ -77,7 +77,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 clientId: clientId, 
                 connectionPolicy: connectionPolicy, 
                 cosmosAuthorization: cosmosAuthorization, 
-                httpClient: httpClient, serviceEndpoint, 
+                httpClient: httpClient,
+                serviceEndpoint: serviceEndpoint, 
                 globalEndpointManager: globalEndpointManager, 
                 cancellationTokenSource: cancellationTokenSource);
 
@@ -147,7 +148,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         // If feature flag is OFF at gateway, SDK won't refresh the latest state of the flag.
                         if (responseMessage.StatusCode == System.Net.HttpStatusCode.BadRequest)
                         {
-                            throw new InvalidOperationException("Client Config API is not enabled at compute gateway.");
+                            string responseFromGateway = await responseMessage.Content.ReadAsStringAsync();
+                            throw new InvalidOperationException($"Client Config API is not enabled at compute gateway. Response is {responseFromGateway}");
                         }
 
                         using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
