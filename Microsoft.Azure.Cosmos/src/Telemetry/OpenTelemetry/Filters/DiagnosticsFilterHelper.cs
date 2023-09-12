@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
     using Documents;
+    using static Antlr4.Runtime.TokenStreamRewriter;
 
     internal static class DiagnosticsFilterHelper
     {
@@ -19,8 +20,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             OpenTelemetryAttributes response)
         {
             config ??= new CosmosThresholdOptions();
-
-            TimeSpan latencyThreshold = operationType == OperationType.Query ? config.NonPointOperationLatencyThreshold : config.PointOperationLatencyThreshold;
+          
+            TimeSpan latencyThreshold = DiagnosticsFilterHelper.IsPointOperation(operationType) ? config.NonPointOperationLatencyThreshold : config.PointOperationLatencyThreshold;
             return response.Diagnostics.GetClientElapsedTime() > latencyThreshold;
         }
 
@@ -35,6 +36,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
                         || (response.StatusCode == System.Net.HttpStatusCode.NotModified && response.SubStatusCode == 0)
                         || (response.StatusCode == System.Net.HttpStatusCode.Conflict && response.SubStatusCode == 0)
                         || (response.StatusCode == System.Net.HttpStatusCode.PreconditionFailed && response.SubStatusCode == 0);
+        }
+
+        /// <summary>
+        /// Check if passed operation type is a point operation
+        /// </summary>
+        /// <param name="operationType"></param>
+        public static bool IsPointOperation(OperationType operationType)
+        {
+            return operationType == OperationType.Create ||
+                   operationType == OperationType.Delete ||
+                   operationType == OperationType.Replace ||
+                   operationType == OperationType.Upsert ||
+                   operationType == OperationType.Patch ||
+                   operationType == OperationType.Read;
         }
     }
 }
