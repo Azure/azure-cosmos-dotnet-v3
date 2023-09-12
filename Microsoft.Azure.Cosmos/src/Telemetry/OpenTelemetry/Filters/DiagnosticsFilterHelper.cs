@@ -21,7 +21,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         {
             config ??= new CosmosThresholdOptions();
           
-            TimeSpan latencyThreshold = DiagnosticsFilterHelper.IsPointOperation(operationType) ? config.NonPointOperationLatencyThreshold : config.PointOperationLatencyThreshold;
+            TimeSpan latencyThreshold = DiagnosticsFilterHelper.IsPointOperation(operationType) ? 
+                config.PointOperationLatencyThreshold : 
+                config.NonPointOperationLatencyThreshold;
             return response.Diagnostics.GetClientElapsedTime() > latencyThreshold;
         }
 
