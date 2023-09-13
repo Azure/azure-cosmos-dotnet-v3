@@ -219,13 +219,29 @@ namespace Microsoft.Azure.Documents.Rntbd
         internal Task OpenChannelAsync(Guid activityId)
         {
             IChannel channel = null;
-            this.capacityLock.EnterWriteLock();
+            this.capacityLock.EnterUpgradeableReadLock();
             try
             {
                 if (this.capacity < this.maxCapacity)
                 {
-                    channel = this.OpenChannelAndIncrementCapacity(
-                        activityId: activityId);
+                    foreach (LbChannelState channelState in this.openChannels)
+                    {
+                        if (channelState.DeepHealthy)
+                        {
+                            return Task.FromResult(0);
+                        }
+                    }
+
+                    this.capacityLock.EnterWriteLock();
+                    try
+                    {
+                        channel = this.OpenChannelAndIncrementCapacity(
+                            activityId: activityId);
+                    }
+                    finally
+                    {
+                        this.capacityLock.ExitWriteLock();
+                    }
                 }
                 else
                 {
@@ -241,7 +257,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             finally
             {
-                this.capacityLock.ExitWriteLock();
+                this.capacityLock.ExitUpgradeableReadLock();
             }
 
             if (channel == null)

@@ -52,11 +52,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
-        private readonly ConcurrentDictionary<int, Task> openConnectionTaskDictionary;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
         private bool disposedValue;
+        private bool validateUnknownReplicas;
         private IOpenConnectionsHandler openConnectionsHandler;
 
         public GatewayAddressCache(
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             this.openConnectionsHandler = openConnectionsHandler;
             this.isReplicaAddressValidationEnabled = replicaAddressValidationEnabled;
-            this.openConnectionTaskDictionary = new ();
+            this.validateUnknownReplicas = false;
         }
 
         public Uri ServiceEndpoint => this.serviceEndpoint;
@@ -121,6 +121,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             List<Task> tasks = new ();
             int batchSize = GatewayAddressCache.DefaultBatchSize;
+
+            // By design, the Unknown replicas are validated only when the following two conditions meet:
+            // 1) The CosmosClient is initiated using the CreateAndInitializaAsync() flow.
+            // 2) The advanced replica selection feature enabled.
+            if (shouldOpenRntbdChannels)
+            {
+                this.validateUnknownReplicas = true;
+            }
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
@@ -338,18 +346,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 throw;
             }
-        }
-
-        /// <summary>
-        /// Checks if a background validation task is already in progress for the given partition address hash code.
-        /// </summary>
-        /// <param name="hashCode">An integer containing the partition address hash code.</param>
-        /// <returns>A boolean flag indicating if the background task is running.</returns>
-        private bool IsBackgroundValidationTaskRunning(
-            int hashCode)
-        {
-            this.openConnectionTaskDictionary.TryGetValue(hashCode, out Task validationTask);
-            return validationTask != null && !(validationTask.IsCompleted || validationTask.IsFaulted);
         }
 
         /// <summary>
@@ -631,8 +627,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
 
                     this.ValidateReplicaAddresses(
-                        addresses: transportAddressUris,
-                        partitionHash: mergedAddresses.GetHashCode());
+                        addresses: transportAddressUris);
 
                     this.CaptureTransportAddressUriHealthStates(
                         partitionAddressInformation: mergedAddresses,
@@ -936,10 +931,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// successful or unhealthy otherwise.
         /// </summary>
         /// <param name="addresses">A read-only list of <see cref="TransportAddressUri"/> needs to be validated.</param>
-        /// <param name="partitionHash">blabla.</param>
         private void ValidateReplicaAddresses(
-            IReadOnlyList<TransportAddressUri> addresses,
-            int partitionHash)
+            IReadOnlyList<TransportAddressUri> addresses)
         {
             if (addresses == null)
             {
@@ -949,13 +942,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             IEnumerable<TransportAddressUri> addressesNeedToValidateStatus = this.GetAddressesNeededToValidateStatus(
                     transportAddresses: addresses);
 
-            if (addressesNeedToValidateStatus.Any()
-                && !this.IsBackgroundValidationTaskRunning(partitionHash))
+            if (addressesNeedToValidateStatus.Any())
             {
                 Task openConnectionsInBackgroundTask = Task.Run(async () => await this.openConnectionsHandler.TryOpenRntbdChannelsAsync(
                     addresses: addressesNeedToValidateStatus));
-
-                this.openConnectionTaskDictionary[partitionHash] = openConnectionsInBackgroundTask;
             }
         }
 
@@ -1024,8 +1014,15 @@ namespace Microsoft.Azure.Cosmos.Routing
         private IEnumerable<TransportAddressUri> GetAddressesNeededToValidateStatus(
             IReadOnlyList<TransportAddressUri> transportAddresses)
         {
-            return transportAddresses
-                .Where(address => address
+            return this.validateUnknownReplicas
+                ? transportAddresses
+                    .Where(address => address
+                        .GetCurrentHealthState()
+                        .GetHealthStatus() is
+                            TransportAddressHealthState.HealthStatus.UnhealthyPending or
+                            TransportAddressHealthState.HealthStatus.Unknown)
+                : transportAddresses
+                    .Where(address => address
                         .GetCurrentHealthState()
                         .GetHealthStatus() is
                             TransportAddressHealthState.HealthStatus.UnhealthyPending);
