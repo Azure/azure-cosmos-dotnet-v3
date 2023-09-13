@@ -1,6 +1,6 @@
 # Cosmos client with Azure Function
 
-This sample demonstrates how to maintain a Cosmos client and reuse the instance among Azure Function executions.
+This sample demonstrates how to maintain a Cosmos client instance following Singleton pattern and reuse the instance across Azure Function executions.
 
 ## Prerequisites
 
