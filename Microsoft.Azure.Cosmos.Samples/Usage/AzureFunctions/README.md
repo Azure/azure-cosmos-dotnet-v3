@@ -10,7 +10,7 @@ This sample demonstrates how to maintain a Cosmos client instance following Sing
 
 ## Run
 
-Before running the application you need fill out `EndpointUrl` and `AuthorizationKey` params in the [AppSettings.json](AppSettings.json)
+Before running the application you need fill out `EndpointUrl` and `AuthorizationKey` params in the [AppSettings.json](../appSettings.json)
 
 ```PowerShell
 dotnet run
