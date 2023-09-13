@@ -41,13 +41,13 @@
 
         public void Visit(QueryMetricsTraceDatum queryMetricsTraceDatum)
         {
-            this.queryMetrics.RetrievedDocumentCount = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.RetrievedDocumentCount;
-            this.queryMetrics.RetrievedDocumentSize = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.RetrievedDocumentSize;
-            this.queryMetrics.OutputDocumentCount = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.OutputDocumentCount;
-            this.queryMetrics.OutputDocumentSize = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.OutputDocumentSize;
-            this.queryMetrics.TotalQueryExecutionTime = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.TotalTime.TotalMilliseconds;
-            this.queryMetrics.DocumentLoadTime = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.DocumentLoadTime.TotalMilliseconds;
-            this.queryMetrics.DocumentWriteTime = queryMetricsTraceDatum.QueryMetrics.BackendMetrics.DocumentWriteTime.TotalMilliseconds;
+            this.queryMetrics.RetrievedDocumentCount = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.RetrievedDocumentCount;
+            this.queryMetrics.RetrievedDocumentSize = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.RetrievedDocumentSize;
+            this.queryMetrics.OutputDocumentCount = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.OutputDocumentCount;
+            this.queryMetrics.OutputDocumentSize = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.OutputDocumentSize;
+            this.queryMetrics.TotalQueryExecutionTime = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.TotalTime.TotalMilliseconds;
+            this.queryMetrics.DocumentLoadTime = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.DocumentLoadTime.TotalMilliseconds;
+            this.queryMetrics.DocumentWriteTime = queryMetricsTraceDatum.QueryMetrics.ServerSideMetrics.DocumentWriteTime.TotalMilliseconds;
         }
 
         public void Visit(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)

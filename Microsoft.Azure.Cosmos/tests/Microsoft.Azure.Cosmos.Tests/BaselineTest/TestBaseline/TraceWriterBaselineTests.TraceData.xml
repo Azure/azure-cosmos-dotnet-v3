@@ -126,7 +126,7 @@
     {
         QueryMetricsTraceDatum datum = new QueryMetricsTraceDatum(
             new Lazy<QueryMetrics>(() => new QueryMetrics(
-                BackendMetricsTests.MockBackendMetrics,
+                ServerSideMetricsTests.ServerSideMetrics,
                 IndexUtilizationInfoTests.MockIndexUtilizationInfo,
                 ClientSideMetricsTests.MockClientSideMetrics)));
         rootTrace.AddDatum("Query Metrics", datum);
