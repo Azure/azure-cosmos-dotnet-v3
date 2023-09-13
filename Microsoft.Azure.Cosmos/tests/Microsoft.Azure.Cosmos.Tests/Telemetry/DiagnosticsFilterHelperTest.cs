@@ -69,5 +69,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
         }
 
+        [TestMethod]
+        public void CheckedDefaultThresholdBasedOnOperationType()
+        {
+            Assert.IsTrue(this.rootTrace.Duration > TimeSpan.Zero);
+
+            CosmosThresholdOptions config = new CosmosThresholdOptions();
+
+            Array values = Enum.GetValues(typeof(OperationType));
+
+            foreach(OperationType operationType in values)
+            {
+                TimeSpan defaultThreshold = DiagnosticsFilterHelper.DefaultThreshold(operationType, config);
+
+                if(DiagnosticsFilterHelper.IsPointOperation(operationType))
+                    Assert.AreEqual(defaultThreshold, config.PointOperationLatencyThreshold);
+                else
+                    Assert.AreEqual(defaultThreshold, config.NonPointOperationLatencyThreshold);
+            }
+        }
+
     }
 }

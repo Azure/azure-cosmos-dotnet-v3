@@ -19,12 +19,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            config ??= new CosmosThresholdOptions();
-          
-            TimeSpan latencyThreshold = DiagnosticsFilterHelper.IsPointOperation(operationType) ? 
-                config.PointOperationLatencyThreshold : 
-                config.NonPointOperationLatencyThreshold;
-            return response.Diagnostics.GetClientElapsedTime() > latencyThreshold;
+            return response.Diagnostics.GetClientElapsedTime() > DiagnosticsFilterHelper.DefaultThreshold(operationType, config);
         }
 
         /// <summary>
@@ -41,10 +36,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         }
 
         /// <summary>
+        /// Get default threshold value based on operation type
+        /// </summary>
+        /// <param name="operationType"></param>
+        /// <param name="config"></param>
+        internal static TimeSpan DefaultThreshold(OperationType operationType, CosmosThresholdOptions config)
+        {
+            config ??= new CosmosThresholdOptions();
+            return DiagnosticsFilterHelper.IsPointOperation(operationType) ?
+                                            config.PointOperationLatencyThreshold :
+                                            config.NonPointOperationLatencyThreshold;
+        }
+
+        /// <summary>
         /// Check if passed operation type is a point operation
         /// </summary>
         /// <param name="operationType"></param>
-        public static bool IsPointOperation(OperationType operationType)
+        internal static bool IsPointOperation(OperationType operationType)
         {
             return operationType == OperationType.Create ||
                    operationType == OperationType.Delete ||
