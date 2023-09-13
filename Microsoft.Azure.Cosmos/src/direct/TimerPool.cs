@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Documents
                             // element whose timeout has not occcured.
                             if (pooledTimerQueue.TryPeek(out pooledTimer))
                             {
-                                if (currentTicks >= pooledTimer.TimeoutTicks)
+                                if (currentTicks >= pooledTimer.TimeoutTicks || pooledTimer.IsCompleted)
                                 {
                                     if (pooledTimer.TimeoutTicks < lastTicks)
                                     {
