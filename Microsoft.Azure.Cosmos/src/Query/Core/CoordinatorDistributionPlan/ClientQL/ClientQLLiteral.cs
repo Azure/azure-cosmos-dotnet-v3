@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
-    internal class ClientQLLiteral
+    internal abstract class ClientQLLiteral
     {
         public ClientQLLiteral(ClientQLLiteralKind kind)
         {

@@ -263,51 +263,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         private static ClientQLLiteralScalarExpression DeserializeLiteralScalarExpression(CosmosObject cosmosObject)
         {
             CosmosObject literalObject = GetValue<CosmosObject>(cosmosObject, Constants.Literal);
-            ClientQLLiteralKind literalKind = GetEnumValue<ClientQLLiteralKind>(GetValue<CosmosString>(literalObject, Constants.Kind).Value);
-            return new ClientQLLiteralScalarExpression(DeserializeClientQLLiteral(literalObject, literalKind));
-        }
-
-        private static ClientQLLiteral DeserializeClientQLLiteral(CosmosObject cosmosObject, ClientQLLiteralKind literalKind)
-        {
-            switch (literalKind)
-            {
-                case ClientQLLiteralKind.Undefined:
-                    return ClientQLUndefinedLiteral.Singleton;
-                case ClientQLLiteralKind.Array:
-                    return new ClientQLArrayLiteral(DeserializeLiteralArray(GetValue<CosmosArray>(cosmosObject, Constants.Items)));
-                case ClientQLLiteralKind.Binary:
-                    return new ClientQLBinaryLiteral(DeserializeBinaryArray(GetValue<CosmosArray>(cosmosObject, Constants.Value)));
-                case ClientQLLiteralKind.Boolean:
-                    return new ClientQLBooleanLiteral(GetValue<CosmosBoolean>(cosmosObject, Constants.Value).Value);
-                case ClientQLLiteralKind.CGuid:
-                    return new ClientQLCGuidLiteral(GetValue<CosmosGuid>(cosmosObject, Constants.Value).Value);
-                case ClientQLLiteralKind.CNumber:
-                    return new ClientQLCNumberLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
-                case ClientQLLiteralKind.MDateTime:
-                    return new ClientQLMDateTimeLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
-                case ClientQLLiteralKind.MJavaScript:
-                    return new ClientQLMJavaScriptLiteral(GetValue<CosmosString>(cosmosObject, Constants.Name).Value);
-                case ClientQLLiteralKind.MNumber:
-                    return new ClientQLMNumberLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
-                case ClientQLLiteralKind.MRegex:
-                    string pattern = GetValue<CosmosString>(cosmosObject, Constants.Pattern).Value;
-                    string options = GetValue<CosmosString>(cosmosObject, Constants.Options).Value;
-                    return new ClientQLMRegexLiteral(pattern, options);
-                case ClientQLLiteralKind.MSingleton:
-                    return new ClientQLMSingletonLiteral(GetEnumValue<ClientQLMSingletonLiteral.Kind>(GetValue<CosmosString>(cosmosObject, Constants.SingletonKind).Value));
-                case ClientQLLiteralKind.MSymbol:
-                    return new ClientQLMSymbolLiteral(GetValue<CosmosString>(cosmosObject, Constants.Value).Value);
-                case ClientQLLiteralKind.Null:
-                    return ClientQLNullLiteral.Singleton;
-                case ClientQLLiteralKind.Number:
-                    return new ClientQLNumberLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
-                case ClientQLLiteralKind.Object:
-                    return new ClientQLObjectLiteral(DeserializeObjectLiteralArray(GetValue<CosmosArray>(cosmosObject, Constants.Properties)));
-                case ClientQLLiteralKind.String:
-                    return new ClientQLStringLiteral(GetValue<CosmosString>(cosmosObject, Constants.Value).Value);
-                default:
-                    throw new NotSupportedException($"Invalid ClientQLExpression kind: {literalKind}");
-            }
+            return new ClientQLLiteralScalarExpression(DeserializeClientQLLiteral(literalObject));
         }
 
         private static ClientQLMuxScalarExpression DeserializeMuxScalarExpression(CosmosObject cosmosObject)
@@ -376,12 +332,62 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         // Helper Functions for Deserialization
 
+        private static ClientQLLiteral DeserializeClientQLLiteral(CosmosObject cosmosObject)
+        {
+            ClientQLLiteralKind literalKind = GetEnumValue<ClientQLLiteralKind>(GetValue<CosmosString>(cosmosObject, Constants.Kind).Value);
+            switch (literalKind)
+            {
+                case ClientQLLiteralKind.Undefined:
+                    return ClientQLUndefinedLiteral.Singleton;
+                case ClientQLLiteralKind.Array:
+                    return new ClientQLArrayLiteral(DeserializeLiteralArray(GetValue<CosmosArray>(cosmosObject, Constants.Items)));
+                case ClientQLLiteralKind.Binary:
+                    return new ClientQLBinaryLiteral(DeserializeBinaryArray(GetValue<CosmosArray>(cosmosObject, Constants.Value)));
+                case ClientQLLiteralKind.Boolean:
+                    return new ClientQLBooleanLiteral(GetValue<CosmosBoolean>(cosmosObject, Constants.Value).Value);
+                case ClientQLLiteralKind.CGuid:
+                    return new ClientQLCGuidLiteral(GetValue<CosmosGuid>(cosmosObject, Constants.Value).Value);
+                case ClientQLLiteralKind.CNumber:
+                    return new ClientQLCNumberLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
+                case ClientQLLiteralKind.MDateTime:
+                    return new ClientQLMDateTimeLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
+                case ClientQLLiteralKind.MJavaScript:
+                    return new ClientQLMJavaScriptLiteral(GetValue<CosmosString>(cosmosObject, Constants.Name).Value);
+                case ClientQLLiteralKind.MNumber:
+                    return new ClientQLMNumberLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
+                case ClientQLLiteralKind.MRegex:
+                    string pattern = GetValue<CosmosString>(cosmosObject, Constants.Pattern).Value;
+                    string options = GetValue<CosmosString>(cosmosObject, Constants.Options).Value;
+                    return new ClientQLMRegexLiteral(pattern, options);
+                case ClientQLLiteralKind.MSingleton:
+                    return new ClientQLMSingletonLiteral(GetEnumValue<ClientQLMSingletonLiteral.Kind>(GetValue<CosmosString>(cosmosObject, Constants.SingletonKind).Value));
+                case ClientQLLiteralKind.MSymbol:
+                    return new ClientQLMSymbolLiteral(GetValue<CosmosString>(cosmosObject, Constants.Value).Value);
+                case ClientQLLiteralKind.Null:
+                    return ClientQLNullLiteral.Singleton;
+                case ClientQLLiteralKind.Number:
+                    return new ClientQLNumberLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
+                case ClientQLLiteralKind.Object:
+                    return new ClientQLObjectLiteral(DeserializeObjectLiteralArray(GetValue<CosmosArray>(cosmosObject, Constants.Properties)));
+                case ClientQLLiteralKind.String:
+                    return new ClientQLStringLiteral(GetValue<CosmosString>(cosmosObject, Constants.Value).Value);
+                default:
+                    throw new NotSupportedException($"Invalid ClientQLExpression kind: {literalKind}");
+            }
+        }
+
         private static ClientQLAggregate DeserializeAggregate(CosmosObject cosmosObject)
         {
-            ClientQLAggregateKind kind = GetEnumValue<ClientQLAggregateKind>(GetValue<CosmosString>(cosmosObject, Constants.Kind).Value);
-            string operatorKind = GetValue<CosmosString>(cosmosObject, Constants.OperatorKind).Value;
-
-            return new ClientQLAggregate(kind, operatorKind);
+            ClientQLAggregateKind aggregateKind = GetEnumValue<ClientQLAggregateKind>(GetValue<CosmosString>(cosmosObject, Constants.Kind).Value);
+            switch (aggregateKind)
+            {
+                case ClientQLAggregateKind.Tuple:
+                    return DeserializeTupleAggregateExpression(cosmosObject);
+                case ClientQLAggregateKind.Builtin:
+                    return DeserializeBuiltInAggregateExpression(cosmosObject);
+                default:
+                    throw new NotSupportedException($"Invalid ClientQLExpression kind: {aggregateKind}");
+            }
         }
 
         private static ClientQLVariable DeserializeClientQLVariable(CosmosObject cosmosObject)
@@ -392,9 +398,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             return new ClientQLVariable(name, uniqueId);
         }
 
+        private static ClientQLBuiltinAggregate DeserializeBuiltInAggregateExpression(CosmosObject cosmosObject)
+        {
+            ClientQLAggregateOperatorKind aggregateOperatorKind = GetEnumValue<ClientQLAggregateOperatorKind>(GetValue<CosmosString>(cosmosObject, Constants.OperatorKind).Value);
+            return new ClientQLBuiltinAggregate(aggregateOperatorKind);
+        }
+
+        private static ClientQLTupleAggregate DeserializeTupleAggregateExpression(CosmosObject cosmosObject)
+        {
+            CosmosArray propertyArray = GetValue<CosmosArray>(cosmosObject, Constants.Items);
+            List<ClientQLAggregate> expression = new List<ClientQLAggregate>(propertyArray.Count);
+
+            foreach (CosmosElement propertyElement in propertyArray)
+            {
+                CosmosObject propertyObject = ConvertToCosmosObject(propertyElement);
+                ClientQLAggregate aggregateExpression = DeserializeAggregate(propertyObject);
+                expression.Add(aggregateExpression);
+            }
+
+            return new ClientQLTupleAggregate(expression);
+        }
+
         private static IReadOnlyList<ClientQLObjectProperty> DeserializeObjectProperties(CosmosArray cosmosArray)
         {
-            List<ClientQLObjectProperty> properties = new List<ClientQLObjectProperty>();
+            List<ClientQLObjectProperty> properties = new List<ClientQLObjectProperty>(cosmosArray.Count);
             foreach (CosmosElement propertyElement in cosmosArray)
             {
                 CosmosObject propertyObject = ConvertToCosmosObject(propertyElement);
@@ -406,23 +433,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             return properties;
         }
 
-        private static ClientQLTupleAggregate DeserializeTupleAggregateExpression(CosmosObject cosmosObject)
-        {
-            string tupleAggregateKind = GetValue<CosmosString>(cosmosObject, Constants.Kind).Value;
-            List<ClientQLAggregate> expression = new List<ClientQLAggregate>();
-            foreach (CosmosElement propertyElement in GetValue<CosmosArray>(cosmosObject, Constants.Items))
-            {
-                CosmosObject propertyObject = ConvertToCosmosObject(propertyElement);
-                ClientQLAggregate aggregateExpression = DeserializeAggregate(propertyObject);
-                expression.Add(aggregateExpression);
-            }
-
-            return new ClientQLTupleAggregate(tupleAggregateKind, expression);
-        }
-
         private static IReadOnlyList<ClientQLScalarExpression> DeserializeScalarExpressionArray(CosmosArray cosmosArray)
         {
-            List<ClientQLScalarExpression> expressions = new List<ClientQLScalarExpression>();
+            List<ClientQLScalarExpression> expressions = new List<ClientQLScalarExpression>(cosmosArray.Count);
             foreach (CosmosElement propertyElement in cosmosArray)
             {
                 CosmosObject propertyObject = ConvertToCosmosObject(propertyElement);
@@ -435,13 +448,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         private static IReadOnlyList<ClientQLOrderByItem> DeserializeOrderByItemArray(CosmosArray cosmosArray)
         {
-            List<ClientQLOrderByItem> expressions = new List<ClientQLOrderByItem>();
+            List<ClientQLOrderByItem> expressions = new List<ClientQLOrderByItem>(cosmosArray.Count);
             foreach (CosmosElement propertyElement in cosmosArray)
             {
                 CosmosObject propertyObject = ConvertToCosmosObject(propertyElement);
-                ClientQLScalarExpressionKind kind = GetEnumValue<ClientQLScalarExpressionKind>(GetValue<CosmosString>(propertyObject, Constants.Kind).Value);
-                ClientQLScalarExpression scalarExpression = new ClientQLScalarExpression(kind);
-                expressions.Add(new ClientQLOrderByItem(scalarExpression, ClientQLSortOrder.Ascending));
+                ClientQLSortOrder sortOrder = GetEnumValue<ClientQLSortOrder>(GetValue<CosmosString>(propertyObject, Constants.SortOrder).Value);
+                ClientQLScalarExpression scalarExpression = DeserializeScalarExpression(propertyObject);
+                expressions.Add(new ClientQLOrderByItem(scalarExpression, sortOrder));
             }
 
             return expressions;
@@ -449,23 +462,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         private static IReadOnlyList<ClientQLAggregate> DeserializeAggregateArray(CosmosArray cosmosArray)
         {
-            List<ClientQLAggregate> expressions = new List<ClientQLAggregate>();
+            List<ClientQLAggregate> expressions = new List<ClientQLAggregate>(cosmosArray.Count);
             foreach (CosmosElement propertyElement in cosmosArray)
             {
-                ClientQLAggregate aggregateExpression = null;
                 CosmosObject propertyObject = ConvertToCosmosObject(propertyElement);
-                string kindProperty = GetValue<CosmosString>(propertyObject, Constants.Kind).Value;
-
-                if (kindProperty.Equals(Constants.Builtin))
-                {
-                    aggregateExpression = DeserializeAggregate(propertyObject);
-                }
-                else if (kindProperty.Equals(Constants.Tuple))
-                {
-                    aggregateExpression = DeserializeTupleAggregateExpression(propertyObject);
-                }
-                    
-                expressions.Add(aggregateExpression);
+                expressions.Add(DeserializeAggregate(propertyObject));
             }
 
             return expressions;
@@ -473,13 +474,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         private static IReadOnlyList<ClientQLLiteral> DeserializeLiteralArray(CosmosArray cosmosArray)
         {
-            List<ClientQLLiteral> expressions = new List<ClientQLLiteral>();
+            List<ClientQLLiteral> expressions = new List<ClientQLLiteral>(cosmosArray.Count);
             foreach (CosmosElement propertyElement in cosmosArray)
             {
                 CosmosObject propertyObject = ConvertToCosmosObject(propertyElement);
-                ClientQLLiteralKind kindProperty = GetEnumValue<ClientQLLiteralKind>(GetValue<CosmosString>(propertyObject, Constants.Kind).Value);
-                ClientQLLiteral literal = new ClientQLLiteral(kindProperty);
-                expressions.Add(literal);
+                expressions.Add(DeserializeClientQLLiteral(propertyObject));
             }
         
             return expressions;
@@ -487,13 +486,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         private static IReadOnlyList<ClientQLObjectLiteralProperty> DeserializeObjectLiteralArray(CosmosArray cosmosArray)
         {
-            List<ClientQLObjectLiteralProperty> expressions = new List<ClientQLObjectLiteralProperty>();
+            List<ClientQLObjectLiteralProperty> expressions = new List<ClientQLObjectLiteralProperty>(cosmosArray.Count);
             foreach (CosmosElement propertyElement in cosmosArray)
             {
                 CosmosObject propertyObject = ConvertToCosmosObject(propertyElement);
                 string name = GetValue<CosmosString>(propertyObject, Constants.Name).Value;
-                ClientQLLiteralKind kindProperty = GetEnumValue<ClientQLLiteralKind>(GetValue<CosmosString>(propertyObject, Constants.Kind).Value);
-                ClientQLLiteral literal = new ClientQLLiteral(kindProperty);
+                ClientQLLiteral literal = DeserializeClientQLLiteral(propertyObject);
                 ClientQLObjectLiteralProperty objectLiteralProperty = new ClientQLObjectLiteralProperty(name, literal);
                 expressions.Add(objectLiteralProperty);
             }
@@ -503,7 +501,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         private static IReadOnlyList<BinaryData> DeserializeBinaryArray(CosmosArray cosmosArray)
         {
-            List<BinaryData> expressions = new List<BinaryData>();
+            List<BinaryData> expressions = new List<BinaryData>(cosmosArray.Count);
             foreach (CosmosElement propertyElement in cosmosArray)
             {
                 CosmosObject propertyObject = ConvertToCosmosObject(propertyElement);

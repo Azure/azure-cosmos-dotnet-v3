@@ -8,8 +8,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLTupleAggregate : ClientQLAggregate
     {
-        public ClientQLTupleAggregate(string operatorKind, IReadOnlyList<ClientQLAggregate> items) 
-            : base(ClientQLAggregateKind.Tuple, operatorKind)
+        public ClientQLTupleAggregate(IReadOnlyList<ClientQLAggregate> items) 
+            : base(ClientQLAggregateKind.Tuple)
         {
             this.Items = items;
         }

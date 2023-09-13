@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
-    internal class ClientQLScalarExpression : ClientQLExpression
+    internal abstract class ClientQLScalarExpression : ClientQLExpression
     {
         public ClientQLScalarExpression(ClientQLScalarExpressionKind kind)
         {

@@ -6,12 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
     internal class ClientQLBuiltinAggregate : ClientQLAggregate
     {
-        public ClientQLBuiltinAggregate(string operatorKind, ClientQLAggregateOperatorKind aggregateOperatorKind)
-            : base(ClientQLAggregateKind.Builtin, operatorKind)
+        public ClientQLBuiltinAggregate(ClientQLAggregateOperatorKind operatorKind)
+            : base(ClientQLAggregateKind.Builtin)
         {
-            this.AggregateOperatorKind = aggregateOperatorKind;
+            this.OperatorKind = operatorKind;
         }
 
-        public ClientQLAggregateOperatorKind AggregateOperatorKind { get; }
+        public ClientQLAggregateOperatorKind OperatorKind { get; }
     }
 }

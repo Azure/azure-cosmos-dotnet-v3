@@ -4,16 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
-    internal class ClientQLAggregate
+    internal abstract class ClientQLAggregate
     {
-        public ClientQLAggregate(ClientQLAggregateKind kind, string operatorKind)
+        public ClientQLAggregate(ClientQLAggregateKind kind)
         {
             this.Kind = kind;
-            this.OperatorKind = operatorKind;
         }
 
         public ClientQLAggregateKind Kind { get; }
-        
-        public string OperatorKind { get; }
     }
 }

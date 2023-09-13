@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 {
-    internal class ClientQLType
+    internal abstract class ClientQLType
     {
         public ClientQLType(ClientQLTypeKind kind)
         {

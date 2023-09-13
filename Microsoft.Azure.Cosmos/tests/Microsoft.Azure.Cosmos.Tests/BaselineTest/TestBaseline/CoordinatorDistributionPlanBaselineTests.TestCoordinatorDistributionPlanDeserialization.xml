@@ -27,8 +27,8 @@
         "Kind": 4
       },
       "Aggregate": {
-        "Kind": 0,
-        "OperatorKind": "Sum"
+        "OperatorKind": 11,
+        "Kind": 0
       },
       "Kind": 0
     },
@@ -364,26 +364,25 @@
       "KeyCount": 1,
       "Aggregates": [
         {
-          "Kind": 0,
-          "OperatorKind": "Sum"
+          "OperatorKind": 11,
+          "Kind": 0
         },
         {
           "Items": [
             {
-              "Kind": 0,
-              "OperatorKind": "Sum"
+              "OperatorKind": 11,
+              "Kind": 0
             },
             {
-              "Kind": 0,
-              "OperatorKind": "Sum"
+              "OperatorKind": 11,
+              "Kind": 0
             }
           ],
-          "Kind": 1,
-          "OperatorKind": "Tuple"
+          "Kind": 1
         },
         {
-          "Kind": 0,
-          "OperatorKind": "Max"
+          "OperatorKind": 9,
+          "Kind": 0
         }
       ],
       "Kind": 2
@@ -563,8 +562,8 @@
         "Kind": 4
       },
       "Aggregate": {
-        "Kind": 0,
-        "OperatorKind": "Sum"
+        "OperatorKind": 11,
+        "Kind": 0
       },
       "Kind": 0
     },
