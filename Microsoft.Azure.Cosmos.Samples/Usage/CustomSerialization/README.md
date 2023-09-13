@@ -4,7 +4,7 @@ This sample demonstrates an example of configuring custom serialization
 
 ## Description
 
-This example covers severale options:
+This example covers several options leveraging CosmosClientOptions.CosmosSerializationOptions:
 
 - IgnoreNullValues
 - Disable indented
