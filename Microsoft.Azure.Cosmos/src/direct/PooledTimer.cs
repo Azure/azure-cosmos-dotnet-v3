@@ -70,6 +70,14 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// The timed task is already completed.
+        /// </summary>
+        public bool IsCompleted
+        {
+            get { return this.tcs.Task.IsCompleted; }
+        }
+
+        /// <summary>
         /// Starts the timer for the timeout period specfied in constructor
         /// </summary>
         /// <returns>Returns the Task upon which you can await on until completion</returns>
