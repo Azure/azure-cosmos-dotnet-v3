@@ -20,7 +20,7 @@ This listener can cover following aspects:
 
 ### Run
 
-Before running the application you need fill out `EndPointUrl` and `AuthorizationKey` params in the [AppSettings.json](AppSettings.json)
+Before running the application you need fill out `EndPointUrl` and `AuthorizationKey` params in the [AppSettings.json](../appSettings.json)
 
 ```PowerShell
 dotnet run
