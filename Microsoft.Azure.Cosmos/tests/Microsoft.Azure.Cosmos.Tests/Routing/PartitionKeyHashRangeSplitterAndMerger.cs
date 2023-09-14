@@ -39,8 +39,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return SplitOutcome.NumRangesNeedsToBeGreaterThanZero;
             }
 
-            UInt128 actualEnd = partitionKeyHashRange.EndExclusive.HasValue ? partitionKeyHashRange.EndExclusive.Value.Value : UInt128.MaxValue;
-            UInt128 actualStart = partitionKeyHashRange.StartInclusive.HasValue ? partitionKeyHashRange.StartInclusive.Value.Value : UInt128.MinValue;
+            UInt128 actualEnd = partitionKeyHashRange.EndExclusive.HasValue ? partitionKeyHashRange.EndExclusive.Value.HashValues[0] : UInt128.MaxValue;
+            UInt128 actualStart = partitionKeyHashRange.StartInclusive.HasValue ? partitionKeyHashRange.StartInclusive.Value.HashValues[0] : UInt128.MinValue;
             UInt128 rangeLength = actualEnd - actualStart;
             if (rangeLength < rangeCount)
             {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             for (int i = 1; i < rangeCount - 1; i++)
             {
                 PartitionKeyHash start = new PartitionKeyHash(actualStart + (childRangeLength * i));
-                PartitionKeyHash end = new PartitionKeyHash(start.Value + childRangeLength);
+                PartitionKeyHash end = new PartitionKeyHash(start.HashValues[0] + childRangeLength);
                 childRanges.Add(new PartitionKeyHashRange(start, end));
             }
 
@@ -77,6 +77,39 @@ namespace Microsoft.Azure.Cosmos.Routing
                 PartitionKeyHash? end = partitionKeyHashRange.EndExclusive;
                 childRanges.Add(new PartitionKeyHashRange(start, end));
             }
+
+            splitRanges = PartitionKeyHashRanges.Create(childRanges);
+            return SplitOutcome.Success;
+        }
+
+        public static PartitionKeyHashRanges SplitRange(PartitionKeyHashRange partitionKeyHashRange, PartitionKeyHash explicitSplitPoint)
+        {
+            SplitOutcome splitOutcome = PartitionKeyHashRangeSplitterAndMerger.TrySplitRange(
+                partitionKeyHashRange,
+                explicitSplitPoint,
+                out PartitionKeyHashRanges splitRanges);
+
+            return splitOutcome switch
+            {
+                SplitOutcome.Success => splitRanges,
+                _ => throw new RangeSplitException($"Splitting range failed because {splitOutcome}"),
+            };
+        }
+
+        public static SplitOutcome TrySplitRange(PartitionKeyHashRange partitionKeyHashRange, PartitionKeyHash explicitSplitPoint, out PartitionKeyHashRanges splitRanges)
+        {
+            if (explicitSplitPoint < (partitionKeyHashRange.StartInclusive != null ? partitionKeyHashRange.StartInclusive : PartitionKeyHash.None) ||
+                explicitSplitPoint > partitionKeyHashRange.EndExclusive)
+            {
+                splitRanges = default;
+                return SplitOutcome.RangeNotWideEnough;
+            }
+
+            IList<PartitionKeyHashRange> childRanges = new List<PartitionKeyHashRange>
+            {
+                new PartitionKeyHashRange(partitionKeyHashRange.StartInclusive, explicitSplitPoint),
+                new PartitionKeyHashRange(explicitSplitPoint, partitionKeyHashRange.EndExclusive)
+            };
 
             splitRanges = PartitionKeyHashRanges.Create(childRanges);
             return SplitOutcome.Success;
@@ -111,7 +144,13 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             public override PartitionKeyHashRange FullRange => PartitionKeyHashRangeSplitterAndMerger.V2.fullRange;
         }
-
+        private sealed class RangeSplitException : Exception
+        {
+            public RangeSplitException(string message)
+                : base(message)
+            {
+            }
+        }
         public enum SplitOutcome
         {
             Success,
