@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
     {
         public static readonly ClientQLNullLiteral Singleton = new ClientQLNullLiteral();
 
-        public ClientQLNullLiteral()
+        private ClientQLNullLiteral()
             : base(ClientQLLiteralKind.Null)
         {
         }
