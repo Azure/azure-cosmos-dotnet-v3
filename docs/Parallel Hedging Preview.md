@@ -6,7 +6,7 @@ When Building a new `CosmosClient` there will be an option to include paralell h
 
 ```csharp
 CosmosClient client = new CosmosClientBuilder("connection string")
-    .WithSpeculativeProcessing(speculativeThreshold: TimeSpan.FromMilliseconds(500))
+    .WithSpeculativeProcessing(type: SpeculationType.Threshold, speculativeThreshold: TimeSpan.FromMilliseconds(500))
     .Build();
 ```
 
@@ -15,7 +15,7 @@ or
 ```csharp
 CosmosClientOptions options = new CosmosClientOptions()
 {
-    SpeculativeProcessor = new ThresholdSpeculator(TimeSpan.FromMilliseconds(500))
+    SpeculationOptions = new SpeculationOptions(type: SpeculationType.Threshold, speculativeThreshold: TimeSpan.FromMilliseconds(500))
 };
 
 CosmosClient client = new CosmosClient(
@@ -72,7 +72,7 @@ To set a region specific consistency level there is a option when creating a `Co
 ```csharp
 CosmosClient client = new CosmosClientBuilder()
     .WithPerRegionConsistencyLevels(
-        new Dictionary<string, ConsistencyLevel>()
+        new ObservableCollection<string, ConsistencyLevel>()
         {
             { "West US", ConsistencyLevel.Eventual },
             { "East US", ConsistencyLevel.Session }
@@ -85,7 +85,7 @@ or
 ```csharp
 CosmosClientOptions options = new CosmosClientOptions()
 {
-    RegionConsistencyLevel = new Dictionary<string, ConsistencyLevel>()
+    RegionConsistencyLevel = new ObservableCollection<string, ConsistencyLevel>()
     {
         { "West US", ConsistencyLevel.Eventual },
         { "East US", ConsistencyLevel.Session }
