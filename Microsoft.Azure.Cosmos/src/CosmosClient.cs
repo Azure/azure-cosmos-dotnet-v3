@@ -1472,22 +1472,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Enables automatic failover for all requests issued by this client.
-        /// </summary>
-        public void EnableAutomaticFailover()
-        {
-            this.ClientContext.DocumentClient.EnableAutomaticFailover();
-        }
-
-        /// <summary>
-        /// Disables automatic failover for all requests issued by this client.
-        /// </summary>
-        public void DisableAutomaticFailover()
-        {
-            this.ClientContext.DocumentClient.DisableAutomaticFailover();
-        }
-
-        /// <summary>
         /// Dispose of cosmos client
         /// </summary>
         public void Dispose()
