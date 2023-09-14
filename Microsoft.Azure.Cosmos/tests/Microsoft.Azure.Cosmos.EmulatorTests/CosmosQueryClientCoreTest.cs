@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsNotNull(containerProperties);
             Assert.IsNotNull(containerProperties.ResourceId);
-            Assert.IsNotNull(containerProperties.EffectivePartitionKeyString);
+            Assert.IsNotNull(containerProperties.EffectiveRangesForPartitionKey);
 
             IReadOnlyList<Documents.PartitionKeyRange> pkRange = await this.queryClientCore.TryGetOverlappingRangesAsync(
                 collectionResourceId: containerProperties.ResourceId,
