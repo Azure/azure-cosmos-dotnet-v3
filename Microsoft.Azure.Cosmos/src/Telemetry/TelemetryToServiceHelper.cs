@@ -105,6 +105,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         this.InitializeClientTelemetry(
                             clientConfig: databaseAccountClientConfigs.Result);
                     }
+                    else if (databaseAccountClientConfigs.Exception is ObjectDisposedException)
+                    {
+                        DefaultTrace.TraceWarning("Client is being disposed for {0} at {1}", serviceEndpointWithPath, DateTime.UtcNow);
+                        break;
+                    }
                     else if (!this.cancellationTokenSource.IsCancellationRequested)
                     {
                         DefaultTrace.TraceWarning("Exception while calling client config {0} ", databaseAccountClientConfigs.Exception);
@@ -149,18 +154,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         if (responseMessage.StatusCode == System.Net.HttpStatusCode.BadRequest)
                         {
                             string responseFromGateway = await responseMessage.Content.ReadAsStringAsync();
-                            throw new InvalidOperationException($"Client Config API is not enabled at compute gateway. Response is {responseFromGateway}");
+                            return TryCatch<AccountClientConfiguration>.FromException(
+                                new InvalidOperationException($"Client Config API is not enabled at compute gateway. Response is {responseFromGateway}"));
                         }
 
                         using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                         {
-                            return TryCatch<AccountClientConfiguration>.FromResult(CosmosResource.FromStream<AccountClientConfiguration>(documentServiceResponse));
+                            return TryCatch<AccountClientConfiguration>.FromResult(
+                                CosmosResource.FromStream<AccountClientConfiguration>(documentServiceResponse));
                         }
                     }
-                }
-                catch (ObjectDisposedException)
-                {
-                    throw new OperationCanceledException($"Client is being disposed for {clientConfigEndpoint} at {DateTime.UtcNow}");
                 }
                 catch (Exception ex)
                 {
