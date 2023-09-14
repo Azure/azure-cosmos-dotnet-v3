@@ -63,17 +63,26 @@ namespace Microsoft.Azure.Cosmos
                 trace,
                 cancellationToken);
 
-            string effectivePartitionKeyString = null;
+            List<Range<string>> effectivePartitionKeyRange = null;
             if (partitionKey != null)
             {
                 // Dis-ambiguate the NonePK if used 
                 PartitionKeyInternal partitionKeyInternal = partitionKey.Value.IsNone ? containerProperties.GetNoneValue() : partitionKey.Value.InternalKey;
-                effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
+                effectivePartitionKeyRange = new List<Range<string>>
+                {
+                    PartitionKeyInternal.GetEffectivePartitionKeyRange(
+                        containerProperties.PartitionKey,
+                        new Range<PartitionKeyInternal>(
+                            min: partitionKeyInternal,
+                            max: partitionKeyInternal,
+                            isMinInclusive: true,
+                            isMaxInclusive: true))
+                };
             }
 
             return new ContainerQueryProperties(
                 containerProperties.ResourceId,
-                effectivePartitionKeyString,
+                effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
                 containerProperties.GeospatialConfig.GeospatialType);
         }
@@ -200,24 +209,6 @@ namespace Microsoft.Azure.Cosmos
             return partitionedQueryExecutionInfo;
         }
 
-        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
-            string resourceLink,
-            string collectionResourceId,
-            string effectivePartitionKeyString,
-            bool forceRefresh,
-            ITrace trace)
-        {
-            return this.GetTargetPartitionKeyRangesAsync(
-                resourceLink,
-                collectionResourceId,
-                new List<Range<string>>
-                {
-                    Range<string>.GetPointRange(effectivePartitionKeyString)
-                },
-                forceRefresh,
-                trace);
-        }
-
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
             string resourceLink,
             string collectionResourceId,
@@ -243,7 +234,7 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
-            List<Range<string>> providedRanges,
+            IReadOnlyList<Range<string>> providedRanges,
             bool forceRefresh,
             ITrace trace)
         {
