@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Handler
             }
             catch (ObjectDisposedException ex)
             {
-                DefaultTrace.TraceError($"Error while stopping system usage monitor. {0} ", ex);
+                DefaultTrace.TraceError("Error while stopping system usage monitor. {0} ", ex);
             }
         }
 

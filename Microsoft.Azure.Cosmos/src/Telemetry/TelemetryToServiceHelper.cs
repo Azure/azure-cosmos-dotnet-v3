@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
                     else if (!this.cancellationTokenSource.IsCancellationRequested)
                     {
-                        DefaultTrace.TraceWarning($"Exception while calling client config " + databaseAccountClientConfigs.Exception.ToString());
+                        DefaultTrace.TraceWarning("Exception while calling client config {0} ", databaseAccountClientConfigs.Exception);
                     }
 
                     await Task.Delay(
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning($"Exception while running client config job " + ex.ToString());
+                DefaultTrace.TraceWarning("Exception while running client config job: {0}", ex);
             }
         }
 
@@ -164,8 +164,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
                 catch (Exception ex)
                 {
-                    // Do not log if exception is due to client dispose.
-                    DefaultTrace.TraceWarning($"Exception while calling client config " + ex);
+                    DefaultTrace.TraceWarning("Exception while calling client config {0}", ex);
                     return TryCatch<AccountClientConfiguration>.FromException(ex);
                 }
             }
@@ -237,12 +236,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         private void StopClientTelemetry()
         {
-            this.collector = new TelemetryCollectorNoOp();
+            try
+            {
+                this.collector = new TelemetryCollectorNoOp();
 
-            this.clientTelemetry?.Dispose();
-            this.clientTelemetry = null;
+                this.clientTelemetry?.Dispose();
+                this.clientTelemetry = null;
 
-            DiagnosticsHandlerHelper.Refresh(isClientTelemetryEnabled: false);
+                DiagnosticsHandlerHelper.Refresh(isClientTelemetryEnabled: false);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceWarning($"Error While stopping Telemetry Job : {0}", ex);
+            }   
         }
     }
 }
