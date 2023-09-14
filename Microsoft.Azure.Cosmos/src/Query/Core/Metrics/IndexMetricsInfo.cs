@@ -23,10 +23,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #endif
     sealed class IndexMetricsInfo
     {
-        public static readonly IndexMetricsInfo Empty = new IndexMetricsInfo(
-            utilizedEntity: null,
-            potentialEntity: null);
-
         /// <summary>
         /// Initializes a new instance of the Index Metrics class.
         /// </summary>
@@ -37,8 +33,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
              IndexMetricsInfoEntity utilizedEntity,
              IndexMetricsInfoEntity potentialEntity)
         {
-            this.UtilizedEntity = utilizedEntity ?? IndexMetricsInfoEntity.Empty;
-            this.PotentialEntity = potentialEntity ?? IndexMetricsInfoEntity.Empty;
+            this.UtilizedEntity = utilizedEntity ?? default;
+            this.PotentialEntity = potentialEntity ?? default;
         }
 
         [JsonProperty("Utilized")]
@@ -56,8 +52,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         {
             if (delimitedString == null)
             {
-                result = IndexMetricsInfo.Empty;
-                return true;
+                result = default;
+                return false;
             }
 
             try
@@ -78,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             }
             catch (JsonException)
             {
-                result = IndexMetricsInfo.Empty;
+                result = default;
                 return false;
             }
         }
