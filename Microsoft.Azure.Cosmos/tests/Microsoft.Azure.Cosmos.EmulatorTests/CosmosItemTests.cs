@@ -1664,7 +1664,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             epk = new PartitionKey("test")
                            .InternalKey
                            .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
-
             properties = new Dictionary<string, object>()
             {
                 { WFConstants.BackendHeaders.EffectivePartitionKeyString, epk },
@@ -1714,9 +1713,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // If this fails the RUs of the container needs to be increased to ensure at least 2 partitions.
                 Assert.IsTrue(ranges.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
+
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
                     null,
+                    //new List<Documents.Routing.Range<string>> { new Documents.Routing.Range<string>("AA", "AA", true, true) },
                     containerResponse.Resource.PartitionKey,
                     containerResponse.Resource.GeospatialConfig.GeospatialType);
 
@@ -1734,6 +1735,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     trace: NoOpTrace.Singleton);
 
                 Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
+
             }
             finally
             {
