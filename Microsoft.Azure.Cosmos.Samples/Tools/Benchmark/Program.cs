@@ -349,11 +349,11 @@ namespace CosmosBenchmark
                 MachineName = Environment.MachineName,
                 JobStatus = "STARTED",
                 JobStartTime = DateTime.Now,
-                pk = "/pk"
+                pk = Environment.MachineName
             };
 
             ItemResponse<BenchmarkProgress> itemResponse = await resultContainer.UpsertItemAsync(
-                benchmarkProgress, new PartitionKey(benchmarkProgress.id));
+                benchmarkProgress, new PartitionKey(benchmarkProgress.pk));
 
             return itemResponse.Resource;
         }

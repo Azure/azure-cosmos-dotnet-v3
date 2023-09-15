@@ -59,7 +59,7 @@ namespace CosmosBenchmark
         public bool CleanupOnFinish { get; set; } = false;
 
         [Option(Required = false, HelpText = "Container partition key path")]
-        public string PartitionKeyPath { get; set; } = "/partitionKey";
+        public string PartitionKeyPath { get; set; } = "/pk";
 
         [Option("pl", Required = false, HelpText = "Degree of parallism")]
         public int DegreeOfParallelism { get; set; } = -1;
