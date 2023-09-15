@@ -348,7 +348,8 @@ namespace CosmosBenchmark
                 id = Environment.MachineName,
                 MachineName = Environment.MachineName,
                 JobStatus = "STARTED",
-                JobStartTime = DateTime.Now
+                JobStartTime = DateTime.Now,
+                pk = "/pk"
             };
 
             ItemResponse<BenchmarkProgress> itemResponse = await resultContainer.UpsertItemAsync(
