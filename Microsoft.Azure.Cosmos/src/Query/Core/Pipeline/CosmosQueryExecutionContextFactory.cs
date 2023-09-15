@@ -606,17 +606,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            bool parsed;
-            parsed = SqlQueryParser.TryParse(inputParameters.SqlQuerySpec.QueryText, out SqlQuery sqlQuery);
+            bool parsed = SqlQueryParser.TryParse(inputParameters.SqlQuerySpec.QueryText, out SqlQuery sqlQuery);
 
             if (parsed)
             {
                 bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
                 bool hasGroupBy = sqlQuery.GroupByClause != default;
                 bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
-                bool verifyQuery = hasAggregates || hasDistinct || hasGroupBy;
 
-                if (verifyQuery)
+                if (hasAggregates || hasDistinct || hasGroupBy)
                 {
                     return await GetPartitionedQueryExecutionInfoAsync(
                         cosmosQueryContext,

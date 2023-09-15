@@ -415,8 +415,9 @@
                                 expectedContinuationTokenCount: 10,
                                 useQueryPlan: false);
             }
-            catch (Exception ex)
+            catch
             {
+                // Confirming that an exception is thrown for an unsupported query 
                 Assert.IsTrue(true);
                 return;
             }
