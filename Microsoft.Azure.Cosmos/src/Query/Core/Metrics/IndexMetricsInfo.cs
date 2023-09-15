@@ -33,12 +33,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
              IndexMetricsInfoEntity utilizedEntity,
              IndexMetricsInfoEntity potentialEntity)
         {
-            this.UtilizedEntity = utilizedEntity ?? default;
-            this.PotentialEntity = potentialEntity ?? default;
+            this.UtilizedEntity = utilizedEntity;
+            this.PotentialEntity = potentialEntity;
         }
 
         [JsonProperty("Utilized")]
         public IndexMetricsInfoEntity UtilizedEntity { get; }
+
         [JsonProperty("Potential")]
         public IndexMetricsInfoEntity PotentialEntity { get; }
 
@@ -52,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         {
             if (delimitedString == null)
             {
-                result = default;
+                result = null;
                 return false;
             }
 
@@ -62,19 +63,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 string decodedString = System.Web.HttpUtility.UrlDecode(delimitedString, Encoding.UTF8);
 
                 result = JsonConvert.DeserializeObject<IndexMetricsInfo>(decodedString, new JsonSerializerSettings()
-                {
-                    // Allowing null values to be resilient to Json structure change
-                    MissingMemberHandling = MissingMemberHandling.Ignore,
-                    NullValueHandling = NullValueHandling.Ignore,
-                    // Ignore parsing error encountered in deserialization
-                    Error = (sender, parsingErrorEvent) => parsingErrorEvent.ErrorContext.Handled = true
-                }) ?? IndexMetricsInfo.Empty;
+                    {
+                        // Allowing null values to be resilient to Json structure change
+                        MissingMemberHandling = MissingMemberHandling.Ignore,
+                        NullValueHandling = NullValueHandling.Ignore,
+                        // Ignore parsing error encountered in deserialization
+                        Error = (sender, parsingErrorEvent) => parsingErrorEvent.ErrorContext.Handled = true
+                    }) ?? null;
 
                 return true;
             }
             catch (JsonException)
             {
-                result = default;
+                result = null;
                 return false;
             }
         }
