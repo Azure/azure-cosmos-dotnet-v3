@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using BaselineTest;
     using System.Linq.Dynamic;
     using System.Text;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
 
@@ -622,7 +621,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<DataObject> testData = new List<DataObject>();
             IOrderedQueryable<DataObject> constantQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? constantQuery : testData.AsQueryable();
-            
+
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
                 // This test case will use the legacy delegate compilation expression evaluator
@@ -683,7 +682,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     StringField = sb.ToString(),
                     Id = Guid.NewGuid().ToString(),
                     Pk = "Test",
-                    
+
                     // For ToString tests
                     ArrayField = new int[] {},
                     Point = new Point(0, 0)
@@ -805,9 +804,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("ToUpper", b => getQuery(b).Select(doc => doc.StringField.ToUpper()))
             };
             this.ExecuteTestSuite(inputs);
-    }
+        }
 
-    [TestMethod]
+        [TestMethod]
         public void TestArrayFunctions()
         {
             const int Records = 100;
