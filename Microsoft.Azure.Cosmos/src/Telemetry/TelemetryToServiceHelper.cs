@@ -167,7 +167,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceWarning("Exception while calling client config {0}", ex);
                     return TryCatch<AccountClientConfiguration>.FromException(ex);
                 }
             }
