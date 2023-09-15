@@ -1,6 +1,6 @@
 ## <a name="recommended-version"></a> Recommended version
 
-The **minimum recommended version is [3.35.4](#3.33.0) when using Direct mode and [3.35.4](#3.35.4) for Gateway mode**.
+The **minimum recommended version is [3.35.4](#3.35.4)**.
 
 Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes.
 
