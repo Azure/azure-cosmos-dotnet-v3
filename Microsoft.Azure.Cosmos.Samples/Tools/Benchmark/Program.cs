@@ -177,7 +177,6 @@ namespace CosmosBenchmark
 
                 Utility.TeePrint("Starting Inserts with {0} tasks", taskCount);
 
-
                 string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
                 int opsPerTask = config.ItemCount / taskCount;
 
@@ -216,7 +215,6 @@ namespace CosmosBenchmark
                     consistencyLevel = accountProperties.Consistency.DefaultConsistencyLevel.ToString();
                 }
                 runSummary.ConsistencyLevel = consistencyLevel;
-
 
                 BenchmarkProgress benchmarkProgress = await CompleteBenchmarkProgressStatus(benchmarkProgressItem, resultContainer);
                 if (config.PublishResults)
