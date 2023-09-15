@@ -142,18 +142,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cosmosQueryContext,
                     containerQueryProperties,
                     trace);
-
+                
                 if (targetRange != null)
                 {
-                    return await TryCreateExecutionContextAsync(
-                        documentContainer,
-                        partitionedQueryExecutionInfo: null,
+                    PartitionedQueryExecutionInfo queryPlan = await CheckQueryValidityWithQueryPlanAsync(
+                        inputParameters,
                         cosmosQueryContext,
                         containerQueryProperties,
-                        inputParameters,
-                        targetRange,
                         trace,
                         cancellationToken);
+
+                    if (queryPlan != null)
+                    {
+                        return await TryCreateFromPartitionedQueryExecutionInfoAsync(
+                            documentContainer,
+                            queryPlan,
+                            containerQueryProperties,
+                            cosmosQueryContext,
+                            inputParameters,
+                            createQueryPipelineTrace,
+                            cancellationToken);
+                    }
+                    else
+                    {
+                        return await TryCreateExecutionContextAsync(
+                            documentContainer,
+                            partitionedQueryExecutionInfo: null,
+                            cosmosQueryContext,
+                            containerQueryProperties,
+                            inputParameters,
+                            targetRange,
+                            trace,
+                            cancellationToken);
+                    }
                 }
 
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -576,6 +597,37 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 maxConcurrency: inputParameters.MaxConcurrency,
                 requestContinuationToken: inputParameters.InitialUserContinuationToken,
                 requestCancellationToken: cancellationToken);
+        }
+
+        private static async Task<PartitionedQueryExecutionInfo> CheckQueryValidityWithQueryPlanAsync(
+            InputParameters inputParameters,
+            CosmosQueryContext cosmosQueryContext,
+            ContainerQueryProperties containerQueryProperties,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            bool parsed;
+            parsed = SqlQueryParser.TryParse(inputParameters.SqlQuerySpec.QueryText, out SqlQuery sqlQuery);
+
+            if (parsed)
+            {
+                bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
+                bool hasGroupBy = sqlQuery.GroupByClause != default;
+                bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
+                bool verifyQuery = hasAggregates || hasDistinct || hasGroupBy;
+
+                if (verifyQuery)
+                {
+                    return await GetPartitionedQueryExecutionInfoAsync(
+                        cosmosQueryContext,
+                        inputParameters,
+                        containerQueryProperties,
+                        trace,
+                        cancellationToken);
+                }
+            }
+
+            return null;
         }
 
         private static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(

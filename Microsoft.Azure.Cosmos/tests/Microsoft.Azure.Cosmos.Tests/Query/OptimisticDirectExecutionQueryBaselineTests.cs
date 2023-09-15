@@ -212,7 +212,7 @@
 
             DocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems, multiPartition: false);
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: input.ExpectedOptimisticDirectExecution);
-            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions, useQueryPlan: true);
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                       documentContainer,
                       cosmosQueryContextCore,
@@ -379,11 +379,11 @@
         {
             int numItems = 100;
             OptimisticDirectExecutionTestInput input = CreateInput(
-                    description: @"Single Partition Key and Value Field",
+                description: @"Single Partition Key and Value Field",
                     query: "SELECT * FROM c",
-                    expectedOptimisticDirectExecution: true,
-                    partitionKeyPath: @"/pk",
-                    partitionKeyValue: "a");
+                expectedOptimisticDirectExecution: true,
+                partitionKeyPath: @"/pk",
+                partitionKeyValue: "a");
 
             int result = await this.GetPipelineAndDrainAsync(
                             input,
@@ -392,6 +392,36 @@
                             expectedContinuationTokenCount: 10);
 
             Assert.AreEqual(numItems, result);
+        }
+
+        // test checks that the Ode code path ensures that a query is valid before sending it to the backend
+        // this query with previous ODE implementation would have succedded. However, with the new query validity check, this query should throw an exception
+        [TestMethod]
+        public async Task TestQueryValidityCheckWithODEAsync()
+        {
+            OptimisticDirectExecutionTestInput input = CreateInput(
+                description: @"Composition of Aggregates query",
+                query: "Select COUNT(1) + 5 FROM c",
+                expectedOptimisticDirectExecution: true,
+                partitionKeyPath: @"/pk",
+                partitionKeyValue: "a");
+
+            try
+            {
+                int result = await this.GetPipelineAndDrainAsync(
+                                input,
+                                numItems: 100,
+                                isMultiPartition: false,
+                                expectedContinuationTokenCount: 10,
+                                useQueryPlan: false);
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(true);
+                return;
+            }
+
+            Assert.IsFalse(true);
         }
 
         // test to check if pipeline handles a 410 exception properly and returns all the documents.
@@ -526,11 +556,11 @@
             return (mergeTest, queryPipelineStage);
         }
 
-        private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount, bool requiresDist = false)
+        private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount, bool requiresDist = false, bool useQueryPlan = true)
         {
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition, requiresDist: requiresDist);
-            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
+            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions, useQueryPlan);
             List<CosmosElement> documents = new List<CosmosElement>();
             int continuationTokenCount = 0;
 
@@ -586,9 +616,9 @@
             return tryGetQueryPlan.Result;
         }
 
-        private static async Task<IQueryPipelineStage> GetOdePipelineAsync(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions)
+        private static async Task<IQueryPipelineStage> GetOdePipelineAsync(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions, bool useQueryPlan = true)
         {
-            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions, useQueryPlan);
 
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                       documentContainer,
@@ -700,7 +730,7 @@
 
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
 
-            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions, useQueryPlan: true);
 
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                       documentContainer,
@@ -725,13 +755,13 @@
             return new OptimisticDirectExecutionTestOutput(input.ExpectedOptimisticDirectExecution);
         }
 
-        private static Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore> CreateInputParamsAndQueryContext(OptimisticDirectExecutionTestInput input, QueryRequestOptions queryRequestOptions)
+        private static Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore> CreateInputParamsAndQueryContext(OptimisticDirectExecutionTestInput input, QueryRequestOptions queryRequestOptions, bool useQueryPlan)
         {
             CosmosSerializerCore serializerCore = new();
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(new SqlQuerySpec(input.Query), Documents.ResourceType.Document));
             string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = GetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, input.PartitionKeyDefinition);
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = useQueryPlan ? GetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, input.PartitionKeyDefinition) : null;
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: new SqlQuerySpec(input.Query),
                 initialUserContinuationToken: input.ContinuationToken,
@@ -740,7 +770,7 @@
                 maxItemCount: queryRequestOptions.MaxItemCount,
                 maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
                 partitionKey: input.PartitionKeyValue,
-                properties: queryRequestOptions.Properties,
+                properties: new Dictionary<string, object>() { { "x-ms-query-partitionkey-definition", input.PartitionKeyDefinition } },
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
