@@ -183,6 +183,16 @@ namespace Microsoft.Azure.Documents.Rntbd
             RntbdConstants.RntbdOperationType operationType = GetRntbdOperationType(resourceOperation.operationType);
             RntbdConstants.RntbdResourceType resourceType = GetRntbdResourceType(resourceOperation.resourceType);
 
+            Console.WriteLine("================= START ============");
+            Console.WriteLine("RntbdConstants.RntbdOperationType: " + operationType);
+            Console.WriteLine("RntbdConstants.RntbdResourceType: " + resourceType);
+            foreach (var e in request.Headers.Keys())
+            {
+                string value = request.Headers[e];
+                Console.WriteLine("Header: " + e + " Value: " + value);
+            }
+            Console.WriteLine("================= END ============");
+
             // NOTE: when request.Headers is a "RequestNameValueCollection", requestHeaders is a reference to request.Headers
             // and not a clone. It's important to keep this in mind when dealing with multiple threads that share the
             // same request object.
