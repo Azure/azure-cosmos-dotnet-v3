@@ -23,10 +23,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #endif
     sealed class IndexMetricsInfoEntity
     {
-        public static readonly IndexMetricsInfoEntity Empty = new IndexMetricsInfoEntity(
-            singleIndexes: new List<SingleIndexIndexMetrics>(),
-            compositeIndexes: new List<CompositeIndexIndexMetrics>());
-
         /// <summary>
         /// Initializes a new instance of the Index Utilization class. This is the legacy class of IndexMetricsInfoEntity.
         /// </summary>
