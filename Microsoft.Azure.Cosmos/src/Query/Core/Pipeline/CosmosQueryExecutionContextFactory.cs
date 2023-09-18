@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cosmosQueryContext,
                     containerQueryProperties,
                     trace);
-                
+
                 if (targetRange != null)
                 {
                     PartitionedQueryExecutionInfo queryPlan = await CheckQueryValidityWithQueryPlanAsync(
@@ -606,15 +606,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            bool parsed = SqlQueryParser.TryParse(inputParameters.SqlQuerySpec.QueryText, out SqlQuery sqlQuery);
+            string[] queryOperators = new string[] { "GROUPBY", "COUNT(", "MIN(", "MAX(", "DISTINCT" };
 
-            if (parsed)
+            foreach (string clause in queryOperators)
             {
-                bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
-                bool hasGroupBy = sqlQuery.GroupByClause != default;
-                bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
-
-                if (hasAggregates || hasDistinct || hasGroupBy)
+                if (inputParameters.SqlQuerySpec.QueryText.Contains(clause))
                 {
                     return await GetPartitionedQueryExecutionInfoAsync(
                         cosmosQueryContext,

@@ -418,11 +418,10 @@
             catch
             {
                 // Confirming that an exception is thrown for an unsupported query 
-                Assert.IsTrue(true);
                 return;
             }
 
-            Assert.IsFalse(true);
+            Assert.Fail();
         }
 
         // test to check if pipeline handles a 410 exception properly and returns all the documents.
