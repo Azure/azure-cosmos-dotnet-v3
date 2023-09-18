@@ -95,6 +95,7 @@
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: null),
             };
+
             this.ExecuteTestSuite(testVariations);
         }
 
@@ -395,33 +396,54 @@
         }
 
         // test checks that the Ode code path ensures that a query is valid before sending it to the backend
-        // this query with previous ODE implementation would have succedded. However, with the new query validity check, this query should throw an exception
+        // these queries with previous ODE implementation would have succedded. However, with the new query validity check, they should all throw an exception
         [TestMethod]
         public async Task TestQueryValidityCheckWithODEAsync()
         {
-            OptimisticDirectExecutionTestInput input = CreateInput(
-                description: @"Composition of Aggregates query",
-                query: "Select COUNT(1) + 5 FROM c",
-                expectedOptimisticDirectExecution: true,
-                partitionKeyPath: @"/pk",
-                partitionKeyValue: "a");
+            List<string> testVariations = new List<string>
+            {
+                "SELECT COUNT(1) + 5 FROM c",
+                "SELECT MIN(c.price) + 10 FROM c",
+                "SELECT MAX(c.price) - 4 FROM c",
+                "SELECT SUM(c.price) + 20 FROM c",
+                "SELECT AVG(c.price) * 50 FROM c",
+            };
 
-            try
+            List<string> testVariationsWithCaseSensitivity = new List<string>();
+            foreach (string testCase in testVariations)
             {
-                int result = await this.GetPipelineAndDrainAsync(
-                                input,
-                                numItems: 100,
-                                isMultiPartition: false,
-                                expectedContinuationTokenCount: 10,
-                                useQueryPlan: false);
-            }
-            catch
-            {
-                // Confirming that an exception is thrown for an unsupported query 
-                return;
+                testVariationsWithCaseSensitivity.Add(testCase.ToLower());
+                testVariationsWithCaseSensitivity.Add(testCase.ToUpper());
             }
 
-            Assert.Fail();
+            List<string> allTestVariations = testVariations.Concat(testVariationsWithCaseSensitivity).ToList();
+
+            foreach (string testCase in allTestVariations)
+            {
+                OptimisticDirectExecutionTestInput input = CreateInput(
+                    description: @"Unsupported queries in CosmosDB that were previousely supported by Ode pipeline and returning wrong resutls",
+                    query: testCase,
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: "a");
+
+                try
+                {
+                    int result = await this.GetPipelineAndDrainAsync(
+                                    input,
+                                    numItems: 100,
+                                    isMultiPartition: false,
+                                    expectedContinuationTokenCount: 10,
+                                    useQueryPlan: false);
+                }
+                catch
+                {
+                    // Confirming that an exception is thrown for an unsupported query 
+                    continue;
+                }
+
+                Assert.Fail();
+            }
         }
 
         // test to check if pipeline handles a 410 exception properly and returns all the documents.

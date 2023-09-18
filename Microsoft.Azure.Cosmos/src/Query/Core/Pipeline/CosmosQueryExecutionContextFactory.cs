@@ -7,9 +7,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -608,22 +608,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            string[] queryOperators = new string[] { "GROUPBY", "COUNT(", "MIN(", "MAX(", "DISTINCT" };
+            string pattern = @"\s+(GROUP BY|COUNT|MIN|MAX|AVG|SUM|DISTINCT)\s*\(";
+            RegexOptions options = RegexOptions.IgnoreCase;
 
-            foreach (string clause in queryOperators)
+            if (Regex.IsMatch(inputParameters.SqlQuerySpec.QueryText, pattern, options))
             {
-                if (inputParameters.SqlQuerySpec.QueryText.Contains(clause))
-                {
-                    return await GetPartitionedQueryExecutionInfoAsync(
+                return await GetPartitionedQueryExecutionInfoAsync(
                         cosmosQueryContext,
                         inputParameters,
                         containerQueryProperties,
                         trace,
                         cancellationToken);
-                }
             }
-
-            return null;
+            else
+            {
+                return null;
+            }
         }
 
         private static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(
