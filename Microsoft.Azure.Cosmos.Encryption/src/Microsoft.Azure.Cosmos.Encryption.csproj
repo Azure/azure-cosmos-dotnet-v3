@@ -26,10 +26,6 @@
   <ItemGroup>
     <AdditionalFiles Include="..\..\Microsoft.Azure.Cosmos\src\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
-	
-  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="[3.31.0,3.35.2]" />
-  </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.35.2-preview" />
@@ -41,6 +37,7 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.19.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.35.3" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
 
