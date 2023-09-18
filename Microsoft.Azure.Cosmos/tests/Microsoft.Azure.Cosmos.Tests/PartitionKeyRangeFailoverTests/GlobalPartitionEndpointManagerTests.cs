@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Timeout(10000)]
-        public async Task TestServiceUnavailableExceptionScenarioAsync()
+        public async Task CreateItemAsync_WithPreferredRegionsAndServiceUnavailable_ShouldRetryAndSucceed()
         {
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
                 out string secondaryRegionNameForUri,
@@ -168,16 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Pk = "TestPk"
             };
 
-            // First create will fail because it is not certain if the payload was sent or not.
-            try
-            {
-                await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
-                Assert.Fail("Should throw an exception");
-            }
-            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.ServiceUnavailable)
-            {
-                Assert.IsNotNull(ce);
-            }
+            await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
 
             ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
@@ -201,6 +192,78 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             response = await container.CreateItemAsync(toDoActivity2, new Cosmos.PartitionKey(toDoActivity2.Pk));
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+        }
+
+
+        [TestMethod]
+        [Timeout(10000)]
+        public async Task CreateItemAsync_WithNoPreferredRegionsAndServiceUnavailable_ShouldThrowServiceUnavailableException()
+        {
+            GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
+                out string secondaryRegionNameForUri,
+                out string globalEndpoint,
+                out string secondaryRegionEndpiont,
+                out string databaseName,
+                out string containerName,
+                out ResourceId containerResourceId,
+                out Mock<IHttpHandler> mockHttpHandler,
+                out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds,
+                out TransportAddressUri primaryRegionprimaryReplicaUri);
+
+            Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
+
+            MockSetupsHelper.SetupServiceUnavailableException(
+                mockTransport,
+                primaryRegionprimaryReplicaUri);
+
+            mockTransport.Setup(x => x.Dispose());
+
+            // Partition key ranges are the same in both regions so the SDK
+            // does not need to go the secondary to get the partition key ranges.
+            // Only the addresses need to be mocked on the secondary
+            MockSetupsHelper.SetupAddresses(
+                mockHttpHandler: mockHttpHandler,
+                partitionKeyRangeId: primaryRegionPartitionKeyRangeIds.First(),
+                regionEndpoint: secondaryRegionEndpiont,
+                regionName: secondaryRegionNameForUri,
+                containerResourceId: containerResourceId,
+                primaryReplicaUri: out TransportAddressUri secondaryRegionPrimaryReplicaUri);
+
+            MockSetupsHelper.SetupCreateItemResponse(
+                mockTransport,
+                secondaryRegionPrimaryReplicaUri);
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                EnablePartitionLevelFailover = true,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
+                HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                TransportClientHandlerFactory = (original) => mockTransport.Object,
+            };
+
+            using CosmosClient customClient = new CosmosClient(
+                 globalEndpoint,
+                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                 cosmosClientOptions);
+
+            Container container = customClient.GetContainer(databaseName, containerName);
+
+            ToDoActivity toDoActivity = new ToDoActivity()
+            {
+                Id = "TestItem",
+                Pk = "TestPk"
+            };
+
+            // First create will fail because it is not certain if the payload was sent or not.
+            try
+            {
+                await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
+                Assert.Fail("Should throw an exception");
+            }
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.ServiceUnavailable)
+            {
+                Assert.IsNotNull(ce);
+            }
         }
 
         [TestMethod]
