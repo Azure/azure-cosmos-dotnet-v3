@@ -9,12 +9,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL
 
     internal class ClientQLBinaryLiteral : ClientQLLiteral
     {
-        public ClientQLBinaryLiteral(IReadOnlyList<BinaryData> value)
+        public ClientQLBinaryLiteral(byte[] value)
             : base(ClientQLLiteralKind.Binary)
         {
             this.Value = value;
         }
 
-        public IReadOnlyList<BinaryData> Value { get; }
+        public byte[] Value { get; }
     }
 }

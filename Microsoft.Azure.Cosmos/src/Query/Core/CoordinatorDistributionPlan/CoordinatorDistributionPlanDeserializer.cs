@@ -75,8 +75,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
             return new CoordinatorDistributionPlan(expression);
         }
-        
-        // Deserialize Enumerable Expressions
+
+        #region Enumerable Expressions
 
         private static ClientQLEnumerableExpression DeserializeClientQLEnumerableExpression(CosmosObject cosmosObject)
         {
@@ -181,7 +181,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             return new ClientQLWhereEnumerableExpression(sourceExpression);
         }
 
-        // Deserialize Scalar Expressions
+        #endregion
+        #region Scalar Expressions
 
         private static ClientQLScalarExpression DeserializeScalarExpression(CosmosObject cosmosObject)
         {
@@ -330,8 +331,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             return new ClientQLVariableRefScalarExpression(variable);
         }
 
-        // Helper Functions for Deserialization
-
+        #endregion
+        #region Literal Expressions
         private static ClientQLLiteral DeserializeClientQLLiteral(CosmosObject cosmosObject)
         {
             ClientQLLiteralKind literalKind = GetEnumValue<ClientQLLiteralKind>(GetValue<CosmosString>(cosmosObject, Constants.Kind).Value);
@@ -499,19 +500,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             return expressions;
         }
 
-        private static IReadOnlyList<BinaryData> DeserializeBinaryArray(CosmosArray cosmosArray)
+        private static byte[] DeserializeBinaryArray(CosmosArray cosmosArray)
         {
-            List<BinaryData> expressions = new List<BinaryData>(cosmosArray.Count);
+            List<ReadOnlyMemory<byte>> expressions = new List<ReadOnlyMemory<byte>>(cosmosArray.Count);
+            int memoryLength = 0;
             foreach (CosmosElement propertyElement in cosmosArray)
             {
                 CosmosObject propertyObject = ConvertToCosmosObject(propertyElement);
                 ReadOnlyMemory<byte> binaryValue = GetValue<CosmosBinary>(propertyObject, Constants.Kind).Value;
-                BinaryData data = new BinaryData(binaryValue);
-                expressions.Add(data);
+                memoryLength += binaryValue.Length;
+                expressions.Add(binaryValue);
             }
 
-            return expressions;
+            byte[] newArray = new byte[memoryLength];
+            int currentIndex = 0;
+            foreach (ReadOnlyMemory<byte> byteCollection in expressions)
+            {
+                byteCollection.CopyTo(newArray.AsMemory(currentIndex));
+                currentIndex += byteCollection.Length;
+            }
+
+            return newArray;
         }
+
+        #endregion
+        #region Helper Functions
 
         private static T GetValue<T>(CosmosObject cosmosObject, string propertyName)
             where T : CosmosElement
@@ -578,5 +591,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
                 throw new InvalidOperationException("Unable to cast CosmosElement to CosmosObject.");
             }
         }
+
+        #endregion
     }
 }
