@@ -1321,9 +1321,12 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        abstract ChangeFeedProcessorBuilder GetAllVersionsChangeFeedProcessorBuilder<T>(
+        virtual ChangeFeedProcessorBuilder GetAllVersionsChangeFeedProcessorBuilder<T>(
             string processorName,
-            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesHandler);
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesHandler)
+        {
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.

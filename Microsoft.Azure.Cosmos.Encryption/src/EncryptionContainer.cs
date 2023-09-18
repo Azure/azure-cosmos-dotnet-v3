@@ -592,6 +592,51 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 });
         }
 
+#if PREVIEW
+        override ChangeFeedProcessorBuilder GetAllVersionsChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangeFeedHandler<ChangeFeedItemChange<T>> onChangesDelegate)
+        {
+            return this.Container.GetAllVersionsChangeFeedProcessorBuilder(processorName,
+                async (
+                        ChangeFeedProcessorContext context,
+    IReadOnlyCollection<ChangeFeedItemChange<JObject>> documents,
+    CancellationToken cancellationToken) =>
+                {
+                    List<ChangeFeedItemChange<T>> decryptedItems = new List<ChangeFeedItemChange<T>>();
+
+                    foreach (ChangeFeedItemChange<JObject> document in documents)
+                    {
+                        T decryptedCurrent = default;
+                        if (document.Current != null)
+                        {
+                            decryptedCurrent = await this.DecryptChangeFeedDocumentAsync<T>(
+                                document.Current, cancellationToken);
+                        }
+
+                        T decryptedPrevious = default;
+                        if (document.Previous != null)
+                        {
+                            decryptedPrevious = await this.DecryptChangeFeedDocumentAsync<T>(
+                                document.Previous, cancellationToken);
+                        }
+
+                        ChangeFeedItemChange<T> item = new ChangeFeedItemChange<T>
+                        {
+                            Current = decryptedCurrent,
+                            Previous = decryptedPrevious,
+                            Metadata = document.Metadata,
+                        };
+
+                        decryptedItems.Add(item);
+                    }
+
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptedItems, cancellationToken);
+                });
+        }
+#endif
+
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
             string processorName,
             ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
@@ -1327,6 +1372,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return decryptedItems;
+        }
+
+        private async Task<T> DecryptChangeFeedDocumentAsync<T>(
+            JObject document,
+            CancellationToken cancellationToken)
+        {
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: cancellationToken);
+
+            (JObject decryptedDocument, _) = await EncryptionProcessor.DecryptAsync(
+                document, encryptionSettings, cancellationToken);
+            return decryptedDocument.ToObject<T>();
         }
 
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
