@@ -147,36 +147,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                 if (targetRange != null)
                 {
-                    PartitionedQueryExecutionInfo queryPlan = await CheckQueryValidityWithQueryPlanAsync(
-                        inputParameters,
+                    return await TryCreateExecutionContextAsync(
+                        documentContainer,
+                        partitionedQueryExecutionInfo: null,
                         cosmosQueryContext,
                         containerQueryProperties,
+                        inputParameters,
+                        targetRange,
                         trace,
-                        cancellationToken);
-
-                    if (queryPlan != null)
-                    {
-                        return await TryCreateFromPartitionedQueryExecutionInfoAsync(
-                            documentContainer,
-                            queryPlan,
-                            containerQueryProperties,
-                            cosmosQueryContext,
-                            inputParameters,
-                            createQueryPipelineTrace,
-                            cancellationToken);
-                    }
-                    else
-                    {
-                        return await TryCreateExecutionContextAsync(
-                            documentContainer,
-                            partitionedQueryExecutionInfo: null,
-                            cosmosQueryContext,
-                            containerQueryProperties,
-                            inputParameters,
-                            targetRange,
-                            trace,
-                            cancellationToken);
-                    }
+                        cancellationToken,
+                        createQueryPipelineTrace);
                 }
 
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -357,8 +337,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             InputParameters inputParameters,
             Documents.PartitionKeyRange targetRange,
             ITrace trace,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            ITrace createQueryPipelineTrace = default)
         {
+            if (partitionedQueryExecutionInfo == null)
+            {
+                PartitionedQueryExecutionInfo queryPlanFromValidityCheck = await CheckQueryValidityWithQueryPlanAsync(
+                    inputParameters,
+                    cosmosQueryContext,
+                    containerQueryProperties,
+                    trace,
+                    cancellationToken);
+
+                if (queryPlanFromValidityCheck != null)
+                {
+                    return await TryCreateFromPartitionedQueryExecutionInfoAsync(
+                        documentContainer,
+                        queryPlanFromValidityCheck,
+                        containerQueryProperties,
+                        cosmosQueryContext,
+                        inputParameters,
+                        createQueryPipelineTrace,
+                        cancellationToken);
+                }
+            }
+
             // Test code added to confirm the correct pipeline is being utilized
             SetTestInjectionPipelineType(inputParameters, OptimisticDirectExecution);
 
