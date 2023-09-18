@@ -340,8 +340,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             List<QLAggregate> aggregates = new List<QLAggregate>(cosmosArray.Count);
             foreach (CosmosElement aggregateElement in cosmosArray)
             {
-                CosmosObject propertyObject = CastToCosmosObject(aggregateElement);
-                aggregates.Add(DeserializeAggregate(propertyObject));
+                CosmosObject aggregateObject = CastToCosmosObject(aggregateElement);
+                aggregates.Add(DeserializeAggregate(aggregateObject));
             }
 
             return aggregates;
@@ -443,25 +443,25 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
 
         private static byte[] DeserializeBinaryLiteral(CosmosArray cosmosArray)
         {
-            List<ReadOnlyMemory<byte>> expressions = new List<ReadOnlyMemory<byte>>(cosmosArray.Count);
+            List<ReadOnlyMemory<byte>> binaryLiterals = new List<ReadOnlyMemory<byte>>(cosmosArray.Count);
             int memoryLength = 0;
             foreach (CosmosElement propertyElement in cosmosArray)
             {
                 CosmosObject propertyObject = CastToCosmosObject(propertyElement);
-                ReadOnlyMemory<byte> binaryValue = GetValue<CosmosBinary>(propertyObject, Constants.Kind).Value;
-                memoryLength += binaryValue.Length;
-                expressions.Add(binaryValue);
+                ReadOnlyMemory<byte> bytes = GetValue<CosmosBinary>(propertyObject, Constants.Kind).Value;
+                memoryLength += bytes.Length;
+                binaryLiterals.Add(bytes);
             }
 
-            byte[] newArray = new byte[memoryLength];
+            byte[] byteCollection = new byte[memoryLength];
             int currentIndex = 0;
-            foreach (ReadOnlyMemory<byte> byteCollection in expressions)
+            foreach (ReadOnlyMemory<byte> bytes in binaryLiterals)
             {
-                byteCollection.CopyTo(newArray.AsMemory(currentIndex));
-                currentIndex += byteCollection.Length;
+                bytes.CopyTo(byteCollection.AsMemory(currentIndex));
+                currentIndex += bytes.Length;
             }
 
-            return newArray;
+            return byteCollection;
         }
 
         private static IReadOnlyList<QLObjectLiteralProperty> DeserializeObjectLiteralArray(CosmosArray cosmosArray)
