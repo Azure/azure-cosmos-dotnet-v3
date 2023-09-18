@@ -813,6 +813,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return memberExpression;
             }
 
+            // If the type of the inputexpression's parent expression (i.e type of (x) for x.Key) is IGrouping, we should ignore "key" and correctly remapped "value" term
+            if (inputExpression.Expression.Type.IsGenericType && inputExpression.Expression.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>))
+            {
+                // If the type is IGrouping then there must be a groupby binding
+                if (context.currentQuery.groupByParameter == null)
+                {
+                    throw new DocumentQueryException(ClientResources.MemberBindingNotSupported);
+                }
+
+                if (memberName == "Key")
+                {
+                    return memberExpression;
+                }
+            }
+
             // if expression is nullable
             if (inputExpression.Expression.Type.IsNullable())
             {
@@ -833,8 +848,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             if (usePropertyRef)
             {
-                SqlIdentifier propertyIdnetifier = SqlIdentifier.Create(memberName);
-                SqlPropertyRefScalarExpression propertyRefExpression = SqlPropertyRefScalarExpression.Create(memberExpression, propertyIdnetifier);
+                SqlIdentifier propertyIdentifier = SqlIdentifier.Create(memberName);
+                SqlPropertyRefScalarExpression propertyRefExpression = SqlPropertyRefScalarExpression.Create(memberExpression, propertyIdentifier);
                 return propertyRefExpression;
             }
             else
@@ -1710,14 +1725,12 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             Collection collection = ExpressionToSql.ConvertToCollection(keySelectorFunc);
 
-            //context.PushCollection(collection);
-            //ParameterExpression parameter = context.GenerateFreshParameter(returnElementType, ExpressionToSql.DefaultParameterName);
-            //context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
-            //context.PopParameter();
-            //context.PopCollection();
 
             ParameterExpression parameterExpression = context.GenerateFreshParameter(returnElementType, ExpressionToSql.DefaultParameterName);
             Binding binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
+
+            // TODO - change this to the proper binding
+            context.currentQuery.groupByParameter = new FromParameterBindings();
             //context.currentQuery.fromParameters.Add(binding);
 
             return collection;

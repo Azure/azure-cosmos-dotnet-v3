@@ -34,6 +34,15 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
+        /// Binding for the Group By clause.
+        /// </summary>
+        public FromParameterBindings groupByParameter
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// The parameter expression to be used as this query's alias.
         /// </summary>
         public ParameterExpression Alias
@@ -62,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private Lazy<ParameterExpression> alias;
 
         /// <summary>
-        /// Input subquery.
+        /// Input subquery/ query to the left of the current query. 
         /// </summary>
         private QueryUnderConstruction inputQuery;
 

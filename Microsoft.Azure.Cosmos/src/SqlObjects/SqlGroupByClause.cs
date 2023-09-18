@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 
         public ImmutableArray<SqlScalarExpression> KeySelectorExpressions { get; }
 
-        // For use during LINQ translation only
+        // TODO Remove this?
         public SqlScalarExpression ValueSelectorExpression { get; }
 
         public static SqlGroupByClause Create(params SqlScalarExpression[] keySelectorExpressions)
