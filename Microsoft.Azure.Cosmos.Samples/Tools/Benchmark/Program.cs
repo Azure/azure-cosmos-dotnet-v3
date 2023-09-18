@@ -377,7 +377,10 @@ namespace CosmosBenchmark
         private static async Task<Container> GetResultContainer(BenchmarkConfig config, CosmosClient cosmosClient)
         {
             Database database = cosmosClient.GetDatabase(config.ResultsDatabase ?? config.Database);
-            ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(id: config.ResultsContainer, partitionKeyPath: "/pk");
+            ContainerResponse containerResponse = await database
+                .CreateContainerIfNotExistsAsync(
+                            id: config.ResultsContainer, 
+                            partitionKeyPath: "/pk");
             return containerResponse.Container;
         }
 
