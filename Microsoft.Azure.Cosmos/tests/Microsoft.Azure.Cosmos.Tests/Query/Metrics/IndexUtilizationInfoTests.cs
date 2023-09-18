@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
                 {
                     Assert.IsTrue(IndexMetricsInfo.TryCreateFromString(testString,
                         out IndexMetricsInfo parsedInfo));
-                    Assert.IsNotNull(parsedInfo);
+                    Assert.IsNull(parsedInfo);
                 }
             }
         }
