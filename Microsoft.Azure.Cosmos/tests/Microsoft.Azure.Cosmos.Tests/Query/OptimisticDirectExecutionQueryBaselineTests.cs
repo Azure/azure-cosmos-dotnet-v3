@@ -1033,9 +1033,16 @@
 
         public override Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(string containerLink, Cosmos.PartitionKey? partitionKey, ITrace trace, CancellationToken cancellationToken)
         {
-            return Task.FromResult(new ContainerQueryProperties(
+           return Task.FromResult(new ContainerQueryProperties(
                 "test",
-                WFConstants.BackendHeaders.EffectivePartitionKeyString,
+                new List<Range<string>>
+                { 
+                    new Range<string>(
+                        PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                        PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                        true,
+                        true)
+                },
                 new PartitionKeyDefinition(),
                 Cosmos.GeospatialType.Geometry));
         }
@@ -1045,17 +1052,7 @@
             throw new NotImplementedException();
         }
 
-        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string resourceLink, string collectionResourceId, List<Range<string>> providedRanges, bool forceRefresh, ITrace trace)
-        {
-            return Task.FromResult(new List<PartitionKeyRange>{new PartitionKeyRange()
-            {
-                MinInclusive = PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                MaxExclusive = PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey
-            }
-            });
-        }
-
-        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(string resourceLink, string collectionResourceId, string effectivePartitionKeyString, bool forceRefresh, ITrace trace)
+        public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string resourceLink, string collectionResourceId, IReadOnlyList<Range<string>> providedRanges, bool forceRefresh, ITrace trace)
         {
             return Task.FromResult(new List<PartitionKeyRange>{new PartitionKeyRange()
             {
