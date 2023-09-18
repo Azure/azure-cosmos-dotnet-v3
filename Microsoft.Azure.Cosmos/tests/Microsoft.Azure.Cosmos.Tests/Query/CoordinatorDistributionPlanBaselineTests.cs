@@ -3,7 +3,7 @@
     using System.Collections.Generic;
     using System.Xml;
     using Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan;
-    using Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.ClientQL;
+    using Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

@@ -1,0 +1,19 @@
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
+{
+    using System.Collections.Generic;
+
+    internal class QLTupleAggregate : QLAggregate
+    {
+        public QLTupleAggregate(IReadOnlyList<QLAggregate> items) 
+            : base(QLAggregateKind.Tuple)
+        {
+            this.Items = items;
+        }
+
+        public IReadOnlyList<QLAggregate> Items { get; }
+    }
+}
