@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     {
         public DateTime Date;
         public long Amount;
-        public TransactionType Type; 
+        public TransactionType Type;
     }
 
     public enum TransactionType
