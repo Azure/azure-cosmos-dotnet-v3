@@ -24,12 +24,6 @@ then
     exit -1
 fi
 
-if [ -z "$TELEMETRY_ENDPOINT" ]
-then
-    echo "Missing TELEMETRY_ENDPOINT"
-    exit -1
-fi
-
 if [ -z "$INCLUDE_QUERY" ]
 then
     echo "Missing INCLUDE_QUERY"
