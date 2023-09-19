@@ -1287,6 +1287,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             //.GroupBy(k => k.FamilyId /*keySelector*/, 
             //        (key, value) => value.Count() /*return the Count of each group */)));
 
+            inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(f => f.FamilyId).Select(g => g.Key)));
             inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(f => f.FamilyId)));
             //inputs.Add(new LinqTestInput("GroupBy", b => getQuery(b).GroupBy(f => f.FamilyId)));
             //inputs.Add(new LinqTestInput("GroupBy -> Select query",

@@ -1709,7 +1709,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             // First argument is input, second is key selector and third is value selector
             LambdaExpression keySelectorLambda = Utilities.GetLambda(arguments[1]);
-            SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitScalarExpression(keySelectorLambda, context);
+
+            // Current GroupBy doesn't allow subquery
+            SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitNonSubqueryScalarLambda(keySelectorLambda, context);
 
             // TODO - We need special treatment for this binding 
             // Alternate thoughts: Instead of saving the value selector func, we emit a select clause here?
@@ -1724,12 +1726,15 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Look to Parameter Access for inspiration
 
             Collection collection = ExpressionToSql.ConvertToCollection(keySelectorFunc);
+            collection.isOuter = true;
+            collection.Name = "GroupBy";
 
-            ParameterExpression parameterExpression = context.GenerateFreshParameter(returnElementType, ExpressionToSql.DefaultParameterName);
+            ParameterExpression parameterExpression = context.GenerateFreshParameter(returnElementType, keySelectorFunc.ToString(), includeSuffix: false);
             Binding binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
 
             // TODO - change this to the proper binding
             context.currentQuery.groupByParameter = new FromParameterBindings();
+            context.currentQuery.groupByParameter.Add(binding);
             //context.currentQuery.fromParameters.Add(binding);
 
             return collection;

@@ -79,9 +79,9 @@ namespace Microsoft.Azure.Cosmos.Linq
             return this.substitutions.Lookup(parameter);
         }
 
-        public ParameterExpression GenerateFreshParameter(Type parameterType, string baseParameterName)
+        public ParameterExpression GenerateFreshParameter(Type parameterType, string baseParameterName, bool includeSuffix = true)
         {
-            return Utilities.NewParameter(baseParameterName, parameterType, this.InScope);
+            return Utilities.NewParameter(baseParameterName, parameterType, this.InScope, includeSuffix);
         }
 
         public Func<string, ParameterExpression> GetGenFreshParameterFunc()

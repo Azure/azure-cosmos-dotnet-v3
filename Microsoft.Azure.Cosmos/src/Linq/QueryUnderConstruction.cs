@@ -100,7 +100,15 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public ParameterExpression GetInputParameterInContext(bool isInNewQuery)
         {
-            return isInNewQuery ? this.Alias : this.fromParameters.GetInputParameter();
+            if (isInNewQuery) return this.Alias;
+
+            // If the current query has a groupby, then we need to use the groupby binding instead
+            if (this.groupByClause != null)
+            {
+                return this.groupByParameter.GetInputParameter();
+            }
+
+            return this.fromParameters.GetInputParameter();
         }
 
         /// <summary>
@@ -295,7 +303,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (this.selectClause == null)
                 {
                     // If selectClause doesn't exists, use SELECT v0 where v0 is the input parameter, instead of SELECT *.
-                    string parameterName = this.fromParameters.GetInputParameter().Name;
+                    // If there is a groupby clause, the input parameter comes from the groupBy binding instead of the from clause binding
+                    string parameterName = this.groupByParameter != null ? this.groupByParameter.GetInputParameter().Name : this.fromParameters.GetInputParameter().Name;
                     SqlScalarExpression parameterExpression = SqlPropertyRefScalarExpression.Create(null, SqlIdentifier.Create(parameterName));
                     this.selectClause = SqlSelectClause.Create(SqlSelectValueSpec.Create(parameterExpression));
                 }
@@ -368,25 +377,25 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private SqlSelectClause Substitute(SqlSelectClause inputSelectClause, SqlTopSpec topSpec, SqlIdentifier inputParam, SqlSelectClause selectClause)
         {
-            SqlSelectSpec selectSpec = inputSelectClause.SelectSpec;
+            SqlSelectSpec inputSelectSpec = inputSelectClause.SelectSpec;
 
             if (selectClause == null)
             {
-                return selectSpec != null ? SqlSelectClause.Create(selectSpec, topSpec, inputSelectClause.HasDistinct) : null;
+                return inputSelectSpec != null ? SqlSelectClause.Create(inputSelectSpec, topSpec, inputSelectClause.HasDistinct) : null;
             }
 
-            if (selectSpec is SqlSelectStarSpec)
+            if (inputSelectSpec is SqlSelectStarSpec)
             {
-                return SqlSelectClause.Create(selectSpec, topSpec, inputSelectClause.HasDistinct);
+                return SqlSelectClause.Create(inputSelectSpec, topSpec, inputSelectClause.HasDistinct);
             }
 
-            SqlSelectValueSpec selValue = selectSpec as SqlSelectValueSpec;
+            SqlSelectValueSpec selValue = inputSelectSpec as SqlSelectValueSpec;
             if (selValue != null)
             {
                 SqlSelectSpec intoSpec = selectClause.SelectSpec;
                 if (intoSpec is SqlSelectStarSpec)
                 {
-                    return SqlSelectClause.Create(selectSpec, topSpec, selectClause.HasDistinct || inputSelectClause.HasDistinct);
+                    return SqlSelectClause.Create(inputSelectSpec, topSpec, selectClause.HasDistinct || inputSelectClause.HasDistinct);
                 }
 
                 SqlSelectValueSpec intoSelValue = intoSpec as SqlSelectValueSpec;
@@ -400,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new DocumentQueryException("Unexpected SQL select clause type: " + intoSpec.GetType());
             }
 
-            throw new DocumentQueryException("Unexpected SQL select clause type: " + selectSpec.GetType());
+            throw new DocumentQueryException("Unexpected SQL select clause type: " + inputSelectSpec.GetType());
         }
 
 #if false
@@ -554,14 +563,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 case LinqMethods.Select:
                     // New query is needed when adding a Select to an existing Select
-                    shouldPackage = this.selectClause != null || this.groupByClause != null;
+                    shouldPackage = this.selectClause != null;
                     break;
 
                 case LinqMethods.Min:
                 case LinqMethods.Max:
                 case LinqMethods.Sum:
                 case LinqMethods.Average:
-                    shouldPackage = (this.selectClause != null) || this.groupByClause != null ||
+                    shouldPackage = (this.selectClause != null) ||
                         (this.offsetSpec != null) ||
                         (this.topSpec != null);
                     break;
@@ -591,13 +600,13 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 case LinqMethods.Skip:
                     shouldPackage = (this.topSpec != null) ||
-                        (this.limitSpec != null) || this.groupByClause != null;
+                        (this.limitSpec != null);
                     break;
 
                 case LinqMethods.SelectMany:
                     shouldPackage = (this.topSpec != null) ||
                         (this.offsetSpec != null) ||
-                        (this.selectClause != null) || this.groupByClause != null;
+                        (this.selectClause != null);
                     break;
 
                 default:
