@@ -1725,7 +1725,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             Collection collection = ExpressionToSql.ConvertToCollection(keySelectorFunc);
 
-
             ParameterExpression parameterExpression = context.GenerateFreshParameter(returnElementType, ExpressionToSql.DefaultParameterName);
             Binding binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
 
@@ -1734,42 +1733,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             //context.currentQuery.fromParameters.Add(binding);
 
             return collection;
-
-            // First, we need to fully translate the scalar expression
-            // then we can use the return type, and the scalar expression collection name to create new binding
-
-            //Collection collection = ExpressionToSql.ConvertToCollection(sqlfunc);
-            //context.PushCollection(collection);
-            //ParameterExpression parameter = context.GenFreshParameter(sqlfunc.GetType(), ExpressionToSql.GetBindingParameterName(context));
-            //context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
-            //context.PopParameter();
-            //context.PopCollection();
-
-            //SqlQuery query = context.currentQuery.FlattenAsPossible().GetSqlQuery();
-            //SqlCollection subqueryCollection = SqlSubqueryCollection.Create(query);
-
-            //ParameterExpression parameterExpression = context.GenFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
-            //Binding binding = new Binding(parameterExpression, subqueryCollection, isInCollection: false, isInputParameter: true);
-
-            //context.currentQuery = new QueryUnderConstruction(context.GetGenFreshParameterFunc());
-            //context.currentQuery.AddBinding(binding);
-
-            //result = new Collection(LinqMethods.GroupBy);
-
-            //====================================
-            // Once we have visit a group by query, then the input need to be set
-
-            //Type elemType = TypeSystem.GetElementType(inputExpression.Type);
-            //context.SetInputParameter(elemType, ParameterSubstitution.InputParameterName); // ignore result
-
-            //// First outer collection
-            //Collection result = new Collection(ExpressionToSql.SqlRoot);
-
-            // Set the input param of the current query to whatever the lambda produce
-            //context.currentQuery.fromParameters.SetInputParameter(lambda.ReturnType, context.currentQuery.GetInputParameterInContext(isInNewQuery: false).Name, context.InScope);
-            //context.SetInputParameter(TypeSystem.GetElementType(lambda.ReturnType), context.currentQuery.GetInputParameterInContext(isInNewQuery: false).Name); // ignore result
-            //context.currentQuery.fromParameters.SetInputParameter(lambda.ReturnType, context.currentQuery.GetInputParameterInContext(isInNewQuery: false).Name, context.InScope);
-            
         }
 
         private static SqlOrderByClause VisitOrderBy(ReadOnlyCollection<Expression> arguments, bool isDescending, TranslationContext context)
