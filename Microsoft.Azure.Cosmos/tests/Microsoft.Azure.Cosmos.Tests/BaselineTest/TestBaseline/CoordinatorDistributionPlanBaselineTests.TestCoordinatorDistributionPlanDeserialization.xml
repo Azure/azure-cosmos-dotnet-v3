@@ -120,7 +120,7 @@
                 "RightExpression": {
                   "OperatorKind": 2,
                   "Expression": {
-                    "FunctionKind": 154,
+                    "FunctionKind": 74,
                     "Arguments": [
                       {
                         "Expression": {
@@ -206,7 +206,7 @@
                     "RightExpression": {
                       "OperatorKind": 2,
                       "Expression": {
-                        "FunctionKind": 154,
+                        "FunctionKind": 74,
                         "Arguments": [
                           {
                             "Expression": {
@@ -308,7 +308,7 @@
                 "RightExpression": {
                   "OperatorKind": 2,
                   "Expression": {
-                    "FunctionKind": 154,
+                    "FunctionKind": 74,
                     "Arguments": [
                       {
                         "Expression": {

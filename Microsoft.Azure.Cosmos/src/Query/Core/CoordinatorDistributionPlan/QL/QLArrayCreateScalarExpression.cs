@@ -19,5 +19,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         
         public IReadOnlyList<QLScalarExpression> Items { get; }
     }
-
 }

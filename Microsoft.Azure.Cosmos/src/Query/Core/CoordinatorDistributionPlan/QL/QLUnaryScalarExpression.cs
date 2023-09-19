@@ -17,5 +17,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         
         public QLScalarExpression Expression { get; }
     }
-
 }

@@ -20,5 +20,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         
         public ulong TakeValue { get; }
     }
-
 }

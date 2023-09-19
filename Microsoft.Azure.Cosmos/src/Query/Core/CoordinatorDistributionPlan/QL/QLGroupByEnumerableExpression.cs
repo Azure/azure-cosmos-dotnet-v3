@@ -22,5 +22,4 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         
         public IReadOnlyList<QLAggregate> Aggregates { get; }
     }
-
 }
