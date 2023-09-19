@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Threading.Tasks;
     using System.Net;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
 
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqSQLTranslationBaselineTest : BaselineTests<LinqTestInput, LinqTestOutput>
@@ -32,7 +33,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
         {
-            cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) => {
+            cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder) =>
+            {
                 cosmosClientBuilder.WithCustomSerializer(new CustomJsonSerializer(new JsonSerializerSettings()
                 {
                     ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
@@ -76,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             public string pk;
 
             public simple(int x, int y)
-            { this.x = x;  this.y = y; this.id = Guid.NewGuid().ToString(); this.pk = "Test"; }
+            { this.x = x; this.y = y; this.id = Guid.NewGuid().ToString(); this.pk = "Test"; }
         }
 
         struct nested
@@ -246,13 +248,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             inputs.Add(new LinqTestInput("Select identity", b => dataQuery(b).Select(x => x)));
             inputs.Add(new LinqTestInput("Select simple property", b => dataQuery(b).Select(x => x.x)));
             inputs.Add(new LinqTestInput("Select extension data", b => dataQuery(b).Select(x => new complex() {
-                NewtonsoftExtensionData = new() { 
+                NewtonsoftExtensionData = new() {
                     { "test", 1.5 }
                 },
-                NetExtensionData = new() { 
+                NetExtensionData = new() {
                     { "OtherTest", 1.5 }
                 }
-            } )));
+            })));
             this.ExecuteTestSuite(inputs);
         }
 
@@ -280,9 +282,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 obj.str = random.NextDouble() < 0.1 ? "5" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.id = Guid.NewGuid().ToString();
                 obj.pk = "Test";
-                obj.NewtonsoftExtensionData = new Dictionary<string, object>() { 
+                obj.NewtonsoftExtensionData = new Dictionary<string, object>() {
                     ["age"] = 32,
-                    ["tags"] = new [] { "item-1", "item-2" }
+                    ["tags"] = new[] { "item-1", "item-2" }
                 };
                 return obj;
             };
@@ -307,11 +309,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             inputs.Add(new LinqTestInput("SelectMany array", b => getQuery(b).SelectMany(x => x.dblArray)));
 
             inputs.Add(new LinqTestInput("Select where extensiondata", b => getQuery(b).Where(p => (int)p.NewtonsoftExtensionData["age"] > 18).Select(x => new { Age = (int)x.NewtonsoftExtensionData["age"] })));
-            inputs.Add(new LinqTestInput("Select where extensiondata contains", b => getQuery(b).Where(p => ((string[])p.NewtonsoftExtensionData["tags"]).Contains("item-1")).Select(x => (string[])x.NewtonsoftExtensionData["tags"] )));
+            inputs.Add(new LinqTestInput("Select where extensiondata contains", b => getQuery(b).Where(p => ((string[])p.NewtonsoftExtensionData["tags"]).Contains("item-1")).Select(x => (string[])x.NewtonsoftExtensionData["tags"])));
 
             // TODO: SelectMany does not currently work with Dictionary objects, the snapshot represents
             // the current (broken) behavior
-            inputs.Add(new LinqTestInput("SelectMany where extensiondata contains", b => getQuery(b).Where(p => ((string[])p.NewtonsoftExtensionData["tags"]).Contains("item-1")).SelectMany(x => (object[])x.NewtonsoftExtensionData["tags"] )));
+            inputs.Add(new LinqTestInput("SelectMany where extensiondata contains", b => getQuery(b).Where(p => ((string[])p.NewtonsoftExtensionData["tags"]).Contains("item-1")).SelectMany(x => (object[])x.NewtonsoftExtensionData["tags"])));
 
             this.ExecuteTestSuite(inputs);
         }

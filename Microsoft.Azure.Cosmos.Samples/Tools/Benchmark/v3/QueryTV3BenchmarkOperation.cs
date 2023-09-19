@@ -108,6 +108,7 @@ namespace CosmosBenchmark
             {
                 DatabseName = databaseName,
                 ContainerName = containerName,
+                OperationType = this.OperationType,
                 RuCharges = totalCharge,
                 CosmosDiagnostics = lastDiagnostics,
                 LazyDiagnostics = () => lastDiagnostics?.ToString(),
