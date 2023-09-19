@@ -33,10 +33,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     internal static class CosmosQueryExecutionContextFactory
     {
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
+        private const string ValidQueryRegex = @"\s+(GROUP\s+BY\s+|COUNT\s*\(|MIN\s*\(|MAX\s*\(|AVG\s*\(|SUM\s*\(|DISTINCT\s+)";
         private const string OptimisticDirectExecution = "OptimisticDirectExecution";
         private const string Passthrough = "Passthrough";
         private const string Specialized = "Specialized";
         private const int PageSizeFactorForTop = 5;
+        private static readonly Regex ValidQueryValidation = new Regex(ValidQueryRegex, RegexOptions.IgnoreCase);
 
         public static IQueryPipelineStage Create(
             DocumentContainer documentContainer,
@@ -147,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                 if (targetRange != null)
                 {
-                    return await TryCreateExecutionContextAsync(
+                    return await TryCreateSinglePartitionExecutionContextAsync(
                         documentContainer,
                         partitionedQueryExecutionInfo: null,
                         cosmosQueryContext,
@@ -298,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
             if (targetRange != null)
             {
-                tryCreatePipelineStage = await TryCreateExecutionContextAsync(
+                tryCreatePipelineStage = await TryCreateSinglePartitionExecutionContextAsync(
                     documentContainer,
                     partitionedQueryExecutionInfo,
                     cosmosQueryContext,
@@ -329,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             return tryCreatePipelineStage;
         }
 
-        private static async Task<TryCatch<IQueryPipelineStage>> TryCreateExecutionContextAsync(
+        private static async Task<TryCatch<IQueryPipelineStage>> TryCreateSinglePartitionExecutionContextAsync(
             DocumentContainer documentContainer,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             CosmosQueryContext cosmosQueryContext,
@@ -611,10 +613,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            string pattern = @"\s+(GROUP BY|COUNT|MIN|MAX|AVG|SUM|DISTINCT)\s*\(";
-            RegexOptions options = RegexOptions.IgnoreCase;
-
-            if (Regex.IsMatch(inputParameters.SqlQuerySpec.QueryText, pattern, options))
+            if (ValidQueryValidation.IsMatch(inputParameters.SqlQuerySpec.QueryText))
             {
                 return await GetPartitionedQueryExecutionInfoAsync(
                         cosmosQueryContext,

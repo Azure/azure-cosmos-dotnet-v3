@@ -402,11 +402,11 @@
         {
             List<string> testVariations = new List<string>
             {
-                "SELECT COUNT(1) + 5 FROM c",
-                "SELECT MIN(c.price) + 10 FROM c",
-                "SELECT MAX(c.price) - 4 FROM c",
-                "SELECT SUM(c.price) + 20 FROM c",
-                "SELECT AVG(c.price) * 50 FROM c",
+                "SELECT   COUNT     (1)   + 5 FROM c",
+                "SELECT MIN(c.price)   + 10 FROM c",
+                "SELECT      MAX(c.price)       - 4 FROM c",
+                "SELECT SUM    (c.price) + 20     FROM c",
+                "SELECT AVG(c.price) * 50 FROM      c",
             };
 
             List<string> testVariationsWithCaseSensitivity = new List<string>();
