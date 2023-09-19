@@ -64,16 +64,15 @@ namespace Microsoft.Azure.Cosmos
         /// 'AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED' to override the value for both preview and GA. The method will
         /// eventually be removed, once partition level failover is enabled by default for  both preview and GA.
         /// </summary>
-        /// <param name="connectionPolicy">An instance of <see cref="ConnectionPolicy"/> containing the client options.</param>
+        /// <param name="defaultValue">A boolean field containing the default value for partition level failover.</param>
         /// <returns>A boolean flag indicating if partition level failover is enabled.</returns>
         public static bool IsPartitionLevelFailoverEnabled(
-            ConnectionPolicy connectionPolicy)
+            bool defaultValue)
         {
-            return connectionPolicy != null
-                && ConfigurationManager
+            return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.PartitionLevelFailoverEnabled,
-                        defaultValue: connectionPolicy.EnablePartitionLevelFailover);
+                        defaultValue: defaultValue);
         }
     }
 }
