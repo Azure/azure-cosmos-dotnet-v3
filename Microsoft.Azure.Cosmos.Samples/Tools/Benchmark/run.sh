@@ -45,7 +45,7 @@ dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --tcp 10 --pl $PL -e 
 sleep 10 #Wait
 
 # Client telemetry enabled ReadStreamExistsV3. This is needed to see the impact of client telemetry. 
-dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --WorkloadName ReadStreamExistsV3WithTelemetry --telemetryScheduleInSec 60 --disableDistributedTracing --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol
+dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --WorkloadName ReadStreamExistsV3WithTelemetry --telemetryScheduleInSec 60 --disableDistributedTracing --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol
 sleep 10 #Wait
 
 # Open telemetry enabled ReadStreamExistsV3. This is needed to see the impact of distributed tracing (without listener) 
@@ -55,12 +55,12 @@ sleep 10 #Wait
 #Point read operations
 for WORKLOAD_NAME in ReadNotExistsV3 ReadTExistsV3 ReadStreamExistsWithDiagnosticsV3
 do
-    dotnet run -c Release  -- -n 2000000 -w $WORKLOAD_NAME --pl $PL --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol
+    dotnet run -c Release  -- -n 2000000 -w $WORKLOAD_NAME --pl $PL --telemetryScheduleInSec 60 --tcp 10 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol
     sleep 10 #Wait
 done
 
 #Insert operation
-dotnet run -c Release  -- -n 2000000 -w InsertV3 --pl 30 --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 1 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol
+dotnet run -c Release  -- -n 2000000 -w InsertV3 --pl 30 --telemetryScheduleInSec 60 --tcp 1 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol
 sleep 45 #Wait
 
 if [ "$INCLUDE_QUERY" = true ]
@@ -70,7 +70,7 @@ then
     # pl is 16 because 18 was casuing a small amount of thorrtles.
     for WORKLOAD_NAME in ReadFeedStreamV3 QueryTSinglePkV3 QueryTSinglePkOrderByWithPaginationV3 QueryTSinglePkOrderByFullDrainV3 QueryTCrossPkV3 QueryTCrossPkOrderByWithPaginationV3 QueryTCrossPkOrderByFullDrainV3 QueryStreamSinglePkV3 QueryStreamSinglePkOrderByWithPaginationV3 QueryStreamSinglePkOrderByFullDrainV3 QueryStreamCrossPkV3 QueryStreamCrossPkOrderByWithPaginationV3 QueryStreamCrossPkOrderByFullDrainV3
     do
-        dotnet run -c Release  -- -n 200000 -w $WORKLOAD_NAME --pl 16 --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol
+        dotnet run -c Release  -- -n 200000 -w $WORKLOAD_NAME --pl 16 --telemetryScheduleInSec 60 --tcp 10 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol
         sleep 10 #Wait
     done
 fi
