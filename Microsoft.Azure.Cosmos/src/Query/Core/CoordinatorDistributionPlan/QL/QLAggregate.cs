@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
     internal abstract class QLAggregate
     {
-        public QLAggregate(QLAggregateKind kind)
+        protected QLAggregate(QLAggregateKind kind)
         {
             this.Kind = kind;
         }

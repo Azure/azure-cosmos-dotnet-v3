@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
     internal class QLArrayIndexerScalarExpression : QLScalarExpression
     {
-        public QLArrayIndexerScalarExpression(QLScalarExpression expression, long index) 
+        public QLArrayIndexerScalarExpression(QLScalarExpression expression, ulong index) 
             : base(QLScalarExpressionKind.ArrayIndexer)
         {
             this.Expression = expression;
@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 
         public QLScalarExpression Expression { get; }
         
-        public long Index { get; }
+        public ulong Index { get; }
     }
-
 }

@@ -6,11 +6,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
     internal class CoordinatorDistributionPlan
     {
-        public CoordinatorDistributionPlan(QLExpression clientQL)
+        public CoordinatorDistributionPlan(QLEnumerableExpression clientQL)
         {
             this.ClientQL = clientQL;
         }
 
-        public QLExpression ClientQL { get; }
+        public QLEnumerableExpression ClientQL { get; }
     }
 }

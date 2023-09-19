@@ -8,12 +8,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 
     internal class QLNumberLiteral : QLLiteral
     {
-        public QLNumberLiteral(long value)
+        public QLNumberLiteral(Number64 value)
             : base(QLLiteralKind.Number)
         {
             this.Value = value;
         }
 
-        public long Value { get; }
+        public Number64 Value { get; }
     }
 }

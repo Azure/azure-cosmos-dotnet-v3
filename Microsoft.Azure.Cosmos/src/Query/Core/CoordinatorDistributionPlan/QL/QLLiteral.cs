@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
     internal abstract class QLLiteral
     {
-        public QLLiteral(QLLiteralKind kind)
+        protected QLLiteral(QLLiteralKind kind)
         {
             this.Kind = kind;
         }

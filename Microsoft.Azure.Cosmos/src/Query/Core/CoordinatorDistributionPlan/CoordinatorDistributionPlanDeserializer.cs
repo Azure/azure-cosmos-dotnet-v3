@@ -173,16 +173,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             QLEnumerableExpression sourceExpression = DeserializeQLEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
             long skipValue = Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.SkipValue).Value);
             long takeExpression = Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.TakeValue).Value);
-            return new QLTakeEnumerableExpression(sourceExpression, skipValue, takeExpression);
+            return new QLTakeEnumerableExpression(sourceExpression, Convert.ToUInt64(skipValue), Convert.ToUInt64(takeExpression));
         }
 
         private static QLWhereEnumerableExpression DeserializeWhereEnumerableExpression(CosmosObject cosmosObject)
         {
             QLEnumerableExpression sourceExpression = DeserializeQLEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
-            return new QLWhereEnumerableExpression(sourceExpression);
+            QLVariable declaredVariable = DeserializeQLVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
+            QLScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
+            return new QLWhereEnumerableExpression(sourceExpression, declaredVariable, expression);
         }
 
         #endregion
+
         #region Scalar Expressions
 
         private static QLScalarExpression DeserializeScalarExpression(CosmosObject cosmosObject)
@@ -236,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         {
             QLScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
             long index = Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Index).Value);
-            return new QLArrayIndexerScalarExpression(expression, index);
+            return new QLArrayIndexerScalarExpression(expression, Convert.ToUInt64(index));
         }
 
         private static QLBinaryScalarExpression DeserializeBinaryOperatorScalarExpression(CosmosObject cosmosObject)
@@ -265,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         private static QLLiteralScalarExpression DeserializeLiteralScalarExpression(CosmosObject cosmosObject)
         {
             CosmosObject literalObject = GetValue<CosmosObject>(cosmosObject, Constants.Literal);
-            return new QLLiteralScalarExpression(DeserializeQLLiteral(literalObject));
+            return new QLLiteralScalarExpression(DeserializeLiteral(literalObject));
         }
 
         private static QLMuxScalarExpression DeserializeMuxScalarExpression(CosmosObject cosmosObject)
@@ -307,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         {
             QLScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
             long index = Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Index).Value);
-            return new QLTupleItemRefScalarExpression(expression, index);
+            return new QLTupleItemRefScalarExpression(expression, Convert.ToUInt64(index));
         }
 
         private static QLUnaryScalarExpression DeserializeUnaryScalarExpression(CosmosObject cosmosObject)
@@ -333,7 +336,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         }
 
         #endregion
-        #region Aggregate Expressions
+
+        #region Aggregate
 
         private static IReadOnlyList<QLAggregate> DeserializeAggregateArray(CosmosArray cosmosArray)
         {
@@ -383,9 +387,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         }
 
         #endregion
-        #region Literal Expressions
 
-        private static QLLiteral DeserializeQLLiteral(CosmosObject cosmosObject)
+        #region Literal
+
+        private static QLLiteral DeserializeLiteral(CosmosObject cosmosObject)
         {
             QLLiteralKind literalKind = GetEnumValue<QLLiteralKind>(GetValue<CosmosString>(cosmosObject, Constants.Kind).Value);
             switch (literalKind)
@@ -393,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
                 case QLLiteralKind.Array:
                     return new QLArrayLiteral(DeserializeLiteralArray(GetValue<CosmosArray>(cosmosObject, Constants.Items)));
                 case QLLiteralKind.Binary:
-                    return new QLBinaryLiteral(DeserializeBinaryLiteral(GetValue<CosmosArray>(cosmosObject, Constants.Value)));
+                    return new QLBinaryLiteral(DeserializeBinaryLiteral(GetValue<CosmosObject>(cosmosObject, Constants.Value)));
                 case QLLiteralKind.Boolean:
                     return new QLBooleanLiteral(GetValue<CosmosBoolean>(cosmosObject, Constants.Value).Value);
                 case QLLiteralKind.CGuid:
@@ -417,7 +422,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
                 case QLLiteralKind.Null:
                     return QLNullLiteral.Singleton;
                 case QLLiteralKind.Number:
-                    return new QLNumberLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
+                    return new QLNumberLiteral(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value);
                 case QLLiteralKind.Object:
                     return new QLObjectLiteral(DeserializeObjectLiteralArray(GetValue<CosmosArray>(cosmosObject, Constants.Properties)));
                 case QLLiteralKind.String:
@@ -435,31 +440,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             foreach (CosmosElement literalElement in cosmosArray)
             {
                 CosmosObject literalObject = CastToCosmosObject(literalElement);
-                literals.Add(DeserializeQLLiteral(literalObject));
+                literals.Add(DeserializeLiteral(literalObject));
             }
         
             return literals;
         }
 
-        private static byte[] DeserializeBinaryLiteral(CosmosArray cosmosArray)
+        private static byte[] DeserializeBinaryLiteral(CosmosObject cosmosObject)
         {
-            List<ReadOnlyMemory<byte>> binaryLiterals = new List<ReadOnlyMemory<byte>>(cosmosArray.Count);
-            int memoryLength = 0;
-            foreach (CosmosElement propertyElement in cosmosArray)
-            {
-                CosmosObject propertyObject = CastToCosmosObject(propertyElement);
-                ReadOnlyMemory<byte> bytes = GetValue<CosmosBinary>(propertyObject, Constants.Kind).Value;
-                memoryLength += bytes.Length;
-                binaryLiterals.Add(bytes);
-            }
-
-            byte[] byteCollection = new byte[memoryLength];
-            int currentIndex = 0;
-            foreach (ReadOnlyMemory<byte> bytes in binaryLiterals)
-            {
-                bytes.CopyTo(byteCollection.AsMemory(currentIndex));
-                currentIndex += bytes.Length;
-            }
+            ReadOnlyMemory<byte> bytes = GetValue<CosmosBinary>(cosmosObject, Constants.Kind).Value;
+            byte[] byteCollection = new byte[bytes.Length];
+            bytes.CopyTo(byteCollection.AsMemory(0));
 
             return byteCollection;
         }
@@ -471,7 +462,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
             {
                 CosmosObject propertyObject = CastToCosmosObject(objectLiteralElement);
                 string name = GetValue<CosmosString>(propertyObject, Constants.Name).Value;
-                QLLiteral literal = DeserializeQLLiteral(propertyObject);
+                QLLiteral literal = DeserializeLiteral(propertyObject);
                 QLObjectLiteralProperty objectLiteralProperty = new QLObjectLiteralProperty(name, literal);
                 objectLiterals.Add(objectLiteralProperty);
             }
@@ -480,6 +471,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan
         }
 
         #endregion
+
         #region Helper Functions
 
         private static QLVariable DeserializeQLVariable(CosmosObject cosmosObject)

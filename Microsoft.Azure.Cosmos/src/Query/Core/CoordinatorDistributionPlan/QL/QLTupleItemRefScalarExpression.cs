@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
     internal class QLTupleItemRefScalarExpression : QLScalarExpression
     {
-        public QLTupleItemRefScalarExpression(QLScalarExpression expression, long index) 
+        public QLTupleItemRefScalarExpression(QLScalarExpression expression, ulong index) 
             : base(QLScalarExpressionKind.TupleItemRef)
         {
             this.Expression = expression;
@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 
         public QLScalarExpression Expression { get; }
         
-        public long Index { get; }
+        public ulong Index { get; }
     }
-
 }

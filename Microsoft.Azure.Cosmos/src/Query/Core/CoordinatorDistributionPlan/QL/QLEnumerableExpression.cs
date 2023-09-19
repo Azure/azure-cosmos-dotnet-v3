@@ -4,9 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
-    internal abstract class QLEnumerableExpression : QLExpression
+    internal abstract class QLEnumerableExpression
     {
-        public QLEnumerableExpression(QLEnumerableExpressionKind kind)
+        protected QLEnumerableExpression(QLEnumerableExpressionKind kind)
         {
             this.Kind = kind;
         }
