@@ -1,0 +1,15 @@
+{
+  "DatabaseName": "db1",
+  "CollectionName": "Volcano",
+  "Key": "",
+  "Endpoints": [
+    {
+      "EndpointUrl": "https://adityasa-distributed3-eastus.documents.azure.com:443/",
+      "ConnectionMode": "Direct"
+    },
+    {
+      "EndpointUrl": "https://adityasa-distributed3-westus3.documents.azure.com:443/",
+      "ConnectionMode": "Direct"
+    }
+  ]
+}
