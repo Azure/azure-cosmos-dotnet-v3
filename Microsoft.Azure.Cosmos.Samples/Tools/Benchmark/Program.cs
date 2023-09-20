@@ -177,7 +177,6 @@ namespace CosmosBenchmark
 
                 Utility.TeePrint("Starting Inserts with {0} tasks", taskCount);
 
-
                 string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
                 int opsPerTask = config.ItemCount / taskCount;
 
@@ -216,7 +215,6 @@ namespace CosmosBenchmark
                     consistencyLevel = accountProperties.Consistency.DefaultConsistencyLevel.ToString();
                 }
                 runSummary.ConsistencyLevel = consistencyLevel;
-
 
                 BenchmarkProgress benchmarkProgress = await CompleteBenchmarkProgressStatus(benchmarkProgressItem, resultContainer);
                 if (config.PublishResults)
@@ -348,11 +346,12 @@ namespace CosmosBenchmark
                 id = Environment.MachineName,
                 MachineName = Environment.MachineName,
                 JobStatus = "STARTED",
-                JobStartTime = DateTime.Now
+                JobStartTime = DateTime.Now,
+                pk = Environment.MachineName
             };
 
             ItemResponse<BenchmarkProgress> itemResponse = await resultContainer.UpsertItemAsync(
-                benchmarkProgress, new PartitionKey(benchmarkProgress.id));
+                benchmarkProgress, new PartitionKey(benchmarkProgress.pk));
 
             return itemResponse.Resource;
         }
@@ -378,7 +377,10 @@ namespace CosmosBenchmark
         private static async Task<Container> GetResultContainer(BenchmarkConfig config, CosmosClient cosmosClient)
         {
             Database database = cosmosClient.GetDatabase(config.ResultsDatabase ?? config.Database);
-            ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(id: config.ResultsContainer, partitionKeyPath: "/id");
+            ContainerResponse containerResponse = await database
+                .CreateContainerIfNotExistsAsync(
+                            id: config.ResultsContainer, 
+                            partitionKeyPath: "/pk");
             return containerResponse.Container;
         }
 
