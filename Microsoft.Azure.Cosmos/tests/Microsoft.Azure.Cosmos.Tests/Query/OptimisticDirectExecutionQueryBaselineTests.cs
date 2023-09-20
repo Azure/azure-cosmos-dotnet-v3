@@ -400,29 +400,32 @@
         [TestMethod]
         public async Task TestQueryValidityCheckWithODEAsync()
         {
-            List<string> testVariations = new List<string>
+            // query, error_message
+            List<(string, string)> testVariations = new List<(string, string)>
             {
-                "SELECT   COUNT     (1)   + 5 FROM c",
-                "SELECT MIN(c.price)   + 10 FROM c",
-                "SELECT      MAX(c.price)       - 4 FROM c",
-                "SELECT SUM    (c.price) + 20     FROM c",
-                "SELECT AVG(c.price) * 50 FROM      c",
+                ("SELECT   COUNT     (1)   + 5 FROM c", "Compositions of aggregates and other expressions are not allowed"),
+                ("SELECT MIN(c.price)   + 10 FROM c", "Compositions of aggregates and other expressions are not allowed"),
+                ("SELECT      MAX(c.price)       - 4 FROM c", "Compositions of aggregates and other expressions are not allowed"),
+                ("SELECT SUM    (c.price) + 20     FROM c","Compositions of aggregates and other expressions are not allowed"),
+                ("SELECT AVG(c.price) * 50 FROM      c", "Compositions of aggregates and other expressions are not allowed"),
+                ("SELECT * from c GROUP BY c.name", "'SELECT *' is not allowed with GROUP BY" ),
+                ("SELECT SUM(c.sales) AS totalSales, AVG(SUM(c.salesAmount)) AS averageTotalSales\n\n\nFROM c", "Cannot perform an aggregate function on an expression containing an aggregate or a subquery"),
+                ("SELECT c.category, c.price, COUNT(c) FROM c GROUP BY c.category\r\n", "invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause")
             };
 
-            List<string> testVariationsWithCaseSensitivity = new List<string>();
-            foreach (string testCase in testVariations)
+            List<(string, string)> testVariationsWithCaseSensitivity = new List<(string, string)>();
+            foreach ((string, string) testCase in testVariations)
             {
-                testVariationsWithCaseSensitivity.Add(testCase.ToLower());
-                testVariationsWithCaseSensitivity.Add(testCase.ToUpper());
+                testVariationsWithCaseSensitivity.Add((testCase.Item1, testCase.Item2));
+                testVariationsWithCaseSensitivity.Add((testCase.Item1.ToLower(), testCase.Item2));
+                testVariationsWithCaseSensitivity.Add((testCase.Item1.ToUpper(), testCase.Item2));
             }
 
-            List<string> allTestVariations = testVariations.Concat(testVariationsWithCaseSensitivity).ToList();
-
-            foreach (string testCase in allTestVariations)
+            foreach ((string, string) testCase in testVariationsWithCaseSensitivity)
             {
                 OptimisticDirectExecutionTestInput input = CreateInput(
                     description: @"Unsupported queries in CosmosDB that were previousely supported by Ode pipeline and returning wrong resutls",
-                    query: testCase,
+                    query: testCase.Item1,
                     expectedOptimisticDirectExecution: true,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a");
@@ -433,12 +436,13 @@
                                     input,
                                     numItems: 100,
                                     isMultiPartition: false,
-                                    expectedContinuationTokenCount: 10,
+                                    expectedContinuationTokenCount: 0,
+                                    requiresDist: true,
                                     useQueryPlan: false);
                 }
-                catch
+                catch(Exception ex)
                 {
-                    // Confirming that an exception is thrown for an unsupported query 
+                    Assert.IsTrue(ex.InnerException.Message.Contains(testCase.Item2));
                     continue;
                 }
 
@@ -622,7 +626,7 @@
             return documents.Count;
         }
 
-        internal static PartitionedQueryExecutionInfo GetPartitionedQueryExecutionInfo(string querySpecJsonString, PartitionKeyDefinition pkDefinition)
+        internal static TryCatch<PartitionedQueryExecutionInfo> TryGetPartitionedQueryExecutionInfo(string querySpecJsonString, PartitionKeyDefinition pkDefinition)
         {
             TryCatch<PartitionedQueryExecutionInfo> tryGetQueryPlan = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfo(
                 querySpecJsonString: querySpecJsonString,
@@ -635,7 +639,7 @@
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
 
-            return tryGetQueryPlan.Result;
+            return tryGetQueryPlan;
         }
 
         private static async Task<IQueryPipelineStage> GetOdePipelineAsync(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions, bool useQueryPlan = true)
@@ -783,7 +787,13 @@
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(new SqlQuerySpec(input.Query), Documents.ResourceType.Document));
             string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = useQueryPlan ? GetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, input.PartitionKeyDefinition) : null;
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = null;
+            if (useQueryPlan)
+            {
+                TryCatch<PartitionedQueryExecutionInfo> queryPlan = TryGetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, input.PartitionKeyDefinition);
+                partitionedQueryExecutionInfo = queryPlan.Succeeded ? queryPlan.Result : throw queryPlan.Exception;
+            }
+            
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: new SqlQuerySpec(input.Query),
                 initialUserContinuationToken: input.ContinuationToken,
@@ -1095,7 +1105,8 @@
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, Documents.ResourceType.Document));
             string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = OptimisticDirectExecutionQueryBaselineTests.GetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, partitionKeyDefinition);
+            TryCatch<PartitionedQueryExecutionInfo> queryPlan = OptimisticDirectExecutionQueryBaselineTests.TryGetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, partitionKeyDefinition);
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = queryPlan.Succeeded ? queryPlan.Result : throw queryPlan.Exception;
             return TryCatch<PartitionedQueryExecutionInfo>.FromResult(partitionedQueryExecutionInfo);
         }
     }
