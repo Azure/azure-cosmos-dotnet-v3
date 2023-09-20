@@ -4,12 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
+
     internal class QLScalarAsEnumerableExpression : QLEnumerableExpression
     {
         public QLScalarAsEnumerableExpression(QLScalarExpression expression, QLEnumerationKind enumerationKind) 
             : base(QLEnumerableExpressionKind.ScalarAsEnumerable)
         {
-            this.Expression = expression;
+            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
             this.EnumerationKind = enumerationKind;
         }
 

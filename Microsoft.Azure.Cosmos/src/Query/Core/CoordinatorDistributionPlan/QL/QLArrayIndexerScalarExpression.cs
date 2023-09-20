@@ -4,12 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
+
     internal class QLArrayIndexerScalarExpression : QLScalarExpression
     {
         public QLArrayIndexerScalarExpression(QLScalarExpression expression, ulong index) 
             : base(QLScalarExpressionKind.ArrayIndexer)
         {
-            this.Expression = expression;
+            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
             this.Index = index;
         }
 

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLSystemFunctionCallScalarExpression : QLScalarExpression
@@ -12,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
             : base(QLScalarExpressionKind.SystemFunctionCall)
         {
             this.FunctionKind = functionKind;
-            this.Arguments = arguments;
+            this.Arguments = arguments ?? throw new ArgumentNullException(nameof(arguments));
         }
 
         public QLBuiltinScalarFunctionKind FunctionKind { get; }

@@ -4,12 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
+
     internal class QLObjectProperty
     {
         public QLObjectProperty(string name, QLScalarExpression expression)
         {
-            this.Name = name;
-            this.Expression = expression;
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
+            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
         public string Name { get; }

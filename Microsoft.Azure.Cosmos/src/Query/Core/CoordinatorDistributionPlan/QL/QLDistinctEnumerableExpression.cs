@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLDistinctEnumerableExpression : QLEnumerableExpression
@@ -11,9 +12,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         public QLDistinctEnumerableExpression(QLEnumerableExpression sourceExpression, QLVariable declaredVariable, IReadOnlyList<QLScalarExpression> expression) 
             : base(QLEnumerableExpressionKind.Distinct)
         {
-            this.SourceExpression = sourceExpression;
-            this.DeclaredVariable = declaredVariable;
-            this.Expression = expression;
+            this.SourceExpression = sourceExpression ?? throw new ArgumentNullException(nameof(sourceExpression));
+            this.DeclaredVariable = declaredVariable ?? throw new ArgumentNullException(nameof(declaredVariable));
+            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
         public QLEnumerableExpression SourceExpression { get; }

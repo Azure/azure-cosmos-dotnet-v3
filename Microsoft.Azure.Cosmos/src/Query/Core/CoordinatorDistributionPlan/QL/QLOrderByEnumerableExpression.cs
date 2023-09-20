@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLOrderByEnumerableExpression : QLEnumerableExpression
@@ -11,9 +12,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         public QLOrderByEnumerableExpression(QLEnumerableExpression sourceExpression, QLVariable declaredVariable, IReadOnlyList<QLOrderByItem> items)
             : base(QLEnumerableExpressionKind.OrderBy)
         {
-            this.SourceExpression = sourceExpression;
-            this.DeclaredVariable = declaredVariable;
-            this.Items = items;
+            this.SourceExpression = sourceExpression ?? throw new ArgumentNullException(nameof(sourceExpression));
+            this.DeclaredVariable = declaredVariable ?? throw new ArgumentNullException(nameof(declaredVariable));
+            this.Items = items ?? throw new ArgumentNullException(nameof(items));
         }
 
         public QLEnumerableExpression SourceExpression { get; }

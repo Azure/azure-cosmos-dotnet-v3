@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLArrayCreateScalarExpression : QLScalarExpression
@@ -12,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
             : base(QLScalarExpressionKind.ArrayCreate)
         {
             this.ArrayKind = arrayKind;
-            this.Items = items;
+            this.Items = items ?? throw new ArgumentNullException(nameof(items));
         }
 
         public QLArrayKind ArrayKind { get; }

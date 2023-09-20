@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLGroupByEnumerableExpression : QLEnumerableExpression
@@ -11,9 +12,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         public QLGroupByEnumerableExpression(QLEnumerableExpression sourceExpression, ulong keyCount, IReadOnlyList<QLAggregate> aggregates) 
             : base(QLEnumerableExpressionKind.GroupBy)
         {
-            this.SourceExpression = sourceExpression;
+            this.SourceExpression = sourceExpression ?? throw new ArgumentNullException(nameof(sourceExpression));
             this.KeyCount = keyCount;
-            this.Aggregates = aggregates;
+            this.Aggregates = aggregates ?? throw new ArgumentNullException(nameof(aggregates));
         }
 
         public QLEnumerableExpression SourceExpression { get; }

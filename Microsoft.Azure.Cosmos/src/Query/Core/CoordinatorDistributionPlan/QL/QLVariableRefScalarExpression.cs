@@ -4,12 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
+
     internal class QLVariableRefScalarExpression : QLScalarExpression
     {
         public QLVariableRefScalarExpression(QLVariable variable)
             : base(QLScalarExpressionKind.VariableRef)
         {
-            this.Variable = variable;
+            this.Variable = variable ?? throw new ArgumentNullException(nameof(variable));
         }
 
         public QLVariable Variable { get; }

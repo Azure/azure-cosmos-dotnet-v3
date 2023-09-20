@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLArrayLiteral : QLLiteral
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         public QLArrayLiteral(IReadOnlyList<QLLiteral> items)
             : base(QLLiteralKind.Array)
         {
-            this.Items = items;
+            this.Items = items ?? throw new ArgumentNullException(nameof(items));
         }
 
         public IReadOnlyList<QLLiteral> Items { get; }

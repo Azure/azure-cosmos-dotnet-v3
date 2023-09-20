@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLObjectLiteral : QLLiteral
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         public QLObjectLiteral(IReadOnlyList<QLObjectLiteralProperty> properties)
             : base(QLLiteralKind.Object)
         {
-            this.Properties = properties;
+            this.Properties = properties ?? throw new ArgumentNullException(nameof(properties));
         }
 
         public IReadOnlyList<QLObjectLiteralProperty> Properties { get; }

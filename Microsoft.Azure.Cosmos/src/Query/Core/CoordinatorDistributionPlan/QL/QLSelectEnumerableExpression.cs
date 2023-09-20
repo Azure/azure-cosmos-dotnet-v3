@@ -4,14 +4,16 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
+
     internal class QLSelectEnumerableExpression : QLEnumerableExpression
     {
         public QLSelectEnumerableExpression(QLEnumerableExpression sourceExpression, QLVariable declaredVariable, QLScalarExpression expression) 
             : base(QLEnumerableExpressionKind.Select)
         {
-            this.SourceExpression = sourceExpression;
-            this.DeclaredVariable = declaredVariable;
-            this.Expression = expression;
+            this.SourceExpression = sourceExpression ?? throw new ArgumentNullException(nameof(sourceExpression));
+            this.DeclaredVariable = declaredVariable ?? throw new ArgumentNullException(nameof(declaredVariable));
+            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
         public QLEnumerableExpression SourceExpression { get; }

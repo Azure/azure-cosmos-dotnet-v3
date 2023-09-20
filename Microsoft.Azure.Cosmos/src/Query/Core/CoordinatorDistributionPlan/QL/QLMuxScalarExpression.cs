@@ -4,14 +4,16 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
+
     internal class QLMuxScalarExpression : QLScalarExpression
     {
         public QLMuxScalarExpression(QLScalarExpression conditionExpression, QLScalarExpression leftExpression, QLScalarExpression rightExpression) 
             : base(QLScalarExpressionKind.Mux)
         {
-            this.ConditionExpression = conditionExpression;
-            this.LeftExpression = leftExpression;
-            this.RightExpression = rightExpression;
+            this.ConditionExpression = conditionExpression ?? throw new ArgumentNullException(nameof(conditionExpression));
+            this.LeftExpression = leftExpression ?? throw new ArgumentNullException(nameof(leftExpression));
+            this.RightExpression = rightExpression ?? throw new ArgumentNullException(nameof(rightExpression));
         }
 
         public QLScalarExpression ConditionExpression { get; }

@@ -4,11 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
+
     internal class QLOrderByItem
     {
         public QLOrderByItem(QLScalarExpression expression, QLSortOrder sortOrder)
         {
-            this.Expression = expression;
+            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
             this.SortOrder = sortOrder;
         }
 

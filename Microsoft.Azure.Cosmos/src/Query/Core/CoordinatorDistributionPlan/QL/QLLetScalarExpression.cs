@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLLetScalarExpression : QLScalarExpression
@@ -11,9 +12,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         public QLLetScalarExpression(QLVariable declaredVariable, QLScalarExpression declaredVariableExpression, QLScalarExpression expression) 
             : base(QLScalarExpressionKind.Let)
         {
-            this.DeclaredVariable = declaredVariable;
-            this.DeclaredVariableExpression = declaredVariableExpression;
-            this.Expression = expression;
+            this.DeclaredVariable = declaredVariable ?? throw new ArgumentNullException(nameof(declaredVariable));
+            this.DeclaredVariableExpression = declaredVariableExpression ?? throw new ArgumentNullException(nameof(declaredVariableExpression));
+            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
         public QLVariable DeclaredVariable { get; }

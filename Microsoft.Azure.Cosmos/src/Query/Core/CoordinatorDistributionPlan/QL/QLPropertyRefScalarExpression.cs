@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLPropertyRefScalarExpression : QLScalarExpression
@@ -11,8 +12,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         public QLPropertyRefScalarExpression(QLScalarExpression expression, string propertyName) 
             : base(QLScalarExpressionKind.PropertyRef)
         {
-            this.Expression = expression;
-            this.PropertyName = propertyName;
+            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
+            this.PropertyName = propertyName ?? throw new ArgumentNullException(nameof(propertyName));
         }
 
         public QLScalarExpression Expression { get; }

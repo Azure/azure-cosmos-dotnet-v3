@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         public QLBinaryLiteral(byte[] value)
             : base(QLLiteralKind.Binary)
         {
-            this.Value = value;
+            this.Value = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         public byte[] Value { get; }

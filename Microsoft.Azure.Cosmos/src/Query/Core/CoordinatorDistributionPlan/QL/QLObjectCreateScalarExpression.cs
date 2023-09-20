@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLObjectCreateScalarExpression : QLScalarExpression
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         public QLObjectCreateScalarExpression(IReadOnlyList<QLObjectProperty> properties, QLObjectKind objectKind) 
             : base(QLScalarExpressionKind.ObjectCreate)
         {
-            this.Properties = properties;
+            this.Properties = properties ?? throw new ArgumentNullException(nameof(properties));
             this.ObjectKind = objectKind;
         }
 

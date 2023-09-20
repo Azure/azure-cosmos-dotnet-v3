@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLTupleCreateScalarExpression : QLScalarExpression
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         public QLTupleCreateScalarExpression(IReadOnlyList<QLScalarExpression> items) 
             : base(QLScalarExpressionKind.TupleCreate)
         {
-            this.Items = items;
+            this.Items = items ?? throw new ArgumentNullException(nameof(items));
         }
 
         public IReadOnlyList<QLScalarExpression> Items { get; }

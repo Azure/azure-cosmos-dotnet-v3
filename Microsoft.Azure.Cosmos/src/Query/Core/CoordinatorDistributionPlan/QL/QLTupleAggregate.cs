@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLTupleAggregate : QLAggregate
@@ -11,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
         public QLTupleAggregate(IReadOnlyList<QLAggregate> items) 
             : base(QLAggregateKind.Tuple)
         {
-            this.Items = items;
+            this.Items = items ?? throw new ArgumentNullException(nameof(items));
         }
 
         public IReadOnlyList<QLAggregate> Items { get; }

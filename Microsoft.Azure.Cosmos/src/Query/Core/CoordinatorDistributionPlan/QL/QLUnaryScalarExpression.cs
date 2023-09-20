@@ -4,13 +4,15 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
+
     internal class QLUnaryScalarExpression : QLScalarExpression
     {
         public QLUnaryScalarExpression(QLUnaryScalarOperatorKind operatorKind, QLScalarExpression expression) 
             : base(QLScalarExpressionKind.UnaryOperator)
         {
             this.OperatorKind = operatorKind;
-            this.Expression = expression;
+            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
         public QLUnaryScalarOperatorKind OperatorKind { get; }

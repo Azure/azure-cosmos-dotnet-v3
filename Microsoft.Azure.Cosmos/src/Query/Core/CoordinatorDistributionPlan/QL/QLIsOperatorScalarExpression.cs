@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
     using System.Collections.Generic;
 
     internal class QLIsOperatorScalarExpression : QLScalarExpression
@@ -12,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
             : base(QLScalarExpressionKind.IsOperator)
         {
             this.OperatorKind = operatorKind;
-            this.Expression = expression;
+            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
         }
 
         public QLIsOperatorKind OperatorKind { get; }

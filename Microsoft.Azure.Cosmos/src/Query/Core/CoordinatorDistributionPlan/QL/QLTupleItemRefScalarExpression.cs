@@ -4,12 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.CoordinatorDistributionPlan.QL
 {
+    using System;
+
     internal class QLTupleItemRefScalarExpression : QLScalarExpression
     {
         public QLTupleItemRefScalarExpression(QLScalarExpression expression, ulong index) 
             : base(QLScalarExpressionKind.TupleItemRef)
         {
-            this.Expression = expression;
+            this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
             this.Index = index;
         }
 
