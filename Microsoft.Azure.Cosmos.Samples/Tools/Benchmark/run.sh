@@ -24,12 +24,6 @@ then
     exit -1
 fi
 
-if [ -z "$TELEMETRY_ENDPOINT" ]
-then
-    echo "Missing TELEMETRY_ENDPOINT"
-    exit -1
-fi
-
 if [ -z "$INCLUDE_QUERY" ]
 then
     echo "Missing INCLUDE_QUERY"
@@ -47,26 +41,26 @@ echo $COMMIT_TIME
 echo $BRANCH_NAME
 
 # Client telemetry disabled ReadStreamExistsV3
-dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --disableClientTelemetry --disableDistributedTracing --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --disableClientTelemetry --disableDistributedTracing --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol  
 sleep 10 #Wait
 
 # Client telemetry enabled ReadStreamExistsV3. This is needed to see the impact of client telemetry. 
-dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --WorkloadName ReadStreamExistsV3WithTelemetry --telemetryScheduleInSec 60 --disableDistributedTracing --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --WorkloadName ReadStreamExistsV3WithTelemetry --telemetryScheduleInSec 60 --disableDistributedTracing --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol
 sleep 10 #Wait
 
 # Open telemetry enabled ReadStreamExistsV3. This is needed to see the impact of distributed tracing (without listener) 
-dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --WorkloadName ReadStreamExistsV3WithDistributedTracingWOListener  --disableClientTelemetry --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --WorkloadName ReadStreamExistsV3WithDistributedTracingWOListener  --disableClientTelemetry --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol
 sleep 10 #Wait
 
 #Point read operations
 for WORKLOAD_NAME in ReadNotExistsV3 ReadTExistsV3 ReadStreamExistsWithDiagnosticsV3
 do
-    dotnet run -c Release  -- -n 2000000 -w $WORKLOAD_NAME --pl $PL --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 10 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+    dotnet run -c Release  -- -n 2000000 -w $WORKLOAD_NAME --pl $PL --telemetryScheduleInSec 60 --tcp 10 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol
     sleep 10 #Wait
 done
 
 #Insert operation
-dotnet run -c Release  -- -n 2000000 -w InsertV3 --pl 30 --telemetryScheduleInSec 60 --telemetryEndpoint $TELEMETRY_ENDPOINT --tcp 1 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
+dotnet run -c Release  -- -n 2000000 -w InsertV3 --pl 30 --telemetryScheduleInSec 60 --tcp 1 -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --partitionkeypath /pk --container testcol
 sleep 45 #Wait
 
 if [ "$INCLUDE_QUERY" = true ]
