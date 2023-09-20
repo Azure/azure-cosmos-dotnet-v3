@@ -325,6 +325,9 @@
     <None Update="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestStringCompareStatic.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Conflicts\ConflictsTestSettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Query\AggregateQueryTests.AggregateMixedTypes_baseline.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -18,5 +18,15 @@ namespace Microsoft.Azure.Cosmos
                 return Encoding.UTF8.GetString(bytes);
             }
         }
+
+        public static Stream ToStream(this string stringValue)
+        {
+            MemoryStream stream = new ();
+            StreamWriter writer = new (stream);
+            writer.Write(stringValue);
+            writer.Flush();
+            stream.Position = 0;
+            return stream;
+        }
     }
 }
