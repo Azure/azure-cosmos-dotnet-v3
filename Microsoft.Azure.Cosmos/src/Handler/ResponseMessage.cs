@@ -251,21 +251,27 @@ namespace Microsoft.Azure.Cosmos
         /// Decode the Index Metrics from the response headers, if exists.
         /// </summary>
         /// <param name="responseMessageHeaders">The response headers</param>
-        /// <param name="isBse64Encoded">The encoding of the IndexMetrics response</param>
+        /// <param name="isBase64Encoded">The encoding of the IndexMetrics response</param>
         /// <returns>Lazy implementation of the pretty-printed IndexMetrics</returns>
-        static internal Lazy<string> DecodeIndexMetrics(Headers responseMessageHeaders, bool isBse64Encoded)
+        static internal Lazy<string> DecodeIndexMetrics(Headers responseMessageHeaders, bool isBase64Encoded)
         {
             if (responseMessageHeaders?.IndexUtilizationText != null)
             {
                 return new Lazy<string>(() =>
                     {
-                        IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText, isBse64Encoded);
-                       
-                        StringBuilder stringBuilder = new StringBuilder();
-                        IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
-                        indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
+                        if (isBase64Encoded)
+                        {
+                            IndexUtilizationInfo parsedIndexUtilizationInfo = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
 
-                        return stringBuilder.ToString();
+                            StringBuilder stringBuilder = new StringBuilder();
+                            IndexMetricsWriter indexMetricWriter = new IndexMetricsWriter(stringBuilder);
+                            indexMetricWriter.WriteIndexMetrics(parsedIndexUtilizationInfo);
+
+                            return stringBuilder.ToString();
+                        }
+
+                        // Return the JSON from the response header
+                        return responseMessageHeaders.IndexUtilizationText;
                     });
             }
 
