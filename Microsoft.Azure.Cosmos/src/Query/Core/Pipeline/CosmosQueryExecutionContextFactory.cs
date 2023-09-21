@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         private const string Passthrough = "Passthrough";
         private const string Specialized = "Specialized";
         private const int PageSizeFactorForTop = 5;
-        private static readonly Regex ValidQueryValidation = new Regex(ValidQueryRegex, RegexOptions.IgnoreCase);
+        private static readonly Regex ValidQueryValidation = new Regex(ValidQueryRegex, RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public static IQueryPipelineStage Create(
             DocumentContainer documentContainer,
