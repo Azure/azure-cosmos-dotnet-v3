@@ -45,6 +45,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         }
 
         [TestMethod]
+        public void CheckResponseCompatibility()
+        {
+            Assembly asm = OpenTelemetryRecorderTests.GetAssemblyLocally(DllName);
+
+            // Get all types (including internal) defined in the assembly
+            IEnumerable<Type> actualClasses = asm
+                .GetTypes()
+                .Where(type => type.Name.Contains("Response"));
+
+            foreach (Type className in actualClasses)
+            {
+                Console.WriteLine(className);
+                //Assert.IsTrue(OpenTelemetryCoreRecorder.OTelCompatibleExceptions.Keys.Contains(className), $"{className.Name} is not added in {typeof(OpenTelemetryCoreRecorder).Name} Class OTelCompatibleExceptions dictionary");
+            }
+
+        }
+
+        [TestMethod]
         public void MarkFailedTest()
         {
             Assert.IsFalse(OpenTelemetryCoreRecorder.IsExceptionRegistered(
