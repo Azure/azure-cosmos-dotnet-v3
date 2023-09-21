@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Generic;
     using System.Diagnostics;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
     /// <summary>
     /// This class is used to add information in an Activity tags ref. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3058
@@ -177,7 +178,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
                 }
 
-                this.scope.Failed(exception);
+                if (DiagnosticsFilterHelper.IsSuccessfulResponse(this.response))
+                {
+                    this.scope.Dispose();
+                }
+                else
+                {
+                    this.scope.Failed(exception);
+                }
             }
         }
 
