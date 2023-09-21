@@ -400,17 +400,22 @@
         [TestMethod]
         public async Task TestQueryValidityCheckWithODEAsync()
         {
+            const string UnsupportedSelectStarInGroupBy = $"'SELECT *' is not allowed with GROUP BY";
+            const string UnsupportedCompositeAggregate = $"Compositions of aggregates and other expressions are not allowed.";
+            const string UnsupportedNestedAggregateExpression = $"Cannot perform an aggregate function on an expression containing an aggregate or a subquery.";
+            const string UnsupportedSelectLisWithAggregateOrGroupByExpression = $"invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause";
+
             // query, error_message
             List<(string, string)> testVariations = new List<(string, string)>
             {
-                ("SELECT   COUNT     (1)   + 5 FROM c", "Compositions of aggregates and other expressions are not allowed"),
-                ("SELECT MIN(c.price)   + 10 FROM c", "Compositions of aggregates and other expressions are not allowed"),
-                ("SELECT      MAX(c.price)       - 4 FROM c", "Compositions of aggregates and other expressions are not allowed"),
-                ("SELECT SUM    (c.price) + 20     FROM c","Compositions of aggregates and other expressions are not allowed"),
-                ("SELECT AVG(c.price) * 50 FROM      c", "Compositions of aggregates and other expressions are not allowed"),
-                ("SELECT * from c GROUP BY c.name", "'SELECT *' is not allowed with GROUP BY" ),
-                ("SELECT SUM(c.sales) AS totalSales, AVG(SUM(c.salesAmount)) AS averageTotalSales\n\n\nFROM c", "Cannot perform an aggregate function on an expression containing an aggregate or a subquery"),
-                ("SELECT c.category, c.price, COUNT(c) FROM c GROUP BY c.category\r\n", "invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause")
+                ("SELECT   COUNT     (1)   + 5 FROM c", UnsupportedCompositeAggregate),
+                ("SELECT MIN(c.price)   + 10 FROM c", UnsupportedCompositeAggregate),
+                ("SELECT      MAX(c.price)       - 4 FROM c", UnsupportedCompositeAggregate),
+                ("SELECT SUM    (c.price) + 20     FROM c",UnsupportedCompositeAggregate),
+                ("SELECT AVG(c.price) * 50 FROM      c", UnsupportedCompositeAggregate),
+                ("SELECT * from c GROUP BY c.name", UnsupportedSelectStarInGroupBy),
+                ("SELECT SUM(c.sales) AS totalSales, AVG(SUM(c.salesAmount)) AS averageTotalSales\n\n\nFROM c", UnsupportedNestedAggregateExpression),
+                ("SELECT c.category, c.price, COUNT(c) FROM c GROUP BY c.category\r\n", UnsupportedSelectLisWithAggregateOrGroupByExpression)
             };
 
             List<(string, string)> testVariationsWithCaseSensitivity = new List<(string, string)>();
