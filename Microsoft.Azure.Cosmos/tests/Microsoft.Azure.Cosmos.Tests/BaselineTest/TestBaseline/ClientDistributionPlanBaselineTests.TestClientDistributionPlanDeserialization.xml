@@ -1,0 +1,606 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Input Expression</Description>
+      <ClientDistributionPlanJson>{"clientDistributionPlan": {"clientQL": {"Kind": "Input","Name": "root"}}}</ClientDistributionPlanJson>
+    </Input>
+    <Output>
+      <SerializedClientPlanJson>{
+  "ClientQL": {
+    "Name": "root",
+    "Kind": 4
+  }
+}</SerializedClientPlanJson>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Aggregate and ObjectCreate Expressions</Description>
+      <ClientDistributionPlanJson>{"clientDistributionPlan": {"clientQL": {"Kind": "Select","DeclaredVariable": {"Name": "v0","UniqueId": 6},"Expression": {"Kind": "ObjectCreate","ObjectKind": "Object","Properties": [{"Name": "count_a","Expression": {"Kind": "VariableRef","Variable": {"Name": "v0","UniqueId": 6}}}]},"SourceExpression": {"Kind": "Aggregate","Aggregate": {"Kind": "Builtin","OperatorKind": "Sum"},"SourceExpression": {"Kind": "Input","Name": "root"}}}}}</ClientDistributionPlanJson>
+    </Input>
+    <Output>
+      <SerializedClientPlanJson>{
+  "ClientQL": {
+    "SourceExpression": {
+      "SourceExpression": {
+        "Name": "root",
+        "Kind": 4
+      },
+      "Aggregate": {
+        "OperatorKind": 11,
+        "Kind": 0
+      },
+      "Kind": 0
+    },
+    "DeclaredVariable": {
+      "Name": "v0",
+      "UniqueId": 6
+    },
+    "Expression": {
+      "Properties": [
+        {
+          "Name": "count_a",
+          "Expression": {
+            "Variable": {
+              "Name": "v0",
+              "UniqueId": 6
+            },
+            "Kind": 14
+          }
+        }
+      ],
+      "ObjectKind": 1,
+      "Kind": 7
+    },
+    "Kind": 7
+  }
+}</SerializedClientPlanJson>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Select, Aggregate and BinaryOperator Expressions</Description>
+      <ClientDistributionPlanJson>{"clientDistributionPlan": {"clientQL": { "Kind": "Select", "DeclaredVariable": {"Name": "v0","UniqueId": 10 }, "Expression": {"Kind": "ObjectCreate","ObjectKind": "Object","Properties": [ {"Name": "F1","Expression": { "Kind": "ObjectCreate", "ObjectKind": "Object", "Properties": [{ "Name": "FieldA", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "VariableRef", "Variable": {"Name": "v0","UniqueId": 10 }},"Index": 0 }},{ "Name": "FieldSum", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "VariableRef", "Variable": {"Name": "v0","UniqueId": 10 }},"Index": 1 }},{ "Name": "FieldAvg", "Expression": {"Kind": "Mux","ConditionExpression": { "Kind": "BinaryOperator", "OperatorKind": "Equal", "LeftExpression": {"Kind": "TupleItemRef","Expression": { "Kind": "TupleItemRef", "Expression": {"Kind": "VariableRef","Variable": { "Name": "v0", "UniqueId": 10} }, "Index": 2},"Index": 1 }, "RightExpression": {"Kind": "Literal","Literal": { "Kind": "Number", "Value": 0} }},"LeftExpression": { "Kind": "Literal", "Literal": {"Kind": "Undefined" }},"RightExpression": { "Kind": "BinaryOperator", "OperatorKind": "Divide", "LeftExpression": {"Kind": "TupleItemRef","Expression": { "Kind": "TupleItemRef", "Expression": {"Kind": "VariableRef","Variable": { "Name": "v0", "UniqueId": 10} }, "Index": 2},"Index": 0 }, "RightExpression": {"Kind": "TupleItemRef","Expression": { "Kind": "TupleItemRef", "Expression": {"Kind": "VariableRef","Variable": { "Name": "v0", "UniqueId": 10} }, "Index": 2},"Index": 1 }}}}]}}, {"Name": "F2","Expression": { "Kind": "ObjectCreate", "ObjectKind": "Object", "Properties": [{ "Name": "OtherFieldA", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "VariableRef", "Variable": {"Name": "v0","UniqueId": 10 }},"Index": 0 }},{ "Name": "OtherFieldMax", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "VariableRef", "Variable": {"Name": "v0","UniqueId": 10 }},"Index": 3 }} ]} }] }, "SourceExpression": {"Kind": "GroupBy","KeyCount": 1,"Aggregates": [ {"Kind": "Builtin","OperatorKind": "Sum" }, {"Kind": "Tuple","Items": [ {"Kind": "Builtin","OperatorKind": "Sum" }, {"Kind": "Builtin","OperatorKind": "Sum" }] }, {"Kind": "Builtin","OperatorKind": "Max" }],"SourceExpression": { "Kind": "Select", "DeclaredVariable": {"Name": "v0","UniqueId": 16 }, "Expression": {"Kind": "TupleCreate","Items": [ {"Kind": "TupleItemRef","Expression": { "Kind": "VariableRef", "Variable": {"Name": "v0","UniqueId": 16 }},"Index": 0 }, {"Kind": "Mux","ConditionExpression": { "Kind": "BinaryOperator", "OperatorKind": "And", "LeftExpression": {"Kind": "BinaryOperator","OperatorKind": "NotEqual","LeftExpression": { "Kind": "TupleItemRef", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "VariableRef", "Variable": {"Name": "v0","UniqueId": 16 }},"Index": 1 }, "Index": 1},"RightExpression": { "Kind": "Literal", "Literal": {"Kind": "Number","Value": 0 }} }, "RightExpression": {"Kind": "UnaryOperator","OperatorKind": "Not","Expression": { "Kind": "SystemFunctionCall", "FunctionKind": "Is_Defined", "Arguments": [{ "Kind": "TupleItemRef", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "VariableRef", "Variable": {"Name": "v0","UniqueId": 16 }},"Index": 1 }, "Index": 0} ]} }},"LeftExpression": { "Kind": "Literal", "Literal": {"Kind": "Array","Items": [] }},"RightExpression": { "Kind": "TupleItemRef", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "VariableRef", "Variable": {"Name": "v0","UniqueId": 16 }},"Index": 1 }, "Index": 0} }, {"Kind": "TupleCreate","Items": [ {"Kind": "Mux","ConditionExpression": { "Kind": "BinaryOperator", "OperatorKind": "And", "LeftExpression": {"Kind": "BinaryOperator","OperatorKind": "NotEqual","LeftExpression": { "Kind": "TupleItemRef", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "TupleItemRef", "Expression": {"Kind": "VariableRef","Variable": { "Name": "v0", "UniqueId": 16} }, "Index": 2},"Index": 0 }, "Index": 1},"RightExpression": { "Kind": "Literal", "Literal": {"Kind": "Number","Value": 0 }} }, "RightExpression": {"Kind": "UnaryOperator","OperatorKind": "Not","Expression": { "Kind": "SystemFunctionCall", "FunctionKind": "Is_Defined", "Arguments": [{ "Kind": "TupleItemRef", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "TupleItemRef", "Expression": {"Kind": "VariableRef","Variable": { "Name": "v0", "UniqueId": 16} }, "Index": 2},"Index": 0 }, "Index": 0} ]} }},"LeftExpression": { "Kind": "Literal", "Literal": {"Kind": "Array","Items": [] }},"RightExpression": { "Kind": "TupleItemRef", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "VariableRef", "Variable": {"Name": "v0","UniqueId": 16 }},"Index": 2 }, "Index": 0} }, {"Kind": "TupleItemRef","Expression": { "Kind": "TupleItemRef", "Expression": {"Kind": "VariableRef","Variable": { "Name": "v0", "UniqueId": 16} }, "Index": 2},"Index": 1 }] }, {"Kind": "Mux","ConditionExpression": { "Kind": "BinaryOperator", "OperatorKind": "And", "LeftExpression": {"Kind": "BinaryOperator","OperatorKind": "NotEqual","LeftExpression": { "Kind": "TupleItemRef", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "VariableRef", "Variable": {"Name": "v0","UniqueId": 16 }},"Index": 3 }, "Index": 1},"RightExpression": { "Kind": "Literal", "Literal": {"Kind": "Number","Value": 0 }} }, "RightExpression": {"Kind": "UnaryOperator","OperatorKind": "Not","Expression": { "Kind": "SystemFunctionCall", "FunctionKind": "Is_Defined", "Arguments": [{ "Kind": "TupleItemRef", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "VariableRef", "Variable": {"Name": "v0","UniqueId": 16 }},"Index": 3 }, "Index": 0} ]} }},"LeftExpression": { "Kind": "Literal", "Literal": {"Kind": "Array","Items": [] }},"RightExpression": { "Kind": "TupleItemRef", "Expression": {"Kind": "TupleItemRef","Expression": { "Kind": "VariableRef", "Variable": {"Name": "v0","UniqueId": 16}},"Index": 3}, "Index": 0}}]}, "SourceExpression": {"Kind": "Input","Name": "root"}}}}}}</ClientDistributionPlanJson>
+    </Input>
+    <Output>
+      <SerializedClientPlanJson>{
+  "ClientQL": {
+    "SourceExpression": {
+      "SourceExpression": {
+        "SourceExpression": {
+          "Name": "root",
+          "Kind": 4
+        },
+        "DeclaredVariable": {
+          "Name": "v0",
+          "UniqueId": 16
+        },
+        "Expression": {
+          "Items": [
+            {
+              "Expression": {
+                "Variable": {
+                  "Name": "v0",
+                  "UniqueId": 16
+                },
+                "Kind": 14
+              },
+              "Index": 0,
+              "Kind": 11
+            },
+            {
+              "ConditionExpression": {
+                "OperatorKind": 1,
+                "LeftExpression": {
+                  "OperatorKind": 14,
+                  "LeftExpression": {
+                    "Expression": {
+                      "Expression": {
+                        "Variable": {
+                          "Name": "v0",
+                          "UniqueId": 16
+                        },
+                        "Kind": 14
+                      },
+                      "Index": 1,
+                      "Kind": 11
+                    },
+                    "Index": 1,
+                    "Kind": 11
+                  },
+                  "RightExpression": {
+                    "Literal": {
+                      "Value": 0,
+                      "Kind": 15
+                    },
+                    "Kind": 5
+                  },
+                  "Kind": 2
+                },
+                "RightExpression": {
+                  "OperatorKind": 2,
+                  "Expression": {
+                    "FunctionKind": 74,
+                    "Arguments": [
+                      {
+                        "Expression": {
+                          "Expression": {
+                            "Variable": {
+                              "Name": "v0",
+                              "UniqueId": 16
+                            },
+                            "Kind": 14
+                          },
+                          "Index": 1,
+                          "Kind": 11
+                        },
+                        "Index": 0,
+                        "Kind": 11
+                      }
+                    ],
+                    "Kind": 9
+                  },
+                  "Kind": 12
+                },
+                "Kind": 2
+              },
+              "LeftExpression": {
+                "Literal": {
+                  "Items": [],
+                  "Kind": 1
+                },
+                "Kind": 5
+              },
+              "RightExpression": {
+                "Expression": {
+                  "Expression": {
+                    "Variable": {
+                      "Name": "v0",
+                      "UniqueId": 16
+                    },
+                    "Kind": 14
+                  },
+                  "Index": 1,
+                  "Kind": 11
+                },
+                "Index": 0,
+                "Kind": 11
+              },
+              "Kind": 6
+            },
+            {
+              "Items": [
+                {
+                  "ConditionExpression": {
+                    "OperatorKind": 1,
+                    "LeftExpression": {
+                      "OperatorKind": 14,
+                      "LeftExpression": {
+                        "Expression": {
+                          "Expression": {
+                            "Expression": {
+                              "Variable": {
+                                "Name": "v0",
+                                "UniqueId": 16
+                              },
+                              "Kind": 14
+                            },
+                            "Index": 2,
+                            "Kind": 11
+                          },
+                          "Index": 0,
+                          "Kind": 11
+                        },
+                        "Index": 1,
+                        "Kind": 11
+                      },
+                      "RightExpression": {
+                        "Literal": {
+                          "Value": 0,
+                          "Kind": 15
+                        },
+                        "Kind": 5
+                      },
+                      "Kind": 2
+                    },
+                    "RightExpression": {
+                      "OperatorKind": 2,
+                      "Expression": {
+                        "FunctionKind": 74,
+                        "Arguments": [
+                          {
+                            "Expression": {
+                              "Expression": {
+                                "Expression": {
+                                  "Variable": {
+                                    "Name": "v0",
+                                    "UniqueId": 16
+                                  },
+                                  "Kind": 14
+                                },
+                                "Index": 2,
+                                "Kind": 11
+                              },
+                              "Index": 0,
+                              "Kind": 11
+                            },
+                            "Index": 0,
+                            "Kind": 11
+                          }
+                        ],
+                        "Kind": 9
+                      },
+                      "Kind": 12
+                    },
+                    "Kind": 2
+                  },
+                  "LeftExpression": {
+                    "Literal": {
+                      "Items": [],
+                      "Kind": 1
+                    },
+                    "Kind": 5
+                  },
+                  "RightExpression": {
+                    "Expression": {
+                      "Expression": {
+                        "Variable": {
+                          "Name": "v0",
+                          "UniqueId": 16
+                        },
+                        "Kind": 14
+                      },
+                      "Index": 2,
+                      "Kind": 11
+                    },
+                    "Index": 0,
+                    "Kind": 11
+                  },
+                  "Kind": 6
+                },
+                {
+                  "Expression": {
+                    "Expression": {
+                      "Variable": {
+                        "Name": "v0",
+                        "UniqueId": 16
+                      },
+                      "Kind": 14
+                    },
+                    "Index": 2,
+                    "Kind": 11
+                  },
+                  "Index": 1,
+                  "Kind": 11
+                }
+              ],
+              "Kind": 10
+            },
+            {
+              "ConditionExpression": {
+                "OperatorKind": 1,
+                "LeftExpression": {
+                  "OperatorKind": 14,
+                  "LeftExpression": {
+                    "Expression": {
+                      "Expression": {
+                        "Variable": {
+                          "Name": "v0",
+                          "UniqueId": 16
+                        },
+                        "Kind": 14
+                      },
+                      "Index": 3,
+                      "Kind": 11
+                    },
+                    "Index": 1,
+                    "Kind": 11
+                  },
+                  "RightExpression": {
+                    "Literal": {
+                      "Value": 0,
+                      "Kind": 15
+                    },
+                    "Kind": 5
+                  },
+                  "Kind": 2
+                },
+                "RightExpression": {
+                  "OperatorKind": 2,
+                  "Expression": {
+                    "FunctionKind": 74,
+                    "Arguments": [
+                      {
+                        "Expression": {
+                          "Expression": {
+                            "Variable": {
+                              "Name": "v0",
+                              "UniqueId": 16
+                            },
+                            "Kind": 14
+                          },
+                          "Index": 3,
+                          "Kind": 11
+                        },
+                        "Index": 0,
+                        "Kind": 11
+                      }
+                    ],
+                    "Kind": 9
+                  },
+                  "Kind": 12
+                },
+                "Kind": 2
+              },
+              "LeftExpression": {
+                "Literal": {
+                  "Items": [],
+                  "Kind": 1
+                },
+                "Kind": 5
+              },
+              "RightExpression": {
+                "Expression": {
+                  "Expression": {
+                    "Variable": {
+                      "Name": "v0",
+                      "UniqueId": 16
+                    },
+                    "Kind": 14
+                  },
+                  "Index": 3,
+                  "Kind": 11
+                },
+                "Index": 0,
+                "Kind": 11
+              },
+              "Kind": 6
+            }
+          ],
+          "Kind": 10
+        },
+        "Kind": 7
+      },
+      "KeyCount": 1,
+      "Aggregates": [
+        {
+          "OperatorKind": 11,
+          "Kind": 0
+        },
+        {
+          "Items": [
+            {
+              "OperatorKind": 11,
+              "Kind": 0
+            },
+            {
+              "OperatorKind": 11,
+              "Kind": 0
+            }
+          ],
+          "Kind": 1
+        },
+        {
+          "OperatorKind": 9,
+          "Kind": 0
+        }
+      ],
+      "Kind": 2
+    },
+    "DeclaredVariable": {
+      "Name": "v0",
+      "UniqueId": 10
+    },
+    "Expression": {
+      "Properties": [
+        {
+          "Name": "F1",
+          "Expression": {
+            "Properties": [
+              {
+                "Name": "FieldA",
+                "Expression": {
+                  "Expression": {
+                    "Variable": {
+                      "Name": "v0",
+                      "UniqueId": 10
+                    },
+                    "Kind": 14
+                  },
+                  "Index": 0,
+                  "Kind": 11
+                }
+              },
+              {
+                "Name": "FieldSum",
+                "Expression": {
+                  "Expression": {
+                    "Variable": {
+                      "Name": "v0",
+                      "UniqueId": 10
+                    },
+                    "Kind": 14
+                  },
+                  "Index": 1,
+                  "Kind": 11
+                }
+              },
+              {
+                "Name": "FieldAvg",
+                "Expression": {
+                  "ConditionExpression": {
+                    "OperatorKind": 6,
+                    "LeftExpression": {
+                      "Expression": {
+                        "Expression": {
+                          "Variable": {
+                            "Name": "v0",
+                            "UniqueId": 10
+                          },
+                          "Kind": 14
+                        },
+                        "Index": 2,
+                        "Kind": 11
+                      },
+                      "Index": 1,
+                      "Kind": 11
+                    },
+                    "RightExpression": {
+                      "Literal": {
+                        "Value": 0,
+                        "Kind": 15
+                      },
+                      "Kind": 5
+                    },
+                    "Kind": 2
+                  },
+                  "LeftExpression": {
+                    "Literal": {
+                      "Kind": 0
+                    },
+                    "Kind": 5
+                  },
+                  "RightExpression": {
+                    "OperatorKind": 5,
+                    "LeftExpression": {
+                      "Expression": {
+                        "Expression": {
+                          "Variable": {
+                            "Name": "v0",
+                            "UniqueId": 10
+                          },
+                          "Kind": 14
+                        },
+                        "Index": 2,
+                        "Kind": 11
+                      },
+                      "Index": 0,
+                      "Kind": 11
+                    },
+                    "RightExpression": {
+                      "Expression": {
+                        "Expression": {
+                          "Variable": {
+                            "Name": "v0",
+                            "UniqueId": 10
+                          },
+                          "Kind": 14
+                        },
+                        "Index": 2,
+                        "Kind": 11
+                      },
+                      "Index": 1,
+                      "Kind": 11
+                    },
+                    "Kind": 2
+                  },
+                  "Kind": 6
+                }
+              }
+            ],
+            "ObjectKind": 1,
+            "Kind": 7
+          }
+        },
+        {
+          "Name": "F2",
+          "Expression": {
+            "Properties": [
+              {
+                "Name": "OtherFieldA",
+                "Expression": {
+                  "Expression": {
+                    "Variable": {
+                      "Name": "v0",
+                      "UniqueId": 10
+                    },
+                    "Kind": 14
+                  },
+                  "Index": 0,
+                  "Kind": 11
+                }
+              },
+              {
+                "Name": "OtherFieldMax",
+                "Expression": {
+                  "Expression": {
+                    "Variable": {
+                      "Name": "v0",
+                      "UniqueId": 10
+                    },
+                    "Kind": 14
+                  },
+                  "Index": 3,
+                  "Kind": 11
+                }
+              }
+            ],
+            "ObjectKind": 1,
+            "Kind": 7
+          }
+        }
+      ],
+      "ObjectKind": 1,
+      "Kind": 7
+    },
+    "Kind": 7
+  }
+}</SerializedClientPlanJson>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Select, Sum and VariableRef Expressions</Description>
+      <ClientDistributionPlanJson>{"clientDistributionPlan": {"clientQL": {"Kind": "Select","DeclaredVariable": {"Name": "v0","UniqueId": 6},"Expression": {"Kind": "ObjectCreate","ObjectKind": "Object","Properties": [{"Name": "count_a_plus_five","Expression": {"Kind": "BinaryOperator","OperatorKind": "Add","LeftExpression": {"Kind": "VariableRef","Variable": {"Name": "v0","UniqueId": 6 }}, "RightExpression": { "Kind": "Literal", "Literal": { "Kind": "Number", "Value": 5 }}}}]}, "SourceExpression": { "Kind": "Aggregate", "Aggregate": { "Kind": "Builtin", "OperatorKind": "Sum" }, "SourceExpression": { "Kind": "Input", "Name": "root" }}}}}</ClientDistributionPlanJson>
+    </Input>
+    <Output>
+      <SerializedClientPlanJson>{
+  "ClientQL": {
+    "SourceExpression": {
+      "SourceExpression": {
+        "Name": "root",
+        "Kind": 4
+      },
+      "Aggregate": {
+        "OperatorKind": 11,
+        "Kind": 0
+      },
+      "Kind": 0
+    },
+    "DeclaredVariable": {
+      "Name": "v0",
+      "UniqueId": 6
+    },
+    "Expression": {
+      "Properties": [
+        {
+          "Name": "count_a_plus_five",
+          "Expression": {
+            "OperatorKind": 0,
+            "LeftExpression": {
+              "Variable": {
+                "Name": "v0",
+                "UniqueId": 6
+              },
+              "Kind": 14
+            },
+            "RightExpression": {
+              "Literal": {
+                "Value": 5,
+                "Kind": 15
+              },
+              "Kind": 5
+            },
+            "Kind": 2
+          }
+        }
+      ],
+      "ObjectKind": 1,
+      "Kind": 7
+    },
+    "Kind": 7
+  }
+}</SerializedClientPlanJson>
+    </Output>
+  </Result>
+</Results>
