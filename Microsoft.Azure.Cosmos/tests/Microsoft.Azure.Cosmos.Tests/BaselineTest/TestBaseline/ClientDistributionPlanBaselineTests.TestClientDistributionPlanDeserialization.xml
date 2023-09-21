@@ -8,7 +8,7 @@
       <SerializedClientPlanJson>{
   "ClientQL": {
     "Name": "root",
-    "Kind": 4
+    "Kind": 3
   }
 }</SerializedClientPlanJson>
     </Output>
@@ -24,10 +24,10 @@
     "SourceExpression": {
       "SourceExpression": {
         "Name": "root",
-        "Kind": 4
+        "Kind": 3
       },
       "Aggregate": {
-        "OperatorKind": 11,
+        "OperatorKind": 8,
         "Kind": 0
       },
       "Kind": 0
@@ -49,10 +49,10 @@
           }
         }
       ],
-      "ObjectKind": 1,
+      "ObjectKind": "Object",
       "Kind": 7
     },
-    "Kind": 7
+    "Kind": 6
   }
 }</SerializedClientPlanJson>
     </Output>
@@ -69,7 +69,7 @@
       "SourceExpression": {
         "SourceExpression": {
           "Name": "root",
-          "Kind": 4
+          "Kind": 3
         },
         "DeclaredVariable": {
           "Name": "v0",
@@ -111,7 +111,7 @@
                   "RightExpression": {
                     "Literal": {
                       "Value": 0,
-                      "Kind": 15
+                      "Kind": 4
                     },
                     "Kind": 5
                   },
@@ -120,7 +120,7 @@
                 "RightExpression": {
                   "OperatorKind": 2,
                   "Expression": {
-                    "FunctionKind": 74,
+                    "FunctionKind": 55,
                     "Arguments": [
                       {
                         "Expression": {
@@ -197,7 +197,7 @@
                       "RightExpression": {
                         "Literal": {
                           "Value": 0,
-                          "Kind": 15
+                          "Kind": 4
                         },
                         "Kind": 5
                       },
@@ -206,7 +206,7 @@
                     "RightExpression": {
                       "OperatorKind": 2,
                       "Expression": {
-                        "FunctionKind": 74,
+                        "FunctionKind": 55,
                         "Arguments": [
                           {
                             "Expression": {
@@ -299,7 +299,7 @@
                   "RightExpression": {
                     "Literal": {
                       "Value": 0,
-                      "Kind": 15
+                      "Kind": 4
                     },
                     "Kind": 5
                   },
@@ -308,7 +308,7 @@
                 "RightExpression": {
                   "OperatorKind": 2,
                   "Expression": {
-                    "FunctionKind": 74,
+                    "FunctionKind": 55,
                     "Arguments": [
                       {
                         "Expression": {
@@ -359,29 +359,29 @@
           ],
           "Kind": 10
         },
-        "Kind": 7
+        "Kind": 6
       },
       "KeyCount": 1,
       "Aggregates": [
         {
-          "OperatorKind": 11,
+          "OperatorKind": 8,
           "Kind": 0
         },
         {
           "Items": [
             {
-              "OperatorKind": 11,
+              "OperatorKind": 8,
               "Kind": 0
             },
             {
-              "OperatorKind": 11,
+              "OperatorKind": 8,
               "Kind": 0
             }
           ],
           "Kind": 1
         },
         {
-          "OperatorKind": 9,
+          "OperatorKind": 6,
           "Kind": 0
         }
       ],
@@ -448,7 +448,7 @@
                     "RightExpression": {
                       "Literal": {
                         "Value": 0,
-                        "Kind": 15
+                        "Kind": 4
                       },
                       "Kind": 5
                     },
@@ -498,7 +498,7 @@
                 }
               }
             ],
-            "ObjectKind": 1,
+            "ObjectKind": "Object",
             "Kind": 7
           }
         },
@@ -535,15 +535,15 @@
                 }
               }
             ],
-            "ObjectKind": 1,
+            "ObjectKind": "Object",
             "Kind": 7
           }
         }
       ],
-      "ObjectKind": 1,
+      "ObjectKind": "Object",
       "Kind": 7
     },
-    "Kind": 7
+    "Kind": 6
   }
 }</SerializedClientPlanJson>
     </Output>
@@ -559,10 +559,10 @@
     "SourceExpression": {
       "SourceExpression": {
         "Name": "root",
-        "Kind": 4
+        "Kind": 3
       },
       "Aggregate": {
-        "OperatorKind": 11,
+        "OperatorKind": 8,
         "Kind": 0
       },
       "Kind": 0
@@ -587,7 +587,7 @@
             "RightExpression": {
               "Literal": {
                 "Value": 5,
-                "Kind": 15
+                "Kind": 4
               },
               "Kind": 5
             },
@@ -595,10 +595,10 @@
           }
         }
       ],
-      "ObjectKind": 1,
+      "ObjectKind": "Object",
       "Kind": 7
     },
-    "Kind": 7
+    "Kind": 6
   }
 }</SerializedClientPlanJson>
     </Output>

@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.QL
 {
     using System;
-    using System.Collections.Generic;
 
     internal class QLLetScalarExpression : QLScalarExpression
     {

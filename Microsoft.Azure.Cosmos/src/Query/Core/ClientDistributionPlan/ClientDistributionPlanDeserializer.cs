@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
             public const string ClientDistributionPlan = "clientDistributionPlan";
             public const string DeclaredVariable = "DeclaredVariable";
             public const string DeclaredVariableExpression = "DeclaredVariableExpression";
-            public const string Delegate = "Delegate";
             public const string Distinct = "Distinct";
             public const string EnumerationKind = "EnumerationKind";
             public const string Expression = "Expression";
@@ -230,9 +229,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         private static QLArrayCreateScalarExpression DeserializeArrayCreateScalarExpression(CosmosObject cosmosObject)
         {
-            QLArrayKind arrayKind = GetEnumValue<QLArrayKind>(GetValue<CosmosString>(cosmosObject, Constants.ArrayKind).Value);
             IReadOnlyList<QLScalarExpression> items = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Items));
-            return new QLArrayCreateScalarExpression(arrayKind, items);
+            return new QLArrayCreateScalarExpression(items);
         }
 
         private static QLArrayIndexerScalarExpression DeserializeArrayIndexerScalarExpression(CosmosObject cosmosObject)
@@ -281,9 +279,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         private static QLObjectCreateScalarExpression DeserializeObjectCreateScalarExpression(CosmosObject cosmosObject)
         {
-            QLObjectKind objectKind = GetEnumValue<QLObjectKind>(GetValue<CosmosString>(cosmosObject, Constants.ObjectKind).Value);
             IReadOnlyList<QLObjectProperty> properties = DeserializeObjectProperties(GetValue<CosmosArray>(cosmosObject, Constants.Properties));
-            return new QLObjectCreateScalarExpression(properties, objectKind);
+            return new QLObjectCreateScalarExpression(properties);
         }
 
         private static QLPropertyRefScalarExpression DeserializePropertyRefScalarExpression(CosmosObject cosmosObject)
@@ -397,28 +394,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
             {
                 case QLLiteralKind.Array:
                     return new QLArrayLiteral(DeserializeLiteralArray(GetValue<CosmosArray>(cosmosObject, Constants.Items)));
-                case QLLiteralKind.Binary:
-                    return new QLBinaryLiteral(DeserializeBinaryLiteral(GetValue<CosmosObject>(cosmosObject, Constants.Value)));
                 case QLLiteralKind.Boolean:
                     return new QLBooleanLiteral(GetValue<CosmosBoolean>(cosmosObject, Constants.Value).Value);
-                case QLLiteralKind.CGuid:
-                    return new QLCGuidLiteral(GetValue<CosmosGuid>(cosmosObject, Constants.Value).Value);
-                case QLLiteralKind.CNumber:
-                    return new QLCNumberLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
-                case QLLiteralKind.MDateTime:
-                    return new QLMDateTimeLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
-                case QLLiteralKind.MJavaScript:
-                    return new QLMJavaScriptLiteral(GetValue<CosmosString>(cosmosObject, Constants.Name).Value);
-                case QLLiteralKind.MNumber:
-                    return new QLMNumberLiteral(Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value));
-                case QLLiteralKind.MRegex:
-                    string pattern = GetValue<CosmosString>(cosmosObject, Constants.Pattern).Value;
-                    string options = GetValue<CosmosString>(cosmosObject, Constants.Options).Value;
-                    return new QLMRegexLiteral(pattern, options);
-                case QLLiteralKind.MSingleton:
-                    return new QLMSingletonLiteral(GetEnumValue<QLMSingletonLiteral.Kind>(GetValue<CosmosString>(cosmosObject, Constants.SingletonKind).Value));
-                case QLLiteralKind.MSymbol:
-                    return new QLMSymbolLiteral(GetValue<CosmosString>(cosmosObject, Constants.Value).Value);
                 case QLLiteralKind.Null:
                     return QLNullLiteral.Singleton;
                 case QLLiteralKind.Number:
@@ -444,15 +421,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
             }
         
             return literals;
-        }
-
-        private static byte[] DeserializeBinaryLiteral(CosmosObject cosmosObject)
-        {
-            ReadOnlyMemory<byte> bytes = GetValue<CosmosBinary>(cosmosObject, Constants.Kind).Value;
-            byte[] byteCollection = new byte[bytes.Length];
-            bytes.CopyTo(byteCollection.AsMemory(0));
-
-            return byteCollection;
         }
 
         private static IReadOnlyList<QLObjectLiteralProperty> DeserializeObjectLiteralArray(CosmosArray cosmosArray)

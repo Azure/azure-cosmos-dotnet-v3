@@ -9,15 +9,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.QL
 
     internal class QLObjectCreateScalarExpression : QLScalarExpression
     {
-        public QLObjectCreateScalarExpression(IReadOnlyList<QLObjectProperty> properties, QLObjectKind objectKind) 
+        private const string Object = "Object";
+
+        public QLObjectCreateScalarExpression(IReadOnlyList<QLObjectProperty> properties) 
             : base(QLScalarExpressionKind.ObjectCreate)
         {
             this.Properties = properties ?? throw new ArgumentNullException(nameof(properties));
-            this.ObjectKind = objectKind;
+            this.ObjectKind = Object;
         }
 
         public IReadOnlyList<QLObjectProperty> Properties { get; }
         
-        public QLObjectKind ObjectKind { get; }
+        public string ObjectKind { get; }
     }
 }

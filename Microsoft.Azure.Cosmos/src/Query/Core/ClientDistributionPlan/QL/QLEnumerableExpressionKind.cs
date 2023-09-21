@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.QL
         Aggregate,
         Distinct,
         GroupBy,
-        Flatten,
         Input,
         OrderBy,
         ScalarAsEnumerable,

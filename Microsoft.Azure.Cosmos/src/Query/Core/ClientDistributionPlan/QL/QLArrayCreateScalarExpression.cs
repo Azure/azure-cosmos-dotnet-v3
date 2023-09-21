@@ -9,14 +9,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.QL
 
     internal class QLArrayCreateScalarExpression : QLScalarExpression
     {
-        public QLArrayCreateScalarExpression(QLArrayKind arrayKind, IReadOnlyList<QLScalarExpression> items) 
+        private const string Array = "Array";
+
+        public QLArrayCreateScalarExpression(IReadOnlyList<QLScalarExpression> items) 
             : base(QLScalarExpressionKind.ArrayCreate)
         {
-            this.ArrayKind = arrayKind;
+            this.ArrayKind = Array;
             this.Items = items ?? throw new ArgumentNullException(nameof(items));
         }
 
-        public QLArrayKind ArrayKind { get; }
+        public string ArrayKind { get; }
         
         public IReadOnlyList<QLScalarExpression> Items { get; }
     }
