@@ -179,20 +179,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
 
                 if (exception is CosmosException cosmosException
-                            && DiagnosticsFilterHelper
+                            && !DiagnosticsFilterHelper
                                     .IsSuccessfulResponse(cosmosException.StatusCode, cosmosException.SubStatusCode))
                 {
-                    this.scope.Dispose();
-                }
-                else
-                {
-                    Console.WriteLine(exception);
                     this.scope.Failed(exception);
                 }
-            }
-            else
-            {
-                this.activity?.Stop();
             }
         }
 
@@ -242,6 +233,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     {
                         this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(this.response.Diagnostics.GetContactedRegions()));
                         CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, operationType, this.response);
+                    }
+
+                    if (!DiagnosticsFilterHelper.IsSuccessfulResponse(this.response.StatusCode, this.response.SubStatusCode))
+                    {
+                        this.scope.Failed();
                     }
                 }
 

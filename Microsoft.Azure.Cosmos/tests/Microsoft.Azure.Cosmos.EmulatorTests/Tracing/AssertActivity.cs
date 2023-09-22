@@ -74,7 +74,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 int subStatusCode = Convert.ToInt32(activity.GetTagItem("db.cosmosdb.sub_status_code"));
                 if (!DiagnosticsFilterHelper.IsSuccessfulResponse(statusCode, subStatusCode))
                 {
-                    Console.WriteLine(statusCode + " " + subStatusCode);
                     Assert.AreEqual(ActivityStatusCode.Error, activity.Status);
                 }
             }
