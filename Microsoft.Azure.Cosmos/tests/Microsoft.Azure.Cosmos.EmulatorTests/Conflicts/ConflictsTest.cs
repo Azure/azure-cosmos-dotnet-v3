@@ -50,7 +50,7 @@
                     foreach (dynamic item in page)
                     {
                         conflictCount++;
-                        Console.WriteLine($"Conflict - {item.ToString()}");
+                        Console.WriteLine($"{{{item.ToString()}}},");
                     }
                 }
             }
@@ -60,25 +60,37 @@
 
         private async Task GenerateConflict(IReadOnlyList<(CosmosClient Client, Container Container)> cosmosContainers)
         {
-            int i = 0;
-            string payloadFormat = @"{{""id"" : ""adf"", ""index"":{0}}}";
+            string payloadFormat = @"{{""id"" : ""adf{0}"", ""pk"":""1"", ""index"":{1}}}";
             PartitionKey partitionKey = new PartitionKey("1");
-            foreach (Container container in cosmosContainers.Select(pair => pair.Container))
+            //List<Task> inserts = new();
+            for (int i = 0; i < 1; i++)
             {
-                ResponseMessage response = await container.CreateItemStreamAsync(
-                    string.Format(payloadFormat, i).ToStream(),
-                    partitionKey);
-                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-                i++;
+                //IEnumerable<Task> tasks = cosmosContainers.Select(
+                //    (pair, index) => Task.Factory.StartNew(
+                //async () =>
+                        int index = 0;
+                        foreach ((CosmosClient Client, Container Container) pair in cosmosContainers)
+                        {
+                            ResponseMessage response = await this.ExecuteOperationWithRetry<ResponseMessage>(
+                                MaxRetries,
+                                () => pair.Container.CreateItemStreamAsync(
+                                    string.Format(payloadFormat, i, index).ToStream(),
+                                    partitionKey),
+                                responseMessage => responseMessage.StatusCode == HttpStatusCode.NotFound);
+                            //Assert.AreEqual(HttpStatusCode.Created, response.StatusCode, $"Error while creating document i={i}; index={index}");
+                            index++;
+                        }
+                        //));
+                // inserts.AddRange(tasks);
             }
+
+            // Task.WaitAll(inserts.ToArray());
         }
 
         private async Task<IReadOnlyList<(CosmosClient Client, Container Container)>> CreateCosmosClients()
         {
             string content = File.ReadAllText(@"Conflicts\ConflictsTestSettings.json");
             CosmosObject root = CosmosObject.Parse(content);
-            // string database = this.GetStringValue(root, "DatabaseName");
-            // string collection = this.GetStringValue(root, "CollectionName");
             string database = "Microsoft.Azure.Cosmos.EmulatorTests.Conflicts";
             string collection = "ConflictsTest";
             string key = this.GetStringValue(root, "Key");
@@ -112,16 +124,13 @@
 
                 ContainerResponse containerResponse = await this.ExecuteOperationWithRetry<ContainerResponse>(
                     MaxRetries,
-                    () => databaseResponse.Database.CreateContainerIfNotExistsAsync(collection, "/pk"));
-                Assert.AreEqual(expectedStatus, containerResponse.StatusCode);
+                    () => databaseResponse.Database.CreateContainerIfNotExistsAsync(
+                            new ContainerProperties(collection, "/pk")
+                            { 
+                                ConflictResolutionPolicy = new ConflictResolutionPolicy() { Mode = ConflictResolutionMode.Custom }
+                            }));
                 Assert.AreEqual(expectedStatus, databaseResponse.StatusCode,
                     $"Endpoint#: {endpointIndex}, Endpoint : {endpointUrl}. CreateContainerIfNotExistsAsync received unexpected response.");
-
-                //if (containerResponse.StatusCode == System.Net.HttpStatusCode.OK)
-                //{
-                //    await containerResponse.Container.DeleteContainerAsync();
-                //    containerResponse = await databaseResponse.Database.CreateContainerIfNotExistsAsync(collection, "/pk");
-                //}
 
                 clients.Add((client, containerResponse.Container));
                 endpointIndex++;
@@ -130,13 +139,25 @@
             return clients;
         }
 
-        private async Task<T> ExecuteOperationWithRetry<T>(int maxRetryCount, Func<Task<T>> operation)
+        private async Task<T> ExecuteOperationWithRetry<T>(int maxRetryCount, Func<Task<T>> operation, Func<T, bool> shouldRetry = null)
         {
             for (int i = 0; i < maxRetryCount; i++)
             {
                 try
                 {
-                    return await operation();
+                    T result = await operation();
+                    if (shouldRetry != null && shouldRetry(result))
+                    {
+                        if (i + 1 < maxRetryCount)
+                        {
+                            Thread.Sleep(i * 1000);
+                            continue;
+                        }
+
+                        break;
+                    }
+
+                    return result;
                 }
                 catch (Exception ex)
                 {
@@ -152,7 +173,7 @@
                 }
             }
 
-            throw new InvalidOperationException($"Operation failed!");
+            throw new InvalidOperationException($"Operation failed after retries!");
         }
 
         private ConnectionMode ParseConnectionMode(string stringValue) => stringValue.ToLowerInvariant() switch
