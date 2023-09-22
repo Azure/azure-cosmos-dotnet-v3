@@ -178,14 +178,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
                 }
 
-                if (DiagnosticsFilterHelper.IsSuccessfulResponse(this.response))
+                if (exception is CosmosException cosmosException
+                            && DiagnosticsFilterHelper
+                                    .IsSuccessfulResponse(cosmosException.StatusCode, cosmosException.SubStatusCode))
                 {
                     this.scope.Dispose();
                 }
                 else
                 {
+                    Console.WriteLine(exception);
                     this.scope.Failed(exception);
                 }
+            }
+            else
+            {
+                this.activity?.Stop();
             }
         }
 
@@ -213,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public void Dispose()
         {
-            if (this.scope.IsEnabled)
+            if (this.IsEnabled)
             {
                 Documents.OperationType operationType 
                     = (this.response == null || this.response?.OperationType == Documents.OperationType.Invalid) ? this.operationType : this.response.OperationType;
