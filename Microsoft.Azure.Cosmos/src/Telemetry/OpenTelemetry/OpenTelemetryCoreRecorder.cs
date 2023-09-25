@@ -178,9 +178,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
                 }
 
-                if (exception is CosmosException cosmosException
+                if (exception is not CosmosException || (exception is CosmosException cosmosException
                             && !DiagnosticsFilterHelper
-                                    .IsSuccessfulResponse(cosmosException.StatusCode, cosmosException.SubStatusCode))
+                                    .IsSuccessfulResponse(cosmosException.StatusCode, cosmosException.SubStatusCode)))
                 {
                     this.scope.Failed(exception);
                 }
