@@ -7,8 +7,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
     using System;
     using System.Collections.Generic;
     using System.Reflection;
+    using Cql;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using QL;
 
     internal static class ClientDistributionPlanDeserializer
     {
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
             public const string Aggregate = "Aggregate";
             public const string Aggregates = "Aggregates";
             public const string Builtin = "Builtin";
-            public const string ClientQL = "clientQL";
+            public const string Cql = "Cql";
             public const string ConditionExpression = "ConditionExpression";
             public const string ClientDistributionPlan = "clientDistributionPlan";
             public const string DeclaredVariable = "DeclaredVariable";
@@ -46,7 +46,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
             public const string Pattern = "Pattern";
             public const string Properties = "Properties";
             public const string PropertyName = "PropertyName";
-            public const string QL = "QL";
             public const string RightExpression = "RightExpression";
             public const string ScalarAsEnumerable = "ScalarAsEnumerable";
             public const string Select = "Select";
@@ -70,15 +69,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
         {
             CosmosObject cosmosObject = CosmosObject.Parse(jsonString);
             CosmosObject clientDistributionPlanElement = GetValue<CosmosObject>(cosmosObject, Constants.ClientDistributionPlan);
-            CosmosObject clientQLElement = GetValue<CosmosObject>(clientDistributionPlanElement, Constants.ClientQL);
-            QLEnumerableExpression expression = DeserializeQLEnumerableExpression(clientQLElement);
+            CosmosObject cqlElement = GetValue<CosmosObject>(clientDistributionPlanElement, Constants.Cql);
+            CqlEnumerableExpression expression = DeserializeCqlEnumerableExpression(cqlElement);
 
             return new ClientDistributionPlan(expression);
         }
 
         #region Enumerable Expressions
 
-        private static QLEnumerableExpression DeserializeQLEnumerableExpression(CosmosObject cosmosObject)
+        private static CqlEnumerableExpression DeserializeCqlEnumerableExpression(CosmosObject cosmosObject)
         {
             CosmosString kindProperty = GetValue<CosmosString>(cosmosObject, Constants.Kind);
             switch (kindProperty.Value)
@@ -104,241 +103,241 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
                 case Constants.Where:
                     return DeserializeWhereEnumerableExpression(cosmosObject);
                 default:
-                    throw new NotSupportedException($"Invalid QLExpression kind: {kindProperty.Value}");
+                    throw new NotSupportedException($"Invalid CqlExpression kind: {kindProperty.Value}");
             }
         }
         
-        private static QLAggregateEnumerableExpression DeserializeAggregateEnumerableExpression(CosmosObject cosmosObject)
+        private static CqlAggregateEnumerableExpression DeserializeAggregateEnumerableExpression(CosmosObject cosmosObject)
         {
-            QLEnumerableExpression sourceExpression = DeserializeQLEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
-            QLAggregate aggregate = DeserializeAggregate(GetValue<CosmosObject>(cosmosObject, Constants.Aggregate));
-            return new QLAggregateEnumerableExpression(sourceExpression, aggregate);
+            CqlEnumerableExpression sourceExpression = DeserializeCqlEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            CqlAggregate aggregate = DeserializeAggregate(GetValue<CosmosObject>(cosmosObject, Constants.Aggregate));
+            return new CqlAggregateEnumerableExpression(sourceExpression, aggregate);
         }
 
-        private static QLDistinctEnumerableExpression DeserializeDistinctEnumerableExpression(CosmosObject cosmosObject)
+        private static CqlDistinctEnumerableExpression DeserializeDistinctEnumerableExpression(CosmosObject cosmosObject)
         {
-            QLEnumerableExpression sourceExpression = DeserializeQLEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
-            QLVariable declaredVariable = DeserializeQLVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
-            IReadOnlyList<QLScalarExpression> expressions = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Expression));
-            return new QLDistinctEnumerableExpression(sourceExpression, declaredVariable, expressions);
+            CqlEnumerableExpression sourceExpression = DeserializeCqlEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            CqlVariable declaredVariable = DeserializeCqlVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
+            IReadOnlyList<CqlScalarExpression> expressions = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Expression));
+            return new CqlDistinctEnumerableExpression(sourceExpression, declaredVariable, expressions);
         }
 
-        private static QLGroupByEnumerableExpression DeserializeGroupByEnumerableExpression(CosmosObject cosmosObject)
+        private static CqlGroupByEnumerableExpression DeserializeGroupByEnumerableExpression(CosmosObject cosmosObject)
         {
-            QLEnumerableExpression sourceExpression = DeserializeQLEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            CqlEnumerableExpression sourceExpression = DeserializeCqlEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
             long keyCount = Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.KeyCount).Value);
-            IReadOnlyList<QLAggregate> aggregates = DeserializeAggregateArray(GetValue<CosmosArray>(cosmosObject, Constants.Aggregates));
-            return new QLGroupByEnumerableExpression(sourceExpression, Convert.ToUInt64(keyCount), aggregates);
+            IReadOnlyList<CqlAggregate> aggregates = DeserializeAggregateArray(GetValue<CosmosArray>(cosmosObject, Constants.Aggregates));
+            return new CqlGroupByEnumerableExpression(sourceExpression, Convert.ToUInt64(keyCount), aggregates);
         }
 
-        private static QLInputEnumerableExpression DeserializeInputEnumerableExpression(CosmosObject cosmosObject)
+        private static CqlInputEnumerableExpression DeserializeInputEnumerableExpression(CosmosObject cosmosObject)
         {
-            return new QLInputEnumerableExpression(GetValue<CosmosString>(cosmosObject, Constants.Name).Value);
+            return new CqlInputEnumerableExpression(GetValue<CosmosString>(cosmosObject, Constants.Name).Value);
         }
 
-        private static QLOrderByEnumerableExpression DeserializeOrderByEnumerableExpression(CosmosObject cosmosObject)
+        private static CqlOrderByEnumerableExpression DeserializeOrderByEnumerableExpression(CosmosObject cosmosObject)
         {
-            QLEnumerableExpression sourceExpression = DeserializeQLEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
-            QLVariable declaredVariable = DeserializeQLVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
-            IReadOnlyList<QLOrderByItem> orderByItems = DeserializeOrderByItemArray(GetValue<CosmosArray>(cosmosObject, Constants.Items));
-            return new QLOrderByEnumerableExpression(sourceExpression, declaredVariable, orderByItems);
+            CqlEnumerableExpression sourceExpression = DeserializeCqlEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            CqlVariable declaredVariable = DeserializeCqlVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
+            IReadOnlyList<CqlOrderByItem> orderByItems = DeserializeOrderByItemArray(GetValue<CosmosArray>(cosmosObject, Constants.Items));
+            return new CqlOrderByEnumerableExpression(sourceExpression, declaredVariable, orderByItems);
         }
 
-        private static QLScalarAsEnumerableExpression DeserializeScalarAsEnumerableExpression(CosmosObject cosmosObject)
+        private static CqlScalarAsEnumerableExpression DeserializeScalarAsEnumerableExpression(CosmosObject cosmosObject)
         {
-            QLScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
-            QLEnumerationKind enumerationKind = GetEnumValue<QLEnumerationKind>(GetValue<CosmosString>(cosmosObject, Constants.EnumerationKind).Value);
-            return new QLScalarAsEnumerableExpression(expression, enumerationKind);
+            CqlScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
+            CqlEnumerationKind enumerationKind = GetEnumValue<CqlEnumerationKind>(GetValue<CosmosString>(cosmosObject, Constants.EnumerationKind).Value);
+            return new CqlScalarAsEnumerableExpression(expression, enumerationKind);
         }
 
-        private static QLSelectEnumerableExpression DeserializeSelectEnumerableExpression(CosmosObject cosmosObject)
+        private static CqlSelectEnumerableExpression DeserializeSelectEnumerableExpression(CosmosObject cosmosObject)
         {
-            QLEnumerableExpression sourceExpression = DeserializeQLEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
-            QLVariable declaredVariable = DeserializeQLVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
-            QLScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
-            return new QLSelectEnumerableExpression(sourceExpression, declaredVariable, expression);
+            CqlEnumerableExpression sourceExpression = DeserializeCqlEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            CqlVariable declaredVariable = DeserializeCqlVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
+            CqlScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
+            return new CqlSelectEnumerableExpression(sourceExpression, declaredVariable, expression);
         }
 
-        private static QLSelectManyEnumerableExpression DeserializeSelectManyEnumerableExpression(CosmosObject cosmosObject)
+        private static CqlSelectManyEnumerableExpression DeserializeSelectManyEnumerableExpression(CosmosObject cosmosObject)
         {
-            QLEnumerableExpression sourceExpression = DeserializeQLEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
-            QLVariable declaredVariable = DeserializeQLVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
-            QLEnumerableExpression selectorExpression = DeserializeQLEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SelectorExpression));
-            return new QLSelectManyEnumerableExpression(sourceExpression, declaredVariable, selectorExpression);
+            CqlEnumerableExpression sourceExpression = DeserializeCqlEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            CqlVariable declaredVariable = DeserializeCqlVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
+            CqlEnumerableExpression selectorExpression = DeserializeCqlEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SelectorExpression));
+            return new CqlSelectManyEnumerableExpression(sourceExpression, declaredVariable, selectorExpression);
         }
 
-        private static QLTakeEnumerableExpression DeserializeTakeEnumerableExpression(CosmosObject cosmosObject)
+        private static CqlTakeEnumerableExpression DeserializeTakeEnumerableExpression(CosmosObject cosmosObject)
         {
-            QLEnumerableExpression sourceExpression = DeserializeQLEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            CqlEnumerableExpression sourceExpression = DeserializeCqlEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
             long skipValue = Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.SkipValue).Value);
             long takeExpression = Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.TakeValue).Value);
-            return new QLTakeEnumerableExpression(sourceExpression, Convert.ToUInt64(skipValue), Convert.ToUInt64(takeExpression));
+            return new CqlTakeEnumerableExpression(sourceExpression, Convert.ToUInt64(skipValue), Convert.ToUInt64(takeExpression));
         }
 
-        private static QLWhereEnumerableExpression DeserializeWhereEnumerableExpression(CosmosObject cosmosObject)
+        private static CqlWhereEnumerableExpression DeserializeWhereEnumerableExpression(CosmosObject cosmosObject)
         {
-            QLEnumerableExpression sourceExpression = DeserializeQLEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
-            QLVariable declaredVariable = DeserializeQLVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
-            QLScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
-            return new QLWhereEnumerableExpression(sourceExpression, declaredVariable, expression);
+            CqlEnumerableExpression sourceExpression = DeserializeCqlEnumerableExpression(GetValue<CosmosObject>(cosmosObject, Constants.SourceExpression));
+            CqlVariable declaredVariable = DeserializeCqlVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
+            CqlScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
+            return new CqlWhereEnumerableExpression(sourceExpression, declaredVariable, expression);
         }
 
         #endregion
 
         #region Scalar Expressions
 
-        private static QLScalarExpression DeserializeScalarExpression(CosmosObject cosmosObject)
+        private static CqlScalarExpression DeserializeScalarExpression(CosmosObject cosmosObject)
         {
-            QLScalarExpressionKind scalarExpressionKind = GetEnumValue<QLScalarExpressionKind>(GetValue<CosmosString>(cosmosObject, Constants.Kind).Value);
+            CqlScalarExpressionKind scalarExpressionKind = GetEnumValue<CqlScalarExpressionKind>(GetValue<CosmosString>(cosmosObject, Constants.Kind).Value);
             switch (scalarExpressionKind)
             {
-                case QLScalarExpressionKind.ArrayCreate:
+                case CqlScalarExpressionKind.ArrayCreate:
                     return DeserializeArrayCreateScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.ArrayIndexer:
+                case CqlScalarExpressionKind.ArrayIndexer:
                     return DeserializeArrayIndexerScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.BinaryOperator:
+                case CqlScalarExpressionKind.BinaryOperator:
                     return DeserializeBinaryOperatorScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.IsOperator:
+                case CqlScalarExpressionKind.IsOperator:
                     return DeserializeIsOperatorScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.Let:
+                case CqlScalarExpressionKind.Let:
                     return DeserializeLetScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.Literal:
+                case CqlScalarExpressionKind.Literal:
                     return DeserializeLiteralScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.Mux:
+                case CqlScalarExpressionKind.Mux:
                     return DeserializeMuxScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.ObjectCreate:
+                case CqlScalarExpressionKind.ObjectCreate:
                     return DeserializeObjectCreateScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.PropertyRef:
+                case CqlScalarExpressionKind.PropertyRef:
                     return DeserializePropertyRefScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.SystemFunctionCall:
+                case CqlScalarExpressionKind.SystemFunctionCall:
                     return DeserializeSystemFunctionCallScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.TupleCreate:
+                case CqlScalarExpressionKind.TupleCreate:
                     return DeserializeTupleCreateScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.TupleItemRef:
+                case CqlScalarExpressionKind.TupleItemRef:
                     return DeserializeTupleItemRefScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.UnaryOperator:
+                case CqlScalarExpressionKind.UnaryOperator:
                     return DeserializeUnaryScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.UserDefinedFunctionCall:
+                case CqlScalarExpressionKind.UserDefinedFunctionCall:
                     return DeserializeUserDefinedFunctionCallScalarExpression(cosmosObject);
-                case QLScalarExpressionKind.VariableRef:
+                case CqlScalarExpressionKind.VariableRef:
                     return DeserializeVariableRefScalarExpression(cosmosObject);
                 default:
-                    throw new NotSupportedException($"Invalid QLExpression kind: {scalarExpressionKind}");
+                    throw new NotSupportedException($"Invalid CqlExpression kind: {scalarExpressionKind}");
             }
         }
 
-        private static QLArrayCreateScalarExpression DeserializeArrayCreateScalarExpression(CosmosObject cosmosObject)
+        private static CqlArrayCreateScalarExpression DeserializeArrayCreateScalarExpression(CosmosObject cosmosObject)
         {
-            IReadOnlyList<QLScalarExpression> items = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Items));
-            return new QLArrayCreateScalarExpression(items);
+            IReadOnlyList<CqlScalarExpression> items = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Items));
+            return new CqlArrayCreateScalarExpression(items);
         }
 
-        private static QLArrayIndexerScalarExpression DeserializeArrayIndexerScalarExpression(CosmosObject cosmosObject)
+        private static CqlArrayIndexerScalarExpression DeserializeArrayIndexerScalarExpression(CosmosObject cosmosObject)
         {
-            QLScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
+            CqlScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
             long index = Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Index).Value);
-            return new QLArrayIndexerScalarExpression(expression, Convert.ToUInt64(index));
+            return new CqlArrayIndexerScalarExpression(expression, Convert.ToUInt64(index));
         }
 
-        private static QLBinaryScalarExpression DeserializeBinaryOperatorScalarExpression(CosmosObject cosmosObject)
+        private static CqlBinaryScalarExpression DeserializeBinaryOperatorScalarExpression(CosmosObject cosmosObject)
         {
-            QLBinaryScalarOperatorKind operatorKind = GetEnumValue<QLBinaryScalarOperatorKind>(GetValue<CosmosString>(cosmosObject, Constants.OperatorKind).Value);
-            QLScalarExpression leftExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.LeftExpression));
-            QLScalarExpression rightExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.RightExpression));
-            return new QLBinaryScalarExpression(operatorKind, leftExpression, rightExpression);
+            CqlBinaryScalarOperatorKind operatorKind = GetEnumValue<CqlBinaryScalarOperatorKind>(GetValue<CosmosString>(cosmosObject, Constants.OperatorKind).Value);
+            CqlScalarExpression leftExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.LeftExpression));
+            CqlScalarExpression rightExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.RightExpression));
+            return new CqlBinaryScalarExpression(operatorKind, leftExpression, rightExpression);
         }
 
-        private static QLIsOperatorScalarExpression DeserializeIsOperatorScalarExpression(CosmosObject cosmosObject)
+        private static CqlIsOperatorScalarExpression DeserializeIsOperatorScalarExpression(CosmosObject cosmosObject)
         {
-            QLIsOperatorKind operatorKind = GetEnumValue<QLIsOperatorKind>(GetValue<CosmosString>(cosmosObject, Constants.OperatorKind).Value);
-            QLScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
-            return new QLIsOperatorScalarExpression(operatorKind, expression);
+            CqlIsOperatorKind operatorKind = GetEnumValue<CqlIsOperatorKind>(GetValue<CosmosString>(cosmosObject, Constants.OperatorKind).Value);
+            CqlScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
+            return new CqlIsOperatorScalarExpression(operatorKind, expression);
         }
 
-        private static QLLetScalarExpression DeserializeLetScalarExpression(CosmosObject cosmosObject)
+        private static CqlLetScalarExpression DeserializeLetScalarExpression(CosmosObject cosmosObject)
         {
-            QLVariable declaredVariable = DeserializeQLVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
-            QLScalarExpression declaredVariableExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariableExpression));
-            QLScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
-            return new QLLetScalarExpression(declaredVariable, declaredVariableExpression, expression);
+            CqlVariable declaredVariable = DeserializeCqlVariable(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariable));
+            CqlScalarExpression declaredVariableExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.DeclaredVariableExpression));
+            CqlScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
+            return new CqlLetScalarExpression(declaredVariable, declaredVariableExpression, expression);
         }
 
-        private static QLLiteralScalarExpression DeserializeLiteralScalarExpression(CosmosObject cosmosObject)
+        private static CqlLiteralScalarExpression DeserializeLiteralScalarExpression(CosmosObject cosmosObject)
         {
             CosmosObject literalObject = GetValue<CosmosObject>(cosmosObject, Constants.Literal);
-            return new QLLiteralScalarExpression(DeserializeLiteral(literalObject));
+            return new CqlLiteralScalarExpression(DeserializeLiteral(literalObject));
         }
 
-        private static QLMuxScalarExpression DeserializeMuxScalarExpression(CosmosObject cosmosObject)
+        private static CqlMuxScalarExpression DeserializeMuxScalarExpression(CosmosObject cosmosObject)
         {
-            QLScalarExpression conditionExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.ConditionExpression));
-            QLScalarExpression leftExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.LeftExpression));
-            QLScalarExpression rightExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.RightExpression));
-            return new QLMuxScalarExpression(conditionExpression, leftExpression, rightExpression);
+            CqlScalarExpression conditionExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.ConditionExpression));
+            CqlScalarExpression leftExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.LeftExpression));
+            CqlScalarExpression rightExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.RightExpression));
+            return new CqlMuxScalarExpression(conditionExpression, leftExpression, rightExpression);
         }
 
-        private static QLObjectCreateScalarExpression DeserializeObjectCreateScalarExpression(CosmosObject cosmosObject)
+        private static CqlObjectCreateScalarExpression DeserializeObjectCreateScalarExpression(CosmosObject cosmosObject)
         {
-            IReadOnlyList<QLObjectProperty> properties = DeserializeObjectProperties(GetValue<CosmosArray>(cosmosObject, Constants.Properties));
-            return new QLObjectCreateScalarExpression(properties);
+            IReadOnlyList<CqlObjectProperty> properties = DeserializeObjectProperties(GetValue<CosmosArray>(cosmosObject, Constants.Properties));
+            return new CqlObjectCreateScalarExpression(properties);
         }
 
-        private static QLPropertyRefScalarExpression DeserializePropertyRefScalarExpression(CosmosObject cosmosObject)
+        private static CqlPropertyRefScalarExpression DeserializePropertyRefScalarExpression(CosmosObject cosmosObject)
         {
-            QLScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
+            CqlScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
             string propertyName = GetValue<CosmosString>(cosmosObject, Constants.PropertyName).Value;
-            return new QLPropertyRefScalarExpression(expression, propertyName);
+            return new CqlPropertyRefScalarExpression(expression, propertyName);
         }
 
-        private static QLSystemFunctionCallScalarExpression DeserializeSystemFunctionCallScalarExpression(CosmosObject cosmosObject)
+        private static CqlSystemFunctionCallScalarExpression DeserializeSystemFunctionCallScalarExpression(CosmosObject cosmosObject)
         {
-            QLBuiltinScalarFunctionKind functionKind = GetEnumValue<QLBuiltinScalarFunctionKind>(GetValue<CosmosString>(cosmosObject, Constants.FunctionKind).Value);
-            IReadOnlyList<QLScalarExpression> arguments = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Arguments));
-            return new QLSystemFunctionCallScalarExpression(functionKind, arguments);
+            CqlBuiltinScalarFunctionKind functionKind = GetEnumValue<CqlBuiltinScalarFunctionKind>(GetValue<CosmosString>(cosmosObject, Constants.FunctionKind).Value);
+            IReadOnlyList<CqlScalarExpression> arguments = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Arguments));
+            return new CqlSystemFunctionCallScalarExpression(functionKind, arguments);
         }
 
-        private static QLTupleCreateScalarExpression DeserializeTupleCreateScalarExpression(CosmosObject cosmosObject)
+        private static CqlTupleCreateScalarExpression DeserializeTupleCreateScalarExpression(CosmosObject cosmosObject)
         {
-            IReadOnlyList<QLScalarExpression> items = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Items));
-            return new QLTupleCreateScalarExpression(items);
+            IReadOnlyList<CqlScalarExpression> items = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Items));
+            return new CqlTupleCreateScalarExpression(items);
         }
 
-        private static QLTupleItemRefScalarExpression DeserializeTupleItemRefScalarExpression(CosmosObject cosmosObject)
+        private static CqlTupleItemRefScalarExpression DeserializeTupleItemRefScalarExpression(CosmosObject cosmosObject)
         {
-            QLScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
+            CqlScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
             long index = Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.Index).Value);
-            return new QLTupleItemRefScalarExpression(expression, Convert.ToUInt64(index));
+            return new CqlTupleItemRefScalarExpression(expression, Convert.ToUInt64(index));
         }
 
-        private static QLUnaryScalarExpression DeserializeUnaryScalarExpression(CosmosObject cosmosObject)
+        private static CqlUnaryScalarExpression DeserializeUnaryScalarExpression(CosmosObject cosmosObject)
         {
-            QLUnaryScalarOperatorKind operatorKind = GetEnumValue<QLUnaryScalarOperatorKind>(GetValue<CosmosString>(cosmosObject, Constants.OperatorKind).Value);
-            QLScalarExpression scalarExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
-            return new QLUnaryScalarExpression(operatorKind, scalarExpression);
+            CqlUnaryScalarOperatorKind operatorKind = GetEnumValue<CqlUnaryScalarOperatorKind>(GetValue<CosmosString>(cosmosObject, Constants.OperatorKind).Value);
+            CqlScalarExpression scalarExpression = DeserializeScalarExpression(GetValue<CosmosObject>(cosmosObject, Constants.Expression));
+            return new CqlUnaryScalarExpression(operatorKind, scalarExpression);
         }
 
-        private static QLUserDefinedFunctionCallScalarExpression DeserializeUserDefinedFunctionCallScalarExpression(CosmosObject cosmosObject)
+        private static CqlUserDefinedFunctionCallScalarExpression DeserializeUserDefinedFunctionCallScalarExpression(CosmosObject cosmosObject)
         {
             string identifierString = GetValue<CosmosString>(cosmosObject, Constants.Identifier).Value;
-            QLFunctionIdentifier functionIdentifier = new QLFunctionIdentifier(identifierString);
-            IReadOnlyList<QLScalarExpression> arguments = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Arguments));
+            CqlFunctionIdentifier functionIdentifier = new CqlFunctionIdentifier(identifierString);
+            IReadOnlyList<CqlScalarExpression> arguments = DeserializeScalarExpressionArray(GetValue<CosmosArray>(cosmosObject, Constants.Arguments));
             bool builtin = GetValue<CosmosBoolean>(cosmosObject, Constants.Builtin).Value;
-            return new QLUserDefinedFunctionCallScalarExpression(functionIdentifier, arguments, builtin);
+            return new CqlUserDefinedFunctionCallScalarExpression(functionIdentifier, arguments, builtin);
         }
 
-        private static QLVariableRefScalarExpression DeserializeVariableRefScalarExpression(CosmosObject cosmosObject)
+        private static CqlVariableRefScalarExpression DeserializeVariableRefScalarExpression(CosmosObject cosmosObject)
         {
-            QLVariable variable = DeserializeQLVariable(GetValue<CosmosObject>(cosmosObject, Constants.Variable));
-            return new QLVariableRefScalarExpression(variable);
+            CqlVariable variable = DeserializeCqlVariable(GetValue<CosmosObject>(cosmosObject, Constants.Variable));
+            return new CqlVariableRefScalarExpression(variable);
         }
 
         #endregion
 
         #region Aggregate
 
-        private static IReadOnlyList<QLAggregate> DeserializeAggregateArray(CosmosArray cosmosArray)
+        private static IReadOnlyList<CqlAggregate> DeserializeAggregateArray(CosmosArray cosmosArray)
         {
-            List<QLAggregate> aggregates = new List<QLAggregate>(cosmosArray.Count);
+            List<CqlAggregate> aggregates = new List<CqlAggregate>(cosmosArray.Count);
             foreach (CosmosElement aggregateElement in cosmosArray)
             {
                 CosmosObject aggregateObject = CastToCosmosObject(aggregateElement);
@@ -348,72 +347,72 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
             return aggregates;
         }
 
-        private static QLAggregate DeserializeAggregate(CosmosObject cosmosObject)
+        private static CqlAggregate DeserializeAggregate(CosmosObject cosmosObject)
         {
-            QLAggregateKind aggregateKind = GetEnumValue<QLAggregateKind>(GetValue<CosmosString>(cosmosObject, Constants.Kind).Value);
+            CqlAggregateKind aggregateKind = GetEnumValue<CqlAggregateKind>(GetValue<CosmosString>(cosmosObject, Constants.Kind).Value);
             switch (aggregateKind)
             {
-                case QLAggregateKind.Builtin:
+                case CqlAggregateKind.Builtin:
                     return DeserializeBuiltInAggregateExpression(cosmosObject);
-                case QLAggregateKind.Tuple:
+                case CqlAggregateKind.Tuple:
                     return DeserializeTupleAggregateExpression(cosmosObject);
                 default:
-                    throw new NotSupportedException($"Invalid QLExpression kind: {aggregateKind}");
+                    throw new NotSupportedException($"Invalid CqlExpression kind: {aggregateKind}");
             }
         }
 
-        private static QLBuiltinAggregate DeserializeBuiltInAggregateExpression(CosmosObject cosmosObject)
+        private static CqlBuiltinAggregate DeserializeBuiltInAggregateExpression(CosmosObject cosmosObject)
         {
-            QLAggregateOperatorKind aggregateOperatorKind = GetEnumValue<QLAggregateOperatorKind>(GetValue<CosmosString>(cosmosObject, Constants.OperatorKind).Value);
-            return new QLBuiltinAggregate(aggregateOperatorKind);
+            CqlAggregateOperatorKind aggregateOperatorKind = GetEnumValue<CqlAggregateOperatorKind>(GetValue<CosmosString>(cosmosObject, Constants.OperatorKind).Value);
+            return new CqlBuiltinAggregate(aggregateOperatorKind);
         }
 
-        private static QLTupleAggregate DeserializeTupleAggregateExpression(CosmosObject cosmosObject)
+        private static CqlTupleAggregate DeserializeTupleAggregateExpression(CosmosObject cosmosObject)
         {
             CosmosArray tupleArray = GetValue<CosmosArray>(cosmosObject, Constants.Items);
-            List<QLAggregate> aggregates = new List<QLAggregate>(tupleArray.Count);
+            List<CqlAggregate> aggregates = new List<CqlAggregate>(tupleArray.Count);
 
             foreach (CosmosElement tupleElement in tupleArray)
             {
                 CosmosObject tupleObject = CastToCosmosObject(tupleElement);
-                QLAggregate aggregate = DeserializeAggregate(tupleObject);
+                CqlAggregate aggregate = DeserializeAggregate(tupleObject);
                 aggregates.Add(aggregate);
             }
 
-            return new QLTupleAggregate(aggregates);
+            return new CqlTupleAggregate(aggregates);
         }
 
         #endregion
 
         #region Literal
 
-        private static QLLiteral DeserializeLiteral(CosmosObject cosmosObject)
+        private static CqlLiteral DeserializeLiteral(CosmosObject cosmosObject)
         {
-            QLLiteralKind literalKind = GetEnumValue<QLLiteralKind>(GetValue<CosmosString>(cosmosObject, Constants.Kind).Value);
+            CqlLiteralKind literalKind = GetEnumValue<CqlLiteralKind>(GetValue<CosmosString>(cosmosObject, Constants.Kind).Value);
             switch (literalKind)
             {
-                case QLLiteralKind.Array:
-                    return new QLArrayLiteral(DeserializeLiteralArray(GetValue<CosmosArray>(cosmosObject, Constants.Items)));
-                case QLLiteralKind.Boolean:
-                    return new QLBooleanLiteral(GetValue<CosmosBoolean>(cosmosObject, Constants.Value).Value);
-                case QLLiteralKind.Null:
-                    return QLNullLiteral.Singleton;
-                case QLLiteralKind.Number:
-                    return new QLNumberLiteral(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value);
-                case QLLiteralKind.Object:
-                    return new QLObjectLiteral(DeserializeObjectLiteralArray(GetValue<CosmosArray>(cosmosObject, Constants.Properties)));
-                case QLLiteralKind.String:
-                    return new QLStringLiteral(GetValue<CosmosString>(cosmosObject, Constants.Value).Value);
-                case QLLiteralKind.Undefined:
-                    return QLUndefinedLiteral.Singleton;
+                case CqlLiteralKind.Array:
+                    return new CqlArrayLiteral(DeserializeLiteralArray(GetValue<CosmosArray>(cosmosObject, Constants.Items)));
+                case CqlLiteralKind.Boolean:
+                    return new CqlBooleanLiteral(GetValue<CosmosBoolean>(cosmosObject, Constants.Value).Value);
+                case CqlLiteralKind.Null:
+                    return CqlNullLiteral.Singleton;
+                case CqlLiteralKind.Number:
+                    return new CqlNumberLiteral(GetValue<CosmosNumber>(cosmosObject, Constants.Value).Value);
+                case CqlLiteralKind.Object:
+                    return new CqlObjectLiteral(DeserializeObjectLiteralArray(GetValue<CosmosArray>(cosmosObject, Constants.Properties)));
+                case CqlLiteralKind.String:
+                    return new CqlStringLiteral(GetValue<CosmosString>(cosmosObject, Constants.Value).Value);
+                case CqlLiteralKind.Undefined:
+                    return CqlUndefinedLiteral.Singleton;
                 default:
-                    throw new NotSupportedException($"Invalid QLExpression kind: {literalKind}");
+                    throw new NotSupportedException($"Invalid CqlExpression kind: {literalKind}");
             }
         }
 
-        private static IReadOnlyList<QLLiteral> DeserializeLiteralArray(CosmosArray cosmosArray)
+        private static IReadOnlyList<CqlLiteral> DeserializeLiteralArray(CosmosArray cosmosArray)
         {
-            List<QLLiteral> literals = new List<QLLiteral>(cosmosArray.Count);
+            List<CqlLiteral> literals = new List<CqlLiteral>(cosmosArray.Count);
             foreach (CosmosElement literalElement in cosmosArray)
             {
                 CosmosObject literalObject = CastToCosmosObject(literalElement);
@@ -423,15 +422,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
             return literals;
         }
 
-        private static IReadOnlyList<QLObjectLiteralProperty> DeserializeObjectLiteralArray(CosmosArray cosmosArray)
+        private static IReadOnlyList<CqlObjectLiteralProperty> DeserializeObjectLiteralArray(CosmosArray cosmosArray)
         {
-            List<QLObjectLiteralProperty> objectLiterals = new List<QLObjectLiteralProperty>(cosmosArray.Count);
+            List<CqlObjectLiteralProperty> objectLiterals = new List<CqlObjectLiteralProperty>(cosmosArray.Count);
             foreach (CosmosElement objectLiteralElement in cosmosArray)
             {
                 CosmosObject propertyObject = CastToCosmosObject(objectLiteralElement);
                 string name = GetValue<CosmosString>(propertyObject, Constants.Name).Value;
-                QLLiteral literal = DeserializeLiteral(propertyObject);
-                QLObjectLiteralProperty objectLiteralProperty = new QLObjectLiteralProperty(name, literal);
+                CqlLiteral literal = DeserializeLiteral(propertyObject);
+                CqlObjectLiteralProperty objectLiteralProperty = new CqlObjectLiteralProperty(name, literal);
                 objectLiterals.Add(objectLiteralProperty);
             }
 
@@ -442,50 +441,50 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan
 
         #region Helper Functions
 
-        private static QLVariable DeserializeQLVariable(CosmosObject cosmosObject)
+        private static CqlVariable DeserializeCqlVariable(CosmosObject cosmosObject)
         {
             string name = GetValue<CosmosString>(cosmosObject, Constants.Name).Value;
             long uniqueId = Number64.ToLong(GetValue<CosmosNumber>(cosmosObject, Constants.UniqueId).Value);
 
-            return new QLVariable(name, uniqueId);
+            return new CqlVariable(name, uniqueId);
         }
 
-        private static IReadOnlyList<QLObjectProperty> DeserializeObjectProperties(CosmosArray cosmosArray)
+        private static IReadOnlyList<CqlObjectProperty> DeserializeObjectProperties(CosmosArray cosmosArray)
         {
-            List<QLObjectProperty> properties = new List<QLObjectProperty>(cosmosArray.Count);
+            List<CqlObjectProperty> properties = new List<CqlObjectProperty>(cosmosArray.Count);
             foreach (CosmosElement propertyElement in cosmosArray)
             {
                 CosmosObject propertyObject = CastToCosmosObject(propertyElement);
                 string objectPropertyName = GetValue<CosmosString>(propertyObject, Constants.Name).Value;
-                QLScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(propertyObject, Constants.Expression));
-                properties.Add(new QLObjectProperty(objectPropertyName, expression));
+                CqlScalarExpression expression = DeserializeScalarExpression(GetValue<CosmosObject>(propertyObject, Constants.Expression));
+                properties.Add(new CqlObjectProperty(objectPropertyName, expression));
             }
 
             return properties;
         }
 
-        private static IReadOnlyList<QLScalarExpression> DeserializeScalarExpressionArray(CosmosArray cosmosArray)
+        private static IReadOnlyList<CqlScalarExpression> DeserializeScalarExpressionArray(CosmosArray cosmosArray)
         {
-            List<QLScalarExpression> expressions = new List<QLScalarExpression>(cosmosArray.Count);
+            List<CqlScalarExpression> expressions = new List<CqlScalarExpression>(cosmosArray.Count);
             foreach (CosmosElement itemElement in cosmosArray)
             {
                 CosmosObject itemObject = CastToCosmosObject(itemElement);
-                QLScalarExpression expression = DeserializeScalarExpression(itemObject);
+                CqlScalarExpression expression = DeserializeScalarExpression(itemObject);
                 expressions.Add(expression);
             }
 
             return expressions;
         }
 
-        private static IReadOnlyList<QLOrderByItem> DeserializeOrderByItemArray(CosmosArray cosmosArray)
+        private static IReadOnlyList<CqlOrderByItem> DeserializeOrderByItemArray(CosmosArray cosmosArray)
         {
-            List<QLOrderByItem> expressions = new List<QLOrderByItem>(cosmosArray.Count);
+            List<CqlOrderByItem> expressions = new List<CqlOrderByItem>(cosmosArray.Count);
             foreach (CosmosElement itemElement in cosmosArray)
             {
                 CosmosObject itemObject = CastToCosmosObject(itemElement);
-                QLSortOrder sortOrder = GetEnumValue<QLSortOrder>(GetValue<CosmosString>(itemObject, Constants.SortOrder).Value);
-                QLScalarExpression scalarExpression = DeserializeScalarExpression(itemObject);
-                expressions.Add(new QLOrderByItem(scalarExpression, sortOrder));
+                CqlSortOrder sortOrder = GetEnumValue<CqlSortOrder>(GetValue<CosmosString>(itemObject, Constants.SortOrder).Value);
+                CqlScalarExpression scalarExpression = DeserializeScalarExpression(itemObject);
+                expressions.Add(new CqlOrderByItem(scalarExpression, sortOrder));
             }
 
             return expressions;
