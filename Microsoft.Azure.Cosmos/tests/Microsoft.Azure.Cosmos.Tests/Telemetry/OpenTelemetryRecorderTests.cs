@@ -52,11 +52,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             // Get all types (including internal) defined in the assembly
             IEnumerable<Type> actualClasses = asm
                 .GetTypes()
-                .Where(type => type.Name.Contains("Response"));
+                .Where(type => type.Name.EndsWith("Response"));
 
             foreach (Type className in actualClasses)
             {
-                Console.WriteLine(className);
+                Console.WriteLine(className.Name);
+                //Assert.IsTrue(OpenTelemetryCoreRecorder.OTelCompatibleExceptions.Keys.Contains(className), $"{className.Name} is not added in {typeof(OpenTelemetryCoreRecorder).Name} Class OTelCompatibleExceptions dictionary");
+            }
+
+            actualClasses = asm
+               .GetTypes()
+               .Where(type => type.Name.EndsWith("Response`1"));
+
+            foreach (Type className in actualClasses)
+            {
+                Console.WriteLine(className.Name);
                 //Assert.IsTrue(OpenTelemetryCoreRecorder.OTelCompatibleExceptions.Keys.Contains(className), $"{className.Name} is not added in {typeof(OpenTelemetryCoreRecorder).Name} Class OTelCompatibleExceptions dictionary");
             }
 
