@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // Set a callback to get the handle of the last executed query to do the verification
             // This is neede because aggregate queries return type is a scalar so it can't be used 
             // to verify the translated LINQ directly as other queries type.
-            client.DocumentClient.OnExecuteScalarQueryCallback = q => LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery = q;
+            client.DocumentClient.OnExecuteScalarQueryCallback = q => lastExecutedScalarQuery = q;
 
             string dbName = $"{nameof(LinqAggregateFunctionBaselineTests)}-{Guid.NewGuid().ToString("N")}";
             testDb = await client.CreateDatabaseAsync(dbName);
@@ -501,7 +501,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         public override LinqAggregateOutput ExecuteTest(LinqAggregateInput input)
         {
-            LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery = null;
+            lastExecutedScalarQuery = null;
             Func<bool, object> compiledQuery = input.expression.Compile();
 
             string errorMessage = null;
@@ -515,10 +515,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 }
                 finally
                 {
-                    Assert.IsNotNull(LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery, "lastExecutedScalarQuery is not set");
+                    Assert.IsNotNull(lastExecutedScalarQuery, "lastExecutedScalarQuery is not set");
 
                     query = JObject
-                        .Parse(LinqAggregateFunctionBaselineTests.lastExecutedScalarQuery.ToString())
+                        .Parse(lastExecutedScalarQuery.ToString())
                         .GetValue("query", StringComparison.Ordinal)
                         .ToString();
                 }
