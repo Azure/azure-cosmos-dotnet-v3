@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
     internal static class DiagnosticsFilterHelper
     {
+        private static readonly CosmosThresholdOptions defaultThresholdOptions = new CosmosThresholdOptions();
+
         /// <summary>
         /// Allow only when Latency is not more than 100 (non-query) /250 (query) ms
         /// </summary>
@@ -42,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// <param name="config"></param>
         internal static TimeSpan DefaultThreshold(OperationType operationType, CosmosThresholdOptions config)
         {
-            config ??= new CosmosThresholdOptions();
+            config ??= DiagnosticsFilterHelper.defaultThresholdOptions;
             return DiagnosticsFilterHelper.IsPointOperation(operationType) ?
                                             config.PointOperationLatencyThreshold :
                                             config.NonPointOperationLatencyThreshold;
