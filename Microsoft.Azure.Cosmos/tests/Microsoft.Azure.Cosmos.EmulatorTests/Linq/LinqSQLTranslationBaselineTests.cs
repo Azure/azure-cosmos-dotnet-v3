@@ -247,8 +247,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             inputs.Add(new LinqTestInput("Select method id", b => dataQuery(b).Select(x => id(x))));
             inputs.Add(new LinqTestInput("Select identity", b => dataQuery(b).Select(x => x)));
             inputs.Add(new LinqTestInput("Select simple property", b => dataQuery(b).Select(x => x.x)));
-            inputs.Add(new LinqTestInput("Select extension data", b => dataQuery(b).Select(x => new complex()
-            {
+            inputs.Add(new LinqTestInput("Select extension data", b => dataQuery(b).Select(x => new complex() {
                 NewtonsoftExtensionData = new() {
                     { "test", 1.5 }
                 },
@@ -283,8 +282,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 obj.str = random.NextDouble() < 0.1 ? "5" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.id = Guid.NewGuid().ToString();
                 obj.pk = "Test";
-                obj.NewtonsoftExtensionData = new Dictionary<string, object>()
-                {
+                obj.NewtonsoftExtensionData = new Dictionary<string, object>() {
                     ["age"] = 32,
                     ["tags"] = new[] { "item-1", "item-2" }
                 };

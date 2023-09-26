@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Reflection;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -141,6 +142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics.ToString()));
             Assert.IsTrue(diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
             Assert.AreEqual(0, response.Diagnostics.GetFailedRequestCount());
+            Assert.IsNull(response.Diagnostics.GetQueryMetrics());
 
             response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response);
@@ -158,6 +160,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             Assert.IsFalse(string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+            Assert.IsNull(response.Diagnostics.GetQueryMetrics());
         }
 
         [TestMethod]
@@ -386,6 +389,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<dynamic> response = await multiPartPkContainer.CreateItemAsync<dynamic>(item: testItem);
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            Assert.IsNull(response.Diagnostics.GetQueryMetrics());
 
             ItemResponse<dynamic> readResponse = await multiPartPkContainer.ReadItemAsync<dynamic>(id: testItem.id, partitionKey: new Cosmos.PartitionKey("pk1"));
             Assert.IsNotNull(readResponse);
@@ -603,6 +607,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(response);
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
                 Assert.IsNotNull(response.Headers.Session);
+                Assert.IsNull(response.Diagnostics.GetQueryMetrics());
             }
 
             {
@@ -613,6 +618,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(response);
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.IsNotNull(response.Headers.Session);
+                Assert.IsNull(response.Diagnostics.GetQueryMetrics());
             }
         }
 
@@ -703,6 +709,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                     }
 
+                    Assert.IsNull(responseMessage.Diagnostics.GetQueryMetrics());
                 }
 
             }
@@ -842,7 +849,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ItemCustomSerialzierTest()
+        public async Task ItemCustomSerializerTest()
         {
             DateTime createDateTime = DateTime.UtcNow;
             Dictionary<string, int> keyValuePairs = new Dictionary<string, int>()
@@ -1278,6 +1285,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 System.Diagnostics.Trace.TraceInformation($"ContinuationToken: {lastContinuationToken}");
                 Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
 
+                ServerSideCumulativeMetrics metrics = response.Diagnostics.GetQueryMetrics();
+                Assert.IsTrue(metrics.PartitionedMetrics.Count == 1);
+                Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
+                Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
+
+                if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)
+                {
+                    Assert.IsTrue(metrics.CumulativeMetrics.RetrievedDocumentSize > 0);
+                    Assert.IsTrue(metrics.CumulativeMetrics.DocumentLoadTime > TimeSpan.Zero);
+                    Assert.IsTrue(metrics.CumulativeMetrics.RuntimeExecutionTime > TimeSpan.Zero);
+                }
+                else
+                {
+                    Assert.AreEqual(0, metrics.CumulativeMetrics.RetrievedDocumentSize);
+                }
+
                 using (StreamReader sr = new StreamReader(response.Content))
                 using (JsonTextReader jtr = new JsonTextReader(sr))
                 {
@@ -1317,9 +1340,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemMultiplePartitionQuery()
         {
-            IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(this.Container, 3, randomPartitionKey: true);
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(this.Container, 3, randomPartitionKey: true);
 
-            ToDoActivity find = deleteList.First();
+            ToDoActivity find = itemList.First();
             QueryDefinition sql = new QueryDefinition("select * from toDoActivity t where t.id = '" + find.id + "'");
 
             QueryRequestOptions requestOptions = new QueryRequestOptions()
@@ -1344,6 +1367,111 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     found = true;
                     ToDoActivity response = iter.First();
                     Assert.AreEqual(find.id, response.id);
+                }
+
+                ServerSideCumulativeMetrics metrics = iter.Diagnostics.GetQueryMetrics();
+
+                if (metrics != null)
+                {
+                    Assert.IsTrue(metrics.PartitionedMetrics.Count == 3);
+                    Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
+                    Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
+
+                    foreach (ServerSidePartitionedMetrics partitionedMetrics in metrics.PartitionedMetrics)
+                    {
+                        Assert.IsNotNull(partitionedMetrics);
+                        Assert.IsNotNull(partitionedMetrics.PartitionKeyRangeId);
+                    }
+
+                    if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)
+                    {
+                        Assert.IsTrue(metrics.CumulativeMetrics.RetrievedDocumentSize > 0);
+                        Assert.IsTrue(metrics.CumulativeMetrics.DocumentLoadTime > TimeSpan.Zero);
+                        Assert.IsTrue(metrics.CumulativeMetrics.RuntimeExecutionTime > TimeSpan.Zero);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(0, metrics.CumulativeMetrics.RetrievedDocumentSize);
+                    }
+                }
+                else
+                {
+                    string diag = iter.Diagnostics.ToString();
+                    Assert.IsNotNull(diag);
+                }
+            }
+
+            Assert.IsTrue(found);
+        }
+
+        /// <summary>
+        /// Validate single partition query using gateway mode.
+        /// </summary>
+        [TestMethod]
+        public async Task ItemSinglePartitionQueryGateway()
+        {
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+            new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"));
+
+            Container createdContainer = (ContainerInlineCore)containerResponse;
+            CosmosClient client1 = TestCommon.CreateCosmosClient(useGateway: true);
+
+            Container container = client1.GetContainer(this.database.Id, createdContainer.Id);
+
+            string findId = "id2002";
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity("pk2002", findId);
+            await container.CreateItemAsync<ToDoActivity>(item);
+
+            QueryDefinition sql = new QueryDefinition("select * from toDoActivity t where t.id = '" + findId + "'");
+
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxBufferedItemCount = 10,
+                ResponseContinuationTokenLimitInKb = 500,
+                MaxItemCount = 1,
+                MaxConcurrency = 1,
+            };
+
+            FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
+                    sql,
+                    requestOptions: requestOptions);
+
+            bool found = false;
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
+                Assert.IsTrue(iter.Count() <= 1);
+                if (iter.Count() == 1)
+                {
+                    found = true;
+                    ToDoActivity response = iter.First();
+                    Assert.AreEqual(findId, response.id);
+                }
+
+                ServerSideCumulativeMetrics metrics = iter.Diagnostics.GetQueryMetrics();
+
+                if (metrics != null)
+                {
+                    Assert.IsTrue(metrics.PartitionedMetrics.Count == 1);
+                    Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
+                    Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
+
+                    foreach (ServerSidePartitionedMetrics partitionedMetrics in metrics.PartitionedMetrics)
+                    {
+                        Assert.IsNotNull(partitionedMetrics);
+                        Assert.IsNull(partitionedMetrics.PartitionKeyRangeId);
+                    }
+
+                    if (metrics.CumulativeMetrics.RetrievedDocumentCount >= 1)
+                    {
+                        Assert.IsTrue(metrics.CumulativeMetrics.RetrievedDocumentSize > 0);
+                        Assert.IsTrue(metrics.CumulativeMetrics.DocumentLoadTime > TimeSpan.Zero);
+                        Assert.IsTrue(metrics.CumulativeMetrics.RuntimeExecutionTime > TimeSpan.Zero);
+                    }
+                    else
+                    {
+                        Assert.AreEqual(0, metrics.CumulativeMetrics.RetrievedDocumentSize);
+                    }
                 }
             }
 
@@ -1536,7 +1664,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             epk = new PartitionKey("test")
                            .InternalKey
                            .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
-
             properties = new Dictionary<string, object>()
             {
                 { WFConstants.BackendHeaders.EffectivePartitionKeyString, epk },
@@ -1586,9 +1713,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // If this fails the RUs of the container needs to be increased to ensure at least 2 partitions.
                 Assert.IsTrue(ranges.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
 
+
                 ContainerQueryProperties containerQueryProperties = new ContainerQueryProperties(
                     containerResponse.Resource.ResourceId,
                     null,
+                    //new List<Documents.Routing.Range<string>> { new Documents.Routing.Range<string>("AA", "AA", true, true) },
                     containerResponse.Resource.PartitionKey,
                     containerResponse.Resource.GeospatialConfig.GeospatialType);
 
@@ -1606,6 +1735,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     trace: NoOpTrace.Singleton);
 
                 Assert.IsTrue(partitionKeyRanges.Count == 1, "Only 1 partition key range should be selected since the EPK option is set.");
+
             }
             finally
             {

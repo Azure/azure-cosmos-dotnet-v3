@@ -878,8 +878,64 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await TestSearch(x => x.description.Contains("todo"), "CONTAINS", false, 0);
             await TestSearch(x => x.description.Contains("tOdO", StringComparison.OrdinalIgnoreCase), "CONTAINS", true, 200);
-
         }
+
+        [TestMethod]
+        public async Task LinqAggregatesWithContinuationTokenTest()
+        {
+            await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 1, perPKItemCount: 2, randomPartitionKey: true);
+
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxItemCount = 1
+            };
+
+            IOrderedQueryable<ToDoActivity> firstQuery = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
+
+            int count = await firstQuery.CountAsync();
+            double average = firstQuery.Average(x => x.taskNum);
+
+            string continuationToken = null;
+
+            FeedIterator<ToDoActivity> firstFeedIterator = firstQuery.ToFeedIterator();
+
+            // if instead of while loop in order to retrieve continuation token
+            if (firstFeedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> firstFeedResponse = await firstFeedIterator.ReadNextAsync();
+
+                continuationToken = firstFeedResponse.ContinuationToken;
+            }
+
+            Assert.AreEqual(2, count);
+            Assert.IsNotNull(continuationToken);
+
+            IOrderedQueryable<ToDoActivity> secondQuery = this.Container.GetItemLinqQueryable<ToDoActivity>(allowSynchronousQueryExecution: true, continuationToken: continuationToken, requestOptions: requestOptions);
+
+            try
+            {
+                count = await secondQuery.CountAsync();
+                Assert.Fail("Expected Count query to return exception");
+            }
+            catch (CosmosException exception)
+            {
+                Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
+                Assert.IsTrue(exception.SubStatusCode == (int)Documents.SubStatusCodes.MalformedContinuationToken);
+                Assert.IsTrue(exception.Message.Contains("ParallelCrossPartitionQueryPipelineStage"));
+            }
+
+            try
+            {
+                average = secondQuery.Average(x => x.taskNum);
+                Assert.Fail("Expected Average query to return exception");
+            }
+            catch (CosmosException exception)
+            {
+                Assert.IsTrue(exception.StatusCode == System.Net.HttpStatusCode.BadRequest);
+                Assert.IsTrue(exception.SubStatusCode == (int)Documents.SubStatusCodes.MalformedContinuationToken);
+                Assert.IsTrue(exception.Message.Contains("ParallelCrossPartitionQueryPipelineStage"));
+            }
+        }     
 
         [TestMethod]
         public async Task LinqSelectEverythingWithoutQueryableTest()
@@ -911,7 +967,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public decimal decimaleValue;
             public bool booleanValue;
             public NumberLinqItem[] children;
-
         }
 
         private async Task<List<T>> FetchResults<T>(QueryDefinition queryDefinition)

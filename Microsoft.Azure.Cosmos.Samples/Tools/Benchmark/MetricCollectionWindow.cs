@@ -11,38 +11,35 @@ namespace CosmosBenchmark
     /// </summary>
     internal class MetricCollectionWindow
     {
-        /// <summary>
-        /// The timestamp when window span is started.
-        /// </summary>
-        public DateTime Started { get; private set; }
+        private DateTime ValidTill { get; set; }
         
-        /// <summary>
-        /// The timestamp until which the current window span is not elapsed.
-        /// </summary>
-        public DateTime ValidTill { get; private set; }
+        private int MetricsReportingIntervalInSec { get; set; }
 
         /// <summary>
         /// Creates the instance of <see cref="MetricCollectionWindow"/>.
         /// </summary>
         /// <param name="config">Cosmos Benchmark configuration.</param>
-        public MetricCollectionWindow(BenchmarkConfig config)
+        public MetricCollectionWindow(int metricsReportingIntervalInSec)
         {
-            this.Reset(config);
+            this.MetricsReportingIntervalInSec = metricsReportingIntervalInSec;
+            this.Reset();
         }
 
         /// <summary>
         /// Indicates whether the current window is valid.
         /// </summary>
-        public bool IsValid => DateTime.UtcNow > this.ValidTill;
+        public bool IsInvalid()
+        {
+            return DateTime.UtcNow > this.ValidTill;
+        }
 
         /// <summary>
         /// Resets the started timestamp and valid till timespan.
         /// </summary>
         /// <param name="config"></param>
-        public void Reset(BenchmarkConfig config)
+        public void Reset()
         {
-            this.Started = DateTime.UtcNow;
-            this.ValidTill = this.Started.AddSeconds(config.MetricsReportingIntervalInSec);
+            this.ValidTill = DateTime.UtcNow.AddSeconds(this.MetricsReportingIntervalInSec);
         }
     }
 }

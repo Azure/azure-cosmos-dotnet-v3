@@ -2008,7 +2008,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<Family> fList = new List<Family>();
             fList.Add(family);
 
-            container.CreateItemAsync(family).Wait();
+            container.CreateItemAsync<Family>(family).Wait();
             IOrderedQueryable<Family> query = container.GetItemLinqQueryable<Family>(allowSynchronousQueryExecution: true);
 
             IEnumerable<string> q1 = query.Select(f => f.Parents[0].FamilyName);
@@ -2485,7 +2485,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             IOrderedQueryable<DataDocument> q = container.GetItemLinqQueryable<DataDocument>(allowSynchronousQueryExecution: true);
 
             IEnumerable<DataDocument> iresult = from f in q
-                                                where f.Id == iDocument.Id
+            where f.Id == iDocument.Id
                                                 select f;
             DataDocument id = iresult.FirstOrDefault();
             Assert.AreEqual(doc.Id, id.Id);
