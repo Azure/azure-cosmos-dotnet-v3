@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OpenTelemetryAttributes response)
         {
             if (!DiagnosticsFilterHelper.IsSuccessfulResponse(
-                        response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
+                        response.StatusCode, response.SubStatusCode) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
                 CosmosDbEventSource.Singleton.FailedRequest(response.Diagnostics.ToString());
             } 
