@@ -13,28 +13,28 @@ namespace Microsoft.Azure.Cosmos
         internal OpenTelemetryResponse(TransactionalBatchResponse responseMessage)
            : this(
                   statusCode: responseMessage.StatusCode,
-                  requestCharge: responseMessage.Headers?.RequestCharge,
+                  requestCharge: OpenTelemetryResponse.GetHeader(responseMessage)?.RequestCharge,
                   responseContentLength: null,
                   diagnostics: responseMessage.Diagnostics,
-                  itemCount: responseMessage.Headers?.ItemCount,
+                  itemCount: OpenTelemetryResponse.GetHeader(responseMessage)?.ItemCount,
                   requestMessage: null,
-                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
-                  activityId: responseMessage.Headers?.ActivityId,
-                  correlationId: responseMessage.Headers?.CorrelatedActivityId)
+                  subStatusCode: (int)OpenTelemetryResponse.GetHeader(responseMessage)?.SubStatusCode,
+                  activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
+                  correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId)
         {
         }
 
         internal OpenTelemetryResponse(ResponseMessage responseMessage)
            : this(
                   statusCode: responseMessage.StatusCode,
-                  requestCharge: responseMessage.Headers?.RequestCharge,
+                  requestCharge: OpenTelemetryResponse.GetHeader(responseMessage)?.RequestCharge,
                   responseContentLength: OpenTelemetryResponse.GetPayloadSize(responseMessage),
                   diagnostics: responseMessage.Diagnostics,
-                  itemCount: responseMessage.Headers?.ItemCount,
+                  itemCount: OpenTelemetryResponse.GetHeader(responseMessage)?.ItemCount,
                   requestMessage: responseMessage.RequestMessage,
-                  subStatusCode: (int)responseMessage.Headers?.SubStatusCode,
-                  activityId: responseMessage.Headers?.ActivityId,
-                  correlationId: responseMessage.Headers?.CorrelatedActivityId,
+                  subStatusCode: (int)OpenTelemetryResponse.GetHeader(responseMessage)?.SubStatusCode,
+                  activityId: OpenTelemetryResponse.GetHeader(responseMessage)?.ActivityId,
+                  correlationId: OpenTelemetryResponse.GetHeader(responseMessage)?.CorrelatedActivityId,
                   operationType: responseMessage is QueryResponse ? Documents.OperationType.Query : Documents.OperationType.Invalid
                  )
         {
@@ -73,6 +73,30 @@ namespace Microsoft.Azure.Cosmos
                 return response.Content.Length.ToString();
             }
             return response?.Headers?.ContentLength;
+        }
+
+        private static Headers GetHeader(ResponseMessage responseMessage)
+        {
+            try
+            {
+                return responseMessage?.Headers;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static Headers GetHeader(TransactionalBatchResponse responseMessage)
+        {
+            try
+            {
+                return responseMessage?.Headers;
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }
