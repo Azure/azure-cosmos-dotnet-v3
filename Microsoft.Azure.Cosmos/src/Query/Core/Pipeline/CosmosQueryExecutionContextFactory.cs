@@ -33,12 +33,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     internal static class CosmosQueryExecutionContextFactory
     {
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
-        private const string ValidQueryRegex = @"\s+(GROUP\s+BY\s+|COUNT\s*\(|MIN\s*\(|MAX\s*\(|AVG\s*\(|SUM\s*\(|DISTINCT\s+)";
+        private const string QueryInspectionPattern = @"\s+(GROUP\s+BY\s+|COUNT\s*\(|MIN\s*\(|MAX\s*\(|AVG\s*\(|SUM\s*\(|DISTINCT\s+)";
         private const string OptimisticDirectExecution = "OptimisticDirectExecution";
         private const string Passthrough = "Passthrough";
         private const string Specialized = "Specialized";
         private const int PageSizeFactorForTop = 5;
-        private static readonly Regex ValidQueryValidation = new Regex(ValidQueryRegex, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex QueryInspectionRegex = new Regex(QueryInspectionPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public static IQueryPipelineStage Create(
             DocumentContainer documentContainer,
@@ -156,9 +156,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         containerQueryProperties,
                         inputParameters,
                         targetRange,
-                        trace,
-                        cancellationToken,
-                        createQueryPipelineTrace);
+                        createQueryPipelineTrace,
+                        cancellationToken);
                 }
 
                 PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -339,27 +338,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             InputParameters inputParameters,
             Documents.PartitionKeyRange targetRange,
             ITrace trace,
-            CancellationToken cancellationToken,
-            ITrace createQueryPipelineTrace = default)
+            CancellationToken cancellationToken)
         {
             if (partitionedQueryExecutionInfo == null)
             {
-                PartitionedQueryExecutionInfo queryPlanFromValidityCheck = await CheckQueryValidityWithQueryPlanAsync(
-                    inputParameters,
-                    cosmosQueryContext,
-                    containerQueryProperties,
-                    trace,
-                    cancellationToken);
-
-                if (queryPlanFromValidityCheck != null)
+                if (QueryInspectionRegex.IsMatch(inputParameters.SqlQuerySpec.QueryText))
                 {
+                    partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
+                        cosmosQueryContext,
+                        inputParameters,
+                        containerQueryProperties,
+                        trace,
+                        cancellationToken);
+
                     return await TryCreateFromPartitionedQueryExecutionInfoAsync(
                         documentContainer,
-                        queryPlanFromValidityCheck,
+                        partitionedQueryExecutionInfo,
                         containerQueryProperties,
                         cosmosQueryContext,
                         inputParameters,
-                        createQueryPipelineTrace,
+                        trace,
                         cancellationToken);
                 }
             }
@@ -604,28 +602,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 maxConcurrency: inputParameters.MaxConcurrency,
                 requestContinuationToken: inputParameters.InitialUserContinuationToken,
                 requestCancellationToken: cancellationToken);
-        }
-
-        private static async Task<PartitionedQueryExecutionInfo> CheckQueryValidityWithQueryPlanAsync(
-            InputParameters inputParameters,
-            CosmosQueryContext cosmosQueryContext,
-            ContainerQueryProperties containerQueryProperties,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            if (ValidQueryValidation.IsMatch(inputParameters.SqlQuerySpec.QueryText))
-            {
-                return await GetPartitionedQueryExecutionInfoAsync(
-                        cosmosQueryContext,
-                        inputParameters,
-                        containerQueryProperties,
-                        trace,
-                        cancellationToken);
-            }
-            else
-            {
-                return null;
-            }
         }
 
         private static async Task<PartitionedQueryExecutionInfo> GetPartitionedQueryExecutionInfoAsync(

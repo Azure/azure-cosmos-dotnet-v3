@@ -405,8 +405,7 @@
             const string UnsupportedNestedAggregateExpression = $"Cannot perform an aggregate function on an expression containing an aggregate or a subquery.";
             const string UnsupportedSelectLisWithAggregateOrGroupByExpression = $"invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause";
 
-            // query, error_message
-            List<(string, string)> testVariations = new List<(string, string)>
+            List<(string Query, string ExpectedMessage)> testVariations = new List<(string Query, string ExpectedMessage)>
             {
                 ("SELECT   COUNT     (1)   + 5 FROM c", UnsupportedCompositeAggregate),
                 ("SELECT MIN(c.price)   + 10 FROM c", UnsupportedCompositeAggregate),
@@ -419,18 +418,18 @@
             };
 
             List<(string, string)> testVariationsWithCaseSensitivity = new List<(string, string)>();
-            foreach ((string, string) testCase in testVariations)
+            foreach ((string Query, string ExpectedMessage) testCase in testVariations)
             {
-                testVariationsWithCaseSensitivity.Add((testCase.Item1, testCase.Item2));
-                testVariationsWithCaseSensitivity.Add((testCase.Item1.ToLower(), testCase.Item2));
-                testVariationsWithCaseSensitivity.Add((testCase.Item1.ToUpper(), testCase.Item2));
+                testVariationsWithCaseSensitivity.Add((testCase.Query, testCase.ExpectedMessage));
+                testVariationsWithCaseSensitivity.Add((testCase.Query.ToLower(), testCase.ExpectedMessage));
+                testVariationsWithCaseSensitivity.Add((testCase.Query.ToUpper(), testCase.ExpectedMessage));
             }
 
-            foreach ((string, string) testCase in testVariationsWithCaseSensitivity)
+            foreach ((string Query, string ExpectedMessage) testCase in testVariationsWithCaseSensitivity)
             {
                 OptimisticDirectExecutionTestInput input = CreateInput(
                     description: @"Unsupported queries in CosmosDB that were previousely supported by Ode pipeline and returning wrong resutls",
-                    query: testCase.Item1,
+                    query: testCase.Query,
                     expectedOptimisticDirectExecution: true,
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a");
@@ -447,7 +446,7 @@
                 }
                 catch(Exception ex)
                 {
-                    Assert.IsTrue(ex.InnerException.Message.Contains(testCase.Item2));
+                    Assert.IsTrue(ex.InnerException.Message.Contains(testCase.ExpectedMessage));
                     continue;
                 }
 
