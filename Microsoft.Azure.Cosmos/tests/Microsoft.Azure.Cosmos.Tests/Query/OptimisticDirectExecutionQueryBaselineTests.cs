@@ -434,23 +434,26 @@
                     partitionKeyPath: @"/pk",
                     partitionKeyValue: "a");
 
-                try
+                foreach (bool isMultiPartition in new[] { true, false })
                 {
-                    int result = await this.GetPipelineAndDrainAsync(
-                                    input,
-                                    numItems: 100,
-                                    isMultiPartition: false,
-                                    expectedContinuationTokenCount: 0,
-                                    requiresDist: true,
-                                    useQueryPlan: false);
-                }
-                catch(Exception ex)
-                {
-                    Assert.IsTrue(ex.InnerException.Message.Contains(testCase.ExpectedMessage));
-                    continue;
-                }
+                    try
+                    {
+                        int result = await this.GetPipelineAndDrainAsync(
+                                        input,
+                                        numItems: 100,
+                                        isMultiPartition: isMultiPartition,
+                                        expectedContinuationTokenCount: 0,
+                                        requiresDist: true,
+                                        useQueryPlan: false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.IsTrue(ex.InnerException.Message.Contains(testCase.ExpectedMessage));
+                        continue;
+                    }
 
-                Assert.Fail();
+                    Assert.Fail();
+                }
             }
         }
 
