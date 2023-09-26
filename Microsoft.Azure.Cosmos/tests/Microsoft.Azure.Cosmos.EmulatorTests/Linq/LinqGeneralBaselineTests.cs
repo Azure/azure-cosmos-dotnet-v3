@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using BaselineTest;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.Scripts;
+    using static Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests.LinqGeneralBaselineTests;
 
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqGeneralBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
@@ -242,19 +243,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "Select(OrderBy)", b => getQuery(b)
                 .Select(f => f.Children.OrderBy(c => c.Pets.Count()))));
-                
+
             inputs.Add(new LinqTestInput(
                 "Select(Take)", b => getQuery(b)
                 .Select(f => f.Children.Take(2))));
-                
+
             inputs.Add(new LinqTestInput(
                 "Select(Where)", b => getQuery(b)
                 .Select(f => f.Children.Where(c => c.Pets.Count() > 0))));
-                
+
             inputs.Add(new LinqTestInput(
                 "Select(Distinct)", b => getQuery(b)
                 .Select(f => f.Children.Distinct())));
-                
+
             inputs.Add(new LinqTestInput(
                 "Select(Count)", b => getQuery(b)
                 .Select(f => f.Children.Count(c => c.Grade > 80))));
@@ -378,7 +379,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "Select(binary with Count)", b => getQuery(b)
                 .Select(f => 5 + f.Children.Count(c => c.Pets.Count() > 0))));
-                
+
             inputs.Add(new LinqTestInput(
                 "Select(constant + Where -> Count)", b => getQuery(b)
                 .Select(f => 5 + f.Children.Where(c => c.Pets.Count() > 0).Count())));
@@ -473,7 +474,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Select(Select) -> Where", b => getQuery(b).Select(f => f.Children.Select(c => c.Pets.Count())).Where(x => x.Count() > 0)));
-            
+
             // Customer requested scenario
             inputs.Add(new LinqTestInput(
                 "Select(new w/ Where) -> Where -> OrderBy -> Take", b => getQuery(b)
@@ -631,7 +632,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "Take -> Select(Select)", b => getQuery(b)
                 .Take(10).Select(f => f.Children.Select(c => c.Pets.Count()))));
-            
+
             // ------------------
             // Any in lambda
             // ------------------
@@ -639,23 +640,23 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "Select(Any w const array)", b => getQuery(b)
                 .Select(f => new int[] { 1, 2, 3 }.Any())));
-                
+
             inputs.Add(new LinqTestInput(
                 "Select(Any)", b => getQuery(b)
                 .Select(f => f.Children.Any())));
-                
+
             inputs.Add(new LinqTestInput(
                 "Select(Any w lambda)", b => getQuery(b)
                 .Select(f => f.Children.Any(c => c.Grade > 80))));
-                
+
             inputs.Add(new LinqTestInput(
                 "Select(new Any)", b => getQuery(b)
                 .Select(f => new { f.FamilyId, HasGoodChildren = f.Children.Any(c => c.Grade > 80) })));
-                
+
             inputs.Add(new LinqTestInput(
                 "Select(new 2 Any)", b => getQuery(b)
                 .Select(f => new { HasChildrenWithPets = f.Children.Any(c => c.Pets.Count() > 0), HasGoodChildren = f.Children.Any(c => c.Grade > 80) })));
-                
+
             inputs.Add(new LinqTestInput(
                 "Select(Nested Any)", b => getQuery(b)
                 .Select(f => f.Children.Any(c => c.Pets.Any(p => p.GivenName.Count() > 10)))));
@@ -672,7 +673,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "OrderBy(Any)", b => getQuery(b)
                 .OrderBy(f => f.Children.Any(c => c.Pets.Count() > 3))));
-            
+
             // ------------------------------------------------
             // SelectMany with Take and OrderBy in lambda
             // ------------------------------------------------
@@ -700,7 +701,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [Ignore]
         public void DebuggingTest()
         {
-            
+
         }
 
         [TestMethod]
@@ -1929,7 +1930,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public async Task ValidateLinqQueries()
         {
-            Container container = await testDb.CreateContainerAsync(new ContainerProperties (id : Guid.NewGuid().ToString("N"), partitionKeyPath : "/id" ));
+            Container container = await testDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString("N"), partitionKeyPath: "/id"));
 
             Parent mother = new Parent { FamilyName = "Wakefield", GivenName = "Robin" };
             Parent father = new Parent { FamilyName = "Miller", GivenName = "Ben" };
@@ -1945,13 +1946,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
 
             Address address = new Address { State = "NY", County = "Manhattan", City = "NY" };
-            Family family = new Family { FamilyId = "WakefieldFamily", Parents = new Parent[] { mother, father }, Children = new Child[] { child }, IsRegistered = false, Int = 3, NullableInt = 5 , Id = "WakefieldFamily"};
+            Family family = new Family { FamilyId = "WakefieldFamily", Parents = new Parent[] { mother, father }, Children = new Child[] { child }, IsRegistered = false, Int = 3, NullableInt = 5, Id = "WakefieldFamily" };
 
             List<Family> fList = new List<Family>();
             fList.Add(family);
 
             container.CreateItemAsync<Family>(family).Wait();
-            IOrderedQueryable<Family> query = container.GetItemLinqQueryable<Family>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<Family> query = container.GetItemLinqQueryable<Family>(allowSynchronousQueryExecution: true);
 
             IEnumerable<string> q1 = query.Select(f => f.Parents[0].FamilyName);
             Assert.AreEqual(q1.FirstOrDefault(), family.Parents[0].FamilyName);
@@ -2009,7 +2010,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             ListArrayClass arrayObject = new ListArrayClass() { Id = "arrayObject", ArrayField = new int[] { 1, 2, 3 } };
             container.CreateItemAsync(arrayObject).Wait();
 
-            IOrderedQueryable<ListArrayClass> listArrayQuery = container.GetItemLinqQueryable<ListArrayClass>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<ListArrayClass> listArrayQuery = container.GetItemLinqQueryable<ListArrayClass>(allowSynchronousQueryExecution: true);
 
             IEnumerable<dynamic> q13 = listArrayQuery.Where(a => a.ArrayField == arrayObject.ArrayField);
             Assert.AreEqual(q13.FirstOrDefault().Id, arrayObject.Id);
@@ -2061,9 +2062,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Document doubleQoutesDocument = new Document() { Id = doc1Id };
             container.CreateItemAsync(doubleQoutesDocument).Wait();
 
-            IQueryable<Document> docQuery = from book in container.GetItemLinqQueryable<Document>(allowSynchronousQueryExecution : true)
-                           where book.Id == doc1Id
-                           select book;
+            IQueryable<Document> docQuery = from book in container.GetItemLinqQueryable<Document>(allowSynchronousQueryExecution: true)
+                                            where book.Id == doc1Id
+                                            select book;
 
             Assert.AreEqual(docQuery.AsEnumerable().Single().Id, doc1Id);
 
@@ -2072,7 +2073,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             container.CreateItemAsync(greatGreatFamily).Wait();
             List<GreatGreatFamily> greatGreatFamilyData = new List<GreatGreatFamily>() { greatGreatFamily };
 
-            IOrderedQueryable<GreatGreatFamily> queryable = container.GetItemLinqQueryable<GreatGreatFamily>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<GreatGreatFamily> queryable = container.GetItemLinqQueryable<GreatGreatFamily>(allowSynchronousQueryExecution: true);
 
             IEnumerable<GreatGreatFamily> q16 = queryable.SelectMany(gf => gf.GreatFamily.Family.Children.Where(c => c.GivenName == "Jesse").Select(c => gf));
 
@@ -2082,7 +2083,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             container.CreateItemAsync(sport).Wait();
             List<Sport> sportData = new List<Sport>() { sport };
 
-            IOrderedQueryable<Sport> sportQuery = container.GetItemLinqQueryable<Sport>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<Sport> sportQuery = container.GetItemLinqQueryable<Sport>(allowSynchronousQueryExecution: true);
 
             IEnumerable<Sport> q17 = sportQuery.Where(s => s.SportName == "Tennis");
 
@@ -2178,8 +2179,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<Database> queryResults = new List<Database>();
             //Simple Equality
             IQueryable<Documents.Database> dbQuery = from db in client.CreateDatabaseQuery()
-                                           where db.Id == databaseName
-                                           select db;
+                                                     where db.Id == databaseName
+                                                     select db;
             IDocumentQuery<Documents.Database> documentQuery = dbQuery.AsDocumentQuery();
 
             while (documentQuery.HasMoreResults)
@@ -2288,32 +2289,32 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             };
 
             //Unfiltered execution.
-            IOrderedQueryable<Book> bookDocQuery = testContainer.GetItemLinqQueryable<Book>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<Book> bookDocQuery = testContainer.GetItemLinqQueryable<Book>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<Book>> getBookQuery = useQuery => useQuery ? bookDocQuery : new List<Book>().AsQueryable();
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Simple Equality on custom property",
                 b => from book in getBookQuery(b)
-                      where book.Title == "My Book"
-                      select book));
+                     where book.Title == "My Book"
+                     select book));
             inputs.Add(new LinqTestInput("Nested Property access",
                 b => from book in getBookQuery(b)
-                      where book.Author.Name == "Don"
-                      select book));
+                     where book.Author.Name == "Don"
+                     select book));
             inputs.Add(new LinqTestInput("Array references & Project Author out..",
                 b => from book in getBookQuery(b)
-                      where book.Languages[0].Name == "English"
-                      select book.Author));
+                     where book.Languages[0].Name == "English"
+                     select book.Author));
             inputs.Add(new LinqTestInput("SelectMany",
                 b => getBookQuery(b).SelectMany(book => book.Languages).Where(lang => lang.Name == "French").Select(lang => lang.Copyright)));
             inputs.Add(new LinqTestInput("NumericRange query",
                 b => from book in getBookQuery(b)
-                      where book.Price < 10
-                      select book.Author));
+                     where book.Price < 10
+                     select book.Author));
             inputs.Add(new LinqTestInput("Or query",
                 b => from book in getBookQuery(b)
-                      where book.Title == "My Book" || book.Author.Name == "Don"
-                      select book));
+                     where book.Title == "My Book" || book.Author.Name == "Don"
+                     select book));
             inputs.Add(new LinqTestInput("SelectMany query on a List type.",
                 b => getBookQuery(b).SelectMany(book => book.Editions).Select(ed => ed.Name)));
             // Below samples are strictly speaking not Any equivalent. But they join and filter "all"
@@ -2334,7 +2335,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void ValidateDynamicAttachmentQuery() //Ensure query on custom property of attachment.
         {
-            IOrderedQueryable<SpecialAttachment2> attachmentQuery = testContainer.GetItemLinqQueryable<SpecialAttachment2>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<SpecialAttachment2> attachmentQuery = testContainer.GetItemLinqQueryable<SpecialAttachment2>(allowSynchronousQueryExecution: true);
             Document myDocument = new Document();
             Func<bool, IQueryable<SpecialAttachment2>> getAttachmentQuery = useQuery => useQuery ? attachmentQuery : new List<SpecialAttachment2>().AsQueryable();
 
@@ -2401,7 +2402,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public IQueryable<T> Query<T>() where T : BaseDocument
             {
-                IQueryable<T> query = this.container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution : true)
+                IQueryable<T> query = this.container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true)
                                        .Where(d => d.TypeName == "Hello");
                 string queryString = query.ToString();
                 return query;
@@ -2411,7 +2412,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public async Task ValidateLinqOnDataDocumentType()
         {
-            Container container = await testDb.CreateContainerAsync(new ContainerProperties(id : nameof(ValidateLinqOnDataDocumentType), partitionKeyPath : "/id"));
+            Container container = await testDb.CreateContainerAsync(new ContainerProperties(id: nameof(ValidateLinqOnDataDocumentType), partitionKeyPath: "/id"));
 
             DataDocument doc = new DataDocument() { Id = Guid.NewGuid().ToString("N"), Number = 0, TypeName = "Hello" };
             container.CreateItemAsync(doc).Wait();
@@ -2424,10 +2425,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             Assert.AreEqual(doc.Id, baseDocument.Id);
 
             BaseDocument iDocument = doc;
-            IOrderedQueryable<DataDocument> q = container.GetItemLinqQueryable<DataDocument>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<DataDocument> q = container.GetItemLinqQueryable<DataDocument>(allowSynchronousQueryExecution: true);
 
             IEnumerable<DataDocument> iresult = from f in q
-                                                where f.Id == iDocument.Id
+            where f.Id == iDocument.Id
                                                 select f;
             DataDocument id = iresult.FirstOrDefault<DataDocument>();
             Assert.AreEqual(doc.Id, id.Id);
@@ -2504,7 +2505,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             StoredProcedureExecuteResponse<int> scriptResponse = null;
             int totalNumberOfDocuments = GatewayTests.CreateExecuteAndDeleteCosmosProcedure(collection, script, out scriptResponse, "My Book");
 
-            IOrderedQueryable<Book> linqQueryable = collection.GetItemLinqQueryable<Book>(allowSynchronousQueryExecution : true);
+            IOrderedQueryable<Book> linqQueryable = collection.GetItemLinqQueryable<Book>(allowSynchronousQueryExecution: true);
             int totalHit = linqQueryable.Where(book => book.Title == "My Book").Count();
             Assert.AreEqual(totalHit, totalNumberOfDocuments, "Didnt get all the documents");
 
