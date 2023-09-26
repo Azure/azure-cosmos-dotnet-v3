@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Collections.ObjectModel;
+    using System.Data.Common;
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
@@ -1087,6 +1088,17 @@ namespace Microsoft.Azure.Cosmos.Linq
             return ExpressionToSql.VisitNonSubqueryScalarExpression(lambdaExpression.Body, parameters, context);
         }
 
+        private static SqlScalarExpression VisitGroupByValueSelectorScalarLambda(LambdaExpression lambdaExpression, TranslationContext context)
+        {
+            ReadOnlyCollection<ParameterExpression> parameters = lambdaExpression.Parameters;
+            if (parameters.Count != 2)
+            {
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, lambdaExpression.Body, 1, parameters.Count));
+            }
+
+            return ExpressionToSql.VisitNonSubqueryScalarExpression(lambdaExpression.Body, parameters, context);
+        }
+
         private static Collection VisitCollectionExpression(Expression expression, ReadOnlyCollection<ParameterExpression> parameters, TranslationContext context)
         {
             foreach (ParameterExpression par in parameters)
@@ -1713,14 +1725,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Current GroupBy doesn't allow subquery
             SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitNonSubqueryScalarLambda(keySelectorLambda, context);
 
-            // TODO - We need special treatment for this binding 
-            // Alternate thoughts: Instead of saving the value selector func, we emit a select clause here?
-            //LambdaExpression valueSelectorLambda = Utilities.GetLambda(arguments[2]);
-            //SqlScalarExpression valueSelectorFunc = ExpressionToSql.VisitScalarExpression(valueSelectorLambda, context);
-
             SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunc/*, valueSelectorFunc*/);
 
             context.currentQuery = context.currentQuery.AddGroupByClause(groupby, context);
+
+            //SqlSelectSpec selectSpec = SqlSelectValueSpec.Create(valueSelectorFunc);
+            //SqlSelectClause selectClause = SqlSelectClause.Create(selectSpec);
+            //context.currentQuery.AddSelectClause(selectClause);
 
             // We need to make the type in IGrouping<keyType, valueType> and then push the corresponding parameter binding
             // Look to Parameter Access for inspiration
@@ -1736,6 +1747,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             context.currentQuery.groupByParameter = new FromParameterBindings();
             context.currentQuery.groupByParameter.Add(binding);
             //context.currentQuery.fromParameters.Add(binding);
+
+            // Translate the body of the value selector lambda
+            LambdaExpression valueSelectorLambda = Utilities.GetLambda(arguments[2]);
+            _ = ExpressionToSql.Translate(valueSelectorLambda.Body, context);
 
             return collection;
         }
@@ -1917,11 +1932,18 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlScalarExpression aggregateExpression;
             if (arguments.Count == 1)
             {
-                // Need to trigger parameter binding for cases where a aggregate function immediately follows a member access.
-                ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
-                context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
-                aggregateExpression = ExpressionToSql.VisitParameter(parameter, context);
-                context.PopParameter();
+                if (context.currentQuery.groupByParameter == null)
+                {
+                    // Need to trigger parameter binding for cases where a aggregate function immediately follows a member access.
+                    ParameterExpression parameter = context.GenerateFreshParameter(typeof(object), ExpressionToSql.DefaultParameterName);
+                    context.PushParameter(parameter, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
+                    aggregateExpression = ExpressionToSql.VisitParameter(parameter, context);
+                    context.PopParameter();
+                }
+                else
+                {
+                    aggregateExpression = ExpressionToSql.VisitParameter(context.currentQuery.groupByParameter.GetInputParameter(), context);
+                }
             }
             else if (arguments.Count == 2)
             {
@@ -1936,7 +1958,16 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlFunctionCallScalarExpression aggregateFunctionCall;
             aggregateFunctionCall = SqlFunctionCallScalarExpression.CreateBuiltin(aggregateFunctionName, aggregateExpression);
 
-            SqlSelectSpec selectSpec = SqlSelectValueSpec.Create(aggregateFunctionCall);
+            SqlSelectSpec selectSpec;
+            if (context.currentQuery.groupByParameter != null)
+            {
+                SqlSelectItem selectItem = SqlSelectItem.Create(aggregateFunctionCall);
+                selectSpec = SqlSelectListSpec.Create(selectItem);
+            }
+            else
+            {
+                selectSpec = SqlSelectValueSpec.Create(aggregateFunctionCall);
+            }
             SqlSelectClause selectClause = SqlSelectClause.Create(selectSpec, null);
             return selectClause;
         }
@@ -1978,7 +2009,16 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.Count, 2, arguments.Count));
             }
 
-            SqlSelectSpec selectSpec = SqlSelectValueSpec.Create(SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Count, countExpression));
+            SqlSelectSpec selectSpec;
+            if (context.currentQuery.groupByParameter != null)
+            {
+                SqlSelectItem selectItem = SqlSelectItem.Create(SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Count, countExpression));
+                selectSpec = SqlSelectListSpec.Create(selectItem);
+            }
+            else
+            {
+                selectSpec = SqlSelectValueSpec.Create(SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Count, countExpression));
+            }
             SqlSelectClause selectClause = SqlSelectClause.Create(selectSpec, null);
             return selectClause;
         }

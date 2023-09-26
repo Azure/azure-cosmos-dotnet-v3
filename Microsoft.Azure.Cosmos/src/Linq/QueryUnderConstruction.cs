@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     break;
                 }
 
-                seenSelect = seenSelect || ((query.selectClause != null) && !query.selectClause.HasDistinct) || (query.groupByClause != null);
+                seenSelect = seenSelect || ((query.selectClause != null) && !query.selectClause.HasDistinct);
                 seenAnyNonSelectOp |=
                     (query.whereClause != null) ||
                     (query.orderByClause != null) ||
@@ -924,13 +924,40 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>true if the selectClause has an aggregate function call</returns>
         private bool HasSelectAggregate()
         {
-            string functionCallName = ((this.selectClause?.SelectSpec as SqlSelectValueSpec)?.Expression as SqlFunctionCallScalarExpression)?.Name.Value;
-            return (functionCallName != null) &&
-                ((functionCallName == SqlFunctionCallScalarExpression.Names.Max) ||
-                (functionCallName == SqlFunctionCallScalarExpression.Names.Min) ||
-                (functionCallName == SqlFunctionCallScalarExpression.Names.Avg) ||
-                (functionCallName == SqlFunctionCallScalarExpression.Names.Count) ||
-                (functionCallName == SqlFunctionCallScalarExpression.Names.Sum));
+            if (this.groupByClause == null)
+            {
+                string functionCallName = ((this.selectClause?.SelectSpec as SqlSelectValueSpec)?.Expression as SqlFunctionCallScalarExpression)?.Name.Value;
+
+                return (functionCallName != null) &&
+                    ((functionCallName == SqlFunctionCallScalarExpression.Names.Max) ||
+                    (functionCallName == SqlFunctionCallScalarExpression.Names.Min) ||
+                    (functionCallName == SqlFunctionCallScalarExpression.Names.Avg) ||
+                    (functionCallName == SqlFunctionCallScalarExpression.Names.Count) ||
+                    (functionCallName == SqlFunctionCallScalarExpression.Names.Sum));
+            }
+            else
+            {
+                bool containAggregate = false;
+                ImmutableArray<SqlSelectItem>? selectItems = (this.selectClause?.SelectSpec as SqlSelectListSpec)?.Items;
+                if (selectItems == null) return containAggregate;
+                for (int i = 0; i < selectItems.Value.Length; i++)
+                {
+                    SqlSelectItem item = selectItems.Value[i];
+                    string functionCallName = (item.Expression as SqlFunctionCallScalarExpression)?.Name.Value;
+
+                    if ((functionCallName != null) &&
+                        ((functionCallName == SqlFunctionCallScalarExpression.Names.Max) ||
+                        (functionCallName == SqlFunctionCallScalarExpression.Names.Min) ||
+                        (functionCallName == SqlFunctionCallScalarExpression.Names.Avg) ||
+                        (functionCallName == SqlFunctionCallScalarExpression.Names.Count) ||
+                        (functionCallName == SqlFunctionCallScalarExpression.Names.Sum)))
+                    {
+                        containAggregate = true;
+                        break;
+                    }
+                }
+                return containAggregate;
+            }
         }
 
         /// <summary>
