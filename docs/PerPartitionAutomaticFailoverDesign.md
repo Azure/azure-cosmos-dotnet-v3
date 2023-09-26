@@ -36,6 +36,8 @@ Today, the partition level failover is applicable only for the multi-master writ
 
 - Today, when a call to get the collection for a specific region fails in the Gateway, the Gateway returns a `Service Unavailable - 503` Status, with a Sub Status code `9002`. Per the current behavior, our .NET SDK doesn't retry for `503.9002`, and it only does so for `503.Unknown` code. Therefore the SDK was not retrying initially. In order to resolve this, delete the `ClientRetryPolicy.IsRetriableServiceUnavailable(SubStatusCodes? subStatusCode)` method completely and with this in place, the SDK should retry on any service unavailable by default and it will not depend upon the sub-status codes to make the retry decision.
 
+- Currently, there is an option `EnablePartitionLevelFailover` in the `CosmosClientOptions` to enable or disable the per partition automatic failover. However this option is not `public` yet. The approach we would like to take is to develop this feature behind a feature flag called `AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED`. By setting this feature flag, the external customers can enable of disable the partition level failover.
+
 - For the customers to enable the partition level failover, we have agreed to make the `ApplicationPreferredRegions` as a mandatory parameter the `CosmosClientOptions`. Therefore, if the partition level failover is enabled, and the `ApplicationPreferredRegions` list is not provided, an `ArgumentException` will be thrown. This will be a change in the behavior.
 
 ## How Does the SDK know Which Region to Fail Over
