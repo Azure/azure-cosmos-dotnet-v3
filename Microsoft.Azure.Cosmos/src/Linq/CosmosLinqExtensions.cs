@@ -178,7 +178,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         /// <summary>
         /// Returns a Boolean value indicating if the specified expression matches the supplied regex pattern.
-        /// Azure Cosmos DB for NoSQL uses PERL compatible regualr expressions (PCRE).
         /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/regexmatch.
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
         /// There's no implementation provided in the client library.
@@ -200,7 +199,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         /// <summary>
         /// Returns a Boolean value indicating if the specified expression matches the supplied regex pattern.
-        /// Azure Cosmos DB for NoSQL uses PERL compatible regualr expressions (PCRE).
         /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/regexmatch.
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
         /// There's no implementation provided in the client library.

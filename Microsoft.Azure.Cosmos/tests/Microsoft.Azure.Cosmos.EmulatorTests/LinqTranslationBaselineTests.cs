@@ -305,6 +305,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 new LinqTestInput("RegexMatch with 1 argument", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abcd"))),
                 new LinqTestInput("RegexMatch with 2 argument", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abcd", "i"))),
+                new LinqTestInput("RegexMatch with 1st argument member expression", b => getQuery(b).Where(doc => doc.StringField.RegexMatch(doc.StringField2))),
+                new LinqTestInput("RegexMatch with ToString", b => getQuery(b).Where(doc => doc.StringField.RegexMatch(doc.IntField.ToString() , "this should error out on the back end"))),
+                new LinqTestInput("RegexMatch with StringUpper", b => getQuery(b).Where(doc => doc.StringField.RegexMatch(doc.StringField2.ToUpper() , "this should error out on the back end"))),
+                new LinqTestInput("RegexMatch with StringLower", b => getQuery(b).Where(doc => doc.StringField.RegexMatch(doc.StringField2.ToLower() , "this should error out on the back end"))),
+                new LinqTestInput("RegexMatch with StringConcat", b => getQuery(b).Where(doc => doc.StringField.RegexMatch(string.Concat(doc.StringField, "str") , "this should error out on the back end"))),
+
+                new LinqTestInput("RegexMatch with 2nd argument invalid string options", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abcd", "this should error out on the back end"))),
             };
             this.ExecuteTestSuite(inputs);
         }
