@@ -8,8 +8,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using global::Azure;
+    using System.Net;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -32,41 +33,48 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 }
 
                 IList<string> expectedTags = new List<string>
-            {
-                 "az.namespace",
-                 "az.schema_url",
-                 "kind",
-                 "db.system",
-                 "db.name",
-                 "db.operation",
-                 "net.peer.name",
-                 "db.cosmosdb.client_id",
-                 "db.cosmosdb.machine_id",
-                 "user_agent.original",
-                 "db.cosmosdb.connection_mode",
-                 "db.cosmosdb.operation_type",
-                 "db.cosmosdb.container",
-                 "db.cosmosdb.request_content_length_bytes",
-                 "db.cosmosdb.response_content_length_bytes",
-                 "db.cosmosdb.status_code",
-                 "db.cosmosdb.sub_status_code",
-                 "db.cosmosdb.request_charge",
-                 "db.cosmosdb.regions_contacted",
-                 "db.cosmosdb.retry_count",
-                 "db.cosmosdb.item_count",
-                 "db.cosmosdb.request_diagnostics",
-                 "exception.type",
-                 "exception.message",
-                 "exception.stacktrace",
-                 "db.cosmosdb.activity_id",
-                 "db.cosmosdb.correlated_activity_id"
-            };
+                {
+                     "az.namespace",
+                     "az.schema_url",
+                     "kind",
+                     "db.system",
+                     "db.name",
+                     "db.operation",
+                     "net.peer.name",
+                     "db.cosmosdb.client_id",
+                     "db.cosmosdb.machine_id",
+                     "user_agent.original",
+                     "db.cosmosdb.connection_mode",
+                     "db.cosmosdb.operation_type",
+                     "db.cosmosdb.container",
+                     "db.cosmosdb.request_content_length_bytes",
+                     "db.cosmosdb.response_content_length_bytes",
+                     "db.cosmosdb.status_code",
+                     "db.cosmosdb.sub_status_code",
+                     "db.cosmosdb.request_charge",
+                     "db.cosmosdb.regions_contacted",
+                     "db.cosmosdb.retry_count",
+                     "db.cosmosdb.item_count",
+                     "db.cosmosdb.request_diagnostics",
+                     "exception.type",
+                     "exception.message",
+                     "exception.stacktrace",
+                     "db.cosmosdb.activity_id",
+                     "db.cosmosdb.correlated_activity_id"
+                };
 
                 foreach (KeyValuePair<string, string> actualTag in activity.Tags)
                 {
                     Assert.IsTrue(expectedTags.Contains(actualTag.Key), $"{actualTag.Key} is not allowed for {activity.OperationName}");
 
                     AssertActivity.AssertDatabaseAndContainerName(activity.OperationName, actualTag);
+                }
+
+                HttpStatusCode statusCode = (HttpStatusCode)Convert.ToInt32(activity.GetTagItem("db.cosmosdb.status_code"));
+                int subStatusCode = Convert.ToInt32(activity.GetTagItem("db.cosmosdb.sub_status_code"));
+                if (!DiagnosticsFilterHelper.IsSuccessfulResponse(statusCode, subStatusCode))
+                {
+                    Assert.AreEqual(ActivityStatusCode.Error, activity.Status);
                 }
             }
         }

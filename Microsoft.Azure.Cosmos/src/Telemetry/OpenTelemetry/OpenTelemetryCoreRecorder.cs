@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Generic;
     using System.Diagnostics;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
     /// <summary>
     /// This class is used to add information in an Activity tags ref. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3058
@@ -177,7 +178,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
                 }
 
-                this.scope.Failed(exception);
+                if (exception is not CosmosException || (exception is CosmosException cosmosException
+                            && !DiagnosticsFilterHelper
+                                    .IsSuccessfulResponse(cosmosException.StatusCode, cosmosException.SubStatusCode)))
+                {
+                    this.scope.Failed(exception);
+                }
             }
         }
 
@@ -205,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public void Dispose()
         {
-            if (this.scope.IsEnabled)
+            if (this.IsEnabled)
             {
                 Documents.OperationType operationType 
                     = (this.response == null || this.response?.OperationType == Documents.OperationType.Invalid) ? this.operationType : this.response.OperationType;
@@ -227,6 +233,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     {
                         this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(this.response.Diagnostics.GetContactedRegions()));
                         CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, operationType, this.response);
+                    }
+
+                    if (!DiagnosticsFilterHelper.IsSuccessfulResponse(this.response.StatusCode, this.response.SubStatusCode))
+                    {
+                        this.scope.Failed();
                     }
                 }
 
