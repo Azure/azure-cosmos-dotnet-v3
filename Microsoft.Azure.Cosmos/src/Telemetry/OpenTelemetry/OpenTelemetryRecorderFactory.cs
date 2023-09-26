@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         databaseName: databaseName,
                         operationType: operationType,
                         clientContext: clientContext,
-                        config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions?.CosmosThresholdOptions);
+                        config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions);
                 }
 #if !INTERNAL
                 else if (Activity.Current is null)
