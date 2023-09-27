@@ -1088,17 +1088,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             return ExpressionToSql.VisitNonSubqueryScalarExpression(lambdaExpression.Body, parameters, context);
         }
 
-        private static SqlScalarExpression VisitGroupByValueSelectorScalarLambda(LambdaExpression lambdaExpression, TranslationContext context)
-        {
-            ReadOnlyCollection<ParameterExpression> parameters = lambdaExpression.Parameters;
-            if (parameters.Count != 2)
-            {
-                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, lambdaExpression.Body, 1, parameters.Count));
-            }
-
-            return ExpressionToSql.VisitNonSubqueryScalarExpression(lambdaExpression.Body, parameters, context);
-        }
-
         private static Collection VisitCollectionExpression(Expression expression, ReadOnlyCollection<ParameterExpression> parameters, TranslationContext context)
         {
             foreach (ParameterExpression par in parameters)
@@ -1714,7 +1703,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private static Collection VisitGroupBy(Type returnElementType, ReadOnlyCollection<Expression> arguments, TranslationContext context)
         {
-            if (arguments.Count != 3 && arguments.Count != 2 /*only key selector*/)
+            if (arguments.Count != 3)
             {
                 throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.GroupBy, 3, arguments.Count));
             }
@@ -1729,13 +1718,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             context.currentQuery = context.currentQuery.AddGroupByClause(groupby, context);
 
-            //SqlSelectSpec selectSpec = SqlSelectValueSpec.Create(valueSelectorFunc);
-            //SqlSelectClause selectClause = SqlSelectClause.Create(selectSpec);
-            //context.currentQuery.AddSelectClause(selectClause);
-
-            // We need to make the type in IGrouping<keyType, valueType> and then push the corresponding parameter binding
-            // Look to Parameter Access for inspiration
-
             Collection collection = ExpressionToSql.ConvertToCollection(keySelectorFunc);
             collection.isOuter = true;
             collection.Name = "GroupBy";
@@ -1743,14 +1725,29 @@ namespace Microsoft.Azure.Cosmos.Linq
             ParameterExpression parameterExpression = context.GenerateFreshParameter(returnElementType, keySelectorFunc.ToString(), includeSuffix: false);
             Binding binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
 
-            // TODO - change this to the proper binding
             context.currentQuery.groupByParameter = new FromParameterBindings();
             context.currentQuery.groupByParameter.Add(binding);
-            //context.currentQuery.fromParameters.Add(binding);
 
             // Translate the body of the value selector lambda
-            LambdaExpression valueSelectorLambda = Utilities.GetLambda(arguments[2]);
-            _ = ExpressionToSql.Translate(valueSelectorLambda.Body, context);
+            Expression valueSelectorExpression = Utilities.GetLambda(arguments[2]).Body;
+
+            // The value selector function needs to be either a MethodCall or an AnonymousType
+            switch (valueSelectorExpression.NodeType)
+            {
+                case ExpressionType.Call:
+                    MethodCallExpression methodCallExpression = (MethodCallExpression)valueSelectorExpression;
+                    ExpressionToSql.VisitMethodCall(methodCallExpression, context);
+
+                    break;
+
+                case ExpressionType.New:
+                    SqlScalarExpression newObjectExpression = ExpressionToSql.VisitNew((NewExpression)valueSelectorExpression, context);
+                    context.currentQuery.AddSelectClause(SqlSelectClause.Create(SqlSelectListSpec.Create(SqlSelectItem.Create(newObjectExpression))));
+                    break;
+
+                default:
+                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, valueSelectorExpression.NodeType));
+            }
 
             return collection;
         }

@@ -1295,8 +1295,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                                                                                 (key, value) => value.Max() /*return the Max of each group */)));
             inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
                                                                                 (key, value) => value.Count() /*return the Count of each group */)));
-            //inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
-            //                                                                    (key, value) => new { Count = value.Count() } /*return the Count of each group, alias as Count */)));
+            inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
+                                                                                (key, value) => new { Count = value.Count(), Sum = value.Min() } /*return the Count of each group, alias as Count */)));
             //inputs.Add(new LinqTestInput("GroupBy", b => getQuery(b).GroupBy(f => f.FamilyId)));
             //inputs.Add(new LinqTestInput("GroupBy -> Select query",
             //    b => from f in getQuery(b)
