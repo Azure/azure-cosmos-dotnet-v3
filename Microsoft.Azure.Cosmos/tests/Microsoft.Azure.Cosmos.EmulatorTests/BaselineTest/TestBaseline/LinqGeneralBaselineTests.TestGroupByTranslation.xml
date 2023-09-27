@@ -1,0 +1,38 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy -> Select]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, value) => value.Min())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT MIN(root["FamilyId"]) 
+FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
+      <ErrorMessage><![CDATA[At least one object must implement IComparable.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy -> Select]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, value) => value.Max())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT MAX(root["FamilyId"]) 
+FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
+      <ErrorMessage><![CDATA[At least one object must implement IComparable.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy -> Select]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, value) => value.Count())]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT COUNT(1) 
+FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Unexpected character encountered while parsing value: {. Path '', line 1, position 2.]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>
