@@ -106,6 +106,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        /// <summary>
+        /// Test to validate that when the partition level failover is enabled with the preferred regions list provided, if the first
+        /// region is unavailable for write, then the write should eventually get retried to the next preferred region.
+        /// </summary>
         [TestMethod]
         [Timeout(10000)]
         public async Task CreateItemAsync_WithPreferredRegionsAndServiceUnavailableForFirstPreferredRegion_ShouldRetryAndSucceedToTheNextPreferredRegion()
@@ -194,7 +198,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
         }
 
-
+        /// <summary>
+        /// Test to validate that when the partition level failover is enabled with the preferred regions list is missing, then the client
+        /// initialization should throw an argument exception and fail.
+        /// </summary>
         [TestMethod]
         public void CreateItemAsync_WithNoPreferredRegionsAndServiceUnavailable_ShouldThrowArgumentException()
         {

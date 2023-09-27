@@ -9,14 +9,14 @@ namespace Microsoft.Azure.Cosmos
     internal static class ConfigurationManager
     {
         /// <summary>
-        /// A read-only string containing the environment variablename for enabling replica validation.
+        /// A read-only string containing the environment variable name for enabling replica validation.
         /// This will eventually be removed once replica valdiatin is enabled by default for both preview
         /// and GA.
         /// </summary>
         internal static readonly string ReplicaConnectivityValidationEnabled = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
 
         /// <summary>
-        /// A read-only string containing the environment variablename for enabling per partition automatic failover.
+        /// A read-only string containing the environment variable name for enabling per partition automatic failover.
         /// This will eventually be removed once per partition automatic failover is enabled by default for both preview
         /// and GA.
         /// </summary>
