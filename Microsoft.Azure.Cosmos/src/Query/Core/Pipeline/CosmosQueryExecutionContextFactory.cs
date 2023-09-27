@@ -340,26 +340,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            if (partitionedQueryExecutionInfo == null)
+            // Retrieve the query plan in a subset of cases to ensure the query is valid before creating the Ode pipeline
+            if (partitionedQueryExecutionInfo == null && QueryInspectionRegex.IsMatch(inputParameters.SqlQuerySpec.QueryText))
             {
-                if (QueryInspectionRegex.IsMatch(inputParameters.SqlQuerySpec.QueryText))
-                {
-                    partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
-                        cosmosQueryContext,
-                        inputParameters,
-                        containerQueryProperties,
-                        trace,
-                        cancellationToken);
-
-                    return await TryCreateFromPartitionedQueryExecutionInfoAsync(
-                        documentContainer,
-                        partitionedQueryExecutionInfo,
-                        containerQueryProperties,
-                        cosmosQueryContext,
-                        inputParameters,
-                        trace,
-                        cancellationToken);
-                }
+                partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
+                    cosmosQueryContext,
+                    inputParameters,
+                    containerQueryProperties,
+                    trace,
+                    cancellationToken);
             }
 
             // Test code added to confirm the correct pipeline is being utilized

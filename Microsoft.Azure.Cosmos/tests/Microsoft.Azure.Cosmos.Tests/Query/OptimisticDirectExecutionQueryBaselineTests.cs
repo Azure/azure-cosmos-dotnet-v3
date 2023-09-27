@@ -213,7 +213,7 @@
 
             DocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems, multiPartition: false);
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: input.ExpectedOptimisticDirectExecution);
-            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions, useQueryPlan: true);
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                       documentContainer,
                       cosmosQueryContextCore,
@@ -441,8 +441,7 @@
                                     numItems: 100,
                                     isMultiPartition: false,
                                     expectedContinuationTokenCount: 0,
-                                    requiresDist: true,
-                                    useQueryPlan: false);
+                                    requiresDist: true);
                 }
                 catch (Exception ex)
                 {
@@ -586,11 +585,11 @@
             return (mergeTest, queryPipelineStage);
         }
 
-        private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount, bool requiresDist = false, bool useQueryPlan = true)
+        private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount, bool requiresDist = false)
         {
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition, requiresDist: requiresDist);
-            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions, useQueryPlan);
+            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
             List<CosmosElement> documents = new List<CosmosElement>();
             int continuationTokenCount = 0;
 
@@ -646,9 +645,9 @@
             return tryGetQueryPlan;
         }
 
-        private static async Task<IQueryPipelineStage> GetOdePipelineAsync(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions, bool useQueryPlan = true)
+        private static async Task<IQueryPipelineStage> GetOdePipelineAsync(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions)
         {
-            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions, useQueryPlan);
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
 
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                       documentContainer,
@@ -760,7 +759,7 @@
 
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
 
-            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions, useQueryPlan: true);
+            (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
 
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                       documentContainer,
@@ -785,19 +784,12 @@
             return new OptimisticDirectExecutionTestOutput(input.ExpectedOptimisticDirectExecution);
         }
 
-        private static Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore> CreateInputParamsAndQueryContext(OptimisticDirectExecutionTestInput input, QueryRequestOptions queryRequestOptions, bool useQueryPlan)
+        private static Tuple<CosmosQueryExecutionContextFactory.InputParameters, CosmosQueryContextCore> CreateInputParamsAndQueryContext(OptimisticDirectExecutionTestInput input, QueryRequestOptions queryRequestOptions)
         {
             CosmosSerializerCore serializerCore = new();
             using StreamReader streamReader = new(serializerCore.ToStreamSqlQuerySpec(new SqlQuerySpec(input.Query), Documents.ResourceType.Document));
             string sqlQuerySpecJsonString = streamReader.ReadToEnd();
 
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = null;
-            if (useQueryPlan)
-            {
-                TryCatch<PartitionedQueryExecutionInfo> queryPlan = TryGetPartitionedQueryExecutionInfo(sqlQuerySpecJsonString, input.PartitionKeyDefinition);
-                partitionedQueryExecutionInfo = queryPlan.Succeeded ? queryPlan.Result : throw queryPlan.Exception;
-            }
-            
             CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
                 sqlQuerySpec: new SqlQuerySpec(input.Query),
                 initialUserContinuationToken: input.ContinuationToken,
@@ -807,7 +799,7 @@
                 maxBufferedItemCount: queryRequestOptions.MaxBufferedItemCount,
                 partitionKey: input.PartitionKeyValue,
                 properties: new Dictionary<string, object>() { { "x-ms-query-partitionkey-definition", input.PartitionKeyDefinition } },
-                partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
+                partitionedQueryExecutionInfo: null,
                 executionEnvironment: null,
                 returnResultsInDeterministicOrder: null,
                 forcePassthrough: false,
