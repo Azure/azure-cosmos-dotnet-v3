@@ -31,7 +31,7 @@ CosmosClient client = new CosmosClient(
     clientOptions: options);
 ```
 
-The example above will create a `CosmosClient` instance with speculative processing enabled with at 500ms threhshold. This means that if a request takes longer than 500ms the SDK will send a new request to the backend in order of the Preferred Regions List. This process will repeat until a request comes back. The SDK will then return the first response that comes back from the backend. The threshold parameter is a required parameter can can be set to any value greater than 0. There will also be options to specify a all options for the `AvailabilityStrategyOptions` object at request level and enable or disable speculative processing at request level.
+The example above will create a `CosmosClient` instance with AvailabilityStrategy enabled with at 500ms threhshold. This means that if a request takes longer than 500ms the SDK will send a new request to the backend in order of the Preferred Regions List. If still no response comes back after the step time, another parallel request will be made to the next region.  The SDK will then return the first response that comes back from the backend. The threshold parameter is a required parameter can can be set to any value greater than 0. There will also be options to specify all options for the `AvailabilityStrategyOptions` object at request level and enable or disable at request level.
 
 ```csharp
 RequestOptions requestOptions = new RequestOptions()
@@ -42,19 +42,9 @@ RequestOptions requestOptions = new RequestOptions()
 };
 ```
 
-## Dynamic Preferred Regions
+## Exclude Regions
 
-If you want to change the preferred regions for a `CosmosClient` you can do so by callinga new method.
-
-```csharp
-client.UpdatePreferredRegions(new List<string>() { "West US", "East US" });
-```
-
-This will update the preferred regions for the client. The SDK will then use the new preferred regions for all new requests.
-
-## Region Choice at Request Level
-
-To choose what region a request will be routed to at a per request level there is a new option on the `RequestOptions` object.
+In request options, uses can specify a list of regions to exclude from the request. This will ensure that the request is not routed to the specified region(s).
 
 ```csharp
 RequestOptions requestOptions = new RequestOptions()
@@ -65,61 +55,17 @@ RequestOptions requestOptions = new RequestOptions()
 ItemResponse<MyItem> response = await container.ReadItemAsync<MyItem>("id", partitionKey, requestOptions);
 ```
 
-or
+This can be used in scenarios where one regions is experiencing an outage and the user wants to ensure that the request is not routed to that region. Additional use cases can include scenarios where a users wants to route a request to a region that is not the primary region. In this cases, by excluding the primary region from the request, the request will be routed to the next region in the Preferred Regions List.
 
-```csharp
-QueryRequestOptions requestOptions = new QueryRequestOptions()
-{
-    ExcludeLocations = new List<string> {"West US"}
-};
+## Availability Strategy Conistency Levels
 
-FeedIterator<MyItem> iterator = container.GetItemQueryIterator<MyItem>("SELECT * FROM c", requestOptions);
-```
-
-This will ensure that the request is not routed to the specified region(s).
-
-## Region Specific Conistency Levels
-
-~~To set a region specific consistency level there is a option when creating a `CosmosClient` in `CosmosClientOptions`.~~
-
-```csharp
-CosmosClient client = new CosmosClientBuilder()
-    .WithPerRegionConsistencyLevels(
-        new ObservableCollection<string, ConsistencyLevel>()
-        {
-            { "West US", ConsistencyLevel.Eventual },
-            { "East US", ConsistencyLevel.Session }
-        })
-    .Build();
-```
-
-~~or~~
-
-```csharp
-CosmosClientOptions options = new CosmosClientOptions()
-{
-    RegionConsistencyLevel = new ObservableCollection<string, ConsistencyLevel>()
-    {
-        { "West US", ConsistencyLevel.Eventual },
-        { "East US", ConsistencyLevel.Session }
-    }
-};
-
-CosmosClient client = new CosmosClient(
-    accountEndpoint: "account endpoint",
-    authKeyOrResourceToken: "auth key or resource token",
-    clientOptions: options);
-```
-
-~~This will set the consistency level for the regions specified in the dictionary. If a region is not specified in the dictionary the SDK will use the default consistency level for the account.~~
-
-### Option 2
+When using an availaibity strategy, you can now specify what consistency level you want to use for the requests made in the case where parallel hedging is made.
 
 ```csharp
 RequestOptions requestOptions = new RequestOptions()
 {
-    AvailabilityStrategyFallbackConsistencyLevel = ConsistencyLevel.Eventual
+    AvailabilityStrategyRequestConsistencyLevel = ConsistencyLevel.Eventual
 };
 ```
 
-This will work similar to the `RquestOptions.BaseConsistencyLevel` that already exists in the SDK. Not every request supports consistency level. This allows each child to decide to expose it and use the same base logic.
+This will work similar to the `RquestOptions.BaseConsistencyLevel` that already exists in the SDK. Not every request supports consistency level.
