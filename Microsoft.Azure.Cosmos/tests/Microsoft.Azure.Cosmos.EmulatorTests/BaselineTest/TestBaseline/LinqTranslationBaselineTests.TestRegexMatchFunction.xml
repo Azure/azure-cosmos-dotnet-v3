@@ -38,49 +38,121 @@ WHERE RegexMatch(root["StringField"], root["StringField2"])]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[RegexMatch with ToString]]></Description>
-      <Expression><![CDATA[query.Where(doc => doc.StringField.RegexMatch(doc.IntField.ToString(), "this should error out on the back end"))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.RegexMatch(doc.IntField.ToString()))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE RegexMatch(root["StringField"], ToString(root["IntField"]), "this should error out on the back end")]]></SqlQuery>
+WHERE RegexMatch(root["StringField"], ToString(root["IntField"]))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[RegexMatch with StringUpper]]></Description>
-      <Expression><![CDATA[query.Where(doc => doc.StringField.RegexMatch(doc.StringField2.ToUpper(), "this should error out on the back end"))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.RegexMatch(doc.StringField2.ToUpper()))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE RegexMatch(root["StringField"], UPPER(root["StringField2"]), "this should error out on the back end")]]></SqlQuery>
+WHERE RegexMatch(root["StringField"], UPPER(root["StringField2"]))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[RegexMatch with StringLower]]></Description>
-      <Expression><![CDATA[query.Where(doc => doc.StringField.RegexMatch(doc.StringField2.ToLower(), "this should error out on the back end"))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.RegexMatch(doc.StringField2.ToLower()))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE RegexMatch(root["StringField"], LOWER(root["StringField2"]), "this should error out on the back end")]]></SqlQuery>
+WHERE RegexMatch(root["StringField"], LOWER(root["StringField2"]))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[RegexMatch with StringConcat]]></Description>
-      <Expression><![CDATA[query.Where(doc => doc.StringField.RegexMatch(Concat(doc.StringField, "str"), "this should error out on the back end"))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.RegexMatch(Concat(doc.StringField, "str")))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE RegexMatch(root["StringField"], CONCAT(root["StringField"], "str"), "this should error out on the back end")]]></SqlQuery>
+WHERE RegexMatch(root["StringField"], CONCAT(root["StringField"], "str"))]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RegexMatch with string composition]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.IntField.ToString().RegexMatch(doc.StringField))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE RegexMatch(ToString(root["IntField"]), root["StringField"])]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RegexMatch with string composition 2]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.IntField.ToString().RegexMatch(doc.StringField, doc.StringField2.ToString()))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE RegexMatch(ToString(root["IntField"]), root["StringField"], root["StringField2"])]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RegexMatch with conditional]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField.RegexMatch("abc") AndAlso doc.StringField2.RegexMatch("def")))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (RegexMatch(root["StringField"], "abc") AND RegexMatch(root["StringField2"], "def"))]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RegexMatch with conditional 2]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField.RegexMatch("abc") OrElse doc.StringField2.RegexMatch("def")))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (RegexMatch(root["StringField"], "abc") OR RegexMatch(root["StringField2"], "def"))]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RegexMatch with conditional 3]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.RegexMatch("abc")).Where(doc => doc.StringField2.RegexMatch("abc"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (RegexMatch(root["StringField"], "abc") AND RegexMatch(root["StringField2"], "abc"))]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RegexMatch with conditional 4]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.RegexMatch("abc")).Where(doc => Not(doc.StringField2.RegexMatch("abc")))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (RegexMatch(root["StringField"], "abc") AND (NOT RegexMatch(root["StringField2"], "abc")))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
