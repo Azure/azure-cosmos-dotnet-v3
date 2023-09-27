@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 {
     using System;
+    using System.Net;
     using Documents;
 
     internal static class DiagnosticsFilterHelper
@@ -26,7 +27,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
             }
             else
             {
-                latencyThreshold = operationType == OperationType.Query ? DistributedTracingOptions.DefaultQueryTimeoutThreshold : DistributedTracingOptions.DefaultCrudLatencyThreshold;
+                latencyThreshold = DiagnosticsFilterHelper.IsPointOperation(operationType) ?
+                    DistributedTracingOptions.DefaultCrudLatencyThreshold :
+                    DistributedTracingOptions.DefaultQueryTimeoutThreshold;
             }
 
             return response.Diagnostics.GetClientElapsedTime() > latencyThreshold;
@@ -36,13 +39,27 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         /// Check if response HTTP status code is returning successful
         /// </summary>
         /// <returns>true or false</returns>
-        public static bool IsSuccessfulResponse(OpenTelemetryAttributes response)
-        { 
-            return response.StatusCode.IsSuccess() 
-                        || (response.StatusCode == System.Net.HttpStatusCode.NotFound && response.SubStatusCode == 0)
-                        || (response.StatusCode == System.Net.HttpStatusCode.NotModified && response.SubStatusCode == 0)
-                        || (response.StatusCode == System.Net.HttpStatusCode.Conflict && response.SubStatusCode == 0)
-                        || (response.StatusCode == System.Net.HttpStatusCode.PreconditionFailed && response.SubStatusCode == 0);
+        public static bool IsSuccessfulResponse(HttpStatusCode statusCode, int substatusCode)
+        {
+            return statusCode.IsSuccess()
+            || (statusCode == System.Net.HttpStatusCode.NotFound && substatusCode == 0)
+            || (statusCode == System.Net.HttpStatusCode.NotModified && substatusCode == 0)
+            || (statusCode == System.Net.HttpStatusCode.Conflict && substatusCode == 0)
+            || (statusCode == System.Net.HttpStatusCode.PreconditionFailed && substatusCode == 0);
+        }
+
+        /// <summary>
+        /// Check if passed operation type is a point operation
+        /// </summary>
+        /// <param name="operationType"></param>
+        public static bool IsPointOperation(OperationType operationType)
+        {
+            return operationType == OperationType.Create ||
+                   operationType == OperationType.Delete ||
+                   operationType == OperationType.Replace ||
+                   operationType == OperationType.Upsert ||
+                   operationType == OperationType.Patch ||
+                   operationType == OperationType.Read;
         }
     }
 }
