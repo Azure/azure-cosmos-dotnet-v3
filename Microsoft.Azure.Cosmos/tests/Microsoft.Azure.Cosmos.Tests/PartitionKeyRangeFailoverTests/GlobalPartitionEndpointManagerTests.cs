@@ -196,8 +196,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
 
         [TestMethod]
-        [Timeout(10000)]
-        public async Task CreateItemAsync_WithNoPreferredRegionsAndServiceUnavailable_ShouldThrowServiceUnavailableException()
+        public void CreateItemAsync_WithNoPreferredRegionsAndServiceUnavailable_ShouldThrowArgumentException()
         {
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
                 out string secondaryRegionNameForUri,
@@ -241,29 +240,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
 
-            using CosmosClient customClient = new CosmosClient(
+            ArgumentException exception = Assert.ThrowsException<ArgumentException>(() => new CosmosClient(
                  globalEndpoint,
                  Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
-                 cosmosClientOptions);
+                 cosmosClientOptions));
 
-            Container container = customClient.GetContainer(databaseName, containerName);
-
-            ToDoActivity toDoActivity = new ToDoActivity()
-            {
-                Id = "TestItem",
-                Pk = "TestPk"
-            };
-
-            // First create will fail because it is not certain if the payload was sent or not.
-            try
-            {
-                await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
-                Assert.Fail("Should throw an exception");
-            }
-            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.ServiceUnavailable)
-            {
-                Assert.IsNotNull(ce);
-            }
+            Assert.AreEqual(
+                expected: "ApplicationPreferredRegions is required when EnablePartitionLevelFailover is enabled.",
+                actual: exception.Message);
         }
 
         [TestMethod]
