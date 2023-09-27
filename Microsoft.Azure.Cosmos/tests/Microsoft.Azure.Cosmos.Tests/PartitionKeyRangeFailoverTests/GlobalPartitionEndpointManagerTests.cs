@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Timeout(10000)]
-        public async Task CreateItemAsync_WithPreferredRegionsAndServiceUnavailable_ShouldRetryAndSucceed()
+        public async Task CreateItemAsync_WithPreferredRegionsAndServiceUnavailableForFirstPreferredRegion_ShouldRetryAndSucceedToTheNextPreferredRegion()
         {
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
                 out string secondaryRegionNameForUri,
