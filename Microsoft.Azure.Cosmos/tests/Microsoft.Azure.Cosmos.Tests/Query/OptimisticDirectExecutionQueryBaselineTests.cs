@@ -442,7 +442,7 @@
                                     isMultiPartition: false,
                                     expectedContinuationTokenCount: 0,
                                     requiresDist: true);
-                    Assert.Fail("Invalid query being executed did not result in exception");
+                    Assert.Fail("Invalid query being executed did not result in an exception");
                 }
                 catch (Exception ex)
                 {
