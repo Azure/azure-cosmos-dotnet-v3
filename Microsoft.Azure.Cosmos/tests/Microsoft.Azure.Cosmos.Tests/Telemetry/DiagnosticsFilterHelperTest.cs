@@ -71,11 +71,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             Assert.IsTrue(
                 !DiagnosticsFilterHelper
-                    .IsSuccessfulResponse(response),
+                    .IsSuccessfulResponse(response.StatusCode, response.SubStatusCode),
                 $" Response time is {response.Diagnostics.GetClientElapsedTime().Milliseconds}ms " +
                 $"and Configured threshold value is {distributedTracingOptions.LatencyThresholdForDiagnosticEvent.Value.Milliseconds}ms " +
                 $"and Is response Success : {response.StatusCode.IsSuccess()}");
-
         }
 
     }
