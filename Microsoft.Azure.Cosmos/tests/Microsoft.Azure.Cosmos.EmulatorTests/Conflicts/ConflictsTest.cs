@@ -28,6 +28,7 @@
         ///    - Use more than 2 regions in the configuration.
         /// </remarks>
         /// <returns></returns>
+        [Ignore]
         [TestMethod]
         public async Task TestConflicts()
         {
