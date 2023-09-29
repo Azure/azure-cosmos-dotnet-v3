@@ -59,14 +59,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         {
             IReadOnlyList<string> excludedResponses = new List<string>()
             {
-            "MediaResponse",
-            "DocumentFeedResponse`1",
-            "CosmosQuotaResponse",
-            "StoredProcedureResponse`1",
-            "StoredProcedureExecuteResponse`1",
-            "StoredProcedureResponse",
-            "TriggerResponse",
-            "UserDefinedFunctionResponse"
+            "MediaResponse", // Part of dead code
+            "DocumentFeedResponse`1",// Part of dead code
+            "CosmosQuotaResponse"// Part of dead code
             };
 
             IDictionary<string, object> responseInstances = new Dictionary<string, object>()
@@ -84,7 +79,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 { "ThroughputResponse", new Mock<ThroughputResponse>().Object },
                 { "UserResponse", new Mock<UserResponse>().Object },
                 { "ChangeFeedEstimatorFeedResponse",  ChangefeedResponseFunc},
-                { "ChangeFeedEstimatorEmptyFeedResponse", ChangeFeedEstimatorEmptyFeedResponseFunc }
+                { "ChangeFeedEstimatorEmptyFeedResponse", ChangeFeedEstimatorEmptyFeedResponseFunc },
+                { "StoredProcedureResponse`1", new Mock<StoredProcedureResponse<object>>().Object },
+                { "StoredProcedureExecuteResponse`1",new Mock<StoredProcedureExecuteResponse<object>>().Object },
+                { "StoredProcedureResponse", new Mock<StoredProcedureResponse>().Object },
+                { "TriggerResponse", new Mock<TriggerResponse>().Object },
+                { "UserDefinedFunctionResponse", new Mock<UserDefinedFunctionResponse>().Object }
             };
 
             Assembly asm = OpenTelemetryRecorderTests.GetAssemblyLocally(DllName);
@@ -146,6 +146,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 else if (instance is Func<Type, FeedResponse<ChangeFeedProcessorState>> fucntion)
                 {
                     _ = new OpenTelemetryResponse<ChangeFeedProcessorState>(fucntion(className));
+                }
+                else if (instance is Response< IStoredProcedureResponse<object>> iStoredProcedureResponse)
+                {
+                    _ = new OpenTelemetryResponse<IStoredProcedureResponse<object>>(iStoredProcedureResponse);
+                }
+                else if (instance is Response<StoredProcedureProperties> storedProcedureResponse)
+                {
+                    _ = new OpenTelemetryResponse<StoredProcedureProperties>(storedProcedureResponse);
+                }
+                else if (instance is Response<TriggerProperties> triggerResponse)
+                {
+                    _ = new OpenTelemetryResponse<TriggerProperties>(triggerResponse);
+                }
+                else if (instance is Response<UserDefinedFunctionProperties> userDefinedFunctionResponse)
+                {
+                    _ = new OpenTelemetryResponse<UserDefinedFunctionProperties>(userDefinedFunctionResponse);
                 }
                 else
                 {
