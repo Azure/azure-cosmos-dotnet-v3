@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Net;
     using Telemetry;
 
@@ -17,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
                diagnostics: responseMessage.Diagnostics,
                itemCount: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ItemCount,
                requestMessage: responseMessage.RequestMessage,
-               subStatusCode: (int)OpenTelemetryResponse<T>.GetHeader(responseMessage)?.SubStatusCode,
+               subStatusCode: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.SubStatusCode,
                activityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ActivityId,
                correlatedActivityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.CorrelatedActivityId,
                operationType: responseMessage is QueryResponse<T> ? Documents.OperationType.Query : Documents.OperationType.Invalid)
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
                   diagnostics: responseMessage.Diagnostics,
                   itemCount: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ItemCount,
                   requestMessage: responseMessage.RequestMessage,
-                  subStatusCode: (int)OpenTelemetryResponse<T>.GetHeader(responseMessage)?.SubStatusCode,
+                  subStatusCode: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.SubStatusCode,
                   activityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.ActivityId,
                   correlatedActivityId: OpenTelemetryResponse<T>.GetHeader(responseMessage)?.CorrelatedActivityId,
                   operationType: responseMessage is QueryResponse ? Documents.OperationType.Query : Documents.OperationType.Invalid)
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
            CosmosDiagnostics diagnostics,
            string itemCount,
            RequestMessage requestMessage,
-           int subStatusCode,
+           Documents.SubStatusCodes? subStatusCode,
            string activityId,
            string correlatedActivityId,
            Documents.OperationType operationType)
@@ -57,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResponseContentLength = responseContentLength;
             this.Diagnostics = diagnostics;
             this.ItemCount = itemCount;
-            this.SubStatusCode = subStatusCode;
+            this.SubStatusCode = (int)(subStatusCode ?? Documents.SubStatusCodes.Unknown);
             this.ActivityId = activityId;
             this.CorrelatedActivityId = correlatedActivityId;
             this.OperationType = operationType;
@@ -83,6 +84,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch
             {
+                Console.WriteLine("Failed to get headers from Response");
                 return null;
             }
         }
