@@ -7,6 +7,7 @@ namespace CosmosCTL
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using CommandLine;
     using CommandLine.Text;
@@ -174,6 +175,9 @@ namespace CosmosCTL
         internal async Task<CosmosClient> CreateCosmosClientAndWarmupCachesAsync(
             List<(string, string)> containers)
         {
+            CancellationTokenSource cancellationTokenSource = new ();
+            cancellationTokenSource.CancelAfter(TimeSpan.FromMinutes(10));
+
             CosmosClientOptions clientOptions = new()
             {
                 ApplicationName = CTLConfig.UserAgentSuffix,
@@ -200,7 +204,8 @@ namespace CosmosCTL
                 this.EndPoint,
                 this.Key,
                 containers,
-                clientOptions);
+                clientOptions,
+                cancellationTokenSource.Token);
         }
 
         private static void HandleParseError(
