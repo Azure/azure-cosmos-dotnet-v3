@@ -88,8 +88,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                            DisableDistributedTracing = false,
                            CosmosThresholdOptions = new CosmosThresholdOptions()
                            {
-                               PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
-                               NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                               PointOperationLatencyThreshold = TimeSpan.Zero,
+                               NonPointOperationLatencyThreshold = TimeSpan.Zero
                            }
                        });
                    }

@@ -20,12 +20,12 @@ namespace Microsoft.Azure.Cosmos
         /// Latency Threshold for non point operations i.e. Query
         /// </summary>
         /// <value>500 ms</value>
-        public TimeSpan NonPointOperationLatencyThreshold { get; set; } = TimeSpan.FromMilliseconds(500);
+        public TimeSpan NonPointOperationLatencyThreshold { get; set; } = TimeSpan.FromSeconds(3);
 
         /// <summary>
         /// Latency Threshold for point operations i.e operation other than Query
         /// </summary>
         /// <value>100 ms</value>
-        public TimeSpan PointOperationLatencyThreshold { get; set; } = TimeSpan.FromMilliseconds(100);
+        public TimeSpan PointOperationLatencyThreshold { get; set; } = TimeSpan.FromSeconds(1);
     }
 }

@@ -59,8 +59,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                         DisableDistributedTracing = false,
                         CosmosThresholdOptions = new CosmosThresholdOptions()
                         {
-                            PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
-                            NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                            PointOperationLatencyThreshold = TimeSpan.Zero,
+                            NonPointOperationLatencyThreshold = TimeSpan.Zero
                         }
                     }));
 
@@ -71,8 +71,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                     DisableDistributedTracing = false,
                     CosmosThresholdOptions = new CosmosThresholdOptions()
                     {
-                        PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
-                        NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                        PointOperationLatencyThreshold = TimeSpan.Zero,
+                        NonPointOperationLatencyThreshold = TimeSpan.Zero
                     }
                  }));
 
@@ -85,8 +85,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                         DisableDistributedTracing = false,
                         CosmosThresholdOptions = new CosmosThresholdOptions()
                         {
-                            PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
-                            NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                            PointOperationLatencyThreshold = TimeSpan.Zero,
+                            NonPointOperationLatencyThreshold = TimeSpan.Zero
                         }
                      }));
 
@@ -1043,8 +1043,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                         DisableDistributedTracing = false,
                         CosmosThresholdOptions = new CosmosThresholdOptions()
                         {
-                            PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
-                            NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                            PointOperationLatencyThreshold = TimeSpan.Zero,
+                            NonPointOperationLatencyThreshold = TimeSpan.Zero
                         }
                      })
                     .WithThrottlingRetryOptions(
@@ -1336,8 +1336,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                             DisableDistributedTracing = false,
                             CosmosThresholdOptions = new CosmosThresholdOptions()
                             {
-                                PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0),
-                                NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(0)
+                                PointOperationLatencyThreshold = TimeSpan.Zero,
+                                NonPointOperationLatencyThreshold = TimeSpan.Zero
                             }
                          })
                         .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
