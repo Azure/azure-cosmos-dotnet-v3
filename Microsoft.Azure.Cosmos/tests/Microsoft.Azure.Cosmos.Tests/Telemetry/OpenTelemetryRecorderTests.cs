@@ -59,9 +59,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         {
             IReadOnlyList<string> excludedResponses = new List<string>()
             {
-            "MediaResponse", // Part of dead code
-            "DocumentFeedResponse`1",// Part of dead code
-            "CosmosQuotaResponse"// Part of dead code
+                "MediaResponse", // Part of dead code
+                "DocumentFeedResponse`1",// Part of dead code
+                "CosmosQuotaResponse",// Part of dead code
+                "StoredProcedureResponse`1" // Not supported as of now
             };
 
             IDictionary<string, object> responseInstances = new Dictionary<string, object>()
@@ -80,7 +81,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 { "UserResponse", new Mock<UserResponse>().Object },
                 { "ChangeFeedEstimatorFeedResponse",  ChangefeedResponseFunc},
                 { "ChangeFeedEstimatorEmptyFeedResponse", ChangeFeedEstimatorEmptyFeedResponseFunc },
-                { "StoredProcedureResponse`1", new Mock<StoredProcedureResponse<object>>().Object },
                 { "StoredProcedureExecuteResponse`1",new Mock<StoredProcedureExecuteResponse<object>>().Object },
                 { "StoredProcedureResponse", new Mock<StoredProcedureResponse>().Object },
                 { "TriggerResponse", new Mock<TriggerResponse>().Object },
@@ -147,10 +147,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 {
                     _ = new OpenTelemetryResponse<ChangeFeedProcessorState>(fucntion(className));
                 }
-                else if (instance is Response< IStoredProcedureResponse<object>> iStoredProcedureResponse)
-                {
-                    _ = new OpenTelemetryResponse<IStoredProcedureResponse<object>>(iStoredProcedureResponse);
-                }
                 else if (instance is Response<StoredProcedureProperties> storedProcedureResponse)
                 {
                     _ = new OpenTelemetryResponse<StoredProcedureProperties>(storedProcedureResponse);
@@ -163,9 +159,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 {
                     _ = new OpenTelemetryResponse<UserDefinedFunctionProperties>(userDefinedFunctionResponse);
                 }
+                else if (instance is Response<StoredProcedureExecuteResponse<object>> storedProcedureExecuteResponse)
+                {
+                    _ = new OpenTelemetryResponse<StoredProcedureExecuteResponse<object>>(storedProcedureExecuteResponse);
+                }
                 else
                 {
-                    Assert.Fail("Opentelemetry does not support this response type" + className.Name);
+                    Assert.Fail("Opentelemetry does not support this response type " + className.Name);
                 }
             }
         }
