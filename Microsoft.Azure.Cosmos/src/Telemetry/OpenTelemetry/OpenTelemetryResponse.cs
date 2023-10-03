@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.IO;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -98,7 +97,6 @@ namespace Microsoft.Azure.Cosmos
             }
             catch
             {
-
                 DefaultTrace.TraceWarning("Failed to get headers from ResponseMessage");
                 return null;
             }

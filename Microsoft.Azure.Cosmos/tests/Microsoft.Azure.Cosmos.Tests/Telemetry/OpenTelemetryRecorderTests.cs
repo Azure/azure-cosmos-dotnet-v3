@@ -7,21 +7,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Diagnostics;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Cosmos.Telemetry;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class OpenTelemetryRecorderTests

@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Telemetry;
