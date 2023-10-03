@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Telemetry;
 
     internal sealed class OpenTelemetryResponse<T> : OpenTelemetryAttributes
@@ -72,6 +73,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch
             {
+                DefaultTrace.TraceWarning("Failed to get headers from FeedResponse<T>");
                 return null;
             }
         }
@@ -84,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch
             {
-                Console.WriteLine("Failed to get headers from Response");
+                DefaultTrace.TraceWarning("Failed to get headers from Response<T>");
                 return null;
             }
         }
