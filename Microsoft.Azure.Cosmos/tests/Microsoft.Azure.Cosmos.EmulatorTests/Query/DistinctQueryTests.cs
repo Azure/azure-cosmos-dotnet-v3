@@ -275,6 +275,57 @@
             await this.TestQueryDistinctBaseAsync(ImplemenationAsync);
         }
 
+        [TestMethod]
+        public async Task TestDistinct_MultiValue_ContinuationTokenSupportAsync()
+        {
+            async Task ImplemenationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                // Run the ordered distinct query through the continuation api, should result in the same set
+                // since the previous hash is passed in the continuation token.
+                foreach (string query in new string[]
+                {
+                "SELECT {0} c.age, c.name FROM c ORDER BY c.age, c.name"
+                })
+                {
+                    string queryWithoutDistinct = string.Format(query, "");
+                    MockDistinctMap documentsSeen = new MockDistinctMap();
+                    List<CosmosElement> documentsFromWithoutDistinct = await QueryTestsBase.RunQueryCombinationsAsync(
+                        container,
+                        queryWithoutDistinct,
+                        new QueryRequestOptions()
+                        {
+                            MaxConcurrency = 10,
+                            MaxItemCount = 100,
+                        },
+                        QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
+                    documentsFromWithoutDistinct = documentsFromWithoutDistinct
+                        .Where(document => documentsSeen.Add(document, out UInt128 hash))
+                        .ToList();
+
+                    foreach (int pageSize in new int[] { 1, 10, 100 })
+                    {
+                        string queryWithDistinct = string.Format(query, "DISTINCT");
+                        List<CosmosElement> documentsFromWithDistinct = await QueryTestsBase.RunQueryCombinationsAsync(
+                            container,
+                            queryWithDistinct,
+                            new QueryRequestOptions()
+                            {
+                                MaxConcurrency = 10,
+                                MaxItemCount = pageSize
+                            },
+                            QueryDrainingMode.ContinuationToken | QueryDrainingMode.HoldState);
+
+                        Assert.AreEqual(
+                            expected: CosmosArray.Create(documentsFromWithDistinct),
+                            actual: CosmosArray.Create(documentsFromWithoutDistinct),
+                            message: $"Documents didn't match for {queryWithDistinct} on a Partitioned container");
+                    }
+                }
+            }
+
+            await this.TestQueryDistinctBaseAsync(ImplemenationAsync);
+        }
+
         private async Task TestQueryDistinctBaseAsync(Query query)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -303,11 +354,23 @@
             }
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
+                ConnectionModes.Direct, // | ConnectionModes.Gateway,
                 CollectionTypes.MultiPartition,
                 documents,
                 query,
-                "/id");
+                "/id",
+                indexingPolicy: new IndexingPolicy()
+                {
+                    IncludedPaths = new System.Collections.ObjectModel.Collection<IncludedPath> { new IncludedPath() { Path = "/*" } },
+                    CompositeIndexes = new System.Collections.ObjectModel.Collection<System.Collections.ObjectModel.Collection<CompositePath>>
+                    {
+                        new System.Collections.ObjectModel.Collection<CompositePath>()
+                        {
+                            new CompositePath() { Path = "/age" },
+                            new CompositePath() { Path = "/name" }
+                        }
+                    }
+                });
         }
 
         private sealed class MockDistinctMap

@@ -68,7 +68,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         [TestCleanup]
         public async Task Cleanup()
         {
-            await this.database.DeleteStreamAsync();
+            if (this.database != null)
+            {
+                await this.database.DeleteStreamAsync();
+            }
+
             this.Client.Dispose();
             this.GatewayClient.Dispose();
         }
