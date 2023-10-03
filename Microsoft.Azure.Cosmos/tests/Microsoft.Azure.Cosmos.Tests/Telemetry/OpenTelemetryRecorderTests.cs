@@ -7,15 +7,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.ComponentModel;
     using System.Linq;
     using System.Net;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Cosmos.Telemetry;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.VisualBasic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -49,10 +52,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             }
             
         }
-
+        /// <summary>
+        /// This test verifies whether OpenTelemetryResponse can be initialized using a specific type of response available in the SDK. 
+        /// If any new response is added to the SDK in the future, it must be configured in either of the following dictionaries.
+        /// </summary>
+        /// <returns></returns>
         [TestMethod]
         public async Task CheckResponseCompatibility()
         {
+            // This list contains all the response types which are not compatible with Open Telemetry Response
             IReadOnlyList<string> excludedResponses = new List<string>()
             {
                 "MediaResponse", // Part of dead code
@@ -61,6 +69,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 "StoredProcedureResponse`1" // Not supported as of now
             };
 
+            // This dictionary contains a Key-Value pair where the Key represents the Response Type compatible with Open Telemetry Response, and the corresponding Value is a mocked instance.
+            // Essentially, at some point in the code, we send an instance of the response to Open Telemetry to retrieve relevant information.
             IDictionary<string, object> responseInstances = new Dictionary<string, object>()
             {
                 { "PartitionKeyRangeBatchResponse", await OpenTelemetryRecorderTests.GetPartitionKeyRangeBatchResponse() },
