@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
             this.OperationType = operationType;
         }
 
-        internal static string GetPayloadSize(ResponseMessage response)
+        private static string GetPayloadSize(ResponseMessage response)
         {
             if (response?.Content != null
                     && response.Content.CanSeek
