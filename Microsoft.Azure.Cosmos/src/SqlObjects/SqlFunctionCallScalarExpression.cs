@@ -112,6 +112,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.Power, Identifiers.Power },
             { Names.Radians, Identifiers.Radians },
             { Names.Rand, Identifiers.Rand },
+            { Names.RegexMatch, Identifiers.RegexMatch },
             { Names.Replace, Identifiers.Replace },
             { Names.Replicate, Identifiers.Replicate },
             { Names.Reverse, Identifiers.Reverse },
@@ -332,6 +333,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Power = "POWER";
             public const string Radians = "RADIANS";
             public const string Rand = "RAND";
+            public const string RegexMatch = "RegexMatch";
             public const string Replace = "REPLACE";
             public const string Replicate = "REPLICATE";
             public const string Reverse = "REVERSE";
@@ -474,6 +476,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier Power = SqlIdentifier.Create(Names.Power);
             public static readonly SqlIdentifier Radians = SqlIdentifier.Create(Names.Radians);
             public static readonly SqlIdentifier Rand = SqlIdentifier.Create(Names.Rand);
+            public static readonly SqlIdentifier RegexMatch = SqlIdentifier.Create(Names.RegexMatch);
             public static readonly SqlIdentifier Replace = SqlIdentifier.Create(Names.Replace);
             public static readonly SqlIdentifier Replicate = SqlIdentifier.Create(Names.Replicate);
             public static readonly SqlIdentifier Reverse = SqlIdentifier.Create(Names.Reverse);
