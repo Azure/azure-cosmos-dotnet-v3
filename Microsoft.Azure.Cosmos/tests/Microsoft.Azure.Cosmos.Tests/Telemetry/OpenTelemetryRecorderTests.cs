@@ -7,18 +7,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.ComponentModel;
     using System.Linq;
     using System.Net;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using Cosmos.Telemetry;
-    using global::Azure;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.VisualBasic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -56,7 +53,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         /// This test verifies whether OpenTelemetryResponse can be initialized using a specific type of response available in the SDK. 
         /// If any new response is added to the SDK in the future, it must be configured in either of the following dictionaries.
         /// </summary>
-        /// <returns></returns>
         [TestMethod]
         public async Task CheckResponseCompatibility()
         {
