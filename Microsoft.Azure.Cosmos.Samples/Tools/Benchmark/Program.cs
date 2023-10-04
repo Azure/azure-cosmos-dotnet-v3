@@ -6,9 +6,7 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
     using System.Diagnostics;
-    using System.Diagnostics.Tracing;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -19,7 +17,6 @@ namespace CosmosBenchmark
     using Azure.Monitor.OpenTelemetry.Exporter;
     using CosmosBenchmark.Fx;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json.Linq;
     using OpenTelemetry;
     using OpenTelemetry.Metrics;
