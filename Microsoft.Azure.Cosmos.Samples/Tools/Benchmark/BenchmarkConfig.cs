@@ -104,7 +104,7 @@ namespace CosmosBenchmark
         public bool DisableCoreSdkLogging { get; set; }
 
         [Option(Required = false, HelpText = "Enable Distributed Tracing")]
-        public bool EnableDistributedTracing { get; set; }
+        public bool EnableDistributedTracing { get; set; } = false;
 
         [Option(Required = false, HelpText = "Client Telemetry Schedule in Seconds")]
         public int  TelemetryScheduleInSec { get; set; }
@@ -139,7 +139,7 @@ namespace CosmosBenchmark
         public string AppInsightsConnectionString { get; set; }
 
         [Option(Required = false, HelpText = "Enable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
-        public bool EnableClientTelemetry { get; set; } = true;
+        public bool EnableClientTelemetry { get; set; } = false;
 
         internal int GetTaskCount(int containerThroughput)
         {
