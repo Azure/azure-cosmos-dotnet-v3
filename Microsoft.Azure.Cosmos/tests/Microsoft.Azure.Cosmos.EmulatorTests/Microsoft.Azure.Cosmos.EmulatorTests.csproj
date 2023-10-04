@@ -202,6 +202,9 @@
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+	<Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestRegexMatchFunction.xml">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestSelectTop.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
