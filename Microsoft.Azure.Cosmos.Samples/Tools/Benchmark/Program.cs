@@ -176,6 +176,7 @@ namespace CosmosBenchmark
 
                 Utility.TeePrint("Starting Inserts with {0} tasks", taskCount);
 
+                ContainerResponse containerResponse = await container.ReadContainerAsync();
                 string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
                 int opsPerTask = config.ItemCount / taskCount;
 
