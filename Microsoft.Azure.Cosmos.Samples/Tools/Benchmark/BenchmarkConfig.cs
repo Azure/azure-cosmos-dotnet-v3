@@ -139,7 +139,7 @@ namespace CosmosBenchmark
         public string AppInsightsConnectionString { get; set; }
 
         [Option(Required = false, HelpText = "Enable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
-        public bool EnableClientTelemetry { get; set; } = false;
+        public bool EnableTelemetry { get; set; } = false;
 
         internal int GetTaskCount(int containerThroughput)
         {
@@ -222,7 +222,7 @@ namespace CosmosBenchmark
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 CosmosClientTelemetryOptions = new Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions()
                 {
-                    DisableSendingMetricsToService = !this.EnableClientTelemetry,
+                    DisableSendingMetricsToService = !this.EnableTelemetry,
                     DisableDistributedTracing = !this.EnableDistributedTracing
                 }
             };
