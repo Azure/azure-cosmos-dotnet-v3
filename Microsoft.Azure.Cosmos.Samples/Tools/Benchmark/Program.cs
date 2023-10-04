@@ -6,6 +6,7 @@ namespace CosmosBenchmark
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Diagnostics;
     using System.Diagnostics.Tracing;
     using System.IO;
@@ -155,9 +156,7 @@ namespace CosmosBenchmark
                     await database.DeleteStreamAsync();
                 }
 
-                ContainerResponse containerResponse = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
-                Container container = containerResponse;
-
+                Container container = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
                 int? currentContainerThroughput = await container.ReadThroughputAsync();
 
                 if (!currentContainerThroughput.HasValue)
@@ -320,19 +319,29 @@ namespace CosmosBenchmark
         /// Get or Create a partitioned container and display cost of running this test.
         /// </summary>
         /// <returns>The created container.</returns>
-        private static async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkConfig options, CosmosClient cosmosClient)
+        private static async Task<Container> CreatePartitionedContainerAsync(BenchmarkConfig options, CosmosClient cosmosClient)
         {
             Microsoft.Azure.Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(options.Database);
 
-            // Show user cost of running this test
-            double estimatedCostPerMonth = 0.06 * options.Throughput;
-            double estimatedCostPerHour = estimatedCostPerMonth / (24 * 30);
-            Utility.TeeTraceInformation($"The container will cost an estimated ${Math.Round(estimatedCostPerHour, 2)} per hour (${Math.Round(estimatedCostPerMonth, 2)} per month)");
-            Utility.TeeTraceInformation("Press enter to continue ...");
-            Console.ReadLine();
+            Container container;
+            try
+            {
+                container = database.GetContainer(options.Container);
+            }
+            catch (CosmosException ex ) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                // Show user cost of running this test only when it is creating new container
+                double estimatedCostPerMonth = 0.06 * options.Throughput;
+                double estimatedCostPerHour = estimatedCostPerMonth / (24 * 30);
+                Utility.TeeTraceInformation($"The container {options.Container} will cost an estimated ${Math.Round(estimatedCostPerHour, 2)} per hour (${Math.Round(estimatedCostPerMonth, 2)} per month)");
+                Utility.TeeTraceInformation("Press enter to continue ...");
+                Console.ReadLine();
 
-            string partitionKeyPath = options.PartitionKeyPath;
-            return await database.CreateContainerIfNotExistsAsync(options.Container, partitionKeyPath, options.Throughput);
+                string partitionKeyPath = options.PartitionKeyPath;
+                container =  await database.CreateContainerAsync(options.Container, partitionKeyPath, options.Throughput);
+            }
+
+            return container;
         }
 
         /// <summary>
