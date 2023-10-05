@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using System.Net.Http;
-    using System.ComponentModel;
     using Microsoft.Azure.Cosmos.Tests;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]

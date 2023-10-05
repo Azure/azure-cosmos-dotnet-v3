@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 // Safety check as diagnostic logs should not break the code.
                 if (Activity.Current?.TraceId != null)
                 {
-                    trace.AddDatum("DistributedTraceId", Activity.Current?.TraceId);
+                    trace.AddDatum("DistributedTraceId", Activity.Current.TraceId);
                 }
             }
             return openTelemetryRecorder;
