@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                  kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
 
                 // The scope here checks for listeners at Operation Level.
-                // If there are listeners at operation level then scope is enabled and activity is created.
+                // If there are listeners at operation level then scope is enabled and it tries to create activity.
                 if (scope.IsEnabled)
                 {
                     scope.SetDisplayName($"{operationName} {containerName}");
@@ -65,16 +65,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
 #if !INTERNAL
                 // The scope here checks for listeners at Network Level.
-                // If there are listeners at network level and no parent activity created at operation level
-                // then create a network scope that creates a parent activity.
+                // If there are listeners at network level then scope is enabled and it tries to create activity.
+                // Need a parent activity at root level so as to group all network activities under it.
                 else
                 {
                     DiagnosticScope requestScope = LazyNetworkScopeFactory.Value.CreateScope(name: operationName);
                     openTelemetryRecorder = requestScope.IsEnabled ? OpenTelemetryCoreRecorder.CreateNetworkLevelParentActivity(networkScope: requestScope) : openTelemetryRecorder;
                 }
 
-                // If there are no listeners at operation level and network level and no parent activity
-                // then create a dummy parent activity.
+                // If there are no listeners at operation level and network level and no parent activity created.
+                // Then create a dummy activity as there should be a parent level activity always when Distributed tracing is on.
                 if (Activity.Current is null)
                 {
                     openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateParentActivity(operationName);
