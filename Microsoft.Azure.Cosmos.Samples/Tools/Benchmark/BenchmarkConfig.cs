@@ -103,8 +103,8 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Disable core SDK logging")]
         public bool DisableCoreSdkLogging { get; set; }
 
-        [Option(Required = false, HelpText = "Enable Distributed Tracing")]
-        public bool EnableDistributedTracing { get; set; }
+        [Option(Required = false, HelpText = "Disable Distributed Tracing feature from source")]
+        public bool DisableDistributedTracing { get; set; } = false;
 
         [Option(Required = false, HelpText = "Client Telemetry Schedule in Seconds")]
         public int  TelemetryScheduleInSec { get; set; }
@@ -138,8 +138,8 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Application Insights connection string")]
         public string AppInsightsConnectionString { get; set; }
 
-        [Option(Required = false, HelpText = "Enable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
-        public bool EnableClientTelemetry { get; set; } = true;
+        [Option(Required = false, HelpText = "Disable Client Telemetry Feature in SDK. Make sure you enable it from the portal also.")]
+        public bool DisableClientTelemetry { get; set; } = false;
 
         internal int GetTaskCount(int containerThroughput)
         {
@@ -220,15 +220,17 @@ namespace CosmosBenchmark
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-                EnableClientTelemetry = this.EnableClientTelemetry 
+                CosmosClientTelemetryOptions = new Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions()
+                {
+                    DisableSendingMetricsToService = this.DisableClientTelemetry,
+                    DisableDistributedTracing = this.DisableDistributedTracing
+                }
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
-
-            clientOptions.IsDistributedTracingEnabled = this.EnableDistributedTracing;
 
             return new Microsoft.Azure.Cosmos.CosmosClient(
                         this.EndPoint,
