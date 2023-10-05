@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using System.Net.Http;
+    using System.ComponentModel;
+    using Microsoft.Azure.Cosmos.Tests;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
     public sealed class DistributedTracingOTelTests : BaseCosmosClientHelper
@@ -33,7 +35,8 @@ namespace Microsoft.Azure.Cosmos
         [DataTestMethod]
         [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", DisplayName = "DirectMode and DistributedFlag On: Asserts activity creation at operation and network level with Diagnostic TraceId being added to logs")]
         [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", null, DisplayName = "DirectMode and DistributedFlag On: Asserts activity creation at operation level with Diagnostic TraceId being added to logs")]
-        public async Task SourceEnabled_FlagOn_DirectMode_RecordsActivity_AssertLogTraceId_AssertTraceparent(string operationLevelSource, string networkLevelSource)
+        [DataRow(null, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", DisplayName = "DirectMode and DistributedFlag On: Asserts activity creation at network level with Diagnostic TraceId being added to logs")]
+        public async Task SourceEnabled_FlagOn_DirectMode_RecordsOperationNetworkActivity_AssertLogTraceId_AssertTraceparent(string operationLevelSource, string networkLevelSource)
         {
             string[] sources = new string[] { operationLevelSource, networkLevelSource };
             sources = sources.Where(x => x != null).ToArray();
@@ -43,12 +46,12 @@ namespace Microsoft.Azure.Cosmos
                 .AddSource(sources)
                 .Build();
 
-            await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false, 
+            await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false,
                                 customizeClientBuilder: (builder) => builder
                                                                         .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
-                                                                         {
+                                                                        {
                                                                             DisableDistributedTracing = false
-                                                                         })
+                                                                        })
                                                                         .WithConnectionModeDirect());
 
             Container containerResponse = await this.database.CreateContainerAsync(
@@ -106,7 +109,8 @@ namespace Microsoft.Azure.Cosmos
         [DataTestMethod]
         [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", DisplayName = "GatewayMode and DistributedFlag On: Asserts activity creation at operation and network level with Diagnostic TraceId being added to logs")]
         [DataRow($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", null, DisplayName = "GatewayMode and DistributedFlag On: Asserts activity creation at operation level with Diagnostic TraceId being added to logs")]
-        public async Task SourceEnabled_FlagOn_GatewayMode_RecordsActivity_AssertLogTraceId_AssertTraceparent(string operationLevelSource, string networkLevelSource)
+        [DataRow(null, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Request", DisplayName = "GatewayMode and DistributedFlag On: Asserts activity creation at network level with Diagnostic TraceId being added to logs")]
+        public async Task SourceEnabled_FlagOn_GatewayMode_RecordsOperationNetworkActivity_AssertLogTraceId_AssertTraceparent(string operationLevelSource, string networkLevelSource)
         {
             string[] sources = new string[] { operationLevelSource, networkLevelSource };
             sources = sources.Where(x => x != null).ToArray();
@@ -128,12 +132,12 @@ namespace Microsoft.Azure.Cosmos
                 .AddSource(sources)
                 .Build();
 
-            await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false, 
+            await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false,
                                 customizeClientBuilder: (builder) => builder
                                                                         .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
-                                                                         {
+                                                                        {
                                                                             DisableDistributedTracing = false
-                                                                         })
+                                                                        })
                                                                         .WithHttpClientFactory(() => new HttpClient(httpClientHandlerHelper))
                                                                         .WithConnectionModeGateway());
 
@@ -142,7 +146,6 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyPath: "/id",
                 throughput: 20000);
 
-            List<Activity> b = CustomOtelExporter.CollectedActivities.ToList();
             //Assert traceId in Diagnostics logs
             string diagnosticsCreateContainer = containerResponse.Diagnostics.ToString();
             JObject objDiagnosticsCreate = JObject.Parse(diagnosticsCreateContainer);
@@ -169,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
         [DataRow(true, true, "random.source.name", DisplayName = "GatewayMode, DistributedFlag Off, Random/No Source:Asserts no activity creation")]
         [DataRow(false, true, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", DisplayName = "DirectMode, DistributedFlag Off, OperationLevel Source:Asserts no activity creation")]
         [DataRow(true, true, $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation", DisplayName = "GatewayMode, DistributedFlag Off, OperationLevel Source:Asserts no activity creation")]
-        public async Task NoSourceEnabled_ResultsInNoSourceParentActivityCreation_AssertLogTraceId(bool useGateway, bool disableDistributingTracing, string source)
+        public async Task NoSourceNoFlagEnabled_ResultsInNoOperationNetworkActivityCreation_AssertLogTraceId(bool useGateway, bool disableDistributingTracing, string source)
         {
             using TracerProvider provider = Sdk.CreateTracerProviderBuilder()
                 .AddCustomOtelExporter()
@@ -178,20 +181,20 @@ namespace Microsoft.Azure.Cosmos
 
             if (useGateway)
             {
-                await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false, 
+                await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false,
                                     customizeClientBuilder: (builder) => builder
                                                                             .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
-                                                                             {
+                                                                            {
                                                                                 DisableDistributedTracing = disableDistributingTracing
                                                                             })
                                                                             .WithConnectionModeGateway());
             }
             else
             {
-                await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false, 
+                await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false,
                                     customizeClientBuilder: (builder) => builder
                                                                             .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
-                                                                             {
+                                                                            {
                                                                                 DisableDistributedTracing = disableDistributingTracing
                                                                             }));
             }
@@ -219,6 +222,49 @@ namespace Microsoft.Azure.Cosmos
 
             //Assert no activity with attached source is created
             Assert.AreEqual(0, CustomOtelExporter.CollectedActivities.Count());
+        }
+
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task SuppressListenerEvents_ResultsInNoScopeActivityCreation_AssertTraceIdNotNull(bool useGateway)
+        {
+            // Initialize CustomListener with suppression
+            CustomListener customListener = new CustomListener($"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.*", "Azure-Cosmos-Operation-Request-Diagnostics", true);
+
+            if (useGateway)
+            {
+                await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false,
+                                    customizeClientBuilder: (builder) => builder
+                                                                            .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                                                                            {
+                                                                                DisableDistributedTracing = false
+                                                                            })
+                                                                            .WithConnectionModeGateway());
+            }
+            else
+            {
+                await base.TestInit(validateSinglePartitionKeyRangeCacheCall: false,
+                                    customizeClientBuilder: (builder) => builder
+                                                                            .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                                                                            {
+                                                                                DisableDistributedTracing = false
+                                                                            }));
+            }
+
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(
+                id: Guid.NewGuid().ToString(),
+                partitionKeyPath: "/id",
+                throughput: 20000);
+
+            // Assert traceId in Diagnostics logs
+            string diagnosticsCreateContainer = containerResponse.Diagnostics.ToString();
+            JObject objDiagnosticsCreate = JObject.Parse(diagnosticsCreateContainer);
+            Assert.IsNotNull(objDiagnosticsCreate["data"]["DistributedTraceId"], "Distributed Trace Id has value in diagnostics i.e. " + (string)objDiagnosticsCreate["data"]["DistributedTraceId"]);
+
+            // Cleanup
+            customListener.Dispose();
         }
 
         [TestCleanup]
