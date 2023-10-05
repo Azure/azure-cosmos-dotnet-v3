@@ -153,7 +153,9 @@ namespace CosmosBenchmark
                     await database.DeleteStreamAsync();
                 }
 
-                Container container = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
+                ContainerResponse containerResponse = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
+
+                Container container = containerResponse;
                 int? currentContainerThroughput = await container.ReadThroughputAsync();
 
                 if (!currentContainerThroughput.HasValue)
@@ -173,7 +175,6 @@ namespace CosmosBenchmark
 
                 Utility.TeePrint("Starting Inserts with {0} tasks", taskCount);
 
-                ContainerResponse containerResponse = await container.ReadContainerAsync();
                 string partitionKeyPath = containerResponse.Resource.PartitionKeyPath;
                 int opsPerTask = config.ItemCount / taskCount;
 
@@ -317,14 +318,15 @@ namespace CosmosBenchmark
         /// Get or Create a partitioned container and display cost of running this test.
         /// </summary>
         /// <returns>The created container.</returns>
-        private static async Task<Container> CreatePartitionedContainerAsync(BenchmarkConfig options, CosmosClient cosmosClient)
+        private static async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkConfig options, CosmosClient cosmosClient)
         {
             Microsoft.Azure.Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(options.Database);
 
-            Container container;
+            ContainerResponse containerResponse;
+            Container container = database.GetContainer(options.Container);
             try
             {
-                container = database.GetContainer(options.Container);
+                containerResponse = await container.ReadContainerAsync();
             }
             catch (CosmosException ex ) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
@@ -336,10 +338,10 @@ namespace CosmosBenchmark
                 Console.ReadLine();
 
                 string partitionKeyPath = options.PartitionKeyPath;
-                container =  await database.CreateContainerAsync(options.Container, partitionKeyPath, options.Throughput);
+                containerResponse =  await database.CreateContainerAsync(options.Container, partitionKeyPath, options.Throughput);
             }
 
-            return container;
+            return containerResponse;
         }
 
         /// <summary>
