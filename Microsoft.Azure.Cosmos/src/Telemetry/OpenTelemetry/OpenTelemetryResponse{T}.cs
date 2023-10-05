@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Net;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Telemetry;
@@ -70,9 +71,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 return responseMessage?.Headers;
             }
-            catch
+            catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Failed to get headers from FeedResponse<T>");
+                DefaultTrace.TraceWarning("Failed to get headers from FeedResponse<T>. Exception: {0}", ex);
                 return null;
             }
         }
@@ -83,9 +84,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 return responseMessage?.Headers;
             }
-            catch
+            catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Failed to get headers from Response<T>");
+                DefaultTrace.TraceWarning("Failed to get headers from Response<T>. Exception: {0}", ex);
                 return null;
             }
         }
