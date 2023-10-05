@@ -8,7 +8,7 @@
       <SerializedClientPlanJson>{
   "Cql": {
     "Name": "root",
-    "Kind": 3
+    "Kind": "Input"
   }
 }</SerializedClientPlanJson>
     </Output>
@@ -24,13 +24,13 @@
     "SourceExpression": {
       "SourceExpression": {
         "Name": "root",
-        "Kind": 3
+        "Kind": "Input"
       },
       "Aggregate": {
-        "OperatorKind": 8,
-        "Kind": 0
+        "OperatorKind": "Sum",
+        "Kind": "Builtin"
       },
-      "Kind": 0
+      "Kind": "Aggregate"
     },
     "DeclaredVariable": {
       "Name": "v0",
@@ -45,14 +45,14 @@
               "Name": "v0",
               "UniqueId": 6
             },
-            "Kind": 14
+            "Kind": "VariableRef"
           }
         }
       ],
       "ObjectKind": "Object",
-      "Kind": 7
+      "Kind": "ObjectCreate"
     },
-    "Kind": 6
+    "Kind": "Select"
   }
 }</SerializedClientPlanJson>
     </Output>
@@ -69,7 +69,7 @@
       "SourceExpression": {
         "SourceExpression": {
           "Name": "root",
-          "Kind": 3
+          "Kind": "Input"
         },
         "DeclaredVariable": {
           "Name": "v0",
@@ -83,16 +83,16 @@
                   "Name": "v0",
                   "UniqueId": 16
                 },
-                "Kind": 14
+                "Kind": "VariableRef"
               },
               "Index": 0,
-              "Kind": 11
+              "Kind": "TupleItemRef"
             },
             {
               "ConditionExpression": {
-                "OperatorKind": 1,
+                "OperatorKind": "And",
                 "LeftExpression": {
-                  "OperatorKind": 14,
+                  "OperatorKind": "NotEqual",
                   "LeftExpression": {
                     "Expression": {
                       "Expression": {
@@ -100,27 +100,27 @@
                           "Name": "v0",
                           "UniqueId": 16
                         },
-                        "Kind": 14
+                        "Kind": "VariableRef"
                       },
                       "Index": 1,
-                      "Kind": 11
+                      "Kind": "TupleItemRef"
                     },
                     "Index": 1,
-                    "Kind": 11
+                    "Kind": "TupleItemRef"
                   },
                   "RightExpression": {
                     "Literal": {
                       "Value": 0,
-                      "Kind": 4
+                      "Kind": "Number"
                     },
-                    "Kind": 5
+                    "Kind": "Literal"
                   },
-                  "Kind": 2
+                  "Kind": "BinaryOperator"
                 },
                 "RightExpression": {
-                  "OperatorKind": 2,
+                  "OperatorKind": "Not",
                   "Expression": {
-                    "FunctionKind": 55,
+                    "FunctionKind": "Is_Defined",
                     "Arguments": [
                       {
                         "Expression": {
@@ -129,27 +129,27 @@
                               "Name": "v0",
                               "UniqueId": 16
                             },
-                            "Kind": 14
+                            "Kind": "VariableRef"
                           },
                           "Index": 1,
-                          "Kind": 11
+                          "Kind": "TupleItemRef"
                         },
                         "Index": 0,
-                        "Kind": 11
+                        "Kind": "TupleItemRef"
                       }
                     ],
-                    "Kind": 9
+                    "Kind": "SystemFunctionCall"
                   },
-                  "Kind": 12
+                  "Kind": "UnaryOperator"
                 },
-                "Kind": 2
+                "Kind": "BinaryOperator"
               },
               "LeftExpression": {
                 "Literal": {
                   "Items": [],
-                  "Kind": 1
+                  "Kind": "Array"
                 },
-                "Kind": 5
+                "Kind": "Literal"
               },
               "RightExpression": {
                 "Expression": {
@@ -158,23 +158,23 @@
                       "Name": "v0",
                       "UniqueId": 16
                     },
-                    "Kind": 14
+                    "Kind": "VariableRef"
                   },
                   "Index": 1,
-                  "Kind": 11
+                  "Kind": "TupleItemRef"
                 },
                 "Index": 0,
-                "Kind": 11
+                "Kind": "TupleItemRef"
               },
-              "Kind": 6
+              "Kind": "Mux"
             },
             {
               "Items": [
                 {
                   "ConditionExpression": {
-                    "OperatorKind": 1,
+                    "OperatorKind": "And",
                     "LeftExpression": {
-                      "OperatorKind": 14,
+                      "OperatorKind": "NotEqual",
                       "LeftExpression": {
                         "Expression": {
                           "Expression": {
@@ -183,30 +183,30 @@
                                 "Name": "v0",
                                 "UniqueId": 16
                               },
-                              "Kind": 14
+                              "Kind": "VariableRef"
                             },
                             "Index": 2,
-                            "Kind": 11
+                            "Kind": "TupleItemRef"
                           },
                           "Index": 0,
-                          "Kind": 11
+                          "Kind": "TupleItemRef"
                         },
                         "Index": 1,
-                        "Kind": 11
+                        "Kind": "TupleItemRef"
                       },
                       "RightExpression": {
                         "Literal": {
                           "Value": 0,
-                          "Kind": 4
+                          "Kind": "Number"
                         },
-                        "Kind": 5
+                        "Kind": "Literal"
                       },
-                      "Kind": 2
+                      "Kind": "BinaryOperator"
                     },
                     "RightExpression": {
-                      "OperatorKind": 2,
+                      "OperatorKind": "Not",
                       "Expression": {
-                        "FunctionKind": 55,
+                        "FunctionKind": "Is_Defined",
                         "Arguments": [
                           {
                             "Expression": {
@@ -216,30 +216,30 @@
                                     "Name": "v0",
                                     "UniqueId": 16
                                   },
-                                  "Kind": 14
+                                  "Kind": "VariableRef"
                                 },
                                 "Index": 2,
-                                "Kind": 11
+                                "Kind": "TupleItemRef"
                               },
                               "Index": 0,
-                              "Kind": 11
+                              "Kind": "TupleItemRef"
                             },
                             "Index": 0,
-                            "Kind": 11
+                            "Kind": "TupleItemRef"
                           }
                         ],
-                        "Kind": 9
+                        "Kind": "SystemFunctionCall"
                       },
-                      "Kind": 12
+                      "Kind": "UnaryOperator"
                     },
-                    "Kind": 2
+                    "Kind": "BinaryOperator"
                   },
                   "LeftExpression": {
                     "Literal": {
                       "Items": [],
-                      "Kind": 1
+                      "Kind": "Array"
                     },
-                    "Kind": 5
+                    "Kind": "Literal"
                   },
                   "RightExpression": {
                     "Expression": {
@@ -248,15 +248,15 @@
                           "Name": "v0",
                           "UniqueId": 16
                         },
-                        "Kind": 14
+                        "Kind": "VariableRef"
                       },
                       "Index": 2,
-                      "Kind": 11
+                      "Kind": "TupleItemRef"
                     },
                     "Index": 0,
-                    "Kind": 11
+                    "Kind": "TupleItemRef"
                   },
-                  "Kind": 6
+                  "Kind": "Mux"
                 },
                 {
                   "Expression": {
@@ -265,22 +265,22 @@
                         "Name": "v0",
                         "UniqueId": 16
                       },
-                      "Kind": 14
+                      "Kind": "VariableRef"
                     },
                     "Index": 2,
-                    "Kind": 11
+                    "Kind": "TupleItemRef"
                   },
                   "Index": 1,
-                  "Kind": 11
+                  "Kind": "TupleItemRef"
                 }
               ],
-              "Kind": 10
+              "Kind": "TupleCreate"
             },
             {
               "ConditionExpression": {
-                "OperatorKind": 1,
+                "OperatorKind": "And",
                 "LeftExpression": {
-                  "OperatorKind": 14,
+                  "OperatorKind": "NotEqual",
                   "LeftExpression": {
                     "Expression": {
                       "Expression": {
@@ -288,27 +288,27 @@
                           "Name": "v0",
                           "UniqueId": 16
                         },
-                        "Kind": 14
+                        "Kind": "VariableRef"
                       },
                       "Index": 3,
-                      "Kind": 11
+                      "Kind": "TupleItemRef"
                     },
                     "Index": 1,
-                    "Kind": 11
+                    "Kind": "TupleItemRef"
                   },
                   "RightExpression": {
                     "Literal": {
                       "Value": 0,
-                      "Kind": 4
+                      "Kind": "Number"
                     },
-                    "Kind": 5
+                    "Kind": "Literal"
                   },
-                  "Kind": 2
+                  "Kind": "BinaryOperator"
                 },
                 "RightExpression": {
-                  "OperatorKind": 2,
+                  "OperatorKind": "Not",
                   "Expression": {
-                    "FunctionKind": 55,
+                    "FunctionKind": "Is_Defined",
                     "Arguments": [
                       {
                         "Expression": {
@@ -317,27 +317,27 @@
                               "Name": "v0",
                               "UniqueId": 16
                             },
-                            "Kind": 14
+                            "Kind": "VariableRef"
                           },
                           "Index": 3,
-                          "Kind": 11
+                          "Kind": "TupleItemRef"
                         },
                         "Index": 0,
-                        "Kind": 11
+                        "Kind": "TupleItemRef"
                       }
                     ],
-                    "Kind": 9
+                    "Kind": "SystemFunctionCall"
                   },
-                  "Kind": 12
+                  "Kind": "UnaryOperator"
                 },
-                "Kind": 2
+                "Kind": "BinaryOperator"
               },
               "LeftExpression": {
                 "Literal": {
                   "Items": [],
-                  "Kind": 1
+                  "Kind": "Array"
                 },
-                "Kind": 5
+                "Kind": "Literal"
               },
               "RightExpression": {
                 "Expression": {
@@ -346,46 +346,46 @@
                       "Name": "v0",
                       "UniqueId": 16
                     },
-                    "Kind": 14
+                    "Kind": "VariableRef"
                   },
                   "Index": 3,
-                  "Kind": 11
+                  "Kind": "TupleItemRef"
                 },
                 "Index": 0,
-                "Kind": 11
+                "Kind": "TupleItemRef"
               },
-              "Kind": 6
+              "Kind": "Mux"
             }
           ],
-          "Kind": 10
+          "Kind": "TupleCreate"
         },
-        "Kind": 6
+        "Kind": "Select"
       },
       "KeyCount": 1,
       "Aggregates": [
         {
-          "OperatorKind": 8,
-          "Kind": 0
+          "OperatorKind": "Sum",
+          "Kind": "Builtin"
         },
         {
           "Items": [
             {
-              "OperatorKind": 8,
-              "Kind": 0
+              "OperatorKind": "Sum",
+              "Kind": "Builtin"
             },
             {
-              "OperatorKind": 8,
-              "Kind": 0
+              "OperatorKind": "Sum",
+              "Kind": "Builtin"
             }
           ],
-          "Kind": 1
+          "Kind": "Tuple"
         },
         {
-          "OperatorKind": 6,
-          "Kind": 0
+          "OperatorKind": "Max",
+          "Kind": "Builtin"
         }
       ],
-      "Kind": 2
+      "Kind": "GroupBy"
     },
     "DeclaredVariable": {
       "Name": "v0",
@@ -405,10 +405,10 @@
                       "Name": "v0",
                       "UniqueId": 10
                     },
-                    "Kind": 14
+                    "Kind": "VariableRef"
                   },
                   "Index": 0,
-                  "Kind": 11
+                  "Kind": "TupleItemRef"
                 }
               },
               {
@@ -419,17 +419,17 @@
                       "Name": "v0",
                       "UniqueId": 10
                     },
-                    "Kind": 14
+                    "Kind": "VariableRef"
                   },
                   "Index": 1,
-                  "Kind": 11
+                  "Kind": "TupleItemRef"
                 }
               },
               {
                 "Name": "FieldAvg",
                 "Expression": {
                   "ConditionExpression": {
-                    "OperatorKind": 6,
+                    "OperatorKind": "Equal",
                     "LeftExpression": {
                       "Expression": {
                         "Expression": {
@@ -437,31 +437,31 @@
                             "Name": "v0",
                             "UniqueId": 10
                           },
-                          "Kind": 14
+                          "Kind": "VariableRef"
                         },
                         "Index": 2,
-                        "Kind": 11
+                        "Kind": "TupleItemRef"
                       },
                       "Index": 1,
-                      "Kind": 11
+                      "Kind": "TupleItemRef"
                     },
                     "RightExpression": {
                       "Literal": {
                         "Value": 0,
-                        "Kind": 4
+                        "Kind": "Number"
                       },
-                      "Kind": 5
+                      "Kind": "Literal"
                     },
-                    "Kind": 2
+                    "Kind": "BinaryOperator"
                   },
                   "LeftExpression": {
                     "Literal": {
-                      "Kind": 0
+                      "Kind": "Undefined"
                     },
-                    "Kind": 5
+                    "Kind": "Literal"
                   },
                   "RightExpression": {
-                    "OperatorKind": 5,
+                    "OperatorKind": "Divide",
                     "LeftExpression": {
                       "Expression": {
                         "Expression": {
@@ -469,13 +469,13 @@
                             "Name": "v0",
                             "UniqueId": 10
                           },
-                          "Kind": 14
+                          "Kind": "VariableRef"
                         },
                         "Index": 2,
-                        "Kind": 11
+                        "Kind": "TupleItemRef"
                       },
                       "Index": 0,
-                      "Kind": 11
+                      "Kind": "TupleItemRef"
                     },
                     "RightExpression": {
                       "Expression": {
@@ -484,22 +484,22 @@
                             "Name": "v0",
                             "UniqueId": 10
                           },
-                          "Kind": 14
+                          "Kind": "VariableRef"
                         },
                         "Index": 2,
-                        "Kind": 11
+                        "Kind": "TupleItemRef"
                       },
                       "Index": 1,
-                      "Kind": 11
+                      "Kind": "TupleItemRef"
                     },
-                    "Kind": 2
+                    "Kind": "BinaryOperator"
                   },
-                  "Kind": 6
+                  "Kind": "Mux"
                 }
               }
             ],
             "ObjectKind": "Object",
-            "Kind": 7
+            "Kind": "ObjectCreate"
           }
         },
         {
@@ -514,10 +514,10 @@
                       "Name": "v0",
                       "UniqueId": 10
                     },
-                    "Kind": 14
+                    "Kind": "VariableRef"
                   },
                   "Index": 0,
-                  "Kind": 11
+                  "Kind": "TupleItemRef"
                 }
               },
               {
@@ -528,22 +528,22 @@
                       "Name": "v0",
                       "UniqueId": 10
                     },
-                    "Kind": 14
+                    "Kind": "VariableRef"
                   },
                   "Index": 3,
-                  "Kind": 11
+                  "Kind": "TupleItemRef"
                 }
               }
             ],
             "ObjectKind": "Object",
-            "Kind": 7
+            "Kind": "ObjectCreate"
           }
         }
       ],
       "ObjectKind": "Object",
-      "Kind": 7
+      "Kind": "ObjectCreate"
     },
-    "Kind": 6
+    "Kind": "Select"
   }
 }</SerializedClientPlanJson>
     </Output>
@@ -559,13 +559,13 @@
     "SourceExpression": {
       "SourceExpression": {
         "Name": "root",
-        "Kind": 3
+        "Kind": "Input"
       },
       "Aggregate": {
-        "OperatorKind": 8,
-        "Kind": 0
+        "OperatorKind": "Sum",
+        "Kind": "Builtin"
       },
-      "Kind": 0
+      "Kind": "Aggregate"
     },
     "DeclaredVariable": {
       "Name": "v0",
@@ -576,29 +576,29 @@
         {
           "Name": "count_a_plus_five",
           "Expression": {
-            "OperatorKind": 0,
+            "OperatorKind": "Add",
             "LeftExpression": {
               "Variable": {
                 "Name": "v0",
                 "UniqueId": 6
               },
-              "Kind": 14
+              "Kind": "VariableRef"
             },
             "RightExpression": {
               "Literal": {
                 "Value": 5,
-                "Kind": 4
+                "Kind": "Number"
               },
-              "Kind": 5
+              "Kind": "Literal"
             },
-            "Kind": 2
+            "Kind": "BinaryOperator"
           }
         }
       ],
       "ObjectKind": "Object",
-      "Kind": 7
+      "Kind": "ObjectCreate"
     },
-    "Kind": 6
+    "Kind": "Select"
   }
 }</SerializedClientPlanJson>
     </Output>

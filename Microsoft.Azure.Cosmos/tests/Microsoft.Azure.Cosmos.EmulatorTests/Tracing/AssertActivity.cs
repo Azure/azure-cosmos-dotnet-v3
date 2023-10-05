@@ -83,7 +83,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             Assert.AreEqual(
                 JsonConvert.SerializeObject(CustomListener.CollectedOperationActivities.OrderBy(x => x.Id)),
-                JsonConvert.SerializeObject(CustomOtelExporter.CollectedActivities.OrderBy(x => x.Id)));
+                JsonConvert.SerializeObject(CustomOtelExporter.CollectedActivities
+                    .Where(activity => activity.Source.Name == $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}.Operation")
+                    .OrderBy(x => x.Id)));
         }
 
         private static void AssertDatabaseAndContainerName(string name, KeyValuePair<string, string> tag)
