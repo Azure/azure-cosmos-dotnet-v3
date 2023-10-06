@@ -25,11 +25,11 @@ stages:
     Codeql.BuildIdentifier: ga
   jobs:
     - task: CodeQL3000Init@0
-        inputs:
-          ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/codeql') }}:
-            Enabled: true
-          ${{ else }}:
-            Enabled: false
+      inputs:
+        ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/codeql') }}:
+          Enabled: true
+        ${{ else }}:
+          Enabled: false
     - template:  templates/nuget-pack.yml
       parameters:
         BuildConfiguration: Release
@@ -40,18 +40,18 @@ stages:
         BlobVersion: 'nightly'
         CleanupFolder: true
     - task: CodeQL3000Finalize@0
-        condition: always()
+      condition: always()
 - stage:
   displayName: Generate nightly preview 
   variables:
     Codeql.BuildIdentifier: preview
   jobs:
     - task: CodeQL3000Init@0
-        inputs:
-          ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/codeql') }}:
-            Enabled: true
-          ${{ else }}:
-            Enabled: false
+      inputs:
+        ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/codeql') }}:
+          Enabled: true
+        ${{ else }}:
+          Enabled: false
     - template:  templates/nuget-pack.yml
       parameters:
         BuildConfiguration: Release
@@ -62,4 +62,4 @@ stages:
         BlobVersion: 'nightly-preview'
         CleanupFolder: true
     - task: CodeQL3000Finalize@0
-        condition: always()
+      condition: always()
