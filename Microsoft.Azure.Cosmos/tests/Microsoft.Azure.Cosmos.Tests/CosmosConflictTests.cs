@@ -5,15 +5,19 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.IO;
+    using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     [TestClass]
     public class CosmosConflictTests
@@ -34,6 +38,43 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task QueryConflicts()
+        {
+            ContainerInternal container = CosmosConflictTests.GetMockedContainer(async (request, cancellationToken) => {
+                Assert.AreEqual(ResourceType.Conflict, request.ResourceType);
+                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new MemoryStream(Encoding.UTF8.GetBytes(@"{ ""Conflicts"": [{ ""id"": ""Test""}]}"))
+                };
+                return responseMessage;
+            });
+
+            {
+                FeedIterator<CosmosObject> iterator = container.Conflicts.GetConflictQueryIterator<CosmosObject>();
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<CosmosObject> responseMessage = await iterator.ReadNextAsync();
+                }
+            }
+            {
+                FeedIterator<CosmosObject> iterator = container.Conflicts.GetConflictQueryIterator<CosmosObject>("SELECT * FROM c");
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<CosmosObject> responseMessage = await iterator.ReadNextAsync();
+                }
+            }
+            {
+                FeedIterator<CosmosObject> iterator = container.Conflicts.GetConflictQueryIterator<CosmosObject>(
+                    queryText: "SELECT * FROM c",
+                    requestOptions: new QueryRequestOptions { MaxItemCount = 1 });
+                while (iterator.HasMoreResults)
+                {
+                    FeedResponse<CosmosObject> responseMessage = await iterator.ReadNextAsync();
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task ReadCurrentGetsCorrectRID()
         {
             const string expectedRID = "something";
@@ -50,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ConflictProperties conflictSettings = new ConflictProperties();
             conflictSettings.SourceResourceId = expectedRID;
 
-            await container.Conflicts.ReadCurrentAsync<JObject>(conflictSettings, partitionKey);
+            ItemResponse<JObject> item = await container.Conflicts.ReadCurrentAsync<JObject>(conflictSettings, partitionKey);
         }
 
         [TestMethod]
