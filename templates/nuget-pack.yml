@@ -30,6 +30,13 @@ jobs:
     vmImage: ${{ parameters.VmImage }}
 
   steps:
+  - task: CodeQL3000Init@0
+    inputs:
+      ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+        Enabled: true
+      ${{ else }}:
+        Enabled: false
+
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos
     inputs: 
@@ -77,3 +84,6 @@ jobs:
     displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
     inputs:
       artifactName: Microsoft.Azure.Cosmos
+
+  - task: CodeQL3000Finalize@0
+    condition: always()
