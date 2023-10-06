@@ -21,7 +21,8 @@ variables:
 stages:
 - stage:
   displayName: Generate nightly GA 
-  variables: Codeql.BuildIdentifier: ga
+  variables:
+    Codeql.BuildIdentifier: ga
   jobs:
     - template:  templates/nuget-pack.yml
       parameters:
@@ -34,7 +35,8 @@ stages:
         CleanupFolder: true
 - stage:
   displayName: Generate nightly preview 
-  variables: Codeql.BuildIdentifier: preview
+  variables:
+    Codeql.BuildIdentifier: preview
   jobs:
     - template:  templates/nuget-pack.yml
       parameters:
