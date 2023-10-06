@@ -1,8 +1,7 @@
-﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Conflicts
+﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -11,10 +10,32 @@
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>
+    /// This is an end to end test that requires connecting to azure cosmos db accounts.
+    /// </summary>
     [TestClass]
-    public class ConflictsTest
+    public class ConflictsE2ETest
     {
         private const int MaxRetries = 10;
+
+        private const string Database = "Microsoft.Azure.Cosmos.EmulatorTests.Conflicts";
+        private const string Collection = "ConflictsTest";
+        private const string Key = "";
+        private static readonly Endpoint Endpoint1 = new Endpoint("", ConnectionMode.Direct);
+        private static readonly Endpoint Endpoint2 = new Endpoint("", ConnectionMode.Direct);
+
+        private class Endpoint
+        {
+            public Endpoint(string url, ConnectionMode connectionMode)
+            {
+                this.Url = url;
+                this.ConnectionMode = connectionMode;
+            }
+
+            public ConnectionMode ConnectionMode { get; }
+
+            public string Url { get; }
+        }
 
         /// <summary>
         /// Tests querying conflicts in a cosmosdb collection.
@@ -32,12 +53,14 @@
         [TestMethod]
         public async Task TestConflicts()
         {
-            IReadOnlyList<(CosmosClient Client, Container Container)> cosmosContainers = await this.CreateDatabaseAndContainer();
+            Assert.IsTrue(!string.IsNullOrWhiteSpace(Key), "Please specify a valid key");
 
-            foreach((CosmosClient client, Container container) pair in cosmosContainers)
-            {
-                Console.WriteLine(pair.container.Id);
-            }
+            IReadOnlyList<(CosmosClient Client, Container Container)> cosmosContainers = await this.CreateDatabaseAndContainer(
+                Database,
+                Collection,
+                Key,
+                Endpoint1,
+                Endpoint2);
 
             await this.InsertWithoutConflict(cosmosContainers);
             await this.InsertWithConflict(cosmosContainers);
@@ -46,32 +69,38 @@
 
         private async Task VerifyConflict(IReadOnlyList<(CosmosClient Client, Container Container)> cosmosContainers)
         {
-            List<List<dynamic>> conflictsUsingDefaultIterator = await this.GetConflictsUsingDefaultIterator(cosmosContainers);
-            List<List<dynamic>> conflictsUsingQueryWithoutOptions = await this.GetConflictsUsingQueryWithoutOptions(cosmosContainers);
+            List<List<CosmosObject>> conflictsUsingDefaultIterator = await this.GetConflictsUsingDefaultIterator(cosmosContainers);
+            List<List<CosmosObject>> conflictsUsingQueryWithoutOptions = await this.GetConflictsUsingQueryWithoutOptions(cosmosContainers);
+
+            Assert.AreEqual(conflictsUsingDefaultIterator.Count, conflictsUsingQueryWithoutOptions.Count, "Conflict count should be identical");
+            for (int i = 0; i < conflictsUsingDefaultIterator.Count; i++)
+            {
+                Assert.AreEqual(string.Join(",", conflictsUsingDefaultIterator[i].ToString()), string.Join(",", conflictsUsingQueryWithoutOptions[i].ToString()));
+            }
         }
 
-        private async Task<List<List<dynamic>>> GetConflictsUsingQueryWithoutOptions(IReadOnlyList<(CosmosClient Client, Container Container)> cosmosContainers)
+        private async Task<List<List<CosmosObject>>> GetConflictsUsingQueryWithoutOptions(IReadOnlyList<(CosmosClient Client, Container Container)> cosmosContainers)
             => await this.GetConflicts(
                 cosmosContainers,
                 query: @"SELECT * FROM c",
                 options: null);
 
-        private async Task<List<List<dynamic>>> GetConflictsUsingDefaultIterator(IReadOnlyList<(CosmosClient Client, Container Container)> cosmosContainers)
+        private async Task<List<List<CosmosObject>>> GetConflictsUsingDefaultIterator(IReadOnlyList<(CosmosClient Client, Container Container)> cosmosContainers)
             => await this.GetConflicts(cosmosContainers, query: null, options: null);
 
-        private async Task<List<List<dynamic>>> GetConflicts(
+        private async Task<List<List<CosmosObject>>> GetConflicts(
             IReadOnlyList<(CosmosClient Client, Container Container)> cosmosContainers,
             string query,
             QueryRequestOptions options)
         {
-            List<List<dynamic>> allConflicts = new List<List<dynamic>>();
-            foreach((CosmosClient client, Container container) pair in cosmosContainers)
+            List<List<CosmosObject>> allConflicts = new List<List<CosmosObject>>();
+            foreach ((CosmosClient client, Container container) pair in cosmosContainers)
             {
-                List<dynamic> clientReportedConflicts = new List<dynamic>();
-                FeedIterator<dynamic> iterator = pair.container.Conflicts.GetConflictQueryIterator<dynamic>(queryText: query, requestOptions: options);
-                while(iterator.HasMoreResults)
+                List<CosmosObject> clientReportedConflicts = new List<CosmosObject>();
+                FeedIterator<CosmosObject> iterator = pair.container.Conflicts.GetConflictQueryIterator<CosmosObject>(queryText: query, requestOptions: options);
+                while (iterator.HasMoreResults)
                 {
-                    FeedResponse<dynamic> page = await iterator.ReadNextAsync();
+                    FeedResponse<CosmosObject> page = await iterator.ReadNextAsync();
                     clientReportedConflicts.AddRange(page);
                 }
 
@@ -128,7 +157,7 @@
                 int clientIndex = 0;
                 List<ResponseMessage> responses = new List<ResponseMessage>();
                 IEnumerable<Container> containers =
-                    (i % 2) == 1 ?
+                    i % 2 == 1 ?
                     containersInOrder :
                     containersInReverseOrder;
                 foreach (Container container in containers)
@@ -166,40 +195,45 @@
 
         private async Task<ResponseMessage> CreateItem(Container container, string payload, PartitionKey partitionKey)
         {
-            return await this.ExecuteOperationWithRetry<ResponseMessage>(
+            return await this.ExecuteOperationWithRetry(
                 MaxRetries,
                 () => container.CreateItemStreamAsync(
-                    payload.ToStream(),
+                    this.ToStream(payload),
                     partitionKey),
                 // Since the test also creates the database and document collection, first few read/write operations on the collection can return NotFound.
                 responseMessage => responseMessage.StatusCode == HttpStatusCode.NotFound);
+        }
+
+        private Stream ToStream(string stringValue)
+        {
+            MemoryStream stream = new();
+            StreamWriter writer = new(stream);
+            writer.Write(stringValue);
+            writer.Flush();
+            stream.Position = 0;
+            return stream;
         }
 
         /// <summary>
         /// Instantiates client and container pointing to each region. Creates (drops if exists) database, container using one region's connections.
         /// </summary>
         /// <returns>Returns the CosmosClient and Container pointing to each region.</returns>
-        private async Task<IReadOnlyList<(CosmosClient Client, Container Container)>> CreateDatabaseAndContainer()
+        private async Task<IReadOnlyList<(CosmosClient Client, Container Container)>> CreateDatabaseAndContainer(
+            string database,
+            string collection,
+            string key,
+            params Endpoint[] endpoints)
         {
-            string content = File.ReadAllText(@"Conflicts\ConflictsTestSettings.json");
-            CosmosObject root = CosmosObject.Parse(content);
-            string database = "Microsoft.Azure.Cosmos.EmulatorTests.Conflicts";
-            string collection = "ConflictsTest";
-            string key = this.GetStringValue(root, "Key");
-            CosmosArray endpoints = this.GetValue<CosmosArray>(root, "Endpoints");
+            Assert.IsTrue(endpoints?.Length > 1, "At least one endpoint must be specified");
+
+            HashSet<string> endpointSet = new HashSet<string>(endpoints.Select(endpoint => endpoint.Url));
+            Assert.AreEqual(endpoints.Length, endpointSet.Count, "Please specify unique endpoints!");
 
             int endpointIndex = 0;
             List<(CosmosClient Client, Container Container)> clients = new();
-            foreach (CosmosObject endpoint in endpoints.Cast<CosmosObject>())
+            foreach (Endpoint endpoint in endpoints)
             {
-                // ISSUE-TODO-adityasa-2023/9/21 - we should validate the endpointUrl and ensure they are unique.
-                // It's a an easy error (copy/paste) which will be rather _very_ difficult to debug downstream.
-                string endpointUrl = this.GetStringValue(endpoint, "EndpointUrl");
-                string connectionModeString = this.GetStringValue(endpoint, "ConnectionMode");
-
-                ConnectionMode connectionMode = this.ParseConnectionMode(connectionModeString);
-
-                CosmosClient client = new CosmosClient(endpointUrl, key, new CosmosClientOptions { ConnectionMode = connectionMode });
+                CosmosClient client = new CosmosClient(endpoint.Url, key, new CosmosClientOptions { ConnectionMode = endpoint.ConnectionMode });
 
                 if (endpointIndex == 0)
                 {
@@ -207,30 +241,30 @@
                     Assert.AreEqual(ConsistencyLevel.Eventual, consistencyLevel, "Only account with eventual consistency is supported by this test.");
                 }
 
-                DatabaseResponse databaseResponse = await this.ExecuteOperationWithRetry<DatabaseResponse>(
+                DatabaseResponse databaseResponse = await this.ExecuteOperationWithRetry(
                     MaxRetries,
                     () => client.CreateDatabaseIfNotExistsAsync(database));
-                if ((endpointIndex  == 0) && (databaseResponse.StatusCode == System.Net.HttpStatusCode.OK))
+                if (endpointIndex == 0 && databaseResponse.StatusCode == HttpStatusCode.OK)
                 {
                     await databaseResponse.Database.DeleteAsync();
-                    databaseResponse = await this.ExecuteOperationWithRetry<DatabaseResponse>(
+                    databaseResponse = await this.ExecuteOperationWithRetry(
                         MaxRetries,
                         () => client.CreateDatabaseIfNotExistsAsync(database));
                 }
 
                 HttpStatusCode expectedStatus = endpointIndex == 0 ? HttpStatusCode.Created : HttpStatusCode.OK;
                 Assert.AreEqual(expectedStatus, databaseResponse.StatusCode,
-                    $"Endpoint#: {endpointIndex}, Endpoint : {endpointUrl}. CreateDatabaseIfNotExistsAsync received unexpected response.");
+                    $"Endpoint#: {endpointIndex}, Endpoint : {endpoint.Url}. CreateDatabaseIfNotExistsAsync received unexpected response.");
 
-                ContainerResponse containerResponse = await this.ExecuteOperationWithRetry<ContainerResponse>(
+                ContainerResponse containerResponse = await this.ExecuteOperationWithRetry(
                     MaxRetries,
                     () => databaseResponse.Database.CreateContainerIfNotExistsAsync(
                             new ContainerProperties(collection, "/pk")
-                            { 
+                            {
                                 ConflictResolutionPolicy = new ConflictResolutionPolicy() { Mode = ConflictResolutionMode.Custom }
                             }));
                 Assert.AreEqual(expectedStatus, databaseResponse.StatusCode,
-                    $"Endpoint#: {endpointIndex}, Endpoint : {endpointUrl}. CreateContainerIfNotExistsAsync received unexpected response.");
+                    $"Endpoint#: {endpointIndex}, Endpoint : {endpoint.Url}. CreateContainerIfNotExistsAsync received unexpected response.");
 
                 clients.Add((client, containerResponse.Container));
                 endpointIndex++;
@@ -250,7 +284,7 @@
                     {
                         if (i + 1 < maxRetryCount)
                         {
-                            Thread.Sleep(i * 1000);
+                            await Task.Delay(i * 1000);
                             continue;
                         }
 
@@ -274,30 +308,6 @@
             }
 
             throw new InvalidOperationException($"Operation failed after retries!");
-        }
-
-        private ConnectionMode ParseConnectionMode(string stringValue) => stringValue.ToLowerInvariant() switch
-            {
-                "direct" => ConnectionMode.Direct,
-                "gateway" => ConnectionMode.Gateway,
-                _ => throw new InvalidOperationException($"Unsupported type {stringValue.ToLowerInvariant()}")
-            };
-
-        private string GetStringValue(CosmosObject cosmosObject, string propertyName)
-        {
-            CosmosString cosmosString = this.GetValue<CosmosString>(cosmosObject, propertyName);
-            return this.ToString(cosmosString);
-        }
-
-        private string ToString(CosmosString cosmosString) => cosmosString.Value.ToString();
-
-        private T GetValue<T>(CosmosObject obj, string propertyName)
-            where T : CosmosElement
-        {
-            CosmosElement val = obj[propertyName];
-            Debug.Assert(val == null || val is T, "ConflictsTest Assert!", "Unexpected type!");
-
-            return (T)val;
         }
     }
 }
