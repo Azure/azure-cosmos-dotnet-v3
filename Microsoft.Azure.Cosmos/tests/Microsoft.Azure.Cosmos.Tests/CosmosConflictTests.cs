@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ConflictProperties conflictSettings = new ConflictProperties();
             conflictSettings.SourceResourceId = expectedRID;
 
-            ItemResponse<JObject> item = await container.Conflicts.ReadCurrentAsync<JObject>(conflictSettings, partitionKey);
+            await container.Conflicts.ReadCurrentAsync<JObject>(conflictSettings, partitionKey);
         }
 
         [TestMethod]
