@@ -323,7 +323,7 @@ namespace CosmosBenchmark
             Microsoft.Azure.Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(options.Database);
             
             string partitionKeyPath = options.PartitionKeyPath;
-            return  await database.CreateContainerIfNotExistsAsync(options.Container, partitionKeyPath, options.Throughput);
+            return await database.CreateContainerIfNotExistsAsync(options.Container, partitionKeyPath, options.Throughput);
         }
 
         /// <summary>
