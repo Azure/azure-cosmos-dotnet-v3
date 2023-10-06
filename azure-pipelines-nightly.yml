@@ -16,10 +16,12 @@ variables:
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops 
   BuildConfiguration: Release
   Packaging.EnableSBOMSigning: true
+  Codeql.Enabled: true
 
 stages:
 - stage:
   displayName: Generate nightly GA 
+  variables: Codeql.BuildIdentifier: ga
   jobs:
     - template:  templates/nuget-pack.yml
       parameters:
@@ -32,6 +34,7 @@ stages:
         CleanupFolder: true
 - stage:
   displayName: Generate nightly preview 
+  variables: Codeql.BuildIdentifier: preview
   jobs:
     - template:  templates/nuget-pack.yml
       parameters:
