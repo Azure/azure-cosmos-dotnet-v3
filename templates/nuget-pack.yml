@@ -32,7 +32,7 @@ jobs:
   steps:
   - task: CodeQL3000Init@0
     inputs:
-      ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+      ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/codeql') }}:
         Enabled: true
       ${{ else }}:
         Enabled: false
