@@ -83,9 +83,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 return responseMessage?.Headers;
             }
-            catch (Exception ex)
+            catch (NotImplementedException ex)
             {
-                DefaultTrace.TraceWarning("Failed to get headers from TransactionalBatchResponse. Exception: {0}", ex);
+                DefaultTrace.TraceVerbose("Failed to get headers from TransactionalBatchResponse. Exception: {0}", ex);
                 return null;
             }
         }
@@ -96,9 +96,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 return responseMessage?.Headers;
             }
-            catch (Exception ex)
+            catch (NotImplementedException ex)
             {
-                DefaultTrace.TraceWarning("Failed to get headers from ResponseMessage. Exception: {0}", ex);
+                DefaultTrace.TraceVerbose("Failed to get headers from ResponseMessage. Exception: {0}", ex);
                 return null;
             }
         }

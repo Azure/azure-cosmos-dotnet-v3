@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return responseMessage?.Headers;
             }
-            catch (Exception ex)
+            catch (NotImplementedException ex)
             {
                 DefaultTrace.TraceWarning("Failed to get headers from FeedResponse<T>. Exception: {0}", ex);
                 return null;
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return responseMessage?.Headers;
             }
-            catch (Exception ex)
+            catch (NotImplementedException ex)
             {
                 DefaultTrace.TraceWarning("Failed to get headers from Response<T>. Exception: {0}", ex);
                 return null;
