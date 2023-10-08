@@ -481,6 +481,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task LinqHasValue()
         {
+            // mayapainter add tests for this
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(this.Container, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
 
             CosmosLinqSerializerOptions camelCaseSerialization = new CosmosLinqSerializerOptions

@@ -229,9 +229,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             string assertMsg = string.Empty;
             if (!resultMatched)
             {
-                if (actualStr == null) actualStr = JsonConvert.SerializeObject(queryResultsList);
+                actualStr ??= JsonConvert.SerializeObject(queryResultsList);
 
-                if (expectedStr == null) expectedStr = JsonConvert.SerializeObject(dataResultsList);
+                expectedStr ??= JsonConvert.SerializeObject(dataResultsList);
 
                 resultMatched |= actualStr.Equals(expectedStr);
                 if (!resultMatched)
@@ -434,7 +434,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     for (int j = 0; j < random.Next(MaxThings) + 1; ++j)
                     {
                         obj.Children[i].Things.Add(
-                            j == 0 ? "A" : $"{j}-{random.Next().ToString()}",
+                            j == 0 ? "A" : $"{j}-{random.Next()}",
                             LinqTestsCommon.RandomString(random, random.Next(MaxThingStringLength)));
                     }
                 }
@@ -462,9 +462,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return getQuery;
         }
 
-        public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(
-         Cosmos.Database cosmosDatabase
-         )
+        public static Func<bool, IQueryable<Data>> GenerateSimpleCosmosData(Cosmos.Database cosmosDatabase)
         {
             const int DocumentCount = 10;
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/Pk" }), Kind = PartitionKind.Hash };
@@ -480,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 {
                     Id = Guid.NewGuid().ToString(),
                     Number = random.Next(-10000, 10000),
-                    Flag = index % 2 == 0 ? true : false,
+                    Flag = index % 2 == 0,
                     Multiples = new int[] { index, index * 2, index * 3, index * 4 },
                     Pk = "Test"
                 };
@@ -573,10 +571,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         public override string ToString()
         {
             // simple cached serialization
-            if (this.json == null)
-            {
-                this.json = JsonConvert.SerializeObject(this);
-            }
+            this.json ??= JsonConvert.SerializeObject(this);
             return this.json;
         }
 
@@ -656,11 +651,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 throw new ArgumentNullException($"{nameof(xmlWriter)} cannot be null.");
             }
 
-            if (this.expressionStr == null)
-            {
-                this.expressionStr = LinqTestInput.FilterInputExpression(this.Expression.Body.ToString());
-            }
-
+            this.expressionStr ??= LinqTestInput.FilterInputExpression(this.Expression.Body.ToString());
 
             xmlWriter.WriteStartElement("Description");
             xmlWriter.WriteCData(this.Description);
@@ -740,7 +731,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 }
                 else if (tokens[i].StartsWith(endCue, StringComparison.OrdinalIgnoreCase))
                 {
-                    indentSb.Length = indentSb.Length - oneTab.Length;
+                    indentSb.Length -= oneTab.Length;
                 }
 
                 sb.Append(indentSb).Append(tokens[i]).Append("\n");

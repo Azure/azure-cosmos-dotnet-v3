@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string sql = SqlTranslator.TranslateExpression(expr.Body, options);
 
             // Assert
-            // Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql); // <- TODO - Desired Behavior with CustomSerializer
+            // Assert.AreEqual("(a[\"Value\"] IN (\"One\", \"Two\"))", sql); // <- TODO - Desired Behavior with CustomSerializer //mayapainter
             Assert.AreEqual("(a[\"Value\"] IN (0, 1))", sql); // <- Actual behavior, with ability to set custom serializor reverted
         }
 
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Arrange
             CosmosLinqSerializerOptions options = new()
             {
-                // CustomCosmosSerializer = new TestCustomJsonSerializer()
+                //CustomCosmosSerializer = new TestCustomJsonSerializer()
             };
 
             // Act
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string sql = SqlTranslator.TranslateExpression(expr.Body, options);
 
             // Assert
-            // Assert.AreEqual("(a[\"Value\"] = \"One\")", sql); // <- THIS is the correct value, if we are able to use the custom serializer
+            // Assert.AreEqual("(a[\"Value\"] = \"One\")", sql); // <- THIS is the correct value, if we are able to use the custom serializer //mayapainter
             Assert.AreEqual("(a[\"Value\"] = 0)", sql); // <- THIS is the current mis-behavior of the SDK
         }
 
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Arrange
             CosmosLinqSerializerOptions options = new()
             {
-                // CustomCosmosSerializer = new TestCustomJsonSerializer()
+                //CustomCosmosSerializer = new TestCustomJsonSerializer()
             };
 
             // Act
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             string sql = SqlTranslator.TranslateExpression(expr.Body);
 
             // TODO: This is a limitation in the translator. It should be able to handle STJ extension data, if a custom
-            // JSON serializer is specified.
+            // JSON serializer is specified. //mayapainter - what is STJ?
             Assert.AreEqual("(a[\"NetExtensionData\"][\"foo\"] = \"bar\")", sql);
         }
 
