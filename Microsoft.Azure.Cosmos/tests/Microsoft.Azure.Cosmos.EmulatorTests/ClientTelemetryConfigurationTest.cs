@@ -80,7 +80,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.cosmosClientBuilder
                 .WithHttpClientFactory(() => new HttpClient(httpHandler))
-                .WithTelemetryDisabled();
+                .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                {
+                    DisableSendingMetricsToService = true
+                });
 
             this.SetClient(this.cosmosClientBuilder.Build());
 
@@ -144,7 +147,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.cosmosClientBuilder
                 .WithHttpClientFactory(() => new HttpClient(httpHandler))
-                .WithTelemetryEnabled();
+                .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                {
+                    DisableSendingMetricsToService = false
+                });
 
             this.SetClient(this.cosmosClientBuilder.Build());
 
@@ -212,7 +218,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.cosmosClientBuilder
                 .WithHttpClientFactory(() => new HttpClient(httpHandler))
-                .WithTelemetryEnabled();
+                .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                {
+                    DisableSendingMetricsToService = false
+                });
 
             this.SetClient(this.cosmosClientBuilder.Build());
 

@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -48,8 +47,9 @@ namespace Microsoft.Azure.Cosmos
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
-            this.EnableClientTelemetry = false; // by default feature flag is off
             this.ServerCertificateCustomValidationCallback = null;
+
+            this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
         }
 
         /// <summary>
@@ -209,15 +209,6 @@ namespace Microsoft.Azure.Cosmos
         {
             get;
             set;
-        }
-
-        /// <summary>
-        /// Gets or sets the flag to enable client telemetry feature.
-        /// </summary>
-        internal bool EnableClientTelemetry 
-        { 
-            get; 
-            set; 
         }
 
         /// <summary>
@@ -484,6 +475,15 @@ namespace Microsoft.Azure.Cosmos
         /// This setting must be used with caution. When used improperly, it can lead to client machine ephemeral port exhaustion <see href="https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-outbound-connections">Azure SNAT port exhaustion</see>.
         /// </remarks>
         internal int? MaxTcpPartitionCount
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets Client Telemetry Options like feature flags and corresponding options
+        /// </summary>
+        internal CosmosClientTelemetryOptions CosmosClientTelemetryOptions
         {
             get;
             set;
