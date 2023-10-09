@@ -7,10 +7,8 @@ namespace CosmosBenchmark
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.Tracing;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Net.Http;
     using System.Reflection;
     using System.Threading;
@@ -18,7 +16,6 @@ namespace CosmosBenchmark
     using Azure.Monitor.OpenTelemetry.Exporter;
     using CosmosBenchmark.Fx;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json.Linq;
     using OpenTelemetry;
     using OpenTelemetry.Metrics;
@@ -323,14 +320,7 @@ namespace CosmosBenchmark
         private static async Task<ContainerResponse> CreatePartitionedContainerAsync(BenchmarkConfig options, CosmosClient cosmosClient)
         {
             Microsoft.Azure.Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(options.Database);
-
-            // Show user cost of running this test
-            double estimatedCostPerMonth = 0.06 * options.Throughput;
-            double estimatedCostPerHour = estimatedCostPerMonth / (24 * 30);
-            Utility.TeeTraceInformation($"The container will cost an estimated ${Math.Round(estimatedCostPerHour, 2)} per hour (${Math.Round(estimatedCostPerMonth, 2)} per month)");
-            Utility.TeeTraceInformation("Press enter to continue ...");
-            Console.ReadLine();
-
+            
             string partitionKeyPath = options.PartitionKeyPath;
             return await database.CreateContainerIfNotExistsAsync(options.Container, partitionKeyPath, options.Throughput);
         }
