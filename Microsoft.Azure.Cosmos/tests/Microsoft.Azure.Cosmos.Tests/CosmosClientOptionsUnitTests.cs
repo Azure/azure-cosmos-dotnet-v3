@@ -100,6 +100,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreNotEqual(Cosmos.ConsistencyLevel.Session, clientOptions.ConsistencyLevel);
             Assert.IsFalse(policy.EnablePartitionLevelFailover);
             Assert.IsFalse(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue);
+#if PREVIEW
+            Assert.IsFalse(clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing);
+#else
+            Assert.IsTrue(clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing);
+#endif
+            Assert.IsTrue(clientOptions.CosmosClientTelemetryOptions.DisableSendingMetricsToService);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
@@ -165,9 +171,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .WithDistributedTracingOptions(new DistributedTracingOptions
+                .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                 {
-                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(100)
+                    DisableDistributedTracing = false,
+                    CosmosThresholdOptions = new CosmosThresholdOptions()
+                    {
+                        PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(100),
+                        NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(100)
+                    }
                 });
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -180,8 +191,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
-            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.DistributedTracingOptions.LatencyThresholdForDiagnosticEvent);
-            Assert.IsTrue(clientOptions.IsDistributedTracingEnabled);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.CosmosClientTelemetryOptions.CosmosThresholdOptions.PointOperationLatencyThreshold);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.CosmosClientTelemetryOptions.CosmosThresholdOptions.NonPointOperationLatencyThreshold);
+            Assert.IsFalse(clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
