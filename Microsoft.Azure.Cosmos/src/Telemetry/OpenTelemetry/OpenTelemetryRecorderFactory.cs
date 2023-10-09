@@ -48,8 +48,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 DiagnosticScope scope = LazyOperationScopeFactory.Value.CreateScope(name: operationName,
                                  kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
 
-                // The scope here checks for listeners at Operation Level.
+                // Need a parent activity id associated with the operation which is logged in diagnostics and used for tracing purpose.
                 // If there are listeners at operation level then scope is enabled and it tries to create activity.
+                // However, if available listeners are not subscribed to operation level event then it will lead to scope being enabled but no activity is created.
                 if (scope.IsEnabled)
                 {
                     scope.SetDisplayName($"{operationName} {containerName}");
@@ -64,9 +65,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions);
                 }
 #if !INTERNAL
-                // The scope here checks for listeners at Network Level.
+                // Need a parent activity which groups all network activities under it and is logged in diagnostics and used for tracing purpose.
                 // If there are listeners at network level then scope is enabled and it tries to create activity.
-                // Need a parent activity at root level so as to group all network activities under it.
+                // However, if available listeners are not subscribed to network event then it will lead to scope being enabled but no activity is created.
                 else
                 {
                     DiagnosticScope requestScope = LazyNetworkScopeFactory.Value.CreateScope(name: operationName);
@@ -75,6 +76,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 // If there are no listeners at operation level and network level and no parent activity created.
                 // Then create a dummy activity as there should be a parent level activity always when Distributed tracing is on.
+                // The parent activity id is logged in diagnostics and used for tracing purpose.
                 if (Activity.Current is null)
                 {
                     openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateParentActivity(operationName);
