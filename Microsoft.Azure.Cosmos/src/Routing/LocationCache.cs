@@ -491,20 +491,36 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (readLocations != null)
                 {
-                    ReadOnlyCollection<string> availableReadLocations;
-                    nextLocationInfo.AvailableReadEndpointByLocation = this.GetEndpointByLocation(readLocations, out availableReadLocations);
+                    nextLocationInfo.AvailableReadEndpointByLocation = this.GetEndpointByLocation(
+                        readLocations,
+                        out ReadOnlyCollection<string> availableReadLocations);
+
                     nextLocationInfo.AvailableReadLocations = availableReadLocations;
                 }
 
                 if (writeLocations != null)
                 {
-                    ReadOnlyCollection<string> availableWriteLocations;
-                    nextLocationInfo.AvailableWriteEndpointByLocation = this.GetEndpointByLocation(writeLocations, out availableWriteLocations);
+                    nextLocationInfo.AvailableWriteEndpointByLocation = this.GetEndpointByLocation(
+                        writeLocations,
+                        out ReadOnlyCollection<string> availableWriteLocations);
+
                     nextLocationInfo.AvailableWriteLocations = availableWriteLocations;
                 }
 
-                nextLocationInfo.WriteEndpoints = this.GetPreferredAvailableEndpoints(nextLocationInfo.AvailableWriteEndpointByLocation, nextLocationInfo.AvailableWriteLocations, OperationType.Write, this.defaultEndpoint);
-                nextLocationInfo.ReadEndpoints = this.GetPreferredAvailableEndpoints(nextLocationInfo.AvailableReadEndpointByLocation, nextLocationInfo.AvailableReadLocations, OperationType.Read, nextLocationInfo.WriteEndpoints[0]);
+                bool isMultiMasterAccount = this.CanUseMultipleWriteLocations();
+
+                nextLocationInfo.WriteEndpoints = this.GetPreferredAvailableEndpoints(
+                    endpointsByLocation: isMultiMasterAccount ? nextLocationInfo.AvailableWriteEndpointByLocation : nextLocationInfo.AvailableReadEndpointByLocation,
+                    orderedLocations: isMultiMasterAccount ? nextLocationInfo.AvailableWriteLocations : nextLocationInfo.AvailableReadLocations,
+                    expectedAvailableOperation: OperationType.Write,
+                    fallbackEndpoint: this.defaultEndpoint);
+
+                nextLocationInfo.ReadEndpoints = this.GetPreferredAvailableEndpoints(
+                    endpointsByLocation: nextLocationInfo.AvailableReadEndpointByLocation,
+                    orderedLocations: nextLocationInfo.AvailableReadLocations,
+                    expectedAvailableOperation: OperationType.Read,
+                    fallbackEndpoint: nextLocationInfo.WriteEndpoints[0]);
+
                 this.lastCacheUpdateTimestamp = DateTime.UtcNow;
 
                 DefaultTrace.TraceInformation("Current WriteEndpoints = ({0}) ReadEndpoints = ({1})",
@@ -534,8 +550,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     foreach (string location in currentLocationInfo.PreferredLocations)
                     {
-                        Uri endpoint;
-                        if (endpointsByLocation.TryGetValue(location, out endpoint))
+                        if (endpointsByLocation.TryGetValue(location, out Uri endpoint))
                         {
                             if (this.IsEndpointUnavailable(endpoint, expectedAvailableOperation))
                             {
@@ -560,9 +575,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     foreach (string location in orderedLocations)
                     {
-                        Uri endpoint;
                         if (!string.IsNullOrEmpty(location) && // location is empty during manual failover
-                            endpointsByLocation.TryGetValue(location, out endpoint))
+                            endpointsByLocation.TryGetValue(location, out Uri endpoint))
                         {
                             endpoints.Add(endpoint);
                         }
