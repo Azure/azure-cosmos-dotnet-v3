@@ -136,9 +136,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyRange,
                 (_) => new PartitionKeyRangeFailoverInfo(failedLocation));
 
+            ReadOnlyCollection<Uri> nextLocations = this.globalEndpointManager.ReadEndpoints;
+
+            if (!this.globalEndpointManager.CanUseMultipleWriteLocations(request))
+            {
+                nextLocations = this.globalEndpointManager.WriteEndpoints;
+            }
+
             // Will return true if it was able to update to a new region
             if (partionFailover.TryMoveNextLocation(
-                    locations: this.globalEndpointManager.ReadEndpoints,
+                    locations: nextLocations,
                     failedLocation: failedLocation))
             {
                 DefaultTrace.TraceInformation("Partition level override added to new location. PartitionKeyRange: {0}, failedLocation: {1}, new location: {2}",
