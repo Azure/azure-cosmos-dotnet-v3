@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Arrange
             CosmosLinqSerializerOptions options = new()
             {
-                //CustomCosmosSerializer = new TestCustomJsonSerializer()
+                // CustomCosmosSerializer = new TestCustomJsonSerializer()
             };
 
             // Act
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             // Arrange
             CosmosLinqSerializerOptions options = new()
             {
-                //CustomCosmosSerializer = new TestCustomJsonSerializer()
+                // CustomCosmosSerializer = new TestCustomJsonSerializer()
             };
 
             // Act

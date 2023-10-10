@@ -171,7 +171,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             return LinqTestsCommon.ExecuteTest(input);
         }
 
-        // Custom serializer that uses System.Text.Json.JsonSerializer
         private class SystemTextJsonSerializer : CosmosSerializer
         {
             private readonly JsonObjectSerializer systemTextJsonSerializer;
