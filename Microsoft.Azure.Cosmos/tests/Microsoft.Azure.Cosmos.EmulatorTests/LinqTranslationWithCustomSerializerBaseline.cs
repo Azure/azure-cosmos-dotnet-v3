@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private static Database TestDb;
         private static Container TestContainer;
 
-        private const int RecordCount = 100;
+        private const int RecordCount = 5;
         private const int MaxValue = 500;
         private const int MaxStringLength = 100;
 
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         public override LinqTestOutput ExecuteTest(LinqTestInput input)
         {
-            return LinqTestsCommon.ExecuteTest(input);
+            return LinqTestsCommon.ExecuteTest(input, includeResults: true);
         }
 
         private class SystemTextJsonSerializer : CosmosSerializer

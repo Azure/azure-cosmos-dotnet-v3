@@ -9,6 +9,7 @@
 SELECT VALUE root 
 FROM root 
 WHERE (root = {"NumericField": 12, "StringField": "12", "id": null, "Pk": null})]]></SqlQuery>
+      <Results><![CDATA[[]]]></Results>
     </Output>
   </Result>
   <Result>
@@ -20,6 +21,18 @@ WHERE (root = {"NumericField": 12, "StringField": "12", "id": null, "Pk": null})
       <SqlQuery><![CDATA[
 SELECT VALUE {"NumericField": 12, "StringField": "12", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
+      <Results><![CDATA[[
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}"
+]]]></Results>
     </Output>
   </Result>
   <Result>
@@ -31,6 +44,18 @@ FROM root]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE ((root["numericField"] > 12) ? {"NumericField": 12, "StringField": "12", "id": null, "Pk": null} : {"NumericField": 12, "StringField": "12", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
+      <Results><![CDATA[[
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}"
+]]]></Results>
     </Output>
   </Result>
   <Result>
@@ -43,6 +68,7 @@ FROM root]]></SqlQuery>
 SELECT VALUE "A" 
 FROM root 
 WHERE (root = {"numericField": root["numericField"], "stringField": root["stringField"]})]]></SqlQuery>
+      <Results><![CDATA[[]]]></Results>
     </Output>
   </Result>
   <Result>
@@ -55,6 +81,7 @@ WHERE (root = {"numericField": root["numericField"], "stringField": root["string
 SELECT VALUE root 
 FROM root 
 WHERE (root = {"NumericField": 12, "StringField": "12", "id": null, "Pk": null})]]></SqlQuery>
+      <Results><![CDATA[[]]]></Results>
     </Output>
   </Result>
   <Result>
@@ -66,6 +93,18 @@ WHERE (root = {"NumericField": 12, "StringField": "12", "id": null, "Pk": null})
       <SqlQuery><![CDATA[
 SELECT VALUE {"NumericField": 12, "StringField": "12", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
+      <Results><![CDATA[[
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}"
+]]]></Results>
     </Output>
   </Result>
   <Result>
@@ -77,6 +116,18 @@ FROM root]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE ((root["NumericField"] > 12) ? {"NumericField": 12, "StringField": "12", "id": null, "Pk": null} : {"NumericField": 12, "StringField": "12", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
+      <Results><![CDATA[[
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}",
+  "{\"NumericField\":0.0,\"StringField\":null,\"id\":null,\"Pk\":null}"
+]]]></Results>
     </Output>
   </Result>
   <Result>
@@ -89,6 +140,7 @@ FROM root]]></SqlQuery>
 SELECT VALUE "A" 
 FROM root 
 WHERE (root = {"NumericField": root["NumericField"], "StringField": root["StringField"]})]]></SqlQuery>
+      <Results><![CDATA[[]]]></Results>
     </Output>
   </Result>
 </Results>
