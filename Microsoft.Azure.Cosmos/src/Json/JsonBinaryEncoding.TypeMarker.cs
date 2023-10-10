@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Json
             public const byte LiteralIntMax = LiteralIntMin + 32;
             #endregion
 
-            #region [0x20, 0x60): Encoded 1-byte system string (64 values)
+            #region [0x20, 0x40): Encoded 1-byte system string (32 values)
             /// <summary>
             /// The first type marker for a system string whose value can be encoded in a 1 byte type marker.
             /// </summary>
@@ -36,14 +36,26 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// The last type marker for a system string whose value can be encoded in a 1 byte type marker.
             /// </summary>
-            public const byte SystemString1ByteLengthMax = SystemString1ByteLengthMin + 64;
+            public const byte SystemString1ByteLengthMax = SystemString1ByteLengthMin + 32;
+            #endregion
+
+            #region [0x40, 0x60): Encoded 1-byte user string (32 values)
+            /// <summary>
+            /// The first type marker for a user string whose value can be encoded in a 1 byte type marker.
+            /// </summary>
+            public const byte UserString1ByteLengthMin = SystemString1ByteLengthMax;
+
+            /// <summary>
+            /// The last type marker for a user string whose value can be encoded in a 1 byte type marker.
+            /// </summary>
+            public const byte UserString1ByteLengthMax = UserString1ByteLengthMin + 32;
             #endregion
 
             #region [0x60, 0x68): 2-byte user string (8 values)
             /// <summary>
             /// The first type marker for a system string whose value can be encoded in a 2 byte type marker.
             /// </summary>
-            public const byte UserString2ByteLengthMin = SystemString1ByteLengthMax;
+            public const byte UserString2ByteLengthMin = UserString1ByteLengthMax;
 
             /// <summary>
             /// The last type marker for a system string whose value can be encoded in a 2 byte type marker.
@@ -456,6 +468,17 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <summary>
+            /// Gets whether a typeMarker is for a one byte encoded user string.
+            /// </summary>
+            /// <param name="typeMarker">The input type marker.</param>
+            /// <returns>Whether the typeMarker is for a one byte encoded user string.</returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsOneByteEncodedUserString(byte typeMarker)
+            {
+                return InRange(typeMarker, UserString1ByteLengthMin, UserString1ByteLengthMax);
+            }
+
+            /// <summary>
             /// Gets whether a typeMarker is for a two byte encoded user string.
             /// </summary>
             /// <param name="typeMarker">The input type marker.</param>
@@ -474,7 +497,7 @@ namespace Microsoft.Azure.Cosmos.Json
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsUserString(byte typeMarker)
             {
-                return IsTwoByteEncodedUserString(typeMarker);
+                return IsOneByteEncodedUserString(typeMarker) || IsTwoByteEncodedUserString(typeMarker);
             }
 
             /// <summary>
@@ -485,7 +508,7 @@ namespace Microsoft.Azure.Cosmos.Json
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsOneByteEncodedString(byte typeMarker)
             {
-                return InRange(typeMarker, SystemString1ByteLengthMin, SystemString1ByteLengthMax);
+                return InRange(typeMarker, SystemString1ByteLengthMin, UserString1ByteLengthMax);
             }
 
             /// <summary>
