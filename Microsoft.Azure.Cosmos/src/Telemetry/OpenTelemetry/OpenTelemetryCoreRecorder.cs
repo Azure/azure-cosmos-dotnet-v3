@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, (int)this.response.SubStatusCode);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.SubStatusCode, this.response.SubStatusCode);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestCharge, this.response.RequestCharge);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, this.response.ItemCount);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
