@@ -39,7 +39,7 @@
     <None Remove="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestDateTimeJsonConverterTimezones.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDotNet.xml" />
-      <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerMultiSerializer.xml" />
+    <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerMultiSerializer.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerNewtonsoft.xml" />
   </ItemGroup>
 

@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="dataResults"></param>
         public static void ValidateResults(IQueryable queryResults, IQueryable dataResults)
         {
-            // Notes: querying between both does not work rn :( 
+            // execution validation
             IEnumerator queryEnumerator = queryResults.GetEnumerator();
             List<object> queryResultsList = new List<object>();
             while (queryEnumerator.MoveNext())
@@ -508,7 +508,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return getQuery;
         }
 
-        //todo mayapainter: make a seperate executelinqtestwithoutvalidation
         public static LinqTestOutput ExecuteTest(LinqTestInput input)
         {
             string querySqlStr = string.Empty;

@@ -23,10 +23,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     {
         private static CosmosClient cosmosClient;
         private static Database testDb;
-        private static Microsoft.Azure.Cosmos.Container testContainer;
+        private static Container testContainer;
 
         private const int RecordCount = 100;
-        private const int NumAbsMax = 500;
+        private const int MaxValue = 500;
         private const int MaxStringLength = 100;
 
         [ClassInitialize]
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 DataObjectDotNet obj = new DataObjectDotNet
                 {
-                    NumericField = random.Next(NumAbsMax * 2) - NumAbsMax,
+                    NumericField = random.Next(MaxValue * 2) - MaxValue,
                     StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
                     id = Guid.NewGuid().ToString(),
                     Pk = "Test"
@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 DataObjectNewtonsoft obj = new DataObjectNewtonsoft
                 {
-                    NumericField = random.Next(NumAbsMax * 2) - NumAbsMax,
+                    NumericField = random.Next(MaxValue * 2) - MaxValue,
                     StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
                     id = Guid.NewGuid().ToString(),
                     Pk = "Test"
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 DataObjectMultiSerializer obj = new DataObjectMultiSerializer
                 {
-                    NumericField = random.Next(NumAbsMax * 2) - NumAbsMax,
+                    NumericField = random.Next(MaxValue * 2) - MaxValue,
                     StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
                     id = Guid.NewGuid().ToString(),
                     Pk = "Test"
