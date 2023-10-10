@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
 
                 // If there are no listeners at operation level and network level and no parent activity created.
-                // Then create a dummy activity as there should be a parent level activity always when Distributed tracing is on.
+                // Then create a dummy activity as there should be a parent level activity always to send a traceid to the backend services through context propagation.
                 // The parent activity id is logged in diagnostics and used for tracing purpose.
                 if (Activity.Current is null)
                 {
