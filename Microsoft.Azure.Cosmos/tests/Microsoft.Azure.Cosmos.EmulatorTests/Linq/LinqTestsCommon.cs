@@ -303,7 +303,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 #endif
             };
 
-
             CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions { PropertyNamingPolicy = camelCaseSerialization ? CosmosPropertyNamingPolicy.CamelCase : CosmosPropertyNamingPolicy.Default};
             IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions, linqSerializerOptions: linqSerializerOptions);
 
