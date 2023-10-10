@@ -1,0 +1,94 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root = {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null})]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select w/ DataObject initializer, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Select(doc => new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Deeper than top level reference, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 12), new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"}, new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((root["numberValueNewtonsoft"] > 12) ? {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null} : {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null}) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with member initialization, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoft() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE "A" 
+FROM root 
+WHERE (root = {"numberValueNewtonsoft": root["numberValueNewtonsoft"], "stringValueNewtonsoft": root["stringValueNewtonsoft"]})]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = False]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root = {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null})]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select w/ DataObject initializer, camelcase = False]]></Description>
+      <Expression><![CDATA[query.Select(doc => new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null} 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Deeper than top level reference, camelcase = False]]></Description>
+      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 12), new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"}, new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ((root["NumberValueNewtonsoft"] > 12) ? {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null} : {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null}) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with member initialization, camelcase = False]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoft() {NumericField = doc.NumericField, StringField = doc.StringField})).Select(b => "A")]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE "A" 
+FROM root 
+WHERE (root = {"NumberValueNewtonsoft": root["NumberValueNewtonsoft"], "StringValueNewtonsoft": root["StringValueNewtonsoft"]})]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

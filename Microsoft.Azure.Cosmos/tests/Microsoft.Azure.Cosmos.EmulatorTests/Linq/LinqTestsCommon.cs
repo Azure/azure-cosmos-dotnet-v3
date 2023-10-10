@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="dataResults"></param>
         public static void ValidateResults(IQueryable queryResults, IQueryable dataResults)
         {
-            // execution validation
+            // Notes: querying between both does not work rn :( 
             IEnumerator queryEnumerator = queryResults.GetEnumerator();
             List<object> queryResultsList = new List<object>();
             while (queryEnumerator.MoveNext())
@@ -271,14 +271,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         /// <summary>
-        /// Generate test data for most LinQ tests
+        /// Generate test data for most LINQ tests
         /// </summary>
         /// <typeparam name="T">the object type</typeparam>
         /// <param name="func">the lamda to create an instance of test data</param>
         /// <param name="count">number of test data to be created</param>
         /// <param name="container">the target container</param>
         /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable</returns>
-        public static Func<bool, IQueryable<T>> GenerateTestCosmosData<T>(Func<Random, T> func, int count, Container container)
+        public static Func<bool, IQueryable<T>> GenerateTestCosmosData<T>(Func<Random, T> func, int count, Container container, bool camelCaseSerialization = false)
         {
             List<T> data = new List<T>();
             int seed = DateTime.Now.Millisecond;
@@ -303,7 +303,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 #endif
             };
 
-            IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
+
+            CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions { PropertyNamingPolicy = camelCaseSerialization ? CosmosPropertyNamingPolicy.CamelCase : CosmosPropertyNamingPolicy.Default};
+            IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions, linqSerializerOptions: linqSerializerOptions);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.
@@ -506,6 +508,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return getQuery;
         }
 
+        //todo mayapainter: make a seperate executelinqtestwithoutvalidation
         public static LinqTestOutput ExecuteTest(LinqTestInput input)
         {
             string querySqlStr = string.Empty;
