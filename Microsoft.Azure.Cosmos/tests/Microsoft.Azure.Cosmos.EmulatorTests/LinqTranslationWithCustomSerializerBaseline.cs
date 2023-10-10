@@ -21,9 +21,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     [SDK.EmulatorTests.TestClass]
     public class LinqTranslationWithCustomSerializerBaseline : BaselineTests<LinqTestInput, LinqTestOutput>
     {
-        private static CosmosClient cosmosClient;
-        private static Database testDb;
-        private static Container testContainer;
+        private static CosmosClient CosmosClient;
+        private static Database TestDb;
+        private static Container TestContainer;
 
         private const int RecordCount = 100;
         private const int MaxValue = 500;
@@ -32,32 +32,32 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
         {
-            cosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder)
+            CosmosClient = TestCommon.CreateCosmosClient((cosmosClientBuilder)
                 => cosmosClientBuilder.WithCustomSerializer(new SystemTextJsonSerializer(new JsonSerializerOptions())));
 
             string dbName = $"{nameof(LinqTranslationBaselineTests)}-{Guid.NewGuid():N}";
-            testDb = await cosmosClient.CreateDatabaseAsync(dbName);
+            TestDb = await CosmosClient.CreateDatabaseAsync(dbName);
         }
 
         [ClassCleanup]
         public async static Task Cleanup()
         {
-            if (testDb != null)
+            if (TestDb != null)
             {
-                await testDb.DeleteStreamAsync();
+                await TestDb.DeleteStreamAsync();
             }
         }
 
         [TestInitialize]
         public async Task TestInitialize()
         {
-            testContainer = await testDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk"));
+            TestContainer = await TestDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk"));
         }
 
         [TestCleanup]
         public async Task TestCleanup()
         {
-            await testContainer.DeleteContainerStreamAsync();
+            await TestContainer.DeleteContainerStreamAsync();
         }
 
         [TestMethod]
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             foreach (bool useCamelCaseSerializer in new bool[] { true, false })
             {
-                Func<bool, IQueryable<DataObjectDotNet>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, RecordCount, testContainer, useCamelCaseSerializer);
+                Func<bool, IQueryable<DataObjectDotNet>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, RecordCount, TestContainer, useCamelCaseSerializer);
 
                 List<LinqTestInput> camelCaseSettingInputs = new List<LinqTestInput>
                 {
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             foreach (bool useCamelCaseSerializer in new bool[] { true, false })
             {
-                Func<bool, IQueryable<DataObjectNewtonsoft>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, RecordCount, testContainer, useCamelCaseSerializer);
+                Func<bool, IQueryable<DataObjectNewtonsoft>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, RecordCount, TestContainer, useCamelCaseSerializer);
 
                 List<LinqTestInput> camelCaseSettingInputs = new List<LinqTestInput>
                 {
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             foreach (bool useCamelCaseSerializer in new bool[] { true, false })
             {
-                Func<bool, IQueryable<DataObjectMultiSerializer>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, RecordCount, testContainer, useCamelCaseSerializer);
+                Func<bool, IQueryable<DataObjectMultiSerializer>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, RecordCount, TestContainer, useCamelCaseSerializer);
 
                 List<LinqTestInput> camelCaseSettingInputs = new List<LinqTestInput>
                 {
