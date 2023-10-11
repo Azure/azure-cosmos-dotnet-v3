@@ -64,6 +64,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             await TestContainer.DeleteContainerStreamAsync();
         }
 
+        public override LinqTestOutput ExecuteTest(LinqTestInput input)
+        {
+            return LinqTestsCommon.ExecuteTest(input, includeResults: true);
+        }
+
         [TestMethod]
         public void TestMemberInitializerDotNet()
         {
@@ -200,11 +205,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             return (getQueryCamelCase, getQueryDefault, insertedData);
         }
 
-        public override LinqTestOutput ExecuteTest(LinqTestInput input)
-        {
-            return LinqTestsCommon.ExecuteTest(input, includeResults: true);
-        }
-
         private class SystemTextJsonSerializer : CosmosSerializer
         {
             private readonly JsonObjectSerializer systemTextJsonSerializer;
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
         }
 
-        internal class DataObjectDotNet : LinqTestObject
+        private class DataObjectDotNet : LinqTestObject
         {
             [JsonPropertyName("numberValueDotNet")]
             public double NumericField { get; set; }
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
         }
 
-        internal class DataObjectNewtonsoft : LinqTestObject
+        private class DataObjectNewtonsoft : LinqTestObject
         {
             [Newtonsoft.Json.JsonProperty(PropertyName = "NumberValueNewtonsoft")]
             public double NumericField { get; set; }
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
         }
 
-        public class DataObjectDataMember : LinqTestObject
+        private class DataObjectDataMember : LinqTestObject
         {
             [DataMember(Name = "NumericFieldDataMember")]
             public double NumericField { get; set; }
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
         }
 
-        internal class DataObjectMultiSerializer : LinqTestObject
+        private class DataObjectMultiSerializer : LinqTestObject
         {
             [Newtonsoft.Json.JsonProperty(PropertyName = "NumberValueNewtonsoft")]
             [JsonPropertyName("numberValueDotNet")]
