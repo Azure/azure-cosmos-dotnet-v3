@@ -740,7 +740,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         internal string SqlQuery { get; }
         internal string ErrorMessage { get; }
         internal string Results { get; }
-
         internal string InputData { get; }
 
         private static readonly Dictionary<string, string> newlineKeywords = new Dictionary<string, string>() {

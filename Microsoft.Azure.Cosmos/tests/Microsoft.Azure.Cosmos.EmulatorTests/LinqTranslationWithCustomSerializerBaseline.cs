@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using System.Linq;
     using System.Linq.Dynamic;
     using System.Reflection;
+    using System.Runtime.Serialization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading.Tasks;
@@ -113,6 +114,35 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
                     // Negative test case: serializing only field name using custom serializer not currently supported
                     new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectNewtonsoft() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData)
+                };
+
+                inputs.AddRange(camelCaseSettingInputs);
+            }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestMemberInitializerDataMember()
+        {
+            Func<bool, IQueryable<DataObjectDataMember>> getQueryCamelCase;
+            Func<bool, IQueryable<DataObjectDataMember>> getQueryDefault;
+            string insertedData;
+            (getQueryCamelCase, getQueryDefault, insertedData) = this.InsertDataAndGetQueryables<DataObjectDataMember>();
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>();
+            foreach (bool useCamelCaseSerializer in new bool[] { true, false })
+            {
+                Func<bool, IQueryable<DataObjectDataMember>> getQuery = useCamelCaseSerializer ? getQueryCamelCase : getQueryDefault;
+
+                List<LinqTestInput> camelCaseSettingInputs = new List<LinqTestInput>
+                {
+                    new LinqTestInput("Filter w/ DataObject initializer with constant value, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDataMember() { NumericField = 12, StringField = "12" }), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Select w/ DataObject initializer, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => new DataObjectDataMember() { NumericField = 12, StringField = "12" }), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 12 ? new DataObjectDataMember() { NumericField = 12, StringField = "12" } : new DataObjectDataMember() { NumericField = 12, StringField = "12" }), skipVerification : true, inputData: insertedData),
+
+                    // Negative test case: serializing only field name using custom serializer not currently supported
+                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDataMember() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData)
                 };
 
                 inputs.AddRange(camelCaseSettingInputs);
@@ -230,9 +260,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public DataObjectDotNet() { }
 
-            public DataObjectDotNet(double numericFeild, string stringField, string id, string pk)
+            public DataObjectDotNet(double numericField, string stringField, string id, string pk)
             {
-                this.NumericField = numericFeild;
+                this.NumericField = numericField;
                 this.StringField = stringField;
                 this.id = id;
                 this.Pk = pk;
@@ -255,9 +285,34 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public DataObjectNewtonsoft() { }
 
-            public DataObjectNewtonsoft(double numericFeild, string stringField, string id, string pk)
+            public DataObjectNewtonsoft(double numericField, string stringField, string id, string pk)
             {
-                this.NumericField = numericFeild;
+                this.NumericField = numericField;
+                this.StringField = stringField;
+                this.id = id;
+                this.Pk = pk;
+            }
+        }
+
+        public class DataObjectDataMember : LinqTestObject
+        {
+            [DataMember(Name = "NumericFieldDataMember")]
+            public double NumericField { get; set; }
+
+            [DataMember(Name = "StringFieldDataMember")]
+            public string StringField { get; set; }
+
+            [DataMember(Name = "id")]
+            public string id { get; set; }
+
+            [DataMember(Name = "Pk")]
+            public string Pk { get; set; }
+
+            public DataObjectDataMember() { }
+
+            public DataObjectDataMember(double numericField, string stringField, string id, string pk)
+            {
+                this.NumericField = numericField;
                 this.StringField = stringField;
                 this.id = id;
                 this.Pk = pk;
@@ -284,9 +339,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public DataObjectMultiSerializer() { }
 
-            public DataObjectMultiSerializer(double numericFeild, string stringField, string id, string pk)
+            public DataObjectMultiSerializer(double numericField, string stringField, string id, string pk)
             {
-                this.NumericField = numericFeild;
+                this.NumericField = numericField;
                 this.StringField = stringField;
                 this.id = id;
                 this.Pk = pk;
