@@ -10,29 +10,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
 
     internal static class DiagnosticsFilterHelper
     {
+        private static readonly CosmosThresholdOptions defaultThresholdOptions = new CosmosThresholdOptions();
+
         /// <summary>
         /// Allow only when Latency is not more than 100 (non-query) /250 (query) ms
         /// </summary>
         /// <returns>true or false</returns>
         public static bool IsLatencyThresholdCrossed(
-            DistributedTracingOptions config,
+            CosmosThresholdOptions config,
             OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            TimeSpan latencyThreshold;
-
-            if (config?.LatencyThresholdForDiagnosticEvent != null)
-            {
-                latencyThreshold = config.LatencyThresholdForDiagnosticEvent.Value;
-            }
-            else
-            {
-                latencyThreshold = DiagnosticsFilterHelper.IsPointOperation(operationType) ?
-                    DistributedTracingOptions.DefaultCrudLatencyThreshold :
-                    DistributedTracingOptions.DefaultQueryTimeoutThreshold;
-            }
-
-            return response.Diagnostics.GetClientElapsedTime() > latencyThreshold;
+            return response.Diagnostics.GetClientElapsedTime() > DiagnosticsFilterHelper.DefaultThreshold(operationType, config);
         }
 
         /// <summary>
@@ -49,10 +38,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Diagnostics
         }
 
         /// <summary>
+        /// Get default threshold value based on operation type
+        /// </summary>
+        /// <param name="operationType"></param>
+        /// <param name="config"></param>
+        internal static TimeSpan DefaultThreshold(OperationType operationType, CosmosThresholdOptions config)
+        {
+            config ??= DiagnosticsFilterHelper.defaultThresholdOptions;
+            return DiagnosticsFilterHelper.IsPointOperation(operationType) ?
+                                            config.PointOperationLatencyThreshold :
+                                            config.NonPointOperationLatencyThreshold;
+        }
+
+        /// <summary>
         /// Check if passed operation type is a point operation
         /// </summary>
         /// <param name="operationType"></param>
-        public static bool IsPointOperation(OperationType operationType)
+        internal static bool IsPointOperation(OperationType operationType)
         {
             return operationType == OperationType.Create ||
                    operationType == OperationType.Delete ||
