@@ -326,13 +326,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         }
 
         /// <summary>
-        /// Generate test data for serializer LINQ tests, which require a non-random payload to be serialized. 
+        /// Generate a non-random payload for serializer LINQ tests. 
         /// </summary>
         /// <typeparam name="T">the object type</typeparam>
         /// <param name="func">the lamda to create an instance of test data</param>
         /// <param name="count">number of test data to be created</param>
         /// <param name="container">the target container</param>
-        /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable</returns>
+        /// <param name="camelCaseSerialization">if theCosmosLinqSerializerOption of camelCaseSerialization should be applied</param>
+        /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable. Also the serialized payload.</returns>
         public static (Func<bool, IQueryable<T>>, List<T>) GenerateTestCosmosDataSerializationTest<T>(Func<int, bool, T> func, int count, Container container, bool camelCaseSerialization = false)
         {
             List<T> data = new List<T>();
@@ -361,7 +362,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
             IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
 
-            //todo mayapainter: finish documentation
             return (getQuery, insertedData);
         }
 
