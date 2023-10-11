@@ -22,13 +22,11 @@ dotnet run
 ### Configure Application Insights Telemetry
 
 ```C#
-// <SetUpApplicationInsights>
 IServiceCollection services = new ServiceCollection();
 services.AddApplicationInsightsTelemetryWorkerService((ApplicationInsightsServiceOptions options) => options.ConnectionString = aiConnectionString);
 
 IServiceProvider serviceProvider = services.BuildServiceProvider();
 _telemetryClient = serviceProvider.GetRequiredService<TelemetryClient>();
-// </SetUpApplicationInsights>
 ```
 
 ### Prepare Client, Database and Container
