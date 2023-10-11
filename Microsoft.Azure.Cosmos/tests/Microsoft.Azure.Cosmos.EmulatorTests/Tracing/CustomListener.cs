@@ -26,7 +26,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         private readonly Func<string, bool> sourceNameFilter;
         private readonly string eventName;
-        
+        private readonly bool suppressAllEvents;
+
         private ConcurrentBag<IDisposable> subscriptions = new();
         private ConcurrentBag<ProducedDiagnosticScope> Scopes { get; } = new();
         
@@ -36,21 +37,22 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static List<EventSource> EventSources { set; get; } = new();
 
-        public CustomListener(string name, string eventName)
-            : this(n => Regex.Match(n, name).Success, eventName)
+        public CustomListener(string name, string eventName, bool suppressAllEvents = false)
+            : this(n => Regex.Match(n, name).Success, eventName, suppressAllEvents)
         {
         }
 
-        public CustomListener(Func<string, bool> filter, string eventName)
+        public CustomListener(Func<string, bool> filter, string eventName, bool suppressAllEvents = false)
         {
             this.sourceNameFilter = filter;
             this.eventName = eventName;
+            this.suppressAllEvents = suppressAllEvents;
 
             foreach (EventSource eventSource in EventSources)
             {
                 this.OnEventSourceCreated(eventSource);
             }
-            
+
             DiagnosticListener.AllListeners.Subscribe(this);
         }
 
@@ -149,7 +151,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 lock (this.Scopes)
                 {
-                    this.subscriptions?.Add(value.Subscribe(this));
+                    IDisposable subscriber = value.Subscribe(this, isEnabled: (name) =>
+                    {
+                        if (this.suppressAllEvents)
+                        {
+                            return false;
+                        }
+                        return true;
+                    });
+                    this.subscriptions?.Add(subscriber);
                 }
             }
         }
@@ -159,7 +169,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         protected override void OnEventSourceCreated(EventSource eventSource)
         {
-            if(this.eventName == null)
+            if (this.eventName == null)
+            {
+                EventSources.Add(eventSource);
+            }
+
+            if (this.eventName == null)
             {
                 EventSources.Add(eventSource);
             }

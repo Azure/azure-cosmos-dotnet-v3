@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using BaselineTest;
     using System.Linq.Dynamic;
     using System.Text;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
 
@@ -288,6 +287,38 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("IsPrimitive string", b => getQuery(b).Where(doc => doc.StringField.IsPrimitive())),
                 new LinqTestInput("IsString string", b => getQuery(b).Where(doc => doc.StringField.IsString())),
                 new LinqTestInput("IsString number", b => getQuery(b).Select(doc => doc.NumericField.IsString())),
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestRegexMatchFunction()
+        {
+            // Similar to the type checking function, RegexMatch are not supported client side.
+            // Therefore this method is verified with baseline only.
+            List<DataObject> data = new List<DataObject>();
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("RegexMatch with 1 argument", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abcd"))),
+                new LinqTestInput("RegexMatch with 2 argument", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abcd", "i"))),
+                new LinqTestInput("RegexMatch with 1st argument member expression", b => getQuery(b).Where(doc => doc.StringField.RegexMatch(doc.StringField2))),
+                new LinqTestInput("RegexMatch with ToString", b => getQuery(b).Where(doc => doc.StringField.RegexMatch(doc.IntField.ToString()))),
+                new LinqTestInput("RegexMatch with StringUpper", b => getQuery(b).Where(doc => doc.StringField.RegexMatch(doc.StringField2.ToUpper()))),
+                new LinqTestInput("RegexMatch with StringLower", b => getQuery(b).Where(doc => doc.StringField.RegexMatch(doc.StringField2.ToLower()))),
+                new LinqTestInput("RegexMatch with StringConcat", b => getQuery(b).Where(doc => doc.StringField.RegexMatch(string.Concat(doc.StringField, "str")))),
+
+                new LinqTestInput("RegexMatch with string composition", b => getQuery(b).Where(doc => doc.IntField.ToString().RegexMatch(doc.StringField))),
+                new LinqTestInput("RegexMatch with string composition 2", b => getQuery(b).Where(doc => doc.IntField.ToString().RegexMatch(doc.StringField, doc.StringField2.ToString()))),
+
+                new LinqTestInput("RegexMatch with conditional", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abc") && doc.StringField2.RegexMatch("def"))),
+                new LinqTestInput("RegexMatch with conditional 2", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abc") || doc.StringField2.RegexMatch("def"))),
+                new LinqTestInput("RegexMatch with conditional 3", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abc")).Where(doc => doc.StringField2.RegexMatch("abc"))),
+                new LinqTestInput("RegexMatch with conditional 4", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abc")).Where(doc => !doc.StringField2.RegexMatch("abc"))),
+
+                new LinqTestInput("RegexMatch with 2nd argument invalid string options", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abcd", "this should error out on the back end"))),
             };
             this.ExecuteTestSuite(inputs);
         }
@@ -622,7 +653,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<DataObject> testData = new List<DataObject>();
             IOrderedQueryable<DataObject> constantQuery = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
             Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? constantQuery : testData.AsQueryable();
-            
+
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
                 // This test case will use the legacy delegate compilation expression evaluator
@@ -683,7 +714,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     StringField = sb.ToString(),
                     Id = Guid.NewGuid().ToString(),
                     Pk = "Test",
-                    
+
                     // For ToString tests
                     ArrayField = new int[] {},
                     Point = new Point(0, 0)
@@ -805,9 +836,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("ToUpper", b => getQuery(b).Select(doc => doc.StringField.ToUpper()))
             };
             this.ExecuteTestSuite(inputs);
-    }
+        }
 
-    [TestMethod]
+        [TestMethod]
         public void TestArrayFunctions()
         {
             const int Records = 100;

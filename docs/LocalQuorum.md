@@ -37,23 +37,23 @@ upgradeConsistencyProperty.SetValue(clientOptions, true);
 CosmosClient cosmosClient = new CosmosClient(..., clientOptions);
 ```
 
-#### Per request upgrade consistency to Bounded 
-> ###### Please note that Bounded here is only used as HINT for SDK to do quorum reads 
+#### Per request upgrade consistency to Strong 
+> ###### Please note that Strong here is only used as HINT for SDK to do quorum reads 
 > ###### It will not impact CosmosDB account or write consistency levels
 
 ```C#
 ItemRequestOptions requestOption = new ItemRequestOptions();
-requestOption.ConsistencyLevel = ConsistencyLevel.Bounded;
+requestOption.ConsistencyLevel = ConsistencyLevel.Strong;
 
 T item = await container.ReadItemAsync<T>(docId, new PartitionKey(docPartitionKey), requestOption);
 ```
 
 ```C#
 QueryRequestOptions requestOption = new QueryRequestOptions();
-requestOption.ConsistencyLevel = ConsistencyLevel.Bounded;
+requestOption.ConsistencyLevel = ConsistencyLevel.Strong;
 
 await container.GetItemQueryIterator<T>(queryText, continuationToken, requestOption);
 ```
 
-> #### Please use Bounded only for per request options as pattern
+> #### Please use Strong only for per request options as pattern
 > #### Single master account possibly Strong == Bounded (**TBD**)
