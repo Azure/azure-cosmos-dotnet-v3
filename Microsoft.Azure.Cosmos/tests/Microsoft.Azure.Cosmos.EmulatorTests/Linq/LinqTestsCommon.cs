@@ -334,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="container">the target container</param>
         /// <param name="camelCaseSerialization">if theCosmosLinqSerializerOption of camelCaseSerialization should be applied</param>
         /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable. Also the serialized payload.</returns>
-        public static (Func<bool, IQueryable<T>>, List<T>) GenerateTestCosmosDataSerializationTest<T>(Func<int, bool, T> func, int count, Container container, bool camelCaseSerialization = false)
+        public static (Func<bool, IQueryable<T>>, List<T>) GenerateSerializationTestCosmosData<T>(Func<int, bool, T> func, int count, Container container, bool camelCaseSerialization = false)
         {
             List<T> data = new List<T>();
             for (int i = 0; i < count; i++)
