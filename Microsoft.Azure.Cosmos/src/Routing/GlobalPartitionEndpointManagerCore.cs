@@ -138,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             ReadOnlyCollection<Uri> nextLocations = this.globalEndpointManager.ReadEndpoints;
 
+            // Add documentation.
             if (!this.globalEndpointManager.CanUseMultipleWriteLocations(request))
             {
                 nextLocations = this.globalEndpointManager.WriteEndpoints;

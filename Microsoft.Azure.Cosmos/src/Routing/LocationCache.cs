@@ -507,6 +507,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     nextLocationInfo.AvailableWriteLocations = availableWriteLocations;
                 }
 
+                // Add Documentation.
                 bool isMultiMasterAccount = this.CanUseMultipleWriteLocations();
 
                 nextLocationInfo.WriteEndpoints = this.GetPreferredAvailableEndpoints(
