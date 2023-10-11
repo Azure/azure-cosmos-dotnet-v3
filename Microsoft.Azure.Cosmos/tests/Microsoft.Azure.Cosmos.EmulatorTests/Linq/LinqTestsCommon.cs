@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="count">number of test data to be created</param>
         /// <param name="container">the target container</param>
         /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable</returns>
-        public static Func<bool, IQueryable<T>> GenerateTestCosmosData<T>(Func<Random, T> func, int count, Container container, bool camelCaseSerialization = false)
+        public static Func<bool, IQueryable<T>> GenerateTestCosmosData<T>(Func<Random, T> func, int count, Container container)
         {
             List<T> data = new List<T>();
             int seed = DateTime.Now.Millisecond;
@@ -313,8 +313,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 #endif
             };
 
-            CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions { PropertyNamingPolicy = camelCaseSerialization ? CosmosPropertyNamingPolicy.CamelCase : CosmosPropertyNamingPolicy.Default};
-            IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions, linqSerializerOptions: linqSerializerOptions);
+            IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions);
 
             // To cover both query against backend and queries on the original data using LINQ nicely, 
             // the LINQ expression should be written once and they should be compiled and executed against the two sources.
@@ -324,6 +323,46 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
 
             return getQuery;
+        }
+
+        /// <summary>
+        /// Generate test data for serializer LINQ tests, which require a non-random payload to be serialized. 
+        /// </summary>
+        /// <typeparam name="T">the object type</typeparam>
+        /// <param name="func">the lamda to create an instance of test data</param>
+        /// <param name="count">number of test data to be created</param>
+        /// <param name="container">the target container</param>
+        /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable</returns>
+        public static (Func<bool, IQueryable<T>>, List<T>) GenerateTestCosmosDataSerializationTest<T>(Func<int, bool, T> func, int count, Container container, bool camelCaseSerialization = false)
+        {
+            List<T> data = new List<T>();
+            for (int i = 0; i < count; i++)
+            {
+                data.Add(func(i, camelCaseSerialization));
+            }
+
+            List<T> insertedData = new List<T>();
+            foreach (T obj in data)
+            {
+                ItemResponse<T> response = container.CreateItemAsync(obj, new Cosmos.PartitionKey("Test")).Result;
+                insertedData.Add(response.Resource);
+            }
+
+            FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+#if PREVIEW
+                EnableOptimisticDirectExecution = false
+#endif
+            };
+
+            CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions { PropertyNamingPolicy = camelCaseSerialization ? CosmosPropertyNamingPolicy.CamelCase : CosmosPropertyNamingPolicy.Default };
+            IOrderedQueryable<T> query = container.GetItemLinqQueryable<T>(allowSynchronousQueryExecution: true, requestOptions: requestOptions, linqSerializerOptions: linqSerializerOptions);
+
+            IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
+
+            //todo mayapainter: finish documentation
+            return (getQuery, insertedData);
         }
 
         public static Func<bool, IQueryable<Family>> GenerateFamilyCosmosData(
@@ -540,11 +579,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 string serializedResults = includeResults ?
                     JsonConvert.SerializeObject(queryResults.Select(item => item is LinqTestObject ? item.ToString() : item), new JsonSerializerSettings { Formatting = Newtonsoft.Json.Formatting.Indented }) :
                     null;
-                return new LinqTestOutput(querySqlStr, serializedResults, errorMsg: null);
+
+                return new LinqTestOutput(querySqlStr, serializedResults, errorMsg: null, input.inputData);
             }
             catch (Exception e)
             {
-                return new LinqTestOutput(querySqlStr, serializedResults: null, errorMsg: LinqTestsCommon.BuildExceptionMessageForTest(e));
+                return new LinqTestOutput(querySqlStr, serializedResults: null, errorMsg: LinqTestsCommon.BuildExceptionMessageForTest(e), inputData: input.inputData);
             }
         }
 
@@ -625,18 +665,25 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         internal int randomSeed = -1;
         internal Expression<Func<bool, IQueryable>> Expression { get; }
         internal string expressionStr;
+        internal string inputData;
 
         // We skip the verification between Cosmos DB and actual query restuls in the following cases
         //     - unordered query since the results are not deterministics for LinQ results and actual query results
         //     - scenarios not supported in LINQ, e.g. sequence doesn't contain element.
         internal bool skipVerification;
 
-        internal LinqTestInput(string description, Expression<Func<bool, IQueryable>> expr, bool skipVerification = false, string expressionStr = null)
+        internal LinqTestInput(
+            string description, 
+            Expression<Func<bool, IQueryable>> expr, 
+            bool skipVerification = false, 
+            string expressionStr = null, 
+            string inputData = null)
             : base(description)
         {
             this.Expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
             this.skipVerification = skipVerification;
             this.expressionStr = expressionStr;
+            this.inputData = inputData;
         }
 
         public static string FilterInputExpression(string input)
@@ -694,6 +741,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         internal string ErrorMessage { get; }
         internal string Results { get; }
 
+        internal string InputData { get; }
+
         private static readonly Dictionary<string, string> newlineKeywords = new Dictionary<string, string>() {
             { "SELECT", "\nSELECT" },
             { "FROM", "\nFROM" },
@@ -718,11 +767,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return msg;
         }
 
-        internal LinqTestOutput(string sqlQuery, string serializedResults, string errorMsg)
+        internal LinqTestOutput(string sqlQuery, string serializedResults, string errorMsg, string inputData)
         {
             this.SqlQuery = FormatSql(sqlQuery);
             this.Results = serializedResults;
             this.ErrorMessage = errorMsg;
+            this.InputData = inputData;
         }
 
         public static String FormatSql(string sqlQuery)
@@ -769,6 +819,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             xmlWriter.WriteStartElement(nameof(this.SqlQuery));
             xmlWriter.WriteCData(this.SqlQuery);
             xmlWriter.WriteEndElement();
+            if (this.InputData != null)
+            {
+                xmlWriter.WriteStartElement("InputData");
+                xmlWriter.WriteCData(this.InputData);
+                xmlWriter.WriteEndElement();
+            }
             if (this.Results != null)
             {
                 xmlWriter.WriteStartElement("Results");

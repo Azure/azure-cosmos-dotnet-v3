@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using global::Azure.Core.Serialization;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [SDK.EmulatorTests.TestClass]
     public class LinqTranslationWithCustomSerializerBaseline : BaselineTests<LinqTestInput, LinqTestOutput>
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private static Database TestDb;
         private static Container TestContainer;
 
-        private const int RecordCount = 5;
+        private const int RecordCount = 3;
         private const int MaxValue = 500;
         private const int MaxStringLength = 100;
 
@@ -63,31 +64,37 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestMemberInitializerDotNet()
         {
-            static DataObjectDotNet createDataObj(Random random)
+            static DataObjectDotNet createDataObj(int index, bool camelCase)
             {
                 DataObjectDotNet obj = new DataObjectDotNet
                 {
-                    NumericField = random.Next(MaxValue * 2) - MaxValue,
-                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
-                    id = Guid.NewGuid().ToString(),
+                    NumericField = index,
+                    StringField = index.ToString(),
+                    id = $"{index}-{camelCase}",
                     Pk = "Test"
                 };
                 return obj;
             }
+            
+            (Func<bool, IQueryable<DataObjectDotNet>> getQueryCamelCase, List<DataObjectDotNet> insertedDataListCamelCase) = LinqTestsCommon.GenerateTestCosmosDataSerializationTest(createDataObj, RecordCount, TestContainer, camelCaseSerialization: true);
+            (Func<bool, IQueryable<DataObjectDotNet>> getQueryDefault, List<DataObjectDotNet> insertedDataListDefault) = LinqTestsCommon.GenerateTestCosmosDataSerializationTest(createDataObj, RecordCount, TestContainer, camelCaseSerialization: false);
+            
+            List<DataObjectDotNet> insertedDataList = insertedDataListCamelCase.Concat(insertedDataListDefault).ToList();
+            string insertedData = JsonConvert.SerializeObject(insertedDataList.Select(item => item.ToString()), new JsonSerializerSettings { Formatting = Newtonsoft.Json.Formatting.Indented });
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             foreach (bool useCamelCaseSerializer in new bool[] { true, false })
             {
-                Func<bool, IQueryable<DataObjectDotNet>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, RecordCount, TestContainer, useCamelCaseSerializer);
+                Func<bool, IQueryable<DataObjectDotNet>> getQuery = useCamelCaseSerializer ? getQueryCamelCase : getQueryDefault;
 
                 List<LinqTestInput> camelCaseSettingInputs = new List<LinqTestInput>
                 {
-                    new LinqTestInput("Filter w/ DataObject initializer with constant value, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDotNet() { NumericField = 12, StringField = "12" }), skipVerification : true),
-                    new LinqTestInput("Select w/ DataObject initializer, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => new DataObjectDotNet() { NumericField = 12, StringField = "12" }), skipVerification : true),
-                    new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 12 ? new DataObjectDotNet() { NumericField = 12, StringField = "12" } : new DataObjectDotNet() { NumericField = 12, StringField = "12" }), skipVerification : true),
+                    new LinqTestInput("Filter w/ DataObject initializer with constant value, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDotNet() { NumericField = 12, StringField = "12" }), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Select w/ DataObject initializer, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => new DataObjectDotNet() { NumericField = 12, StringField = "12" }), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 12 ? new DataObjectDotNet() { NumericField = 12, StringField = "12" } : new DataObjectDotNet() { NumericField = 12, StringField = "12" }), skipVerification : true, inputData: insertedData),
 
                     // Negative test case: serializing only field name using custom serializer not currently supported
-                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDotNet() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true)
+                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectDotNet() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData)
                 };
 
                 inputs.AddRange(camelCaseSettingInputs);
@@ -99,70 +106,84 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         [TestMethod]
         public void TestMemberInitializerNewtonsoft()
         {
-            static DataObjectNewtonsoft createDataObj(Random random)
+            static DataObjectNewtonsoft createDataObj(int index, bool camelCase)
             {
                 DataObjectNewtonsoft obj = new DataObjectNewtonsoft
                 {
-                    NumericField = random.Next(MaxValue * 2) - MaxValue,
-                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
-                    id = Guid.NewGuid().ToString(),
+                    NumericField = index,
+                    StringField = index.ToString(),
+                    id = $"{index}-{camelCase}",
                     Pk = "Test"
                 };
                 return obj;
             }
 
+            (Func<bool, IQueryable<DataObjectNewtonsoft>> getQueryCamelCase, List<DataObjectNewtonsoft> insertedDataListCamelCase) = LinqTestsCommon.GenerateTestCosmosDataSerializationTest(createDataObj, RecordCount, TestContainer, camelCaseSerialization: true);
+            (Func<bool, IQueryable<DataObjectNewtonsoft>> getQueryDefault, List<DataObjectNewtonsoft> insertedDataListDefault) = LinqTestsCommon.GenerateTestCosmosDataSerializationTest(createDataObj, RecordCount, TestContainer, camelCaseSerialization: false);
+
+            List<DataObjectNewtonsoft> insertedDataList = insertedDataListCamelCase.Concat(insertedDataListDefault).ToList();
+            string insertedData = JsonConvert.SerializeObject(insertedDataList.Select(item => item.ToString()), new JsonSerializerSettings { Formatting = Newtonsoft.Json.Formatting.Indented });
+
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             foreach (bool useCamelCaseSerializer in new bool[] { true, false })
             {
-                Func<bool, IQueryable<DataObjectNewtonsoft>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, RecordCount, TestContainer, useCamelCaseSerializer);
+                Func<bool, IQueryable<DataObjectNewtonsoft>> getQuery = useCamelCaseSerializer ? getQueryCamelCase : getQueryDefault;
 
                 List<LinqTestInput> camelCaseSettingInputs = new List<LinqTestInput>
                 {
-                    new LinqTestInput("Filter w/ DataObject initializer with constant value, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectNewtonsoft() { NumericField = 12, StringField = "12" }), skipVerification : true),
-                    new LinqTestInput("Select w/ DataObject initializer, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => new DataObjectNewtonsoft() { NumericField = 12, StringField = "12" }), skipVerification : true),
-                    new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 12 ? new DataObjectNewtonsoft() { NumericField = 12, StringField = "12" } : new DataObjectNewtonsoft() { NumericField = 12, StringField = "12" }), skipVerification : true),
+                    new LinqTestInput("Filter w/ DataObject initializer with constant value, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectNewtonsoft() { NumericField = 12, StringField = "12" }), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Select w/ DataObject initializer, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => new DataObjectNewtonsoft() { NumericField = 12, StringField = "12" }), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 12 ? new DataObjectNewtonsoft() { NumericField = 12, StringField = "12" } : new DataObjectNewtonsoft() { NumericField = 12, StringField = "12" }), skipVerification : true, inputData: insertedData),
 
                     // Negative test case: serializing only field name using custom serializer not currently supported
-                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectNewtonsoft() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true)
+                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectNewtonsoft() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData)
                 };
 
                 inputs.AddRange(camelCaseSettingInputs);
             }
+
             this.ExecuteTestSuite(inputs);
         }
 
         [TestMethod]
         public void TestMemberInitializerMultiSerializer()
         {
-            static DataObjectMultiSerializer createDataObj(Random random)
+            static DataObjectMultiSerializer createDataObj(int index, bool camelCase)
             {
                 DataObjectMultiSerializer obj = new DataObjectMultiSerializer
                 {
-                    NumericField = random.Next(MaxValue * 2) - MaxValue,
-                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
-                    id = Guid.NewGuid().ToString(),
+                    NumericField = index,
+                    StringField = index.ToString(),
+                    id = $"{index}-{camelCase}",
                     Pk = "Test"
                 };
                 return obj;
             }
 
+            (Func<bool, IQueryable<DataObjectMultiSerializer>> getQueryCamelCase, List<DataObjectMultiSerializer> insertedDataListCamelCase) = LinqTestsCommon.GenerateTestCosmosDataSerializationTest(createDataObj, RecordCount, TestContainer, camelCaseSerialization: true);
+            (Func<bool, IQueryable<DataObjectMultiSerializer>> getQueryDefault, List<DataObjectMultiSerializer> insertedDataListDefault) = LinqTestsCommon.GenerateTestCosmosDataSerializationTest(createDataObj, RecordCount, TestContainer, camelCaseSerialization: false);
+
+            List<DataObjectMultiSerializer> insertedDataList = insertedDataListCamelCase.Concat(insertedDataListDefault).ToList();
+            string insertedData = JsonConvert.SerializeObject(insertedDataList.Select(item => item.ToString()), new JsonSerializerSettings { Formatting = Newtonsoft.Json.Formatting.Indented });
+
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             foreach (bool useCamelCaseSerializer in new bool[] { true, false })
             {
-                Func<bool, IQueryable<DataObjectMultiSerializer>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, RecordCount, TestContainer, useCamelCaseSerializer);
+                Func<bool, IQueryable<DataObjectMultiSerializer>> getQuery = useCamelCaseSerializer ? getQueryCamelCase : getQueryDefault;
 
                 List<LinqTestInput> camelCaseSettingInputs = new List<LinqTestInput>
                 {
-                    new LinqTestInput("Filter w/ DataObject initializer with constant value, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectMultiSerializer() { NumericField = 12, StringField = "12" }), skipVerification : true),
-                    new LinqTestInput("Select w/ DataObject initializer, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => new DataObjectMultiSerializer() { NumericField = 12, StringField = "12" }), skipVerification : true),
-                    new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 12 ? new DataObjectMultiSerializer() { NumericField = 12, StringField = "12" } : new DataObjectMultiSerializer() { NumericField = 12, StringField = "12" }), skipVerification : true),
+                    new LinqTestInput("Filter w/ DataObject initializer with constant value, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectMultiSerializer() { NumericField = 12, StringField = "12" }), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Select w/ DataObject initializer, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => new DataObjectMultiSerializer() { NumericField = 12, StringField = "12" }), skipVerification : true, inputData: insertedData),
+                    new LinqTestInput("Deeper than top level reference, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Select(doc => doc.NumericField > 12 ? new DataObjectMultiSerializer() { NumericField = 12, StringField = "12" } : new DataObjectMultiSerializer() { NumericField = 12, StringField = "12" }), skipVerification : true, inputData: insertedData),
 
                     // Negative test case: serializing only field name using custom serializer not currently supported
-                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectMultiSerializer() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true)
+                    new LinqTestInput("Filter w/ DataObject initializer with member initialization, camelcase = " + useCamelCaseSerializer, b => getQuery(b).Where(doc => doc == new DataObjectMultiSerializer() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData)
                 };
 
                 inputs.AddRange(camelCaseSettingInputs);
             }
+
             this.ExecuteTestSuite(inputs);
         }
 

@@ -9,6 +9,14 @@
 SELECT VALUE root 
 FROM root 
 WHERE (root = {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null})]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
   </Result>
@@ -21,11 +29,15 @@ WHERE (root = {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id":
       <SqlQuery><![CDATA[
 SELECT VALUE {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+]]]></InputData>
       <Results><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
   "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
   "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
   "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
@@ -44,11 +56,15 @@ FROM root]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE ((root["numberValueNewtonsoft"] > 12) ? {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null} : {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+]]]></InputData>
       <Results><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
   "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
   "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
   "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
@@ -68,6 +84,14 @@ FROM root]]></SqlQuery>
 SELECT VALUE "A" 
 FROM root 
 WHERE (root = {"numberValueNewtonsoft": root["numberValueNewtonsoft"], "stringValueNewtonsoft": root["stringValueNewtonsoft"]})]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
   </Result>
@@ -81,6 +105,14 @@ WHERE (root = {"numberValueNewtonsoft": root["numberValueNewtonsoft"], "stringVa
 SELECT VALUE root 
 FROM root 
 WHERE (root = {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null})]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
   </Result>
@@ -93,11 +125,15 @@ WHERE (root = {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id":
       <SqlQuery><![CDATA[
 SELECT VALUE {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+]]]></InputData>
       <Results><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
   "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
   "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
   "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
@@ -116,11 +152,15 @@ FROM root]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE ((root["NumberValueNewtonsoft"] > 12) ? {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null} : {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+]]]></InputData>
       <Results><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
   "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
   "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
   "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
@@ -140,6 +180,14 @@ FROM root]]></SqlQuery>
 SELECT VALUE "A" 
 FROM root 
 WHERE (root = {"NumberValueNewtonsoft": root["NumberValueNewtonsoft"], "StringValueNewtonsoft": root["StringValueNewtonsoft"]})]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
+  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
   </Result>
