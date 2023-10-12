@@ -732,12 +732,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets Client Telemetry Options like feature flags and corresponding options
         /// </summary>
-#if PREVIEW
-        public 
-#else
-        internal
-#endif 
-            CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
+        public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
