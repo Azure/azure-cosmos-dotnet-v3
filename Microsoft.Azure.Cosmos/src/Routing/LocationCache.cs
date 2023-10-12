@@ -510,14 +510,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     nextLocationInfo.AvailableWriteLocations = availableWriteLocations;
                 }
 
-                // For any multi master write accounts, the write endpoints would be the available write regions
-                // configured at the account level. For single master write accounts, the write endpoints would be
-                // the available read regions configured at the account level.
-                bool canUsePartitionLevelFailover = !this.CanUseMultipleWriteLocations() && this.partitionLevelFailoverEnabled;
+                // For any single master write accounts, the write endpoints would be the read regions configured at the account level.
+                // For multi master write accounts, since all the regions are treated as write regions, the write endpoints would be
+                // the preferred write regions that are configured in the application preferred regions in the CosmosClientOptions.
+                bool isSingleMasterAndPartitionLevelFailoverEnabled = !this.CanUseMultipleWriteLocations() && this.partitionLevelFailoverEnabled;
 
                 nextLocationInfo.WriteEndpoints = this.GetPreferredAvailableEndpoints(
-                    endpointsByLocation: canUsePartitionLevelFailover ? nextLocationInfo.AvailableReadEndpointByLocation : nextLocationInfo.AvailableWriteEndpointByLocation,
-                    orderedLocations: canUsePartitionLevelFailover ? nextLocationInfo.AvailableReadLocations : nextLocationInfo.AvailableWriteLocations,
+                    endpointsByLocation: isSingleMasterAndPartitionLevelFailoverEnabled ? nextLocationInfo.AvailableReadEndpointByLocation : nextLocationInfo.AvailableWriteEndpointByLocation,
+                    orderedLocations: isSingleMasterAndPartitionLevelFailoverEnabled ? nextLocationInfo.AvailableReadLocations : nextLocationInfo.AvailableWriteLocations,
                     expectedAvailableOperation: OperationType.Write,
                     fallbackEndpoint: this.defaultEndpoint);
 

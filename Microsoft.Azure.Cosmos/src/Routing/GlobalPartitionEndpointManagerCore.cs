@@ -136,9 +136,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyRange,
                 (_) => new PartitionKeyRangeFailoverInfo(failedLocation));
 
-            // For any single master write accounts, the next locations to fail over to are the write regions configured
-            // at the account level. For multi master write accounts, since all the regions are treated as write regions,
-            // the next locations to fail over would be the read regions.
+            // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level. Here
+            // the globalEndpointManager.WriteEndpoints are basically initialized from the Location Cache, with the read regions, configured at the
+            // account level. For multi master write accounts, since all the regions are treated as write regions, the next locations to fail over
+            // will be the preferred read regions that are configured in the application preferred regions in the CosmosClientOptions.
             ReadOnlyCollection<Uri> nextLocations = !this.globalEndpointManager.CanUseMultipleWriteLocations(request)
                 ? this.globalEndpointManager.WriteEndpoints
                 : this.globalEndpointManager.ReadEndpoints;

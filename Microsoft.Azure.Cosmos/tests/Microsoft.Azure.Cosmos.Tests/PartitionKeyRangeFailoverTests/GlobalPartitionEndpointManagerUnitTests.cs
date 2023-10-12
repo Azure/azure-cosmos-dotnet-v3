@@ -73,13 +73,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
             
             GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(mockEndpointManager.Object);
-            List<Uri> readRegions = new List<Uri>();
+            List<Uri> readRegions = new (), writeRegions = new();
             for(int i = 0; i < numOfReadRegions; i++)
             {
                 readRegions.Add(new Uri($"https://localhost:{i}/"));
             }
 
             mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+            mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
 
             // Create a random pk range
             PartitionKeyRange partitionKeyRange = new PartitionKeyRange()
