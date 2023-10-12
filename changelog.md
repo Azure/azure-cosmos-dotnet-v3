@@ -18,20 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 #### Fixed
-- optimize the rntbd open connection logic to open connections in parallel. (#3939)
-- Query : Fixes malformed continuation token exception type and message (#3917)
-- fix race condition by calling dispose too early. (#4030)
 - GatewayAddressCache: Fixes Unobserved Exception During Background Address Refresh (#4039)
 - Chaning Bounded to Strong (#4103)
 - Revert "Query: Adds new system strings in JsonBinaryEncoding, replacing 1-byte user strings (#3400)" (#4108)
-- Distributed Tracing: Fixes event generation for failed requests (#3973)
 - Distributed Tracing: Fixes dependency failure on appinsights (#4098)
 - Distributed Tracing: Fixes SDK responses compatibility with opentelemetry response (#4097)
 - Distributed Tracing: Fixes traceid null exception issue (#4111)
 
 #### Added
-- Adds support for newtonsoft member access via ExtensionData (#3834)
-- Query: Adds string comparison alternative when converting LINQ to SQL (#3668)
 - Query: Adds ODE continuation token support for non-ODE pipelines (#4009)
 - Query: Adds LINQ RegexMatch Extension method (#4078)
 - Documentation: Adds additional note for GetContactedRegions method (#4042)
@@ -40,7 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CosmosClientOptions: Adds support for multiple formats of Azure region names (#4016)
 
 #### Breaking Changes
-- disable replica validation in preview package. (#4019)
 - Client Telemetry: Adds new public APIs (#4056)
 
 
