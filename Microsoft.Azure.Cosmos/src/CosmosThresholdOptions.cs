@@ -9,12 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Threshold values for Distributed Tracing
     /// </summary>
-#if PREVIEW
-    public 
-#else
-    internal
-#endif 
-        class CosmosThresholdOptions
+    public class CosmosThresholdOptions
     {
         /// <summary>
         /// Latency Threshold for non point operations i.e. Query
