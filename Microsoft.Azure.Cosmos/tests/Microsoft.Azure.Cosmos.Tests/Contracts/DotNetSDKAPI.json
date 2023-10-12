@@ -7945,6 +7945,18 @@
         }
       },
       "Members": {
+        "Microsoft.Azure.Cosmos.CosmosThresholdOptions CosmosThresholdOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosThresholdOptions CosmosThresholdOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.CosmosThresholdOptions get_CosmosThresholdOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_CosmosThresholdOptions(Microsoft.Azure.Cosmos.CosmosThresholdOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.CosmosThresholdOptions get_CosmosThresholdOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosThresholdOptions get_CosmosThresholdOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.RequestOptions ShallowCopy()": {
           "Type": "Method",
           "Attributes": [],
@@ -8009,6 +8021,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_AddRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_CosmosThresholdOptions(Microsoft.Azure.Cosmos.CosmosThresholdOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_CosmosThresholdOptions(Microsoft.Azure.Cosmos.CosmosThresholdOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_IfMatchEtag(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
