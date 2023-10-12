@@ -836,7 +836,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 LocationCacheTests.DefaultEndpoint,
                 enableEndpointDiscovery,
                 10,
-                useMultipleWriteLocations);
+                useMultipleWriteLocations,
+                false);
 
             this.cache.OnDatabaseAccountRead(this.databaseAccount);
 

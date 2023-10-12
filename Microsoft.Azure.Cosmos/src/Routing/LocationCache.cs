@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private const string UnavailableLocationsExpirationTimeInSeconds = "UnavailableLocationsExpirationTimeInSeconds";
         private static int DefaultUnavailableLocationsExpirationTimeInSeconds = 5 * 60;
 
+        private readonly bool partitionLevelFailoverEnabled;
         private readonly bool enableEndpointDiscovery;
         private readonly Uri defaultEndpoint;
         private readonly bool useMultipleWriteLocations;
@@ -41,7 +42,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri defaultEndpoint,
             bool enableEndpointDiscovery,
             int connectionLimit,
-            bool useMultipleWriteLocations)
+            bool useMultipleWriteLocations,
+            bool partitionLevelFailoverEnabled)
         {
             this.locationInfo = new DatabaseAccountLocationsInfo(preferredLocations, defaultEndpoint);
             this.defaultEndpoint = defaultEndpoint;
@@ -53,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.locationUnavailablityInfoByEndpoint = new ConcurrentDictionary<Uri, LocationUnavailabilityInfo>();
             this.lastCacheUpdateTimestamp = DateTime.MinValue;
             this.enableMultipleWriteLocations = false;
+            this.partitionLevelFailoverEnabled = partitionLevelFailoverEnabled;
             this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(LocationCache.DefaultUnavailableLocationsExpirationTimeInSeconds);
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
@@ -507,12 +510,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     nextLocationInfo.AvailableWriteLocations = availableWriteLocations;
                 }
 
-                // Add Documentation.
-                bool isMultiMasterAccount = this.CanUseMultipleWriteLocations();
+                // For any multi master write accounts, the write endpoints would be the available write regions
+                // configured at the account level. For single master write accounts, the write endpoints would be
+                // the available read regions configured at the account level.
+                bool canUsePartitionLevelFailover = !this.CanUseMultipleWriteLocations() && this.partitionLevelFailoverEnabled;
 
                 nextLocationInfo.WriteEndpoints = this.GetPreferredAvailableEndpoints(
-                    endpointsByLocation: isMultiMasterAccount ? nextLocationInfo.AvailableWriteEndpointByLocation : nextLocationInfo.AvailableReadEndpointByLocation,
-                    orderedLocations: isMultiMasterAccount ? nextLocationInfo.AvailableWriteLocations : nextLocationInfo.AvailableReadLocations,
+                    endpointsByLocation: canUsePartitionLevelFailover ? nextLocationInfo.AvailableReadEndpointByLocation : nextLocationInfo.AvailableWriteEndpointByLocation,
+                    orderedLocations: canUsePartitionLevelFailover ? nextLocationInfo.AvailableReadLocations : nextLocationInfo.AvailableWriteLocations,
                     expectedAvailableOperation: OperationType.Write,
                     fallbackEndpoint: this.defaultEndpoint);
 
