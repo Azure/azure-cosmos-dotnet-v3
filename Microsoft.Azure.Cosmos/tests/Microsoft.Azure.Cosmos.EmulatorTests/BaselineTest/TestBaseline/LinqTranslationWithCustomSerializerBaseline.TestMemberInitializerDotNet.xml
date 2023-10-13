@@ -59,42 +59,12 @@ FROM root]]></SqlQuery>
   "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  }
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}"
 ]]]></Results>
     </Output>
   </Result>
@@ -116,42 +86,12 @@ FROM root]]></SqlQuery>
   "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  }
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}"
 ]]]></Results>
     </Output>
   </Result>
@@ -236,42 +176,12 @@ FROM root]]></SqlQuery>
   "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  }
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}"
 ]]]></Results>
     </Output>
   </Result>
@@ -293,42 +203,12 @@ FROM root]]></SqlQuery>
   "{\"numberValueDotNet\": 2, \"stringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  },
-  {
-    "NumericField": 0.0,
-    "StringField": null,
-    "id": null,
-    "Pk": null
-  }
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}"
 ]]]></Results>
     </Output>
   </Result>

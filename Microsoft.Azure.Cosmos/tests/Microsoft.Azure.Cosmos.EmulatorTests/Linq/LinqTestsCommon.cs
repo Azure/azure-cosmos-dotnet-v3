@@ -554,7 +554,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             return getQuery;
         }
 
-        public static LinqTestOutput ExecuteTest(LinqTestInput input, bool includeResults = false)
+        public static LinqTestOutput ExecuteTest(LinqTestInput input, bool serializeResultsInBaseline = false)
         {
             string querySqlStr = string.Empty;
             try
@@ -574,8 +574,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                     LinqTestsCommon.ValidateResults(queryResults, dataResults);
                 }
 
-                string serializedResults = includeResults ?
-                    JsonConvert.SerializeObject(queryResults.Select(item => item is LinqTestObject ? item.ToString() : item), new JsonSerializerSettings { Formatting = Newtonsoft.Json.Formatting.Indented }) :
+                string serializedResults = serializeResultsInBaseline ?
+                    JsonConvert.SerializeObject(queryResults.Select(item => item is LinqTestObject ? item.ToString() : item), new JsonSerializerSettings { Formatting = Newtonsoft.Json.Formatting.Indented}) :
                     null;
 
                 return new LinqTestOutput(querySqlStr, serializedResults, errorMsg: null, input.inputData);
