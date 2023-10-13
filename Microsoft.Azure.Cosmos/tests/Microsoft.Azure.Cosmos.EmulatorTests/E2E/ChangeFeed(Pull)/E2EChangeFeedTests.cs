@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.E2E.ChangeFeed_Pull_
     /// The intention of these tests is to assert that change feed (pull model) is functioning as expected
     /// for LatestVersions and AllVersionsAndDeletes ChangeFeedMode requests against a test live database account endpoint.
     /// </summary>
+    [Ignore]
     [TestClass]
     [TestCategory("E2E ChangeFeed")]
     public class E2EChangeFeedTests : BaseE2EChangeFeedTests

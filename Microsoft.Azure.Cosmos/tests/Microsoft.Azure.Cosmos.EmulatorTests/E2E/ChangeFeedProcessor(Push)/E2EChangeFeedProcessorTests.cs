@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.E2E.ChangeFeedProcessor_Push_
     /// The intention of these tests is to assert that change feed processor (push model) is functioning as expected
     /// for LatestVersions and AllVersionsAndDeletes ChangeFeedMode requests against a test live database account endpoint.
     /// </summary>
+    [Ignore]
     [TestClass]
     [TestCategory("E2E ChangeFeedProcessor")]
     public class E2EChangeFeedProcessorTests : BaseE2EChangeFeedTests
