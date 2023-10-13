@@ -102,11 +102,11 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             if (isInNewQuery) return this.Alias;
 
-            // If the current query has a groupby, then we need to use the groupby binding instead
-            if (this.groupByClause != null)
-            {
-                return this.groupByParameter.GetInputParameter();
-            }
+            //// If the current query has a groupby, then we need to use the groupby binding instead
+            //if (this.groupByClause != null)
+            //{
+            //    return this.groupByParameter.GetInputParameter();
+            //}
 
             return this.fromParameters.GetInputParameter();
         }

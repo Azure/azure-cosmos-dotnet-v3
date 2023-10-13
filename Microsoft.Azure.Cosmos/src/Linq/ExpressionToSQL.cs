@@ -1193,7 +1193,8 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             Type inputElementType = TypeSystem.GetElementType(inputCollection.Type);
             Collection collection = ExpressionToSql.Translate(inputCollection, context);
-            context.PushCollection(collection);
+            
+            if (context.currentQuery.groupByParameter == null) context.PushCollection(collection);
 
             Collection result = new Collection(inputExpression.Method.Name);
             bool shouldBeOnNewQuery = context.currentQuery.ShouldBeOnNewQuery(inputExpression.Method.Name, inputExpression.Arguments.Count);
@@ -1323,7 +1324,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             context.PopSubqueryBinding();
-            context.PopCollection();
+            if (context.currentQuery.groupByParameter == null) context.PopCollection();
             context.PopMethod();
             return result;
         }
@@ -1711,6 +1712,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.GroupBy, 3, arguments.Count));
             }
 
+            // bind the parameters in the value selector to the current input
+            foreach (ParameterExpression par in Utilities.GetLambda(arguments[2]).Parameters)
+            {
+                context.PushParameter(par, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
+            }
+
             // First argument is input, second is key selector and third is value selector
             LambdaExpression keySelectorLambda = Utilities.GetLambda(arguments[1]);
 
@@ -1750,6 +1757,11 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 default:
                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, valueSelectorExpression.NodeType));
+            }
+
+            foreach (ParameterExpression par in Utilities.GetLambda(arguments[2]).Parameters)
+            {
+                context.PopParameter();
             }
 
             return collection;
@@ -1942,13 +1954,22 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
                 else
                 {
+                    // The aggregate is being called on the values field in the value selector, which is the same as the current root
                     aggregateExpression = ExpressionToSql.VisitParameter(context.currentQuery.groupByParameter.GetInputParameter(), context);
                 }
             }
             else if (arguments.Count == 2)
             {
-                LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
-                aggregateExpression = ExpressionToSql.VisitScalarExpression(lambda, context);
+                if (context.currentQuery.groupByParameter != null)
+                {
+                    LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
+                    aggregateExpression = ExpressionToSql.VisitNonSubqueryScalarLambda(lambda, context);
+                }
+                else
+                {
+                    LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
+                    aggregateExpression = ExpressionToSql.VisitScalarExpression(lambda, context);
+                }
             }
             else
             {

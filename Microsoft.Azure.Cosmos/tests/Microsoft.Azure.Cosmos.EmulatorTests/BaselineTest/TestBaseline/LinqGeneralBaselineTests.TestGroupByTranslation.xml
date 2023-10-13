@@ -2,7 +2,7 @@
   <Result>
     <Input>
       <Description><![CDATA[GroupBy Single Value With Min]]></Description>
-      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, value) => value.Min())]]></Expression>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => values.Min())]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -14,7 +14,7 @@ FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[GroupBy Single Value With Max]]></Description>
-      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, value) => value.Max())]]></Expression>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => values.Max())]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -25,8 +25,32 @@ FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[GroupBy Single Value With Min]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => values.Min(value => value.Int))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root["Int"]) 
+FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Unexpected character encountered while parsing value: [. Path '', line 1, position 2.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Single Value With Max]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => values.Max(value => value.Int))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MAX(root["Int"]) 
+FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Unexpected character encountered while parsing value: [. Path '', line 1, position 2.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[GroupBy Single Value With Count]]></Description>
-      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, value) => value.Count())]]></Expression>
+      <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, values) => values.Count())]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
