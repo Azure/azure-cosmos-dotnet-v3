@@ -152,8 +152,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     inputCollectionExpression = collExpr;
                 }
-
-                //if (inputCollectionExpression == null) inputCollectionExpression = collExpr;
             }
 
             SqlFromClause fromClause = SqlFromClause.Create(inputCollectionExpression);
@@ -411,33 +409,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             throw new DocumentQueryException("Unexpected SQL select clause type: " + inputSelectSpec.GetType());
         }
-
-#if false
-        private SqlSelectClause Substitute(SqlGroupByClause inputGroupByClause, SqlTopSpec topSpec, SqlIdentifier inputParam, SqlSelectClause selectClause)
-        {
-            SqlSelectValueSpec selValue = SqlSelectValueSpec.Create(inputGroupByClause.KeySelectorExpressions[0]);
-            if (selValue != null)
-            {
-                SqlSelectSpec intoSpec = selectClause.SelectSpec;
-                if (intoSpec is SqlSelectStarSpec)
-                {
-                    return SqlSelectClause.Create(selValue, topSpec, hasDistinct: false);
-                }
-
-                SqlSelectValueSpec intoSelValue = intoSpec as SqlSelectValueSpec;
-                if (intoSelValue != null)
-                {
-                    SqlScalarExpression replacement = SqlExpressionManipulation.Substitute(selValue.Expression, inputParam, intoSelValue.Expression);
-                    SqlSelectValueSpec selValueReplacement = SqlSelectValueSpec.Create(replacement);
-                    return SqlSelectClause.Create(selValueReplacement, topSpec, hasDistinct: false);
-                }
-
-                throw new DocumentQueryException("Unexpected SQL select clause type: " + intoSpec.GetType());
-            }
-
-            throw new DocumentQueryException("Unexpected SQL select clause type: " + inputGroupByClause.GetType());
-        }
-#endif 
 
         private SqlWhereClause Substitute(SqlSelectSpec spec, SqlIdentifier inputParam, SqlWhereClause whereClause)
         {
@@ -924,40 +895,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <returns>true if the selectClause has an aggregate function call</returns>
         private bool HasSelectAggregate()
         {
-            if (this.groupByClause == null)
-            {
-                string functionCallName = ((this.selectClause?.SelectSpec as SqlSelectValueSpec)?.Expression as SqlFunctionCallScalarExpression)?.Name.Value;
+            string functionCallName = ((this.selectClause?.SelectSpec as SqlSelectValueSpec)?.Expression as SqlFunctionCallScalarExpression)?.Name.Value;
 
-                return (functionCallName != null) &&
-                    ((functionCallName == SqlFunctionCallScalarExpression.Names.Max) ||
-                    (functionCallName == SqlFunctionCallScalarExpression.Names.Min) ||
-                    (functionCallName == SqlFunctionCallScalarExpression.Names.Avg) ||
-                    (functionCallName == SqlFunctionCallScalarExpression.Names.Count) ||
-                    (functionCallName == SqlFunctionCallScalarExpression.Names.Sum));
-            }
-            else
-            {
-                bool containAggregate = false;
-                ImmutableArray<SqlSelectItem>? selectItems = (this.selectClause?.SelectSpec as SqlSelectListSpec)?.Items;
-                if (selectItems == null) return containAggregate;
-                for (int i = 0; i < selectItems.Value.Length; i++)
-                {
-                    SqlSelectItem item = selectItems.Value[i];
-                    string functionCallName = (item.Expression as SqlFunctionCallScalarExpression)?.Name.Value;
-
-                    if ((functionCallName != null) &&
-                        ((functionCallName == SqlFunctionCallScalarExpression.Names.Max) ||
-                        (functionCallName == SqlFunctionCallScalarExpression.Names.Min) ||
-                        (functionCallName == SqlFunctionCallScalarExpression.Names.Avg) ||
-                        (functionCallName == SqlFunctionCallScalarExpression.Names.Count) ||
-                        (functionCallName == SqlFunctionCallScalarExpression.Names.Sum)))
-                    {
-                        containAggregate = true;
-                        break;
-                    }
-                }
-                return containAggregate;
-            }
+            return (functionCallName != null) &&
+                ((functionCallName == SqlFunctionCallScalarExpression.Names.Max) ||
+                (functionCallName == SqlFunctionCallScalarExpression.Names.Min) ||
+                (functionCallName == SqlFunctionCallScalarExpression.Names.Avg) ||
+                (functionCallName == SqlFunctionCallScalarExpression.Names.Count) ||
+                (functionCallName == SqlFunctionCallScalarExpression.Names.Sum));
         }
 
         /// <summary>

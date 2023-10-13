@@ -814,7 +814,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return memberExpression;
             }
 
-            // If the type of the inputexpression's parent expression (i.e type of (x) for x.Key) is IGrouping, we should ignore "key" and correctly remapped "value" term
+            // If the type of the inputexpression's parent expression (i.e type of (x) for x.Key) is IGrouping, we should ignore "key" 
             if (inputExpression.Expression.Type.IsGenericType && inputExpression.Expression.Type.GetGenericTypeDefinition() == typeof(IGrouping<,>))
             {
                 // If the type is IGrouping then there must be a groupby binding
@@ -1711,13 +1711,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             // First argument is input, second is key selector and third is value selector
             LambdaExpression keySelectorLambda = Utilities.GetLambda(arguments[1]);
 
-            // Current GroupBy doesn't allow subquery
+            // Current GroupBy doesn't allow subquery, so we need to visit non subquery scalar lambda
             SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitNonSubqueryScalarLambda(keySelectorLambda, context);
 
-            SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunc/*, valueSelectorFunc*/);
+            SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunc);
 
             context.currentQuery = context.currentQuery.AddGroupByClause(groupby, context);
 
+            // Create a GroupBy collection and bind the new GroupBy collection to the new parameters created from the key
             Collection collection = ExpressionToSql.ConvertToCollection(keySelectorFunc);
             collection.isOuter = true;
             collection.Name = "GroupBy";
@@ -1735,15 +1736,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             switch (valueSelectorExpression.NodeType)
             {
                 case ExpressionType.Call:
+                    // Single Value Selector
                     MethodCallExpression methodCallExpression = (MethodCallExpression)valueSelectorExpression;
                     ExpressionToSql.VisitMethodCall(methodCallExpression, context);
 
                     break;
 
                 case ExpressionType.New:
-                    SqlScalarExpression newObjectExpression = ExpressionToSql.VisitNew((NewExpression)valueSelectorExpression, context);
-                    context.currentQuery.AddSelectClause(SqlSelectClause.Create(SqlSelectListSpec.Create(SqlSelectItem.Create(newObjectExpression))));
-                    break;
+                    // TODO: Multi Value Selector
 
                 default:
                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, valueSelectorExpression.NodeType));
@@ -1955,16 +1955,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlFunctionCallScalarExpression aggregateFunctionCall;
             aggregateFunctionCall = SqlFunctionCallScalarExpression.CreateBuiltin(aggregateFunctionName, aggregateExpression);
 
-            SqlSelectSpec selectSpec;
-            if (context.currentQuery.groupByParameter != null)
-            {
-                SqlSelectItem selectItem = SqlSelectItem.Create(aggregateFunctionCall);
-                selectSpec = SqlSelectListSpec.Create(selectItem);
-            }
-            else
-            {
-                selectSpec = SqlSelectValueSpec.Create(aggregateFunctionCall);
-            }
+            SqlSelectSpec selectSpec = SqlSelectValueSpec.Create(aggregateFunctionCall);
             SqlSelectClause selectClause = SqlSelectClause.Create(selectSpec, null);
             return selectClause;
         }
@@ -2006,16 +1997,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.Count, 2, arguments.Count));
             }
 
-            SqlSelectSpec selectSpec;
-            if (context.currentQuery.groupByParameter != null)
-            {
-                SqlSelectItem selectItem = SqlSelectItem.Create(SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Count, countExpression));
-                selectSpec = SqlSelectListSpec.Create(selectItem);
-            }
-            else
-            {
-                selectSpec = SqlSelectValueSpec.Create(SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Count, countExpression));
-            }
+            SqlSelectSpec selectSpec = SqlSelectValueSpec.Create(SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.Count, countExpression));
             SqlSelectClause selectClause = SqlSelectClause.Create(selectSpec, null);
             return selectClause;
         }

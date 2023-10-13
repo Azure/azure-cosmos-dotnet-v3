@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!SequenceEquals(first.KeySelectorExpressions, second.KeySelectorExpressions))
+            if (!SequenceEquals(first.Expressions, second.Expressions))
             {
                 return false;
             }

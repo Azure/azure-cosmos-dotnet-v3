@@ -243,9 +243,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public override int Visit(SqlGroupByClause sqlGroupByClause)
         {
             int hashCode = SqlGroupByClauseHashCode;
-            for (int i = 0; i < sqlGroupByClause.KeySelectorExpressions.Length; i++)
+            for (int i = 0; i < sqlGroupByClause.Expressions.Length; i++)
             {
-                hashCode = CombineHashes(hashCode, sqlGroupByClause.KeySelectorExpressions[i].Accept(this));
+                hashCode = CombineHashes(hashCode, sqlGroupByClause.Expressions[i].Accept(this));
             }
 
             return hashCode;
