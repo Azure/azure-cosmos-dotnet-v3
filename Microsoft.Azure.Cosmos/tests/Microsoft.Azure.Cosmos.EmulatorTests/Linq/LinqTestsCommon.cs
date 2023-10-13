@@ -334,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         /// <param name="container">the target container</param>
         /// <param name="camelCaseSerialization">if theCosmosLinqSerializerOption of camelCaseSerialization should be applied</param>
         /// <returns>a lambda that takes a boolean which indicate where the query should run against CosmosDB or against original data, and return a query results as IQueryable. Also the serialized payload.</returns>
-        public static (Func<bool, IQueryable<T>>, List<string>) GenerateSerializationTestCosmosData<T>(Func<int, bool, T> func, int count, Container container, bool camelCaseSerialization = false)
+        public static Func<bool, IQueryable<T>> GenerateSerializationTestCosmosData<T>(Func<int, bool, T> func, int count, Container container, bool camelCaseSerialization = false)
         {
             List<T> data = new List<T>();
             for (int i = 0; i < count; i++)
@@ -342,11 +342,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 data.Add(func(i, camelCaseSerialization));
             }
 
-            List<string> insertedData = new List<string>();
             foreach (T obj in data)
             {
                 ItemResponse<T> response = container.CreateItemAsync(obj, new Cosmos.PartitionKey("Test")).Result;
-                insertedData.Add(response.Resource.ToString());
             }
 
             FeedOptions feedOptions = new FeedOptions() { EnableScanInQuery = true, EnableCrossPartitionQuery = true };
@@ -362,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
             IQueryable<T> getQuery(bool useQuery) => useQuery ? query : data.AsQueryable();
 
-            return (getQuery, insertedData);
+            return getQuery;
         }
 
         public static Func<bool, IQueryable<Family>> GenerateFamilyCosmosData(

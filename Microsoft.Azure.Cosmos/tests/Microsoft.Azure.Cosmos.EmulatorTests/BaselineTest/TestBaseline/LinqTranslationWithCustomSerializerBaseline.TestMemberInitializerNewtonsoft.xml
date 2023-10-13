@@ -10,12 +10,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["numberValueNewtonsoft"] = 1)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
-  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -31,12 +31,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root = {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
-  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -51,20 +51,50 @@ WHERE (root = {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": n
 SELECT VALUE {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
-  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}"
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  }
 ]]]></Results>
     </Output>
   </Result>
@@ -78,20 +108,50 @@ FROM root]]></SqlQuery>
 SELECT VALUE ((root["numberValueNewtonsoft"] > 1) ? {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null} : {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
-  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}"
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  }
 ]]]></Results>
     </Output>
   </Result>
@@ -106,12 +166,12 @@ SELECT VALUE "A"
 FROM root 
 WHERE (root = {"numberValueNewtonsoft": root["numberValueNewtonsoft"], "stringValueNewtonsoft": root["stringValueNewtonsoft"]})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
-  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -127,12 +187,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root["NumberValueNewtonsoft"] = 1)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
-  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -148,12 +208,12 @@ SELECT VALUE root
 FROM root 
 WHERE (root = {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
-  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -168,20 +228,50 @@ WHERE (root = {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": n
 SELECT VALUE {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
-  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}"
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  }
 ]]]></Results>
     </Output>
   </Result>
@@ -195,20 +285,50 @@ FROM root]]></SqlQuery>
 SELECT VALUE ((root["NumberValueNewtonsoft"] > 1) ? {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null} : {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
-  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}",
-  "{NumericField:0, StringField:, id:, Pk:}"
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  },
+  {
+    "NumberValueNewtonsoft": 0.0,
+    "StringValueNewtonsoft": null,
+    "id": null,
+    "Pk": null
+  }
 ]]]></Results>
     </Output>
   </Result>
@@ -223,12 +343,12 @@ SELECT VALUE "A"
 FROM root 
 WHERE (root = {"NumberValueNewtonsoft": root["NumberValueNewtonsoft"], "StringValueNewtonsoft": root["StringValueNewtonsoft"]})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
-  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
-  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
-  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-True\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
