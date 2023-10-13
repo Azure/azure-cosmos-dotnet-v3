@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.E2E.ChangeFeedProcessor_Push_
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.E2E
 {
     using System;
     using System.Collections.Generic;
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.E2E.ChangeFeedProcessor_Push_
             this.ConnectionString = Environment.GetEnvironmentVariable("TEST_LIVE_BACKEND_ENDPOINT");
             Debug.WriteLine($"(E2E ChangeFeedProcessor){nameof(this.ConnectionString)}: {this.ConnectionString}");
         }
-        
+
         public CosmosClient CreateCosmosClient(string applicationName)
         {
             return new CosmosClient(
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.E2E.ChangeFeedProcessor_Push_
 
             stopWatch.Stop();
             TimeSpan timeTakenForASplit = stopWatch.Elapsed;
-            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
+            string elapsedTime = string.Format("{0:00}:{1:00}:{2:00}.{3:00}",
                 timeTakenForASplit.Hours, timeTakenForASplit.Minutes, timeTakenForASplit.Seconds,
                 timeTakenForASplit.Milliseconds / 10);
 

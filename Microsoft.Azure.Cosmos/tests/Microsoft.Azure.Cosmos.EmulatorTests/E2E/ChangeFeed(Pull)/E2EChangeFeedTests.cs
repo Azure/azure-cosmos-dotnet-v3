@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.E2E.ChangeFeed_Pull_
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests.E2E.ChangeFeedProcessor_Push_;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
