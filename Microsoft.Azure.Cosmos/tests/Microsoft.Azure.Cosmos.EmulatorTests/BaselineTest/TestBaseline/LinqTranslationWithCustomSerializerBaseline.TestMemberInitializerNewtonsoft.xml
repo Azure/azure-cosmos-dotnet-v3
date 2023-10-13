@@ -1,21 +1,42 @@
 ﻿<Results>
   <Result>
     <Input>
-      <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = True]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"}))]]></Expression>
+      <Description><![CDATA[Filter w/ constant value, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == 1))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root = {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null})]]></SqlQuery>
+WHERE (root["numberValueNewtonsoft"] = 1)]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
+  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = True]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoft() {NumericField = 1, StringField = "1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root = {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null})]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
+  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -23,54 +44,54 @@ WHERE (root = {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id":
   <Result>
     <Input>
       <Description><![CDATA[Select w/ DataObject initializer, camelcase = True]]></Description>
-      <Expression><![CDATA[query.Select(doc => new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"})]]></Expression>
+      <Expression><![CDATA[query.Select(doc => new DataObjectNewtonsoft() {NumericField = 1, StringField = "1"})]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null} 
+SELECT VALUE {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
+  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
 ]]]></InputData>
       <Results><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}"
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}"
 ]]]></Results>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Deeper than top level reference, camelcase = True]]></Description>
-      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 12), new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"}, new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectNewtonsoft() {NumericField = 1, StringField = "1"}, new DataObjectNewtonsoft() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["numberValueNewtonsoft"] > 12) ? {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null} : {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null}) 
+SELECT VALUE ((root["numberValueNewtonsoft"] > 1) ? {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null} : {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
+  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
 ]]]></InputData>
       <Results><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}"
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}"
 ]]]></Results>
     </Output>
   </Result>
@@ -85,12 +106,33 @@ SELECT VALUE "A"
 FROM root 
 WHERE (root = {"numberValueNewtonsoft": root["numberValueNewtonsoft"], "stringValueNewtonsoft": root["stringValueNewtonsoft"]})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
+  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
+]]]></InputData>
+      <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Filter w/ constant value, camelcase = False]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.NumericField == 1))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (root["NumberValueNewtonsoft"] = 1)]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
+  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -98,20 +140,20 @@ WHERE (root = {"numberValueNewtonsoft": root["numberValueNewtonsoft"], "stringVa
   <Result>
     <Input>
       <Description><![CDATA[Filter w/ DataObject initializer with constant value, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"}))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc == new DataObjectNewtonsoft() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root = {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null})]]></SqlQuery>
+WHERE (root = {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
+  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -119,54 +161,54 @@ WHERE (root = {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id":
   <Result>
     <Input>
       <Description><![CDATA[Select w/ DataObject initializer, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Select(doc => new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"})]]></Expression>
+      <Expression><![CDATA[query.Select(doc => new DataObjectNewtonsoft() {NumericField = 1, StringField = "1"})]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null} 
+SELECT VALUE {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
+  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
 ]]]></InputData>
       <Results><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}"
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}"
 ]]]></Results>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Deeper than top level reference, camelcase = False]]></Description>
-      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 12), new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"}, new DataObjectNewtonsoft() {NumericField = 12, StringField = "12"}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => IIF((doc.NumericField > 1), new DataObjectNewtonsoft() {NumericField = 1, StringField = "1"}, new DataObjectNewtonsoft() {NumericField = 1, StringField = "1"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["NumberValueNewtonsoft"] > 12) ? {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null} : {"NumberValueNewtonsoft": 12, "StringValueNewtonsoft": "12", "id": null, "Pk": null}) 
+SELECT VALUE ((root["NumberValueNewtonsoft"] > 1) ? {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null} : {"NumberValueNewtonsoft": 1, "StringValueNewtonsoft": "1", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
+  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
 ]]]></InputData>
       <Results><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":null,\"id\":null,\"Pk\":null}"
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}",
+  "{NumericField:0, StringField:, id:, Pk:}"
 ]]]></Results>
     </Output>
   </Result>
@@ -181,12 +223,12 @@ SELECT VALUE "A"
 FROM root 
 WHERE (root = {"NumberValueNewtonsoft": root["NumberValueNewtonsoft"], "StringValueNewtonsoft": root["StringValueNewtonsoft"]})]]></SqlQuery>
       <InputData><![CDATA[[
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-True\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":0.0,\"StringValueNewtonsoft\":\"0\",\"id\":\"0-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":1.0,\"StringValueNewtonsoft\":\"1\",\"id\":\"1-False\",\"Pk\":\"Test\"}",
-  "{\"NumberValueNewtonsoft\":2.0,\"StringValueNewtonsoft\":\"2\",\"id\":\"2-False\",\"Pk\":\"Test\"}"
+  "{NumericField:0, StringField:0, id:0-True, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-True, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-True, Pk:Test}",
+  "{NumericField:0, StringField:0, id:0-False, Pk:Test}",
+  "{NumericField:1, StringField:1, id:1-False, Pk:Test}",
+  "{NumericField:2, StringField:2, id:2-False, Pk:Test}"
 ]]]></InputData>
       <Results><![CDATA[[]]]></Results>
     </Output>
