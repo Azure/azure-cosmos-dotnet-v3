@@ -48,7 +48,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 DiagnosticScope scope = LazyOperationScopeFactory.Value.CreateScope(name: operationName,
                                  kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
 
-                // Record values only when we have a valid Diagnostic Scope
+                // Need a parent activity id associated with the operation which is logged in diagnostics and used for tracing purpose.
+                // If there are listeners at operation level then scope is enabled and it tries to create activity.
+                // However, if available listeners are not subscribed to operation level event then it will lead to scope being enabled but no activity is created.
                 if (scope.IsEnabled)
                 {
                     scope.SetDisplayName($"{operationName} {containerName}");
@@ -63,14 +65,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions);
                 }
 #if !INTERNAL
-                else if (Activity.Current is null)
+                // Need a parent activity which groups all network activities under it and is logged in diagnostics and used for tracing purpose.
+                // If there are listeners at network level then scope is enabled and it tries to create activity.
+                // However, if available listeners are not subscribed to network event then it will lead to scope being enabled but no activity is created.
+                else
                 {
                     DiagnosticScope requestScope = LazyNetworkScopeFactory.Value.CreateScope(name: operationName);
+                    openTelemetryRecorder = requestScope.IsEnabled ? OpenTelemetryCoreRecorder.CreateNetworkLevelParentActivity(networkScope: requestScope) : openTelemetryRecorder;
+                }
 
-                    openTelemetryRecorder = requestScope.IsEnabled ? OpenTelemetryCoreRecorder.CreateNetworkLevelParentActivity(networkScope: requestScope) : OpenTelemetryCoreRecorder.CreateParentActivity(operationName);
+                // If there are no listeners at operation level and network level and no parent activity created.
+                // Then create a dummy activity as there should be a parent level activity always to send a traceid to the backend services through context propagation.
+                // The parent activity id is logged in diagnostics and used for tracing purpose.
+                if (Activity.Current is null)
+                {
+                    openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateParentActivity(operationName);
                 }
 #endif
-                trace.AddDatum("DistributedTraceId", Activity.Current?.TraceId);
+                // Safety check as diagnostic logs should not break the code.
+                if (Activity.Current?.TraceId != null)
+                {
+                    trace.AddDatum("DistributedTraceId", Activity.Current.TraceId);
+                }
             }
             return openTelemetryRecorder;
         }

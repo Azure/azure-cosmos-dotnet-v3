@@ -686,12 +686,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="options"></param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-#if PREVIEW
-        public 
-#else
-        internal
-#endif 
-            CosmosClientBuilder WithClientTelemetryOptions(CosmosClientTelemetryOptions options)
+        public CosmosClientBuilder WithClientTelemetryOptions(CosmosClientTelemetryOptions options)
         {
             this.clientOptions.CosmosClientTelemetryOptions = options;
             return this;
