@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
     using System.Linq.Expressions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
+    using BaselineTest;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             public string id;
             public string pk;
 
-            [JsonExtensionData(ReadData = true, WriteData = true)]
+            [Newtonsoft.Json.JsonExtensionData(ReadData = true, WriteData = true)]
             public Dictionary<string, object> NewtonsoftExtensionData { get; set; }
 
             [System.Text.Json.Serialization.JsonExtensionData()]
@@ -216,12 +216,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 obj.pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<simple>> dataQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<simple>> dataQuery = LinqTestsCommon.GenerateTestCosmosData<simple>(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select cast float", b => dataQuery(b).Select(x => (int)floatValue)));
             inputs.Add(new LinqTestInput("Select identity", b => dataQuery(b).Select(x => x)));
-            inputs.Add(new LinqTestInput("Select int expr", b => dataQuery(b).Select(x => x.x % 10 + 2 + x.x % 5)));
+            inputs.Add(new LinqTestInput("Select int expr", b => dataQuery(b).Select(x => (x.x % 10) + 2 + (x.x % 5))));
             inputs.Add(new LinqTestInput("Select int expr w const", b => dataQuery(b).Select(x => x.x + constInt)));
             inputs.Add(new LinqTestInput("Select w new array", b => dataQuery(b).Select(d => new int[2] { d.x, d.x + 1 })));
             inputs.Add(new LinqTestInput("Select new", b => dataQuery(b).Select(d => new { first = d.x, second = d.x })));
@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 };
                 return obj;
             };
-            Func<bool, IQueryable<complex>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<complex>> getQuery = LinqTestsCommon.GenerateTestCosmosData<complex>(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select equality", b => getQuery(b).Select(s => s.str == "5")));

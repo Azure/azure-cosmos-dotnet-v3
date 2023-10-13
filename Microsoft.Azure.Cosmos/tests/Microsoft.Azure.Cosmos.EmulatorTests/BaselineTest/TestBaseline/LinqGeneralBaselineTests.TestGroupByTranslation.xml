@@ -1,38 +1,38 @@
 ﻿<Results>
   <Result>
     <Input>
-      <Description><![CDATA[GroupBy -> Select]]></Description>
+      <Description><![CDATA[GroupBy Single Value With Min]]></Description>
       <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, value) => value.Min())]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT MIN(root["FamilyId"]) 
+SELECT VALUE MIN(root["FamilyId"]) 
 FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
-      <ErrorMessage><![CDATA[At least one object must implement IComparable.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Cannot deserialize the current JSON array (e.g. [1,2,3]) into type 'Microsoft.Azure.Cosmos.Services.Management.Tests.Family' because the type requires a JSON object (e.g. {"name":"value"}) to deserialize correctly.To fix this error either change the JSON to a JSON object (e.g. {"name":"value"}) or change the deserialized type to an array or a type that implements a collection interface (e.g. ICollection, IList) like List<T> that can be deserialized from a JSON array. JsonArrayAttribute can also be added to the type to force it to deserialize from a JSON array.Path '[0]', line 1, position 2.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[GroupBy -> Select]]></Description>
+      <Description><![CDATA[GroupBy Single Value With Max]]></Description>
       <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, value) => value.Max())]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT MAX(root["FamilyId"]) 
+SELECT VALUE MAX(root["FamilyId"]) 
 FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
-      <ErrorMessage><![CDATA[At least one object must implement IComparable.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Cannot deserialize the current JSON array (e.g. [1,2,3]) into type 'Microsoft.Azure.Cosmos.Services.Management.Tests.Family' because the type requires a JSON object (e.g. {"name":"value"}) to deserialize correctly.To fix this error either change the JSON to a JSON object (e.g. {"name":"value"}) or change the deserialized type to an array or a type that implements a collection interface (e.g. ICollection, IList) like List<T> that can be deserialized from a JSON array. JsonArrayAttribute can also be added to the type to force it to deserialize from a JSON array.Path '[0]', line 1, position 2.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[GroupBy -> Select]]></Description>
+      <Description><![CDATA[GroupBy Single Value With Count]]></Description>
       <Expression><![CDATA[query.GroupBy(k => k.FamilyId, (key, value) => value.Count())]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT COUNT(1) 
+SELECT VALUE COUNT(1) 
 FROM root GROUP BY root["FamilyId"] ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Unexpected character encountered while parsing value: {. Path '', line 1, position 2.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Unexpected character encountered while parsing value: [. Path '', line 1, position 2.]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

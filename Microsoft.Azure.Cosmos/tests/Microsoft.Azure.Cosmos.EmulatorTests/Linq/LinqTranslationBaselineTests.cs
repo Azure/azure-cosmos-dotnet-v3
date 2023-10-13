@@ -426,11 +426,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public void TestDateTimeJsonConverterTimezones()
         {
             const int Records = 10;
-            DateTime midDateTime = new(2016, 9, 13, 0, 0, 0);
+            DateTime midDateTime = new (2016, 9, 13, 0, 0, 0);
             Func<Random, DataObject> createDataObj = (random) =>
             {
-                DataObject obj = new()
-                {
+                DataObject obj = new() {
                     IsoDateOnly = LinqTestsCommon.RandomDateTime(random, midDateTime),
                     Id = Guid.NewGuid().ToString(),
                     Pk = "Test"
@@ -495,7 +494,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             const int Records = 20;
             Func<Random, DataObject> createDataObj = (random) => new DataObject()
             {
-                NumericField = 1.0 * random.Next() - random.NextDouble() / 2
+                NumericField = (1.0 * random.Next()) - (random.NextDouble() / 2)
             };
             Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
 
@@ -541,8 +540,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             // therefore, for test data, we just want to have real number with the decimal part < 0.5.
             DataObject createDataObj(Random random) => new DataObject()
             {
-                NumericField = 1.0 * random.Next() + random.NextDouble() / 2,
-                DecimalField = (decimal)(1.0 * random.Next() + random.NextDouble()) / 2,
+                NumericField = (1.0 * random.Next()) + (random.NextDouble() / 2),
+                DecimalField = (decimal)((1.0 * random.Next()) + random.NextDouble()) / 2,
                 IntField = 1.0 * random.Next(),
                 Id = Guid.NewGuid().ToString(),
                 Pk = "Test"
@@ -557,7 +556,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // Abs
                 new LinqTestInput("Abs decimal", b => getQuery(b).Select(doc => Math.Abs(doc.DecimalField))),
 
-                new LinqTestInput("Abs double", b => getQuery(b).Select(doc => Math.Abs(doc.NumericField))),
+                new LinqTestInput("Abs double", b => getQuery(b).Select(doc => Math.Abs((double)doc.NumericField))),
                 new LinqTestInput("Abs float", b => getQuery(b)
                     .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
                     .Select(doc => Math.Abs((float)doc.NumericField))),
@@ -587,7 +586,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Atan", b => getQuery(b).Select(doc => Math.Atan2(doc.NumericField, 1))),
                 // Ceiling
                 new LinqTestInput("Ceiling decimal", b => getQuery(b).Select(doc => Math.Ceiling((decimal)doc.NumericField))),
-                new LinqTestInput("Ceiling double", b => getQuery(b).Select(doc => Math.Ceiling(doc.NumericField))),
+                new LinqTestInput("Ceiling double", b => getQuery(b).Select(doc => Math.Ceiling((double)doc.NumericField))),
                 new LinqTestInput("Ceiling float", b => getQuery(b)
                     .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
                     .Select(doc => Math.Ceiling((float)doc.NumericField))),
@@ -599,7 +598,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     .Select(doc => Math.Exp(doc.NumericField))),
                 // Floor
                 new LinqTestInput("Floor decimal", b => getQuery(b).Select(doc => Math.Floor((decimal)doc.NumericField))),
-                new LinqTestInput("Floor double", b => getQuery(b).Select(doc => Math.Floor(doc.NumericField))),
+                new LinqTestInput("Floor double", b => getQuery(b).Select(doc => Math.Floor((double)doc.NumericField))),
                 new LinqTestInput("Floor float", b => getQuery(b)
                     .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
                     .Select(doc => Math.Floor((float)doc.NumericField))),
@@ -616,10 +615,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 // Pow
                 new LinqTestInput("Pow", b => getQuery(b).Select(doc => Math.Pow(doc.NumericField, 1))),
                 // Round
-                new LinqTestInput("Round double", b => getQuery(b).Select(doc => Math.Round(doc.NumericField))),
+                new LinqTestInput("Round double", b => getQuery(b).Select(doc => Math.Round((double)doc.NumericField))),
                 // Sign
                 new LinqTestInput("Sign decimal", b => getQuery(b).Select(doc => Math.Sign((decimal)doc.NumericField))),
-                new LinqTestInput("Sign double", b => getQuery(b).Select(doc => Math.Sign(doc.NumericField))),
+                new LinqTestInput("Sign double", b => getQuery(b).Select(doc => Math.Sign((double)doc.NumericField))),
                 new LinqTestInput("Sign float", b => getQuery(b)
                     .Where(doc => doc.NumericField > -1000000 && doc.NumericField < 1000000)
                     .Select(doc => Math.Sign((float)doc.NumericField))),
@@ -637,7 +636,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Sqrt", b => getQuery(b).Select(doc => Math.Sqrt(doc.NumericField))),
                 // Truncate
                 new LinqTestInput("Truncate decimal", b => getQuery(b).Select(doc => Math.Truncate((decimal)doc.NumericField))),
-                new LinqTestInput("Truncate double", b => getQuery(b).Select(doc => Math.Truncate(doc.NumericField)))
+                new LinqTestInput("Truncate double", b => getQuery(b).Select(doc => Math.Truncate((double)doc.NumericField)))
             };
             this.ExecuteTestSuite(inputs);
         }
@@ -717,7 +716,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     Pk = "Test",
 
                     // For ToString tests
-                    ArrayField = new int[] { },
+                    ArrayField = new int[] {},
                     Point = new Point(0, 0)
                 };
             };

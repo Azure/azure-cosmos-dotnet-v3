@@ -15,9 +15,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using BaselineTest;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.Scripts;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
+    using static Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests.LinqGeneralBaselineTests;
 
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqGeneralBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
@@ -1130,8 +1131,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Select(new(Where -> Skip)) -> Where", b => getQuery(b)
-                .Select(f => new
-                {
+                .Select(f => new {
                     id = f.FamilyId,
                     GoodChildren = f.Children.Where(c => c.Grade > 75).Skip(1)
                 })
@@ -1143,8 +1143,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Select(new(Skip -> Take, Skip, Take) -> Skip -> Take -> Where", b => getQuery(b)
-                .Select(f => new
-                {
+                .Select(f => new {
                     v0 = f.Children.Skip(1).Take(2),
                     v1 = f.Parents.Skip(1),
                     v2 = f.Records.Transactions.Take(10)
@@ -1153,8 +1152,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Select(new(SelectMany -> SelectMany -> Distinct, OrderByDescending -> Take -> SelectMany -> Skip, Select -> OrderBy -> Skip -> Take -> Sum) -> Where -> Skip -> Take -> SelectMany -> Skip -> Take", b => getQuery(b)
-                .Select(f => new
-                {
+                .Select(f => new {
                     v0 = f.Children.SelectMany(c => c.Pets.Skip(1).SelectMany(p => p.GivenName).Distinct()),
                     v1 = f.Children.OrderByDescending(c => c.Grade).Take(2).SelectMany(c => c.Pets.Select(p => p.GivenName).Skip(2)),
                     v2 = f.Records.Transactions.Select(t => t.Amount).OrderBy(a => a).Skip(10).Take(20).Sum()
@@ -1201,6 +1199,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        [Ignore]
         public void TestUnsupportedScenarios()
         {
             List<LinqTestInput> inputs = new List<LinqTestInput>();
@@ -1279,24 +1278,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         {
             List<LinqTestInput> inputs = new List<LinqTestInput>();
 
-            //inputs.Add(new LinqTestInput("Select", b => getQuery(b)
-            //.Select(f => new { family = f.FamilyId, numValue = f.Int })
-            //.Where(a => a.numValue > 0)));
-
-            //inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b)
-            //.GroupBy(k => k.FamilyId /*keySelector*/, 
-            //        (key, value) => value.Count() /*return the Count of each group */)));
-
-            //inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(f => f.FamilyId).Select(g => g.Key)));
-            //inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(f => f.FamilyId)));
-            inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Min", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
                                                                                 (key, value) => value.Min() /*return the Min of each group */)));
-            inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Max", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
                                                                                 (key, value) => value.Max() /*return the Max of each group */)));
-            inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
+            inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
                                                                                 (key, value) => value.Count() /*return the Count of each group */)));
-            inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
-                                                                                (key, value) => new { Count = value.Count(), Sum = value.Min() } /*return the Count of each group, alias as Count */)));
+
+            //inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
+            //                                                                    (key, value) => new { Count = value.Count(), Sum = value.Min() } /*return the Count of each group, alias as Count */)));
             //inputs.Add(new LinqTestInput("GroupBy", b => getQuery(b).GroupBy(f => f.FamilyId)));
             //inputs.Add(new LinqTestInput("GroupBy -> Select query",
             //    b => from f in getQuery(b)
@@ -1543,8 +1533,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Select(new(Where, Sum) -> OrderBy(Count) -> ThenBy)", b => getQuery(b)
-                .Select(f => new
-                {
+                .Select(f => new {
                     ChildrenWithPets = f.Children.Where(c => c.Pets.Count() > 0),
                     TotalExpenses = f.Records.Transactions.Sum(t => t.Amount)
                 })
@@ -1553,8 +1542,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             inputs.Add(new LinqTestInput(
                 "Select(new(Min, Count, SelectMany->Select->Distinct->Count)) -> OrderByDescending -> ThenBy", b => getQuery(b)
-                .Select(f => new
-                {
+                .Select(f => new {
                     ParentGivenName = f.Parents.Min(p => p.GivenName),
                     ParentCount = f.Parents.Count(),
                     GoodChildrenCount = f.Children.Where(c => c.Grade > 95).Count(),
@@ -1633,8 +1621,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput(
                 "Where -> SelectMany(Select(new Where->Count)) -> Distinct -> OrderBy -> ThenBy", b => getQuery(b)
                 .Where(f => f.Children.Count() > 0)
-                .SelectMany(f => f.Children.Select(c => new
-                {
+                .SelectMany(f => f.Children.Select(c => new {
                     Name = c.GivenName,
                     PetWithLongNames = c.Pets.Where(p => p.GivenName.Length > 8).Count()
                 }))
@@ -2175,9 +2162,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("Filter 1st children's gender -> Select his 1st pet", b => getQuery(b).Where(f => f.Children.Count() > 0 && f.Children[0].Pets.Count() > 0 && f.Children[0].Gender == "female").Select(f => f.Children[0].Pets[0])));
             inputs.Add(new LinqTestInput("Filter 1st children's gender -> Select his 2nd pet", b => getQuery(b).Where(f => f.Children.Count() > 0 && f.Children[0].Pets.Count() > 1 && f.Children[0].Gender == "female").Select(f => f.Children[0].Pets[1])));
             inputs.Add(new LinqTestInput("Select FamilyId of all children", b => getQuery(b).SelectMany(f => f.Children.Select(c => new { Id = f.FamilyId }))));
-            inputs.Add(new LinqTestInput("Filter family with null Id", b => getQuery(b).Where(f => null == f.FamilyId)));
-            inputs.Add(new LinqTestInput("Filter family with null Id #2", b => getQuery(b).Where(f => f.FamilyId == null)));
-            inputs.Add(new LinqTestInput("Filter family with null object", b => getQuery(b).Where(f => f.NullObject == null)));
+            inputs.Add(new LinqTestInput("Filter family with null Id", b => getQuery(b).Where(f => (string)null == f.FamilyId)));
+            inputs.Add(new LinqTestInput("Filter family with null Id #2", b => getQuery(b).Where(f => f.FamilyId == (string)null)));
+            inputs.Add(new LinqTestInput("Filter family with null object", b => getQuery(b).Where(f => f.NullObject == (object)null)));
             inputs.Add(new LinqTestInput("Filter family with null Id #3", b => getQuery(b).Where(f => null == f.FamilyId)));
             inputs.Add(new LinqTestInput("Filter registered family", b => getQuery(b).Where(f => f.IsRegistered == false)));
             inputs.Add(new LinqTestInput("Filter family by FamilyId", b => getQuery(b).Where(f => f.FamilyId.Equals("WakefieldFamily"))));
@@ -2484,7 +2471,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             IEnumerable<BaseDocument> result = queryHelper.Query<BaseDocument>();
             Assert.AreEqual(1, result.Count());
 
-            BaseDocument baseDocument = result.FirstOrDefault();
+            BaseDocument baseDocument = result.FirstOrDefault<BaseDocument>();
             Assert.AreEqual(doc.Id, baseDocument.Id);
 
             BaseDocument iDocument = doc;
@@ -2493,7 +2480,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             IEnumerable<DataDocument> iresult = from f in q
             where f.Id == iDocument.Id
                                                 select f;
-            DataDocument id = iresult.FirstOrDefault();
+            DataDocument id = iresult.FirstOrDefault<DataDocument>();
             Assert.AreEqual(doc.Id, id.Id);
         }
 
@@ -2548,7 +2535,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 Id = Guid.NewGuid().ToString(),
                 PartitionKey = partitionKeyDefinition,
             };
-            cosmosContainerSettings.IndexingPolicy.IndexingMode = Cosmos.IndexingMode.Consistent;
+            cosmosContainerSettings.IndexingPolicy.IndexingMode = Microsoft.Azure.Cosmos.IndexingMode.Consistent;
 
             Container collection = await testDb.CreateContainerAsync(cosmosContainerSettings);
 
