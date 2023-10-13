@@ -17,6 +17,7 @@
         private const string PartitionKeyField = "key";
         private const string NumberField = "numberField";
         private const string NullField = "nullField";
+        private const string AllowOptimisticDirectExecution = "allowOptimisticDirectExecution";
 
         private static class PageSizeOptions
         {
@@ -538,6 +539,20 @@
                 documents,
                 (container, documents) => RunFailingTests(container, invalidQueries),
                 "/" + PartitionKeyField);
+        }
+
+
+        [TestMethod]
+        public async Task TestAllowOdeFlagInCosmosClient()
+        {
+            string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            CosmosClient client = new CosmosClient($"AccountEndpoint={endpoint};AccountKey={authKey}");
+            AccountProperties properties = await client.ReadAccountAsync();
+
+            Assert.IsTrue(properties.QueryEngineConfigurationString.Contains(AllowOptimisticDirectExecution));
+            Assert.IsTrue(Convert.ToBoolean(properties.QueryEngineConfiguration[AllowOptimisticDirectExecution]));
         }
 
         private static async Task RunTests(IEnumerable<DirectExecutionTestCase> testCases, Container container)

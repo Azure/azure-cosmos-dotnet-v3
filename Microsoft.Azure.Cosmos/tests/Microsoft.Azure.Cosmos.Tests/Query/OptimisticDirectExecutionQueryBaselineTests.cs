@@ -29,6 +29,7 @@
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
 
     [TestClass]
@@ -161,6 +162,7 @@
         public async Task TestPipelineForBackendDocumentsOnSinglePartitionAsync()
         {
             int numItems = 100;
+            int documentCountInSinglePartition = 0;
             OptimisticDirectExecutionTestInput input = CreateInput(
                     description: @"Single Partition Key and Value Field",
                     query: "SELECT VALUE COUNT(1) FROM c",
@@ -170,8 +172,8 @@
 
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: false);
-            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
-            int documentCountInSinglePartition = 0;
+            CosmosClientContext clientContext = CreateCosmosClientContext(allowOptimisticDirectExecution: true);
+            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions, clientContext);
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
@@ -213,9 +215,12 @@
             DocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems, multiPartition: false);
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: input.ExpectedOptimisticDirectExecution);
             (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
+            CosmosClientContext clientContext = CreateCosmosClientContext(allowOptimisticDirectExecution: true);
+
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                       documentContainer,
                       cosmosQueryContextCore,
+                      clientContext,
                       inputParameters,
                       NoOpTrace.Singleton);
 
@@ -436,6 +441,41 @@
             Assert.AreEqual(1, result);
         }
 
+        [TestMethod]
+        public async Task TestAllowOdeFlagLogic()
+        {
+            // GetPipelineAndDrainAsyc() contains asserts to confirm that the Ode pipeline only gets picked if allowOptimisticDirectExecution flag is true
+            int numItems = 100;
+            OptimisticDirectExecutionTestInput input = CreateInput(
+                    description: @"Single Partition Key and Value Field",
+                    query: "SELECT * FROM c",
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: "a");
+
+            // Test with AllowODE = true
+            int result = await this.GetPipelineAndDrainAsync(
+                            input,
+                            numItems: numItems,
+                            isMultiPartition: false,
+                            expectedContinuationTokenCount: 10,
+                            requiresDist: false,
+                            allowOptimisticDirectExecution: true);
+
+            Assert.AreEqual(numItems, result);
+            
+            // Test with AllowODE = false
+            result = await this.GetPipelineAndDrainAsync(
+                            input,
+                            numItems: numItems,
+                            isMultiPartition: false,
+                            expectedContinuationTokenCount: 10,
+                            requiresDist: false,
+                            allowOptimisticDirectExecution: false);
+
+            Assert.AreEqual(numItems, result);
+        }
+
         // Creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
         private static async Task<bool> ExecuteGoneExceptionOnODEPipeline(bool isMultiPartition)
         {
@@ -520,23 +560,30 @@
                         inject429s: false,
                         injectEmptyPages: false,
                         shouldReturnFailure: mergeTest.ShouldReturnFailure));
+            CosmosClientContext clientContext = CreateCosmosClientContext(allowOptimisticDirectExecution: true);
 
-            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
+            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions, clientContext);
 
             return (mergeTest, queryPipelineStage);
         }
 
-        private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount, bool requiresDist = false)
+        private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount, bool requiresDist = false, bool allowOptimisticDirectExecution = true)
         {
+            int continuationTokenCount = 0;
+            List<CosmosElement> documents = new List<CosmosElement>();
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition, requiresDist: requiresDist);
-            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
-            List<CosmosElement> documents = new List<CosmosElement>();
-            int continuationTokenCount = 0;
+            CosmosClientContext clientContext = CreateCosmosClientContext(allowOptimisticDirectExecution);
+            IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions, clientContext);
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
-                if (!requiresDist)
+                if (!allowOptimisticDirectExecution)
+                {
+                    Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
+                }
+
+                if (allowOptimisticDirectExecution && !requiresDist)
                 {
                     Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
                 }
@@ -560,7 +607,7 @@
                         partitionKeyValue: input.PartitionKeyValue,
                         continuationToken: tryGetPage.Result.State.Value);
 
-                    queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions);
+                    queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions, clientContext);
                 }
 
                 continuationTokenCount++;
@@ -586,18 +633,36 @@
             return tryGetQueryPlan.Result;
         }
 
-        private static async Task<IQueryPipelineStage> GetOdePipelineAsync(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions)
+        private static async Task<IQueryPipelineStage> GetOdePipelineAsync(OptimisticDirectExecutionTestInput input, DocumentContainer documentContainer, QueryRequestOptions queryRequestOptions, CosmosClientContext clientContext)
         {
             (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
-
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                       documentContainer,
                       cosmosQueryContextCore,
+                      clientContext,
                       inputParameters,
                       NoOpTrace.Singleton);
 
             Assert.IsNotNull(queryPipelineStage);
             return queryPipelineStage;
+        }
+
+        private static CosmosClientContext CreateCosmosClientContext(bool allowOptimisticDirectExecution)
+        {
+            string queryEngineConfig = $"{{\"allowOptimisticDirectExecution\":{allowOptimisticDirectExecution.ToString().ToLower()}}}";
+
+            AccountProperties cosmosAccountSettings = new AccountProperties
+            {
+                QueryEngineConfigurationString = queryEngineConfig,
+            };
+
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockClient.Setup(c => c.ReadAccountAsync()).ReturnsAsync(cosmosAccountSettings);
+
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(c => c.Client).Returns(mockClient.Object);
+
+            return mockContext.Object;
         }
 
         private static async Task<DocumentContainer> CreateDocumentContainerAsync(
@@ -697,14 +762,13 @@
             // gets DocumentContainer
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(input.PartitionKeyDefinition);
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
-
             QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
-
             (CosmosQueryExecutionContextFactory.InputParameters inputParameters, CosmosQueryContextCore cosmosQueryContextCore) = CreateInputParamsAndQueryContext(input, queryRequestOptions);
-
+            CosmosClientContext clientContext = CreateCosmosClientContext(allowOptimisticDirectExecution: true);
             IQueryPipelineStage queryPipelineStage = CosmosQueryExecutionContextFactory.Create(
                       documentContainer,
                       cosmosQueryContextCore,
+                      clientContext,
                       inputParameters,
                       NoOpTrace.Singleton);
 

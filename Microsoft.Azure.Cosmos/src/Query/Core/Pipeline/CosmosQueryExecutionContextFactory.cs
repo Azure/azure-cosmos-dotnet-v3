@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -33,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     internal static class CosmosQueryExecutionContextFactory
     {
         private const string InternalPartitionKeyDefinitionProperty = "x-ms-query-partitionkey-definition";
+        private const string AllowOptimisticDirectExecution = "allowOptimisticDirectExecution";
         private const string OptimisticDirectExecution = "OptimisticDirectExecution";
         private const string Passthrough = "Passthrough";
         private const string Specialized = "Specialized";
@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         public static IQueryPipelineStage Create(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
+            CosmosClientContext clientContext,
             InputParameters inputParameters,
             ITrace trace)
         {
@@ -68,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         valueFactory: (trace, innerCancellationToken) => CosmosQueryExecutionContextFactory.TryCreateCoreContextAsync(
                             documentContainer,
                             cosmosQueryContext,
+                            clientContext,
                             inputParameters,
                             trace,
                             innerCancellationToken));
@@ -83,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         private static async Task<TryCatch<IQueryPipelineStage>> TryCreateCoreContextAsync(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
+            CosmosClientContext clientContext,
             InputParameters inputParameters,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -142,6 +145,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters,
                     queryPlanFromContinuationToken,
                     cosmosQueryContext,
+                    clientContext,
                     containerQueryProperties,
                     trace);
 
@@ -242,6 +246,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     partitionedQueryExecutionInfo,
                     containerQueryProperties,
                     cosmosQueryContext,
+                    clientContext,
                     inputParameters,
                     createQueryPipelineTrace,
                     cancellationToken);
@@ -253,6 +258,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             ContainerQueryProperties containerQueryProperties,
             CosmosQueryContext cosmosQueryContext,
+            CosmosClientContext clientContext,
             InputParameters inputParameters,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -289,9 +295,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             TryCatch<IQueryPipelineStage> tryCreatePipelineStage;
 
             Documents.PartitionKeyRange targetRange = await TryGetTargetRangeOptimisticDirectExecutionAsync(
-                inputParameters, 
-                partitionedQueryExecutionInfo, 
-                cosmosQueryContext, 
+                inputParameters,
+                partitionedQueryExecutionInfo,
+                cosmosQueryContext,
+                clientContext,
                 containerQueryProperties,
                 trace);
 
@@ -758,18 +765,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             InputParameters inputParameters,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             CosmosQueryContext cosmosQueryContext,
+            CosmosClientContext clientContext,
             ContainerQueryProperties containerQueryProperties,
             ITrace trace)
         {
-            if (!inputParameters.EnableOptimisticDirectExecution)
-            {
-                if (inputParameters.InitialUserContinuationToken != null 
-                    && OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(inputParameters.InitialUserContinuationToken))
-                {
-                    throw new MalformedContinuationTokenException($"The continuation token supplied requires the Optimistic Direct Execution flag to be enabled in QueryRequestOptions for the query execution to resume. " +
-                            $"{inputParameters.InitialUserContinuationToken}");
-                }
+            AccountProperties properties = await clientContext.Client.ReadAccountAsync();
+            bool allowOdeGatewayFlag = properties.QueryEngineConfiguration.ContainsKey(AllowOptimisticDirectExecution) && Convert.ToBoolean(properties.QueryEngineConfiguration[AllowOptimisticDirectExecution]);
 
+            if (allowOdeGatewayFlag)
+            {
+                if (!inputParameters.EnableOptimisticDirectExecution)
+                {
+                    if (inputParameters.InitialUserContinuationToken != null
+                        && OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(inputParameters.InitialUserContinuationToken))
+                    {
+                        throw new MalformedContinuationTokenException($"The continuation token supplied requires the Optimistic Direct Execution flag to be enabled in QueryRequestOptions for the query execution to resume. " +
+                                $"{inputParameters.InitialUserContinuationToken}");
+                    }
+
+                    return null;
+                }
+            }
+            else
+            {
                 return null;
             }
 
