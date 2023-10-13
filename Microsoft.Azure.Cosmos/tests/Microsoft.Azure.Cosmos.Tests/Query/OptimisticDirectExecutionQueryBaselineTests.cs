@@ -224,7 +224,9 @@
                       inputParameters,
                       NoOpTrace.Singleton);
 
-            string expectedErrorMessage = "The continuation token supplied requires the Optimistic Direct Execution flag to be enabled in QueryRequestOptions for the query execution to resume. ";
+            string expectedErrorMessage = "This query cannot be executed using the provided continuation token. " +
+                        "Please ensure that the EnableOptimisticDirectExecution flag is enabled in the QueryRequestOptions. " +
+                        "If after enabling this flag, you still see this error, contact the database administrator for assistance or retry the query without the continuation token.";
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
@@ -476,6 +478,54 @@
             Assert.AreEqual(numItems, result);
         }
 
+        [TestMethod]
+        public async Task TestOdeFlagsWithContinuationToken()
+        {
+            ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                    token: Guid.NewGuid().ToString(),
+                    range: new Documents.Routing.Range<string>("A", "B", true, false));
+
+            OptimisticDirectExecutionContinuationToken optimisticDirectExecutionContinuationToken = new OptimisticDirectExecutionContinuationToken(parallelContinuationToken);
+            CosmosElement cosmosElementContinuationToken = OptimisticDirectExecutionContinuationToken.ToCosmosElement(optimisticDirectExecutionContinuationToken);
+
+            OptimisticDirectExecutionTestInput input = CreateInput(
+                    description: @"Single Partition Key and Ode continuation token",
+                    query: "SELECT * FROM c",
+                    expectedOptimisticDirectExecution: true,
+                    partitionKeyPath: @"/pk",
+                    partitionKeyValue: "a",
+                    continuationToken: cosmosElementContinuationToken);
+
+            // All of these cases should throw the same exception message.
+            await this.ValidateErrorMessageWithModifiedOdeFlag(input, allowOptimisticDirectExecution: true, enableOptimisticDirectExecution: false);
+            await this.ValidateErrorMessageWithModifiedOdeFlag(input, allowOptimisticDirectExecution: false, enableOptimisticDirectExecution: true);
+            await this.ValidateErrorMessageWithModifiedOdeFlag(input, allowOptimisticDirectExecution: false, enableOptimisticDirectExecution: false);
+        }
+
+        private async Task ValidateErrorMessageWithModifiedOdeFlag(OptimisticDirectExecutionTestInput input, bool allowOptimisticDirectExecution, bool enableOptimisticDirectExecution)
+        {
+            int numItems = 100;
+            string expectedErrorMessage = "This query cannot be executed using the provided continuation token. " +
+                        "Please ensure that the EnableOptimisticDirectExecution flag is enabled in the QueryRequestOptions. " +
+                        "If after enabling this flag, you still see this error, contact the database administrator for assistance or retry the query without the continuation token.";
+            try
+            {
+                int result = await this.GetPipelineAndDrainAsync(
+                                    input,
+                                    numItems: numItems,
+                                    isMultiPartition: false,
+                                    expectedContinuationTokenCount: 10,
+                                    requiresDist: false,
+                                    allowOptimisticDirectExecution,
+                                    enableOptimisticDirectExecution);
+                Assert.Fail();
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(ex.InnerException.Message.Contains(expectedErrorMessage));
+            }
+        }
+
         // Creates a gone exception after the first MoveNexyAsync() call. This allows for the pipeline to return some documents before failing
         private static async Task<bool> ExecuteGoneExceptionOnODEPipeline(bool isMultiPartition)
         {
@@ -567,17 +617,20 @@
             return (mergeTest, queryPipelineStage);
         }
 
-        private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount, bool requiresDist = false, bool allowOptimisticDirectExecution = true)
+        private async Task<int> GetPipelineAndDrainAsync(OptimisticDirectExecutionTestInput input, int numItems, bool isMultiPartition, int expectedContinuationTokenCount, bool requiresDist = false, bool allowOptimisticDirectExecution = true, bool enableOptimisticDirectExecution = true)
         {
             int continuationTokenCount = 0;
             List<CosmosElement> documents = new List<CosmosElement>();
-            QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution: true);
+            QueryRequestOptions queryRequestOptions = GetQueryRequestOptions(enableOptimisticDirectExecution);
             DocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems, multiPartition: isMultiPartition, requiresDist: requiresDist);
             CosmosClientContext clientContext = CreateCosmosClientContext(allowOptimisticDirectExecution);
             IQueryPipelineStage queryPipelineStage = await GetOdePipelineAsync(input, inMemoryCollection, queryRequestOptions, clientContext);
 
             while (await queryPipelineStage.MoveNextAsync(NoOpTrace.Singleton))
             {
+                TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
+                tryGetPage.ThrowIfFailed();
+                
                 if (!allowOptimisticDirectExecution)
                 {
                     Assert.AreNotEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
@@ -587,9 +640,6 @@
                 {
                     Assert.AreEqual(TestInjections.PipelineType.OptimisticDirectExecution, queryRequestOptions.TestSettings.Stats.PipelineType.Value);
                 }
-
-                TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
-                tryGetPage.ThrowIfFailed();
 
                 documents.AddRange(tryGetPage.Result.Documents);
 

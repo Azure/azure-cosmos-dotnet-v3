@@ -773,22 +773,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             bool allowOdeGatewayFlag = properties.QueryEngineConfiguration.ContainsKey(AllowOptimisticDirectExecution) && Convert.ToBoolean(properties.QueryEngineConfiguration[AllowOptimisticDirectExecution]);
 
             // Use the Ode code path only if both AllowOdeGatewayFlag and EnableOptimisticDirectExecution are true
-            if (allowOdeGatewayFlag)
+            if (!allowOdeGatewayFlag || !inputParameters.EnableOptimisticDirectExecution)
             {
-                if (!inputParameters.EnableOptimisticDirectExecution)
+                if (inputParameters.InitialUserContinuationToken != null
+                          && OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(inputParameters.InitialUserContinuationToken))
                 {
-                    if (inputParameters.InitialUserContinuationToken != null
-                        && OptimisticDirectExecutionContinuationToken.IsOptimisticDirectExecutionContinuationToken(inputParameters.InitialUserContinuationToken))
-                    {
-                        throw new MalformedContinuationTokenException($"The continuation token supplied requires the Optimistic Direct Execution flag to be enabled in QueryRequestOptions for the query execution to resume. " +
-                                $"{inputParameters.InitialUserContinuationToken}");
-                    }
+                    string errorMessage = "This query cannot be executed using the provided continuation token. " +
+                        "Please ensure that the EnableOptimisticDirectExecution flag is enabled in the QueryRequestOptions. " +
+                        "If after enabling this flag, you still see this error, contact the database administrator for assistance or retry the query without the continuation token.";
 
-                    return null;
+                    throw new MalformedContinuationTokenException($"{errorMessage} Continuation Token: {inputParameters.InitialUserContinuationToken}");
                 }
-            }
-            else
-            {
+
                 return null;
             }
 
