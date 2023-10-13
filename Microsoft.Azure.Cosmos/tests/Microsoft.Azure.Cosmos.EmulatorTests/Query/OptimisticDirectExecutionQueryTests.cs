@@ -541,7 +541,6 @@
                 "/" + PartitionKeyField);
         }
 
-
         [TestMethod]
         public async Task TestAllowOdeFlagInCosmosClient()
         {
