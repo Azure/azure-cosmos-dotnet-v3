@@ -49,8 +49,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 owner.ServiceEndpoint,
                 connectionPolicy.EnableEndpointDiscovery,
                 connectionPolicy.MaxConnectionLimit,
-                connectionPolicy.UseMultipleWriteLocations,
-                connectionPolicy.EnablePartitionLevelFailover);
+                connectionPolicy.UseMultipleWriteLocations);
 
             this.owner = owner;
             this.defaultEndpoint = owner.ServiceEndpoint;
@@ -91,6 +90,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public ReadOnlyCollection<Uri> ReadEndpoints => this.locationCache.ReadEndpoints;
+
+        public ReadOnlyCollection<Uri> AccountReadEndpoints => this.locationCache.AccountReadEndpoints;
 
         public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
 

@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private const string UnavailableLocationsExpirationTimeInSeconds = "UnavailableLocationsExpirationTimeInSeconds";
         private static int DefaultUnavailableLocationsExpirationTimeInSeconds = 5 * 60;
 
-        private readonly bool partitionLevelFailoverEnabled;
         private readonly bool enableEndpointDiscovery;
         private readonly Uri defaultEndpoint;
         private readonly bool useMultipleWriteLocations;
@@ -42,8 +41,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             Uri defaultEndpoint,
             bool enableEndpointDiscovery,
             int connectionLimit,
-            bool useMultipleWriteLocations,
-            bool partitionLevelFailoverEnabled)
+            bool useMultipleWriteLocations)
         {
             this.locationInfo = new DatabaseAccountLocationsInfo(preferredLocations, defaultEndpoint);
             this.defaultEndpoint = defaultEndpoint;
@@ -55,7 +53,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.locationUnavailablityInfoByEndpoint = new ConcurrentDictionary<Uri, LocationUnavailabilityInfo>();
             this.lastCacheUpdateTimestamp = DateTime.MinValue;
             this.enableMultipleWriteLocations = false;
-            this.partitionLevelFailoverEnabled = partitionLevelFailoverEnabled;
             this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(LocationCache.DefaultUnavailableLocationsExpirationTimeInSeconds);
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
@@ -101,6 +98,24 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 return this.locationInfo.ReadEndpoints;
+            }
+        }
+
+        /// <summary>
+        /// Gets list of account level read endpoints.
+        /// </summary>
+        public ReadOnlyCollection<Uri> AccountReadEndpoints
+        {
+            get
+            {
+                // Hot-path: avoid ConcurrentDictionary methods which acquire locks
+                if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
+                    && this.locationUnavailablityInfoByEndpoint.Any())
+                {
+                    this.UpdateLocationCache();
+                }
+
+                return this.locationInfo.AccountReadEndpoints;
             }
         }
 
@@ -499,6 +514,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         out ReadOnlyCollection<string> availableReadLocations);
 
                     nextLocationInfo.AvailableReadLocations = availableReadLocations;
+                    nextLocationInfo.AccountReadEndpoints = nextLocationInfo.AvailableReadEndpointByLocation.Select(x => x.Value).ToList().AsReadOnly();
                 }
 
                 if (writeLocations != null)
@@ -510,14 +526,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     nextLocationInfo.AvailableWriteLocations = availableWriteLocations;
                 }
 
-                // For any single master write accounts, the write endpoints would be the read regions configured at the account level.
-                // For multi master write accounts, since all the regions are treated as write regions, the write endpoints would be
-                // the preferred write regions that are configured in the application preferred regions in the CosmosClientOptions.
-                bool isSingleMasterAndPartitionLevelFailoverEnabled = !this.CanUseMultipleWriteLocations() && this.partitionLevelFailoverEnabled;
-
                 nextLocationInfo.WriteEndpoints = this.GetPreferredAvailableEndpoints(
-                    endpointsByLocation: isSingleMasterAndPartitionLevelFailoverEnabled ? nextLocationInfo.AvailableReadEndpointByLocation : nextLocationInfo.AvailableWriteEndpointByLocation,
-                    orderedLocations: isSingleMasterAndPartitionLevelFailoverEnabled ? nextLocationInfo.AvailableReadLocations : nextLocationInfo.AvailableWriteLocations,
+                    endpointsByLocation: nextLocationInfo.AvailableWriteEndpointByLocation,
+                    orderedLocations: nextLocationInfo.AvailableWriteLocations,
                     expectedAvailableOperation: OperationType.Write,
                     fallbackEndpoint: this.defaultEndpoint);
 
@@ -654,6 +665,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.AvailableWriteEndpointByLocation = new ReadOnlyDictionary<string, Uri>(new Dictionary<string, Uri>(StringComparer.OrdinalIgnoreCase));
                 this.AvailableReadEndpointByLocation = new ReadOnlyDictionary<string, Uri>(new Dictionary<string, Uri>(StringComparer.OrdinalIgnoreCase));
                 this.WriteEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
+                this.AccountReadEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
                 this.ReadEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
             }
 
@@ -665,6 +677,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.AvailableWriteEndpointByLocation = other.AvailableWriteEndpointByLocation;
                 this.AvailableReadEndpointByLocation = other.AvailableReadEndpointByLocation;
                 this.WriteEndpoints = other.WriteEndpoints;
+                this.AccountReadEndpoints = other.AccountReadEndpoints;
                 this.ReadEndpoints = other.ReadEndpoints;
             }
 
@@ -675,6 +688,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             public ReadOnlyDictionary<string, Uri> AvailableReadEndpointByLocation { get; set; }
             public ReadOnlyCollection<Uri> WriteEndpoints { get; set; }
             public ReadOnlyCollection<Uri> ReadEndpoints { get; set; }
+            public ReadOnlyCollection<Uri> AccountReadEndpoints { get; set; }
         }
 
         [Flags]

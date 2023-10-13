@@ -433,8 +433,7 @@
                 new Uri("https://default.documents.azure.com"),
                 true,
                 10,
-                useMultipleWriteLocations,
-                false);
+                useMultipleWriteLocations);
 
             mockDocumentClientContext.LocationCache.OnDatabaseAccountRead(mockDocumentClientContext.DatabaseAccount);
 
