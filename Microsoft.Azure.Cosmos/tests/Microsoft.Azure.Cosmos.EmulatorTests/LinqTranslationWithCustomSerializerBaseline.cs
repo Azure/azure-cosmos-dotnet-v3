@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private const int RecordCount = 3;
         private const int MaxValue = 500;
         private const int MaxStringLength = 100;
+        private const int PropertyCount = 4;
 
         [ClassInitialize]
         public async static Task Initialize(TestContext textContext)
@@ -192,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             this.ExecuteTestSuite(inputs);
         }
 
-        private (Func<bool, IQueryable<T>>, Func<bool, IQueryable<T>>) InsertDataAndGetQueryables<T>() where T : ISerializertTestDataObject
+        private (Func<bool, IQueryable<T>>, Func<bool, IQueryable<T>>) InsertDataAndGetQueryables<T>() where T : ISerializerTestDataObject
         {
             static T createDataObj(int index, bool camelCase)
             {
@@ -222,13 +223,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                         using (StreamReader streamReader = new StreamReader(response.Content))
                         using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
                         {
+                            // manual parsing of response object to preserve property names
                             JObject queryResponseObject = await JObject.LoadAsync(jsonTextReader);
                             IEnumerable<JToken> info = queryResponseObject["Documents"].AsEnumerable();
 
                             foreach (JToken docToken in info)
                             {
                                 string documentString = "{";
-                                for (int index = 0; index < 4; index++)
+                                for (int index = 0; index < PropertyCount; index++)
                                 {
                                     documentString += index == 0 ? String.Empty : ", ";
                                     documentString += docToken.ElementAt(index).ToString();
@@ -284,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             }
         }
 
-        private class DataObjectDotNet : ISerializertTestDataObject
+        private class DataObjectDotNet : ISerializerTestDataObject
         {
             [JsonPropertyName("numberValueDotNet")]
             public double NumericField { get; set; }
@@ -310,11 +312,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public override string ToString()
             {
-                return $"{{NumericField:{this.NumericField}, StringField:{this.StringField}, id:{this.id}, Pk:{this.Pk}}}";
+                return $"{{NumericField:{this.NumericField},StringField:{this.StringField},id:{this.id},Pk:{this.Pk}}}";
             }
         }
 
-        private class DataObjectNewtonsoft : ISerializertTestDataObject
+        private class DataObjectNewtonsoft : ISerializerTestDataObject
         {
             [Newtonsoft.Json.JsonProperty(PropertyName = "NumberValueNewtonsoft")]
             public double NumericField { get; set; }
@@ -340,11 +342,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public override string ToString()
             {
-                return $"{{NumericField:{this.NumericField}, StringField:{this.StringField}, id:{this.id}, Pk:{this.Pk}}}";
+                return $"{{NumericField:{this.NumericField},StringField:{this.StringField},id:{this.id},Pk:{this.Pk}}}";
             }
         }
 
-        private class DataObjectDataMember : ISerializertTestDataObject
+        [DataContract]
+        private class DataObjectDataMember : ISerializerTestDataObject
         {
             [DataMember(Name = "NumericFieldDataMember")]
             public double NumericField { get; set; }
@@ -370,11 +373,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public override string ToString()
             {
-                return $"{{NumericField:{this.NumericField}, StringField:{this.StringField}, id:{this.id}, Pk:{this.Pk}}}";
+                return $"{{NumericField:{this.NumericField},StringField:{this.StringField},id:{this.id},Pk:{this.Pk}}}";
             }
         }
 
-        private class DataObjectMultiSerializer : ISerializertTestDataObject
+        private class DataObjectMultiSerializer : ISerializerTestDataObject
         {
             [Newtonsoft.Json.JsonProperty(PropertyName = "NumberValueNewtonsoft")]
             [JsonPropertyName("numberValueDotNet")]
@@ -404,11 +407,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             public override string ToString()
             {
-                return $"{{NumericField:{this.NumericField}, StringField:{this.StringField}, id:{this.id}, Pk:{this.Pk}}}";
+                return $"{{NumericField:{this.NumericField},StringField:{this.StringField},id:{this.id},Pk:{this.Pk}}}";
             }
         }
 
-        internal interface ISerializertTestDataObject
+        internal interface ISerializerTestDataObject
         {
             double NumericField { get; set; }
 

@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["numericField"] = 1)]]></SqlQuery>
+WHERE (root["numericFieldDataMember"] = 1)]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
@@ -29,7 +29,7 @@ WHERE (root["numericField"] = 1)]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root = {"NumericField": 1, "StringField": "1", "id": null, "Pk": null})]]></SqlQuery>
+WHERE (root = {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null})]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
@@ -48,7 +48,7 @@ WHERE (root = {"NumericField": 1, "StringField": "1", "id": null, "Pk": null})]]
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"NumericField": 1, "StringField": "1", "id": null, "Pk": null} 
+SELECT VALUE {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
@@ -60,38 +60,38 @@ FROM root]]></SqlQuery>
 ]]]></InputData>
       <Results><![CDATA[[
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   }
@@ -105,7 +105,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["numericField"] > 1) ? {"NumericField": 1, "StringField": "1", "id": null, "Pk": null} : {"NumericField": 1, "StringField": "1", "id": null, "Pk": null}) 
+SELECT VALUE ((root["numericFieldDataMember"] > 1) ? {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null} : {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
@@ -117,38 +117,38 @@ FROM root]]></SqlQuery>
 ]]]></InputData>
       <Results><![CDATA[[
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   }
@@ -164,7 +164,7 @@ FROM root]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE "A" 
 FROM root 
-WHERE (root = {"numericField": root["numericField"], "stringField": root["stringField"]})]]></SqlQuery>
+WHERE (root = {"numericFieldDataMember": root["numericFieldDataMember"], "stringFieldDataMember": root["stringFieldDataMember"]})]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
@@ -185,7 +185,7 @@ WHERE (root = {"numericField": root["numericField"], "stringField": root["string
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NumericField"] = 1)]]></SqlQuery>
+WHERE (root["NumericFieldDataMember"] = 1)]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
@@ -194,20 +194,7 @@ WHERE (root["NumericField"] = 1)]]></SqlQuery>
   "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
   "{\"NumericField\": 2, \"StringField\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
 ]]]></InputData>
-      <Results><![CDATA[[
-  {
-    "NumericField": 1.0,
-    "StringField": "1",
-    "id": "1-True",
-    "Pk": "Test"
-  },
-  {
-    "NumericField": 1.0,
-    "StringField": "1",
-    "id": "1-False",
-    "Pk": "Test"
-  }
-]]]></Results>
+      <Results><![CDATA[[]]]></Results>
     </Output>
   </Result>
   <Result>
@@ -219,7 +206,7 @@ WHERE (root["NumericField"] = 1)]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root = {"NumericField": 1, "StringField": "1", "id": null, "Pk": null})]]></SqlQuery>
+WHERE (root = {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null})]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
@@ -238,7 +225,7 @@ WHERE (root = {"NumericField": 1, "StringField": "1", "id": null, "Pk": null})]]
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"NumericField": 1, "StringField": "1", "id": null, "Pk": null} 
+SELECT VALUE {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
@@ -250,38 +237,38 @@ FROM root]]></SqlQuery>
 ]]]></InputData>
       <Results><![CDATA[[
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   }
@@ -295,7 +282,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["NumericField"] > 1) ? {"NumericField": 1, "StringField": "1", "id": null, "Pk": null} : {"NumericField": 1, "StringField": "1", "id": null, "Pk": null}) 
+SELECT VALUE ((root["NumericFieldDataMember"] > 1) ? {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null} : {"NumericFieldDataMember": 1, "StringFieldDataMember": "1", "id": null, "Pk": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
@@ -307,38 +294,38 @@ FROM root]]></SqlQuery>
 ]]]></InputData>
       <Results><![CDATA[[
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   },
   {
-    "NumericField": 1.0,
-    "StringField": "1",
+    "NumericFieldDataMember": 0.0,
+    "StringFieldDataMember": null,
     "id": null,
     "Pk": null
   }
@@ -354,7 +341,7 @@ FROM root]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE "A" 
 FROM root 
-WHERE (root = {"NumericField": root["NumericField"], "StringField": root["StringField"]})]]></SqlQuery>
+WHERE (root = {"NumericFieldDataMember": root["NumericFieldDataMember"], "StringFieldDataMember": root["StringFieldDataMember"]})]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumericField\": 0, \"StringField\": \"0\", \"id\": \"0-True\", \"Pk\": \"Test\"}",
   "{\"NumericField\": 1, \"StringField\": \"1\", \"id\": \"1-True\", \"Pk\": \"Test\"}",
