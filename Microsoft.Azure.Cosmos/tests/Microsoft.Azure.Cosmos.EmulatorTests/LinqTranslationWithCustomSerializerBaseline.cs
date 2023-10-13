@@ -294,10 +294,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             [JsonPropertyName("stringValueDotNet")]
             public string StringField { get; set; }
 
-            [JsonPropertyName("id")]
             public string id { get; set; }
 
-            [JsonPropertyName("Pk")]
             public string Pk { get; set; }
 
             public DataObjectDotNet() { }
@@ -324,10 +322,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             [Newtonsoft.Json.JsonProperty(PropertyName = "StringValueNewtonsoft")]
             public string StringField { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "id")]
             public string id { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "Pk")]
             public string Pk { get; set; }
 
             public DataObjectNewtonsoft() { }
@@ -387,12 +383,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             [JsonPropertyName("stringValueDotNet")]
             public string StringField { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "id")]
-            [JsonPropertyName("id")]
             public string id { get; set; }
 
-            [Newtonsoft.Json.JsonProperty(PropertyName = "Pk")]
-            [JsonPropertyName("Pk")]
             public string Pk { get; set; }
 
             public DataObjectMultiSerializer() { }
