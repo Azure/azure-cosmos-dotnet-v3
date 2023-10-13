@@ -1285,41 +1285,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("GroupBy Single Value With Count", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
                                                                                 (key, value) => value.Count() /*return the Count of each group */)));
 
-            //inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(k => k.FamilyId /*keySelector*/,
-            //                                                                    (key, value) => new { Count = value.Count(), Sum = value.Min() } /*return the Count of each group, alias as Count */)));
-            //inputs.Add(new LinqTestInput("GroupBy", b => getQuery(b).GroupBy(f => f.FamilyId)));
-            //inputs.Add(new LinqTestInput("GroupBy -> Select query",
-            //    b => from f in getQuery(b)
-            //         group f by f.FamilyId into k
-            //         select k));
-            //inputs.Add(new LinqTestInput("GroupBy -> Select", b => getQuery(b).GroupBy(f => f.FamilyId).Select(f => f.Key)));
-            //inputs.Add(new LinqTestInput("GroupBy -> Select -> Take", b => getQuery(b).GroupBy(f => f.FamilyId).Select(f => f.Key).Take(10)));
-            //inputs.Add(new LinqTestInput("GroupBy -> Select -> Select", b => getQuery(b).GroupBy(f => f.FamilyId).Select(f => f.Key).Select(x => x)));
-
-            //// Linq.GroupBy doesn't support multiple property group by, so we need to group it into a new anonymous type
-            //inputs.Add(new LinqTestInput("GroupBy multiple expressions",
-            //    b => from f in getQuery(b)
-            //         group f by new { family = f.FamilyId, numValue = f.Int } into newGroup
-            //         select newGroup.Key.family));
-
-            //inputs.Add(new LinqTestInput("Select -> GroupBy", b => getQuery(b).Select(family => family.FamilyId).GroupBy(id => id), skipVerification: true));
-            //inputs.Add(new LinqTestInput("Select -> GroupBy -> Select", b => getQuery(b).Select(family => family.FamilyId).GroupBy(id => id).Select(x => x.Key.Count())));
-            //inputs.Add(new LinqTestInput("Select -> GroupBy -> Select with Aggregate", b => getQuery(b).Select(family => family.FamilyId).GroupBy(id => id).Select(x => x.Count())));
-            //inputs.Add(new LinqTestInput("Where -> GroupBy -> Select query",
-            //    b => from f in getQuery(b)
-            //         where f.Int == 5 && f.NullableInt != null
-            //         group f by f.IsRegistered into registerGroup
-            //         select registerGroup));
-            //inputs.Add(new LinqTestInput("Where -> GroupBy -> Select", b => getQuery(b).Where(f => f.Int == 5 && f.NullableInt != null).GroupBy(f => f.IsRegistered).Select(f => f.Key)));
-            //inputs.Add(new LinqTestInput("GroupBy query",
-            //    b => from f in getQuery(b)
-            //         group f by f.FamilyId));
-
-            // group something by something into something
-            // group with aggregate
-            // negative case: group with order by
-            // scalar expression in group by clause i.e arithmetic/ numerable/ range (startswith/ contains)
-            // group by with scalar expression inside group by 
             this.ExecuteTestSuite(inputs);
         }
 

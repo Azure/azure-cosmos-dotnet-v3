@@ -1220,12 +1220,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case LinqMethods.GroupBy:
                     {
-#if INTERNAL
+//#if INTERNAL
                         result = ExpressionToSql.VisitGroupBy(returnElementType, inputExpression.Arguments, context);
                         break;
-#else
-                        throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, inputExpression.Method.Name));
-#endif
+//#else
+//                        throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, inputExpression.Method.Name));
+//#endif
                     }
                 case LinqMethods.OrderBy:
                     {
