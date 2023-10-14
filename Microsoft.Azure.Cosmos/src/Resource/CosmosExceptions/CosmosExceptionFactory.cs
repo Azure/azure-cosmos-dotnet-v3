@@ -182,6 +182,11 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                         catch (Newtonsoft.Json.JsonReaderException)
                         {
                         }
+                        // Suggested resolution. However, for the purpose of TDD and failing a test, I am commenting this out.
+                        //////catch (Exception exception) when (exception is Newtonsoft.Json.JsonReaderException ||
+                        //////    exception is Newtonsoft.Json.JsonSerializationException)
+                        //////{
+                        //////}
 
                         // Content is not Json
                         content.Position = 0;

@@ -781,7 +781,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 database = await client.CreateDatabaseIfNotExistsAsync("mydb");
-                
+
                 ContainerProperties containerProperties = new ContainerProperties("subpartitionedcontainer", new List<string> { "/Country", "/City" });
                 Container container = await database.CreateContainerAsync(containerProperties);
                 ContainerInternal containerInternal = (ContainerInternal)container;
@@ -812,7 +812,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 doc1.SetValue("Country", "USA");
                 doc1.SetValue("City", "Stonybrook");
                 documents[4] = await container.CreateItemAsync<Document>(doc1);
-               
+
                 Cosmos.PartitionKey partitionKey1 = new PartitionKeyBuilder().Add("USA").Add("Stonybrook").Build();
 
                 using (ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey1))
@@ -844,7 +844,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             finally
             {
                 HttpConstants.Versions.CurrentVersion = currentVersion;
-                if(database != null) await database.DeleteAsync();
+                if (database != null) await database.DeleteAsync();
             }
         }
 
@@ -973,7 +973,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 // Each parameter in query spec should be a call to the custom serializer
                 int parameterCount = queryDefinition.ToSqlQuerySpec().Parameters.Count;
-                Assert.AreEqual((parameterCount*pageCount)+parameterCount, toStreamCount, $"missing to stream call. Expected: {(parameterCount * pageCount) + parameterCount}, Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+                Assert.AreEqual((parameterCount * pageCount) + parameterCount, toStreamCount, $"missing to stream call. Expected: {(parameterCount * pageCount) + parameterCount}, Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
                 Assert.AreEqual(pageCount, fromStreamCount);
             }
         }
@@ -1195,7 +1195,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.AreEqual(3, pageCount);
                 }
-                
+
 
 
                 IReadOnlyList<(string Name, object Value)> parameters1 = queryDefinition.GetQueryParameters();
@@ -1362,7 +1362,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 FeedResponse<ToDoActivity> iter = await feedIterator.ReadNextAsync();
                 Assert.IsTrue(iter.Count() <= 1);
-                if(iter.Count() == 1)
+                if (iter.Count() == 1)
                 {
                     found = true;
                     ToDoActivity response = iter.First();
@@ -1493,8 +1493,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(
-                this.Container, 
-                300, 
+                this.Container,
+                300,
                 randomPartitionKey: true,
                 randomTaskNumber: true);
 
@@ -1753,8 +1753,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ItemQueryStreamSerializationSetting()
         {
             IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(
-                container: this.Container, 
-                pkCount: 101, 
+                container: this.Container,
+                pkCount: 101,
                 randomTaskNumber: true);
 
             QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t ORDER BY t.taskNum");
@@ -2135,9 +2135,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
             Assert.AreEqual(null, response.Resource.children[0].id);
-            
+
             patchOperations.Clear();
-            patchOperations.Add(PatchOperation.Add("/children/1/description","Child#1"));
+            patchOperations.Add(PatchOperation.Add("/children/1/description", "Child#1"));
             patchOperations.Add(PatchOperation.Move("/children/0/description", "/description"));
             patchOperations.Add(PatchOperation.Move("/children/1/description", "/children/0/description"));
             // with content response
@@ -3148,6 +3148,93 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(diagnosticString.Contains("ForceAddressRefresh"));
                 Assert.IsTrue(diagnosticString.Contains("No change to cache"));
                 Assert.AreNotEqual(0, diagnostics.GetFailedRequestCount());
+            }
+        }
+
+        /// <summary>
+        /// <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/4115"/>
+        /// </summary>
+        /// <returns></returns>
+        [TestMethod]
+        [Owner("philipthomas")]
+        [Description("Fix: ReadItemAsync/ReadItemStreamAsync is yielding a Newtonsoft.Json.JsonSerializationException whenever " +
+            "the item is not found and the custom serializer has MissingMemberHandling set to MissingMemberHandling.Error. " +
+            "ReadItemAsync/ReadItemStreamAsync should yield a CosmosException with a NotFound StatusCode.")]
+        public async Task GivenReadItemAsyncSerializationExceptionWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync()
+        {
+            // AAA
+            //     Arrange
+            CancellationTokenSource cancellationTokenSource = new();
+            CancellationToken cancellationToken = cancellationTokenSource.Token;
+
+            int toStreamCount = 0;
+            int fromStreamCount = 0;
+            CosmosSerializerHelper serializer = new(
+                jsonSerializerSettings: new JsonSerializerSettings()
+                {
+                    NullValueHandling = NullValueHandling.Ignore,
+                    MissingMemberHandling = MissingMemberHandling.Error,
+                },
+                fromStreamCallback: item => fromStreamCount++,
+                toStreamCallBack: item => toStreamCount++);
+
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(customizeClientBuilder: builder => builder.WithCustomSerializer(cosmosJsonSerializer: serializer));
+
+            string databaseId = Guid.NewGuid().ToString();
+            Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(
+                id: databaseId,
+                cancellationToken: cancellationToken);
+
+            try
+            {
+                string containerId = Guid.NewGuid().ToString();
+                Container container = await database.CreateContainerIfNotExistsAsync(
+                    containerProperties: new ContainerProperties
+                    {
+                        Id = containerId,
+                        PartitionKeyPath = "/pk",
+                    },
+                    cancellationToken: cancellationToken);
+
+
+                //     Act
+                // If any thing other than a CosmosException is thrown, the call to ReadItemAsync below will fail.
+                string itemIdThatWillNotExist = Guid.NewGuid().ToString();
+                string partitionKeyValue = "Washington";
+                CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(action:
+                    async () => await container.ReadItemAsync<ToDoActivity>(
+                        id: itemIdThatWillNotExist, 
+                        partitionKey: new Cosmos.PartitionKey(partitionKeyValue),
+                        cancellationToken: cancellationToken));
+                
+                Debug.Assert(
+                    condition: cosmosException != null,
+                    message: $"{cosmosException}");
+
+                Debug.WriteLine(message: $"{nameof(cosmosException)}: {cosmosException}");
+
+                //     Assert
+                Assert.AreEqual(
+                    actual: cosmosException.StatusCode,
+                    expected: HttpStatusCode.NotFound);
+            }
+            catch (JsonSerializationException jsonSerializationException)
+            {
+                Assert.Fail(message: $"JsonSerializationException was caught, so fail the test. {jsonSerializationException}.");
+            }
+            catch (Exception otherException)
+            {
+                Assert.Fail(message: $"Any other exception is thrown before the Act, so fail the test. {otherException}.");
+            }
+            finally
+            {
+                if (database != null)
+                {
+                    // Remove the test database. Cleanup.
+                    _ = await database.DeleteAsync(cancellationToken: cancellationToken);
+
+                    Debug.WriteLine($"The {nameof(database)} with id '{databaseId}' was removed.");
+                }
             }
         }
 
