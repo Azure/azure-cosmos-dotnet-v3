@@ -769,8 +769,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ContainerQueryProperties containerQueryProperties,
             ITrace trace)
         {
+            bool allowOdeGatewayFlag = false;
             AccountProperties properties = await clientContext.Client.ReadAccountAsync();
-            bool allowOdeGatewayFlag = properties.QueryEngineConfiguration.ContainsKey(AllowOptimisticDirectExecution) && Convert.ToBoolean(properties.QueryEngineConfiguration[AllowOptimisticDirectExecution]);
+            if (properties.QueryEngineConfiguration.TryGetValue(AllowOptimisticDirectExecution, out object allowOptimisticDirectExecutionValue))
+            {
+                bool.TryParse(allowOptimisticDirectExecutionValue.ToString(), out allowOdeGatewayFlag);
+            }
 
             // Use the Ode code path only if both AllowOdeGatewayFlag and EnableOptimisticDirectExecution are true
             if (!allowOdeGatewayFlag || !inputParameters.EnableOptimisticDirectExecution)
