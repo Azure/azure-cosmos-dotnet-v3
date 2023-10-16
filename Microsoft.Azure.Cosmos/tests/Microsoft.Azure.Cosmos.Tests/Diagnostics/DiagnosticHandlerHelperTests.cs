@@ -58,8 +58,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             // Get default instance of DiagnosticsHandlerHelper with client telemetry disabled (default)
             DiagnosticsHandlerHelper diagnosticHandlerHelper1 = DiagnosticsHandlerHelper.GetInstance();
-            await Task.Delay(10000); // warm up
+            await Task.Delay(10000); // warm up to make sure there is at least one entry in the history
             Assert.IsNotNull(diagnosticHandlerHelper1.GetDiagnosticsSystemHistory());
+            Assert.IsNull(diagnosticHandlerHelper1.GetClientTelemetrySystemHistory());
             Assert.IsTrue(diagnosticHandlerHelper1.GetDiagnosticsSystemHistory().Values.Count > 0);
             int countBeforeRefresh = diagnosticHandlerHelper1.GetDiagnosticsSystemHistory().Values.Count;
 
@@ -69,22 +70,21 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             Assert.IsNull(TelemetrySystemUsageRecorderField1.GetValue(null));
 
             // Refresh instance of DiagnosticsHandlerHelper with client telemetry enabled
-            DiagnosticsHandlerHelper.Refresh(true);
-            await Task.Delay(5000); // warm up again to populate telemetry data
+            DiagnosticsHandlerHelper.Refresh(isClientTelemetryEnabled: true);
             DiagnosticsHandlerHelper diagnosticHandlerHelper2 = DiagnosticsHandlerHelper.GetInstance();
-            int countAfterRefresh = diagnosticHandlerHelper1.GetDiagnosticsSystemHistory().Values.Count;
-            
+            Assert.IsNotNull(diagnosticHandlerHelper2.GetDiagnosticsSystemHistory());
+            int countAfterRefresh = diagnosticHandlerHelper2.GetDiagnosticsSystemHistory().Values.Count;
+          
             Assert.IsTrue(countBeforeRefresh <= countAfterRefresh, "After Refresh count should be greater than or equal to before refresh count");
-
             Assert.AreNotEqual(diagnosticHandlerHelper1, diagnosticHandlerHelper2);
 
-            Assert.IsNotNull(diagnosticHandlerHelper2.GetDiagnosticsSystemHistory());
+            await Task.Delay(5000); // warm up to make sure there is at least one entry in the history
             Assert.IsNotNull(diagnosticHandlerHelper2.GetClientTelemetrySystemHistory());
 
             Assert.IsTrue(diagnosticHandlerHelper2.GetClientTelemetrySystemHistory().Values.Count > 0);
 
             // Refresh instance of DiagnosticsHandlerHelper with client telemetry disabled
-            DiagnosticsHandlerHelper.Refresh(false);
+            DiagnosticsHandlerHelper.Refresh(isClientTelemetryEnabled: false);
             DiagnosticsHandlerHelper diagnosticHandlerHelper3 = DiagnosticsHandlerHelper.GetInstance();
             Assert.IsNotNull(diagnosticHandlerHelper3.GetDiagnosticsSystemHistory());
             Assert.IsNull(diagnosticHandlerHelper3.GetClientTelemetrySystemHistory());

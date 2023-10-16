@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 #if INTERNAL
             return new TelemetryToServiceHelper();
 #else
-            if (!connectionPolicy.EnableClientTelemetry)
+            if (connectionPolicy.CosmosClientTelemetryOptions.DisableSendingMetricsToService)
             {
                 return new TelemetryToServiceHelper();
             }
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 catch (Exception ex)
                 {
                     DefaultTrace.TraceWarning($"Error While starting Telemetry Job : {0}. Hence disabling Client Telemetry", ex);
-                    this.connectionPolicy.EnableClientTelemetry = false;
+                    this.connectionPolicy.CosmosClientTelemetryOptions.DisableSendingMetricsToService = true;
                 }
             }
             else

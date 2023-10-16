@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
                sessionContainer: clientOptions.SessionContainer,
                cosmosClientId: cosmosClient.Id,
                remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.ServerCertificateCustomValidationCallback),
-               isDistributedTracingEnabled: clientOptions.IsDistributedTracingEnabled);
+               cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions);
 
             return ClientContextCore.Create(
                 cosmosClient,

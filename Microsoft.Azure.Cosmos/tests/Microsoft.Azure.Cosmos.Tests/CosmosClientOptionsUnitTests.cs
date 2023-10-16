@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -98,6 +99,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreNotEqual(Cosmos.ConsistencyLevel.Session, clientOptions.ConsistencyLevel);
             Assert.IsFalse(policy.EnablePartitionLevelFailover);
             Assert.IsFalse(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue);
+#if PREVIEW
+            Assert.IsFalse(clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing);
+#else
+            Assert.IsTrue(clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing);
+#endif
+            Assert.IsTrue(clientOptions.CosmosClientTelemetryOptions.DisableSendingMetricsToService);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
@@ -162,9 +169,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 portReuseMode,
                 enableTcpConnectionEndpointRediscovery)
                 .WithApplicationPreferredRegions(preferredLocations)
-                .WithDistributedTracingOptions(new DistributedTracingOptions
+                .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                 {
-                    LatencyThresholdForDiagnosticEvent = TimeSpan.FromMilliseconds(100)
+                    DisableDistributedTracing = false,
+                    CosmosThresholdOptions = new CosmosThresholdOptions()
+                    {
+                        PointOperationLatencyThreshold = TimeSpan.FromMilliseconds(100),
+                        NonPointOperationLatencyThreshold = TimeSpan.FromMilliseconds(100)
+                    }
                 });
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
@@ -177,8 +189,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, clientOptions.PortReuseMode);
             Assert.IsTrue(clientOptions.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
-            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.DistributedTracingOptions.LatencyThresholdForDiagnosticEvent);
-            Assert.IsTrue(clientOptions.IsDistributedTracingEnabled);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.CosmosClientTelemetryOptions.CosmosThresholdOptions.PointOperationLatencyThreshold);
+            Assert.AreEqual(TimeSpan.FromMilliseconds(100), clientOptions.CosmosClientTelemetryOptions.CosmosThresholdOptions.NonPointOperationLatencyThreshold);
+            Assert.IsFalse(clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -681,6 +694,170 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
             Assert.IsTrue(cosmosClientOptions.EnableUpgradeConsistencyToLocalQuorum);
+        }
+
+        [TestMethod]
+        public void VerifyRegionNameFormatConversionForApplicationRegion()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            cosmosClientOptions.ApplicationRegion = "westus2";
+
+            ConnectionPolicy policy = cosmosClientOptions.GetConnectionPolicy(0);
+
+            // Need to see Regions.WestUS2 in the list, but not "westus2"
+            bool seenWestUS2 = false;
+            bool seenNormalized = false;
+
+            foreach (string region in policy.PreferredLocations)
+            {
+                if (region == "westus2")
+                {
+                    seenNormalized = true;
+                }
+
+                if (region == Regions.WestUS2)
+                {
+                    seenWestUS2 = true;
+                }
+            }
+            Assert.IsTrue(seenWestUS2);
+            Assert.IsFalse(seenNormalized);
+        }
+
+        [TestMethod]
+        public void VerifyRegionNameFormatConversionBypassForApplicationRegion()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            
+            // No conversion for expected format.
+            cosmosClientOptions.ApplicationRegion = Regions.NorthCentralUS;
+
+            ConnectionPolicy policy = cosmosClientOptions.GetConnectionPolicy(0);
+
+            Assert.AreEqual(Regions.NorthCentralUS, policy.PreferredLocations[0]);
+
+            // Ignore unknown values. 
+            cosmosClientOptions.ApplicationRegion = null;
+
+            policy = cosmosClientOptions.GetConnectionPolicy(0);
+
+            Assert.AreEqual(0, policy.PreferredLocations.Count);
+
+            cosmosClientOptions.ApplicationRegion = string.Empty;
+            policy = cosmosClientOptions.GetConnectionPolicy(0);
+
+            Assert.AreEqual(0, policy.PreferredLocations.Count);
+
+            cosmosClientOptions.ApplicationRegion = "Invalid region";
+            Assert.ThrowsException<ArgumentException>(() => cosmosClientOptions.GetConnectionPolicy(0));
+        }
+
+        [TestMethod]
+        public void VerifyRegionNameFormatConversionForApplicationPreferredRegions()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            cosmosClientOptions.ApplicationPreferredRegions = new List<string> {"westus2", "usdodcentral", Regions.ChinaNorth3};
+
+            ConnectionPolicy policy = cosmosClientOptions.GetConnectionPolicy(0);
+
+            bool seenUSDodCentral = false;
+            bool seenWestUS2 = false;
+            bool seenChinaNorth3 = false;
+            bool seenNormalizedUSDodCentral = false;
+            bool seenNormalizedWestUS2 = false;
+
+            foreach (string region in policy.PreferredLocations)
+            {
+                if (region == Regions.USDoDCentral)
+                {
+                    seenUSDodCentral = true;
+                }
+
+                if (region == Regions.WestUS2)
+                {
+                    seenWestUS2 = true;
+                }
+
+                if (region == Regions.ChinaNorth3)
+                {
+                    seenChinaNorth3 = true;
+                }
+
+                if (region == "westus2")
+                {
+                    seenNormalizedWestUS2 = true;
+                }
+
+                if (region == "usdodcentral")
+                {
+                    seenNormalizedUSDodCentral = true;
+                }
+            }
+
+            Assert.IsTrue(seenChinaNorth3);
+            Assert.IsTrue(seenWestUS2);
+            Assert.IsTrue(seenUSDodCentral);
+            Assert.IsFalse(seenNormalizedUSDodCentral);
+            Assert.IsFalse(seenNormalizedWestUS2);
+        }
+
+        [TestMethod]
+        public void VerifyRegionNameFormatConversionBypassForInvalidApplicationPreferredRegions()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+
+            // List contains valid and invalid values
+            cosmosClientOptions.ApplicationPreferredRegions = new List<string>
+            {
+                null,
+                string.Empty,
+                Regions.JioIndiaCentral,
+                "westus2",
+                "Invalid region"
+            };
+
+            ConnectionPolicy policy = cosmosClientOptions.GetConnectionPolicy(0);
+
+            bool seenJioIndiaCentral = false;
+            bool seenWestUS2 = false;
+            bool seenNormalized = false;
+
+            foreach (string region in policy.PreferredLocations)
+            {
+                if (region == Regions.JioIndiaCentral)
+                {
+                    seenJioIndiaCentral = true;
+                }
+
+                if (region == Regions.WestUS2)
+                {
+                    seenWestUS2 = true;
+                }
+
+                if (region == "westus2")
+                {
+                    seenNormalized = true;
+                }
+            }
+
+            Assert.IsTrue(seenJioIndiaCentral);
+            Assert.IsTrue(seenWestUS2);
+            Assert.IsFalse(seenNormalized);
+        }
+
+        [TestMethod]
+        public void RegionNameMappingTest()
+        {
+            RegionNameMapper mapper = new RegionNameMapper();
+
+            // Test normalized name
+            Assert.AreEqual(Regions.WestUS2, mapper.GetCosmosDBRegionName("westus2"));
+
+            // Test with spaces
+            Assert.AreEqual(Regions.WestUS2, mapper.GetCosmosDBRegionName("west us 2"));
+
+            // Test for case insenstive
+            Assert.AreEqual(Regions.WestUS2, mapper.GetCosmosDBRegionName("wEsTuS2"));
         }
 
         [TestMethod]
