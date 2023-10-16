@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the partition key range id for the partition.
         /// </summary>
         /// <remarks>
-        /// Only has a value in direct mode.  When using gateway mode, this is null.
+        /// Only has a value in direct mode. When using gateway mode, this is null.
         /// </remarks>
         public abstract int? PartitionKeyRangeId { get; }
     }
